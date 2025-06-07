@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Debug Visualization</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #222;
+            color: white;
+        }
+        
+        .debug-container {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+        }
+        
+        .debug-square {
+            width: 64px;
+            height: 64px;
+            border: 2px solid #0ff;
+            position: relative;
+            margin: 10px 0;
+            background: #111;
+        }
+        
+        .camera-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #ff0;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .direction-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: #f00;
+            transform-origin: bottom;
+            transform: translate(-50%, -100%);
+        }
+        
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 8px 8px;
+        }
+        
+        .info-panel {
+            font-size: 10px;
+            line-height: 1.2;
+        }
+        
+        .test-controls {
+            margin-top: 10px;
+        }
+        
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        
+        button:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h3>Camera Debug (64x64)</h3>
+        
+        <div class="debug-square" id="debugSquare">
+            <div class="grid-overlay"></div>
+            <div class="camera-center" id="cameraCenter"></div>
+            <div class="direction-indicator" id="directionIndicator"></div>
+        </div>
+        
+        <div class="info-panel" id="infoPanel">
+            <div>Pos: <span id="posDisplay">0, 0</span></div>
+            <div>Zoom: <span id="zoomDisplay">1.0</span></div>
+            <div>Rotation: <span id="rotationDisplay">0°</span></div>
+            <div>Move Vector: <span id="moveVectorDisplay">0, 0</span></div>
+        </div>
+        
+        <div class="test-controls">
+            <div>Movement Test:</div>
+            <button onclick="testMove('w')">W</button>
+            <button onclick="testMove('a')">A</button>
+            <button onclick="testMove('s')">S</button>
+            <button onclick="testMove('d')">D</button>
+            <br>
+            <div>Rotation Test:</div>
+            <button onclick="testRotate(-15)">Rotate L</button>
+            <button onclick="testRotate(15)">Rotate R</button>
+            <br>
+            <div>Zoom Test:</div>
+            <button onclick="testZoom(1.2)">Zoom In</button>
+            <button onclick="testZoom(0.8)">Zoom Out</button>
+            <br>
+            <button onclick="resetCamera()">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // Simulate the camera state
+        let camera = {
+            x: 2500,
+            y: 2500,
+            zoom: 1.0,
+            rotation: 45, // degrees
+            targetX: 2500,
+            targetY: 2500,
+            targetZoom: 1.0,
+            targetRotation: 45
+        };
+
+        // Constants from the game
+        const KEYBOARD_MOVE_SPEED = 1500;
+        const ZOOM_FACTOR = 1.2;
+
+        function updateDisplay() {
+            document.getElementById('posDisplay').textContent = 
+                `${camera.x.toFixed(1)}, ${camera.y.toFixed(1)}`;
+            document.getElementById('zoomDisplay').textContent = 
+                camera.zoom.toFixed(2);
+            document.getElementById('rotationDisplay').textContent = 
+                `${camera.rotation.toFixed(1)}°`;
+            
+            // Update visual indicators
+            const indicator = document.getElementById('directionIndicator');
+            indicator.style.transform = `translate(-50%, -100%) rotate(${camera.rotation}deg)`;
+            
+            // Show movement vector calculations
+            const rotationRad = (camera.rotation * Math.PI) / 180;
+            const forwardX = Math.cos(rotationRad);
+            const forwardY = Math.sin(rotationRad);
+            const rightX = -Math.sin(rotationRad);
+            const rightY = Math.cos(rotationRad);
+            
+            document.getElementById('moveVectorDisplay').textContent = 
+                `F:(${forwardX.toFixed(2)}, ${forwardY.toFixed(2)}) R:(${rightX.toFixed(2)}, ${rightY.toFixed(2)})`;
+        }
+
+        function testMove(direction) {
+            const deltaTime = 1/60; // Simulate 60fps
+            const moveSpeed = (KEYBOARD_MOVE_SPEED * deltaTime) / camera.zoom;
+            
+            // Convert camera rotation to radians for calculations
+            const rotationRad = (camera.rotation * Math.PI) / 180;
+            
+            // Screen-aligned movement: always move relative to current view direction
+            const forwardX = Math.cos(rotationRad);
+            const forwardY = Math.sin(rotationRad);
+            const rightX = -Math.sin(rotationRad);
+            const rightY = Math.cos(rotationRad);
+
+            let deltaX = 0, deltaY = 0;
+
+            switch(direction) {
+                case 'w': // Forward (screen up)
+                    deltaX = forwardX * moveSpeed;
+                    deltaY = forwardY * moveSpeed;
+                    break;
+                case 's': // Backward (screen down)
+                    deltaX = -forwardX * moveSpeed;
+                    deltaY = -forwardY * moveSpeed;
+                    break;
+                case 'a': // Left (screen left)
+                    deltaX = rightX * moveSpeed;
+                    deltaY = rightY * moveSpeed;
+                    break;
+                case 'd': // Right (screen right)
+                    deltaX = -rightX * moveSpeed;
+                    deltaY = -rightY * moveSpeed;
+                    break;
+            }
+
+            camera.targetX += deltaX;
+            camera.targetY += deltaY;
+            
+            // Apply smoothing
+            camera.x += (camera.targetX - camera.x) * 0.15;
+            camera.y += (camera.targetY - camera.y) * 0.15;
+            
+            console.log(`Move ${direction}: delta(${deltaX.toFixed(2)}, ${deltaY.toFixed(2)}) -> pos(${camera.x.toFixed(2)}, ${camera.y.toFixed(2)})`);
+            updateDisplay();
+        }
+
+        function testRotate(degrees) {
+            camera.targetRotation += degrees;
+            camera.rotation += (camera.targetRotation - camera.rotation) * 0.15;
+            console.log(`Rotate ${degrees}°: rotation=${camera.rotation.toFixed(2)}°`);
+            updateDisplay();
+        }
+
+        function testZoom(factor) {
+            const newZoom = camera.targetZoom * factor;
+            camera.targetZoom = Math.max(0.01, Math.min(50.0, newZoom));
+            camera.zoom += (camera.targetZoom - camera.zoom) * 0.15;
+            console.log(`Zoom ${factor}: zoom=${camera.zoom.toFixed(3)}`);
+            updateDisplay();
+        }
+
+        function resetCamera() {
+            camera.x = camera.targetX = 2500;
+            camera.y = camera.targetY = 2500;
+            camera.zoom = camera.targetZoom = 1.0;
+            camera.rotation = camera.targetRotation = 45;
+            console.log('Camera reset');
+            updateDisplay();
+        }
+
+        // Keyboard event handling with focus management
+        document.addEventListener('keydown', (e) => {
+            console.log('Key pressed:', e.code, e.key);
+            e.preventDefault(); // Prevent default browser behavior
+            
+            switch(e.code) {
+                case 'KeyW':
+                    testMove('w');
+                    break;
+                case 'KeyA':
+                    testMove('a');
+                    break;
+                case 'KeyS':
+                    testMove('s');
+                    break;
+                case 'KeyD':
+                    testMove('d');
+                    break;
+                case 'KeyQ':
+                    testRotate(-15);
+                    break;
+                case 'KeyE':
+                    testRotate(15);
+                    break;
+                default:
+                    console.log('Unhandled key:', e.code);
+            }
+        });
+
+        // Make sure the page can receive keyboard events
+        document.body.tabIndex = 0;
+        
+        // Focus the body when page loads
+        window.addEventListener('load', () => {
+            document.body.focus();
+            console.log('Page focused for keyboard input');
+        });
+        
+        // Focus when clicked anywhere
+        document.addEventListener('click', () => {
+            document.body.focus();
+            console.log('Page refocused');
+        });
+
+        // Initialize display
+        updateDisplay();
+        
+        // Show instructions
+        console.log('=== Camera Debug Tool Ready ===');
+        console.log('Click anywhere on the page, then use:');
+        console.log('WASD - Movement');
+        console.log('Q/E - Rotation');
+        console.log('Or use the buttons');
+    </script>
+</body>
+</html>

@@ -1,0 +1,721 @@
+@file:Suppress(
+    "NOTHING_TO_INLINE", // Crucial for zero-cost abstractions
+    "FunctionName",      // For unconventional names like `j`, `α`, `▶`, `↺`
+    "ObjectPropertyName",// For object property names
+    "UNCHECKED_CAST",    // Often necessary with generic type-erased patterns
+    "NonAsciiCharacters",// For symbols like α, ▶, ↺
+    "TooManyFunctions"   // Suppress for large utility file
+)
+
+package borg.trikeshed.core // Changed package from com.example.trikeshedcore
+
+import kotlin.jvm.JvmInline
+import kotlin.jvm.JvmOverloads
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.random.Random
+import kotlin.reflect.KClass
+
+// I. borg.trikeshed.lib Essentials: Join and Series Primitives
+
+/**
+ * Interface representing a fundamental Join operation, similar to a Pair but with named `a` and `b` components.
+ */
+interface Join<out A, out B> { // Made Join covariant on A and B as per best practice for read-only interfaces
+    val a: A
+    val b: B
+    operator fun component1(): A = a
+    operator fun component2(): B = b
+    val pair: Pair<A, B> get() = Pair(a, b)
+}
+
+/**
+ * A concrete data class implementation of the [Join] interface.
+ * Marked private as the primary construction is via the infix 'j' function.
+ */
+private data class _Join<A, B>(override val a: A, override val b: B) : Join<A, B>
+
+/**
+ * Infix operator to create a [Join] instance. This is the primary construction mechanism.
+ */
+infix fun <A, B> A.j(b: B): Join<A, B> = _Join(this, b)
+
+/** Accessor for the first element of a [Join]. */
+inline val <A, B> Join<A, B>.first: A get() = a
+/** Accessor for the second element of a [Join]. */
+inline val <A, B> Join<A, B>.second: B get() = b
+
+/**
+ * Type alias for a [Join] where both elements are of the same type.
+ */
+typealias Twin<T> = Join<T, T>
+
+/**
+ * Factory function to create a [Twin] from a single value.
+ */
+fun <T> T.twin(): Twin<T> = this j this
+
+/**
+ * Type alias for a Series, which is a [Join] of a size ([Int]) and an accessor function.
+ * This represents a lazily-evaluated sequence of elements indexed by an integer.
+ */
+typealias Series<T> = Join<Int, (Int) -> T>
+
+/** Returns the size of the [Series]. */
+inline val <T> Series<T>.size: Int get() = a
+
+/**
+ * Operator to access an element of the [Series] by its index.
+ */
+inline operator fun <T> Series<T>.get(i: Int): T = b(i)
+
+/**
+ * An empty [Series] instance.
+ * Note: The original `by (0 j { _ -> null })` relies on delegation which might not be ideal for a top-level object if type T is needed.
+ * A safer EmptySeries might be a function `emptySeries<T>()` or a more constrained object.
+ * The provided code uses `EmptySeries as Series<T>` which is common.
+ */
+object EmptySeries : Series<Nothing> { // Changed to Series<Nothing> for better type safety with 'as' cast
+    override val a: Int = 0
+    override val b: (Int) -> Nothing = { throw IndexOutOfBoundsException("Accessing element in an empty series.") }
+}
+
+
+/**
+ * Factory function to create an empty [Series].
+ */
+inline fun <T> emptySeries(): Series<T> = EmptySeries as Series<T>
+
+/**
+ * Creates a lazy supplier (a lambda with no arguments) that returns `this` value.
+ * Used for lazy meta-patterns.
+ */
+inline val <T> T.leftIdentity: () -> T get() = { this }
+
+/**
+ * Syntactic sugar for [leftIdentity].
+ */
+inline val <T> T.`↺`: () -> T get() = leftIdentity
+
+/**
+ * A value class wrapper around [Series] that makes it [Iterable].
+ */
+@JvmInline
+value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
+    override fun iterator(): Iterator<A> = object : Iterator<A> {
+        private var index = 0
+        override fun hasNext(): Boolean = index < s.size
+        override fun next(): A = s[index++]
+    }
+}
+
+/**
+ * Provides an [Iterable] view of the [Series].
+ */
+inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
+
+/**
+ * Extension function to convert a [Series] of [Char] to a String.
+ */
+fun Series<Char>.asString(): String = this.`▶`.joinToString("")
+
+// III. core.Tensor Implementation
+
+/**
+ * Type alias for a Tensor, which is a [Join] of its shape ([IntArray]) and an accessor function
+ * that takes coordinates ([IntArray]) and returns an element.
+ */
+typealias Tensor<T> = Join<IntArray, (IntArray) -> T>
+
+/** Returns the shape of the [Tensor]. */
+inline val <T> Tensor<T>.tensorShape: IntArray get() = a
+/** Returns the accessor function of the [Tensor]. */
+inline val <T> Tensor<T>.tensorAccessor: (IntArray) -> T get() = b
+
+/** Syntactic sugar for [tensorShape]. */
+inline val <T> Tensor<T>.shape: IntArray get() = tensorShape
+/** Syntactic sugar for [tensorAccessor]. */
+inline val <T> Tensor<T>.accessor: (IntArray) -> T get() = tensorAccessor
+
+/** Returns the rank (number of dimensions) of the [Tensor]. */
+inline val <T> Tensor<T>.tensorRank: Int get() = shape.size
+/** Syntactic sugar for [tensorRank]. */
+inline val <T> Tensor<T>.rank: Int get() = tensorRank
+
+/** Returns the total number of elements in the [Tensor]. */
+inline val <T> Tensor<T>.tensorTotalSize: Int get() = if (shape.isEmpty()) 0 else shape.reduceOrNull { acc, i -> acc * i } ?: 0 // reduceOrNull for empty shape
+/** Syntactic sugar for [tensorTotalSize]. */
+inline val <T> Tensor<T>.totalSize: Int get() = tensorTotalSize
+
+/**
+ * Constructs a [Tensor] from a given shape and accessor function.
+ */
+inline fun <T> TensorConstruct(shape: IntArray, noinline accessor: (IntArray) -> T): Tensor<T> =
+    shape j accessor
+
+/**
+ * Constructs a 1-dimensional [Tensor] (effectively a "Series" in tensor form) from a size and an accessor function.
+ */
+inline fun <T> TensorSeries(size: Int, noinline accessor: (Int) -> T): Tensor<T> =
+    intArrayOf(size) j { coords -> accessor(coords[0]) }
+
+/**
+ * Constructs a 2-dimensional [Tensor] (a "Cursor") from rows, columns, and an accessor function.
+ */
+inline fun <T> TensorCursor(rows: Int, cols: Int, noinline accessor: (Int, Int) -> T): Tensor<T> =
+    intArrayOf(rows, cols) j { coords -> accessor(coords[0], coords[1]) }
+
+/**
+ * Invokes the [Tensor]'s accessor with the given coordinates.
+ */
+inline operator fun <T> Tensor<T>.invoke(coords: IntArray): T = accessor(coords)
+
+/**
+ * Invokes the [Tensor]'s accessor with the given variable arguments for coordinates.
+ */
+inline operator fun <T> Tensor<T>.invoke(vararg coords: Int): T = accessor(coords)
+
+/**
+ * Invokes a 1-dimensional [Tensor]'s accessor with a single coordinate.
+ */
+inline operator fun <T> Tensor<T>.invoke(i: Int): T {
+    // Rank check was in original, good for safety.
+    // require(rank == 1) { "Tensor is not rank 1. Use invoke(coords: IntArray) or invoke(vararg coords: Int)." }
+    return this(intArrayOf(i))
+}
+
+/**
+ * Invokes a 2-dimensional [Tensor]'s accessor with row and column coordinates.
+ */
+inline operator fun <T> Tensor<T>.invoke(i: Int, j: Int): T {
+    // require(rank == 2) { "Tensor is not rank 2. Use invoke(coords: IntArray) or invoke(vararg coords: Int)." }
+    return this(intArrayOf(i, j))
+}
+
+// IV. Core Tensor Operations
+
+/**
+ * Applies a transformation function element-wise to a [Tensor], producing a new [Tensor].
+ * This is an "alpha-conversion" operation.
+ */
+inline infix fun <X, C> Tensor<X>.α(crossinline transform: (X) -> C): Tensor<C> =
+    shape j { coords: IntArray -> transform(accessor(coords)) }
+
+/**
+ * Applies a transformation function element-wise to a [Series], producing a new [Series].
+ */
+inline infix fun <X, C> Series<X>.α(crossinline transform: (X) -> C): Series<C> =
+    size j { i -> transform(this[i]) }
+
+/**
+ * Converts a linear index into multi-dimensional coordinates based on the [Tensor]'s shape.
+ */
+fun Tensor<*>.linearToCoords(linearIndex: Int): IntArray {
+    if (rank == 0 && linearIndex == 0 && totalSize == 1) return intArrayOf() // Scalar case
+    if (rank == 0 && totalSize == 0 && linearIndex == 0) return intArrayOf() // Empty scalar
+    if (rank == 0) throw IndexOutOfBoundsException("Cannot convert linear index for a rank 0 tensor with totalSize $totalSize")
+
+
+    val coords = IntArray(rank)
+    var remaining = linearIndex
+    for (i in rank - 1 downTo 0) { // Iterate from the last dimension
+        val currentDimSize = shape[i]
+        if (currentDimSize == 0 && remaining == 0) { // Handle zero-sized dimensions if remaining is also zero
+             coords[i] = 0
+             continue
+        }
+        if (currentDimSize == 0) throw ArithmeticException("Division by zero: dimension $i has size 0")
+
+        coords[i] = remaining % currentDimSize
+        remaining /= currentDimSize
+    }
+    if (remaining != 0) throw IndexOutOfBoundsException("Linear index $linearIndex is out of bounds for shape ${shape.contentToString()}")
+    return coords
+}
+
+
+/**
+ * Converts multi-dimensional coordinates into a linear index based on the [Tensor]'s shape.
+ */
+fun Tensor<*>.coordsToLinear(coords: IntArray): Int {
+    require(coords.size == rank) { "Coordinate rank mismatch: expected $rank, got ${coords.size}" }
+    var linearIndex = 0
+    var multiplier = 1
+    for (i in rank - 1 downTo 0) {
+        require(coords[i] >= 0 && coords[i] < shape[i]) { "Coordinate out of bounds: coords[$i]=${coords[i]} for dimension $i with size ${shape[i]}" }
+        linearIndex += coords[i] * multiplier
+        multiplier *= shape[i]
+    }
+    return linearIndex
+}
+
+
+/**
+ * Materializes the entire content of a [Tensor] into an [Array].
+ * Note: This can be memory-intensive for large tensors.
+ * The type parameter T must be reified or KClass provided to create Array<T>.
+ * Using Array<Any?> and casting is a common workaround if T is not reified.
+ */
+@Suppress("UNCHECKED_CAST")
+inline fun <reified T> Tensor<T>.materialize(): Array<T> {
+    if (totalSize == 0) return emptyArray()
+    // Using Array constructor with initializer for type safety if T is non-nullable
+    return Array(totalSize) { i -> this(linearToCoords(i)) }
+}
+
+
+/**
+ * Determines the broadcasted shape for two input shapes.
+ * Dimensions are aligned from the right. A dimension can broadcast if it's equal or one of them is 1.
+ */
+fun broadcastShapes(shape1: IntArray, shape2: IntArray): IntArray {
+    val maxRank = maxOf(shape1.size, shape2.size)
+    val result = IntArray(maxRank)
+
+    for (k in 0 until maxRank) {
+        val idx1 = shape1.size - 1 - k
+        val idx2 = shape2.size - 1 - k
+
+        val dim1 = if (idx1 >= 0) shape1[idx1] else 1
+        val dim2 = if (idx2 >= 0) shape2[idx2] else 1
+
+        result[maxRank - 1 - k] = when {
+            dim1 == dim2 -> dim1
+            dim1 == 1 -> dim2
+            dim2 == 1 -> dim1
+            else -> throw IllegalArgumentException("Shapes are not broadcastable: ${shape1.contentToString()} vs ${shape2.contentToString()} at aligned index $k (dim1=$dim1, dim2=$dim2)")
+        }
+    }
+    return result
+}
+
+
+/**
+ * Helper function to adjust coordinates for broadcasting.
+ * Given target coordinates (for the broadcasted shape) and an original shape,
+ * it computes the corresponding coordinates in the original tensor.
+ * Dimensions of size 1 in the original tensor are effectively repeated.
+ */
+public fun adjustCoordsForBroadcast(targetCoords: IntArray, originalShape: IntArray): IntArray { // Changed to public
+    val originalRank = originalShape.size
+    val targetRank = targetCoords.size
+    val newCoords = IntArray(originalRank)
+    val rankDiff = targetRank - originalRank
+
+    for (i in 0 until originalRank) {
+        newCoords[i] = if (originalShape[i] == 1) 0 else targetCoords[i + rankDiff]
+    }
+    return newCoords
+}
+
+
+/**
+ * Zips two [Tensor]s element-wise, creating a new [Tensor] of [Join] pairs.
+ * The shapes are broadcasted if compatible.
+ */
+fun <A, B> Tensor<A>.zip(other: Tensor<B>): Tensor<Join<A, B>> {
+    val broadcastedShape = broadcastShapes(this.shape, other.shape)
+    return TensorConstruct(broadcastedShape) { targetCoords ->
+        val aVal = this(adjustCoordsForBroadcast(targetCoords, this.shape))
+        val bVal = other(adjustCoordsForBroadcast(targetCoords, other.shape))
+        aVal j bVal
+    }
+}
+
+/**
+ * Combines two [Tensor]s element-wise using a transformation function,
+ * producing a new [Tensor]. Shapes are broadcasted if compatible.
+ */
+inline fun <A, B, C> Tensor<A>.combine(other: Tensor<B>, crossinline transform: (A, B) -> C): Tensor<C> {
+    val broadcastedShape = broadcastShapes(this.shape, other.shape)
+    return TensorConstruct(broadcastedShape) { targetCoords ->
+        val aVal = this(adjustCoordsForBroadcast(targetCoords, this.shape))
+        val bVal = other(adjustCoordsForBroadcast(targetCoords, other.shape))
+        transform(aVal, bVal)
+    }
+}
+
+// V. CoreTensorCursor Layer
+
+/**
+ * Type alias for a [Tensor] specialized to represent a Cursor (a 2D structure like a table).
+ * It's expected to be rank 2.
+ */
+typealias CoreTensorCursor<T> = Tensor<T>
+
+/**
+ * Type alias for a 1-dimensional [Tensor] representing a row vector within a cursor.
+ */
+typealias CoreTensorRowVec<T> = Tensor<T>
+
+/**
+ * Type alias for a 1-dimensional [Tensor] representing a column vector within a cursor.
+ */
+typealias CoreTensorColumnVec<T> = Tensor<T>
+
+/**
+ * Type alias for a [Tensor] holding [ColumnMeta] objects, representing the metadata for cursor columns.
+ * Expected to be rank 1.
+ */
+typealias CursorMeta = Tensor<ColumnMeta> // Rank 1 Tensor of ColumnMeta
+
+/**
+ * Type alias for a [Join] that combines a [CoreTensorCursor] (the data) with its [CursorMeta] (the schema).
+ */
+typealias CoreTensorCursorWithMeta<T> = Join<CoreTensorCursor<T>, CursorMeta>
+
+/** Returns the number of rows in a [CoreTensorCursor]. Assumes rank 2. */
+inline val <T> CoreTensorCursor<T>.rows: Int get() = if (rank >=1) shape[0] else 0
+
+/** Returns the number of columns in a [CoreTensorCursor]. Assumes rank 2. */
+inline val <T> CoreTensorCursor<T>.cols: Int get() = if (rank >=2) shape[1] else 0
+
+
+/**
+ * Extracts a row as a [CoreTensorRowVec] (rank 1 Tensor) from a 2-dimensional [CoreTensorCursor].
+ */
+fun <T> CoreTensorCursor<T>.row(index: Int): CoreTensorRowVec<T> {
+    require(rank == 2) { "Cursor must be rank 2 for row access. Shape: ${shape.contentToString()}" }
+    require(index in 0 until rows) { "Row index $index out of bounds for rows $rows" }
+    return TensorSeries(cols) { colIdx -> this(index, colIdx) }
+}
+
+/**
+ * Extracts a column as a [CoreTensorColumnVec] (rank 1 Tensor) from a 2-dimensional [CoreTensorCursor].
+ */
+fun <T> CoreTensorCursor<T>.col(index: Int): CoreTensorColumnVec<T> {
+    require(rank == 2) { "Cursor must be rank 2 for column access. Shape: ${shape.contentToString()}" }
+    require(index in 0 until cols) { "Column index $index out of bounds for cols $cols" }
+    return TensorSeries(rows) { rowIdx -> this(rowIdx, index) }
+}
+
+
+/**
+ * Slices a [CoreTensorCursor] by a range of rows, returning a new [CoreTensorCursor].
+ */
+operator fun <T> CoreTensorCursor<T>.get(rowRange: IntRange): CoreTensorCursor<T> {
+    require(rank == 2) { "Cursor must be rank 2 for row range slicing." }
+    val start = rowRange.first
+    val end = rowRange.last
+    require(start >= 0 && end < rows && start <= end) { "Row range $rowRange out of bounds for rows $rows" }
+    val newRows = end - start + 1
+    return TensorCursor(newRows, cols) { r, c -> this(start + r, c) }
+}
+
+/**
+ * Slices a [CoreTensorCursor] by specific column indices (vararg Int), returning a new [CoreTensorCursor].
+ */
+operator fun <T> CoreTensorCursor<T>.get(vararg colIndices: Int): CoreTensorCursor<T> {
+    require(rank == 2) { "Cursor must be rank 2 for column indexing by Int vararg." }
+    colIndices.forEach { require(it >= 0 && it < cols) { "Column index $it out of bounds for cols $cols" } }
+    val newCols = colIndices.size
+    if (newCols == 0) return TensorCursor(rows, 0) { _, _ -> throw IndexOutOfBoundsException("Accessing empty cursor") }
+    return TensorCursor(rows, newCols) { r, c -> this(r, colIndices[c]) }
+}
+
+/**
+ * Slices a [CoreTensorCursor] by specific column indices provided as a [Series<Int>].
+ */
+operator fun <T> CoreTensorCursor<T>.get(colIndices: Series<Int>): CoreTensorCursor<T> {
+    require(rank == 2) { "Cursor must be rank 2 for column indexing by Series<Int>." }
+    val indicesArray = colIndices.`▶`.toList().toIntArray() // Materialize Series<Int> to IntArray
+    indicesArray.forEach { require(it >= 0 && it < cols) { "Column index $it out of bounds for cols $cols" } }
+    val newCols = indicesArray.size
+    if (newCols == 0) return TensorCursor(rows, 0) { _, _ -> throw IndexOutOfBoundsException("Accessing empty cursor") }
+    return TensorCursor(rows, newCols) { r, c -> this(r, indicesArray[c]) }
+}
+
+
+// VI. Metadata Types
+
+/**
+ * Interface for type metadata, used within [ColumnMeta].
+ */
+interface TypeMemento {
+    val networkSize: Int? // Example property, can be expanded
+}
+
+/**
+ * Enum defining various I/O and data types used in the system,
+ * implementing [TypeMemento].
+ */
+enum class IOMemento : TypeMemento {
+    IoByte, IoShort, IoInt, IoFloat, IoDouble, IoLong,
+    IoBoolean, IoChar, IoString, IoCharSeries, IoBigDecimal,
+    IoBigInt, IoDateTime, IoDuration, IoUUID, IoBinary,
+    IoUnknown; // Represents an unknown or generic type
+
+    override val networkSize: Int? get() = when(this) {
+        IoByte, IoBoolean -> 1
+        IoShort, IoChar -> 2
+        IoInt, IoFloat -> 4
+        IoLong, IoDouble -> 8
+        else -> null // Variable size or not applicable
+    }
+}
+
+/**
+ * Type alias for column metadata, a [Join] of a column name ([String]) and its [TypeMemento].
+ */
+typealias ColumnMeta = Join<String, TypeMemento>
+
+/** Returns the name of the column from [ColumnMeta]. */
+inline val ColumnMeta.name: String get() = a
+/** Returns the type memento of the column from [ColumnMeta]. */
+inline val ColumnMeta.type: TypeMemento get() = b
+
+/**
+ * Returns the [CursorMeta] component (the metadata [Tensor]) from a [CoreTensorCursorWithMeta].
+ */
+inline val <T> CoreTensorCursorWithMeta<T>.coreTensorMeta: CursorMeta get() = b
+/** Syntactic sugar for [coreTensorMeta]. */
+inline val <T> CoreTensorCursorWithMeta<T>.meta: CursorMeta get() = b
+
+
+/** Returns a [List] of column names from [CursorMeta]. (CursorMeta is Tensor<ColumnMeta>) */
+inline val CursorMeta.names: List<String> get() = (0 until this.totalSize).map { this(it).name }
+
+
+// VII. ColumnExclusion
+
+/**
+ * A value class used to specify a column to be excluded by its name.
+ */
+@JvmInline
+value class ColumnExclusion(val name: String) {
+    override fun toString(): String = "ColumnExclusion('$name')"
+}
+
+/**
+ * Unary minus operator extension for [String] to create a [ColumnExclusion].
+ * Example: `-"columnName"`
+ */
+operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
+
+
+/**
+ * Returns a new [CoreTensorCursorWithMeta] with columns excluded by their indices.
+ * Assumes `this.a` is the data cursor and `this.meta` is the metadata tensor.
+ */
+operator fun <T> CoreTensorCursorWithMeta<T>.minus(killbag: Series<Int>): CoreTensorCursorWithMeta<T> {
+    val currentDataCursor = this.a
+    val currentMetaTensor = this.meta
+
+    val numMetaCols = currentMetaTensor.totalSize
+    val allMetaIndices = (0 until numMetaCols).toSet()
+    val killIndicesSet = killbag.`▶`.toSet()
+    val retainedMetaIndices = (allMetaIndices - killIndicesSet).sorted().toIntArray()
+
+    if (retainedMetaIndices.isEmpty() && numMetaCols > 0 && killIndicesSet.isNotEmpty()) {
+         // All columns were killed, return empty structure
+        val emptyDataCursor = TensorCursor(currentDataCursor.rows, 0) { _,_ -> throw IndexOutOfBoundsException("Accessing empty data cursor") } as CoreTensorCursor<T>
+        val emptyMetaTensor = TensorSeries(0) { _ -> throw IndexOutOfBoundsException("Accessing empty meta tensor") } as CursorMeta
+        return emptyDataCursor j emptyMetaTensor
+    }
+
+
+    val newCursor = currentDataCursor.get(*retainedMetaIndices) // Use .get() explicitly
+    val newMeta = currentMetaTensor.get(*retainedMetaIndices) // Use .get() explicitly
+    return newCursor j newMeta
+}
+
+
+/**
+ * Returns a new [CoreTensorCursorWithMeta] with columns excluded by [ColumnExclusion] objects.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.exclude(exclusions: Series<ColumnExclusion>): CoreTensorCursorWithMeta<T> {
+    val currentMetaNames = this.meta.names // List<String>
+    val exclusionNameSet = exclusions.`▶`.map { it.name }.toSet()
+
+    val killIndices = mutableSetOf<Int>()
+    currentMetaNames.forEachIndexed { index, name ->
+        if (name in exclusionNameSet) {
+            killIndices.add(index)
+        }
+    }
+
+    if (killIndices.isEmpty()) return this // No columns to exclude
+
+    val allMetaIndices = (0 until this.meta.totalSize).toSet()
+    val retainedMetaIndices = (allMetaIndices - killIndices).sorted().toIntArray()
+
+    if (retainedMetaIndices.isEmpty() && this.meta.totalSize > 0) {
+        val emptyDataCursor = TensorCursor(this.a.rows, 0) { _,_ -> throw IndexOutOfBoundsException("Accessing empty data cursor") } as CoreTensorCursor<T>
+        val emptyMetaTensor = TensorSeries(0) { _ -> throw IndexOutOfBoundsException("Accessing empty meta tensor") } as CursorMeta
+        return emptyDataCursor j emptyMetaTensor
+    }
+
+    val newCursor = this.a.get(*retainedMetaIndices) // Use .get() explicitly
+    val newMeta = this.meta.get(*retainedMetaIndices) // Use .get() explicitly
+    return newCursor j newMeta
+}
+
+
+/**
+ * Operator for CoreTensorCursorWithMeta to get a subset of columns by names.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.get(vararg columnNames: String): CoreTensorCursorWithMeta<T> {
+    val currentMetaTensor = this.meta
+    val currentMetaNames = currentMetaTensor.names // Assumes .names gives List<String>
+
+    val indicesToRetain = columnNames.mapNotNull { nameToFind ->
+        currentMetaNames.indexOf(nameToFind).takeIf { it != -1 }
+    }.toIntArray()
+
+    if (indicesToRetain.isEmpty() && columnNames.isNotEmpty()) {
+         // Requested columns not found, return empty structure
+        val emptyDataCursor = TensorCursor(this.a.rows, 0) { _,_ -> throw IndexOutOfBoundsException("Accessing empty data cursor") } as CoreTensorCursor<T>
+        val emptyMetaTensor = TensorSeries(0) { _ -> throw IndexOutOfBoundsException("Accessing empty meta tensor") } as CursorMeta
+        return emptyDataCursor j emptyMetaTensor
+    }
+    if (indicesToRetain.isEmpty() && columnNames.isEmpty()) { // get() was called with no args
+        // return this // Or perhaps return empty as above? Consistent with vararg. Let's return empty.
+         val emptyDataCursor = TensorCursor(this.a.rows, 0) { _,_ -> throw IndexOutOfBoundsException("Accessing empty data cursor") } as CoreTensorCursor<T>
+        val emptyMetaTensor = TensorSeries(0) { _ -> throw IndexOutOfBoundsException("Accessing empty meta tensor") } as CursorMeta
+        return emptyDataCursor j emptyMetaTensor
+    }
+
+
+    val newCursor = this.a.get(*indicesToRetain) // Use .get() explicitly
+    val newMeta = currentMetaTensor.get(*indicesToRetain) // Use .get() explicitly
+    return newCursor j newMeta
+}
+
+
+// VIII. Presentation Functions and Properties
+
+/**
+ * Helper function to convert any value to a display string, considering [IOMemento] types.
+ */
+fun Any?.toDisplayString(type: TypeMemento?): String { // Made TypeMemento nullable
+    return when (type) {
+        IOMemento.IoCharSeries -> (this as? Series<Char>)?.asString() ?: this?.toString() ?: "null"
+        else -> this?.toString() ?: "null"
+    }
+}
+
+/**
+ * Prints the first 'count' rows of the cursor to stdout.
+ * Default is 5 rows.
+ */
+@JvmOverloads
+fun <T> CoreTensorCursorWithMeta<T>.head(count: Int = 5) { // Renamed last to count for clarity
+    if (this.a.rows == 0) {
+        println("Cursor is empty (0 rows).")
+        val metaNames = this.meta.names.toList() // .toList() is not needed if .names is already List
+        println("Columns: $metaNames")
+        return
+    }
+    show(0 until max(0, min(count, this.a.rows)))
+}
+
+
+/**
+ * Prints 'n' random rows from the cursor to stdout.
+ * Includes header.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.showRandom(n: Int = 5) {
+    if (this.a.rows == 0) {
+        head(0) // Prints "Cursor is empty" and column names
+        return
+    }
+    val metaNames = this.meta.names.toList() // .toList() is not needed if .names is already List
+    println("rows:${this.a.rows}" to metaNames) // Print header once
+    val actualN = min(n, this.a.rows)
+    if (actualN == 0) return
+
+    val randomIndices = (0 until this.a.rows).shuffled(Random).take(actualN).sorted()
+    randomIndices.forEach { rowIndex ->
+        showValues(rowIndex..rowIndex) // Show one row at a time
+    }
+}
+
+
+/**
+ * Prints a summary of the cursor (rows, column names) and then calls [showValues]
+ * to print the data for a specified range.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.show(range: IntRange = 0 until this.a.rows) {
+    if (this.a.rows == 0 && range.isEmpty()) {
+         head(0) // Prints "Cursor is empty" and column names
+         return
+    }
+    // Validate range against actual rows
+    val validFirst = max(0, range.first)
+    val validLast = min(this.a.rows - 1, range.last)
+
+    if (validFirst > validLast && this.a.rows > 0) { // Valid range is empty but there are rows
+        println("Requested range $range is empty or out of bounds for rows ${this.a.rows}.")
+        return
+    }
+     if (validFirst > validLast && this.a.rows == 0) { // Valid range is empty and no rows
+         head(0)
+         return
+    }
+
+
+    val metaNames = this.meta.names.toList() // .toList() is not needed if .names is already List
+    println("rows:${this.a.rows}, cols:${this.meta.totalSize} :: Columns: $metaNames") // Print header
+    showValues(validFirst..validLast)
+}
+
+
+/**
+ * Prints the values of the cursor rows within the specified range to stdout.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.showValues(range: IntRange) { // Made internal or part of show()
+    try {
+        val validFirst = max(0, range.first)
+        val validLast = min(this.a.rows - 1, range.last)
+
+        if (validFirst > validLast) { // If range becomes invalid after clamping
+            if (this.a.rows > 0) println("Range $range is effectively empty or out of bounds for display.")
+            // If rows is 0, show() or head() would have handled it.
+            return
+        }
+
+        for (x in validFirst..validLast) {
+            val rowValues: CoreTensorRowVec<T> = this.a.row(x)
+            val rowMetaTensor: CursorMeta = this.meta
+
+            val showList = (0 until min(rowValues.totalSize, rowMetaTensor.totalSize)).map { colIdx ->
+                val value = rowValues(colIdx) // rank 1 tensor, so colIdx is the only coord
+                val colMeta = rowMetaTensor(colIdx) // rank 1 tensor
+                // Ensure type is IOMemento for toDisplayString, or handle other TypeMemento cases
+                val displayType = colMeta.type as? IOMemento ?: IOMemento.IoUnknown
+                colMeta.name to value.toDisplayString(displayType)
+            }
+            println("Row $x: $showList")
+        }
+    } catch (e: IndexOutOfBoundsException) {
+        println("Cannot fully access range $range (Index out of bounds during display). Rows: ${this.a.rows}, Cols: ${this.meta.totalSize}")
+    } catch (e: Exception) {
+        println("An error occurred displaying range $range: ${e.message}")
+        // e.printStackTrace() // For debugging
+    }
+}
+
+
+/**
+ * Checks if all columns in the [CoreTensorCursorWithMeta] are of a numerical type
+ * according to [IOMemento].
+ */
+val <T> CoreTensorCursorWithMeta<T>.isNumerical: Boolean
+    get() = (0 until this.meta.totalSize).all { idx ->
+        when (this.meta(idx).type) { // it.type is TypeMemento. this.meta(idx) gets ColumnMeta
+            IOMemento.IoByte, IOMemento.IoShort, IOMemento.IoInt, IOMemento.IoFloat, IOMemento.IoDouble, IOMemento.IoLong -> true
+            else -> false
+        }
+    }
+
+/**
+ * Checks if all columns in the [CoreTensorCursorWithMeta] have the same data type memento.
+ */
+val <T> CoreTensorCursorWithMeta<T>.isHomoMorphic: Boolean
+    get() {
+        if (this.meta.totalSize <= 1) return true
+        val firstType = this.meta(0).type // Get type of first column
+        return (1 until this.meta.totalSize).all { idx -> this.meta(idx).type == firstType }
+    }
+
+// End of TrikeShedCore.kt content
