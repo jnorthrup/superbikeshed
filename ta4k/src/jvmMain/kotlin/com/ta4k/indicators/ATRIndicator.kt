@@ -31,6 +31,9 @@ class ATRIndicator(
     // Result scale for ATR usually matches price scale or a bit more
     private val resultScale = klineSeries.firstOrNull()?.closePrice?.scale()?.let { it + 2 } ?: 4
 
+    // Helper to get the first Kline from the series, returns null if series is empty.
+    // Used to determine the scale for BigDecimal results, avoiding repeated checks.
+    private fun Series<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
 
     private fun ensureCalculatedUpTo(targetIndex: Int) {
         if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
@@ -135,6 +138,21 @@ class ATRIndicator(
             return klineSeries.size j { idx -> // Use infix j
                 // getValue will ensure calculation and apply scaling for the specific index
                 this.getValue(idx)
+            }
+        }
+
+    /**
+     * Returns all calculated True Range values up to the latest available data in the input series,
+     * as a Trikethed [Series].
+     * Accessing this property will trigger calculation for all available klines if not already done.
+     */
+    val trueRangeValues: Series<BigDecimal?> // Renamed to trueRangeValues to distinguish from trueRangeResults list
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx ->
+                this.getTrueRange(idx)
             }
         }
 }

@@ -30,6 +30,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-browser:0.0.1-SNAPSHOT") // Check for latest version
     // For kotlinx.html if needed for typed HTML building:
     // implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.8.0") // Check for latest version
+    implementation(project(":Review:trikeshed-core"))
 }
 
 // Ensure the wrapper task for browser support is available
