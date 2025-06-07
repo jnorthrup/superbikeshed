@@ -1,0 +1,6 @@
+cdk                                                                             | Go to kscript dev directory
+switchPath                                                                      | Add / Remove current development project to PATH
+cp -r -L . ~/workspace/test                                                     | Copy recursively all files (also hidden) to target directory
+kscript --clear-cache                                                           | Clear kscript caches
+kscript -d --package ${PROJECT_DIR}/test/resources/kt_tests/main_with_deps.kt   | Package example
+kscript -d --idea ${PROJECT_DIR}/test/resources/kt_tests/main_with_deps.kt      | Idea example
