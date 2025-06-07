@@ -24,7 +24,7 @@ object KlineCsvParser {
      * or a [Failure] containing a list of error messages.
      */
     sealed class ParseResult {
-        data class Success(val klines: KlineSeries) : ParseResult()
+        data class Success(val klines: KlineSeries) : ParseResult() // KlineSeries is now Series<Kline>
         data class Failure(val errors: List<String>) : ParseResult()
     }
 
@@ -113,27 +113,27 @@ object KlineCsvParser {
         }
 
         // Determine final result
+        // Convert the mutableList to Series<Kline> using the extension from SeriesExtensions.kt
+        val finalKlineSeries = com.ta4k.trikeshedutils.toSeries(klines) // Explicit call to toSeries
+
         return if (errors.isNotEmpty()) {
-            if (strict || klines.isEmpty()) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
+            if (strict || finalKlineSeries.size == 0) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
                 ParseResult.Failure(errors)
             } else {
                 // Not strict, and some klines were parsed despite errors. Return success with klines, errors are available.
-                // The calling code can decide what to do with partial data + errors.
-                // For now, we'll consider this a success, and errors are informational.
-                // Alternatively, could add errors to the Success object: Success(klines, errors)
-                ParseResult.Success(klines)
+                ParseResult.Success(finalKlineSeries)
             }
-        } else if (klines.isEmpty() && lineCount <=1 && actualHeaders != EXPECTED_HEADER_COLUMNS && actualHeaders.isNotEmpty()) {
+        } else if (finalKlineSeries.size == 0 && lineCount <=1 && actualHeaders != EXPECTED_HEADER_COLUMNS && actualHeaders.isNotEmpty()) {
             // Special case: only a header line was present AND it was incorrect, and no data lines.
             // Errors list would already contain the header error.
              ParseResult.Failure(errors)
         }
-         else if (klines.isEmpty() && lineCount <=1 ) {
+         else if (finalKlineSeries.size == 0 && lineCount <=1 ) {
             // Only header line was present (and it was valid), or file was empty after header check.
-            ParseResult.Success(klines) // No data, but no parsing errors for data lines.
+            ParseResult.Success(finalKlineSeries) // No data, but no parsing errors for data lines.
         }
         else {
-            ParseResult.Success(klines)
+            ParseResult.Success(finalKlineSeries)
         }
     }
 

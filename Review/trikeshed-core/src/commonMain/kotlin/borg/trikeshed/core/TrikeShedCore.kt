@@ -199,139 +199,139 @@ inline infix fun <X, C> Tensor<X>.α(crossinline transform: (X) -> C): Tensor<C>
 inline infix fun <X, C> Series<X>.α(crossinline transform: (X) -> C): Series<C> =
     size j { i -> transform(this[i]) }
 
-///**
-// * Converts a linear index into multi-dimensional coordinates based on the [Tensor]'s shape.
-// */
-//fun Tensor<*>.linearToCoords(linearIndex: Int): IntArray {
-//    val coords = IntArray(rank)
-//    var remaining = linearIndex
-//    var i = rank - 1
-//    while (i >= 0) {
-//        coords[i] = remaining % shape[i]
-//        remaining /= shape[i]
-//        i--
-//    }
-//    return coords
-//}
-//
-///**
-// * Converts multi-dimensional coordinates into a linear index based on the [Tensor]'s shape.
-// */
-//fun Tensor<*>.coordsToLinear(coords: IntArray): Int {
-//    require(coords.size == rank) { "Coordinate rank mismatch: expected $rank, got ${coords.size}" }
-//    var linearIndex = 0
-//    var multiplier = 1
-//    for (i in rank - 1 downTo 0) {
-//        require(coords[i] >= 0 && coords[i] < shape[i]) { "Coordinate out of bounds: coords[$i]=${coords[i]} for dimension $i with size ${shape[i]}" }
-//        linearIndex += coords[i] * multiplier
-//        multiplier *= shape[i]
-//    }
-//    return linearIndex
-//}
-//
-///**
-// * Materializes the entire content of a [Tensor] into an [Array].
-// * Note: This can be memory-intensive for large tensors.
-// */
-//fun <T> Tensor<T>.materialize(): Array<T> {
-//    val arr = arrayOfNulls<Any?>(totalSize) as Array<T>
-//    for (i in 0 until totalSize) {
-//        arr[i] = this(linearToCoords(i))
-//    }
-//    return arr
-//}
-//
-///**
-// * Determines the broadcasted shape for two input shapes.
-// * Dimensions are aligned from the right. A dimension can broadcast if it's equal or one of them is 1.
-// */
-//fun broadcastShapes(shape1: IntArray, shape2: IntArray): IntArray {
-//    val maxRank = maxOf(shape1.size, shape2.size)
-//    val result = IntArray(maxRank)
-//
-//    var i = 0
-//    while (i < maxRank) {
-//        val dim1 = if (i < shape1.size) shape1[shape1.size - 1 - i] else 1
-//        val dim2 = if (i < shape2.size) shape2[shape2.size - 1 - i] else 1
-//
-//        result[maxRank - 1 - i] = when {
-//            dim1 == dim2 -> dim1
-//            dim1 == 1 -> dim2
-//            dim2 == 1 -> dim1
-//            else -> throw IllegalArgumentException("Shapes are not broadcastable: ${shape1.contentToString()} vs ${shape2.contentToString()}")
-//        }
-//        i++
-//    }
-//    return result
-//}
-//
-///**
-// * A helper function for broadcasting, as provided in the summary.
-// * Its exact semantics for general broadcasting are ambiguous from the snippet alone.
-// * It appears to map a source shape (`this`) to a target shape, possibly indicating
-// * relevant dimensions or padding.
-// */
-//fun IntArray.broadcastTo(targetShape: IntArray): IntArray {
-//    val result = IntArray(targetShape.size)
-//    val offset = targetShape.size - this.size // `this` is the source shape
-//
-//    for (i in result.indices) { // iterate through dimensions of the target shape
-//        result[i] = if (i < offset) 0 else { // If target dim is beyond source, pad with 0
-//            val sourceIndex = i - offset // Corresp. source dim index
-//            // The original snippet's logic:
-//            // if (sourceIndex < this.size && this[sourceIndex] < targetShape[i]) { this[sourceIndex] } else 0
-//            // This literal interpretation makes it return the source dimension size if it's smaller, else 0.
-//            if (sourceIndex < this.size && this[sourceIndex] < targetShape[i]) {
-//                this[sourceIndex]
-//            } else {
-//                0 // Covers `sourceIndex >= this.size` or `this[sourceIndex] >= targetShape[i]`
-//            }
-//        }
-//    }
-//    return result
-//}
-//
-///**
-// * Zips two [Tensor]s element-wise, creating a new [Tensor] of [Join] pairs.
-// * The shapes are broadcasted if compatible.
-// */
-//fun <A, B> Tensor<A>.zip(other: Tensor<B>): Tensor<Join<A, B>> {
-//    val broadcastedShape = broadcastShapes(this.shape, other.shape)
-//    return TensorConstruct(broadcastedShape) { coords ->
-//        // Calculate source coordinates for 'this' tensor
-//        val aCoords = IntArray(this.rank) { i ->
-//            val targetCoordIdx = coords.size - this.rank + i
-//            if (this.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
-//        }
-//        // Calculate source coordinates for 'other' tensor
-//        val bCoords = IntArray(other.rank) { i ->
-//            val targetCoordIdx = coords.size - other.rank + i
-//            if (other.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
-//        }
-//        this(aCoords) j other(bCoords)
-//    }
-//}
-//
-///**
-// * Combines two [Tensor]s element-wise using a transformation function,
-// * producing a new [Tensor]. Shapes are broadcasted if compatible.
-// */
-//inline fun <A, B, C> Tensor<A>.combine(other: Tensor<B>, crossinline transform: (A, B) -> C): Tensor<C> {
-//    val broadcastedShape = broadcastShapes(this.shape, other.shape)
-//    return TensorConstruct(broadcastedShape) { coords ->
-//        // Calculate source coordinates for 'this' tensor
-//        val aCoords = IntArray(this.rank) { i ->
-//            val targetCoordIdx = coords.size - this.rank + i
-//            if (this.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
-//        }
-//        // Calculate source coordinates for 'other' tensor
-//        val bCoords = IntArray(other.rank) { i ->
-//            val targetCoordIdx = coords.size - other.rank + i
-//            if (other.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
-//        }
-//        transform(this(aCoords), other(bCoords))
-//    }
-//}
+/**
+ * Converts a linear index into multi-dimensional coordinates based on the [Tensor]'s shape.
+ */
+fun Tensor<*>.linearToCoords(linearIndex: Int): IntArray {
+    val coords = IntArray(rank)
+    var remaining = linearIndex
+    var i = rank - 1
+    while (i >= 0) {
+        coords[i] = remaining % shape[i]
+        remaining /= shape[i]
+        i--
+    }
+    return coords
+}
+
+/**
+ * Converts multi-dimensional coordinates into a linear index based on the [Tensor]'s shape.
+ */
+fun Tensor<*>.coordsToLinear(coords: IntArray): Int {
+    require(coords.size == rank) { "Coordinate rank mismatch: expected $rank, got ${coords.size}" }
+    var linearIndex = 0
+    var multiplier = 1
+    for (i in rank - 1 downTo 0) {
+        require(coords[i] >= 0 && coords[i] < shape[i]) { "Coordinate out of bounds: coords[$i]=${coords[i]} for dimension $i with size ${shape[i]}" }
+        linearIndex += coords[i] * multiplier
+        multiplier *= shape[i]
+    }
+    return linearIndex
+}
+
+/**
+ * Materializes the entire content of a [Tensor] into an [Array].
+ * Note: This can be memory-intensive for large tensors.
+ */
+fun <T> Tensor<T>.materialize(): Array<T> {
+    val arr = arrayOfNulls<Any?>(totalSize) as Array<T>
+    for (i in 0 until totalSize) {
+        arr[i] = this(linearToCoords(i))
+    }
+    return arr
+}
+
+/**
+ * Determines the broadcasted shape for two input shapes.
+ * Dimensions are aligned from the right. A dimension can broadcast if it's equal or one of them is 1.
+ */
+fun broadcastShapes(shape1: IntArray, shape2: IntArray): IntArray {
+    val maxRank = maxOf(shape1.size, shape2.size)
+    val result = IntArray(maxRank)
+
+    var i = 0
+    while (i < maxRank) {
+        val dim1 = if (i < shape1.size) shape1[shape1.size - 1 - i] else 1
+        val dim2 = if (i < shape2.size) shape2[shape2.size - 1 - i] else 1
+
+        result[maxRank - 1 - i] = when {
+            dim1 == dim2 -> dim1
+            dim1 == 1 -> dim2
+            dim2 == 1 -> dim1
+            else -> throw IllegalArgumentException("Shapes are not broadcastable: ${shape1.contentToString()} vs ${shape2.contentToString()}")
+        }
+        i++
+    }
+    return result
+}
+
+/**
+ * A helper function for broadcasting, as provided in the summary.
+ * Its exact semantics for general broadcasting are ambiguous from the snippet alone.
+ * It appears to map a source shape (`this`) to a target shape, possibly indicating
+ * relevant dimensions or padding.
+ */
+fun IntArray.broadcastTo(targetShape: IntArray): IntArray {
+    val result = IntArray(targetShape.size)
+    val offset = targetShape.size - this.size // `this` is the source shape
+
+    for (i in result.indices) { // iterate through dimensions of the target shape
+        result[i] = if (i < offset) 0 else { // If target dim is beyond source, pad with 0
+            val sourceIndex = i - offset // Corresp. source dim index
+            // The original snippet's logic:
+            // if (sourceIndex < this.size && this[sourceIndex] < targetShape[i]) { this[sourceIndex] } else 0
+            // This literal interpretation makes it return the source dimension size if it's smaller, else 0.
+            if (sourceIndex < this.size && this[sourceIndex] < targetShape[i]) {
+                this[sourceIndex]
+            } else {
+                0 // Covers `sourceIndex >= this.size` or `this[sourceIndex] >= targetShape[i]`
+            }
+        }
+    }
+    return result
+}
+
+/**
+ * Zips two [Tensor]s element-wise, creating a new [Tensor] of [Join] pairs.
+ * The shapes are broadcasted if compatible.
+ */
+fun <A, B> Tensor<A>.zip(other: Tensor<B>): Tensor<Join<A, B>> {
+    val broadcastedShape = broadcastShapes(this.shape, other.shape)
+    return TensorConstruct(broadcastedShape) { coords ->
+        // Calculate source coordinates for 'this' tensor
+        val aCoords = IntArray(this.rank) { i ->
+            val targetCoordIdx = coords.size - this.rank + i
+            if (this.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
+        }
+        // Calculate source coordinates for 'other' tensor
+        val bCoords = IntArray(other.rank) { i ->
+            val targetCoordIdx = coords.size - other.rank + i
+            if (other.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
+        }
+        this(aCoords) j other(bCoords)
+    }
+}
+
+/**
+ * Combines two [Tensor]s element-wise using a transformation function,
+ * producing a new [Tensor]. Shapes are broadcasted if compatible.
+ */
+inline fun <A, B, C> Tensor<A>.combine(other: Tensor<B>, crossinline transform: (A, B) -> C): Tensor<C> {
+    val broadcastedShape = broadcastShapes(this.shape, other.shape)
+    return TensorConstruct(broadcastedShape) { coords ->
+        // Calculate source coordinates for 'this' tensor
+        val aCoords = IntArray(this.rank) { i ->
+            val targetCoordIdx = coords.size - this.rank + i
+            if (this.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
+        }
+        // Calculate source coordinates for 'other' tensor
+        val bCoords = IntArray(other.rank) { i ->
+            val targetCoordIdx = coords.size - other.rank + i
+            if (other.shape[i] == 1 && targetCoordIdx >= 0) 0 else coords[targetCoordIdx]
+        }
+        transform(this(aCoords), other(bCoords))
+    }
+}
 
 // V. CoreTensorCursor Layer
 
@@ -447,12 +447,12 @@ inline val ColumnMeta.name: String get() = a
 /** Returns the type memento of the column from [ColumnMeta]. */
 inline val ColumnMeta.type: TypeMemento get() = b
 
-///**
-// * Returns the [CursorMeta] component (the metadata [Tensor]) from a [CoreTensorCursorWithMeta].
-// */
-//inline val <T> CoreTensorCursorWithMeta<T>.coreTensorMeta: CursorMeta get() = b
-///** Syntactic sugar for [coreTensorMeta]. */
-//inline val <T> CoreTensorCursorWithMeta<T>.meta: CursorMeta get() = b
+/**
+ * Returns the [CursorMeta] component (the metadata [Tensor]) from a [CoreTensorCursorWithMeta].
+ */
+inline val <T> CoreTensorCursorWithMeta<T>.coreTensorMeta: CursorMeta get() = b
+/** Syntactic sugar for [coreTensorMeta]. */
+inline val <T> CoreTensorCursorWithMeta<T>.meta: CursorMeta get() = b
 
 /** Returns a [List] of column names from [CursorMeta]. */
 inline val CursorMeta.names: List<String>
@@ -480,49 +480,49 @@ value class ColumnExclusion(val name: String) {
  */
 operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
 
-///**
-// * Returns a new [CoreTensorCursorWithMeta] with columns excluded by their indices.
-// */
-//operator fun <T> CoreTensorCursorWithMeta<T>.minus(killbag: Series<Int>): CoreTensorCursorWithMeta<T> {
-//    val toSet = (0 until this.meta.totalSize).toSet()
-//    val retainedIndices = (toSet - killbag.`▶`.toSet()).toIntArray() // Convert Series to Set for subtraction
-//    val newCursor = this.a[*retainedIndices] // Slice the data cursor
-//    val newMeta = this.meta[*retainedIndices] // Slice the meta cursor
-//    return newCursor j newMeta
-//}
-//
-///**
-// * Returns a new [CoreTensorCursorWithMeta] with columns excluded by [ColumnExclusion] objects.
-// */
-//fun <T> CoreTensorCursorWithMeta<T>.exclude(s: Series<ColumnExclusion>): CoreTensorCursorWithMeta<T> {
-//    val exclusionBag = mutableSetOf<Int>()
-//    val currentMetaNames = this.meta.names // Get names from the CursorMeta part of CoreTensorCursorWithMeta
-//
-//    s.`▶`.forEach { excludedCol ->
-//        val index = currentMetaNames.indexOfFirst { it.name == excludedCol.name }
-//        if (index != -1) {
-//            exclusionBag.add(index)
-//        }
-//    }
-//    val retainedIndices = ((0 until this.meta.totalSize).toSet() - exclusionBag).toIntArray()
-//    val newCursor = this.a[*retainedIndices]
-//    val newMeta = this.meta[*retainedIndices]
-//    return newCursor j newMeta
-//}
-//
-///**
-// * Operator for CoreTensorCursorWithMeta to get a subset of columns by names.
-// * This is an adaptation of `Cursor.get(vararg s: String)` from the original.
-// */
-//fun <T> CoreTensorCursorWithMeta<T>.get(vararg s: String): CoreTensorCursorWithMeta<T> {
-//    val currentMeta = this.meta
-//    val indicesToRetain = s.mapNotNull { nameToFind ->
-//        currentMeta.`▶`.indexOfFirst { it.name == nameToFind }.takeIf { it != -1 }
-//    }.toIntArray()
-//    val newCursor = this.a[*indicesToRetain]
-//    val newMeta = currentMeta[*indicesToRetain]
-//    return newCursor j newMeta
-//}
+/**
+ * Returns a new [CoreTensorCursorWithMeta] with columns excluded by their indices.
+ */
+operator fun <T> CoreTensorCursorWithMeta<T>.minus(killbag: Series<Int>): CoreTensorCursorWithMeta<T> {
+    val toSet = (0 until this.meta.totalSize).toSet()
+    val retainedIndices = (toSet - killbag.`▶`.toSet()).toIntArray() // Convert Series to Set for subtraction
+    val newCursor = this.a[*retainedIndices] // Slice the data cursor
+    val newMeta = this.meta[*retainedIndices] // Slice the meta cursor
+    return newCursor j newMeta
+}
+
+/**
+ * Returns a new [CoreTensorCursorWithMeta] with columns excluded by [ColumnExclusion] objects.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.exclude(s: Series<ColumnExclusion>): CoreTensorCursorWithMeta<T> {
+    val exclusionBag = mutableSetOf<Int>()
+    val currentMetaNames = this.meta.names // Get names from the CursorMeta part of CoreTensorCursorWithMeta
+
+    s.`▶`.forEach { excludedCol ->
+        val index = currentMetaNames.indexOfFirst { it.name == excludedCol.name }
+        if (index != -1) {
+            exclusionBag.add(index)
+        }
+    }
+    val retainedIndices = ((0 until this.meta.totalSize).toSet() - exclusionBag).toIntArray()
+    val newCursor = this.a[*retainedIndices]
+    val newMeta = this.meta[*retainedIndices]
+    return newCursor j newMeta
+}
+
+/**
+ * Operator for CoreTensorCursorWithMeta to get a subset of columns by names.
+ * This is an adaptation of `Cursor.get(vararg s: String)` from the original.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.get(vararg s: String): CoreTensorCursorWithMeta<T> {
+    val currentMeta = this.meta
+    val indicesToRetain = s.mapNotNull { nameToFind ->
+        currentMeta.`▶`.indexOfFirst { it.name == nameToFind }.takeIf { it != -1 }
+    }.toIntArray()
+    val newCursor = this.a[*indicesToRetain]
+    val newMeta = currentMeta[*indicesToRetain]
+    return newCursor j newMeta
+}
 
 // VIII. Presentation Functions and Properties
 
@@ -537,71 +537,70 @@ fun Any?.toDisplayString(type: IOMemento): String {
 }
 
 /**
-///**
-// * Prints the first 'last' rows of the cursor to stdout.
-// * Default is 5 rows.
-// */
-//@JvmOverloads
-//fun <T> CoreTensorCursorWithMeta<T>.head(last: Int = 5) {
-//    show(0 until max(0, min(last, this.a.rows)))
-//}
-//
-///**
-// * Prints 'n' random rows from the cursor to stdout.
-// */
-//fun <T> CoreTensorCursorWithMeta<T>.showRandom(n: Int = 5) {
-//    head(0);repeat(n) {
-//        if (this.a.rows > 0) showValues(Random.nextInt(0, this.a.rows).let { it..it })
-//    }
-//}
-//
-///**
-// * Prints a summary of the cursor (rows, column names) and then calls [showValues]
-// * to print the data for a specified range.
-// */
-//fun <T> CoreTensorCursorWithMeta<T>.show(range: IntRange = 0 until this.a.rows) {
-//    val metaNames = this.meta.names.toList()
-//    println("rows:${this.a.rows}" to metaNames)
-//    showValues(range)
-//}
-//
-///**
-// * Prints the values of the cursor rows within the specified range to stdout.
-// */
-//fun <T> CoreTensorCursorWithMeta<T>.showValues(range: IntRange) {
-//    try {
-//        range.forEach { x: Int ->
-//            val rowValues: CoreTensorRowVec<T> = this.a.row(x) // Get the data row
-//            val rowMeta: CursorMeta = this.meta // Get the metadata for columns
-//
-//            val showList = (0 until rowValues.totalSize).map { colIdx ->
-//                val value = rowValues(colIdx)
-//                val colMeta = rowMeta(colIdx)
-//                colMeta.name to value.toDisplayString(colMeta.type as IOMemento) // Cast TypeMemento to IOMemento for display
-//            }
-//            println(showList)
-//        }
-//    } catch (e: IndexOutOfBoundsException) { // Changed NoSuchElementException to IndexOutOfBoundsException for clarity
-//        println("cannot fully access range $range (Index out of bounds)")
-//    } catch (e: Exception) {
-//        println("An error occurred displaying range $range: ${e.message}")
-//    }
-//}
-//
-///**
-// * Checks if all columns in the [CoreTensorCursorWithMeta] are of a numerical type.
-// */
-//val <T> CoreTensorCursorWithMeta<T>.isNumerical: Boolean
-//    get() = this.meta.`▶`.all {
-//        when (it.type) {
-//            IOMemento.IoByte, IOMemento.IoShort, IOMemento.IoInt, IOMemento.IoFloat, IOMemento.IoDouble, IOMemento.IoLong -> true
-//            else -> false
-//        }
-//    }
-//
-///**
-// * Checks if all columns in the [CoreTensorCursorWithMeta] have the same data type.
-// */
-//val <T> CoreTensorCursorWithMeta<T>.isHomoMorphic: Boolean
-//    get() = if (this.meta.totalSize <= 1) true else !this.meta.`▶`.any { it.type != this.meta(0).type }
-*/ // Close the block comment that started at line 498
+ * Prints the first 'last' rows of the cursor to stdout.
+ * Default is 5 rows.
+ */
+@JvmOverloads
+fun <T> CoreTensorCursorWithMeta<T>.head(last: Int = 5) {
+    show(0 until max(0, min(last, this.a.rows)))
+}
+
+/**
+ * Prints 'n' random rows from the cursor to stdout.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.showRandom(n: Int = 5) {
+    head(0);repeat(n) {
+        if (this.a.rows > 0) showValues(Random.nextInt(0, this.a.rows).let { it..it })
+    }
+}
+
+/**
+ * Prints a summary of the cursor (rows, column names) and then calls [showValues]
+ * to print the data for a specified range.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.show(range: IntRange = 0 until this.a.rows) {
+    val metaNames = this.meta.names.toList()
+    println("rows:${this.a.rows}" to metaNames)
+    showValues(range)
+}
+
+/**
+ * Prints the values of the cursor rows within the specified range to stdout.
+ */
+fun <T> CoreTensorCursorWithMeta<T>.showValues(range: IntRange) {
+    try {
+        range.forEach { x: Int ->
+            val rowValues: CoreTensorRowVec<T> = this.a.row(x) // Get the data row
+            val rowMeta: CursorMeta = this.meta // Get the metadata for columns
+
+            val showList = (0 until rowValues.totalSize).map { colIdx ->
+                val value = rowValues(colIdx)
+                val colMeta = rowMeta(colIdx)
+                colMeta.name to value.toDisplayString(colMeta.type as IOMemento) // Cast TypeMemento to IOMemento for display
+            }
+            println(showList)
+        }
+    } catch (e: IndexOutOfBoundsException) { // Changed NoSuchElementException to IndexOutOfBoundsException for clarity
+        println("cannot fully access range $range (Index out of bounds)")
+    } catch (e: Exception) {
+        println("An error occurred displaying range $range: ${e.message}")
+    }
+}
+
+/**
+ * Checks if all columns in the [CoreTensorCursorWithMeta] are of a numerical type.
+ */
+val <T> CoreTensorCursorWithMeta<T>.isNumerical: Boolean
+    get() = this.meta.`▶`.all {
+        when (it.type) {
+            IOMemento.IoByte, IOMemento.IoShort, IOMemento.IoInt, IOMemento.IoFloat, IOMemento.IoDouble, IOMemento.IoLong -> true
+            else -> false
+        }
+    }
+
+/**
+ * Checks if all columns in the [CoreTensorCursorWithMeta] have the same data type.
+ */
+val <T> CoreTensorCursorWithMeta<T>.isHomoMorphic: Boolean
+    get() = if (this.meta.totalSize <= 1) true else !this.meta.`▶`.any { it.type != this.meta(0).type }
+// Close the block comment that started at line 498

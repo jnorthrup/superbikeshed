@@ -45,6 +45,7 @@ kotlin {
             // kotlin.srcDirs are now conventional: src/commonMain/kotlin
             dependencies {
                 implementation(kotlin("stdlib-common"))
+                implementation(project(":Review:trikeshed-core"))
             }
         }
         val commonTest by getting {
