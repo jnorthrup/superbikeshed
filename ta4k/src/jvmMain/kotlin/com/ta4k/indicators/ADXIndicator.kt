@@ -4,6 +4,7 @@ import com.ta4k.core.model.Kline // Assuming this path
 import borg.trikeshed.core.Series // Import new Series
 import borg.trikeshed.core.size // Import Series extensions
 import borg.trikeshed.core.get  // Import Series extensions
+import borg.trikeshed.core.j // For creating Series from results
 // ConcreteJoin is not directly used for a primary 'values' in ADX as it has multiple distinct outputs (+DI, -DI, ADX)
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -187,4 +188,28 @@ class ADXIndicator(
         ensureCalculatedUpTo(index)
         return if (index >= (2 * period - 1) && index < adxResults.size) adxResults[index]?.setScale(resultScale, RoundingMode.HALF_UP) else null
     }
+
+    val plusDISeries: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx -> this.getPlusDI(idx) }
+        }
+
+    val minusDISeries: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx -> this.getMinusDI(idx) }
+        }
+
+    val adxValueSeries: Series<BigDecimal?> // Renamed from adxSeries to avoid conflict with adxResults list
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx -> this.getADX(idx) }
+        }
 }

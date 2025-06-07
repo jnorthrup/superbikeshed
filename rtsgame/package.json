@@ -12,7 +12,8 @@
   "dependencies": {
     "gl-matrix": "^3.4.3",
     "immer": "^10.0.3",
-    "three": "^0.162.0"
+    "three": "^0.162.0",
+    "trikeshed-core": "file:../Review/trikeshed-core"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
