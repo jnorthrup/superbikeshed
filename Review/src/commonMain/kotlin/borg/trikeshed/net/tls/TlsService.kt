@@ -108,7 +108,7 @@ interface TlsConnection {
 /**
  * Service interface for platform-specific TLS operations, focused on the client role for QUIC.
  */
-interface TlsService {
+expect interface TlsService { // Changed to expect interface
     /**
      * Starts a new TLS client handshake.
      *
@@ -126,4 +126,8 @@ interface TlsService {
         quicTransportParams: ByteArray, // Bytes of the QUIC TP TLS extension payload
         callbacks: TlsHandshakeCallbacks
     ): Result<TlsConnection>
+
+    // Consider adding a close() method to TlsService if the service itself holds resources
+    // that need explicit cleanup beyond individual TlsConnection objects.
+    // fun close()
 }
