@@ -23,6 +23,7 @@ export enum RooCodeEventName {
 	TaskToolFailed = "taskToolFailed",
 	EvalPass = "evalPass",
 	EvalFail = "evalFail",
+	DGMEchoResponse = "DGMEchoResponse",
 }
 
 export const rooCodeEventsSchema = z.object({
@@ -44,6 +45,7 @@ export const rooCodeEventsSchema = z.object({
 	[RooCodeEventName.TaskCompleted]: z.tuple([z.string(), tokenUsageSchema, toolUsageSchema]),
 	[RooCodeEventName.TaskTokenUsageUpdated]: z.tuple([z.string(), tokenUsageSchema]),
 	[RooCodeEventName.TaskToolFailed]: z.tuple([z.string(), toolNamesSchema, z.string()]),
+	[RooCodeEventName.DGMEchoResponse]: z.tuple([dgmToUpperEchoResponsePayloadSchema]),
 })
 
 export type RooCodeEvents = z.infer<typeof rooCodeEventsSchema>
@@ -70,6 +72,21 @@ export enum TaskCommandName {
 	CloseTask = "CloseTask",
 }
 
+export enum DGMTaskCommandName {
+	ToUpperEcho = "DGMToUpperEcho",
+	// Future commands: RunAgent = "DGMRunAgent", GetCapabilities = "DGMGetCapabilities"
+}
+
+export const dgmToUpperEchoCommandSchema = z.object({
+	commandName: z.literal(DGMTaskCommandName.ToUpperEcho),
+	data: z.object({
+		text_to_echo: z.string(),
+	}),
+});
+// Placeholder for future command schemas
+// export const dgmRunAgentCommandSchema = ...
+// export const dgmGetCapabilitiesCommandSchema = ...
+
 export const taskCommandSchema = z.discriminatedUnion("commandName", [
 	z.object({
 		commandName: z.literal(TaskCommandName.StartNewTask),
@@ -88,9 +105,18 @@ export const taskCommandSchema = z.discriminatedUnion("commandName", [
 		commandName: z.literal(TaskCommandName.CloseTask),
 		data: z.string(),
 	}),
+	dgmToUpperEchoCommandSchema,
 ])
 
 export type TaskCommand = z.infer<typeof taskCommandSchema>
+
+/**
+ * DGM Payloads
+ */
+export const dgmToUpperEchoResponsePayloadSchema = z.object({
+	echoed_text: z.string(),
+	original_text: z.string(),
+});
 
 /**
  * TaskEvent
@@ -166,6 +192,11 @@ export const taskEventSchema = z.discriminatedUnion("eventName", [
 		eventName: z.literal(RooCodeEventName.EvalFail),
 		payload: z.undefined(),
 		taskId: z.number(),
+	}),
+	z.object({
+		eventName: z.literal(RooCodeEventName.DGMEchoResponse),
+		payload: rooCodeEventsSchema.shape[RooCodeEventName.DGMEchoResponse],
+		taskId: z.string().optional(),
 	}),
 ])
 

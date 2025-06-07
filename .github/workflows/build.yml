@@ -1,0 +1,44 @@
+name: Build Gradle and Maven Projects
+
+on: [push, pull_request]
+
+jobs:
+  # Placeholder for Gradle job
+  gradle_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build root project
+        run: ./gradlew build -x test
+      - name: Build Review project
+        run: ./gradlew :Review:build -x test
+      - name: Build k2script project
+        run: ./gradlew :k2script:build -x test
+      # Ensure the path to settings.gradle.kts for spacegraphjs/kotlin-spacegraph is correct or use a separate build step if it's a standalone project
+      - name: Build spacegraphjs/kotlin-spacegraph project
+        run: cd spacegraphjs/kotlin-spacegraph && ../../gradlew build -x test && cd ../..
+      - name: Build ta4k project
+        run: ./gradlew :ta4k:build -x test
+
+  # Placeholder for Maven job
+  maven_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Build moneyfan project
+        run: mvn -B package --file moneyfan/pom.xml -DskipTests
