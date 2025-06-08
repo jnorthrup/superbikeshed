@@ -26,6 +26,8 @@ import { DIFF_VIEW_URI_SCHEME } from "./integrations/editor/DiffViewProvider"
 import { TerminalRegistry } from "./integrations/terminal/TerminalRegistry"
 import { McpServerManager } from "./services/mcp/McpServerManager"
 import { CodeIndexManager } from "./services/code-index/manager"
+import { DGMService } from "./services/dgmService" // Added DGMService import
+import { LLMAttentionPortalPanel } from "./panels/LLMAttentionPortalPanel"; // Added LLM Attention Portal Panel import
 import { migrateSettings } from "./utils/migrateSettings"
 import { API } from "./extension/api"
 
@@ -159,6 +161,52 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Allows other extensions to activate once Roo is ready.
 	vscode.commands.executeCommand(`${Package.name}.activationCompleted`)
 
+	// DGM Service Integration
+	const dgmService = DGMService.getInstance();
+	context.subscriptions.push(vscode.commands.registerCommand('bao-cline.startDgmService', () => {
+		dgmService.startDgmProcess();
+		vscode.window.showInformationMessage("Attempting to start DGM Service...");
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('bao-cline.triggerDGMEcho', async () => {
+		// Check if dgmClientId is available, if not, dgmService is not fully ready.
+		if (!dgmService.isDgmProcessRunning() || !dgmService.dgmClientId) {
+			const startChoice = await vscode.window.showWarningMessage(
+				'DGM Service not ready or DGM client not connected. Start it now?',
+				{ modal: false },
+				'Start DGM Service'
+			);
+			if (startChoice === 'Start DGM Service') {
+				await vscode.commands.executeCommand('bao-cline.startDgmService');
+				// Wait a bit for connection and ACK. A more robust solution would use an event or promise from DGMService.
+				// Increased delay for PoC, and check status again.
+				await new Promise(resolve => setTimeout(resolve, 3000));
+				if (!dgmService.isDgmProcessRunning() || !dgmService.dgmClientId) {
+					vscode.window.showErrorMessage('DGM Service failed to start or connect. Please check DGM Service output channel for details.');
+					return;
+				}
+			} else {
+				vscode.window.showInformationMessage('DGM Echo command cancelled because DGM service is not active.');
+				return;
+			}
+		}
+		const inputText = await vscode.window.showInputBox({ prompt: "Enter text to echo via DGM" });
+		if (inputText) {
+			dgmService.sendToUpperEchoCommand(inputText);
+		}
+	}));
+
+	context.subscriptions.push(dgmService.onDgmResponse((response) => {
+		vscode.window.showInformationMessage(`DGM Echo: ${response.echoed_text} (Original: ${response.original_text})`);
+	}));
+	// End DGM Service Integration
+
+	// LLM Attention Portal Command
+	context.subscriptions.push(vscode.commands.registerCommand('bao-cline.showLlmAttentionPortal', () => {
+		LLMAttentionPortalPanel.createOrShow(context.extensionUri);
+	  }));
+	// End LLM Attention Portal Command
+
 	// Implements the `RooCodeAPI` interface.
 	const socketPath = process.env.ROO_CODE_IPC_SOCKET_PATH
 	const enableLogging = typeof socketPath === "string"
@@ -199,4 +247,5 @@ export async function deactivate() {
 	await McpServerManager.cleanup(extensionContext)
 	TelemetryService.instance.shutdown()
 	TerminalRegistry.cleanup()
+	DGMService.getInstance().dispose() // Added DGMService dispose
 }
