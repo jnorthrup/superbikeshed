@@ -1,3 +1,4 @@
+@file:JsExport
 @file:Suppress(
     "NOTHING_TO_INLINE", // Crucial for zero-cost abstractions
     "FunctionName",      // For unconventional names like `j`, `α`, `▶`, `↺`
@@ -9,6 +10,7 @@
 
 package borg.trikeshed.core // Changed package from com.example.trikeshedcore
 
+import kotlin.js.JsExport
 import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmOverloads
 import kotlin.math.max
