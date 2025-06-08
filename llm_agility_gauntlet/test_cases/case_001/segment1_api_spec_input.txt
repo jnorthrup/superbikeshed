@@ -1,0 +1,14 @@
+# DataWeaver is a service for posting and retrieving encrypted data blobs.
+# All requests require an 'X-API-Key' header.
+
+## Endpoint: /v1/blob/new
+# Method: POST
+# Description: Creates a new data blob.
+# Body must be a JSON object with a single key, 'payload', containing the base64 encoded data string.
+# Returns: JSON with 'blob_id' (string) and 'timestamp' (unix_epoch_seconds as integer).
+
+## Endpoint: /v1/blob/fetch/{id}
+# Method: GET
+# Description: Retrieves a data blob. The 'id' in the URL is the blob_id.
+# Optional Header: Optionally accepts 'X-Cache-Bypass' with value 'true' (boolean string).
+# Returns: JSON with 'payload' (base64 string).
