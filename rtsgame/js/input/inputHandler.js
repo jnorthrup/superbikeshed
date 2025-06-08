@@ -167,6 +167,65 @@ export function initInputHandling(gameContext) {
         console.error("Canvas element not found in gameContext for input handling.");
     }
 
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault(); // Prevent default browser context menu.
+
+        const worldPos = this.simulation.camera.screenToWorld(event.clientX, event.clientY);
+
+        // Assuming gameContext.strategicAI holds the AI instance
+        const prediction = this.simulation.strategicAI ? this.simulation.strategicAI.currentPrediction : null;
+
+        if (prediction && prediction.type === 'ENEMY_GROUND_ATTACK') {
+            if (isPointOnPrediction(worldPos.x, worldPos.y, prediction, this.simulation.camera)) {
+                console.log(`Player interacted (right-click) with prediction: ${prediction.id}`);
+
+                // For now, default to "Acknowledge & Reinforce"
+                if (this.simulation.gameState && typeof this.simulation.gameState.addEvent === 'function') {
+                    this.simulation.gameState.addEvent('PlayerInteraction_AckReinforce_AttackVector', {
+                        predictedPathID: prediction.id,
+                        confidence: prediction.confidence, // Send current confidence at time of interaction
+                        playerReinforceFocus: true
+                    });
+                    // Optional: Add visual feedback directly on the prediction object
+                    // prediction.acknowledged = true; // The renderer would need to check this
+                }
+                // Here you would ideally open a context menu to choose the interaction type.
+                // For this step, we directly trigger one type of interaction.
+            }
+        }
+    });
+
+    // --- Context Menu Event Listener for AI Prediction Interaction ---
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault(); // Prevent default browser context menu.
+
+        // Convert screen click coordinates to world coordinates.
+        const worldPos = this.simulation.camera.screenToWorld(event.clientX, event.clientY);
+
+        // Access the current AI prediction from the StrategicAI instance attached to the simulation.
+        const prediction = this.simulation.strategicAI ? this.simulation.strategicAI.currentPrediction : null;
+
+        // Check if there's an active prediction and it's of the type we can interact with.
+        if (prediction && prediction.type === 'ENEMY_GROUND_ATTACK') {
+            // Use the helper function to determine if the click was on the visualized prediction.
+            if (isPointOnPrediction(worldPos.x, worldPos.y, prediction, this.simulation.camera)) {
+                console.log(`Player interacted (right-click) with prediction: ${prediction.id}`);
+
+                // For this initial implementation, a right-click defaults to the "Acknowledge & Reinforce" action.
+                // A more complete system would involve a UI context menu to select different interactions.
+                if (this.simulation.gameState && typeof this.simulation.gameState.addEvent === 'function') {
+                    this.simulation.gameState.addEvent('PlayerInteraction_AckReinforce_AttackVector', {
+                        predictedPathID: prediction.id, // ID of the prediction being interacted with.
+                        confidence: prediction.confidence, // Current confidence of the AI in this prediction.
+                        playerReinforceFocus: true // Flag indicating player's intent to reinforce.
+                    });
+                    // Optional: Visual feedback could be triggered here or by the AI's reaction to the event.
+                    // e.g., prediction.acknowledged = true; (The renderer would then visually update the prediction).
+                }
+            }
+        }
+    });
+
     // --- Document Event Listeners (Keyboard shortcuts) ---
     document.addEventListener('keydown', (e) => {
         // Get selected entity from selection manager for key events
@@ -342,6 +401,77 @@ function createSampleWindow(gameContext) {
 
     gameContext.windowManager.addWindow(window);
 }
+
+/**
+ * Calculates the Euclidean distance between two points.
+ * @param {object} p1 - The first point with x, y properties.
+ * @param {object} p2 - The second point with x, y properties.
+ * @returns {number} The distance between p1 and p2.
+ */
+function getDistanceSimple(p1, p2) {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * Checks if a given world coordinate point is on or near a visualized AI prediction.
+ * @param {number} worldX - The x-coordinate of the click in world space.
+ * @param {number} worldY - The y-coordinate of the click in world space.
+ * @param {object} prediction - The AI prediction object. Expected to have `targetArea` and `path`.
+ * @param {object} camera - The game camera object (not used in current distance checks but kept for future potential use with screen-space thresholds).
+ * @returns {boolean} True if the point is considered on the prediction, false otherwise.
+ */
+function isPointOnPrediction(worldX, worldY, prediction, camera) {
+    if (!prediction) return false;
+
+    const clickPoint = { x: worldX, y: worldY };
+    // Define a tolerance for clicking near a path. This is in world units.
+    const interactionThreshold = 10;
+
+    // 1. Target Area Hit Check: Check if the click is within the prediction's target area circle.
+    if (prediction.targetArea) {
+        const distToCenter = getDistanceSimple(clickPoint, prediction.targetArea);
+        if (distToCenter <= prediction.targetArea.radius) {
+            return true; // Click is inside the target area.
+        }
+    }
+
+    // 2. Path Hit Check: Check if the click is close to any segment of the predicted path.
+    if (prediction.path && prediction.path.length >= 2) {
+        for (let i = 0; i < prediction.path.length - 1; i++) {
+            const p1 = prediction.path[i]; // Start point of the current path segment.
+            const p2 = prediction.path[i+1]; // End point of the current path segment.
+
+            // Calculate squared length of the segment.
+            const lenSq = Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2);
+            if (lenSq === 0) { // If the segment is just a point.
+                if (getDistanceSimple(clickPoint, p1) <= interactionThreshold) return true;
+                continue; // Move to the next segment.
+            }
+
+            // Calculate the projection of the click point onto the line defined by the segment.
+            // 't' is the normalized position of the projection along the segment.
+            let t = ((clickPoint.x - p1.x) * (p2.x - p1.x) + (clickPoint.y - p1.y) * (p2.y - p1.y)) / lenSq;
+            // Clamp 't' to the range [0, 1] to ensure the projection is on the segment itself.
+            t = Math.max(0, Math.min(1, t));
+
+            // Calculate the coordinates of the projected point on the segment.
+            const projectionX = p1.x + t * (p2.x - p1.x);
+            const projectionY = p1.y + t * (p2.y - p1.y);
+
+            // Calculate the distance from the click point to this projected point.
+            const distToSegment = getDistanceSimple(clickPoint, {x: projectionX, y: projectionY});
+
+            if (distToSegment <= interactionThreshold) {
+                return true; // Click is close enough to this path segment.
+            }
+        }
+    }
+
+    return false; // Click is not on the target area or any path segment.
+}
+
 
 function createUnitInspectorWindow(gameContext) {
     // Duplicate declaration removed to fix redeclaration error

@@ -145,4 +145,40 @@ export class WebGL2DRenderer {
         if (!this.gl) return;
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
     }
+
+    render(simulation, camera, ctx) { // simulation is gameContext, ctx is the 2D canvas context
+        if (!this.gl || !simulation || !camera || !ctx) return;
+
+        this.clear(); // Clear the WebGL canvas (background)
+
+        // Main game rendering would happen here using this.gl for WebGL objects.
+        // For example, if units were WebGL objects:
+        // simulation.entityManager.units.forEach(unit => {
+        //     // Simplified: actual WebGL rendering for units
+        //     // const width = (unit.type.size || 10) * camera.zoom;
+        //     // const height = (unit.type.size || 10) * camera.zoom;
+        //     // const screenX = (unit.x - camera.x) * camera.zoom + camera.canvasWidth / 2 - width / 2;
+        //     // const screenY = (unit.y - camera.y) * camera.zoom + camera.canvasHeight / 2 - height / 2;
+        //     // let unitColor = [0.5, 0.5, 0.5, 1.0];
+        //     // if (unit.team === 'player') unitColor = [0.2, 0.8, 0.2, 1.0];
+        //     // else if (unit.team === 'enemy') unitColor = [0.8, 0.2, 0.2, 1.0];
+        //     // this.drawRect(screenX, screenY, width, height, unitColor); // WebGL drawRect
+        // });
+        // simulation.entityManager.buildings.forEach(building => { /* ... WebGL building rendering ... */ });
+        // simulation.entityManager.projectiles.forEach(projectile => { /* ... WebGL projectile rendering ... */ });
+
+
+        // Debug visualizations using the 2D canvas context (ctx), drawn on top.
+        // These functions are expected to be globally available via window.debugRTS
+        if (typeof window.debugRTS !== 'undefined') {
+            // Render command hierarchy debug information (e.g., lines to commanders, authority levels).
+            if (typeof window.debugRTS.renderCommandHierarchyDebug === 'function') {
+                window.debugRTS.renderCommandHierarchyDebug(ctx, simulation);
+            }
+            // Render AI prediction visualizations (e.g., attack paths, target areas).
+            if (typeof window.debugRTS.renderAIPredictionsDebug === 'function') {
+                window.debugRTS.renderAIPredictionsDebug(ctx, simulation);
+            }
+        }
+    }
 }

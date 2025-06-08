@@ -116,6 +116,7 @@ gameContext.gameState = {
 
 // Initialize the enhanced journaling system
 import { initializeRecordingSystem } from './core/recordingUtils.js';
+import { StrategicAI } from './ai/strategicAI.js'; // Import StrategicAI for AI logic.
   
 // Initialize the random seed system using native Math.random()
 // For production, you might want a more robust seed generation or a fixed seed for reproducibility.
@@ -233,6 +234,12 @@ if (!gameContext.HEADLESS_MODE) {
     // This helps bridge the gap if some parts of UI still expect a global way to access sim state.
     window.simulation = simulation;
 
+    // Instantiate StrategicAI for the 'red' team and attach to simulation
+    // This creates the main AI logic controller for the 'red' team.
+    // It's attached to the simulation object to be accessible by other game systems (e.g., rendering, input).
+    simulation.strategicAI = new StrategicAI('red');
+    console.log("StrategicAI instance created for team 'red'.");
+
     // Create and store InputManager instance
     const inputManager = new InputManager(simulation);
     gameContext.inputManager = inputManager; // Make it available to initInputHandling via gameContext
@@ -267,9 +274,23 @@ if (!gameContext.HEADLESS_MODE) {
             supcomCamera.update(deltaTime);
         }
 
-
-        // Update the simulation state
+        // Update the main simulation (entities, game logic)
         const continueLoop = simulation.gameLoop(timestamp); // timestamp is still used by sim's internal deltaTime
+
+        // Update Strategic AI instance.
+        if (simulation.strategicAI) {
+            // The StrategicAI's update method handles its internal logic, including
+            // processing player interaction events and generating new predictions.
+            // It requires the main simulation object (as gameContext), its own team ID,
+            // and access to the current game state (units, buildings, resources).
+            simulation.strategicAI.update(
+                simulation, // Pass the entire simulation object as gameContext
+                simulation.strategicAI.team, // The AI's own team
+                simulation.entityManager.units, // Global list of units
+                simulation.entityManager.buildings, // Global list of buildings
+                simulation.resources // Global resources object
+            );
+        }
 
         // Render the current state if not in headless mode
         if (!gameContext.HEADLESS_MODE && gameContext.renderer) {
