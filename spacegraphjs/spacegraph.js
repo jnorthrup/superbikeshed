@@ -267,7 +267,7 @@ export class SpaceGraph {
         const vec = new THREE.Vector2((screenX / window.innerWidth) * 2 - 1, -(screenY / window.innerHeight) * 2 + 1);
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(vec, this._camera); 
-        raycaster.params.Line.threshold = 5;
+        raycaster.params.Line.threshold = 0.1; // Smaller threshold for more precise line intersection
 
         const nodeMeshes = [...this.nodes.values()].map(n => n.mesh).filter(Boolean);
         if (nodeMeshes.length > 0) {
@@ -309,6 +309,139 @@ export class SpaceGraph {
         this.uiManager?.dispose(); 
         console.log("SpaceGraph disposed.");
     }
+
+      clearGraph() {
+        // Remove all edges first
+        const edgeIds = Array.from(this.edges.keys());
+        edgeIds.forEach(edgeId => this.removeEdge(edgeId));
+
+        // Remove all nodes
+        const nodeIds = Array.from(this.nodes.keys());
+        nodeIds.forEach(nodeId => this.removeNode(nodeId));
+
+        if (this.nodes.size !== 0 || this.edges.size !== 0) {
+            console.warn("clearGraph: Not all nodes/edges were cleared effectively from maps. Forcing clear.");
+            this.nodes.clear();
+            this.edges.clear();
+        }
+        // Also clear from layout engine if possible - this part is crucial
+        if (this.layoutEngine) {
+            this.layoutEngine.nodes = []; // Reset internal arrays
+            this.layoutEngine.edges = [];
+            if (this.layoutEngine.velocities) this.layoutEngine.velocities.clear();
+            if (this.layoutEngine.fixedNodes) this.layoutEngine.fixedNodes.clear();
+            console.log("ForceLayout arrays cleared.");
+        }
+        console.log("Graph cleared.");
+      }
+
+      loadDynamicData(graphData) {
+        this.clearGraph();
+
+        if (!graphData || !graphData.nodes) {
+          console.warn("loadDynamicData: No data provided or data is malformed.");
+          this.layoutEngine?.kick(); // Kick even if empty to reset layout
+          return;
+        }
+
+        // Create a map to store initial positions from graphData if provided
+        const initialPositions = new Map();
+
+        graphData.nodes.forEach(nodeData => {
+          let nodeInstance;
+          // Use provided x,y,z or default to random small values to avoid all nodes at 0,0,0 before layout
+          const position = {
+            x: nodeData.x ?? (Math.random() - 0.5) * 200,
+            y: nodeData.y ?? (Math.random() - 0.5) * 200,
+            z: nodeData.z ?? (Math.random() - 0.5) * 50
+          };
+          initialPositions.set(nodeData.id, new THREE.Vector3(position.x, position.y, position.z));
+
+          const constructorData = { ...nodeData.data, label: nodeData.label, type: nodeData.type, color: nodeData.color, size: nodeData.size }; // Pass all data from our exporter
+
+
+          // Customize content for HtmlNodeElement based on type
+          let content = `<strong>${nodeData.label || nodeData.id}</strong><br/>Type: ${nodeData.type}`;
+          if (nodeData.type === 'playerResources') { // Matched type from exporter
+            content = `<strong>Player ${nodeData.data.playerId}</strong>
+                       <br/>Mass: ${nodeData.data.mass?.toFixed(0)}
+                       <br/>Energy: ${nodeData.data.energy?.toFixed(0)}
+                       <br/>Comp: ${nodeData.data.computronium?.toFixed(0)}
+                       <br/>Ferrite: ${nodeData.data.ferrite?.toFixed(0)}
+                       <br/>Crylithium: ${nodeData.data.crylithium?.toFixed(0)}`;
+            constructorData.width = nodeData.width || 220;
+            constructorData.height = nodeData.height || 120; // Adjusted height for more resources
+            constructorData.backgroundColor = nodeData.color || '#333355';
+          } else if (nodeData.type === 'mapResourceNode') {
+            content = `<strong>${nodeData.data.resourceType}</strong>
+                       <br/>(${nodeData.id})
+                       <br/>Amt: ${nodeData.data.currentAmount?.toFixed(0)}/${nodeData.data.maxAmount?.toFixed(0)}`;
+            constructorData.width = nodeData.width || 200;
+            constructorData.height = nodeData.height || 90;
+            constructorData.backgroundColor = nodeData.color || '#553333';
+          } else if (nodeData.type === 'structure' || nodeData.type === 'unit' || nodeData.type === 'building') {
+            content = `<strong>${nodeData.label || nodeData.id}</strong>
+                       <br/>Owner: ${nodeData.data.ownerPlayerId || 'N/A'}
+                       <br/>Type: ${nodeData.data.entityType || nodeData.data.structureType || nodeData.type}
+                       <br/>HP: ${nodeData.data.hp?.toFixed(0)}/${nodeData.data.maxHp?.toFixed(0)}`;
+            constructorData.width = nodeData.width || (nodeData.type === 'unit' ? 180 : 200);
+            constructorData.height = nodeData.height || (nodeData.type === 'unit' ? 80 : 100);
+            constructorData.backgroundColor = nodeData.color || (nodeData.type === 'unit' ? '#555533' : '#335533');
+          } else { // Default generic node
+            content = `<strong>${nodeData.label || nodeData.id}</strong><br/>Type: ${nodeData.type}`;
+            if (nodeData.data) { // Append any other data
+                Object.entries(nodeData.data).forEach(([key, value]) => {
+                    if (typeof value === 'number') value = value.toFixed(0);
+                    if (key !== 'playerId' && key !== 'mass' && key !== 'energy' && key !== 'computronium' && key !== 'ferrite' && key !== 'crylithium' &&
+                        key !== 'resourceType' && key !== 'currentAmount' && key !== 'maxAmount' && key !== 'x' && key !== 'y' &&
+                        key !== 'ownerPlayerId' && key !== 'entityType' && key !== 'structureType' && key !== 'hp' && key !== 'maxHp' && key !== 'nodeId') {
+                       content += `<br/>${key}: ${value}`;
+                    }
+                });
+            }
+            constructorData.width = nodeData.width || 160;
+            constructorData.height = nodeData.height || 70;
+            constructorData.backgroundColor = nodeData.color || '#444444';
+          }
+          constructorData.content = content; // Set the composed HTML content
+
+          // For now, all nodes are HtmlNodeElement. Could extend to use ShapeNode based on a property.
+          nodeInstance = new HtmlNodeElement(nodeData.id, position, constructorData);
+
+          if (nodeInstance) {
+            this.addNode(nodeInstance);
+          }
+        });
+
+        if (graphData.edges) {
+          graphData.edges.forEach(edgeData => {
+            const sourceNode = this.getNodeById(edgeData.sourceId);
+            const targetNode = this.getNodeById(edgeData.targetId);
+            if (sourceNode && targetNode) {
+              const edgeConstructorData = {
+                  color: edgeData.color ? (typeof edgeData.color === 'string' ? parseInt(edgeData.color.replace('#',''), 16) : edgeData.color) : undefined,
+                  thickness: edgeData.thickness,
+                  label: edgeData.label, // Pass label, Edge class can decide what to do
+                  type: edgeData.type,     // Pass type
+                  directed: edgeData.directed
+              };
+              this.addEdge(sourceNode, targetNode, edgeConstructorData);
+            } else {
+              console.warn(`Edge creation failed: Source (${edgeData.sourceId}) or Target (${edgeData.targetId}) node not found.`);
+            }
+          });
+        }
+
+        // Restore positions if layout is not immediately run, or to give layout good start points
+        this.nodes.forEach(node => {
+            const pos = initialPositions.get(node.id);
+            if (pos) node.setPosition(pos.x, pos.y, pos.z);
+        });
+
+        this.layoutEngine?.kick(1.5); // Stronger kick for new data
+        // A brief delay before centering might allow layout to settle a bit
+        // setTimeout(() => this.centerView(), 100);
+      }
 }
 
 class BaseNode {

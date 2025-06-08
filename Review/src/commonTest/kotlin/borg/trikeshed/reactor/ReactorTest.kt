@@ -2,7 +2,7 @@ package borg.trikeshed.reactor
 
 import borg.trikeshed.lib.IOConstants.OP_ACCEPT
 import borg.trikeshed.lib.IOConstants.OP_READ
-import borg.trikeshed.nio.ByteBufferFactory
+import borg.trikeshed.io.ByteBufferFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest // Assuming this import for runTest
 import kotlin.test.Test

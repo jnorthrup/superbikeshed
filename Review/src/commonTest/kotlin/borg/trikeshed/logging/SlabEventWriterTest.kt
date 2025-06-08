@@ -1,6 +1,6 @@
 package borg.trikeshed.logging
 
-import borg.trikeshed.nio.slabs.MemorySlabManagerService
+import borg.trikeshed.io.slabs.MemorySlabManagerService
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals

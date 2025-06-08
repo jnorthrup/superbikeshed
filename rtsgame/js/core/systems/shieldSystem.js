@@ -1,13 +1,15 @@
+import { DAMAGE_TYPES } from '../config/combatConstants.js';
+
 export class ShieldSystem {
     constructor() {
         this.damageTypeInteractions = {
-            KINETIC: { shieldFactor: 0.8, bleedThrough: 0.2 },
-            ENERGY: { shieldFactor: 0.6, bleedThrough: 0.4 },
-            THERMAL: { shieldFactor: 0.7, bleedThrough: 0.3 },
-            EMP: { shieldFactor: 0.3, bleedThrough: 0.7 },
-            CORROSIVE: { shieldFactor: 0.9, bleedThrough: 0.1 },
-            NANITE: { shieldFactor: 1.0, bleedThrough: 0.0 },
-            PHASE: { shieldFactor: 0.5, bleedThrough: 0.5 }
+            [DAMAGE_TYPES.KINETIC]: { shieldFactor: 0.8, bleedThrough: 0.2 },
+            [DAMAGE_TYPES.ENERGY]: { shieldFactor: 0.6, bleedThrough: 0.4 },
+            [DAMAGE_TYPES.THERMAL]: { shieldFactor: 0.7, bleedThrough: 0.3 },
+            [DAMAGE_TYPES.EMP]: { shieldFactor: 2.0, bleedThrough: 0.1 }, // EMP is strong vs shields
+            [DAMAGE_TYPES.CORROSIVE]: { shieldFactor: 0.9, bleedThrough: 0.1 }, // Corrosive might primarily target armor, less shield
+            [DAMAGE_TYPES.NANITE]: { shieldFactor: 0.2, bleedThrough: 0.8 }, // Nanites might bypass shields or be ineffective
+            [DAMAGE_TYPES.PHASE]: { shieldFactor: 0.5, bleedThrough: 0.5 } // Phase damage partially bypasses shields
         };
     }
 
@@ -37,7 +39,8 @@ export class ShieldSystem {
     takeDamage(entity, damage, damageType) {
         if (!entity.shield || !entity.shield.isActive) return damage;
 
-        const interaction = this.damageTypeInteractions[damageType] || this.damageTypeInteractions.KINETIC;
+        // Use a default interaction if the specific damageType is not found, defaulting to KINETIC behavior
+        const interaction = this.damageTypeInteractions[damageType] || this.damageTypeInteractions[DAMAGE_TYPES.KINETIC] || { shieldFactor: 1.0, bleedThrough: 0.0 };
         const shieldDamage = damage * interaction.shieldFactor;
         const bleedThroughDamage = damage * interaction.bleedThrough;
 

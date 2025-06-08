@@ -1,7 +1,7 @@
 package borg.trikeshed.logging
 
-import borg.trikeshed.nio.slabs.MemorySlab
-import borg.trikeshed.nio.slabs.MemorySlabManagerService
+import borg.trikeshed.io.slabs.MemorySlab
+import borg.trikeshed.io.slabs.MemorySlabManagerService
 import kotlin.coroutines.CoroutineContext // For constructor, though not actively used yet
 
 /**
