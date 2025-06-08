@@ -13,7 +13,7 @@ import borg.trikeshed.lib.Series // Placeholder import
  * Conceptual interface for a provider/manager of QUIC connections.
  * A concrete implementation would handle connection pooling, establishment, and lifecycle.
  */
-interface QuicConnectionProvider {
+expect interface QuicConnectionProvider {
     /**
      * Retrieves an active QUIC connection for the given host and port,
      * or establishes a new one if necessary.

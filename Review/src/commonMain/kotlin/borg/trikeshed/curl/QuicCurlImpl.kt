@@ -7,6 +7,7 @@ import borg.trikeshed.net.http.HttpHeaders
 import borg.trikeshed.net.http.RequestBody
 import borg.trikeshed.net.http.HttpAuthentication // Added import
 import borg.trikeshed.net.http.QuicCurlException
+import borg.trikeshed.lib.base64Encode // Import for base64Encode
 import borg.trikeshed.net.http3.qpack.QpackEncoder
 import borg.trikeshed.net.http3.qpack.QpackDecoder
 import borg.trikeshed.net.http3.Http3Frame // For HeadersFrame, DataFrame
@@ -233,11 +234,7 @@ class QuicCurlImpl(
                 when (auth) {
                     is HttpAuthentication.BasicAuth -> {
                         val credentials = "${auth.username}:${auth.password}"
-                        // In a real scenario, use a proper Base64 encoder.
-                        // For this subtask, a simple placeholder or assuming one exists.
-                        // val encodedCredentials = base64Encode(credentials) // Using expect fun
-                        // Simple placeholder for now:
-                        val encodedCredentials = credentials.encodeToByteArray().joinToString("") { byte -> (byte.toInt() and 0xFF).toString(16).padStart(2, '0') } // NOT REAL BASE64, JUST HEX for placeholder
+                        val encodedCredentials = base64Encode(credentials) // Uses the new expect fun (UTF-8 bytes of string)
                         addHeader("authorization", "Basic $encodedCredentials")
                     }
                     is HttpAuthentication.BearerToken -> {
