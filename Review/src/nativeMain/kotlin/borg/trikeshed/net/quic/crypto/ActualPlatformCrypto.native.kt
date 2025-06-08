@@ -3,6 +3,7 @@ package borg.trikeshed.net.quic.crypto
 import kotlinx.cinterop.*
 import platform.openssl.*
 import kotlinx.coroutines.Dispatchers
+import borg.trikeshed.lib.Join // Placeholder import
 import kotlinx.coroutines.withContext
 
 
@@ -27,7 +28,7 @@ actual suspend fun sha256(data: ByteArray): ByteArray = withContext(Dispatchers.
 
 // Note: OpenSSL key generation and ECDH are complex. This is a simplified outline.
 // Proper error handling and parameter setup (e.g., for specific curves like X25519) is crucial.
-actual suspend fun generateEcdhKeyPair(groupId: UShort): Pair<ByteArray, ByteArray> = withContext(Dispatchers.Default) {
+actual suspend fun generateEcdhKeyPair(groupId: UShort): Join<ByteArray, ByteArray> = withContext(Dispatchers.Default) {
     // groupId mapping to NID, e.g., X25519_GROUP (0x001Du) -> NID_X25519
     // For simplicity, assuming X25519 if groupId indicates it, otherwise not implemented
     val pkeyNid = when(groupId) {
@@ -67,7 +68,7 @@ actual suspend fun generateEcdhKeyPair(groupId: UShort): Pair<ByteArray, ByteArr
         if (EVP_PKEY_get_raw_public_key(pkey, pubKeyBuf, pubKeyLen.ptr) != 1) throw RuntimeException("EVP_PKEY_get_raw_public_key failed")
         val publicKeyBytes = pubKeyBuf.readBytes(pubKeyLen.value.toInt())
 
-        return@withContext Pair(privateKeyBytes, publicKeyBytes)
+        return@withContext Join(privateKeyBytes, publicKeyBytes)
     } finally {
         EVP_PKEY_free(pkey)
         EVP_PKEY_CTX_free(pctx)
