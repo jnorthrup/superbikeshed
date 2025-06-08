@@ -41,5 +41,27 @@ export const COMMAND_CONFIG = {
         COMPROMISED_COMMAND: 0.4,
         CRITICAL_STATUS: 0.2,
         COMBAT_INEFFECTIVE: 0.0  // Represents HP < CRITICAL_STATUS threshold (e.g. < 0.2)
+    },
+
+    // Steering Behavior Configuration
+    STEERING_WEIGHTS: {
+        SEPARATION: 1.5,
+        TERRAIN_AVOIDANCE: 2.0
+        // Cohesion, Alignment, Seek/Arrive could be added here later
+    },
+    STEERING_FEELER_LENGTH_FACTOR: 1.5, // Multiplier for unit.type.size to determine feeler length
+    NEIGHBOR_RADIUS_FACTOR: 2.0,       // Multiplier for unit.type.size for separation check distance
+
+    // Formation Rules
+    FORMATION_RULES: {
+        MAX_FOLLOWER_SEPARATION_DISTANCE_FACTOR: 0.75 // Factor of COMMAND_RANGES.STRATEGIC
+    },
+
+    FORMATION_BEHAVIOR: {
+        PREDICTION_TIME_SECONDS: 0.5,
+        ARRIVAL_RADIUS_FACTOR: 0.25, // Multiplier for unit.type.size
+        DEFAULT_MAX_FORCE: 1.0,
+        DEFAULT_MAX_TURN_RATE_RADIANS_PER_FRAME: 0.05235987755982988, // Math.PI / 60
+        MIN_FORMATION_SLOT_DISTANCE: 50.0 // Used for radial offset in executeGroupMovement
     }
 };

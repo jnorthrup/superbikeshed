@@ -95,6 +95,9 @@ function retracePath(startNode, endNode) {
     }));
 }
 
+// Export isTraversable for external use (e.g., by Unit for terrain avoidance feelers)
+export { isTraversable };
+
 export function findPath(startCoords, endCoords, gameContext, unitMovementType = 'land') {
     // Convert world coordinates to grid coordinates
     const startGridX = Math.floor(startCoords.x / TILE_SIZE);
