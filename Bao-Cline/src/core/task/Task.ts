@@ -17,6 +17,7 @@ import {
 	type ClineAsk,
 	type ClineMessage,
 	type ClineSay,
+	type TaskEvent as TaskEvent_TS_Type, // Renaming to avoid conflict if Kotlin types are also named TaskEvent
 	type ToolProgressStatus,
 	type HistoryItem,
 	TelemetryEventName,
@@ -82,6 +83,22 @@ import { processUserContentMentions } from "../mentions/processUserContentMentio
 import { ApiMessage } from "../task-persistence/apiMessages"
 import { getMessagesSinceLastSummary, summarizeConversation } from "../condense"
 import { maybeRemoveImageBlocks } from "../../api/transform/image-cleaning"
+
+// Kotlin Bridge Imports
+import {
+	processUserRequest_bridge,
+	// addTaskEvent_bridge, // If needed later
+	UserRequest as KtUserRequest_TS,
+	Response as KtResponse_TS,
+	KotlinExtensionState as KtState_TS,
+	Join as KtJoin_TS,
+	TaskEvent as KtTaskEvent_TS,
+	// Import other Kotlin types as needed, using '_TS' suffix for clarity
+	// ActiveSession as KtActiveSession_TS,
+	// EnvironmentContext as KtEnvironmentContext_TS,
+	// Series as KtSeries_TS,
+	// TaskHistory as KtTaskHistory_TS,
+} from "../../kotlinBridge"
 
 export type ClineEvents = {
 	message: [{ action: "created" | "updated"; message: ClineMessage }]
@@ -1460,6 +1477,78 @@ export class Task extends EventEmitter<ClineEvents> {
 			// tool use since user can exit at any moment and we wouldn't be
 			// able to save the assistant's response.
 			let didEndLoop = false
+
+		// --- START KOTLIN BRIDGE INTEGRATION ---
+		const currentUserInputText = parsedUserContent
+			.filter((block) => block.type === "text")
+			.map((block) => (block as Anthropic.TextBlockParam).text)
+			.join("\n")
+
+		const ktUserRequest: KtUserRequest_TS = { text: currentUserInputText }
+
+		// Map ClineMessage to KtTaskEvent_TS
+		const mapToKtTaskEvent = (msg: ClineMessage): KtTaskEvent_TS => {
+			// This is a simplified mapping. A real implementation would need more detail.
+			return {
+				ts: msg.ts,
+				type: msg.type,
+				ask: msg.ask as KtTaskEvent_TS["ask"], // Cast, assuming enum values match
+				say: msg.say as KtTaskEvent_TS["say"], // Cast, assuming enum values match
+				text: msg.text,
+				// images, partial, reasoning, conversationHistoryIndex, checkpoint, progressStatus, contextCondense, tokenUsage
+				// would need to be mapped here if present and relevant.
+			}
+		}
+
+		const ktState: KtState_TS = {
+			first: { // ActiveSession
+				currentTaskId: this.taskId,
+				// currentMode: this.apiConfiguration.mode, // Requires ModeConfig TS to Kotlin mapping
+				history: { // TaskHistory (Series<TaskEvent>)
+					items: this.clineMessages.map(mapToKtTaskEvent),
+				},
+			},
+			second: { // EnvironmentContext
+				workspaceRoot: this.workspacePath,
+				// openFiles: currently open files in VS Code (would need to get this from provider)
+				vscodeVersion: "unknown", // Would need to get this from VS Code environment
+				extensionVersion: "unknown", // Package version
+				// userPreferences: map user preferences
+				// providerConfig: { // Join<ApiKeys, ModelSettings> - This is a complex mapping
+				//  first: { /* map ApiKeys from this.apiConfiguration */ },
+				//  second: { /* map ModelSettings from this.apiConfiguration */ }
+				// }
+			},
+		}
+
+		try {
+			await this.say("text", `Sending to Kotlin: ${currentUserInputText}`)
+			const ktResult: KtJoin_TS<KtResponse_TS, KtState_TS> = await processUserRequest_bridge(
+				ktState,
+				ktUserRequest,
+			)
+			const responseText = ktResult.first.text
+			const newKotlinState = ktResult.second
+
+			// Process newKotlinState - for now, just log and send response
+			// In a real scenario, update this.clineMessages, this.apiConfiguration, etc.
+			// e.g., this.clineMessages = newKotlinState.first.history?.items.map(mapFromKtTaskEvent) || [];
+
+			await this.say("text", `Kotlin responded: ${responseText}`)
+			console.log("New Kotlin state session history items:", newKotlinState.first.history?.items?.length)
+
+			// For now, we'll let the original TypeScript logic proceed as well,
+			// effectively making the Kotlin call an additional step rather than a replacement.
+			// To fully replace, the old logic below would be removed or conditional.
+			// We might set a flag here and if true, return true from this function to stop the old loop.
+			// For this subtask, we are just inserting the call.
+
+		} catch (error) {
+			console.error("Error calling Kotlin processUserRequest:", error)
+			await this.say("error", "Failed to process request via Kotlin module.")
+		}
+		// --- END KOTLIN BRIDGE INTEGRATION ---
+
 
 			if (assistantMessage.length > 0) {
 				await this.addToApiConversationHistory({
