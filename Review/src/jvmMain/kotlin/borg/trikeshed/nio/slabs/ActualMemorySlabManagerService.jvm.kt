@@ -1,6 +1,6 @@
 package borg.trikeshed.nio.slabs
 
-import borg.trikeshed.nio.ByteBufferFactory
+import borg.trikeshed.io.ByteBufferFactory
 import kotlin.coroutines.CoroutineContext
 
 /**

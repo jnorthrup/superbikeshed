@@ -1,7 +1,7 @@
 package borg.trikeshed.logging
 
-import borg.trikeshed.nio.ByteBuffer // Required for deserialize
-import borg.trikeshed.nio.ByteBufferFactory // Required for serialize
+import borg.trikeshed.io.ByteBuffer // Required for deserialize
+import borg.trikeshed.io.ByteBufferFactory // Required for serialize
 
 /**
  * A simple data class representing an event with a timestamp, type, and a byte array payload.

@@ -2,7 +2,7 @@ package simple
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Series // Ensure Series is available
-import borg.trikeshed.nio.*
+import borg.trikeshed.io.*
 import borg.trikeshed.native.HasPosixErr
 import kotlinx.cinterop.*
 import platform.posix.*
