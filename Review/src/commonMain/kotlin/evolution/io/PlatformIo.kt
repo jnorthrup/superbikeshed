@@ -16,12 +16,11 @@ enum class InterestOp {
 }
 
 // --- Socket Address (Common Definition) ---
-// Using expect class to allow platform-specific backing fields/implementations if necessary,
-// while providing a common way to construct it.
-expect class SocketAddress(val host: String, val port: Int) {
-    fun getHostName(): String // Common way to access host
-    fun getPort(): Int      // Common way to access port
-}
+// SocketAddress is now replaced by borg.trikeshed.io.network.NetworkAddress (typealias to Join<String, Int>)
+// No expect class needed here anymore for SocketAddress.
+// Usages below will be updated.
+// Placeholder import for the new NetworkAddress type.
+import borg.trikeshed.io.network.NetworkAddress // This is Join<String, Int>
 
 // --- Selection Event from Selector Loop ---
 // channelKey: Could be platform's native key (e.g., java.nio.channels.SelectionKey)
@@ -35,8 +34,8 @@ data class SelectionEvent(
 // --- Platform Independent UDP Channel Interface ---
 
 expect interface PlatformUdpChannel : CoroutineContext.Element { // Can also be a simple interface if not a context element itself
-    suspend fun bind(localAddress: SocketAddress): Boolean
-    fun getLocalAddress(): SocketAddress?
+    suspend fun bind(localAddress: NetworkAddress): Boolean // Changed SocketAddress to NetworkAddress
+    fun getLocalAddress(): NetworkAddress? // Changed SocketAddress to NetworkAddress
     override val key: CoroutineContext.Key<*> // Typically PlatformUdpChannelKey if it is a context element
 
     /**
@@ -50,8 +49,8 @@ expect interface PlatformUdpChannel : CoroutineContext.Element { // Can also be 
                                         // Should ideally take selector instance or get from context.
                                         // For now, assumes channel knows its selector or can find it.
 
-    suspend fun send(data: ByteArray, targetAddress: SocketAddress): Int
-    suspend fun receive(buffer: ByteArray): Pair<Int, SocketAddress?> // Bytes read, source address
+    suspend fun send(data: ByteArray, targetAddress: NetworkAddress): Int // Changed SocketAddress to NetworkAddress
+    suspend fun receive(buffer: ByteArray): borg.trikeshed.lib.Join<Int, NetworkAddress?> // Bytes read, source address - Changed Pair to Join
 
     fun configureBlocking(block: Boolean) // May throw if called after registration on some platforms
     fun close()
