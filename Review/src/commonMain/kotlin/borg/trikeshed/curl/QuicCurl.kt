@@ -3,6 +3,7 @@ package borg.trikeshed.curl
 import borg.trikeshed.net.http.HttpRequest
 import borg.trikeshed.net.http.HttpResponse
 import borg.trikeshed.net.quic.QuicConnection // Conceptual import
+import borg.trikeshed.lib.Series // Placeholder import
 
 // QuicCurlException would be imported if needed by Result type, but Result uses Throwable.
 // import borg.trikeshed.net.http.QuicCurlException
@@ -12,7 +13,7 @@ import borg.trikeshed.net.quic.QuicConnection // Conceptual import
  * Conceptual interface for a provider/manager of QUIC connections.
  * A concrete implementation would handle connection pooling, establishment, and lifecycle.
  */
-interface QuicConnectionProvider {
+expect interface QuicConnectionProvider {
     /**
      * Retrieves an active QUIC connection for the given host and port,
      * or establishes a new one if necessary.
@@ -20,7 +21,14 @@ interface QuicConnectionProvider {
      *
      * @return A [Result] containing the [QuicConnection] on success, or an [Exception] on failure.
      */
-    suspend fun getConnection(host: String, port: Int, scheme: String): Result<QuicConnection>
+    suspend fun getConnection(
+        host: String,
+        port: Int,
+        scheme: String,
+        // New parameters
+        clientCertificateChainDer: Series<ByteArray>? = null,
+        clientPrivateKeyDer: ByteArray? = null
+    ): Result<QuicConnection>
 
     /**
      * Releases a connection back to the provider, potentially for reuse or future closure.
