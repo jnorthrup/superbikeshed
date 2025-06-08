@@ -10,7 +10,6 @@
     "rootDir": "./src",                     // Specify the root directory of input files.
     "baseUrl": "./",                        // Base directory to resolve non-absolute module names.
     "paths": {
-      "trikeshed-core-js": ["vendor/trikeshed-core/trikeshedCore"], // Points to the .d.ts without the extension
       "*": [                                // Fallback for other modules
         "node_modules/*",
         "src/types/*"                       // Example for project-specific type definitions

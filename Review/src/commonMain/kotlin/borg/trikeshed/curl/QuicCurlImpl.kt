@@ -7,6 +7,7 @@ import borg.trikeshed.net.http.HttpHeaders
 import borg.trikeshed.net.http.RequestBody
 import borg.trikeshed.net.http.HttpAuthentication // Added import
 import borg.trikeshed.net.http.QuicCurlException
+import borg.trikeshed.lib.base64Encode // Import for base64Encode
 import borg.trikeshed.net.http3.qpack.QpackEncoder
 import borg.trikeshed.net.http3.qpack.QpackDecoder
 import borg.trikeshed.net.http3.Http3Frame // For HeadersFrame, DataFrame
@@ -19,10 +20,14 @@ import kotlinx.coroutines.CompletableDeferred // For asynchronous response handl
 
 // Assuming QuicConnection and its StreamManager are conceptually available via QuicConnectionProvider
 // For actual compilation, QuicConnection and its manager would need to be concrete types.
+import borg.trikeshed.lib.Series // Placeholder import
+
 
 class QuicCurlImpl(
-    private val connectionProvider: QuicConnectionProvider
-    // In a real app, might also take CoroutineContext for execution, logger, etc.
+    private val connectionProvider: QuicConnectionProvider,
+    // New optional constructor parameters
+    private val defaultClientCertChainDer: Series<ByteArray>? = null,
+    private val defaultClientPrivateKeyDer: ByteArray? = null
 ) : QuicCurl {
     private val qpackEncoder = QpackEncoder()
     private val qpackDecoder = QpackDecoder()
@@ -68,7 +73,14 @@ class QuicCurlImpl(
 
         if (context == null) {
             println("No usable H3 context for $contextKey, establishing new QUIC connection and H3 setup.")
-            val connectionResult = connectionProvider.getConnection(host, port, scheme)
+            // Pass client cert info to getConnection
+            val connectionResult = connectionProvider.getConnection(
+                host,
+                port,
+                scheme,
+                this.defaultClientCertChainDer, // Pass stored default
+                this.defaultClientPrivateKeyDer  // Pass stored default
+            )
             if (connectionResult.isFailure) {
                 return Result.failure(
                     connectionResult.exceptionOrNull() as? QuicCurlException
@@ -222,11 +234,7 @@ class QuicCurlImpl(
                 when (auth) {
                     is HttpAuthentication.BasicAuth -> {
                         val credentials = "${auth.username}:${auth.password}"
-                        // In a real scenario, use a proper Base64 encoder.
-                        // For this subtask, a simple placeholder or assuming one exists.
-                        // val encodedCredentials = base64Encode(credentials) // Using expect fun
-                        // Simple placeholder for now:
-                        val encodedCredentials = credentials.encodeToByteArray().joinToString("") { byte -> (byte.toInt() and 0xFF).toString(16).padStart(2, '0') } // NOT REAL BASE64, JUST HEX for placeholder
+                        val encodedCredentials = base64Encode(credentials) // Uses the new expect fun (UTF-8 bytes of string)
                         addHeader("authorization", "Basic $encodedCredentials")
                     }
                     is HttpAuthentication.BearerToken -> {

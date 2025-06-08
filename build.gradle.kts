@@ -9,18 +9,6 @@ plugins {
 allprojects {
     group = "org.superbikeshed"
     version = "1.0.0"
-    
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-        google()
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap")
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
-        maven("https://oss.sonatype.org/content/repositories/snapshots/")
-        maven("https://s01.oss.sonatype.org/content/repositories/snapshots")
-        maven("https://jitpack.io")
-    }
 }
 
 subprojects {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RTS Game - Command & Conquer Style</title>
+    <link href="js/lib/spacegraph/spacegraph.css" rel="stylesheet"/>
     <style>
         /* Reset and base styles */
         * {
@@ -460,6 +461,11 @@
             <canvas id="minimapCanvas" width="216" height="180"></canvas>
         </div>
 
+        <!-- SpaceGraph Visualization Container -->
+        <div id="sg_container_main" style="position: absolute; right: 10px; top: 80px; width: 400px; height: 300px; border: 1px solid #ccc; z-index: 1000; background-color: #0a0a1e;">
+            <!-- spacegraph.js will create its canvas and css3d div here -->
+        </div>
+
         <!-- Combat Alerts -->
         <div class="combat-alerts" id="alertContainer">
             <!-- Alerts will be populated dynamically -->
@@ -549,6 +555,42 @@
         </div>
     </div>
 
+    <script type="importmap">
+    {
+        "imports": {
+            "three":         "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/",
+            "gsap":          "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js"
+        }
+    }
+    </script>
     <script src="main.bundle.js"></script>
+    <script type="module">
+      import { SpaceGraph } from './js/lib/spacegraph/spacegraph.js'; // Adjust path
+
+      const sgContainer = document.getElementById('sg_container_main');
+      if (sgContainer) {
+        try {
+          window.rtsSpaceGraphInstance = new SpaceGraph(sgContainer, {}); // Pass empty uiElements to use defaults
+          window.updateRtsSpaceGraph = function(graphData) {
+            if (window.rtsSpaceGraphInstance && typeof window.rtsSpaceGraphInstance.loadDynamicData === 'function') {
+              window.rtsSpaceGraphInstance.loadDynamicData(graphData);
+            } else {
+              console.error("SpaceGraph instance (rtsSpaceGraphInstance) not found or loadDynamicData method is missing.");
+            }
+          };
+          console.log("SpaceGraph for RTS initialized and updateRtsSpaceGraph exposed.");
+          // Example: Load empty data initially or after a short delay
+          // setTimeout(() => {
+          //   if(window.updateRtsSpaceGraph) window.updateRtsSpaceGraph({ nodes: [], edges: [] });
+          // }, 1000);
+        } catch (e) {
+          console.error("Failed to initialize SpaceGraph for RTS:", e);
+          if(sgContainer) sgContainer.innerHTML = "<p style='color:red;'>Error initializing SpaceGraph visualizer.</p>";
+        }
+      } else {
+        console.error("SpaceGraph container 'sg_container_main' not found.");
+      }
+    </script>
 </body>
 </html>

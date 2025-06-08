@@ -2,10 +2,6 @@ plugins {
     kotlin("multiplatform") version "2.2.0-RC2"
 }
 
-repositories {
-    mavenCentral()
-    google()
-}
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
@@ -27,6 +23,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 implementation(project(":Review:trikeshed-core"))
             }
             kotlin {
@@ -69,8 +66,8 @@ kotlin {
             dependsOn(commonMain)
             kotlin.srcDirs("src/posixMain/kotlin", "src/linuxX64Main/kotlin")
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-linuxx64:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime-linuxx64:0.5.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-linuxx64:1.9.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime-linuxx64:0.6.1")
             }
         }
     }

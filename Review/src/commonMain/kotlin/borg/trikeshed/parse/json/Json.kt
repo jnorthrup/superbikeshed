@@ -29,6 +29,8 @@ import borg.trikeshed.lib.size
 import borg.trikeshed.lib.take
 import borg.trikeshed.lib.trim
 import borg.trikeshed.lib.zipWithNext
+import borg.trikeshed.lib.MutableSeries
+import borg.trikeshed.lib.mutableSeriesOf
 
 // Type aliases for clarity and expressiveness
 typealias JsonBounds = Twin<Int> // (openIdx j closeIdx)
@@ -79,14 +81,14 @@ object JsonParser {
         /** depths is passed in for the purpose of queries being able to skip a slot if it is too shallow;
          * format is _a[1,1,2,] where any valid segment is at least 1.
          * */
-        depths: MutableList<Int>? = null,
+        depths: MutableSeries<Int>? = null,
         /*  * an optional int that gives you n commas max, presuming undefined null bias in the last comma */
         takeFirst: Int? = null,
     ): JsonStructuralIndices {
         var depth = 0
         var openIdx = -1
         var closeIdx = -1
-        val commaIdxs: MutableList<Int> = mutableListOf()
+        val commaIdxs: MutableSeries<Int> = mutableSeriesOf()
         var insideQuote = false
         var escapeNextChar = false
         var maxDepth = 0
@@ -279,7 +281,7 @@ object JsonParser {
             if (reifyResult) reify(tmp.slice) else tmp.slice
 
         } else {
-            val depths1: MutableList<Int> = mutableListOf()
+            val depths1: MutableSeries<Int> = mutableSeriesOf()
 
             val nextPath = pathTail.take(1).first()
             jsPath(

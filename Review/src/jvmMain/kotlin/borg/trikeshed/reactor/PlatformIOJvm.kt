@@ -1,7 +1,7 @@
 package borg.trikeshed.reactor
 
-import borg.trikeshed.nio.ByteBuffer
-import borg.trikeshed.nio.ByteBufferFactory
+import borg.trikeshed.io.ByteBuffer
+import borg.trikeshed.io.ByteBufferFactory
 import java.net.InetSocketAddress
 import java.nio.channels.SelectionKey as JvmSelectionKey
 import java.nio.channels.Selector as JvmSelector

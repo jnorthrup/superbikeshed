@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TacticsDSL - High-APM Visual Programming</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .editor-panel {
+            flex: 1;
+            position: relative;
+            background: #0f3460;
+            border-right: 2px solid #00d4ff;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #tacticsCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            background: 
+                radial-gradient(circle at 20px 20px, rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(135deg, #0f3460, #1a1a2e);
+            background-size: 20px 20px;
+        }
+
+        .side-panel {
+            width: 300px;
+            background: #16213e;
+            border-left: 2px solid #00d4ff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-section {
+            margin: 10px;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid #00d4ff;
+        }
+
+        .panel-section h3 {
+            margin: 0 0 10px 0;
+            color: #00d4ff;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hotkey-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .hotkey-button {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            color: white;
+            padding: 8px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hotkey-button:hover {
+            background: rgba(0, 212, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .hotkey-button.active {
+            background: #00d4ff;
+            color: #1a1a2e;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .apm-display {
+            text-align: center;
+            font-size: 24px;
+            color: #00ff00;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .efficiency-bar {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .efficiency-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ffff44, #44ff44);
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .macro-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+        }
+
+        .macro-button {
+            background: rgba(255, 165, 0, 0.2);
+            border: 1px solid #ffa500;
+            color: #ffa500;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .macro-button:hover {
+            background: rgba(255, 165, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .macro-button.recording {
+            background: rgba(255, 0, 0, 0.3);
+            border-color: #ff0000;
+            color: #ff0000;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .quick-commands {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .quick-command {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 8px;
+            margin-bottom: 3px;
+            background: rgba(138, 43, 226, 0.2);
+            border: 1px solid #8a2be2;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .quick-command:hover {
+            background: rgba(138, 43, 226, 0.4);
+            transform: translateX(5px);
+        }
+
+        .quick-command .key {
+            background: #8a2be2;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 300px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border-top: 1px solid #00d4ff;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .mode-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: rgba(255, 215, 0, 0.9);
+            color: #1a1a2e;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .mode-indicator.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .code-preview {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 10px;
+            line-height: 1.3;
+            color: #ccc;
+        }
+
+        .syntax-highlight .keyword { color: #ff6b9d; }
+        .syntax-highlight .string { color: #c7f59b; }
+        .syntax-highlight .number { color: #ffd93d; }
+        .syntax-highlight .comment { color: #6c6c6c; }
+
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+
+        .metric-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: #ccc;
+            text-transform: uppercase;
+        }
+
+        .floating-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid #00d4ff;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .floating-tooltip.show {
+            opacity: 1;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .side-panel { width: 250px; }
+            .hotkey-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .side-panel { width: 100%; height: 40%; }
+            .status-bar { right: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="editor-panel">
+            <div class="canvas-container">
+                <canvas id="tacticsCanvas" width="1200" height="800"></canvas>
+                <div class="mode-indicator" id="modeIndicator">Hotkey Mode</div>
+                <div class="status-bar">
+                    <span>Press ` for Hotkey Mode | Tab for Quick Commands | Drag blocks to connect | Right-click for context menu</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <!-- APM Monitor -->
+            <div class="panel-section">
+                <h3>Performance Monitor</h3>
+                <div class="apm-display" id="apmDisplay">0 APM</div>
+                <div class="efficiency-bar">
+                    <div class="efficiency-fill" id="efficiencyFill" style="width: 100%"></div>
+                </div>
+                <div class="performance-metrics">
+                    <div class="metric">
+                        <div class="metric-value" id="blockCount">0</div>
+                        <div class="metric-label">Blocks</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="complexityScore">0</div>
+                        <div class="metric-label">Complexity</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Placement Hotkeys -->
+            <div class="panel-section">
+                <h3>Quick Placement</h3>
+                <div class="hotkey-grid">
+                    <div class="hotkey-button" data-block="SELECT" data-key="S">S<br>Select</div>
+                    <div class="hotkey-button" data-block="MOVE" data-key="M">M<br>Move</div>
+                    <div class="hotkey-button" data-block="ATTACK" data-key="A">A<br>Attack</div>
+                    <div class="hotkey-button" data-block="BUILD" data-key="B">B<br>Build</div>
+                    <div class="hotkey-button" data-block="WHEN" data-key="W">W<br>When</div>
+                    <div class="hotkey-button" data-block="DELAY" data-key="D">D<br>Delay</div>
+                    <div class="hotkey-button" data-block="PARALLEL" data-key="Ctrl+P">⇈P<br>Parallel</div>
+                    <div class="hotkey-button" data-block="SEQUENCE" data-key="Ctrl+Q">⇈Q<br>Sequence</div>
+                    <div class="hotkey-button" data-block="MACRO" data-key="Ctrl+M">⇈M<br>Macro</div>
+                </div>
+            </div>
+
+            <!-- Macro Management -->
+            <div class="panel-section">
+                <h3>Macro System</h3>
+                <div class="macro-buttons">
+                    <button class="macro-button" id="recordBtn">🔴 Record</button>
+                    <button class="macro-button" id="stopBtn">⏹️ Stop</button>
+                    <button class="macro-button" id="playBtn">▶️ Play</button>
+                    <button class="macro-button" id="saveBtn">💾 Save</button>
+                </div>
+            </div>
+
+            <!-- Quick Commands -->
+            <div class="panel-section">
+                <h3>Quick Commands</h3>
+                <div class="quick-commands">
+                    <div class="quick-command" data-action="select_army">
+                        <span>Select Army</span>
+                        <span class="key">Q</span>
+                    </div>
+                    <div class="quick-command" data-action="select_workers">
+                        <span>Select Workers</span>
+                        <span class="key">W</span>
+                    </div>
+                    <div class="quick-command" data-action="attack_move">
+                        <span>Attack Move</span>
+                        <span class="key">Shift+A</span>
+                    </div>
+                    <div class="quick-command" data-action="retreat">
+                        <span>Retreat</span>
+                        <span class="key">R</span>
+                    </div>
+                    <div class="quick-command" data-action="patrol">
+                        <span>Patrol</span>
+                        <span class="key">P</span>
+                    </div>
+                    <div class="quick-command" data-action="formation">
+                        <span>Formation</span>
+                        <span class="key">F</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generated Code Preview -->
+            <div class="panel-section">
+                <h3>Generated Code</h3>
+                <div class="code-preview" id="codePreview">
+                    <div class="syntax-highlight">
+                        <span class="comment">// Your visual program will appear here</span><br>
+                        <span class="keyword">composer</span>.<span class="keyword">startChain</span>()<br>
+                        &nbsp;&nbsp;.<span class="keyword">select</span>(<span class="string">'army'</span>)<br>
+                        &nbsp;&nbsp;.<span class="keyword">attack</span>(<span class="string">'target'</span>)<br>
+                        &nbsp;&nbsp;.<span class="keyword">execute</span>();
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="floating-tooltip" id="tooltip"></div>
+
+    <script type="module">
+        import { VisualTacticsEditor } from './js/dsl/VisualTacticsEditor.js';
+        import { CommandBlocks, APMComposer } from './js/dsl/TacticsDSL.js';
+
+        // Initialize the visual editor
+        const canvas = document.getElementById('tacticsCanvas');
+        const gameState = { /* mock game state */ };
+        const editor = new VisualTacticsEditor(canvas, gameState);
+        
+        // UI Elements
+        const modeIndicator = document.getElementById('modeIndicator');
+        const apmDisplay = document.getElementById('apmDisplay');
+        const efficiencyFill = document.getElementById('efficiencyFill');
+        const blockCount = document.getElementById('blockCount');
+        const complexityScore = document.getElementById('complexityScore');
+        const codePreview = document.getElementById('codePreview');
+        const tooltip = document.getElementById('tooltip');
+        
+        // Track UI state
+        let hotkeyMode = false;
+        let quickCommandMode = false;
+        let isRecording = false;
+        
+        // Update UI every frame
+        function updateUI() {
+            // Update APM display
+            const apm = editor.apmCounter.getCurrentAPM();
+            const efficiency = editor.apmCounter.getEfficiency();
+            
+            apmDisplay.textContent = `${apm} APM`;
+            efficiencyFill.style.width = `${efficiency * 100}%`;
+            
+            // Update metrics
+            blockCount.textContent = editor.blocks.size;
+            const program = editor.exportProgram();
+            complexityScore.textContent = program.metadata.complexity;
+            
+            // Update code preview
+            updateCodePreview(program);
+            
+            requestAnimationFrame(updateUI);
+        }
+        
+        function updateCodePreview(program) {
+            // Generate readable code from the visual program
+            let code = '<div class="syntax-highlight">';
+            code += '<span class="comment">// Generated TacticsDSL Program</span><br>';
+            code += '<span class="keyword">const</span> program = <span class="keyword">composer</span>.<span class="keyword">startChain</span>()<br>';
+            
+            program.expressions.forEach((expr, index) => {
+                code += `&nbsp;&nbsp;.<span class="keyword">${expr.type.toLowerCase()}</span>(<span class="string">'${expr.params || 'target'}'</span>)`;
+                if (index < program.expressions.length - 1) code += '<br>';
+            });
+            
+            code += '<br>&nbsp;&nbsp;.<span class="keyword">execute</span>();<br>';
+            code += `<span class="comment">// Estimated APM: ${program.metadata.estimatedAPM}</span>`;
+            code += '</div>';
+            
+            codePreview.innerHTML = code;
+        }
+        
+        // Hotkey button interactions
+        document.querySelectorAll('.hotkey-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const blockType = button.dataset.block;
+                const key = button.dataset.key;
+                
+                // Simulate hotkey press
+                if (hotkeyMode) {
+                    editor.placeBlockAtCursor(blockType);
+                    
+                    // Visual feedback
+                    button.classList.add('active');
+                    setTimeout(() => button.classList.remove('active'), 200);
+                }
+            });
+            
+            // Tooltip on hover
+            button.addEventListener('mouseenter', (e) => {
+                showTooltip(e, `Hotkey: ${button.dataset.key}<br>Click to place ${button.dataset.block} block`);
+            });
+            
+            button.addEventListener('mouseleave', hideTooltip);
+        });
+        
+        // Quick command interactions
+        document.querySelectorAll('.quick-command').forEach(command => {
+            command.addEventListener('click', () => {
+                const action = command.dataset.action;
+                editor.composer.quickAction(action);
+                
+                // Visual feedback
+                command.style.transform = 'translateX(10px)';
+                setTimeout(() => command.style.transform = 'translateX(0)', 150);
+            });
+        });
+        
+        // Macro controls
+        document.getElementById('recordBtn').addEventListener('click', () => {
+            if (!isRecording) {
+                editor.composer.startRecording('macro_' + Date.now());
+                isRecording = true;
+                document.getElementById('recordBtn').classList.add('recording');
+                document.getElementById('recordBtn').textContent = '🔴 Recording...';
+            }
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (isRecording) {
+                editor.composer.stopRecording();
+                isRecording = false;
+                document.getElementById('recordBtn').classList.remove('recording');
+                document.getElementById('recordBtn').textContent = '🔴 Record';
+            }
+        });
+        
+        document.getElementById('playBtn').addEventListener('click', () => {
+            // Play the most recently recorded macro
+            const macros = Array.from(editor.composer.macros.keys());
+            if (macros.length > 0) {
+                editor.composer.playMacro(macros[macros.length - 1]);
+            }
+        });
+        
+        // Global hotkey handling
+        document.addEventListener('keydown', (e) => {
+            // Toggle hotkey mode
+            if (e.key === '`') {
+                e.preventDefault();
+                hotkeyMode = !hotkeyMode;
+                modeIndicator.textContent = hotkeyMode ? 'Hotkey Mode Active' : 'Visual Mode';
+                modeIndicator.classList.toggle('active', hotkeyMode);
+            }
+            
+            // Toggle quick command mode
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                quickCommandMode = !quickCommandMode;
+                // Add quick command panel visibility logic here
+            }
+            
+            // Speed placement in hotkey mode
+            if (hotkeyMode) {
+                const speedKeys = {
+                    's': 'SELECT',
+                    'm': 'MOVE', 
+                    'a': 'ATTACK',
+                    'b': 'BUILD',
+                    'w': 'WHEN',
+                    'd': 'DELAY'
+                };
+                
+                if (speedKeys[e.key.toLowerCase()]) {
+                    e.preventDefault();
+                    editor.placeBlockAtCursor(speedKeys[e.key.toLowerCase()]);
+                    
+                    // Visual feedback on corresponding button
+                    const button = document.querySelector(`[data-block="${speedKeys[e.key.toLowerCase()]}"]`);
+                    if (button) {
+                        button.classList.add('active');
+                        setTimeout(() => button.classList.remove('active'), 200);
+                    }
+                }
+            }
+        });
+        
+        // Tooltip system
+        function showTooltip(event, text) {
+            tooltip.innerHTML = text;
+            tooltip.style.left = event.pageX + 10 + 'px';
+            tooltip.style.top = event.pageY - 10 + 'px';
+            tooltip.classList.add('show');
+        }
+        
+        function hideTooltip() {
+            tooltip.classList.remove('show');
+        }
+        
+        // Canvas resize handling
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            editor.markAllDirty();
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Start UI update loop
+        updateUI();
+        
+        // Demo: Create some example blocks
+        setTimeout(() => {
+            // Add some demo blocks to show the system
+            const selectBlock = editor.createBlock('SELECT', 100, 100);
+            const moveBlock = editor.createBlock('MOVE', 100, 180);
+            const attackBlock = editor.createBlock('ATTACK', 100, 260);
+            
+            editor.blocks.set(selectBlock.id, selectBlock);
+            editor.blocks.set(moveBlock.id, moveBlock);
+            editor.blocks.set(attackBlock.id, attackBlock);
+            
+            // Connect them
+            editor.createConnection(selectBlock.id, moveBlock.id);
+            editor.createConnection(moveBlock.id, attackBlock.id);
+            
+            editor.markAllDirty();
+        }, 1000);
+        
+        // Expose editor for debugging
+        window.tacticsEditor = editor;
+        
+        console.log('🚀 TacticsDSL Visual Editor loaded!');
+        console.log('Press ` to toggle hotkey mode');
+        console.log('Press Tab for quick commands');
+        console.log('Drag blocks to connect them');
+        console.log('Right-click for context menu');
+    </script>
+</body>
+</html>

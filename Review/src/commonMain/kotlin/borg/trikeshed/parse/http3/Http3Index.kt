@@ -5,6 +5,8 @@ import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.first
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.j
+import borg.trikeshed.lib.MutableSeries
+import borg.trikeshed.lib.mutableSeriesOf
 import evolution.Http3FrameType
 import evolution.Http3StreamId
 import evolution.QpackFieldLine
@@ -77,10 +79,10 @@ typealias value_offset = ULong // Offset of the field value in the QPACK table
 typealias frame_indices = Series<Http3FrameIndex> // List of frames for the stream
 // HTTP/3 document indexing for O(log n) lookups
 @JvmInline value class Http3DocumentIndex private constructor(
-    private val data: Join<MutableList<Http3StreamIndex>, Join<MutableList<QpackFieldIndex>, ULong>>
+    private val data: Join<MutableSeries<Http3StreamIndex>, Join<MutableSeries<QpackFieldIndex>, ULong>>
 ) {
-    val streamIndices: MutableList<Http3StreamIndex> get() = data.first
-    val qpackIndices: MutableList<QpackFieldIndex> get() = data.second.first
+    val streamIndices: MutableSeries<Http3StreamIndex> get() = data.first
+    val qpackIndices: MutableSeries<QpackFieldIndex> get() = data.second.first
     val totalFrames: ULong get() = data.second.second
      
     // O(log n) frame lookup by stream and position
@@ -96,32 +98,32 @@ typealias frame_indices = Series<Http3FrameIndex> // List of frames for the stre
     }
     
     // Find all frames of specific type
-    fun findFramesByType(frameType: Http3FrameType): MutableList<Http3FrameIndex> {
+    fun findFramesByType(frameType: Http3FrameType): MutableSeries<Http3FrameIndex> {
         // This would require frame type information in the index
         // For now, return empty series - real implementation would store type data
-        return mutableListOf<Http3FrameIndex>()
+        return mutableSeriesOf<Http3FrameIndex>()
     }
 }
 
 // QPACK dynamic table indexing
 @JvmInline value class QpackTableIndex private constructor(
-    private val data: Join<MutableList<QpackFieldLine>, Join<ULong, ULong>>
+    private val data: Join<MutableSeries<QpackFieldLine>, Join<ULong, ULong>>
 ) {
-    val fields: MutableList<QpackFieldLine> get() = data.first
+    val fields: MutableSeries<QpackFieldLine> get() = data.first
     val capacity: ULong get() = data.second.first
     val insertCount: ULong get() = data.second.second
     
     companion object {
         fun empty(): QpackTableIndex = 
-            QpackTableIndex(mutableListOf<QpackFieldLine>().j(0uL.j(0uL)))
+            QpackTableIndex(mutableSeriesOf<QpackFieldLine>().j(0uL.j(0uL)))
             
         fun withCapacity(capacity: ULong): QpackTableIndex =
-            QpackTableIndex(mutableListOf<QpackFieldLine>().j(capacity.j(0uL)))
+            QpackTableIndex(mutableSeriesOf<QpackFieldLine>().j(capacity.j(0uL)))
     }
     
     // Insert field at head of table (FIFO)
     fun insertField(field: QpackFieldLine): QpackTableIndex {
-        val newFields = mutableListOf(field)
+        val newFields = mutableSeriesOf(field)
         val updatedFields = newFields // Would concatenate with existing in real implementation
         val newInsertCount = insertCount + 1uL
         
@@ -200,13 +202,13 @@ class Http3StreamStateIndex {
         streamStates[streamId]
     
     // Find all active streams
-    fun getActiveStreams(): MutableList<Http3StreamId> {
+    fun getActiveStreams(): MutableSeries<Http3StreamId> {
         val activeIds = streamStates.entries
             .filter { !(it.value.second.second) } // not completed
             .map { it.key as Http3StreamId }
             .toTypedArray()
             
-        return mutableListOf(*activeIds)
+        return mutableSeriesOf(*activeIds)
     }
     
     // Get stream statistics
