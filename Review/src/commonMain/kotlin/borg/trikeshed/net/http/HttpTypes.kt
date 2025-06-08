@@ -34,6 +34,31 @@ typealias HttpUserAgent = String              // User-Agent header value
 // --- New Data Structures for QuicCurl ---
 
 /**
+ * Represents structured HTTP authentication schemes.
+ */
+sealed interface HttpAuthentication {
+    /**
+     * Represents HTTP Basic Authentication.
+     * @property username The username.
+     * @property password The password.
+     */
+    data class BasicAuth(val username: String, val password: String) : HttpAuthentication
+
+    /**
+     * Represents Bearer Token Authentication.
+     * @property token The bearer token.
+     */
+    data class BearerToken(val token: String) : HttpAuthentication
+
+    /**
+     * Represents API Key based authentication, typically via a custom header.
+     * @property headerName The name of the HTTP header to use for the API key.
+     * @property keyValue The value of the API key.
+     */
+    data class ApiKeyAuth(val headerName: String, val keyValue: String) : HttpAuthentication
+}
+
+/**
  * Represents the body of an HTTP request.
  */
 sealed class RequestBody {
@@ -88,7 +113,8 @@ data class HttpRequest(
     val url: String,
     val method: HttpMethod,
     val headers: HttpHeaders,
-    val body: RequestBody
+    val body: RequestBody,
+    val authentication: HttpAuthentication? = null // New field
 )
 
 /**
