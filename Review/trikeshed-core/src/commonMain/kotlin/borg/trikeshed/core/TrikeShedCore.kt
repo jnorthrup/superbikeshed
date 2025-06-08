@@ -32,7 +32,7 @@ interface Join<A, B> {
 /**
  * A concrete data class implementation of the [Join] interface.
  */
-private data class _Join<A, B>(override val a: A, override val b: B) : Join<A, B>
+private class _Join<A, B>(override val a: A, override val b: B) : Join<A, B>
 
 /**
  * Infix operator to create a [Join] instance. This is the primary construction mechanism.
@@ -536,71 +536,4 @@ fun Any?.toDisplayString(type: IOMemento): String {
     }
 }
 
-/**
- * Prints the first 'last' rows of the cursor to stdout.
- * Default is 5 rows.
- */
-@JvmOverloads
-fun <T> CoreTensorCursorWithMeta<T>.head(last: Int = 5) {
-    show(0 until max(0, min(last, this.a.rows)))
-}
-
-/**
- * Prints 'n' random rows from the cursor to stdout.
- */
-fun <T> CoreTensorCursorWithMeta<T>.showRandom(n: Int = 5) {
-    head(0);repeat(n) {
-        if (this.a.rows > 0) showValues(Random.nextInt(0, this.a.rows).let { it..it })
-    }
-}
-
-/**
- * Prints a summary of the cursor (rows, column names) and then calls [showValues]
- * to print the data for a specified range.
- */
-fun <T> CoreTensorCursorWithMeta<T>.show(range: IntRange = 0 until this.a.rows) {
-    val metaNames = this.meta.names.toList()
-    println("rows:${this.a.rows}" to metaNames)
-    showValues(range)
-}
-
-/**
- * Prints the values of the cursor rows within the specified range to stdout.
- */
-fun <T> CoreTensorCursorWithMeta<T>.showValues(range: IntRange) {
-    try {
-        range.forEach { x: Int ->
-            val rowValues: CoreTensorRowVec<T> = this.a.row(x) // Get the data row
-            val rowMeta: CursorMeta = this.meta // Get the metadata for columns
-
-            val showList = (0 until rowValues.totalSize).map { colIdx ->
-                val value = rowValues(colIdx)
-                val colMeta = rowMeta(colIdx)
-                colMeta.name to value.toDisplayString(colMeta.type as IOMemento) // Cast TypeMemento to IOMemento for display
-            }
-            println(showList)
-        }
-    } catch (e: IndexOutOfBoundsException) { // Changed NoSuchElementException to IndexOutOfBoundsException for clarity
-        println("cannot fully access range $range (Index out of bounds)")
-    } catch (e: Exception) {
-        println("An error occurred displaying range $range: ${e.message}")
-    }
-}
-
-/**
- * Checks if all columns in the [CoreTensorCursorWithMeta] are of a numerical type.
- */
-val <T> CoreTensorCursorWithMeta<T>.isNumerical: Boolean
-    get() = this.meta.`▶`.all {
-        when (it.type) {
-            IOMemento.IoByte, IOMemento.IoShort, IOMemento.IoInt, IOMemento.IoFloat, IOMemento.IoDouble, IOMemento.IoLong -> true
-            else -> false
-        }
-    }
-
-/**
- * Checks if all columns in the [CoreTensorCursorWithMeta] have the same data type.
- */
-val <T> CoreTensorCursorWithMeta<T>.isHomoMorphic: Boolean
-    get() = if (this.meta.totalSize <= 1) true else !this.meta.`▶`.any { it.type != this.meta(0).type }
 // Close the block comment that started at line 498
