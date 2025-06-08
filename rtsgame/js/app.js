@@ -335,7 +335,7 @@ if (!gameContext.HEADLESS_MODE) {
 
 } // Close the HMR protection if block
 
-import * as trikeShedAPI from 'trikeshed-core-js';
+import { createTensor, j as trikeJ } from 'trikeshed-ts'; // Updated import
 // import { GameEngine } from './core/gameEngine';
 // Moved these imports to prevent issues - they're not currently used anyway
 // import { ThreeRenderer } from './rendering/threeRenderer';
@@ -352,10 +352,9 @@ class Game {
         // this.gameState = new GameState( // Old TrikeShed
         //     TensorOps.create([1000, 1000], null) // 1000x1000 world grid // Old TrikeShed
         // );
-        // this.gameState = TrikeShedCore.createTensor([1000,1000], () => null); // Placeholder for old bridge
-        this.gameState = trikeShedAPI.TensorConstruct([1000,1000], () => null); // Using new placeholder import
-        const myJoin = trikeShedAPI.j(1, 2); // Example usage
-        console.log("Conceptual join from trikeshed-core-js:", myJoin); // Example usage
+        this.gameState = createTensor([1000,1000], () => null); // Using updated import
+        const myJoin = trikeJ(1, 2); // Using updated import (aliased j to trikeJ)
+        console.log("Conceptual join from trikeshed-ts:", myJoin); // Updated log
         
         // Initialize subsystems
         // this.engine = new GameEngine(this.gameState, this.rng); // GameEngine might need update for new TrikeShedCore
