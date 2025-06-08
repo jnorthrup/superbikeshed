@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+> **Unified Planning**: See `/todo/rtsgame_todos.md` for consolidated RTS game development tasks
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Essential Development Commands
