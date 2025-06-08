@@ -1,6 +1,8 @@
 package borg.trikeshed.parse
 
 import borg.trikeshed.isam.meta.IOMemento
+import borg.trikeshed.lib.MutableSeries
+import borg.trikeshed.lib.mutableSeriesOf
 
 data class
 /** This is a dragnet for a given line to record the counters of character classes */
@@ -101,7 +103,7 @@ TypeEvidence(
         }
 
         fun MutableList<TypeEvidence>.update(
-            lineEvidence: MutableList<TypeEvidence>,
+            lineEvidence: MutableSeries<TypeEvidence>,
         ) {
             apply {
                 //update the fileDeduce with the max of the lineDeduce

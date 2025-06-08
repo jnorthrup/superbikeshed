@@ -1,7 +1,7 @@
 package borg.trikeshed.logging
 
-import borg.trikeshed.nio.ByteBufferFactory
-import borg.trikeshed.nio.ByteBuffer // For type hint
+import borg.trikeshed.io.ByteBufferFactory
+import borg.trikeshed.io.ByteBuffer // For type hint
 import kotlin.test.*
 
 class SimpleEventTest {

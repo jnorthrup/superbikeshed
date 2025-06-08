@@ -1,6 +1,6 @@
 package borg.trikeshed.nio.slabs
 
-import borg.trikeshed.nio.ByteBuffer // This is borg.trikeshed.nio.ByteBuffer
+import borg.trikeshed.io.ByteBuffer // This is borg.trikeshed.io.ByteBuffer
 
 /**
  * JVM-specific actual implementation of the [MemorySlab] interface.

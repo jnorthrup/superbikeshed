@@ -1,6 +1,6 @@
 package borg.trikeshed.nio.slabs
 
-import borg.trikeshed.nio.ByteBuffer
+import borg.trikeshed.io.ByteBuffer
 
 /**
  * Represents an append-only, fixed-capacity block of memory, typically backed by a direct ByteBuffer.
