@@ -3,6 +3,7 @@ package borg.trikeshed.net.quic
 import borg.trikeshed.net.quic.crypto.QuicSecrets
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import borg.trikeshed.common.collections.HashSeriesSet // Placeholder import
 // ConnectionId and PacketNumber are already in borg.trikeshed.net.quic via QuicTypes.kt
 // QuicConnection and QuicConnectionStateEnum are in borg.trikeshed.net.quic via QuicConnection.kt
 
@@ -61,7 +62,7 @@ class QuicConnectionManager(
 
     // RTT and Loss Detection related fields
     private val sentPackets = mutableMapOf<PacketNumber, SentPacketInfo>()
-    private val lostPacketsForRetransmission = mutableSetOf<PacketNumber>() // Using Set to avoid duplicates
+    private val lostPacketsForRetransmission = HashSeriesSet.Companion.MutableHashSeriesSet<PacketNumber>() // Changed to MutableHashSeriesSet
 
     private var smoothedRtt: Long = 0L // in microseconds
     private var rttVar: Long = 0L // in microseconds
