@@ -8,6 +8,7 @@ import { Caption } from './entities/caption.js';
 import { Building } from './building.js';
 import { UnitProgression } from './unitProgression.js';
 import { AutonomousBehavior } from './autonomousBehavior.js';
+import { ALLOY_TYPES } from '../config/alloyTypes.js';
 
 const WEIGHT_SPEED_PENALTY_FACTOR = 0.01;
 const DEFAULT_UNIT_SPEED = 1.0;
@@ -20,9 +21,13 @@ class Unit {
         this.x = x;
         this.y = y;
         this.team = team;
-        this.type = type;
-        this.hp = type.maxHp;
+        this.type = type; // Store the original type definition
+
+        // Initialize base stats from type that will be modified by alloys
         this.maxHp = type.maxHp;
+        this.hp = type.maxHp; // Current HP should also be initialized based on maxHp
+        this.armorValue = type.armorValue || 0; // Initialize armorValue from type definition
+
         this.target = null;
         this.cooldown = 0; // Represents attack cooldown time remaining
         // Access seedRandom from the simulation instance's direct property
@@ -48,15 +53,76 @@ class Unit {
         this.commandAuthority = this.type.tier * 10 + (this.type.support ? 5 : 0); // Original command authority
         this.protectionNeeds = [];
         this.lastThreatAssessment = 0;
-        this.fleeThreshold = this.maxHp * 0.2;
+        this.fleeThreshold = this.maxHp * 0.2; // Will be updated after alloy modification
         this.formation = null;
         
+        // Speed calculation considering weight (initial speed based on type)
+        const baseSpeed = type.speed || DEFAULT_UNIT_SPEED;
+        const weight = type.unitWeight || DEFAULT_UNIT_WEIGHT; // Assuming unitWeight might be a future property
+        let speedDenominator = 1 + (weight * WEIGHT_SPEED_PENALTY_FACTOR);
+        if (speedDenominator <= 0.1) {
+            speedDenominator = 0.1;
+        }
+        this.speed = baseSpeed / speedDenominator; // Instance property for speed
+        if (this.speed < 0) { // Ensure speed is not negative
+            this.speed = 0;
+        }
+
+        // Initialize other potentially modifiable stats as instance properties
+        this.shieldRegenRate = type.shieldRegenRate || (type.maxEnergyShields > 0 ? DEFAULT_SHIELD_REGEN_RATE : 0);
+        this.coreEfficiency = type.coreEfficiency || 1.0; // Base efficiency, to be modified by alloy
+
+        // Apply Alloy Modifiers
+        const unitAlloyKey = type.alloyType || 'STANDARD_PLASTEEL'; // Default to standard if not specified
+        const alloy = ALLOY_TYPES[unitAlloyKey];
+
+        if (alloy) {
+            if (alloy.modifiers.hpFactor) {
+                this.maxHp = Math.round(this.maxHp * alloy.modifiers.hpFactor);
+                this.hp = this.maxHp; // Also set current HP to new max
+            }
+            if (alloy.modifiers.armorAdd) {
+                this.armorValue += alloy.modifiers.armorAdd;
+            }
+            if (alloy.modifiers.speedFactor) {
+                this.speed *= alloy.modifiers.speedFactor;
+            }
+            // Cost factor modification is noted to be handled at purchase time, not on the instance.
+
+            if (alloy.modifiers.shieldRegenFactor) {
+                this.shieldRegenRate *= alloy.modifiers.shieldRegenFactor;
+            }
+
+            if (alloy.modifiers.computroniumEfficiencyFactor) {
+                // This will be used if/when the computroniumCore is added or its efficiency is set.
+                this.coreEfficiency *= alloy.modifiers.computroniumEfficiencyFactor;
+            }
+        }
+
+        // Ensure stats don't go below reasonable minimums after modification
+        this.speed = Math.max(0.1, this.speed);
+        this.maxHp = Math.max(1, this.maxHp);
+        // Ensure current hp is not greater than maxHp, and at least 1 if maxHp is > 0
+        this.hp = Math.min(this.maxHp, Math.max(1, this.hp));
+        if (this.maxHp === 0) this.hp = 0;
+        this.armorValue = Math.max(0, this.armorValue);
+
+        // Update fleeThreshold based on new maxHp
+        this.fleeThreshold = this.maxHp * 0.2;
+
+
         // Add Computronium core if this unit type has one
+        // Note: type.coreEfficiency is the base, this.coreEfficiency has alloy modification applied above.
         if (type.hasComputroniumCore && simulation && simulation.computroniumManagers) {
             const manager = simulation.computroniumManagers[team];
             if (manager) {
-                this.computroniumCore = manager.addCore(this, type.coreEfficiency || 1.0);
-                console.log(`[Unit] Added Computronium core to ${type.name}`);
+                // Pass the potentially alloy-modified coreEfficiency (this.coreEfficiency) to the manager
+                this.computroniumCore = manager.addCore(this, this.coreEfficiency);
+                // If the core was added and has its own efficiency property, make sure it reflects this.coreEfficiency
+                if (this.computroniumCore && typeof this.computroniumCore.efficiency === 'number') {
+                    this.computroniumCore.efficiency = this.coreEfficiency;
+                }
+                console.log(`[Unit] Added Computronium core to ${type.name} with efficiency ${this.coreEfficiency}`);
             }
         }
         
@@ -87,18 +153,6 @@ class Unit {
         this.pathRequestCooldown = 0;
         this.PATH_REQUEST_INTERVAL = 30; // Request path every ~0.5s at 60fps
 
-        // Speed calculation considering weight
-        const baseSpeed = this.type.speed || DEFAULT_UNIT_SPEED;
-        const weight = this.type.unitWeight || DEFAULT_UNIT_WEIGHT;
-        let speedDenominator = 1 + (weight * WEIGHT_SPEED_PENALTY_FACTOR);
-        if (speedDenominator <= 0.1) {
-            speedDenominator = 0.1;
-        }
-        this.speed = baseSpeed / speedDenominator;
-        if (this.speed < 0) {
-            this.speed = 0;
-        }
-
         // Enhanced authority properties
         this.baseAuthority = this.commandAuthority; // Use original for base
         this.healthAuthorityModifier = 0;
@@ -127,7 +181,7 @@ class Unit {
         this.computroniumCoreLevel = type.computroniumCoreLevel || 0;
         this.coreFocusMode = type.defaultCoreFocusMode || 'BALANCED';
         this.computroniumAuthorityModifier = 0;
-        this.computroniumCore = null;
+        // this.computroniumCore is initialized above after alloy mods to coreEfficiency
         this.lastFocusModeChange = 0;
         this.focusModeCooldown = 10000; // 10 seconds cooldown between mode changes
 
@@ -260,11 +314,11 @@ class Unit {
         }
 
         // Shield Regeneration (New Energy Shields)
-        if (this.type.maxEnergyShields > 0) {
-            if (this.currentEnergyShields < this.type.maxEnergyShields) {
-                const regenRate = this.type.shieldRegenRate || DEFAULT_SHIELD_REGEN_RATE;
+        if (this.type.maxEnergyShields > 0) { // Check if the unit type is supposed to have shields
+            if (this.currentEnergyShields < this.type.maxEnergyShields) { // Check if current shields are less than max defined by type
+                const regenRate = this.shieldRegenRate; // Use instance-specific shieldRegenRate (already alloy-modified)
                 this.currentEnergyShields += regenRate * deltaTime;
-                if (this.currentEnergyShields > this.type.maxEnergyShields) {
+                if (this.currentEnergyShields > this.type.maxEnergyShields) { // Ensure shields do not exceed max for type
                     this.currentEnergyShields = this.type.maxEnergyShields;
                 }
             }
@@ -661,7 +715,7 @@ class Unit {
         }
     }
 
-    takeDamage(damage, sourceUnit, simulation) {
+    takeDamage(damage, sourceUnit, simulation, damageType = null) { // Added damageType parameter
         const { entityManager, seedRandom } = simulation; // simulation is the new gameContext
         let remainingDamage = damage;
 
@@ -716,6 +770,10 @@ class Unit {
             // to avoid self-removal issues during iteration.
             // Example: simulation.entityManager.addEffect(new Effect(this.x, this.y, 'explosion_medium', simulation));
             // Example: simulation.gameState.addEvent('death', `${this.type.name} destroyed!`);
+
+        // If damageType was passed and is relevant for shield interaction here, it could be used.
+        // For now, existing shield logic based on weaponEnergyCost is maintained.
+        // A future refactor might centralize shield damage calculation using damageType in ShieldSystem.
         }
 
 
