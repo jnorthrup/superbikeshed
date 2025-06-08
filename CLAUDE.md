@@ -1,5 +1,7 @@
 # CLAUDE.md: Tensor-Core Evolution Guide
 
+> **Unified Planning**: See `/todo/trikeshed_todos.md` for detailed TrikeShed evolution tasks
+
 dont even talk about a demo of a goddamn thing ever.  do not write gaslighting println
 
 ## CRITICAL TYPE SYSTEM RULES

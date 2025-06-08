@@ -1,5 +1,7 @@
 # Feature Integration & Next Steps TODO
 
+> **Note**: This document is synchronized with the unified todo system at `/todo/rtsgame_todos.md`
+
 This document outlines recently implemented major features, considerations for merging their respective branches, and a TODO list for subsequent work and refinements.
 
 ## Recently Implemented Features
