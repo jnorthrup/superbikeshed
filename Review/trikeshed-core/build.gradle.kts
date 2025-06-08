@@ -1,18 +1,10 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("js") // Added for clarity, though multiplatform should cover it
 }
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
-repositories { // Ensure repositories are here if not inherited from root
-    mavenCentral()
-    google()
-    maven {
-        url = uri("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
-    }
-}
 
 kotlin {
     jvm {
@@ -24,11 +16,13 @@ kotlin {
     js(IR) { // Use the IR compiler
         browser { // Target browser environment
             commonWebpackConfig {
-                cssSupport.enabled = true
+                cssSupport {
+                    enabled.set(true)
+                }
             }
         }
         binaries.executable()
-        moduleName = "trikeshedCore" // Define a module name for JS
+        outputModuleName.set("trikeshedCore") // Define a module name for JS
     }
 
     sourceSets {
@@ -52,9 +46,8 @@ kotlin {
 
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(kotlin("stdlib-js")) // Added as per instruction
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
             }
         }
 
