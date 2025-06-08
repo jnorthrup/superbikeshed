@@ -562,6 +562,117 @@ runtime jvm parameters declared via `@file:KotlinOptions` are used to spin up th
 
 Just `java` is required to run these binaries.
 
+== LLM Integration with LiteLLM
+
+`kscript` now offers experimental integration with Large Language Models (LLMs) through the powerful Python library https://litellm.ai/[LiteLLM]. This allows you to easily incorporate AI capabilities into your Kotlin scripts.
+
+=== How It Works
+
+When you use the LLM functions in your kscript, `kscript` will:
+1. Attempt to start a small Python helper service in the background. This service uses LiteLLM to communicate with various LLM providers.
+2. Your Kotlin script then communicates with this local Python service to send requests and receive responses from the LLM.
+3. The Python service is designed to shut down when your kscript (or the JVM running it) exits. You can also stop it explicitly.
+
+=== Setup
+
+Before using this feature, you need to set up your Python environment and API keys:
+
+1.  **Python Installation**: Ensure you have Python 3 installed and accessible (e.g., `python3` on your PATH).
+2.  **Install LiteLLM**:
+    Install LiteLLM and any specific LLM provider packages you intend to use. It's highly recommended to use a Python virtual environment.
+    [source,bash]
+    ----
+    python3 -m venv .venv_kscript_llm
+    source .venv_kscript_llm/bin/activate  # On Linux/macOS
+    # .venv_kscript_llm\Scripts\activate   # On Windows
+
+    # Install LiteLLM (and any other specific providers you need, e.g., openai, anthropic)
+    pip install litellm openai anthropic # Example
+    ----
+    `kscript` includes a `k2script/python_litellm_service/requirements.txt` with `litellm` as a base. You can use this:
+    [source,bash]
+    ----
+    pip install -r /path/to/k2script/python_litellm_service/requirements.txt
+    ----
+    (Adjust the path to where your `k2script` source is located if installing from there).
+    The Python executable used by `kscript` defaults to `python3`.
+
+3.  **API Keys**:
+    Configure API keys for the LLM providers you want to use. LiteLLM typically picks these up from environment variables. For example:
+    [source,bash]
+    ----
+    export OPENAI_API_KEY="sk-your_openai_api_key"
+    export ANTHROPIC_API_KEY="sk-an-your_anthropic_api_key"
+    # etc. for other providers
+    ----
+    Alternatively, you can pass the `apiKey` parameter to the `askLLM` function in your script, but using environment variables is generally more secure and flexible.
+
+=== Basic Usage
+
+You can interact with LLMs using functions from the `kscript.api.ai` package.
+
+Example (`litellm_example.kts`):
+[source,kotlin]
+----
+#!/usr/bin/env kscript
+
+import kscript.api.ai.askLLM
+import kscript.api.ai.askLLMForContent
+import kscript.api.ai.stopLiteLLMService // Optional
+
+println("Kscript LiteLLM Integration Example")
+
+// Ensure API keys are set (e.g., export OPENAI_API_KEY="...")
+val model = "gpt-3.5-turbo"
+val prompt = "Write a short haiku about Kotlin."
+
+try {
+    val response = askLLM(model = model, prompt = prompt)
+    if (response.status == "success") {
+        println("LLM says: ${response.content}")
+    } else {
+        System.err.println("LLM Error: ${response.error_message}")
+    }
+
+    // Simpler way to get content directly:
+    // val content = askLLMForContent(model = model, prompt = "What is France's capital?")
+    // println("Direct content: $content")
+
+} catch (e: Exception) {
+    System.err.println("Error: ${e.message}")
+} finally {
+    // stopLiteLLMService() // Optionally stop the service
+}
+----
+
+To run this example:
+[source,bash]
+----
+kscript examples/litellm_example.kts
+----
+
+Key functions:
+*   `askLLM(...)`: Sends a request to the specified LLM model and returns an `LLMResponse` object. This object contains the `status`, `content`, `raw_response`, and any `error_message`.
+*   `askLLMForContent(...)`: A simpler version that directly returns the LLM's text content or throws an error.
+*   `stopLiteLLMService()`: Explicitly stops the background Python LLM service.
+
+Parameters for `askLLM` and `askLLMForContent` include:
+*   `model` (String): The model identifier (e.g., "gpt-4", "ollama/mistral", "claude-2").
+*   `prompt` (String): The user's prompt.
+*   `systemPrompt` (String, optional): A system message to guide the AI.
+*   `apiKey` (String, optional): Directly pass the API key.
+*   `temperature`, `maxTokens`, `baseUrl`, `customLlmProvider` (optional): Other parameters supported by LiteLLM.
+*   `requestTimeoutSeconds` (Long, optional): Timeout for the request.
+
+=== Important Notes
+
+*   **Experimental Feature**: This integration is experimental. The API and behavior might change.
+*   **Python Service**: The first time you use an LLM function in a kscript session, it will start the Python helper service. This might add a small delay to the first call. The service attempts to use `python3` by default.
+*   **Resource Management**: The Python service is designed to terminate when the main kscript (JVM) process exits. You can use `stopLiteLLMService()` for an earlier cleanup.
+*   **Error Handling**: Functions will throw `IOException` for communication issues, timeouts, or if the LLM reports an error. Check the `LLMResponse.status` and `LLMResponse.error_message` for details from the LLM provider.
+*   **JSON Parsing**: The current implementation uses basic JSON parsing. For very complex or large LLM responses, this might be a limitation.
+*   **Dependencies**: Ensure the Python environment `kscript` uses has `litellm` and any necessary LLM provider client libraries installed.
+
 == Embed kscript installer within your script
 
 To make a script automatically <<Installation,install kscript>> and its dependencies on first run if necessary, run:
