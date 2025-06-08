@@ -17,17 +17,17 @@ export class SpaceGraph {
     isLinking = false;
     linkSourceNode = null;
     tempLinkLine = null;
-    uiManager = null; 
-    cameraController = null; 
-    layoutEngine = null; 
-    background = {color: 0x000000, alpha: 0.0}; 
+    uiManager = null;
+    cameraController = null;
+    layoutEngine = null;
+    background = {color: 0x000000, alpha: 0.0};
 
     constructor(containerElement, uiElements = {}) {
         if (!containerElement) throw new Error("SpaceGraph requires a container element.");
         this.container = containerElement;
 
-        this.scene = new THREE.Scene(); 
-        this.cssScene = new THREE.Scene(); 
+        this.scene = new THREE.Scene();
+        this.cssScene = new THREE.Scene();
 
         this._camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 20000);
         this._camera.position.z = 700;
@@ -35,20 +35,20 @@ export class SpaceGraph {
         this._setupRenderers();
         this.setBackground(this.background.color, this.background.alpha);
 
-        this.cameraController = new CameraController(this._camera, this.container); 
-        this.layoutEngine = new ForceLayout(this); 
+        this.cameraController = new CameraController(this._camera, this.container);
+        this.layoutEngine = new ForceLayout(this);
 
         this.uiManager = new UIManager(this, uiElements);
 
         this._setupLighting();
 
         this.centerView(null, 0);
-        this.cameraController.setInitialState(); 
+        this.cameraController.setInitialState();
 
         window.addEventListener('resize', this._onWindowResize.bind(this), false);
 
         this._animate();
-        this.layoutEngine.start(); 
+        this.layoutEngine.start();
     }
 
     _setupRenderers() {
@@ -74,7 +74,7 @@ export class SpaceGraph {
         }
         Object.assign(this.css3dContainer.style, {
             position: 'absolute', inset: '0', width: '100%',
-            height: '100%', pointerEvents: 'none', zIndex: '2' 
+            height: '100%', pointerEvents: 'none', zIndex: '2'
         });
 
         this.cssRenderer = new CSS3DRenderer();
@@ -92,7 +92,7 @@ export class SpaceGraph {
         directionalLight.position.set(0.5, 1, 0.75);
         this.scene.add(directionalLight);
     }
-    
+
     setBackground(color = 0x000000, alpha = 0.0) {
         this.background = {color, alpha};
         this.webglRenderer.setClearColor(color, alpha);
@@ -104,11 +104,11 @@ export class SpaceGraph {
         if (this.nodes.has(nodeInstance.id)) return this.nodes.get(nodeInstance.id);
 
         this.nodes.set(nodeInstance.id, nodeInstance);
-        nodeInstance.spaceGraph = this; 
+        nodeInstance.spaceGraph = this;
 
         if (nodeInstance.cssObject) this.cssScene.add(nodeInstance.cssObject);
-        if (nodeInstance.mesh) this.scene.add(nodeInstance.mesh); 
-        if (nodeInstance.labelObject) this.cssScene.add(nodeInstance.labelObject); 
+        if (nodeInstance.mesh) this.scene.add(nodeInstance.mesh);
+        if (nodeInstance.labelObject) this.cssScene.add(nodeInstance.labelObject);
 
         this.layoutEngine?.addNode(nodeInstance);
         return nodeInstance;
@@ -124,7 +124,7 @@ export class SpaceGraph {
         const edgesToRemove = [...this.edges.values()].filter(edge => edge.source === node || edge.target === node);
         edgesToRemove.forEach(edge => this.removeEdge(edge.id));
 
-        node.dispose(); 
+        node.dispose();
         this.nodes.delete(nodeId);
         this.layoutEngine?.removeNode(node);
     }
@@ -138,9 +138,9 @@ export class SpaceGraph {
 
         const edgeId = generateId('edge');
         const edge = new Edge(edgeId, sourceNode, targetNode, data);
-        edge.spaceGraph = this; 
+        edge.spaceGraph = this;
         this.edges.set(edgeId, edge);
-        if (edge.threeObject) this.scene.add(edge.threeObject); 
+        if (edge.threeObject) this.scene.add(edge.threeObject);
         this.layoutEngine?.addEdge(edge);
         return edge;
     }
@@ -157,13 +157,13 @@ export class SpaceGraph {
     getNodeById = (id) => this.nodes.get(id);
     getEdgeById = (id) => this.edges.get(id);
 
-    _updateNodesAndEdges() { 
+    _updateNodesAndEdges() {
         this.nodes.forEach(node => node.update(this));
         this.edges.forEach(edge => edge.update(this));
         this.uiManager?.updateEdgeMenuPosition();
     }
 
-    _render() { 
+    _render() {
         this.webglRenderer.render(this.scene, this._camera);
         this.cssRenderer.render(this.cssScene, this._camera);
     }
@@ -190,9 +190,9 @@ export class SpaceGraph {
             this.nodes.forEach(node => targetPos.add(node.position));
             targetPos.divideScalar(this.nodes.size);
         } else {
-             targetPos = new THREE.Vector3(0,0,0); 
+             targetPos = new THREE.Vector3(0,0,0);
         }
-        const distance = this.nodes.size > 1 ? 700 : 400; 
+        const distance = this.nodes.size > 1 ? 700 : 400;
         this.cameraController.moveTo(targetPos.x, targetPos.y, targetPos.z + distance, duration, targetPos);
     }
 
@@ -202,20 +202,20 @@ export class SpaceGraph {
 
         const fov = this._camera.fov * DEG2RAD;
         const aspect = this._camera.aspect;
-        let nodeSize = 100; 
+        let nodeSize = 100;
 
-        if (node.getBoundingSphereRadius) { 
+        if (node.getBoundingSphereRadius) {
              nodeSize = node.getBoundingSphereRadius() * 2;
-        } else if (node.size) { 
-             nodeSize = Math.max(node.size.width / aspect, node.size.height) * 1.2; 
+        } else if (node.size) {
+             nodeSize = Math.max(node.size.width / aspect, node.size.height) * 1.2;
         }
-        
-        const distance = (nodeSize / (2 * Math.tan(fov / 2))) + 50; 
+
+        const distance = (nodeSize / (2 * Math.tan(fov / 2))) + 50;
 
         if (pushHistory) this.cameraController.pushState();
         this.cameraController.moveTo(targetPos.x, targetPos.y, targetPos.z + distance, duration, targetPos);
     }
-    
+
     autoZoom(node) {
         if (!node || !this.cameraController) return;
         const currentTargetNodeId = this.cameraController.getCurrentTargetNodeId();
@@ -224,7 +224,7 @@ export class SpaceGraph {
         } else {
             this.cameraController.pushState();
             this.cameraController.setCurrentTargetNodeId(node.id);
-            this.focusOnNode(node, 0.6, false); 
+            this.focusOnNode(node, 0.6, false);
         }
     }
 
@@ -239,11 +239,11 @@ export class SpaceGraph {
 
     setSelectedNode(node) {
         if (this.selectedNode === node) return;
-        this.selectedNode?.setSelectedStyle(false); 
+        this.selectedNode?.setSelectedStyle(false);
         if(this.selectedNode?.htmlElement) this.selectedNode.htmlElement.classList.remove('selected');
 
         this.selectedNode = node;
-        this.selectedNode?.setSelectedStyle(true); 
+        this.selectedNode?.setSelectedStyle(true);
         if(this.selectedNode?.htmlElement) this.selectedNode.htmlElement.classList.add('selected');
 
         if (node) this.setSelectedEdge(null);
@@ -266,7 +266,7 @@ export class SpaceGraph {
     intersectedObject(screenX, screenY) {
         const vec = new THREE.Vector2((screenX / window.innerWidth) * 2 - 1, -(screenY / window.innerHeight) * 2 + 1);
         const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(vec, this._camera); 
+        raycaster.setFromCamera(vec, this._camera);
         raycaster.params.Line.threshold = 0.1; // Smaller threshold for more precise line intersection
 
         const nodeMeshes = [...this.nodes.values()].map(n => n.mesh).filter(Boolean);
@@ -288,7 +288,7 @@ export class SpaceGraph {
         }
         return null;
     }
-    
+
     dispose() {
         this.cameraController?.dispose();
         this.layoutEngine?.stop();
@@ -306,7 +306,7 @@ export class SpaceGraph {
         this.webglCanvas?.remove();
 
         window.removeEventListener('resize', this._onWindowResize);
-        this.uiManager?.dispose(); 
+        this.uiManager?.dispose();
         console.log("SpaceGraph disposed.");
     }
 
@@ -446,15 +446,15 @@ export class SpaceGraph {
 
 class BaseNode {
     id = null;
-    spaceGraph = null; 
+    spaceGraph = null;
     position = new THREE.Vector3();
-    data = {}; 
-    mass = 1.0; 
+    data = {};
+    mass = 1.0;
 
-    mesh = null; 
-    cssObject = null; 
-    htmlElement = null; 
-    labelObject = null; 
+    mesh = null;
+    cssObject = null;
+    htmlElement = null;
+    labelObject = null;
 
     constructor(id, position = {x: 0, y: 0, z: 0}, data = {}, mass = 1.0) {
         this.id = id ?? generateId('node');
@@ -469,8 +469,8 @@ class BaseNode {
 
     update(spaceGraphInstance) {  }
     dispose() {  }
-    
-    getBoundingSphereRadius() { return 10; } 
+
+    getBoundingSphereRadius() { return 10; }
     setSelectedStyle(selected) {  }
 
     startDrag() {
@@ -485,16 +485,16 @@ class BaseNode {
     endDrag() {
         this.htmlElement?.classList.remove('dragging');
         this.spaceGraph?.layoutEngine?.releaseNode(this);
-        this.spaceGraph?.layoutEngine?.kick(); 
+        this.spaceGraph?.layoutEngine?.kick();
     }
 }
 
 export class HtmlNodeElement extends BaseNode {
     size = {width: 160, height: 70};
-    billboard = true; 
+    billboard = true;
 
     constructor(id, position = {x: 0, y: 0, z: 0}, data = {}) {
-        super(id, position, data, data.mass ?? 1.0); 
+        super(id, position, data, data.mass ?? 1.0);
         this.size.width = data.width ?? this.size.width;
         this.size.height = data.height ?? this.size.height;
         this.billboard = data.billboard ?? this.billboard;
@@ -502,8 +502,8 @@ export class HtmlNodeElement extends BaseNode {
         this.htmlElement = this._createHtmlElement();
         this.cssObject = new CSS3DObject(this.htmlElement);
         this.cssObject.userData = { nodeId: this.id, type: 'html-node' };
-        
-        this.update(); 
+
+        this.update();
         this.setContentScale(this.data.contentScale ?? 1.0);
         if (this.data.backgroundColor) {
             this.setBackgroundColor(this.data.backgroundColor);
@@ -512,17 +512,17 @@ export class HtmlNodeElement extends BaseNode {
 
     getDefaultData() {
         return {
-            label: '', content: '', type: 'html', 
+            label: '', content: '', type: 'html',
             width: 160, height: 70, contentScale: 1.0,
-            backgroundColor: 'var(--node-bg-default)', 
-            editable: false 
+            backgroundColor: 'var(--node-bg-default)',
+            editable: false
         };
     }
 
     _createHtmlElement() {
         const el = document.createElement('div');
-        el.className = 'node-html'; 
-        if (this.data.type === 'note') el.classList.add('note-node'); 
+        el.className = 'node-html';
+        if (this.data.type === 'note') el.classList.add('note-node');
         el.id = `node-html-${this.id}`;
         el.dataset.nodeId = this.id;
         el.style.width = `${this.size.width}px`;
@@ -544,17 +544,17 @@ export class HtmlNodeElement extends BaseNode {
         if(this.data.editable) this._initContentEditable(el);
         return el;
     }
-    
+
     _initContentEditable(element) {
         const contentDiv = $('.node-content', element);
-        if (contentDiv) { 
+        if (contentDiv) {
             contentDiv.contentEditable = "true";
             let debounceTimer;
             contentDiv.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
-                    this.data.content = contentDiv.innerHTML; 
-                    this.data.label = contentDiv.textContent || ''; 
+                    this.data.content = contentDiv.innerHTML;
+                    this.data.label = contentDiv.textContent || '';
                 }, 300);
             });
             contentDiv.addEventListener('pointerdown', e => e.stopPropagation());
@@ -575,8 +575,8 @@ export class HtmlNodeElement extends BaseNode {
     setSize(width, height, scaleContent = false) {
         const oldWidth = this.size.width;
         const oldHeight = this.size.height;
-        this.size.width = Math.max(80, width); 
-        this.size.height = Math.max(40, height); 
+        this.size.width = Math.max(80, width);
+        this.size.height = Math.max(40, height);
         if (this.htmlElement) {
             this.htmlElement.style.width = `${this.size.width}px`;
             this.htmlElement.style.height = `${this.size.height}px`;
@@ -585,8 +585,8 @@ export class HtmlNodeElement extends BaseNode {
             const scaleFactor = Math.sqrt((this.size.width * this.size.height) / (oldWidth * oldHeight));
             this.setContentScale(this.data.contentScale * scaleFactor);
         }
-        this.data.width = this.size.width; 
-        this.data.height = this.size.height; 
+        this.data.width = this.size.width;
+        this.data.height = this.size.height;
         this.spaceGraph?.layoutEngine?.kick();
     }
 
@@ -595,20 +595,20 @@ export class HtmlNodeElement extends BaseNode {
         const contentEl = this.htmlElement?.querySelector('.node-content');
         if (contentEl) contentEl.style.transform = `scale(${this.data.contentScale})`;
     }
-    
+
     setBackgroundColor(color) {
         this.data.backgroundColor = color;
         this.htmlElement?.style.setProperty('--node-bg', this.data.backgroundColor);
     }
 
-    adjustContentScale(deltaFactor) { 
+    adjustContentScale(deltaFactor) {
         this.setContentScale(this.data.contentScale * deltaFactor);
     }
     adjustNodeSize(factor) {
         this.setSize(this.size.width * factor, this.size.height * factor, false);
     }
 
-    update(spaceGraphInstance) { 
+    update(spaceGraphInstance) {
         if (this.cssObject) {
             this.cssObject.position.copy(this.position);
             if (this.billboard && spaceGraphInstance?._camera) {
@@ -624,7 +624,7 @@ export class HtmlNodeElement extends BaseNode {
         this.htmlElement = null;
         this.cssObject = null;
     }
-    
+
     getBoundingSphereRadius() {
         return Math.sqrt(this.size.width ** 2 + this.size.height ** 2) / 2 * (this.data.contentScale ?? 1.0);
     }
@@ -652,12 +652,12 @@ export class NoteNode extends HtmlNodeElement {
 }
 
 export class ShapeNode extends BaseNode {
-    shape = 'sphere'; 
-    size = 50;    
-    color = 0xffffff; 
+    shape = 'sphere';
+    size = 50;
+    color = 0xffffff;
 
     constructor(id, position, data = {}, mass = 1.5) {
-        super(id, position, data, mass); 
+        super(id, position, data, mass);
         this.shape = this.data.shape ?? this.shape;
         this.size = this.data.size ?? this.size;
         this.color = this.data.color ?? this.color;
@@ -669,7 +669,7 @@ export class ShapeNode extends BaseNode {
             this.labelObject = this._createLabel();
             this.labelObject.userData = { nodeId: this.id, type: 'shape-label' };
         }
-        this.update(); 
+        this.update();
     }
 
     getDefaultData() {
@@ -678,7 +678,7 @@ export class ShapeNode extends BaseNode {
 
     _createMesh() {
         let geometry;
-        const effectiveSize = Math.max(10, this.size); 
+        const effectiveSize = Math.max(10, this.size);
         switch (this.shape) {
             case 'box':
                 geometry = new THREE.BoxGeometry(effectiveSize, effectiveSize, effectiveSize);
@@ -698,7 +698,7 @@ export class ShapeNode extends BaseNode {
 
     _createLabel() {
         const div = document.createElement('div');
-        div.className = 'node-label-3d'; 
+        div.className = 'node-label-3d';
         div.textContent = this.data.label;
         div.dataset.nodeId = this.id;
         Object.assign(div.style, {
@@ -709,17 +709,17 @@ export class ShapeNode extends BaseNode {
         return new CSS3DObject(div);
     }
 
-    update(spaceGraphInstance) { 
+    update(spaceGraphInstance) {
         if (this.mesh) this.mesh.position.copy(this.position);
         if (this.labelObject) {
-            const offset = this.getBoundingSphereRadius() * 1.1 + 10; 
+            const offset = this.getBoundingSphereRadius() * 1.1 + 10;
             this.labelObject.position.copy(this.position).y += offset;
-            if (spaceGraphInstance?._camera) { 
+            if (spaceGraphInstance?._camera) {
                 this.labelObject.quaternion.copy(spaceGraphInstance._camera.quaternion);
             }
         }
     }
-    
+
     dispose() {
         super.dispose();
         this.mesh?.geometry?.dispose();
@@ -734,7 +734,7 @@ export class ShapeNode extends BaseNode {
 
     getBoundingSphereRadius() {
         switch (this.shape) {
-            case 'box': return Math.sqrt(3 * (this.size / 2) ** 2); 
+            case 'box': return Math.sqrt(3 * (this.size / 2) ** 2);
             case 'sphere':
             default: return this.size / 2;
         }
@@ -742,21 +742,21 @@ export class ShapeNode extends BaseNode {
 
     setSelectedStyle(selected) {
         if (this.mesh?.material) {
-            this.mesh.material.emissive?.setHex(selected ? 0x888800 : 0x000000); 
+            this.mesh.material.emissive?.setHex(selected ? 0x888800 : 0x000000);
         }
         this.labelObject?.element?.classList.toggle('selected', selected);
     }
 }
 
 export class Edge {
-    spaceGraph = null; 
-    threeObject = null; 
+    spaceGraph = null;
+    threeObject = null;
     data = {
         color: 0x00d0ff,
         thickness: 1.5,
-        style: 'solid', 
-        constraintType: 'elastic', 
-        constraintParams: { stiffness: 0.001, idealLength: 200 } 
+        style: 'solid',
+        constraintType: 'elastic',
+        constraintParams: { stiffness: 0.001, idealLength: 200 }
     };
 
     constructor(id, sourceNode, targetNode, data = {}) {
@@ -771,9 +771,9 @@ export class Edge {
                 {})
         };
         this.data = {
-            ...this.data, 
-            ...data,      
-            constraintParams: { 
+            ...this.data,
+            ...data,
+            constraintParams: {
                 ...defaultConstraintParams,
                 ...(data.constraintParams || {})
             }
@@ -785,26 +785,26 @@ export class Edge {
     _createThreeObject() {
         const material = new THREE.LineBasicMaterial({
             color: this.data.color,
-            linewidth: this.data.thickness, 
+            linewidth: this.data.thickness,
             transparent: true,
             opacity: 0.6,
-            depthTest: false, 
+            depthTest: false,
         });
         const points = [this.source.position.clone(), this.target.position.clone()];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const line = new THREE.Line(geometry, material);
-        line.renderOrder = -1; 
-        line.userData.edgeId = this.id; 
+        line.renderOrder = -1;
+        line.userData.edgeId = this.id;
         return line;
     }
 
-    update() { 
+    update() {
         if (!this.threeObject || !this.source || !this.target) return;
         const positions = this.threeObject.geometry.attributes.position;
         positions.setXYZ(0, this.source.position.x, this.source.position.y, this.source.position.z);
         positions.setXYZ(1, this.target.position.x, this.target.position.y, this.target.position.z);
         positions.needsUpdate = true;
-        this.threeObject.geometry.computeBoundingSphere(); 
+        this.threeObject.geometry.computeBoundingSphere();
     }
 
     setHighlight(highlight) {
@@ -828,11 +828,11 @@ export class Edge {
 }
 
 export class UIManager {
-    spaceGraph = null; 
+    spaceGraph = null;
     container = null;
     contextMenuElement = null;
     confirmDialogElement = null;
-    edgeMenuObject = null; 
+    edgeMenuObject = null;
 
     draggedNode = null;
     resizedNode = null;
@@ -840,7 +840,7 @@ export class UIManager {
     resizeStartPos = {x: 0, y: 0};
     resizeStartSize = {width: 0, height: 0};
     dragOffset = new THREE.Vector3();
-    
+
     pointerState = {
         down: false, primary: false, secondary: false, middle: false,
         potentialClick: true, lastPos: {x: 0, y: 0}, startPos: {x: 0, y: 0}
@@ -871,7 +871,7 @@ export class UIManager {
             this.confirmDialogElement.innerHTML = '<p id="confirm-message">Are you sure?</p><button id="confirm-yes">Yes</button><button id="confirm-no">No</button>';
             document.body.appendChild(this.confirmDialogElement);
         }
-        
+
         this.statusIndicatorElement = uiElements.statusIndicatorEl || S.$('#status-indicator');
         if (!this.statusIndicatorElement || !document.body.contains(this.statusIndicatorElement)) {
             this.statusIndicatorElement = document.createElement('div');
@@ -879,19 +879,19 @@ export class UIManager {
             // CSS typically handles initial visibility/fade-in, so no 'hidden' class added by default.
             document.body.appendChild(this.statusIndicatorElement);
         }
-        
+
         this._bindEvents();
     }
 
     _bindEvents() {
-        const opts = { passive: false }; 
+        const opts = { passive: false };
         this.container.addEventListener('pointerdown', this._onPointerDown.bind(this), false);
-        window.addEventListener('pointermove', this._onPointerMove.bind(this), false); 
-        window.addEventListener('pointerup', this._onPointerUp.bind(this), false); 
+        window.addEventListener('pointermove', this._onPointerMove.bind(this), false);
+        window.addEventListener('pointerup', this._onPointerUp.bind(this), false);
         this.container.addEventListener('contextmenu', this._onContextMenu.bind(this), opts);
-        
+
         document.addEventListener('click', this._onDocumentClick.bind(this), true);
-        
+
         this.contextMenuElement.addEventListener('click', this._onContextMenuClick.bind(this), false);
         $('#confirm-yes', this.confirmDialogElement)?.addEventListener('click', this._onConfirmYes.bind(this), false);
         $('#confirm-no', this.confirmDialogElement)?.addEventListener('click', this._onConfirmNo.bind(this), false);
@@ -899,7 +899,7 @@ export class UIManager {
         this.container.addEventListener('wheel', this._onWheel.bind(this), opts);
     }
 
-    _updatePointerState(e, isDown) { 
+    _updatePointerState(e, isDown) {
         this.pointerState.down = isDown;
         this.pointerState.primary = isDown && e.button === 0;
         this.pointerState.secondary = isDown && e.button === 2;
@@ -910,10 +910,10 @@ export class UIManager {
         }
         this.pointerState.lastPos = {x: e.clientX, y: e.clientY};
     }
-    
+
     _getTargetInfo(event) {
         const element = document.elementFromPoint(event.clientX, event.clientY);
-        const nodeHtmlElement = element?.closest('.node-html'); 
+        const nodeHtmlElement = element?.closest('.node-html');
         const resizeHandle = element?.closest('.resize-handle');
         const nodeControlsButton = element?.closest('.node-controls button');
         const contentEditable = element?.closest('[contenteditable="true"]');
@@ -934,16 +934,16 @@ export class UIManager {
             if (intersected) {
                 if (intersected instanceof Edge) {
                     intersectedEdge = intersected;
-                } else if (intersected instanceof ShapeNode) { 
+                } else if (intersected instanceof ShapeNode) {
                     intersectedShapeNode = intersected;
-                    if (!node) node = intersectedShapeNode; 
+                    if (!node) node = intersectedShapeNode;
                 }
             }
         }
-        
+
         return {
             element, nodeHtmlElement, resizeHandle, nodeControlsButton, contentEditable, interactiveInNode,
-            node: node || intersectedShapeNode, 
+            node: node || intersectedShapeNode,
             intersectedEdge
         };
     }
@@ -951,7 +951,7 @@ export class UIManager {
     _onPointerDown(e) {
         this._updatePointerState(e, true);
         const targetInfo = this._getTargetInfo(e);
-        
+
         if (targetInfo.nodeControlsButton && targetInfo.node instanceof HtmlNodeElement) {
             e.preventDefault(); e.stopPropagation();
             this._handleNodeControlButtonClick(targetInfo.nodeControlsButton, targetInfo.node);
@@ -960,19 +960,19 @@ export class UIManager {
         if (targetInfo.resizeHandle && targetInfo.node instanceof HtmlNodeElement) {
             e.preventDefault(); e.stopPropagation();
             this.resizedNode = targetInfo.node;
-            this.resizedNode.startResize(); 
+            this.resizedNode.startResize();
             this.resizeStartPos = {x: e.clientX, y: e.clientY};
             this.resizeStartSize = {...this.resizedNode.size};
             this.container.style.cursor = 'nwse-resize';
             this._hideContextMenu(); return;
         }
 
-        if (targetInfo.node) { 
+        if (targetInfo.node) {
             if (targetInfo.interactiveInNode || targetInfo.contentEditable) {
-                 e.stopPropagation(); 
+                 e.stopPropagation();
                  if(this.spaceGraph.selectedNode !== targetInfo.node) this.spaceGraph.setSelectedNode(targetInfo.node);
                  this._hideContextMenu();
-            } else { 
+            } else {
                 e.preventDefault();
                 this.draggedNode = targetInfo.node;
                 this.draggedNode.startDrag();
@@ -982,21 +982,21 @@ export class UIManager {
                 if(this.spaceGraph.selectedNode !== targetInfo.node) this.spaceGraph.setSelectedNode(targetInfo.node);
                 this._hideContextMenu(); return;
             }
-        } else if (targetInfo.intersectedEdge) { 
+        } else if (targetInfo.intersectedEdge) {
             e.preventDefault();
             this.spaceGraph.setSelectedEdge(targetInfo.intersectedEdge);
             this._hideContextMenu(); return;
-        } else { 
+        } else {
             this._hideContextMenu();
             if (this.spaceGraph.selectedNode || this.spaceGraph.selectedEdge) {
-            } else if (this.pointerState.primary) { 
-                this.spaceGraph.cameraController?.startPan(e); 
+            } else if (this.pointerState.primary) {
+                this.spaceGraph.cameraController?.startPan(e);
             }
         }
     }
-    
+
     _handleNodeControlButtonClick(button, node) {
-        if (!(node instanceof HtmlNodeElement)) return; 
+        if (!(node instanceof HtmlNodeElement)) return;
 
         const actionMap = {
             'node-delete': () => this._showConfirm(`Delete node "${node.id.substring(0,10)}..."?`, () => this.spaceGraph.removeNode(node.id)),
@@ -1033,20 +1033,20 @@ export class UIManager {
         if (this.spaceGraph.isLinking) {
             e.preventDefault();
             this._updateTempLinkLine(e.clientX, e.clientY);
-            const {node} = this._getTargetInfo(e); 
+            const {node} = this._getTargetInfo(e);
             $$('.node-html.linking-target', this.container).forEach(el => el.classList.remove('linking-target'));
             if (node && node !== this.spaceGraph.linkSourceNode && node.htmlElement) {
                 node.htmlElement.classList.add('linking-target');
             }
             return;
         }
-        
+
         if (this.pointerState.primary && this.spaceGraph.cameraController?.isPanning) {
-             this.spaceGraph.cameraController.pan(e); 
+             this.spaceGraph.cameraController.pan(e);
         }
 
         if (!this.pointerState.down && !this.resizedNode && !this.draggedNode && !this.spaceGraph.isLinking) {
-            const { intersectedEdge } = this._getTargetInfo(e); 
+            const { intersectedEdge } = this._getTargetInfo(e);
             if (this.hoveredEdge !== intersectedEdge) {
                 if (this.hoveredEdge && this.hoveredEdge !== this.spaceGraph.selectedEdge) {
                     this.hoveredEdge.setHighlight(false);
@@ -1066,21 +1066,21 @@ export class UIManager {
             this.resizedNode.endResize(); this.resizedNode = null;
         } else if (this.draggedNode) {
             this.draggedNode.endDrag(); this.draggedNode = null;
-        } else if (this.spaceGraph.isLinking && e.button === 0) { 
+        } else if (this.spaceGraph.isLinking && e.button === 0) {
             this._completeLinking(e);
-        } else if (e.button === 1 && this.pointerState.potentialClick) { 
+        } else if (e.button === 1 && this.pointerState.potentialClick) {
             const {node} = this._getTargetInfo(e);
             if (node) { this.spaceGraph.autoZoom(node); e.preventDefault(); }
-        } else if (e.button === 0 && this.pointerState.potentialClick) { 
+        } else if (e.button === 0 && this.pointerState.potentialClick) {
              const targetInfo = this._getTargetInfo(e);
              if (!targetInfo.node && !targetInfo.intersectedEdge && !this.spaceGraph.cameraController?.isPanning) {
                 this.spaceGraph.setSelectedNode(null);
                 this.spaceGraph.setSelectedEdge(null);
             }
         }
-        
+
         this.spaceGraph.cameraController?.endPan();
-        this._updatePointerState(e, false); 
+        this._updatePointerState(e, false);
         $$('.node-html.linking-target', this.container).forEach(el => el.classList.remove('linking-target'));
     }
 
@@ -1096,15 +1096,15 @@ export class UIManager {
         } else if (targetInfo.intersectedEdge) {
             if (this.spaceGraph.selectedEdge !== targetInfo.intersectedEdge) this.spaceGraph.setSelectedEdge(targetInfo.intersectedEdge);
             items = this._getContextMenuItemsEdge(targetInfo.intersectedEdge);
-        } else { 
+        } else {
             this.spaceGraph.setSelectedNode(null); this.spaceGraph.setSelectedEdge(null);
             const worldPos = this.spaceGraph.screenToWorld(e.clientX, e.clientY, 0);
             items = this._getContextMenuItemsBackground(worldPos);
         }
         if (items.length > 0) this._showContextMenu(e.clientX, e.clientY, items);
     }
-    
-    _onDocumentClick(e) { 
+
+    _onDocumentClick(e) {
         const clickedContextMenu = this.contextMenuElement.contains(e.target);
         const clickedEdgeMenu = this.edgeMenuObject?.element?.contains(e.target);
         const clickedConfirmDialog = this.confirmDialogElement.contains(e.target);
@@ -1113,7 +1113,7 @@ export class UIManager {
         if (!clickedEdgeMenu && this.edgeMenuObject) {
             const targetInfo = this._getTargetInfo(e);
             if (this.spaceGraph.selectedEdge !== targetInfo.intersectedEdge) {
-                 this.spaceGraph.setSelectedEdge(null); 
+                 this.spaceGraph.setSelectedEdge(null);
             }
         }
     }
@@ -1134,7 +1134,7 @@ export class UIManager {
 
     _getContextMenuItemsEdge(edge) {
         return [
-            {label: "Edit Edge Style...", action: "edit-edge", edgeId: edge.id}, 
+            {label: "Edit Edge Style...", action: "edit-edge", edgeId: edge.id},
             {label: "Reverse Edge Direction", action: "reverse-edge", edgeId: edge.id},
             {type: 'separator'},
             {label: "Delete Edge 🗑️", action: "delete-edge", edgeId: edge.id, class: 'delete-action'},
@@ -1187,23 +1187,23 @@ export class UIManager {
             },
             'edit-edge': () => { const e = this.spaceGraph.getEdgeById(data.edgeId); if(e) this.spaceGraph.setSelectedEdge(e);  },
             'toggle-background': () => this.spaceGraph.setBackground(
-                this.spaceGraph.background.alpha === 0 ? 0x101018 : 0x000000, 
+                this.spaceGraph.background.alpha === 0 ? 0x101018 : 0x000000,
                 this.spaceGraph.background.alpha === 0 ? 1.0 : 0.0
             ),
         };
         actions[action]?.() ?? console.warn("Unknown context menu action:", action);
     }
-    
+
     _createNodeFromMenu(positionData, NodeTypeClass, nodeDataParams) {
         if (!positionData) { console.error("Position data missing for node creation"); return; }
         try {
             const pos = JSON.parse(positionData);
             const newNode = this.spaceGraph.addNode(new NodeTypeClass(null, pos, nodeDataParams));
             this.spaceGraph.layoutEngine?.kick();
-            setTimeout(() => { 
+            setTimeout(() => {
                 this.spaceGraph.focusOnNode(newNode, 0.6, true);
                 this.spaceGraph.setSelectedNode(newNode);
-                if (newNode instanceof NoteNode) { 
+                if (newNode instanceof NoteNode) {
                     newNode.htmlElement?.querySelector('.node-content')?.focus();
                 }
             }, 100);
@@ -1211,18 +1211,18 @@ export class UIManager {
     }
 
     _showContextMenu(x, y, items) {
-        this.contextMenuElement.innerHTML = ''; 
+        this.contextMenuElement.innerHTML = '';
         const ul = document.createElement('ul');
         items.forEach(item => {
             if (item.type === 'separator') {
                 const li = document.createElement('li'); li.className = 'separator';
                 ul.appendChild(li); return;
             }
-            if (item.disabled) return; 
+            if (item.disabled) return;
             const li = document.createElement('li');
             li.textContent = item.label;
             if(item.class) li.classList.add(item.class);
-            Object.entries(item).forEach(([key, value]) => { 
+            Object.entries(item).forEach(([key, value]) => {
                 if (value !== undefined && value !== null && key !== 'type' && key !== 'label' && key !== 'class') {
                     li.dataset[key] = typeof value === 'object' ? JSON.stringify(value) : value;
                 }
@@ -1262,28 +1262,28 @@ export class UIManager {
     }
 
     _createTempLinkLine(sourceNode) {
-        this._removeTempLinkLine(); 
+        this._removeTempLinkLine();
         const material = new THREE.LineDashedMaterial({
             color: 0xffaa00, linewidth: 2, dashSize: 8, gapSize: 4,
             transparent: true, opacity: 0.9, depthTest: false
         });
-        const points = [sourceNode.position.clone(), sourceNode.position.clone()]; 
+        const points = [sourceNode.position.clone(), sourceNode.position.clone()];
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         this.spaceGraph.tempLinkLine = new THREE.Line(geometry, material);
-        this.spaceGraph.tempLinkLine.computeLineDistances(); 
-        this.spaceGraph.tempLinkLine.renderOrder = 1; 
+        this.spaceGraph.tempLinkLine.computeLineDistances();
+        this.spaceGraph.tempLinkLine.renderOrder = 1;
         this.spaceGraph.scene.add(this.spaceGraph.tempLinkLine);
     }
-    
+
     _updateTempLinkLine(screenX, screenY) {
         if (!this.spaceGraph.tempLinkLine || !this.spaceGraph.linkSourceNode) return;
         const targetPos = this.spaceGraph.screenToWorld(screenX, screenY, this.spaceGraph.linkSourceNode.position.z);
         if (targetPos) {
             const positions = this.spaceGraph.tempLinkLine.geometry.attributes.position;
-            positions.setXYZ(1, targetPos.x, targetPos.y, targetPos.z); 
+            positions.setXYZ(1, targetPos.x, targetPos.y, targetPos.z);
             positions.needsUpdate = true;
             this.spaceGraph.tempLinkLine.geometry.computeBoundingSphere();
-            this.spaceGraph.tempLinkLine.computeLineDistances(); 
+            this.spaceGraph.tempLinkLine.computeLineDistances();
         }
     }
     _removeTempLinkLine() {
@@ -1296,11 +1296,11 @@ export class UIManager {
     }
     _completeLinking(event) {
         this._removeTempLinkLine();
-        const {node: targetNode} = this._getTargetInfo(event); 
+        const {node: targetNode} = this._getTargetInfo(event);
         if (targetNode && targetNode !== this.spaceGraph.linkSourceNode) {
             this.spaceGraph.addEdge(this.spaceGraph.linkSourceNode, targetNode);
         }
-        this.cancelLinking(); 
+        this.cancelLinking();
     }
 
     cancelLinking() {
@@ -1314,7 +1314,7 @@ export class UIManager {
     _onKeyDown(event) {
         const activeEl = document.activeElement;
         const isEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
-        if (isEditing && event.key !== 'Escape') return; 
+        if (isEditing && event.key !== 'Escape') return;
 
         const selectedNode = this.spaceGraph.selectedNode;
         const selectedEdge = this.spaceGraph.selectedEdge;
@@ -1329,11 +1329,11 @@ export class UIManager {
                 if (this.spaceGraph.isLinking) { this.cancelLinking(); handled = true; }
                 else if (this.contextMenuElement.style.display === 'block') { this._hideContextMenu(); handled = true; }
                 else if (this.confirmDialogElement.style.display === 'block') { this._hideConfirm(); handled = true; }
-                else if (this.edgeMenuObject) { this.spaceGraph.setSelectedEdge(null); handled = true; } 
+                else if (this.edgeMenuObject) { this.spaceGraph.setSelectedEdge(null); handled = true; }
                 else if (selectedNode || selectedEdge) { this.spaceGraph.setSelectedNode(null); this.spaceGraph.setSelectedEdge(null); handled = true; }
                 break;
             case 'Enter':
-                if (selectedNode instanceof NoteNode) { 
+                if (selectedNode instanceof NoteNode) {
                     selectedNode.htmlElement?.querySelector('.node-content')?.focus(); handled = true;
                 }
                 break;
@@ -1349,7 +1349,7 @@ export class UIManager {
                      handled = true;
                 }
                 break;
-            case ' ': 
+            case ' ':
                 if (selectedNode) { this.spaceGraph.focusOnNode(selectedNode, 0.5, true); handled = true; }
                 else if (selectedEdge) {
                     const midPoint = new THREE.Vector3().lerpVectors(selectedEdge.source.position, selectedEdge.target.position, 0.5);
@@ -1362,28 +1362,28 @@ export class UIManager {
         }
         if (handled) event.preventDefault();
     }
-    
-    _onWheel = (e) => { 
+
+    _onWheel = (e) => {
         const targetInfo = this._getTargetInfo(e);
         if (e.target.closest('.node-controls, .edge-menu-frame') || targetInfo.contentEditable) return;
 
-        if (e.ctrlKey || e.metaKey) { 
+        if (e.ctrlKey || e.metaKey) {
             if (targetInfo.node instanceof HtmlNodeElement) {
                 e.preventDefault(); e.stopPropagation();
                 targetInfo.node.adjustContentScale(e.deltaY < 0 ? 1.1 : (1 / 1.1));
-            } 
-        } else { 
+            }
+        } else {
             e.preventDefault();
-            this.spaceGraph.cameraController?.zoom(e); 
+            this.spaceGraph.cameraController?.zoom(e);
         }
     }
 
     showEdgeMenu(edge) {
-        if (!edge || this.edgeMenuObject) return; 
-        this.hideEdgeMenu(); 
+        if (!edge || this.edgeMenuObject) return;
+        this.hideEdgeMenu();
 
         const menuElement = document.createElement('div');
-        menuElement.className = 'edge-menu-frame'; 
+        menuElement.className = 'edge-menu-frame';
         menuElement.dataset.edgeId = edge.id;
         menuElement.innerHTML = `
           <button title="Color (NYI)" data-action="color">🎨</button>
@@ -1397,7 +1397,7 @@ export class UIManager {
             const button = e.target.closest('button');
             if (!button) return;
             const action = button.dataset.action;
-            e.stopPropagation(); 
+            e.stopPropagation();
 
             switch (action) {
                 case 'delete':
@@ -1408,7 +1408,7 @@ export class UIManager {
                     break;
             }
         });
-        
+
         menuElement.addEventListener('pointerdown', e => e.stopPropagation());
         menuElement.addEventListener('wheel', e => e.stopPropagation());
 
@@ -1430,11 +1430,11 @@ export class UIManager {
         const edge = this.spaceGraph.selectedEdge;
         const midPoint = new THREE.Vector3().lerpVectors(edge.source.position, edge.target.position, 0.5);
         this.edgeMenuObject.position.copy(midPoint);
-        if (this.spaceGraph._camera) { 
+        if (this.spaceGraph._camera) {
              this.edgeMenuObject.quaternion.copy(this.spaceGraph._camera.quaternion);
         }
     }
-    
+
     dispose() {
         this.container.removeEventListener('pointerdown', this._onPointerDown);
         window.removeEventListener('pointermove', this._onPointerMove);
@@ -1447,9 +1447,9 @@ export class UIManager {
         window.removeEventListener('keydown', this._onKeyDown);
         this.container.removeEventListener('wheel', this._onWheel);
 
-        this.hideEdgeMenu(); 
-        this.contextMenuElement?.remove(); 
-        this.confirmDialogElement?.remove(); 
+        this.hideEdgeMenu();
+        this.contextMenuElement?.remove();
+        this.confirmDialogElement?.remove();
         this.statusIndicatorElement?.remove();
 
         this.spaceGraph = null; this.container = null;
@@ -1461,53 +1461,53 @@ export class UIManager {
 }
 
 export class CameraController {
-    camera = null; 
-    domElement = null; 
+    camera = null;
+    domElement = null;
     isPanning = false;
     panStart = new THREE.Vector2();
     targetPosition = new THREE.Vector3();
     targetLookAt = new THREE.Vector3();
-    currentLookAt = new THREE.Vector3(); 
-    zoomSpeed = 0.0015; 
-    panSpeed = 0.8;     
-    minZoom = 20;       
-    maxZoom = 15000;    
-    dampingFactor = 0.12; 
+    currentLookAt = new THREE.Vector3();
+    zoomSpeed = 0.0015;
+    panSpeed = 0.8;
+    minZoom = 20;
+    maxZoom = 15000;
+    dampingFactor = 0.12;
     animationFrameId = null;
     viewHistory = [];
     maxHistory = 20;
-    currentTargetNodeId = null; 
-    initialState = null; 
+    currentTargetNodeId = null;
+    initialState = null;
 
     constructor(threeCamera, domElement) {
         this.camera = threeCamera;
-        this.domElement = domElement; 
+        this.domElement = domElement;
         this.targetPosition.copy(this.camera.position);
-        this.targetLookAt.copy(new THREE.Vector3(0,0,0)); 
+        this.targetLookAt.copy(new THREE.Vector3(0,0,0));
         this.currentLookAt.copy(this.targetLookAt);
-        this._updateLoop(); 
+        this._updateLoop();
     }
 
-    setInitialState() { 
+    setInitialState() {
         if (!this.initialState) {
             this.initialState = {
-                position: this.targetPosition.clone(), 
+                position: this.targetPosition.clone(),
                 lookAt: this.targetLookAt.clone()
             };
         }
     }
 
-    startPan(event) { 
+    startPan(event) {
         if (event.button !== 0 || this.isPanning) return;
         this.isPanning = true;
         this.panStart.set(event.clientX, event.clientY);
         this.domElement.classList.add('panning');
         gsap.killTweensOf(this.targetPosition);
         gsap.killTweensOf(this.targetLookAt);
-        this.currentTargetNodeId = null; 
+        this.currentTargetNodeId = null;
     }
 
-    pan(event) { 
+    pan(event) {
         if (!this.isPanning) return;
         const deltaX = event.clientX - this.panStart.x;
         const deltaY = event.clientY - this.panStart.y;
@@ -1515,7 +1515,7 @@ export class CameraController {
         const cameraDist = this.camera.position.distanceTo(this.currentLookAt);
         const vFOV = this.camera.fov * DEG2RAD;
         const viewHeight = this.domElement.clientHeight || window.innerHeight;
-        const height = 2 * Math.tan(vFOV / 2) * Math.max(1, cameraDist); 
+        const height = 2 * Math.tan(vFOV / 2) * Math.max(1, cameraDist);
 
         const panXAmount = -(deltaX / viewHeight) * height * this.panSpeed;
         const panYAmount = (deltaY / viewHeight) * height * this.panSpeed;
@@ -1536,14 +1536,14 @@ export class CameraController {
         }
     }
 
-    zoom(event) { 
+    zoom(event) {
         gsap.killTweensOf(this.targetPosition);
         gsap.killTweensOf(this.targetLookAt);
         this.currentTargetNodeId = null;
 
         const delta = -event.deltaY * this.zoomSpeed;
         const currentDist = this.targetPosition.distanceTo(this.targetLookAt);
-        let newDist = currentDist * Math.pow(0.95, delta * 12); 
+        let newDist = currentDist * Math.pow(0.95, delta * 12);
         newDist = clamp(newDist, this.minZoom, this.maxZoom);
         const zoomFactorAmount = (newDist - currentDist);
 
@@ -1551,13 +1551,13 @@ export class CameraController {
         const direction = new THREE.Vector3();
         if (mouseWorldPos) {
             direction.copy(mouseWorldPos).sub(this.targetPosition).normalize();
-        } else { 
+        } else {
             this.camera.getWorldDirection(direction);
         }
         this.targetPosition.addScaledVector(direction, zoomFactorAmount);
     }
-    
-    _getLookAtPlaneIntersection(screenX, screenY) { 
+
+    _getLookAtPlaneIntersection(screenX, screenY) {
         const vec = new THREE.Vector3((screenX / window.innerWidth) * 2 - 1, -(screenY / window.innerHeight) * 2 + 1, 0.5);
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(vec, this.camera);
@@ -1569,9 +1569,9 @@ export class CameraController {
     }
 
     moveTo(x, y, z, duration = 0.7, lookAtTarget = null) {
-        this.setInitialState(); 
+        this.setInitialState();
         const targetPosVec = new THREE.Vector3(x, y, z);
-        const targetLookVec = lookAtTarget ? lookAtTarget.clone() : new THREE.Vector3(x, y, 0); 
+        const targetLookVec = lookAtTarget ? lookAtTarget.clone() : new THREE.Vector3(x, y, 0);
 
         gsap.killTweensOf(this.targetPosition); gsap.killTweensOf(this.targetLookAt);
         gsap.to(this.targetPosition, { x: targetPosVec.x, y: targetPosVec.y, z: targetPosVec.z, duration, ease: "power3.out", overwrite: true });
@@ -1581,10 +1581,10 @@ export class CameraController {
     resetView(duration = 0.7) {
         if (this.initialState) {
             this.moveTo(this.initialState.position.x, this.initialState.position.y, this.initialState.position.z, duration, this.initialState.lookAt);
-        } else { 
+        } else {
             this.moveTo(0, 0, 700, duration, new THREE.Vector3(0,0,0));
         }
-        this.viewHistory = []; this.currentTargetNodeId = null; 
+        this.viewHistory = []; this.currentTargetNodeId = null;
     }
 
     pushState() {
@@ -1602,14 +1602,14 @@ export class CameraController {
             this.moveTo(prevState.position.x, prevState.position.y, prevState.position.z, duration, prevState.lookAt);
             this.currentTargetNodeId = prevState.targetNodeId;
         } else {
-            this.resetView(duration); 
+            this.resetView(duration);
         }
     }
 
     getCurrentTargetNodeId = () => this.currentTargetNodeId;
     setCurrentTargetNodeId = (nodeId) => { this.currentTargetNodeId = nodeId; };
 
-    _updateLoop = () => { 
+    _updateLoop = () => {
         const deltaPos = this.targetPosition.distanceTo(this.camera.position);
         const deltaLookAt = this.targetLookAt.distanceTo(this.currentLookAt);
 
@@ -1636,30 +1636,30 @@ export class CameraController {
 }
 
 export class ForceLayout {
-    spaceGraph = null; 
-    nodes = []; 
-    edges = []; 
-    velocities = new Map(); 
-    fixedNodes = new Set(); 
+    spaceGraph = null;
+    nodes = [];
+    edges = [];
+    velocities = new Map();
+    fixedNodes = new Set();
     isRunning = false;
     animationFrameId = null;
     energy = Infinity;
     lastKickTime = 0;
     autoStopTimeout = null;
 
-    settings = { 
+    settings = {
         repulsion: 3000,
-        attraction: 0.001, 
-        idealEdgeLength: 200, 
+        attraction: 0.001,
+        idealEdgeLength: 200,
         centerStrength: 0.0005,
         damping: 0.92,
         minEnergyThreshold: 0.1,
         gravityCenter: new THREE.Vector3(0, 0, 0),
         zSpreadFactor: 0.15,
         autoStopDelay: 4000,
-        nodePadding: 1.2, 
-        defaultElasticStiffness: 0.001, 
-        defaultElasticIdealLength: 200, 
+        nodePadding: 1.2,
+        defaultElasticStiffness: 0.001,
+        defaultElasticIdealLength: 200,
         defaultRigidStiffness: 0.1,
         defaultWeldStiffness: 0.5,
     };
@@ -1689,14 +1689,14 @@ export class ForceLayout {
     fixNode(node) { this.fixedNodes.add(node); this.velocities.get(node.id)?.set(0,0,0); }
     releaseNode(node) { this.fixedNodes.delete(node);  }
 
-    runOnce(steps = 100) { 
+    runOnce(steps = 100) {
         console.log(`ForceLayout: Running ${steps} initial steps...`);
         let i = 0;
         for (; i < steps; i++) {
             if (this._calculateStep() < this.settings.minEnergyThreshold) break;
         }
         console.log(`ForceLayout: Initial steps completed after ${i} iterations.`);
-        this.spaceGraph._updateNodesAndEdges(); 
+        this.spaceGraph._updateNodesAndEdges();
     }
 
     start() {
@@ -1726,23 +1726,23 @@ export class ForceLayout {
 
     kick(intensity = 1) {
         if (this.nodes.length === 0) return;
-        this.lastKickTime = Date.now(); this.energy = Infinity; 
+        this.lastKickTime = Date.now(); this.energy = Infinity;
         this.nodes.forEach(node => {
             if (!this.fixedNodes.has(node)) {
                 this.velocities.get(node.id)?.add(
                     new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, (Math.random()-0.5)*this.settings.zSpreadFactor)
-                    .normalize().multiplyScalar(intensity * (1 + Math.random()*2)) 
+                    .normalize().multiplyScalar(intensity * (1 + Math.random()*2))
                 );
             }
         });
         if (!this.isRunning) this.start();
-        clearTimeout(this.autoStopTimeout); 
+        clearTimeout(this.autoStopTimeout);
         this.autoStopTimeout = setTimeout(() => {
             if (this.isRunning && this.energy < this.settings.minEnergyThreshold) this.stop();
         }, this.settings.autoStopDelay);
     }
-    
-    setSettings(newSettings) { 
+
+    setSettings(newSettings) {
         this.settings = {...this.settings, ...newSettings};
         this.settings.defaultElasticStiffness = this.settings.attraction;
         this.settings.defaultElasticIdealLength = this.settings.idealEdgeLength;
@@ -1751,11 +1751,11 @@ export class ForceLayout {
     }
 
     _calculateStep() {
-        if (this.nodes.length < 2 && this.edges.length === 0) return 0; 
+        if (this.nodes.length < 2 && this.edges.length === 0) return 0;
         let totalSystemEnergy = 0;
         const forces = new Map(this.nodes.map(node => [node.id, new THREE.Vector3()]));
         const { repulsion, centerStrength, gravityCenter, zSpreadFactor, damping, nodePadding } = this.settings;
-        const tempDelta = new THREE.Vector3(); 
+        const tempDelta = new THREE.Vector3();
 
         for (let i = 0; i < this.nodes.length; i++) {
             const nodeA = this.nodes[i];
@@ -1763,18 +1763,18 @@ export class ForceLayout {
                 const nodeB = this.nodes[j];
                 tempDelta.subVectors(nodeB.position, nodeA.position);
                 let distSq = tempDelta.lengthSq();
-                if (distSq < 1e-4) { 
+                if (distSq < 1e-4) {
                     distSq = 1e-4;
-                    tempDelta.randomDirection().multiplyScalar(0.01); 
+                    tempDelta.randomDirection().multiplyScalar(0.01);
                 }
                 const dist = Math.sqrt(distSq);
-                const radiusA = nodeA.getBoundingSphereRadius() * nodePadding; 
+                const radiusA = nodeA.getBoundingSphereRadius() * nodePadding;
                 const radiusB = nodeB.getBoundingSphereRadius() * nodePadding;
                 const combinedRadius = radiusA + radiusB;
                 const overlap = combinedRadius - dist;
-                let forceMag = -repulsion / distSq; 
-                if (overlap > 0) { 
-                    forceMag -= (repulsion * Math.pow(overlap, 2) * 0.01) / dist; 
+                let forceMag = -repulsion / distSq;
+                if (overlap > 0) {
+                    forceMag -= (repulsion * Math.pow(overlap, 2) * 0.01) / dist;
                 }
                 const forceVec = tempDelta.normalize().multiplyScalar(forceMag);
                 forceVec.z *= zSpreadFactor;
@@ -1787,14 +1787,14 @@ export class ForceLayout {
             const {source, target, data: edgeData} = edge;
             if (!source || !target || !this.velocities.has(source.id) || !this.velocities.has(target.id)) return;
             tempDelta.subVectors(target.position, source.position);
-            const distance = tempDelta.length() + 1e-6; 
+            const distance = tempDelta.length() + 1e-6;
             let forceMag = 0;
             const params = edgeData.constraintParams || {};
             const type = edgeData.constraintType || 'elastic';
 
             switch (type) {
                 case 'rigid':
-                    const targetDist = params.distance ?? source.position.distanceTo(target.position); 
+                    const targetDist = params.distance ?? source.position.distanceTo(target.position);
                     const rStiffness = params.stiffness ?? this.settings.defaultRigidStiffness;
                     forceMag = rStiffness * (distance - targetDist);
                     break;
@@ -1820,7 +1820,7 @@ export class ForceLayout {
             this.nodes.forEach(node => {
                 if (this.fixedNodes.has(node)) return;
                 const forceVec = tempDelta.subVectors(gravityCenter, node.position).multiplyScalar(centerStrength);
-                forceVec.z *= zSpreadFactor * 0.5; 
+                forceVec.z *= zSpreadFactor * 0.5;
                 forces.get(node.id)?.add(forceVec);
             });
         }
@@ -1831,19 +1831,19 @@ export class ForceLayout {
             const velocity = this.velocities.get(node.id);
             if (!force || !velocity) return;
 
-            const mass = node.mass || 1.0; 
-            const acceleration = tempDelta.copy(force).divideScalar(mass); 
-            velocity.add(acceleration).multiplyScalar(damping); 
+            const mass = node.mass || 1.0;
+            const acceleration = tempDelta.copy(force).divideScalar(mass);
+            velocity.add(acceleration).multiplyScalar(damping);
 
             const speed = velocity.length();
-            if (speed > 50) velocity.multiplyScalar(50 / speed); 
+            if (speed > 50) velocity.multiplyScalar(50 / speed);
 
-            node.position.add(velocity); 
-            totalSystemEnergy += 0.5 * mass * velocity.lengthSq(); 
+            node.position.add(velocity);
+            totalSystemEnergy += 0.5 * mass * velocity.lengthSq();
         });
         return totalSystemEnergy;
     }
-    
+
     dispose() {
         this.stop();
         this.nodes = []; this.edges = [];

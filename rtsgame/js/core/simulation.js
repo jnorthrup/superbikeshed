@@ -13,7 +13,9 @@ import { ComputroniumManager } from './computroniumManager.js';
 import { EnhancedCommandHierarchy } from './enhancedCommandHierarchy.js';
 
 // Import specific functions from trikeshed-ts
-import { createCursor, createTensor, j as trikeJ } from 'trikeshed-ts';
+import { createCursor } from 'trikeshed-ts';
+// Import resource manager functions and types
+import { addPlayerResource, PlayerResourceType } from './resourceManager.js';
 
 // EntityManager class to manage all game entities
 export class EntityManager {
@@ -476,8 +478,42 @@ export class Simulation {
         // Update game time
         this.gameState.gameTime += deltaTime;
         
-        // Update resource income display
-        this.updateResourceIncome();
+        // Update resource income (old system, to be replaced by new logic below)
+        // this.updateResourceIncome();
+
+        // --- New Resource Generation Logic ---
+        // TODO: This is a placeholder. Actual income rates should be calculated based on game logic (buildings, tech, etc.)
+        // Assuming player IDs are 0 for blue and 1 for red for this conceptual integration.
+        const playerIds = { blue: 0, red: 1 };
+
+        for (const team of ['blue', 'red']) {
+            const playerId = playerIds[team];
+            if (playerId === undefined) continue;
+
+            // Placeholder income values per tick (deltaTime dependent)
+            const massIncomePerTick = (this.resources[team].massIncome / 60) * deltaTime; // Example: Convert per-minute to per-tick
+            const energyIncomePerTick = (this.resources[team].energyIncome / 60) * deltaTime;
+            // Add other resource incomes (Computronium, Ferrite, Crylithium) if they generate over time
+            // const computroniumIncomePerTick = (this.resources[team].computroniumIncome / 60) * deltaTime;
+
+
+            let currentPlayerResources = this.gameState.getPlayerResourcesState();
+
+            if (massIncomePerTick > 0) {
+                currentPlayerResources = addPlayerResource(currentPlayerResources, playerId, PlayerResourceType.Mass, massIncomePerTick);
+            }
+            if (energyIncomePerTick > 0) {
+                currentPlayerResources = addPlayerResource(currentPlayerResources, playerId, PlayerResourceType.Energy, energyIncomePerTick);
+            }
+            // if (computroniumIncomePerTick > 0) {
+            //    currentPlayerResources = addPlayerResource(currentPlayerResources, playerId, PlayerResourceType.Computronium, computroniumIncomePerTick);
+            // }
+            // ... and for Ferrite, Crylithium if they have passive income.
+
+            this.gameState.setPlayerResourcesState(currentPlayerResources);
+            // console.log(`Player ${playerId} (${team}) resources updated. Mass: ${getPlayerResource(currentPlayerResources, playerId, PlayerResourceType.Mass)}`);
+        }
+        // --- End of New Resource Generation Logic ---
         
         // Update Computronium systems
         this.updateComputroniumSystems(deltaTime);

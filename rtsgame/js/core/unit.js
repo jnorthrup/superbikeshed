@@ -9,6 +9,8 @@ import { Building } from './building.js';
 import { UnitProgression } from './unitProgression.js';
 import { AutonomousBehavior } from './autonomousBehavior.js';
 import { COMMAND_CONFIG } from '../config/commandConfig.js';
+import { isTraversable } from '../pathfinding/astar.js';
+import { ALLOY_TYPES } from '../config/alloyTypes.js';
 
 const WEIGHT_SPEED_PENALTY_FACTOR = 0.01;
 const DEFAULT_UNIT_SPEED = 1.0;
@@ -21,9 +23,13 @@ class Unit {
         this.x = x;
         this.y = y;
         this.team = team;
-        this.type = type;
-        this.hp = type.maxHp;
+        this.type = type; // Store the original type definition
+
+        // Initialize base stats from type that will be modified by alloys
         this.maxHp = type.maxHp;
+        this.hp = type.maxHp; // Current HP should also be initialized based on maxHp
+        this.armorValue = type.armorValue || 0; // Initialize armorValue from type definition
+
         this.target = null;
         this.cooldown = 0; // Represents attack cooldown time remaining
         // Access seedRandom from the simulation instance's direct property
@@ -49,15 +55,76 @@ class Unit {
         this.commandAuthority = this.type.tier * 10 + (this.type.support ? 5 : 0); // Original command authority
         this.protectionNeeds = [];
         this.lastThreatAssessment = 0;
-        this.fleeThreshold = this.maxHp * 0.2;
+        this.fleeThreshold = this.maxHp * 0.2; // Will be updated after alloy modification
         this.formation = null;
         
+        // Speed calculation considering weight (initial speed based on type)
+        const baseSpeed = type.speed || DEFAULT_UNIT_SPEED;
+        const weight = type.unitWeight || DEFAULT_UNIT_WEIGHT; // Assuming unitWeight might be a future property
+        let speedDenominator = 1 + (weight * WEIGHT_SPEED_PENALTY_FACTOR);
+        if (speedDenominator <= 0.1) {
+            speedDenominator = 0.1;
+        }
+        this.speed = baseSpeed / speedDenominator; // Instance property for speed
+        if (this.speed < 0) { // Ensure speed is not negative
+            this.speed = 0;
+        }
+
+        // Initialize other potentially modifiable stats as instance properties
+        this.shieldRegenRate = type.shieldRegenRate || (type.maxEnergyShields > 0 ? DEFAULT_SHIELD_REGEN_RATE : 0);
+        this.coreEfficiency = type.coreEfficiency || 1.0; // Base efficiency, to be modified by alloy
+
+        // Apply Alloy Modifiers
+        const unitAlloyKey = type.alloyType || 'STANDARD_PLASTEEL'; // Default to standard if not specified
+        const alloy = ALLOY_TYPES[unitAlloyKey];
+
+        if (alloy) {
+            if (alloy.modifiers.hpFactor) {
+                this.maxHp = Math.round(this.maxHp * alloy.modifiers.hpFactor);
+                this.hp = this.maxHp; // Also set current HP to new max
+            }
+            if (alloy.modifiers.armorAdd) {
+                this.armorValue += alloy.modifiers.armorAdd;
+            }
+            if (alloy.modifiers.speedFactor) {
+                this.speed *= alloy.modifiers.speedFactor;
+            }
+            // Cost factor modification is noted to be handled at purchase time, not on the instance.
+
+            if (alloy.modifiers.shieldRegenFactor) {
+                this.shieldRegenRate *= alloy.modifiers.shieldRegenFactor;
+            }
+
+            if (alloy.modifiers.computroniumEfficiencyFactor) {
+                // This will be used if/when the computroniumCore is added or its efficiency is set.
+                this.coreEfficiency *= alloy.modifiers.computroniumEfficiencyFactor;
+            }
+        }
+
+        // Ensure stats don't go below reasonable minimums after modification
+        this.speed = Math.max(0.1, this.speed);
+        this.maxHp = Math.max(1, this.maxHp);
+        // Ensure current hp is not greater than maxHp, and at least 1 if maxHp is > 0
+        this.hp = Math.min(this.maxHp, Math.max(1, this.hp));
+        if (this.maxHp === 0) this.hp = 0;
+        this.armorValue = Math.max(0, this.armorValue);
+
+        // Update fleeThreshold based on new maxHp
+        this.fleeThreshold = this.maxHp * 0.2;
+
+
         // Add Computronium core if this unit type has one
+        // Note: type.coreEfficiency is the base, this.coreEfficiency has alloy modification applied above.
         if (type.hasComputroniumCore && simulation && simulation.computroniumManagers) {
             const manager = simulation.computroniumManagers[team];
             if (manager) {
-                this.computroniumCore = manager.addCore(this, type.coreEfficiency || 1.0);
-                console.log(`[Unit] Added Computronium core to ${type.name}`);
+                // Pass the potentially alloy-modified coreEfficiency (this.coreEfficiency) to the manager
+                this.computroniumCore = manager.addCore(this, this.coreEfficiency);
+                // If the core was added and has its own efficiency property, make sure it reflects this.coreEfficiency
+                if (this.computroniumCore && typeof this.computroniumCore.efficiency === 'number') {
+                    this.computroniumCore.efficiency = this.coreEfficiency;
+                }
+                console.log(`[Unit] Added Computronium core to ${type.name} with efficiency ${this.coreEfficiency}`);
             }
         }
         
@@ -88,47 +155,15 @@ class Unit {
         this.pathRequestCooldown = 0;
         this.PATH_REQUEST_INTERVAL = 30; // Request path every ~0.5s at 60fps
 
-        // Speed calculation considering weight
-        const baseSpeed = this.type.speed || DEFAULT_UNIT_SPEED;
-        const weight = this.type.unitWeight || DEFAULT_UNIT_WEIGHT;
-        let speedDenominator = 1 + (weight * WEIGHT_SPEED_PENALTY_FACTOR);
-        if (speedDenominator <= 0.1) {
-            speedDenominator = 0.1;
-        }
-        this.speed = baseSpeed / speedDenominator;
-        if (this.speed < 0) {
-            this.speed = 0;
-        }
-
-        // Enhanced authority properties
-        this.baseAuthority = this.commandAuthority; // Use original for base
-        this.healthAuthorityModifier = 0;
-        this.veterancyAuthorityModifier = 0;
-        this.contextAuthorityModifier = 0;
-        this.effectiveAuthority = this.baseAuthority;
-
-        // Veterancy tracking
-        this.combatExperience = 0;        // Successful attacks landed
-        this.survivalTime = 0;            // Time alive in combat zones
-        this.commandExperience = 0;       // Subordinates successfully commanded
-        this.killCount = 0;               // Enemy units destroyed
-        this.damageDelt = 0;              // Total damage inflicted
-        this.lastPromotionTime = 0;       // Prevents spam promotions
-        this.veterancyLevel = 'GREEN';
-
-        // Health-based command fitness
-        this.commandFitness = 'FULL_COMMAND';
-        this.lastAuthorityUpdate = 0;
-        this.commandSuccesses = 0;
-        this.commandFailures = 0;
-        this.currentCommander = null; // Track who this unit is following
-        this.lastCommandChange = 0; // Timestamp of last command transfer
+        // Track who this unit is following and last command change
+        this.currentCommander = null;
+        this.lastCommandChange = 0;
 
         // Computronium integration
         this.computroniumCoreLevel = type.computroniumCoreLevel || 0;
         this.coreFocusMode = type.defaultCoreFocusMode || 'BALANCED';
         this.computroniumAuthorityModifier = 0;
-        this.computroniumCore = null;
+        // this.computroniumCore is initialized above after alloy mods to coreEfficiency
         this.lastFocusModeChange = 0;
         this.focusModeCooldown = 10000; // 10 seconds cooldown between mode changes
 
@@ -181,7 +216,7 @@ class Unit {
         this.hasExplicitOrders = false;
 
         // Enhanced authority properties (as per implementation-guide.md Section 1.1)
-        this.baseAuthority = this.calculateBaseAuthority();
+        this.baseAuthority = this.commandAuthority; // Use original commandAuthority for base
         this.healthAuthorityModifier = 0;
         this.veterancyAuthorityModifier = 0;
         this.contextAuthorityModifier = 0;
@@ -207,7 +242,26 @@ class Unit {
         this.canPromoteSubordinates = false;
         this.provideMoraleBonus = false;
 
-        this.formationAngle = Math.random() * Math.PI * 2; // For executeGroupMovement
+        // Random angle for initial radial formation slot position.
+        this.formationAngle = Math.random() * Math.PI * 2;
+
+        // --- Formation Movement & Steering Properties ---
+        // Defines a specific offset {x, y, angle} from the leader; more precise than formationAngle. (Currently unused, formationAngle provides simpler radial slots).
+        this.formationOffset = { x: 0, y: 0, angle: 0 };
+        // For leaders: their current A* path waypoint or patrol target. For followers: null when in formation.
+        this.leaderTargetPosition = null;
+        // For followers: the leader's predicted future position.
+        this.leaderPredictedPosition = null;
+        // For followers: the calculated world coordinates of their ideal formation slot.
+        this.idealFormationSlotWorld = null;
+        // Maximum magnitude of combined steering forces applicable per frame.
+        this.maxForce = COMMAND_CONFIG.FORMATION_BEHAVIOR.DEFAULT_MAX_FORCE;
+        // Maximum rate (radians per frame) at which the unit can turn.
+        this.maxTurnRate = COMMAND_CONFIG.FORMATION_BEHAVIOR.DEFAULT_MAX_TURN_RATE_RADIANS_PER_FRAME;
+        // Accumulator for steering forces (seek, separation, avoidance) each frame.
+        this.steering = { x: 0, y: 0 };
+        // Flag to enable detailed console logging for this unit's formation behavior.
+        this.debugFormation = false;
     }
 
     // Removed the duplicate placeholder calculateBaseAuthority() method from here
@@ -292,11 +346,11 @@ class Unit {
         }
 
         // Shield Regeneration (New Energy Shields)
-        if (this.type.maxEnergyShields > 0) {
-            if (this.currentEnergyShields < this.type.maxEnergyShields) {
-                const regenRate = this.type.shieldRegenRate || DEFAULT_SHIELD_REGEN_RATE;
+        if (this.type.maxEnergyShields > 0) { // Check if the unit type is supposed to have shields
+            if (this.currentEnergyShields < this.type.maxEnergyShields) { // Check if current shields are less than max defined by type
+                const regenRate = this.shieldRegenRate; // Use instance-specific shieldRegenRate (already alloy-modified)
                 this.currentEnergyShields += regenRate * deltaTime;
-                if (this.currentEnergyShields > this.type.maxEnergyShields) {
+                if (this.currentEnergyShields > this.type.maxEnergyShields) { // Ensure shields do not exceed max for type
                     this.currentEnergyShields = this.type.maxEnergyShields;
                 }
             }
@@ -724,7 +778,7 @@ class Unit {
         }
     }
 
-    takeDamage(damage, sourceUnit, simulation) {
+    takeDamage(damage, sourceUnit, simulation, damageType = null) { // Added damageType parameter
         const { entityManager, seedRandom } = simulation; // simulation is the new gameContext
         let remainingDamage = damage;
 
@@ -779,6 +833,10 @@ class Unit {
             // to avoid self-removal issues during iteration.
             // Example: simulation.entityManager.addEffect(new Effect(this.x, this.y, 'explosion_medium', simulation));
             // Example: simulation.gameState.addEvent('death', `${this.type.name} destroyed!`);
+
+        // If damageType was passed and is relevant for shield interaction here, it could be used.
+        // For now, existing shield logic based on weaponEnergyCost is maintained.
+        // A future refactor might centralize shield damage calculation using damageType in ShieldSystem.
         }
 
 
@@ -921,6 +979,67 @@ class Unit {
         }
     }
 
+    calculateSeparationForce(gameContext) {
+        let totalSeparationForce = { x: 0, y: 0 };
+        const { units } = gameContext.entityManager;
+        // Define the radius within which separation from other units is checked.
+        const separationRadius = (this.type.size || 10) * COMMAND_CONFIG.NEIGHBOR_RADIUS_FACTOR;
+
+        units.forEach(otherUnit => {
+            if (otherUnit === this) return; // Don't compare with self
+
+            const dist = this.getDistance(otherUnit);
+            // If the other unit is within the separation radius (but not overlapping exactly at 0 distance)
+            if (dist > 0 && dist < separationRadius) {
+                // Calculate a force vector pointing away from the neighbor.
+                let forceX = this.x - otherUnit.x;
+                let forceY = this.y - otherUnit.y;
+
+                // Normalize the force vector and then scale it.
+                // The scaling makes the force stronger for closer units (inverse square like or similar).
+                // Here, it's scaled by (separationRadius / dist) to make it stronger than linear falloff.
+                forceX = (forceX / dist) * (separationRadius / dist);
+                forceY = (forceY / dist) * (separationRadius / dist);
+
+                totalSeparationForce.x += forceX;
+                totalSeparationForce.y += forceY;
+            }
+        });
+        return totalSeparationForce;
+    }
+
+    calculateTerrainAvoidanceForce(gameContext) {
+        let totalAvoidanceForce = { x: 0, y: 0 };
+        // Feeler length is based on unit size and a configuration factor.
+        const feelerLength = (this.type.size || 10) * COMMAND_CONFIG.STEERING_FEELER_LENGTH_FACTOR;
+
+        // Project a feeler straight ahead based on the unit's current orientation (angle).
+        const feelerEndX = this.x + Math.cos(this.angle) * feelerLength;
+        const feelerEndY = this.y + Math.sin(this.angle) * feelerLength;
+
+        // Convert the feeler's endpoint to grid coordinates to check terrain.
+        const gridX = Math.floor(feelerEndX / TILE_SIZE);
+        const gridY = Math.floor(feelerEndY / TILE_SIZE);
+
+        // gameContext is the simulation object. isTraversable expects gameContext.gameContext (which holds terrain).
+        if (!isTraversable(gridX, gridY, gameContext.gameContext, this.type.movementType)) {
+            // Obstacle detected at the feeler's endpoint.
+            // Calculate a force to steer the unit away from this point.
+            // This simple version pushes the unit directly away from the detected obstacle point.
+            let avoidanceX = this.x - feelerEndX; // Vector from obstacle point towards the unit
+            let avoidanceY = this.y - feelerEndY;
+            const distToObstaclePoint = Math.sqrt(avoidanceX * avoidanceX + avoidanceY * avoidanceY);
+
+            if (distToObstaclePoint > 0) {
+                // Normalize the repulsion vector and scale it by maxForce to make it a strong corrective action.
+                totalAvoidanceForce.x = (avoidanceX / distToObstaclePoint) * this.maxForce;
+                totalAvoidanceForce.y = (avoidanceY / distToObstaclePoint) * this.maxForce;
+            }
+        }
+        // TODO: Implement more sophisticated feeler arrangements (e.g., side feelers) for better obstacle negotiation.
+        return totalAvoidanceForce;
+    }
+
     followSuperiorOrders(gameContext) { // Renamed simulation to gameContext for consistency with guide
         const { units } = gameContext.entityManager;
 
@@ -969,52 +1088,193 @@ class Unit {
         }
     }
 
-    executeGroupMovement(gameContext) {
+    executeGroupMovement(gameContext) { // gameContext is the simulation object
         const { units } = gameContext.entityManager;
 
+        // --- Leader Selection Logic ---
         let groupLeader = null;
-        // Start by assuming this unit is its own leader, unless a better one is found
+        // A unit initially considers its own effective authority as the baseline.
         let highestEffectiveAuthority = this.effectiveAuthority;
-        // If this unit itself is not fit for command, it shouldn't lead a group by default
+        // However, if the unit itself is not in 'FULL_COMMAND', it should prefer a fit leader.
         if (this.commandFitness !== 'FULL_COMMAND') {
-             highestEffectiveAuthority = -1; // Ensure it tries to find a leader if not FULL_COMMAND
+             highestEffectiveAuthority = -1; // Prioritize finding any fit leader if this unit is compromised.
         }
 
         for (const ally of units) {
-            if (ally.team === this.team) { // Check all allies on the same team
-                 if (this.getDistance(ally) < COMMAND_CONFIG.COMMAND_RANGES.STRATEGIC) {
-                    ally.calculateEffectiveAuthority(); // Ensure authority is up-to-date
+            if (ally.team === this.team) {
+                 if (this.getDistance(ally) < COMMAND_CONFIG.COMMAND_RANGES.STRATEGIC) { // Check units within strategic range
+                    ally.calculateEffectiveAuthority();
                     if (ally.effectiveAuthority > highestEffectiveAuthority &&
                         ally.commandFitness === 'FULL_COMMAND') {
                         highestEffectiveAuthority = ally.effectiveAuthority;
-                        groupLeader = ally; // This ally is a better leader
+                        groupLeader = ally;
                     }
                 }
             }
         }
-         // If this unit is the most authoritative and fit, it doesn't need to follow anyone in the group context.
+        // If this unit is the most suitable leader found (or no one better was found and it's fit),
+        // it effectively becomes the leader of its own "group" of one, or the actual group leader.
         if (groupLeader === this) {
-            groupLeader = null;
+            groupLeader = null; // It doesn't "follow" itself in the context of group movement adjustments.
         }
 
-        if (groupLeader) { // groupLeader will be null if this unit is the leader or no suitable leader found
-            const leaderDist = this.getDistance(groupLeader);
+        // Reset steering forces for the current frame.
+        this.steering.x = 0;
+        this.steering.y = 0;
 
-            const veterancyModifier = groupLeader.veterancyLevel === 'HERO' ? 20 :
-                                    groupLeader.veterancyLevel === 'ELITE' ? 15 : 10;
-            const idealDistance = COMMAND_CONFIG.COMMAND_RANGES.FORMATION_MIN_DISTANCE + veterancyModifier;
+        // --- Behavior based on whether a leader is identified ---
+        if (this === groupLeader || !groupLeader) {
+            // This unit is acting as the LEADER or is an independent unit (no group leader found).
+            // Update its own target position based on its current path or patrol target.
+            // This is for potential observation by other units or future leader-specific behaviors.
+            if (this.path && this.path[this.currentWaypointIndex]) {
+                this.leaderTargetPosition = this.path[this.currentWaypointIndex];
+            } else if (this.patrolTarget) {
+                this.leaderTargetPosition = this.patrolTarget;
+            } else {
+                this.leaderTargetPosition = null;
+            }
+            // Clear any follower-specific properties if it was previously a follower.
+            this.leaderPredictedPosition = null;
+            this.idealFormationSlotWorld = null;
+            // The leader's primary movement is driven by defaultMovementAndTargeting (handling A* pathing via patrolTarget).
+            // No additional steering forces are typically applied here for the leader itself unless
+            // group cohesion forces (not yet implemented) were to influence the leader too.
 
-            if (leaderDist > idealDistance + 30) { // If too far from the leader's ideal position
-                // Move towards a formation spot around the leader
-                this.patrolTarget = {
-                    x: groupLeader.x + Math.cos(this.formationAngle || 0) * idealDistance,
-                    y: groupLeader.y + Math.sin(this.formationAngle || 0) * idealDistance
-                };
+        } else { // This unit is a FOLLOWER.
+            // Followers prioritize formation movement over individual A* pathing or patrol targets.
+            this.patrolTarget = null;
+            this.path = null;
 
-                // Clear conflicting combat orders if moving into formation and target is far
-                if (this.target && this.getDistance(this.target) > (this.type.range || 100) * 1.5) {
-                    this.target = null;
+            // --- Regrouping Behavior: Check for excessive separation from the leader ---
+            const distanceToLeader = this.getDistance(groupLeader);
+            const maxSeparationDistance = COMMAND_CONFIG.COMMAND_RANGES.STRATEGIC * COMMAND_CONFIG.FORMATION_RULES.MAX_FOLLOWER_SEPARATION_DISTANCE_FACTOR;
+
+            if (distanceToLeader > maxSeparationDistance) {
+                // Unit is too far; override formation steering and pathfind directly to the leader.
+                this.path = findPath({ x: this.x, y: this.y }, { x: groupLeader.x, y: groupLeader.y }, gameContext.gameContext, this.type.movementType);
+                this.currentWaypointIndex = 0;
+                // Set patrolTarget to leader's current position to engage A* path following via defaultMovementAndTargeting.
+                this.patrolTarget = { x: groupLeader.x, y: groupLeader.y };
+
+                this.idealFormationSlotWorld = null; // Clear formation-specific targets
+                this.leaderPredictedPosition = null;
+                this.steering = { x: 0, y: 0 };      // Reset any accumulated steering forces
+                return; // Skip formation steering for this tick; defaultMovementAndTargeting will handle the path.
+            }
+
+            // --- Leader Prediction ---
+            // Predict the leader's future position based on its current velocity.
+            const predictionTime = COMMAND_CONFIG.FORMATION_BEHAVIOR.PREDICTION_TIME_SECONDS;
+            this.leaderPredictedPosition = {
+                x: groupLeader.x + groupLeader.vx * predictionTime,
+                y: groupLeader.y + groupLeader.vy * predictionTime
+            };
+
+            // --- Ideal Formation Slot Calculation ---
+            // Calculate the follower's ideal slot in the world based on leader's predicted position and unit's formationAngle.
+            const baseFormationDistance = COMMAND_CONFIG.FORMATION_BEHAVIOR.MIN_FORMATION_SLOT_DISTANCE;
+            // Note: this.formationOffset (a more specific {x,y,angle} offset) is available for future, more complex formations.
+            const offsetX = Math.cos(this.formationAngle || 0) * baseFormationDistance;
+            const offsetY = Math.sin(this.formationAngle || 0) * baseFormationDistance;
+
+            this.idealFormationSlotWorld = {
+                x: this.leaderPredictedPosition.x + offsetX,
+                y: this.leaderPredictedPosition.y + offsetY
+            };
+
+            // --- Calculate Steering Forces ---
+            // 1. Seek/Arrive Force towards idealFormationSlotWorld
+            let desiredVelocityX = this.idealFormationSlotWorld.x - this.x;
+            let desiredVelocityY = this.idealFormationSlotWorld.y - this.y;
+            const distToSlot = Math.sqrt(desiredVelocityX * desiredVelocityX + desiredVelocityY * desiredVelocityY);
+
+            const currentActualSpeed = this.getCurrentSpeed(gameContext);
+            // Define an arrival radius where the unit starts to slow down or stop seeking.
+            const arrivalRadius = (this.type.size || 10) * COMMAND_CONFIG.FORMATION_BEHAVIOR.ARRIVAL_RADIUS_FACTOR;
+
+            if (distToSlot > arrivalRadius) { // Only apply seek/arrive if further than arrival radius.
+                // Normalize the desired velocity vector.
+                desiredVelocityX /= distToSlot;
+                desiredVelocityY /= distToSlot;
+
+                // Arrival Dampening: Scale speed based on distance to target.
+                // This is a simplified "arrive" behavior. A more sophisticated one might use a separate slowingRadius.
+                const slowingRadius = (this.type.size || 10) * 2; // Example: Start slowing when within 2x unit size.
+                if (distToSlot < slowingRadius) { // If inside slowing radius, scale speed down.
+                    desiredVelocityX *= currentActualSpeed * (distToSlot / slowingRadius);
+                    desiredVelocityY *= currentActualSpeed * (distToSlot / slowingRadius);
+                } else { // Otherwise, aim for full current speed.
+                    desiredVelocityX *= currentActualSpeed;
+                    desiredVelocityY *= currentActualSpeed;
                 }
+            } else { // Within arrival radius: effectively stop seeking the slot.
+                desiredVelocityX = 0;
+                desiredVelocityY = 0;
+            }
+
+            // Calculate the steering force for seeking/arriving.
+            let seekForceX = desiredVelocityX - this.vx;
+            let seekForceY = desiredVelocityY - this.vy;
+            this.steering.x += seekForceX;
+            this.steering.y += seekForceY;
+
+            // 2. Separation Force: Steer away from nearby units.
+            const separationForce = this.calculateSeparationForce(gameContext);
+            this.steering.x += separationForce.x * COMMAND_CONFIG.STEERING_WEIGHTS.SEPARATION;
+            this.steering.y += separationForce.y * COMMAND_CONFIG.STEERING_WEIGHTS.SEPARATION;
+
+            // 3. Terrain Avoidance Force: Steer away from detected terrain obstacles.
+            const terrainAvoidanceForce = this.calculateTerrainAvoidanceForce(gameContext);
+            this.steering.x += terrainAvoidanceForce.x * COMMAND_CONFIG.STEERING_WEIGHTS.TERRAIN_AVOIDANCE;
+            this.steering.y += terrainAvoidanceForce.y * COMMAND_CONFIG.STEERING_WEIGHTS.TERRAIN_AVOIDANCE;
+
+            // Conditional logging for debugging formation behavior of this unit.
+            if (this.debugFormation && groupLeader) {
+                console.log(`Unit ${this.id || this.type.name} (Follower) of Leader ${groupLeader.id || groupLeader.type.name}:
+                  IdealSlot: ${this.idealFormationSlotWorld ? `${this.idealFormationSlotWorld.x.toFixed(1)},${this.idealFormationSlotWorld.y.toFixed(1)}` : 'null'}
+                  PredictedLeader: ${this.leaderPredictedPosition ? `${this.leaderPredictedPosition.x.toFixed(1)},${this.leaderPredictedPosition.y.toFixed(1)}` : 'null'}
+                  Steering (pre-apply): x:${this.steering.x.toFixed(2)}, y:${this.steering.y.toFixed(2)}`);
+            }
+
+            // --- Apply Combined Steering Forces ---
+            // Truncate the total steering force to the unit's maximum steering force.
+            const steerMag = Math.sqrt(this.steering.x * this.steering.x + this.steering.y * this.steering.y);
+            if (steerMag > this.maxForce) {
+                this.steering.x = (this.steering.x / steerMag) * this.maxForce;
+                this.steering.y = (this.steering.y / steerMag) * this.maxForce;
+            }
+
+            // Apply the steering force to the unit's velocity.
+            this.vx += this.steering.x;
+            this.vy += this.steering.y;
+
+            // Truncate the final velocity to the unit's maximum speed.
+            const velMag = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            if (velMag > currentActualSpeed) { // currentActualSpeed already considers terrain & weight
+                this.vx = (this.vx / velMag) * currentActualSpeed;
+                this.vy = (this.vy / velMag) * currentActualSpeed;
+            }
+
+            // Update unit's orientation (angle) based on its new velocity (if moving).
+            if (Math.abs(this.vx) > 0.01 || Math.abs(this.vy) > 0.01) { // Threshold to prevent jitter when near stationary
+                let targetAngle = Math.atan2(this.vy, this.vx);
+                let angleDiff = targetAngle - this.angle;
+                // Normalize angle difference to the range [-PI, PI] for shortest turn.
+                while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+                // Apply turn, capped by maxTurnRate.
+                const turnThisFrame = Math.min(Math.abs(angleDiff), this.maxTurnRate);
+                this.angle += (angleDiff > 0 ? turnThisFrame : -turnThisFrame);
+
+                // Normalize the unit's angle to keep it within [-PI, PI].
+                while (this.angle > Math.PI) this.angle -= 2 * Math.PI;
+                while (this.angle < -Math.PI) this.angle += 2 * Math.PI;
+            }
+            // Conditional logging for final velocity and angle.
+            if (this.debugFormation) {
+                console.log(`Unit ${this.id || this.type.name} (Follower) - Final V: x:${this.vx.toFixed(2)}, y:${this.vy.toFixed(2)}, Angle: ${this.angle.toFixed(2)}`);
             }
         }
     }
@@ -1602,6 +1862,35 @@ function renderCommandHierarchyDebug(ctx, gameContext) {
             ctx.beginPath();
             ctx.arc(screenX, screenY, COMMAND_CONFIG.COMMAND_RANGES.SQUAD * camera.zoom, 0, Math.PI * 2);
             ctx.stroke();
+        }
+
+        // Visualize idealFormationSlotWorld for followers
+        if (unit.idealFormationSlotWorld) {
+            const idealSlotScreenX = (unit.idealFormationSlotWorld.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const idealSlotScreenY = (unit.idealFormationSlotWorld.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            ctx.fillStyle = 'rgba(0, 0, 255, 0.5)'; // Blue circle
+            ctx.beginPath();
+            ctx.arc(idealSlotScreenX, idealSlotScreenY, 5 * camera.zoom, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Visualize leaderPredictedPosition for followers
+        if (unit.leaderPredictedPosition) {
+            const predLeaderScreenX = (unit.leaderPredictedPosition.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const predLeaderScreenY = (unit.leaderPredictedPosition.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; // Red dot/cross
+            // Simple dot for now
+            ctx.beginPath();
+            ctx.arc(predLeaderScreenX, predLeaderScreenY, 3 * camera.zoom, 0, Math.PI * 2);
+            ctx.fill();
+            // Could draw a small cross instead:
+            // ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+            // ctx.beginPath();
+            // ctx.moveTo(predLeaderScreenX - 3 * camera.zoom, predLeaderScreenY);
+            // ctx.lineTo(predLeaderScreenX + 3 * camera.zoom, predLeaderScreenY);
+            // ctx.moveTo(predLeaderScreenX, predLeaderScreenY - 3 * camera.zoom);
+            // ctx.lineTo(predLeaderScreenX, predLeaderScreenY + 3 * camera.zoom);
+            // ctx.stroke();
         }
     });
     ctx.textAlign = 'left'; // Reset text align
