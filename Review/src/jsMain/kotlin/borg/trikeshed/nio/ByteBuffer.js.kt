@@ -4,91 +4,99 @@ import org.khronos.webgl.Int8Array
 import org.khronos.webgl.get
 import org.khronos.webgl.set
 
-// Actual class implementing the expect interface ByteBuffer for JS
-actual class JsArrayByteBuffer actual constructor(
-    private val underlying: Int8Array, // Using Int8Array which is JS native for byte arrays
-    actual override val capacity: Int
-) : ByteBuffer {
-    private var _position: Int = 0
-    actual override fun position(): Int = _position
-    actual override fun position(newPosition: Int) {
-        if (newPosition < 0 || newPosition > _limit) throw IndexOutOfBoundsException("Position $newPosition out of bounds for limit $_limit")
-        _position = newPosition
-    }
+actual class ByteBuffer private constructor(
+    private val buffer: Int8Array,
+    actual val capacity: Int
+) {
+    actual var position: Int = 0
+    actual var limit: Int = capacity
+    private var isReadOnly: Boolean = false
 
-    private var _limit: Int = capacity
-    actual override fun limit(): Int = _limit
-    actual override fun limit(newLimit: Int) {
-        if (newLimit < 0 || newLimit > capacity) throw IllegalArgumentException("New limit $newLimit out of bounds for capacity $capacity")
-        _limit = newLimit
-        if (_position > _limit) _position = _limit
-    }
-
-    private var isReadOnly: Boolean = false // Common ByteBuffer property
-
-    actual override fun clear(): ByteBuffer {
-        _position = 0
-        _limit = capacity
-        return this
-    }
-
-    actual override fun flip(): ByteBuffer {
-        _limit = _position
-        _position = 0
-        return this
-    }
-
-    actual override fun rewind(): ByteBuffer {
-        _position = 0
-        return this
-    }
-
-    actual override fun remaining(): Int = _limit - _position
-    actual override fun hasRemaining(): Boolean = _position < _limit
-
-    actual override fun get(): Byte {
-        if (_position >= _limit) throw IndexOutOfBoundsException("BufferUnderflow")
-        return underlying[_position++].toByte()
-    }
-
-    // Simplified get(bytes) for brevity, actual would need offset and length
-    actual override fun get(bytes: ByteArray) {
-        if (remaining() < bytes.size) throw IndexOutOfBoundsException("BufferUnderflow")
-        for (i in bytes.indices) {
-            bytes[i] = underlying[_position + i].toByte()
+    actual companion object {
+        actual fun allocate(capacity: Int): ByteBuffer {
+            return ByteBuffer(Int8Array(capacity), capacity)
         }
-        _position += bytes.size
+
+        actual fun wrap(array: ByteArray): ByteBuffer {
+            val int8Array = Int8Array(array.size)
+            array.forEachIndexed { index, byte -> int8Array[index] = byte }
+            return ByteBuffer(int8Array, array.size)
+        }
     }
 
-    actual override fun put(byte: Byte) {
-        if (isReadOnly) throw RuntimeException("ReadOnlyBufferException")
-        if (_position >= _limit) throw IndexOutOfBoundsException("BufferOverflow")
-        underlying[_position++] = byte.toInt()
+    actual fun clear(): ByteBuffer {
+        position = 0
+        limit = capacity
+        return this
     }
 
-    // Simplified put(bytes) for brevity
-    actual override fun put(bytes: ByteArray) {
-        if (isReadOnly) throw RuntimeException("ReadOnlyBufferException")
-        if (remaining() < bytes.size) throw IndexOutOfBoundsException("BufferOverflow")
-        bytes.forEachIndexed { index, byte -> underlying[_position + index] = byte.toInt() }
-        _position += bytes.size
+    actual fun flip(): ByteBuffer {
+        limit = position
+        position = 0
+        return this
     }
 
-    // getInt, putInt, getLong, putLong would require careful byte-order handling (DataView)
-    actual override fun getInt(): Int = TODO("ByteBuffer.js.kt: Not yet implemented getInt")
-    actual override fun putInt(value: Int): Unit = TODO("ByteBuffer.js.kt: Not yet implemented putInt")
-    actual override fun getLong(): Long = TODO("ByteBuffer.js.kt: Not yet implemented getLong")
-    actual override fun putLong(value: Long): Unit = TODO("ByteBuffer.js.kt: Not yet implemented putLong")
+    actual fun rewind(): ByteBuffer {
+        position = 0
+        return this
+    }
 
-    actual override fun duplicate(): ByteBuffer {
-        val newBuffer = JsArrayByteBuffer(underlying, capacity) // Shares underlying data
-        newBuffer._position = this._position
-        newBuffer._limit = this._limit
-        return newBuffer
+    actual fun remaining(): Int = limit - position
+
+    actual fun hasRemaining(): Boolean = position < limit
+
+    actual fun get(): Byte {
+        if (position >= limit) throw IndexOutOfBoundsException()
+        return buffer[position++].toByte()
+    }
+
+    actual fun get(index: Int): Byte {
+        if (index >= limit) throw IndexOutOfBoundsException()
+        return buffer[index].toByte()
+    }
+
+    actual fun get(dst: ByteArray, offset: Int, length: Int): ByteBuffer {
+        if (length > remaining()) throw BufferUnderflowException()
+        if (offset < 0 || length < 0 || offset + length > dst.size) throw IndexOutOfBoundsException()
+
+        for (i in 0 until length) {
+            dst[offset + i] = buffer[position + i].toByte()
+        }
+        position += length
+        return this
+    }
+
+    actual fun put(b: Byte): ByteBuffer {
+        if (isReadOnly) throw ReadOnlyBufferException()
+        if (position >= limit) throw BufferOverflowException()
+        buffer[position++] = b.toInt()
+        return this
+    }
+
+    actual fun put(index: Int, b: Byte): ByteBuffer {
+        if (isReadOnly) throw ReadOnlyBufferException()
+        if (index >= limit) throw IndexOutOfBoundsException()
+        buffer[index] = b.toInt()
+        return this
+    }
+
+    actual fun put(src: ByteArray, offset: Int, length: Int): ByteBuffer {
+        if (isReadOnly) throw ReadOnlyBufferException()
+        if (length > remaining()) throw BufferOverflowException()
+        if (offset < 0 || length < 0 || offset + length > src.size) throw IndexOutOfBoundsException()
+
+        for (i in 0 until length) {
+            buffer[position + i] = src[offset + i].toInt()
+        }
+        position += length
+        return this
+    }
+
+    actual fun array(): ByteArray {
+        return ByteArray(limit) { buffer[it].toByte() }
     }
 }
 
-// Exceptions would typically be defined in common or be standard JS errors.
-// class BufferOverflowException : RuntimeException()
-// class BufferUnderflowException : RuntimeException()
-// class ReadOnlyBufferException : RuntimeException()
+class BufferOverflowException : RuntimeException()
+class BufferUnderflowException : RuntimeException()
+class ReadOnlyBufferException : RuntimeException()

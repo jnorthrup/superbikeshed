@@ -2,7 +2,7 @@ package simple
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Series // Ensure Series is available
-import borg.trikeshed.io.*
+import borg.trikeshed.nio.*
 import borg.trikeshed.native.HasPosixErr
 import kotlinx.cinterop.*
 import platform.posix.*
@@ -34,11 +34,11 @@ class PosixFile(
     },
 ) : IPlatformFile { // Implement IPlatformFile
 
-    val st: borg.trikeshed.io.stat by lazy {
+    val st: borg.trikeshed.nio.stat by lazy {
         memScoped {
             val statBuf = alloc<platform.posix.stat>()
             fstat(fd, statBuf.ptr)
-            borg.trikeshed.io.stat(statBuf.ptr) // Wrap native stat struct in actual class
+            borg.trikeshed.nio.stat(statBuf.ptr) // Wrap native stat struct in actual class
         }
     }
 
@@ -79,7 +79,7 @@ class PosixFile(
     }
 
     // IPlatformFile requires st_ and st if they are not implemented by delegation
-    override var st_: borg.trikeshed.io.stat? = null // Actual stat from borg.trikeshed.io
+    override var st_: borg.trikeshed.nio.stat? = null // Actual stat from borg.trikeshed.nio
         get() = field ?: st.also { field = it } // Lazy init if needed
 
     companion object {
