@@ -50,6 +50,7 @@ import { Caption } from './core/entities/caption.js'; // Import Caption class
 import { initThreeRenderer } from './rendering/threeRenderer.js'; // Import Three.js renderer
 // Minimap functionality removed
 import { ModernUIManager } from './ui/modernUIManager.js'; // NEW: Import Modern UI Manager
+import { exportGameStateToSpaceGraphData } from './visualization/spacegraphExporter.js';
 
 // Initial game setup
 // Initialize gameContext properties for the first time
@@ -232,6 +233,10 @@ if (!gameContext.HEADLESS_MODE) {
     // Make the simulation instance globally accessible for debugging or specific UI interactions.
     // This helps bridge the gap if some parts of UI still expect a global way to access sim state.
     window.simulation = simulation;
+    // Expose gameState and entityManager for SpaceGraph exporter
+    window.gameState = simulation.gameState;
+    window.entityManager = simulation.entityManager;
+
 
     // Create and store InputManager instance
     const inputManager = new InputManager(simulation);
@@ -244,10 +249,28 @@ if (!gameContext.HEADLESS_MODE) {
     // Start the game loop
     console.log("Starting game loop with new Simulation engine...");
     let lastFrameTime = 0;
+    let lastSpacegraphUpdate = 0; // For SpaceGraph periodic update
+    const SPACEGRAPH_UPDATE_INTERVAL = 1000; // milliseconds (e.g., once per second)
+
     function animate(timestamp) {
         const deltaTime = lastFrameTime > 0 ? (timestamp - lastFrameTime) / 1000 : (1/60); // seconds
         lastFrameTime = timestamp;
         
+        // Update SpaceGraph visualization periodically
+        if (timestamp - lastSpacegraphUpdate > SPACEGRAPH_UPDATE_INTERVAL) {
+            lastSpacegraphUpdate = timestamp;
+            if (window.gameState && window.entityManager && typeof window.updateRtsSpaceGraph === 'function') {
+                try {
+                    // console.log("Attempting to update SpaceGraph data...");
+                    const graphData = exportGameStateToSpaceGraphData(window.gameState, window.entityManager);
+                    window.updateRtsSpaceGraph(graphData);
+                    // console.log("SpaceGraph data sent for update.");
+                } catch (e) {
+                    console.error("Error updating SpaceGraph data:", e);
+                }
+            }
+        }
+
         // Add battle detection and camera adjustment
         if (simulation.entityManager && simulation.entityManager.units && Array.isArray(simulation.entityManager.units)) {
             const battlingUnits = simulation.entityManager.units.filter(unit =>

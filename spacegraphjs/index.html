@@ -52,6 +52,16 @@
             space.centerView(null, 0.8);     
 
             window.space = space; 
+
+            // Make the update function globally accessible for rtsgame
+            window.updateSpaceGraph = function(rtsGraphData) {
+              if (window.space && typeof window.space.loadDynamicData === 'function') {
+                window.space.loadDynamicData(rtsGraphData);
+              } else {
+                console.error("SpaceGraph instance not found or loadDynamicData method is missing.");
+              }
+            };
+
             // UIManager should handle its own status indicator if necessary, or examples can manage it if a specific one is on page.
             // For now, let's assume the UIManager's dynamically created one is sufficient or CSS handles initial state.
             const statusEl = S.$('#status-indicator'); // Find the auto-created one
