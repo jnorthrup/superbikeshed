@@ -12,19 +12,91 @@ import { TrikeShedEntityManager } from './trikeshedEntityManager.js';
 import { ComputroniumManager } from './computroniumManager.js';
 import { EnhancedCommandHierarchy } from './enhancedCommandHierarchy.js';
 
+import * as trikeShedAPI from 'trikeshed-core-js'; // Import trikeshed-core-js
+
 // EntityManager class to manage all game entities
 export class EntityManager {
-    constructor() {
-        this.units = [];
+    constructor(maxEntities = 1000) { // Assuming a max number of entities for Tensor initialization
+        this.units = []; // Still used for storing full unit objects for now
         this.buildings = [];
+        this.nextEntityId = 0; // Simple ID generation for now
+        this.entityIdToIndex = new Map(); // Map entity ID to Tensor row index
+
+        // TODO: Determine appropriate initial size or make dynamic
+        // For now, initialize with a fixed max size and default values (e.g., 0,0 for position)
+        // Positions: entityId (row) -> [x, y]
+        this.unitPositions = trikeShedAPI.TensorCursor(maxEntities, 2, () => 0.0);
+        // Health: entityId (row) -> [hp, maxHp]
+        this.unitHealth = trikeShedAPI.TensorCursor(maxEntities, 2, () => 0.0);
+
+        // Placeholder for other components if refactored
+        // this.unitTypes = trikeShedAPI.TensorSeries(maxEntities, () => ''); // type as string
+        // this.unitTeams = trikeShedAPI.TensorSeries(maxEntities, () => ''); // team as string
         this.projectiles = [];
         this.effects = [];
         this.captions = [];
     }
 
-    addUnit(unit) {
-        this.units.push(unit);
+    _getNewEntityIndex(entityId) {
+        if (this.entityIdToIndex.has(entityId)) {
+            return this.entityIdToIndex.get(entityId);
+        }
+        // This simple index assignment assumes entities are never removed or IDs are not reused in Tensors.
+        // A more robust system would manage free indices.
+        const index = this.entityIdToIndex.size;
+        if (index >= this.unitPositions.rows) { // Check against .rows of one of the tensors
+            console.error("EntityManager: Exceeded maximum entity capacity for Tensors.");
+            // TODO: Implement dynamic resizing or better error handling
+            return null;
+        }
+        this.entityIdToIndex.set(entityId, index);
+        return index;
     }
+
+    addUnit(unit) {
+        this.units.push(unit); // Keep full object for now for non-refactored properties
+
+        const entityIndex = this._getNewEntityIndex(unit.id);
+        if (entityIndex === null) return; // Max capacity reached
+
+        // Write initial position to TensorCursor
+        // TODO: Implement actual update logic using trikeshed-core when available
+        // Conceptual update (actual API will differ for immutable Tensors):
+        // this.unitPositions = this.unitPositions.withUpdatedValue(entityIndex, 0, unit.x);
+        // this.unitPositions = this.unitPositions.withUpdatedValue(entityIndex, 1, unit.y);
+        console.log(`EntityManager: Added unit ${unit.id} at index ${entityIndex}. Position (${unit.x}, ${unit.y}) conceptually stored in Tensor.`);
+
+        // Write initial health to TensorCursor
+        // TODO: Implement actual update logic using trikeshed-core
+        // this.unitHealth = this.unitHealth.withUpdatedValue(entityIndex, 0, unit.hp);
+        // this.unitHealth = this.unitHealth.withUpdatedValue(entityIndex, 1, unit.maxHp);
+        console.log(`EntityManager: Unit ${unit.id} health (${unit.hp}/${unit.maxHp}) conceptually stored in Tensor.`);
+    }
+
+    // Example getter for position (would be used by unit or other systems)
+    getUnitPosition(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        // TODO: Read from actual Tensor using trikeshed-core API
+        // return { x: this.unitPositions.get(index, 0), y: this.unitPositions.get(index, 1) };
+        // For placeholder, return from original unit object if still stored
+        const unit = this.units.find(u => u.id === unitId);
+        return unit ? { x: unit.x, y: unit.y } : null;
+    }
+
+    // Example setter for position (would be called by unit's movement logic)
+    setUnitPosition(unitId, x, y) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        // TODO: Implement actual update logic using trikeshed-core (creating a new Tensor)
+        // this.unitPositions = this.unitPositions.withUpdatedValue(index, 0, x);
+        // this.unitPositions = this.unitPositions.withUpdatedValue(index, 1, y);
+        // For placeholder, update original unit object if still stored
+        const unit = this.units.find(u => u.id === unitId);
+        if (unit) { unit.x = x; unit.y = y; }
+        // console.log(`EntityManager: Unit ${unitId} position updated to (${x}, ${y}) conceptually in Tensor.`);
+    }
+
 
     addBuilding(building) {
         this.buildings.push(building);
@@ -46,10 +118,24 @@ export class EntityManager {
         // Update units
         for (let i = this.units.length - 1; i >= 0; i--) {
             const unit = this.units[i];
-            unit.update(simulation, deltaTime);
             
-            if (unit.hp <= 0 || unit.isDead) {
+            // Before unit.update, ensure its state is synced from Tensors if necessary
+            // For this example, we'll assume unit.update reads via getUnitPosition etc.
+            // or that EntityManager passes necessary state to unit.update directly.
+
+            unit.update(simulation, deltaTime); // unit.update might internally call setUnitPosition
+
+            // After unit.update, if unit's internal state changed (e.g. hp), sync it back to Tensor
+            // TODO: Example: this.setUnitHealth(unit.id, unit.hp, unit.maxHp);
+
+            // Read health for death check from Tensor conceptually (or from unit if it's source of truth for now)
+            // const healthData = this.getUnitHealth(unit.id);
+            // const isDead = (healthData && healthData.hp <= 0) || unit.isDead; // unit.isDead might be set by unit itself
+
+            if (unit.hp <= 0 || unit.isDead) { // Still using unit.hp for now
                 this.units.splice(i, 1);
+                // TODO: Mark entity index as free in Tensors / entityIdToIndex
+                this.entityIdToIndex.delete(unit.id); // Basic removal
                 
                 // Check for commander death (game over condition)
                 if (unit.type === UNIT_TYPES.commander) {
