@@ -5,6 +5,7 @@ import evolution.CryptoKey    // Assuming interface defined in evolution files
 import evolution.subtleCrypto // Accessing the internal val from evolution package
 import evolution.toUint8Array // Assuming helper extension
 import evolution.toByteArray  // Assuming helper extension
+import borg.trikeshed.lib.Join // Placeholder import
 import kotlinx.coroutines.await
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Uint8Array
@@ -19,7 +20,7 @@ actual suspend fun sha256(data: ByteArray): ByteArray {
     return resultBuffer.toByteArray()
 }
 
-actual suspend fun generateEcdhKeyPair(groupId: UShort): Pair<ByteArray, ByteArray> {
+actual suspend fun generateEcdhKeyPair(groupId: UShort): Join<ByteArray, ByteArray> {
     val curveName = when (groupId) {
         0x001Du.toUShort() -> "X25519" // Matched to NID_X25519
         0x0017u.toUShort() -> "P-256"  // Matched to NID_X9_62_prime256v1 (secp256r1)
@@ -47,7 +48,7 @@ actual suspend fun generateEcdhKeyPair(groupId: UShort): Pair<ByteArray, ByteArr
     val privateKeyBytes = subtleCrypto.exportKey("raw", privateKeyCryptoKey).await().toByteArray()
     val publicKeyBytes = subtleCrypto.exportKey("raw", publicKeyCryptoKey).await().toByteArray()
 
-    return Pair(privateKeyBytes, publicKeyBytes)
+    return Join(privateKeyBytes, publicKeyBytes)
 }
 
 actual suspend fun computeEcdhSharedSecret(groupId: UShort, privateKeyBytes: ByteArray, peerPublicKeyBytes: ByteArray): ByteArray {

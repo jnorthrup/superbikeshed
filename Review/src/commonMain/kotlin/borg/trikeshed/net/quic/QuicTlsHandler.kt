@@ -7,6 +7,8 @@ import borg.trikeshed.net.quic.tls.TlsEncryptionLevel
 import borg.trikeshed.net.quic.tls.TlsHandshakeCallbacks
 import borg.trikeshed.net.tls.TlsService // The main expect interface
 import borg.trikeshed.net.tls.TlsServiceKey
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Join
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -37,11 +39,16 @@ class QuicTlsHandler(
         ?: throw IllegalStateException("TlsService not found in CoroutineContext. Ensure platform implementation is provided.")
 
     private var tlsConnection: TlsConnection? = null
+    // This queue is for illustrative purposes if TlsHandler were to manage a queue.
+    // The current onHandshakeDataToSendCallback directly passes data out.
+    // If it were to queue, it would need to be a var and re-assigned with an immutable Series.
+    private var cryptoDataToSendQueue: Series<Join<ByteArray, EncryptionLevel>> = Series.empty()
 
-    suspend fun startClientHandshake(hostname: String, alpnProtocols: List<String>) {
+
+    suspend fun startClientHandshake(hostname: String, alpnProtocols: Series<String>) {
         val result = tlsService.startClientHandshake(
             hostname = hostname,
-            alpnProtocols = alpnProtocols,
+            alpnProtocols = alpnProtocols, // Pass Series<String> directly
             quicTransportParams = localQuicTransportParams,
             callbacks = this
         )
@@ -215,7 +222,7 @@ class QuicTlsHandler(
     private fun mapTlsAlertToQuicError(alert: TlsAlert): Long {
         // RFC 9001, Section 11: TLS errors map to QUIC error codes in the range 0x0100 to 0x01FF.
         // The value is 0x0100 + alert description.
-        return (0x0100L + alert.description.toLong())
+        return (TransportErrorCode.CRYPTO_ERROR_TLS_ALERT_BASE.value + alert.description.toLong())
     }
 }
 

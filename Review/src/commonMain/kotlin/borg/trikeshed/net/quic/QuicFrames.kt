@@ -1,6 +1,7 @@
 package borg.trikeshed.net.quic
 
 import borg.trikeshed.lib.Join // Assuming this is the correct path for Join
+import borg.trikeshed.lib.Series // Placeholder
 import borg.trikeshed.net.quic.PacketNumber // From QuicTypes.kt
 import borg.trikeshed.net.quic.ConnectionId // From QuicTypes.kt
 
@@ -44,7 +45,7 @@ data class AckFrame(
   val largestAcked: Long, // Was PacketNumber (ULong)
   val ackDelay: Long,     // Was ULong
   val firstAckRangePacketCount: Long,
-  val additionalAckRanges: List<AckRange>,
+  val additionalAckRanges: Series<AckRange>,
   val ecnCounts: EcnCounts?
 ) : QuicFrame
 // Note: Removed old AckBlock as its role is covered by AckRange and firstAckRangePacketCount.

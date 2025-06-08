@@ -1,44 +1,26 @@
 package borg.trikeshed.io.network
 
 import kotlin.coroutines.CoroutineContext
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Join
 
 // Key for the QUIC Network Service in the CoroutineContext
 object QuicNetworkServiceKey : CoroutineContext.Key<QuicNetworkService>
 
 // Represents a network address (IP and port)
-data class NetworkAddress(val host: String, val port: Int) {
-    override fun toString(): String = "$host:$port"
-}
+typealias NetworkAddress = Join<String, Int>
+// Consider adding extension properties for clarity if direct .first/.second is too verbose:
+// val NetworkAddress.host: String get() = first
+// val NetworkAddress.port: Int get() = second
 
 // Represents a UDP datagram
-data class DatagramPacket(
-    val data: ByteArray,
-    val address: NetworkAddress,
-    val length: Int = data.size // Actual length of data in the buffer, can be less than data.size
-) {
-    // Ensure data is copied to avoid external modification issues if needed,
-    // or document that the ByteArray is not to be modified.
-    // For now, assume direct use.
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
+// Structure: Join(data: ByteArray, Join(address: NetworkAddress, length: Int))
+typealias DatagramPacket = Join<ByteArray, Join<NetworkAddress, Int>>
 
-        other as DatagramPacket
-
-        if (!data.contentEquals(other.data)) return false
-        if (address != other.address) return false
-        if (length != other.length) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = data.contentHashCode()
-        result = 31 * result + address.hashCode()
-        result = 31 * result + length
-        return result
-    }
-}
+// Extension properties for easier access to DatagramPacket components
+val DatagramPacket.data: ByteArray get() = this.first
+val DatagramPacket.address: NetworkAddress get() = this.second.first
+val DatagramPacket.length: Int get() = this.second.second
 
 // Interface for QUIC network operations
 interface QuicNetworkService : CoroutineContext.Element {
@@ -57,7 +39,7 @@ interface QuicNetworkService : CoroutineContext.Element {
 
     // Resolves a hostname to a list of NetworkAddresses.
     // Could return multiple if DNS resolves to multiple IPs.
-    suspend fun resolve(hostname: String, port: Int): List<NetworkAddress>
+    suspend fun resolve(hostname: String, port: Int): Series<NetworkAddress>
 
     // Closes the UDP socket and releases any underlying resources.
     suspend fun close()
