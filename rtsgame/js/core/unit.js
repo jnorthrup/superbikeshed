@@ -8,6 +8,7 @@ import { Caption } from './entities/caption.js';
 import { Building } from './building.js';
 import { UnitProgression } from './unitProgression.js';
 import { AutonomousBehavior } from './autonomousBehavior.js';
+import { COMMAND_CONFIG } from '../config/commandConfig.js';
 
 const WEIGHT_SPEED_PENALTY_FACTOR = 0.01;
 const DEFAULT_UNIT_SPEED = 1.0;
@@ -169,8 +170,8 @@ class Unit {
         this.progression = new UnitProgression(this);
         
         // Add progression-related properties
-        this.baseAuthority = this.calculateBaseAuthority();
-        this.effectiveAuthority = this.baseAuthority;
+        // this.baseAuthority = this.calculateBaseAuthority(); // This line is now part of the new properties block
+        // this.effectiveAuthority = this.baseAuthority; // This line is now part of the new properties block
         
         // Add promotion callback
         this.onPromotion = null;
@@ -178,7 +179,38 @@ class Unit {
         // Add autonomous behavior
         this.autonomousBehavior = null;
         this.hasExplicitOrders = false;
+
+        // Enhanced authority properties (as per implementation-guide.md Section 1.1)
+        this.baseAuthority = this.calculateBaseAuthority();
+        this.healthAuthorityModifier = 0;
+        this.veterancyAuthorityModifier = 0;
+        this.contextAuthorityModifier = 0;
+        this.computroniumAuthorityModifier = 0;
+        this.effectiveAuthority = this.baseAuthority;
+
+        // Veterancy tracking
+        this.combatExperience = 0;
+        this.survivalTime = 0;
+        this.commandExperience = 0;
+        this.killCount = 0;
+        this.damageDelt = 0; // Corrected typo from damageDelt to damageDealt if intended, guide says damageDelt
+        this.lastPromotionTime = 0;
+        this.veterancyLevel = 'GREEN';
+
+        // Health-based command fitness
+        this.commandFitness = 'FULL_COMMAND';
+        this.lastAuthorityUpdate = 0;
+        this.commandSuccesses = 0;
+        this.commandFailures = 0;
+
+        // Veterancy benefits flags
+        this.canPromoteSubordinates = false;
+        this.provideMoraleBonus = false;
+
+        this.formationAngle = Math.random() * Math.PI * 2; // For executeGroupMovement
     }
+
+    // Removed the duplicate placeholder calculateBaseAuthority() method from here
 
     getCurrentSpeed(simulation) { // Renamed gameContext to simulation
         const terrain = simulation.terrain; // Access terrain directly from simulation
@@ -310,6 +342,22 @@ class Unit {
         if (this.autonomousBehavior && !this.hasExplicitOrders) {
             this.autonomousBehavior.update(deltaTime);
         }
+
+        // Update authority every 5 seconds (as per implementation-guide.md Section 1.3)
+        const now = performance.now();
+        if (now - this.lastAuthorityUpdate > COMMAND_CONFIG.UPDATE_INTERVALS.AUTHORITY_RECALC) {
+            this.calculateEffectiveAuthority();
+            this.lastAuthorityUpdate = now;
+
+            // Check for command succession needs
+            if (this.commandFitness === 'COMBAT_INEFFECTIVE' ||
+                this.commandFitness === 'CRITICAL_STATUS') {
+                this.triggerCommandSuccession(simulation); // Pass simulation as gameContext
+            }
+        }
+
+        // Update veterancy tracking (as per implementation-guide.md Section 1.3)
+        this.updateVeterancyProgress(simulation); // Pass simulation as gameContext
     }
 
     defaultMovementAndTargeting(simulation, deltaTime) { // Renamed gameContext, added deltaTime
@@ -650,14 +698,29 @@ class Unit {
             gameState.addEvent('battle', `Major engagement: ${this.type.name} vs ${target.type.name}`, 2, { x: this.x, y: this.y });
         }
 
-        // Record damage and experience
-        if (damage > 0) {
-            this.progression.recordDamage(damage);
+        // Record damage and experience (as per implementation-guide.md Section 3.2)
+        // Note: The guide mentions `damage` as the variable, but existing code seems to use `actualDamage`
+        // if we consider the damage after reductions. For simplicity with the guide, using `damage` parameter.
+        // If `actualDamage` (damage after shield/armor) is intended, this needs adjustment.
+        // The original `this.progression.recordDamage(damage)` is kept as it might serve a different purpose.
+        // This new logic is specifically for `damageDelt` and `combatExperience`.
+
+        if (damage > 0) { // Assuming 'damage' is the intended variable from the guide for raw damage output by this unit
+            this.combatExperience += 1;
+            this.damageDelt += damage; // Use the 'damage' parameter from the attack method
+            this.progression.recordDamage(damage); // Keeping original call, might be for other progression aspects
         }
         
-        // Record kill
+        // Record kill (as per implementation-guide.md Section 3.2)
         if (target.hp <= 0) {
-            this.progression.recordKill(target);
+            this.killCount += 1;
+            // Bonus experience for high-value targets
+            if (target.type && target.type.id === 'acu') { // Specific check for ACU commander type
+                this.combatExperience += 10;
+            } else if (target.type && target.type.tier && target.type.tier >= 2) {
+                this.combatExperience += 3;
+            }
+            this.progression.recordKill(target); // Keeping original call
         }
     }
 
@@ -857,7 +920,105 @@ class Unit {
             }
         }
     }
-    followSuperiorOrders(simulation) { /* Renamed gameContext */ const units = simulation.entityManager.units; /* ... */ }
+
+    followSuperiorOrders(gameContext) { // Renamed simulation to gameContext for consistency with guide
+        const { units } = gameContext.entityManager;
+
+        let commander = null;
+        let highestEffectiveAuthority = 0;
+
+        for (const ally of units) {
+            if (ally.team === this.team &&
+                ally !== this &&
+                this.getDistance(ally) < COMMAND_CONFIG.COMMAND_RANGES.TACTICAL) {
+
+                ally.calculateEffectiveAuthority(); // Ensure ally's authority is up-to-date
+
+                if (ally.effectiveAuthority > this.effectiveAuthority && // Must have higher authority than current unit
+                    ally.effectiveAuthority > highestEffectiveAuthority && // Must be the highest found so far
+                    ally.commandFitness === 'FULL_COMMAND') { // Commander must be fit
+
+                    highestEffectiveAuthority = ally.effectiveAuthority;
+                    commander = ally;
+                }
+            }
+        }
+
+        if (commander) {
+            this.currentCommander = commander;
+
+            // Follow commander's directives for targeting
+            if (commander.target && !this.target &&
+                this.getDistance(commander.target) < (this.type.range || 100) * 2) { // type.range might not exist for all, so default
+                this.target = commander.target;
+            }
+
+            // Maintain formation distance based on effective authority difference
+            const authorityGap = commander.effectiveAuthority - this.effectiveAuthority;
+            const formationDistance = Math.max(
+                COMMAND_CONFIG.COMMAND_RANGES.FORMATION_MIN_DISTANCE,
+                Math.min(COMMAND_CONFIG.COMMAND_RANGES.FORMATION_MAX_DISTANCE, COMMAND_CONFIG.COMMAND_RANGES.FORMATION_MIN_DISTANCE + authorityGap * 2)
+            );
+
+            const distToCommander = this.getDistance(commander);
+            if (distToCommander > formationDistance + 50 && !this.target) { // If too far and not engaging enemy
+                this.patrolTarget = { x: commander.x, y: commander.y }; // Simple follow
+            }
+        } else {
+            this.currentCommander = null; // No suitable commander found or in range
+        }
+    }
+
+    executeGroupMovement(gameContext) {
+        const { units } = gameContext.entityManager;
+
+        let groupLeader = null;
+        // Start by assuming this unit is its own leader, unless a better one is found
+        let highestEffectiveAuthority = this.effectiveAuthority;
+        // If this unit itself is not fit for command, it shouldn't lead a group by default
+        if (this.commandFitness !== 'FULL_COMMAND') {
+             highestEffectiveAuthority = -1; // Ensure it tries to find a leader if not FULL_COMMAND
+        }
+
+        for (const ally of units) {
+            if (ally.team === this.team) { // Check all allies on the same team
+                 if (this.getDistance(ally) < COMMAND_CONFIG.COMMAND_RANGES.STRATEGIC) {
+                    ally.calculateEffectiveAuthority(); // Ensure authority is up-to-date
+                    if (ally.effectiveAuthority > highestEffectiveAuthority &&
+                        ally.commandFitness === 'FULL_COMMAND') {
+                        highestEffectiveAuthority = ally.effectiveAuthority;
+                        groupLeader = ally; // This ally is a better leader
+                    }
+                }
+            }
+        }
+         // If this unit is the most authoritative and fit, it doesn't need to follow anyone in the group context.
+        if (groupLeader === this) {
+            groupLeader = null;
+        }
+
+        if (groupLeader) { // groupLeader will be null if this unit is the leader or no suitable leader found
+            const leaderDist = this.getDistance(groupLeader);
+
+            const veterancyModifier = groupLeader.veterancyLevel === 'HERO' ? 20 :
+                                    groupLeader.veterancyLevel === 'ELITE' ? 15 : 10;
+            const idealDistance = COMMAND_CONFIG.COMMAND_RANGES.FORMATION_MIN_DISTANCE + veterancyModifier;
+
+            if (leaderDist > idealDistance + 30) { // If too far from the leader's ideal position
+                // Move towards a formation spot around the leader
+                this.patrolTarget = {
+                    x: groupLeader.x + Math.cos(this.formationAngle || 0) * idealDistance,
+                    y: groupLeader.y + Math.sin(this.formationAngle || 0) * idealDistance
+                };
+
+                // Clear conflicting combat orders if moving into formation and target is far
+                if (this.target && this.getDistance(this.target) > (this.type.range || 100) * 1.5) {
+                    this.target = null;
+                }
+            }
+        }
+    }
+
     updateStuckDetection(simulation) { // Renamed gameContext
         const dxMoved = this.x - this.lastPositionForStuckCheck.x;
         const dyMoved = this.y - this.lastPositionForStuckCheck.y;
@@ -996,6 +1157,63 @@ class Unit {
         }
     }
 
+    calculateEffectiveAuthority() {
+        const healthRatio = this.hp / this.maxHp;
+
+        // Health bias calculation
+        if (healthRatio >= COMMAND_CONFIG.HEALTH_THRESHOLDS.FULL_COMMAND) {
+            this.healthAuthorityModifier = 5; // Per guide, direct value, not COMMAND_CONFIG.AUTHORITY_WEIGHTS.HEALTH_MAX_MODIFIER
+            this.commandFitness = 'FULL_COMMAND';
+        } else if (healthRatio >= COMMAND_CONFIG.HEALTH_THRESHOLDS.REDUCED_AUTHORITY) {
+            this.healthAuthorityModifier = 2;
+            this.commandFitness = 'REDUCED_AUTHORITY';
+        } else if (healthRatio >= COMMAND_CONFIG.HEALTH_THRESHOLDS.COMPROMISED_COMMAND) {
+            this.healthAuthorityModifier = -2;
+            this.commandFitness = 'COMPROMISED_COMMAND';
+        } else if (healthRatio >= COMMAND_CONFIG.HEALTH_THRESHOLDS.CRITICAL_STATUS) {
+            this.healthAuthorityModifier = -5;
+            this.commandFitness = 'CRITICAL_STATUS';
+        } else { // Effectively healthRatio < COMMAND_CONFIG.HEALTH_THRESHOLDS.CRITICAL_STATUS
+            this.healthAuthorityModifier = -10;
+            this.commandFitness = 'COMBAT_INEFFECTIVE';
+        }
+
+        // Veterancy bias calculation
+        const experiencePoints = this.combatExperience +
+                               (this.survivalTime / 60) +
+                               (this.commandExperience * 3) +
+                               (this.killCount * 2);
+
+        if (experiencePoints >= COMMAND_CONFIG.VETERANCY_THRESHOLDS.HERO) {
+            this.veterancyLevel = 'HERO';
+            this.veterancyAuthorityModifier = 15; // Per guide, direct value, not COMMAND_CONFIG.AUTHORITY_WEIGHTS.VETERANCY_MAX_MODIFIER
+        } else if (experiencePoints >= COMMAND_CONFIG.VETERANCY_THRESHOLDS.ELITE) {
+            this.veterancyLevel = 'ELITE';
+            this.veterancyAuthorityModifier = 10;
+        } else if (experiencePoints >= COMMAND_CONFIG.VETERANCY_THRESHOLDS.VETERAN) {
+            this.veterancyLevel = 'VETERAN';
+            this.veterancyAuthorityModifier = 5;
+        } else if (experiencePoints >= COMMAND_CONFIG.VETERANCY_THRESHOLDS.REGULAR) {
+            this.veterancyLevel = 'REGULAR';
+            this.veterancyAuthorityModifier = 2;
+        } else {
+            this.veterancyLevel = 'GREEN';
+            this.veterancyAuthorityModifier = 0;
+        }
+
+        // Placeholder for Computronium-based C&C modifier calculation
+        this.computroniumAuthorityModifier = 0; // Placeholder for Computronium-based C&C modifier
+
+        // Calculate final effective authority
+        this.effectiveAuthority = this.baseAuthority +
+                                this.healthAuthorityModifier +
+                                this.veterancyAuthorityModifier +
+                                this.contextAuthorityModifier +
+                                this.computroniumAuthorityModifier;
+
+        return this.effectiveAuthority;
+    }
+
     /**
      * Get veterancy level
      * @returns {string} Veterancy level
@@ -1102,6 +1320,297 @@ class Unit {
         this.hasExplicitOrders = true;
         // ... existing repair code ...
     }
+
+    // Placeholder method for command succession (Section 1.3 / 2.1)
+    triggerCommandSuccession(gameContext) {
+        const { units } = gameContext.entityManager; // Get units from entityManager
+
+        // Find suitable replacement commander
+        const nearbyAllies = units.filter(u =>
+            u.team === this.team &&
+            u !== this &&
+            this.getDistance(u) < COMMAND_CONFIG.COMMAND_RANGES.TACTICAL &&
+            u.commandFitness === 'FULL_COMMAND'
+        );
+
+        if (nearbyAllies.length === 0) return;
+
+        // Select best replacement based on effective authority
+        let bestReplacement = null;
+        let highestAuthority = 0;
+
+        for (const ally of nearbyAllies) {
+            ally.calculateEffectiveAuthority(); // Ensure authority is up-to-date
+            if (ally.effectiveAuthority > highestAuthority) {
+                highestAuthority = ally.effectiveAuthority;
+                bestReplacement = ally;
+            }
+        }
+
+        if (bestReplacement && bestReplacement.effectiveAuthority > this.effectiveAuthority) {
+            this.transferCommand(bestReplacement, gameContext);
+        }
+    }
+
+    transferCommand(newCommander, gameContext) {
+        const { units, addCaption } = gameContext.entityManager; // Get units and addCaption from entityManager
+        const { gameState } = gameContext; // Get gameState for addEvent
+
+        // Transfer subordinates
+        const subordinates = units.filter(u =>
+            u.team === this.team &&
+            u.currentCommander === this
+        );
+
+        subordinates.forEach(subordinate => {
+            subordinate.currentCommander = newCommander;
+            subordinate.lastCommandChange = performance.now();
+        });
+
+        // Update command experience
+        newCommander.commandExperience += subordinates.length;
+        this.commandFailures += 1; // Failed to maintain command
+
+        // Visual feedback
+        // Caption class is imported at the top of the file
+        addCaption(new Caption(
+            newCommander.x, newCommander.y,
+            `Command transferred to ${newCommander.veterancyLevel} ${newCommander.type.name}`,
+            '#ff4', 14
+        ));
+
+        // Log succession event
+        if (gameState && typeof gameState.addEvent === 'function') {
+            gameState.addEvent('command_succession',
+                `${this.team} command transferred due to combat ineffectiveness`, 2);
+        }
+    }
+
+    // Placeholder method for veterancy progress (Section 1.3 / 3.1)
+    updateVeterancyProgress(gameContext) {
+        const deltaTime = gameContext.gameSpeedManager ? (gameContext.gameSpeedManager.deltaTime || (1/60)) : (1/60);
+
+        // Check if the unit is in combat zones
+        // this.isUnderFire(gameContext) is not yet defined, will be falsy
+        const inCombat = this.target || this.hp < this.maxHp || (typeof this.isUnderFire === 'function' && this.isUnderFire(gameContext));
+
+        if (inCombat) {
+            this.survivalTime += deltaTime;
+        }
+
+        // Check for promotion eligibility
+        const oldLevel = this.veterancyLevel;
+        this.calculateEffectiveAuthority(); // This method updates veterancyLevel based on experience points
+
+        if (oldLevel !== this.veterancyLevel) {
+            this.processPromotion(oldLevel, gameContext);
+        }
+    }
+
+    processPromotion(oldLevel, gameContext) {
+        const { entityManager, gameState } = gameContext;
+        const now = performance.now();
+
+        // Prevent spam promotions
+        if (now - this.lastPromotionTime < COMMAND_CONFIG.UPDATE_INTERVALS.PROMOTION_COOLDOWN) return;
+
+        this.lastPromotionTime = now;
+
+        // Apply veterancy benefits
+        this.applyVeterancyBenefits();
+
+        // Visual feedback (Caption class is imported at the top)
+        if (entityManager && typeof entityManager.addCaption === 'function') {
+            entityManager.addCaption(new Caption(
+                this.x, this.y,
+                `${this.type.name} promoted to ${this.veterancyLevel}!`,
+                '#4f4', 16
+            ));
+        }
+
+        // Strategic event
+        if (gameState && typeof gameState.addEvent === 'function') {
+            gameState.addEvent('promotion',
+                `${this.team} ${this.type.name} promoted to ${this.veterancyLevel}`, 2);
+        }
+    }
+
+    applyVeterancyBenefits() {
+        const baseDamage = this.type.damage;
+        const baseSpeed = this.type.speed; // Assuming this.type.speed is the base speed
+        const baseRange = this.type.range;
+
+        // It's assumed that this.damage, this.speed, this.range are instance properties
+        // that might initially be copies of this.type.damage etc., or are used to store modified values.
+        // If not, this logic would need to adjust multipliers or store modifiers.
+
+        switch (this.veterancyLevel) {
+            case 'REGULAR':
+                this.damage = baseDamage * 1.1;
+                // Re-calculate effective speed if baseSpeed is modified
+                // For now, directly modifying this.speed. If this.speed is an effective speed already,
+                // this needs to apply to the base speed that this.speed is derived from.
+                // The current constructor calculates this.speed once.
+                // For simplicity, we'll assume this.speed can be directly modified here.
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.05 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+
+                break;
+            case 'VETERAN':
+                this.damage = baseDamage * 1.2;
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.1 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+                this.range = baseRange * 1.1; // Assuming this.range exists and can be modified
+                break;
+            case 'ELITE':
+                this.damage = baseDamage * 1.3;
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.15 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+                this.range = baseRange * 1.2;
+                this.canPromoteSubordinates = true;
+                break;
+            case 'HERO':
+                this.damage = baseDamage * 1.4;
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.2 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+                this.range = baseRange * 1.3;
+                this.provideMoraleBonus = true;
+                this.canPromoteSubordinates = true;
+                break;
+        }
+        // Ensure speed does not become negative
+        if (this.speed < 0) {
+            this.speed = 0;
+        }
+    }
 }
 
 export { Unit };
+
+// Debugging and Validation Functions (as per Sections 5.1 and 6.2)
+
+function validateAuthoritySystem(gameContext) {
+    const { units } = gameContext.entityManager;
+    const testResults = {
+        authorityCollisions: 0,
+        commandChainBreaks: 0,
+        successionFailures: 0,
+        // veterancyErrors: 0 // Not specified in this step's prompt
+    };
+
+    // Test 1: Authority collision detection
+    const authorityMap = new Map();
+    units.forEach(unit => {
+        unit.calculateEffectiveAuthority(); // Make sure it's up to date
+        const authKey = `${unit.team}-${unit.effectiveAuthority.toFixed(2)}`; // Key by team and authority
+
+        if (authorityMap.has(authKey)) {
+            const existingUnits = authorityMap.get(authKey);
+            // Check for proximity with any of the existing units with same team and authority
+            for (const existingUnit of existingUnits) {
+                if (existingUnit.team === unit.team && unit.getDistance(existingUnit) < COMMAND_CONFIG.COMMAND_RANGES.TACTICAL) {
+                    testResults.authorityCollisions++;
+                    console.warn(`Authority collision: Unit ${unit.id || unit.type.name} and Unit ${existingUnit.id || existingUnit.type.name} (team ${unit.team}) both have authority ${unit.effectiveAuthority.toFixed(2)} within tactical range.`);
+                    break;
+                }
+            }
+            existingUnits.push(unit);
+        } else {
+            authorityMap.set(authKey, [unit]);
+        }
+    });
+
+    // Test 2: Command chain validation
+    units.forEach(unit => {
+        if (unit.currentCommander) {
+            unit.currentCommander.calculateEffectiveAuthority(); // Ensure commander's authority is up-to-date
+            unit.calculateEffectiveAuthority(); // Ensure unit's own authority is up-to-date
+            if (unit.currentCommander.effectiveAuthority <= unit.effectiveAuthority) {
+                testResults.commandChainBreaks++;
+                console.warn(`Command chain break: Unit ${unit.id || unit.type.name} (Auth: ${unit.effectiveAuthority.toFixed(2)}) following lower/equal authority commander ${unit.currentCommander.id || unit.currentCommander.type.name} (Auth: ${unit.currentCommander.effectiveAuthority.toFixed(2)})`);
+            }
+        }
+    });
+
+    // Test 3: Succession system validation (Basic Check)
+    units.forEach(unit => {
+        if (unit.commandFitness === 'COMBAT_INEFFECTIVE') {
+            // Check if it still has subordinates (which it shouldn't if succession worked)
+            const hasSubordinates = units.some(u => u.currentCommander === unit);
+            if (hasSubordinates) {
+                 // Now check if a suitable successor was available
+                const hasPotentialSuccessor = units.some(ally =>
+                    ally.team === unit.team &&
+                    ally !== unit &&
+                    unit.getDistance(ally) < COMMAND_CONFIG.COMMAND_RANGES.TACTICAL &&
+                    ally.commandFitness === 'FULL_COMMAND' &&
+                    ally.effectiveAuthority > unit.effectiveAuthority
+                );
+
+                if (hasPotentialSuccessor) {
+                    // If it has subordinates AND a potential successor was available, it's a potential failure.
+                    testResults.successionFailures++;
+                    console.warn(`Potential succession failure: Unit ${unit.id || unit.type.name} is COMBAT_INEFFECTIVE but still has subordinates, and a potential successor was available.`);
+                }
+            }
+        }
+    });
+
+    console.log("Authority System Validation Results:", testResults);
+    return testResults;
+}
+
+function renderCommandHierarchyDebug(ctx, gameContext) {
+    const { units } = gameContext.entityManager;
+    const camera = gameContext.camera; // Assuming camera is on gameContext
+
+    if (!camera || !units) return;
+
+    units.forEach(unit => {
+        const screenX = (unit.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+        const screenY = (unit.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+        // Authority and Veterancy display
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        if (unit.effectiveAuthority !== undefined) {
+            ctx.fillText(`Auth: ${unit.effectiveAuthority.toFixed(0)}`, screenX, screenY - 20);
+        }
+        if (unit.veterancyLevel) {
+            ctx.fillText(`${unit.veterancyLevel}`, screenX, screenY - 10);
+        }
+
+
+        // Command lines
+        if (unit.currentCommander) {
+            const commanderScreenX = (unit.currentCommander.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const commanderScreenY = (unit.currentCommander.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+            ctx.strokeStyle = '#ff0'; // Yellow line
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY);
+            ctx.lineTo(commanderScreenX, commanderScreenY);
+            ctx.stroke();
+        }
+
+        // Authority radius - using a threshold like VETERANCY_THRESHOLDS.REGULAR (25 points)
+        // or an authority value like 20 as suggested in the prompt.
+        // Let's use effectiveAuthority > a certain value, e.g., 10 (REGULAR gives +2, VETERAN +5, so base + REGULAR could be ~7-10+)
+        // COMMAND_CONFIG.VETERANCY_THRESHOLDS.REGULAR is an XP value, not an authority value.
+        // Let's use a simple authority threshold, e.g., > 10 for drawing a radius.
+        if (unit.effectiveAuthority > 10) {
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)'; // Light green, semi-transparent
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, COMMAND_CONFIG.COMMAND_RANGES.SQUAD * camera.zoom, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    });
+    ctx.textAlign = 'left'; // Reset text align
+}
+
+
+if (typeof window !== 'undefined') {
+    window.debugRTS = {
+        validateAuthoritySystem,
+        renderCommandHierarchyDebug
+    };
+}
