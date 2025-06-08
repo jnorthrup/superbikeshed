@@ -126,7 +126,10 @@ expect interface TlsService { // Changed to expect interface
         hostname: String,
         alpnProtocols: Series<String>,
         quicTransportParams: ByteArray, // Bytes of the QUIC TP TLS extension payload
-        callbacks: TlsHandshakeCallbacks
+        callbacks: TlsHandshakeCallbacks,
+        // New parameters for client certificate authentication
+        clientCertificateChainDer: Series<ByteArray>? = null,
+        clientPrivateKeyDer: ByteArray? = null
     ): Result<TlsConnection>
 
     // Consider adding a close() method to TlsService if the service itself holds resources

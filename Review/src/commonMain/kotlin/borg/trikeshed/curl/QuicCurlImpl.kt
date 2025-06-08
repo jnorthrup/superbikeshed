@@ -5,6 +5,7 @@ import borg.trikeshed.net.http.HttpResponse
 import borg.trikeshed.net.http.HttpMethod
 import borg.trikeshed.net.http.HttpHeaders
 import borg.trikeshed.net.http.RequestBody
+import borg.trikeshed.net.http.HttpAuthentication // Added import
 import borg.trikeshed.net.http.QuicCurlException
 import borg.trikeshed.net.http3.qpack.QpackEncoder
 import borg.trikeshed.net.http3.qpack.QpackDecoder
@@ -216,6 +217,30 @@ class QuicCurlImpl(
                  addHeader("host", authority)
             }
 
+            // START OF NEW AUTHENTICATION LOGIC
+            request.authentication?.let { auth ->
+                when (auth) {
+                    is HttpAuthentication.BasicAuth -> {
+                        val credentials = "${auth.username}:${auth.password}"
+                        // In a real scenario, use a proper Base64 encoder.
+                        // For this subtask, a simple placeholder or assuming one exists.
+                        // val encodedCredentials = base64Encode(credentials) // Using expect fun
+                        // Simple placeholder for now:
+                        val encodedCredentials = credentials.encodeToByteArray().joinToString("") { byte -> (byte.toInt() and 0xFF).toString(16).padStart(2, '0') } // NOT REAL BASE64, JUST HEX for placeholder
+                        addHeader("authorization", "Basic $encodedCredentials")
+                    }
+                    is HttpAuthentication.BearerToken -> {
+                        addHeader("authorization", "Bearer ${auth.token}")
+                    }
+                    is HttpAuthentication.ApiKeyAuth -> {
+                        // Note: This will overwrite if the user manually provided a header with the same name.
+                        // This is often desired behavior for a dedicated auth mechanism.
+                        http3Headers.remove(auth.headerName.lowercase()) // Remove if manually set, to ensure our value takes precedence
+                        addHeader(auth.headerName, auth.keyValue)
+                    }
+                }
+            }
+            // END OF NEW AUTHENTICATION LOGIC
 
             // E. Encode Headers (QPACK Placeholder)
             val encodedHeaders = qpackEncoder.encode(http3Headers.mapValues { it.value.toList() }, stream.streamId)

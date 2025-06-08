@@ -45,12 +45,21 @@ class QuicTlsHandler(
     private var cryptoDataToSendQueue: Series<Join<ByteArray, EncryptionLevel>> = Series.empty()
 
 
-    suspend fun startClientHandshake(hostname: String, alpnProtocols: Series<String>) {
+    suspend fun startClientHandshake(
+        hostname: String,
+        alpnProtocols: Series<String>,
+        // New parameters
+        clientCertificateChainDer: Series<ByteArray>? = null,
+        clientPrivateKeyDer: ByteArray? = null
+    ) {
         val result = tlsService.startClientHandshake(
             hostname = hostname,
             alpnProtocols = alpnProtocols, // Pass Series<String> directly
             quicTransportParams = localQuicTransportParams,
-            callbacks = this
+            callbacks = this,
+            // Pass through the new parameters
+            clientCertificateChainDer = clientCertificateChainDer,
+            clientPrivateKeyDer = clientPrivateKeyDer
         )
         result.fold(
             onSuccess = { activeTlsConnection ->
