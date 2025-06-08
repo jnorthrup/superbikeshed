@@ -6,14 +6,6 @@ plugins {
 group = "org.ta4k"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenLocal()
-    maven("https://oss.sonatype.org/content/repositories/snapshots/")
-    maven("https://mvnrepository.com/artifact/org.jetbrains.kotlinx/")
-    mavenCentral()
-    gradlePluginPortal()
-    google()
-}
 
 kotlin {
     jvm {
@@ -24,13 +16,16 @@ kotlin {
             useJUnitPlatform()
         }
     }
-//    js(BOTH) {
-//        browser {
-//            commonWebpackConfig {
-//                cssSupport.enabled = true
-//            }
-//        }
-//    }
+    js(IR) {
+        browser {
+            commonWebpackConfig {
+                cssSupport {
+                    enabled.set(true)
+                }
+            }
+        }
+        binaries.executable()
+    }
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
     when {
@@ -67,6 +62,16 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-test-junit5")
                 implementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
                 runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
             }
         }
         val nativeMain by getting {

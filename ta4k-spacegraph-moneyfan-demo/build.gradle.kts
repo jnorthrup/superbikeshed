@@ -1,6 +1,6 @@
 // ta4k-spacegraph-moneyfan-demo/build.gradle.kts
 plugins {
-    kotlin("multiplatform") version "1.9.23" // Use a recent Kotlin version
+    kotlin("multiplatform") // Inherit version from root project
     // No application plugin here as this module primarily produces JS for the browser
 }
 
@@ -9,20 +9,9 @@ kotlin {
         browser {
             // Configure webpack tasks
             commonWebpackConfig {
-                cssSupport.enabled = true // Enable CSS handling
-
-                // Ensure source maps are generated for easier debugging
-                sourceMaps = true // "eval-source-map" is often default for dev, "source-map" for prod.
-                                  // Explicitly true ensures they are on.
-            }
-
-            // Configure the development server to serve resources and enable hot reloading if possible
-            devServer?.apply {
-                staticResourcesDirectory = project.file("src/jsMain/resources")
-                // watchFiles.add(project.file("src/jsMain/resources").path) // Redundant if staticResourcesDirectory works
-                // contentBase = project.file("src/jsMain/resources") // old way, staticResourcesDirectory is newer
-                open = true // Automatically open the browser
-                port = 8080 // Default port
+                cssSupport {
+                    enabled.set(true) // Enable CSS handling
+                }
             }
 
             // Production build configuration (optional for demo, but good practice)
