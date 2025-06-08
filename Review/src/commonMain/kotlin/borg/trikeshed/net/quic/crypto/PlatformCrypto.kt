@@ -1,8 +1,10 @@
 package borg.trikeshed.net.quic.crypto
 
+import borg.trikeshed.lib.Join // Placeholder import
+
 // groupId: e.g., X25519_GROUP (0x001Du) or P256_GROUP (0x0017u)
-// Returns Pair(privateKey, publicKey)
-expect fun generateEcdhKeyPair(groupId: UShort): Pair<ByteArray, ByteArray>
+// Returns Join(privateKey, publicKey)
+expect fun generateEcdhKeyPair(groupId: UShort): Join<ByteArray, ByteArray>
 
 // groupId: Specifies the elliptic curve group.
 // privateKey: The local private key.
