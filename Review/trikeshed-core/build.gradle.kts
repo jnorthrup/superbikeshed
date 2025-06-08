@@ -9,6 +9,9 @@ version = "1.0-SNAPSHOT"
 repositories { // Ensure repositories are here if not inherited from root
     mavenCentral()
     google()
+    maven {
+        url = uri("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
+    }
 }
 
 kotlin {
