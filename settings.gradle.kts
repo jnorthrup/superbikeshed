@@ -41,4 +41,4 @@ project(":ta4k").projectDir = file("ta4k") // Assuming 'ta4k' is a sibling direc
 project(":Review").projectDir = file("Review") // Assuming 'Review' is a sibling
 project(":Review:trikeshed-core").projectDir = file("Review/trikeshed-core") // Include the trikeshed-core subproject
 project(":spacegraphjs:kotlin-spacegraph").projectDir = file("spacegraphjs/kotlin-spacegraph") // Assuming nested structure
-include(\nexus\)
+// include(\nexus\)
