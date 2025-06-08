@@ -5,24 +5,28 @@ import base64
 # Assume this function is provided to the LLM evaluation environment
 # def make_api_request(method: str, url: str, headers: dict, json_payload: dict = None) -> dict:
 #     # This would be a mock implementation for testing
-#     if url == "http://api.dataweaver.example.com/v1/blob/new" and method == "POST": # Example URL
-#         if json_payload and "payload" in json_payload:
-#             return {"blob_id": "mock_blob_123", "timestamp": 1678886400}
+#     if url == "http://api.dataweaver.example.com/v2/blob" and method == "POST": # Example URL
+#         if json_payload and "payload" in json_payload and json_payload.get("version") == "0.8_alpha":
+#             return {"blob_id": "mock_blob_v2_456", "timestamp": 1678886500}
 #     raise RuntimeError(f"Unexpected API call to {method} {url}")
 
 def process_and_post(filepath: str, api_key: str) -> str:
     raw_bytes = read_data_file(filepath) # Snippet A is used here
     utf8_string = raw_bytes.decode('utf-8')
-    encrypted_string = simple_encrypt(utf8_string) # Snippet B is used here
-    base64_payload = base64.b64encode(encrypted_string.encode('utf-8')).decode('utf-8')
 
-    api_url_path = "/v1/blob/new"
+    # String is base64 encoded (as per Segment 3 change, replacing simple_encrypt)
+    base64_encoded_once = base64.b64encode(utf8_string.encode('utf-8')).decode('utf-8')
+    # This base64 string is then base64 encoded again for the final payload
+    final_payload = base64.b64encode(base64_encoded_once.encode('utf-8')).decode('utf-8')
+
+    api_url_path = "/v2/blob" # New path from Segment 3 requirements
 
     headers = {
         "X-API-Key": api_key
     }
     json_payload = {
-        "payload": base64_payload
+        "payload": final_payload,
+        "version": "0.8_alpha" # New version key from Segment 3 requirements
     }
 
     try:
