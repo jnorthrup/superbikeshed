@@ -1,0 +1,6 @@
+headers = ../../../nativeInterop/cinterop/async_io_linux.h
+headerFilter = async_io_linux.h
+linkerOpts.linux = -luring
+// compilerOpts.linux = -I/usr/include # Example if system headers for liburing are not found by default
+// Ensure the path to async_io_linux.h is correct relative to this .def file.
+// Assuming .def is in src/linuxX64Main/cinterop/ and .h is in src/nativeInterop/cinterop/
