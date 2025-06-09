@@ -53,7 +53,7 @@ println("Detected OS Version Details: $currentOsVersionDetails")
 
 plugins {
     kotlin("multiplatform")
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    // id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20" // Removed
 }
 
 group = "borg.trikeshed"
@@ -127,7 +127,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                // implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Removed
             }
         }
 

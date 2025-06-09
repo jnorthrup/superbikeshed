@@ -18,7 +18,7 @@ data class IncrementalDataRequest(
 
 package borg.trikeshed.services // Ensure package is at the top
 
-import kotlinx.serialization.Serializable
+// import kotlinx.serialization.Serializable // Removed from previous step, but ensure it's fully gone
 import borg.trikeshed.core.Series // Already imported by the original file creation
 import borg.trikeshed.core.toSeries // My extension, potentially move to TrikeShedCore.kt if more general
 import borg.trikeshed.core.toList // My extension
@@ -27,18 +27,18 @@ import borg.trikeshed.core.toSerializable // Moved to top
 
 // Define the data type that will be part of the incremental updates.
 // It must be @Serializable and include a timestamp or version field.
-@Serializable
+// @Serializable // Removed
 data class YourDataType(val id: String, val value: Double, val timestamp: Long)
 
 // Define the request structure for asking for incremental data.
-@Serializable
+// @Serializable // Removed
 data class IncrementalDataRequest(
     val dataSource: String, // Identifier for the data source being queried
     val sinceTimestamp: Long? // Nullable, if null, implies fetching all (or from the beginning)
 )
 
 // Define the response structure that TrikeShed will send back.
-@Serializable
+// @Serializable // Removed
 data class IncrementalDataResponse(
     val newData: SerializableSeriesData<YourDataType>, // Changed to SerializableSeriesData
     val latestTimestamp: Long          // The timestamp of the latest item in newData, or sinceTimestamp if no new data
@@ -109,3 +109,34 @@ internal inline fun <T> Series<T>.toList(): List<T> {
     }
     return result
 }
+
+/*
+// Example of how to serialize the response using custom JSON builders:
+// This function is for demonstration and documentation purposes.
+// In a real application, this serialization would typically occur in an HTTP handler layer.
+
+import borg.trikeshed.core.customjson.toCustomJsonString // Ensure this import is valid if used outside comments
+
+fun serializeResponseForDgm(response: IncrementalDataResponse): String {
+    // The IncrementalDataResponse object itself is passed to the custom serializer.
+    // The toCustomJsonString extension function for IncrementalDataResponse handles
+    // converting its fields, including the nested SerializableSeriesData, into a JSON string.
+    return response.toCustomJsonString()
+}
+
+// Example Usage (conceptual):
+fun demonstrateSerialization() {
+    // 1. Create some sample data and get a response object
+    IncrementalDataService.resetSampleData()
+    IncrementalDataService.addSampleData("testId1", 123.45)
+    val request = IncrementalDataRequest("testDataSource", null)
+    val serviceResponse = IncrementalDataService.getIncrementalData(request)
+
+    // 2. Serialize the response object to a JSON string
+    val jsonString = serializeResponseForDgm(serviceResponse)
+    println("Serialized IncrementalDataResponse for DGM: $jsonString")
+
+    // Expected output structure (simplified, actual values will vary):
+    // {"newData":{"data":[{"id":"testId1","value":123.45,"timestamp":1}]},"latestTimestamp":1}
+}
+*/
