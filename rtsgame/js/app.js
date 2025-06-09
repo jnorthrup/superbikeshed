@@ -51,6 +51,9 @@ import { initThreeRenderer } from './rendering/threeRenderer.js'; // Import Thre
 // Minimap functionality removed
 import { ModernUIManager } from './ui/modernUIManager.js'; // NEW: Import Modern UI Manager
 import { exportGameStateToSpaceGraphData } from './visualization/spacegraphExporter.js';
+import { CommandHierarchyUI } from './ui/commandHierarchyUI.js';
+import { FormationSystem } from './systems/formationSystem.js';
+import { FormationControls } from './ui/formationControls.js';
 
 // Initial game setup
 // Initialize gameContext properties for the first time
@@ -443,3 +446,55 @@ gameInitializer.initialize().catch(error => {
     console.error("Failed to initialize game:", error);
 });
 */
+
+class Game {
+    constructor() {
+        // ... existing constructor code ...
+        
+        // Initialize command hierarchy UI
+        this.commandHierarchyUI = new CommandHierarchyUI(this.canvas, this.ctx);
+        
+        // Add keyboard shortcut for toggling command hierarchy UI
+        this.keyboardShortcuts = {
+            // ... existing shortcuts ...
+            'h': () => this.commandHierarchyUI.toggle()
+        };
+
+        this.formationSystem = new FormationSystem();
+        this.formationControls = new FormationControls(this.canvas, this.ctx, this.formationSystem);
+    }
+    
+    // ... existing code ...
+    
+    handleUnitSelection(unit) {
+        // ... existing selection code ...
+        
+        // Update command hierarchy UI with selected unit
+        this.commandHierarchyUI.setSelectedUnit(unit);
+
+        this.formationControls.setSelectedUnits([unit]);
+    }
+    
+    render() {
+        // ... existing render code ...
+        
+        // Render command hierarchy UI
+        this.commandHierarchyUI.render();
+
+        this.formationControls.render();
+        
+        // ... rest of render code ...
+    }
+
+    handleClick(x, y) {
+        if (this.formationControls.handleClick(x, y)) {
+            return;
+        }
+    }
+
+    handleKeyPress(key) {
+        if (key === 'f') {
+            this.formationControls.toggle();
+        }
+    }
+}

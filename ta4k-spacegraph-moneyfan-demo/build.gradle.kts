@@ -1,7 +1,7 @@
 // ta4k-spacegraph-moneyfan-demo/build.gradle.kts
 plugins {
-    kotlin("multiplatform") version "1.9.0"
-    kotlin("plugin.serialization") version "1.9.0"
+    kotlin("multiplatform") version "2.2.0-RC2"
+    kotlin("plugin.serialization") version "2.2.0-RC2"
     // No application plugin here as this module primarily produces JS for the browser
 }
 
@@ -32,13 +32,6 @@ kotlin {
     }
 
     sourceSets {
-        // Common source set (not used much in this primarily JS demo)
-        // val commonMain by getting {
-        //     dependencies {
-        //         // implementation(kotlin("stdlib-common")) // Already included by default
-        //     }
-        // }
-
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js")) // Standard JS library for Kotlin
@@ -53,18 +46,8 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-browser:0.2.1") // Browser APIs
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.7.3") // Use js artifact
             }
-            // Ensure the resources directory is correctly identified for the JS source set
-            // This makes files in src/jsMain/resources available, e.g. index.html, data files.
-            // The devServer.staticResourcesDirectory handles serving, but this ensures build awareness.
             resources.srcDirs(project.file("src/jsMain/resources"))
         }
-
-        // Optional JVM source set if any JVM-specific helper tasks were needed
-        // val jvmMain by getting {
-        //     dependencies {
-        //         implementation(kotlin("stdlib-jdk8"))
-        //     }
-        // }
     }
 }
 
