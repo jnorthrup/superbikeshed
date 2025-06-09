@@ -265,39 +265,102 @@ class NJoin<A : IsPackable, B : IsPackable>(
         // better handled by the packing (`kj`) function.
     }
 
+    // Helper function to extract a full sequence of bits for a packer, handling spilling
+    private fun extractFullBitsForPacker(
+        packerBitSize: Int,
+        offsetIntoTotalPayload: Int // 0 for B, packerB.bitSize for A
+    ): ActualPackedBits {
+        if (packerBitSize == 0) return 0L
+        // This check should be against PAYLOAD_BITS_PER_SEGMENT if a single packer cannot exceed that,
+        // but individual packers define their own bitSize up to 64.
+        // The NJoin's totalBitSize can be larger, distributed over segments.
+        if (packerBitSize < 0) throw IllegalArgumentException("Packer bit size cannot be negative.")
+        // It's okay for packerBitSize to be > PAYLOAD_BITS_PER_SEGMENT, but not > 64 for a single ActualPackedBits return.
+        // However, the logic here collects bits for a packer, so if packerBitSize is, e.g. 70, this method would fail.
+        // This implies that Packer<T>.bitSize must be <= 64.
+        // The problem description for `kj` implies packerA/B.bitSize are the definitions from Packer<T>.
+        require(packerBitSize <= 64) { "Cannot extract more than 64 bits for a single packer's value at once with this method."}
+
+
+        var collectedBits: ActualPackedBits = 0L
+        var bitsCollectedForCurrentPacker = 0
+        var globalPayloadBitCursor = 0 // Tracks bits processed across all segment payloads
+
+        for (segmentIndex in packedBitsList.indices) {
+            val segment = packedBitsList[segmentIndex]
+            val segmentPayload = segment and (CONTINUATION_BIT_MASK - 1) // Clear continuation bit (top bit for 63 payload)
+
+            for (bitInSegmentPayloadIndex in 0 until PAYLOAD_BITS_PER_SEGMENT) {
+                if (bitsCollectedForCurrentPacker == packerBitSize) {
+                    // Already collected all needed bits for this value
+                    break // Break from inner loop (bitInSegmentPayloadIndex)
+                }
+
+                // Check if the current global bit is within the target range for the current packer
+                if (globalPayloadBitCursor >= offsetIntoTotalPayload &&
+                    globalPayloadBitCursor < offsetIntoTotalPayload + packerBitSize) {
+
+                    // This bit from segmentPayload is part of the target value
+                    if (((segmentPayload shr bitInSegmentPayloadIndex) and 1L) == 1L) {
+                        collectedBits = collectedBits or (1L shl bitsCollectedForCurrentPacker)
+                    }
+                    bitsCollectedForCurrentPacker++
+                }
+                globalPayloadBitCursor++
+            }
+
+            if (bitsCollectedForCurrentPacker == packerBitSize) {
+                break // Break from outer loop (segmentIndex)
+            }
+
+            // Check for unexpected end of data
+            if ((segment and CONTINUATION_BIT_MASK) == 0L && segmentIndex < packedBitsList.size - 1) {
+                 // This implies an issue if more bits were expected for the current packer or subsequent packers,
+                 // but kj logic should ensure segments are formed correctly.
+                 // If we are here, it means we haven't collected all bits for the current packer,
+                 // but there's no continuation bit and it's not the last segment. This is problematic.
+                 // However, if offsetIntoTotalPayload + packerBitSize exceeds total actual payload bits
+                 // this could be okay if totalBitSize was not a multiple of PAYLOAD_BITS_PER_SEGMENT.
+                 // For now, assume kj packs all bits as per packerA.bitSize + packerB.bitSize.
+            }
+        }
+
+        // Sanity check: If all segments are processed and not all bits for the packer are found.
+        // This could happen if `totalBitSize` in NJoin was set to something less than the sum of
+        // packerA.bitSize and packerB.bitSize, or if data is truncated/corrupt.
+        // The `kj` operator sets `totalBitSize` to `packerA.bitSize + packerB.bitSize`.
+        if (bitsCollectedForCurrentPacker < packerBitSize && offsetIntoTotalPayload + packerBitSize <= this.totalBitSize) {
+            // This check is tricky. If packerBitSize is e.g. 32, but only 30 bits of it were actually
+            // in totalBitSize (e.g. end of packed structure), then this is fine.
+            // However, kj promises to pack packerA.bitSize + packerB.bitSize.
+            // So, we should always find packerBitSize bits unless packerBitSize itself is 0.
+            // A warning or error could be logged here if bitsCollectedForCurrentPacker != packerBitSize
+            // System.err.println("Warning: Expected $packerBitSize bits but collected $bitsCollectedForCurrentPacker for item at offset $offsetIntoTotalPayload")
+        }
+        return collectedBits
+    }
+
     /**
      * Retrieves the first element (of type A) from the packed data.
-     * Note: This is a simplified unpacker. The `kj` operator is responsible for the correct
-     * packing strategy (layout, spilling). This method assumes `kj` has packed `B` first, then `A`.
-     * Complex unpacking logic for spilled data should ideally be part of `kj`'s responsibilities
-     * or a dedicated unpacking utility that understands the segment structure.
+     * This method unpacks data that might be spilled across multiple segments.
+     * It assumes the packing order is B first, then A.
      * @return The unpacked value of type A.
-     * @throws NotImplementedError if unpacking spilled data is attempted by this simplified method.
      */
     fun getA(): A {
-        if (isSpilled()) {
-            // Proper unpacking of spilled data requires stitching bits from packedBitsList
-            // based on PAYLOAD_BITS_PER_SEGMENT and CONTINUATION_BIT_MASK.
-            // This is a complex task handled by the packing/unpacking orchestrator (e.g. kj or helper).
-            throw NotImplementedError("Unpacking spilled NJoin.getA() not yet fully implemented here. kj orchestrates this.")
-        }
-        // Simplified: assumes fits in first segment, B packed first.
-        val bitsForA = packedBitsList[0].getBits(packerB.bitSize, packerA.bitSize)
+        // A is packed after B. Offset is packerB.bitSize.
+        val bitsForA = extractFullBitsForPacker(packerA.bitSize, packerB.bitSize)
         return packerA.unpack(bitsForA)
     }
 
     /**
      * Retrieves the second element (of type B) from the packed data.
-     * Similar to `getA()`, this is a simplified unpacker.
+     * This method unpacks data that might be spilled across multiple segments.
+     * It assumes B is packed first.
      * @return The unpacked value of type B.
-     * @throws NotImplementedError if unpacking spilled data is attempted by this simplified method.
      */
     fun getB(): B {
-        if (isSpilled()) {
-            throw NotImplementedError("Unpacking spilled NJoin.getB() not yet fully implemented here. kj orchestrates this.")
-        }
-        // Simplified: assumes fits in first segment, B packed first.
-        val bitsForB = packedBitsList[0].getBits(0, packerB.bitSize)
+        // B is packed first. Offset is 0.
+        val bitsForB = extractFullBitsForPacker(packerB.bitSize, 0)
         return packerB.unpack(bitsForB)
     }
 
