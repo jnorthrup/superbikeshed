@@ -44,6 +44,50 @@ export function initInputHandling(gameContext) {
             // Get currently selected entity from selection manager
             const currentSelectedEntity = selectionManager.getSelected();
 
+            // Calculate world coordinates for all click types first
+            const worldX = (e.clientX - camera.canvasWidth / 2) / camera.zoom + camera.x;
+            const worldY = (e.clientY - camera.canvasHeight / 2) / camera.zoom + camera.y;
+
+            // Right-click handling (button === 2)
+            if (e.button === 2) {
+                e.preventDefault(); // Prevent default browser context menu for all right-clicks on canvas
+
+                // Priority 1: Threat Designation Mode
+                if (gameContext.uiManager && gameContext.uiManager.isDesignatingNewThreatArea) {
+                    const threatEvent = {
+                        type: 'PlayerInteraction_NewThreatDesignation',
+                        payload: { x: worldX, y: worldY, radius: 100 } // Default radius
+                    };
+                    // Use the gameState's addEvent if available (consistent with StrategicAI event handling)
+                    if (gameContext.gameState && typeof gameContext.gameState.addEvent === 'function') {
+                        gameContext.gameState.addEvent(threatEvent.type, threatEvent.payload);
+                    } else { // Fallback for older structure
+                        addEvent(gameContext, threatEvent.type, threatEvent.payload, 3);
+                    }
+                    console.log(`New threat designated at (${worldX.toFixed(0)}, ${worldY.toFixed(0)})`);
+                    gameContext.uiManager.setDesignatingNewThreatArea(false); // Explicitly turn off mode
+                    e.stopPropagation();
+                    return;
+                }
+
+                // Priority 2: AI Prediction Context Menu
+                const prediction = gameContext.strategicAI ? gameContext.strategicAI.currentPrediction : null;
+                if (prediction && prediction.type === 'ENEMY_GROUND_ATTACK' &&
+                    isPointOnPrediction(worldX, worldY, prediction, camera)) {
+                    if (gameContext.uiManager && typeof gameContext.uiManager.showPredictionContextMenu === 'function') {
+                        // Pass the whole prediction object as it contains ID and current confidence
+                        gameContext.uiManager.showPredictionContextMenu(e.clientX, e.clientY, prediction);
+                        e.stopPropagation();
+                        return;
+                    }
+                }
+
+                // Priority 3: Standard Game Commands (if not handled above)
+                inputManager.handleRightClick(worldX, worldY);
+                return; // Ensure other mousedown logic for e.button === 2 doesn't run
+            }
+
+            // Handle grenade aiming (can be left or right click to cancel)
             if (gameState.aimingGrenade) {
                 if (e.button === 0) { // Left click
                     const worldX = (e.clientX - camera.canvasWidth / 2) / camera.zoom + camera.x;
@@ -86,13 +130,17 @@ export function initInputHandling(gameContext) {
 
             // Left-click for selection (or other actions if aiming grenade)
             if (e.button === 0) {
-                const worldX = (e.clientX - camera.canvasWidth / 2) / camera.zoom + camera.x;
-                const worldY = (e.clientY - camera.canvasHeight / 2) / camera.zoom + camera.y;
+                // If in threat designation mode, a left click cancels it.
+                if (gameContext.uiManager && gameContext.uiManager.isDesignatingNewThreatArea) {
+                    console.log("Threat designation mode cancelled by left click.");
+                    gameContext.uiManager.setDesignatingNewThreatArea(false); // Explicitly turn off
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
                 
-                // Grenade aiming takes precedence if active
+                // Grenade aiming (already uses worldX, worldY from calculation at top of mousedown)
                 if (gameState.aimingGrenade) {
-                    // Logic for launching grenade remains here for now, as it uses selectedEntity from selectionManager
-                    const currentSelectedEntity = selectionManager.getSelected();
                     if (currentSelectedEntity && typeof currentSelectedEntity.launchGrenade === 'function') {
                         currentSelectedEntity.launchGrenade(worldX, worldY, gameContext);
                     }
@@ -107,8 +155,6 @@ export function initInputHandling(gameContext) {
                 if (!gameState.fpvMode) {
                     inputManager.handleLeftClick(worldX, worldY, e.shiftKey);
 
-                    // Introspection window on Ctrl+Click is a UI feature, can remain here.
-                    // It uses selectionManager, which is not yet command-driven for UI feedback.
                     const currentSelectionForIntrospection = selectionManager.getSelected(); 
                     if (currentSelectionForIntrospection && e.ctrlKey && gameContext.introspectionManager) {
                         gameContext.introspectionManager.createIntrospectionWindow(
@@ -119,12 +165,9 @@ export function initInputHandling(gameContext) {
                         );
                     }
                 }
-            } else if (e.button === 2) { // Right click for commands (e.g., move)
-                const worldX = (e.clientX - camera.canvasWidth / 2) / camera.zoom + camera.x;
-                const worldY = (e.clientY - camera.canvasHeight / 2) / camera.zoom + camera.y;
-                inputManager.handleRightClick(worldX, worldY); // Pass false for shiftKey, or e.shiftKey if needed
-                e.preventDefault(); // Prevent context menu
             }
+            // Note: Right-click (e.button === 2) is now handled earlier if it's for context menu or threat designation.
+            // The fall-through to inputManager.handleRightClick() is part of that earlier block.
         });
 
         canvas.addEventListener('mousemove', (e) => {
@@ -167,64 +210,9 @@ export function initInputHandling(gameContext) {
         console.error("Canvas element not found in gameContext for input handling.");
     }
 
-    canvas.addEventListener('contextmenu', (event) => {
-        event.preventDefault(); // Prevent default browser context menu.
-
-        const worldPos = this.simulation.camera.screenToWorld(event.clientX, event.clientY);
-
-        // Assuming gameContext.strategicAI holds the AI instance
-        const prediction = this.simulation.strategicAI ? this.simulation.strategicAI.currentPrediction : null;
-
-        if (prediction && prediction.type === 'ENEMY_GROUND_ATTACK') {
-            if (isPointOnPrediction(worldPos.x, worldPos.y, prediction, this.simulation.camera)) {
-                console.log(`Player interacted (right-click) with prediction: ${prediction.id}`);
-
-                // For now, default to "Acknowledge & Reinforce"
-                if (this.simulation.gameState && typeof this.simulation.gameState.addEvent === 'function') {
-                    this.simulation.gameState.addEvent('PlayerInteraction_AckReinforce_AttackVector', {
-                        predictedPathID: prediction.id,
-                        confidence: prediction.confidence, // Send current confidence at time of interaction
-                        playerReinforceFocus: true
-                    });
-                    // Optional: Add visual feedback directly on the prediction object
-                    // prediction.acknowledged = true; // The renderer would need to check this
-                }
-                // Here you would ideally open a context menu to choose the interaction type.
-                // For this step, we directly trigger one type of interaction.
-            }
-        }
-    });
-
-    // --- Context Menu Event Listener for AI Prediction Interaction ---
-    canvas.addEventListener('contextmenu', (event) => {
-        event.preventDefault(); // Prevent default browser context menu.
-
-        // Convert screen click coordinates to world coordinates.
-        const worldPos = this.simulation.camera.screenToWorld(event.clientX, event.clientY);
-
-        // Access the current AI prediction from the StrategicAI instance attached to the simulation.
-        const prediction = this.simulation.strategicAI ? this.simulation.strategicAI.currentPrediction : null;
-
-        // Check if there's an active prediction and it's of the type we can interact with.
-        if (prediction && prediction.type === 'ENEMY_GROUND_ATTACK') {
-            // Use the helper function to determine if the click was on the visualized prediction.
-            if (isPointOnPrediction(worldPos.x, worldPos.y, prediction, this.simulation.camera)) {
-                console.log(`Player interacted (right-click) with prediction: ${prediction.id}`);
-
-                // For this initial implementation, a right-click defaults to the "Acknowledge & Reinforce" action.
-                // A more complete system would involve a UI context menu to select different interactions.
-                if (this.simulation.gameState && typeof this.simulation.gameState.addEvent === 'function') {
-                    this.simulation.gameState.addEvent('PlayerInteraction_AckReinforce_AttackVector', {
-                        predictedPathID: prediction.id, // ID of the prediction being interacted with.
-                        confidence: prediction.confidence, // Current confidence of the AI in this prediction.
-                        playerReinforceFocus: true // Flag indicating player's intent to reinforce.
-                    });
-                    // Optional: Visual feedback could be triggered here or by the AI's reaction to the event.
-                    // e.g., prediction.acknowledged = true; (The renderer would then visually update the prediction).
-                }
-            }
-        }
-    });
+    // Remove the two separate 'contextmenu' event listeners as their functionality
+    // is now integrated into the 'mousedown' (e.button === 2) logic.
+    // The default prevention is handled there too.
 
     // --- Document Event Listeners (Keyboard shortcuts) ---
     document.addEventListener('keydown', (e) => {
@@ -284,6 +272,15 @@ export function initInputHandling(gameContext) {
                 if (gameState.aimingGrenade) {
                     gameState.aimingGrenade = false;
                     console.log("Grenade aiming cancelled by Escape.");
+                }
+                // Toggle new threat designation mode with 'Y' key
+                if (gameContext.uiManager && typeof gameContext.uiManager.toggleDesignatingNewThreatArea === 'function') {
+                    gameContext.uiManager.toggleDesignatingNewThreatArea();
+                }
+                break;
+            case 'y': // Key for designating new threat area
+                 if (gameContext.uiManager && typeof gameContext.uiManager.toggleDesignatingNewThreatArea === 'function') {
+                    gameContext.uiManager.toggleDesignatingNewThreatArea();
                 }
                 break;
             case 'w':

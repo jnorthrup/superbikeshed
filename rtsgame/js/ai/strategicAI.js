@@ -68,6 +68,10 @@ function getDistance(objA, objB) {
 }
 
 class StrategicAI {
+    static CLUSTER_RADIUS = 150;
+    static DEFENSE_ASSESSMENT_RADIUS = 200;
+    static MIN_CLUSTER_THREAT_FOR_PREDICTION = 50; // Example value
+
     constructor(team) {
         this.team = team; // The team this AI instance is controlling (e.g., 'red', 'blue').
         this.personality = AI_PERSONALITIES.BALANCED; // Default personality, can be overridden.
@@ -87,6 +91,107 @@ class StrategicAI {
         this.predictionUpdateCooldown = 0;
         // Interval in seconds at which the AI attempts to generate a new prediction.
         this.PREDICTION_UPDATE_INTERVAL = 10;
+        this.needsNewPredictionSearch = false; // Flag to encourage seeking alternative predictions
+        this.lastDisputedPredictionDetails = null; // Store details of the last disputed prediction {targetArea: {x,y,radius}}
+    }
+
+    _calculateDistanceSq(pos1, pos2) {
+        const dx = pos1.x - pos2.x;
+        const dy = pos1.y - pos2.y;
+        return dx * dx + dy * dy;
+    }
+
+    _getUnitStrength(unit, unitTypesConfig) {
+        // Ensure unit and unit.type are valid and unitTypesConfig is available
+        if (!unit || !unit.type || !unitTypesConfig || !unitTypesConfig[unit.type.name]) { // unit.type is the object, unit.type.name is the key
+            // console.warn(`_getUnitStrength: Invalid unit, unit.type, or unitTypesConfig for unit:`, unit);
+            return unit && unit.hp > 0 ? unit.hp : 0; // Fallback to HP if type data is missing
+        }
+        const typeData = unitTypesConfig[unit.type.name]; // Access type data using unit.type.name
+        let strength = unit.hp > 0 ? unit.hp : 0; // Current HP
+
+        // Check if typeData exists after access
+        if (typeData) {
+            strength += (typeData.damage || 0) * 5; // Factor in damage potential
+            strength += (typeData.maxHp || unit.hp || 0) / 2; // Factor in max HP as general robustness
+        } else {
+            // console.warn(`_getUnitStrength: typeData not found for unit type: ${unit.type.name}`);
+        }
+        return strength;
+    }
+
+    _clusterEnemyUnits(enemyUnits, gameContext, unitTypesConfig) {
+        const clusters = [];
+        let unclusteredUnits = [...enemyUnits.filter(u => u.hp > 0)];
+        const CLUSTER_RADIUS_SQUARED = StrategicAI.CLUSTER_RADIUS * StrategicAI.CLUSTER_RADIUS;
+
+        while (unclusteredUnits.length > 0) {
+            const firstUnit = unclusteredUnits.shift();
+            if (!firstUnit) continue;
+
+            const currentClusterUnits = [firstUnit];
+            const queue = [firstUnit];
+
+            let head = 0;
+            while (head < queue.length) {
+                const unitA = queue[head++];
+                for (let i = unclusteredUnits.length - 1; i >= 0; i--) {
+                    const unitB = unclusteredUnits[i];
+                    if (this._calculateDistanceSq(unitA, unitB) < CLUSTER_RADIUS_SQUARED) {
+                        currentClusterUnits.push(unitB);
+                        queue.push(unitB);
+                        unclusteredUnits.splice(i, 1);
+                    }
+                }
+            }
+
+            if (currentClusterUnits.length > 0) {
+                let sumX = 0, sumY = 0, totalStrength = 0;
+                const composition = {};
+                currentClusterUnits.forEach(u => {
+                    sumX += u.x;
+                    sumY += u.y;
+                    totalStrength += this._getUnitStrength(u, unitTypesConfig);
+                    composition[u.type.name] = (composition[u.type.name] || 0) + 1; // Use u.type.name
+                });
+                clusters.push({
+                    id: 'cluster_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    centroid: { x: sumX / currentClusterUnits.length, y: sumY / currentClusterUnits.length },
+                    units: currentClusterUnits,
+                    totalStrength: totalStrength,
+                    composition: composition
+                });
+            }
+        }
+        return clusters;
+    }
+
+    _assessPlayerDefenses(targetPosition, gameContext, unitTypesConfig) {
+        let defenseScore = 0;
+        // Assuming gameContext.entityManager.getPlayerEntities() exists and returns units and buildings for the AI's team.
+        // If not, this needs to be:
+        // const playerUnits = gameContext.entityManager.units.filter(u => u.team === this.team && u.hp > 0);
+        // const playerBuildings = gameContext.entityManager.buildings.filter(b => b.team === this.team && b.hp > 0);
+        // const playerEntities = [...playerUnits, ...playerBuildings];
+
+        // Let's assume getPlayerEntities() is a method on entityManager that returns both units and buildings of the AI's team (player to the AI)
+        // For this AI, "player" is its own team. So we need to get entities of `this.team`.
+        const playerEntities = [];
+        gameContext.entityManager.units.forEach(u => {
+            if (u.team === this.team && u.hp > 0) playerEntities.push(u);
+        });
+        gameContext.entityManager.buildings.forEach(b => {
+            if (b.team === this.team && b.hp > 0) playerEntities.push(b);
+        });
+
+        const DEFENSE_RADIUS_SQUARED = StrategicAI.DEFENSE_ASSESSMENT_RADIUS * StrategicAI.DEFENSE_ASSESSMENT_RADIUS;
+
+        playerEntities.forEach(entity => {
+            if (entity.hp > 0 && this._calculateDistanceSq(entity, targetPosition) < DEFENSE_RADIUS_SQUARED) {
+                defenseScore += this._getUnitStrength(entity, unitTypesConfig);
+            }
+        });
+        return defenseScore;
     }
 
     /**
@@ -138,6 +243,12 @@ class StrategicAI {
             // It needs access to all units and buildings to find enemies and its own assets (potential targets).
             this.generateAttackPrediction(gameContext, this.team, gameContext.entityManager.units, gameContext.entityManager.buildings, gameContext.resources);
             this.predictionUpdateCooldown = this.PREDICTION_UPDATE_INTERVAL; // Reset cooldown.
+            // Reset the flag after a prediction generation cycle
+            if (this.needsNewPredictionSearch) {
+                this.needsNewPredictionSearch = false;
+                // Potentially clear lastDisputedPredictionDetails if alternative search was "successful enough"
+                // For now, we'll let it be overwritten by a new dispute, or naturally fade if not re-predicted.
+            }
         }
     }
 
@@ -146,82 +257,109 @@ class StrategicAI {
      * This is a simplified heuristic for the initial implementation.
      * @param {object} gameContext - The main game simulation object.
      * @param {string} aiTeam - The team for which this AI is making predictions (its own team, i.e., `this.team`).
-     * @param {Array<Unit>} allUnits - Global list of all units.
-     * @param {Array<Building>} allBuildings - Global list of all buildings.
+     * @param {Array<Unit>} allUnits - Global list of all units. (Now obtained from gameContext.entityManager)
+     * @param {Array<Building>} allBuildings - Global list of all buildings. (Now obtained from gameContext.entityManager)
      * @param {object} allResources - Global resources object (not directly used in this simple heuristic but available).
      */
-    generateAttackPrediction(gameContext, aiTeam, allUnits, allBuildings, allResources) {
-        // Determine the enemy team based on this AI's team.
+    generateAttackPrediction(gameContext, aiTeam, allUnits_deprecated, allBuildings_deprecated, allResources_deprecated) {
+        // UNIT_TYPES is imported at the top of the file. gameContext.UNIT_TYPES can be a fallback.
+        const unitTypesConfig = UNIT_TYPES || gameContext.UNIT_TYPES || window.UNIT_TYPES;
+        if (!unitTypesConfig) {
+            console.error(`[StrategicAI-${this.team}] UNIT_TYPES configuration not found! Cannot generate prediction.`);
+            this.currentPrediction = null;
+            return;
+        }
+
         const enemyTeam = aiTeam === 'blue' ? 'red' : 'blue';
+        // Use gameContext.entityManager to get units and buildings
+        const enemyUnits = gameContext.entityManager.units.filter(u => u.team === enemyTeam && u.hp > 0);
 
-        // Filter for active, land-based enemy units that could form an attacking force.
-        const enemyGroundUnits = allUnits.filter(u => u.team === enemyTeam && u.type.movementType === 'land' && u.hp > 0);
-
-        if (enemyGroundUnits.length === 0) {
-            this.currentPrediction = null; // No enemy ground units, so no attack prediction.
+        if (enemyUnits.length === 0) {
+            this.currentPrediction = null;
             return;
         }
 
-        // Identify potential targets: buildings belonging to this AI's team.
-        const ownPlayerBuildings = allBuildings.filter(b => b.team === aiTeam && b.hp > 0);
+        const enemyClusters = this._clusterEnemyUnits(enemyUnits, gameContext, unitTypesConfig);
+        if (enemyClusters.length === 0) {
+            this.currentPrediction = null;
+            return;
+        }
+
+        enemyClusters.sort((a, b) => b.totalStrength - a.totalStrength);
+        const mostThreateningCluster = enemyClusters[0];
+
+        if (!mostThreateningCluster || mostThreateningCluster.totalStrength < StrategicAI.MIN_CLUSTER_THREAT_FOR_PREDICTION) {
+            this.currentPrediction = null;
+            return;
+        }
+
+        // AI's own buildings are the potential targets
+        const ownPlayerBuildings = gameContext.entityManager.buildings.filter(b => b.team === aiTeam && b.hp > 0);
         if (ownPlayerBuildings.length === 0) {
-            this.currentPrediction = null; // No buildings for the AI to defend, so no prediction of an attack against them.
+            this.currentPrediction = null;
             return;
         }
 
-        // Simplistic Target Selection: Pick the first of its own buildings as the potential target.
-        // Future improvements: Rank targets by strategic value, vulnerability, proximity to front lines, etc.
-        const potentialTarget = ownPlayerBuildings[0];
+        let bestTargetInfo = { target: null, score: -Infinity, defenseScore: 0 };
 
-        // Simplified Attacker Identification: Find the enemy ground unit closest to this AI's `potentialTarget`.
-        // This unit represents the spearhead or centroid of the predicted attacking force.
-        // Future improvements: Identify enemy clusters or staging areas, consider unit strength.
-        let closestEnemyUnit = null;
-        let minDistanceToTarget = Infinity;
+        ownPlayerBuildings.forEach(building => {
+            // Assess defenses around this specific building (which belongs to the AI team)
+            const defenseScore = this._assessPlayerDefenses(building, gameContext, unitTypesConfig);
+            const distanceToTargetSq = this._calculateDistanceSq(mostThreateningCluster.centroid, building);
+            // Score inversely proportional to defense and distance, directly to cluster strength.
+            // Add small epsilon to distance to avoid division by zero if centroid is on building.
+            const score = mostThreateningCluster.totalStrength / ((1 + defenseScore) * (1 + Math.sqrt(distanceToTargetSq) * 0.05));
 
-        for (const enemy of enemyGroundUnits) {
-            const dist = getDistance(enemy, potentialTarget);
-            if (dist < minDistanceToTarget) {
-                minDistanceToTarget = dist;
-                closestEnemyUnit = enemy;
+            if (score > bestTargetInfo.score) {
+                bestTargetInfo = { target: building, score: score, defenseScore: defenseScore };
             }
-        }
+        });
 
-        if (!closestEnemyUnit) {
-            this.currentPrediction = null; // Should ideally not happen if enemyGroundUnits.length > 0.
-            return;
-        }
-        // The starting point of the predicted attack vector.
-        const attackerCentroid = { x: closestEnemyUnit.x, y: closestEnemyUnit.y };
+        if (!bestTargetInfo.target) { this.currentPrediction = null; return; }
+        const targetBuilding = bestTargetInfo.target;
+        const defenseAtTarget = bestTargetInfo.defenseScore;
 
-        // Pathfinding: Calculate a likely path from the identified attacker to the potential target.
-        // `gameContext.gameContext` is passed as `findPath` expects the simulation's core context (which holds terrain data).
-        const predictedPath = findPath(attackerCentroid, { x: potentialTarget.x, y: potentialTarget.y }, gameContext.gameContext, 'land');
-
+        const predictedPath = findPath(mostThreateningCluster.centroid, { x: targetBuilding.x, y: targetBuilding.y }, gameContext.gameContext, 'land'); // Assuming 'land' for ground attacks
         if (!predictedPath || predictedPath.length === 0) {
-            this.currentPrediction = null; // No valid path found.
+            this.currentPrediction = null;
             return;
         }
 
-        // Confidence Heuristic: Base confidence on the proximity of the "attacking" unit to the target.
-        // Closer attackers might indicate a more imminent or committed attack.
-        let confidence = 'low';
-        if (minDistanceToTarget < 300) confidence = 'medium';
-        if (minDistanceToTarget < 150) confidence = 'high';
-        // TODO: Enhance confidence logic (e.g., factor in size/strength of nearby enemy cluster, recent enemy movements, unit types).
+        // Initialize or update currentPrediction
+        // For this subtask, let's simplify and assume we create a new one or overwrite if ID matches or status implies it's old.
+        // A more robust system would check if the new prediction is significantly different from the old one.
+        if (!this.currentPrediction || this.currentPrediction.status === 'handled_or_expired') { // Simplified condition
+            this.currentPrediction = { id: `pred_${aiTeam}_${Date.now()}_${Math.random().toString(36).substr(2,5)}` };
+        }
 
-        // Store the generated prediction.
-        this.currentPrediction = {
-            id: `pred_${aiTeam}_${Date.now()}`, // Unique ID for the prediction.
-            path: predictedPath, // The calculated path (array of points).
-            targetArea: { x: potentialTarget.x, y: potentialTarget.y, radius: 50 }, // Target area (fixed radius for now).
-            confidence: confidence, // 'low', 'medium', or 'high'.
-            type: 'ENEMY_GROUND_ATTACK', // Type of prediction.
-            timestamp: gameContext.gameState ? gameContext.gameState.gameTime : Date.now() / 1000, // Timestamp of generation.
-            playerAcknowledged: false // Flag for player interaction feedback, initialized to false.
-        };
+        this.currentPrediction.timestamp = gameContext.gameState ? gameContext.gameState.gameTime : Date.now() / 1000;
+        this.currentPrediction.isPlayerDesignated = false; // Reset for a standard AI prediction
+        this.currentPrediction.isDisputed = false;
+        this.currentPrediction.playerAcknowledged = false;
 
-        // console.log(`[StrategicAI-${this.team}] Generated prediction: ${this.currentPrediction.confidence} enemy attack towards ${potentialTarget.type.name} (ID: ${this.currentPrediction.id})`);
+        this.currentPrediction.attackerCentroid = mostThreateningCluster.centroid;
+        const compositionKeys = Object.keys(mostThreateningCluster.composition);
+        this.currentPrediction.attackerUnitType = compositionKeys.length > 0 ? compositionKeys.reduce((a, b) => mostThreateningCluster.composition[a] > mostThreateningCluster.composition[b] ? a : b) : 'unknown_force';
+        this.currentPrediction.targetArea = { x: targetBuilding.x, y: targetBuilding.y, radius: (targetBuilding.type.radius || targetBuilding.type.size || 20) + 15 };
+        this.currentPrediction.path = predictedPath;
+
+        let confidence = 0.5; // Base confidence
+        confidence += Math.min(0.35, mostThreateningCluster.totalStrength / 3000); // Adjusted divisor
+        confidence -= Math.min(0.45, defenseAtTarget / 2000); // Adjusted divisor
+        const distanceToTarget = Math.sqrt(this._calculateDistanceSq(mostThreateningCluster.centroid, targetBuilding));
+        confidence -= Math.min(0.15, distanceToTarget / 2500); // Adjusted divisor
+
+        this.currentPrediction.confidence = Math.max(0.05, Math.min(0.95, confidence));
+        this.currentPrediction.confidenceText = this.getConfidenceText(this.currentPrediction.confidence);
+        this.currentPrediction.type = 'ENEMY_GROUND_ATTACK'; // Ensure type is set
+
+        // console.log(`[StrategicAI-${this.team}] Generated prediction: ${this.currentPrediction.confidenceText} (val: ${this.currentPrediction.confidence.toFixed(2)}) target: ${targetBuilding.type.name} by cluster (Strength: ${mostThreateningCluster.totalStrength.toFixed(0)}) (ID: ${this.currentPrediction.id})`);
+    }
+
+    getConfidenceText(numericConfidence) {
+        if (numericConfidence >= 0.75) return 'high';
+        if (numericConfidence >= 0.4) return 'medium';
+        return 'low';
     }
 
     /**
@@ -238,20 +376,47 @@ class StrategicAI {
 
         // Check if the interaction event corresponds to the AI's current active prediction.
         if (this.currentPrediction && this.currentPrediction.id === event.payload.predictedPathID) {
-            // Handle "Acknowledge & Reinforce" interaction type.
-            if (event.payload.playerReinforceFocus === true) {
-                this.currentPrediction.playerAcknowledged = true; // Mark the prediction as acknowledged by the player.
+            if (event.type === 'PlayerInteraction_AckReinforce_AttackVector' && event.payload.playerReinforceFocus === true) {
+                this.currentPrediction.playerAcknowledged = true;
+                this.currentPrediction.isDisputed = false; // Acknowledging clears dispute
 
-                // Optionally, boost the AI's confidence in this prediction.
-                if (this.currentPrediction.confidence === 'low') {
-                    this.currentPrediction.confidence = 'medium';
-                } else if (this.currentPrediction.confidence === 'medium') {
-                    this.currentPrediction.confidence = 'high';
+                // Boost confidence numerically
+                if (this.currentPrediction.confidence < 0.4) this.currentPrediction.confidence = 0.5; // low to medium threshold
+                else if (this.currentPrediction.confidence < 0.75) this.currentPrediction.confidence = 0.8; // medium to high threshold
+                else this.currentPrediction.confidence = Math.min(1.0, this.currentPrediction.confidence * 1.1); // Cap at 1.0 for high
+
+                this.currentPrediction.confidenceText = this.getConfidenceText(this.currentPrediction.confidence);
+                // console.log(`[StrategicAI-${this.team}] Player ACKNOWLEDGED prediction ${this.currentPrediction.id}. Confidence: ${this.currentPrediction.confidenceText} (val: ${this.currentPrediction.confidence.toFixed(2)}).`);
+
+            } else if (event.type === 'PlayerInteraction_DisputeMonitor_AttackVector') { // Check for correct event type
+                this.currentPrediction.confidence *= 0.5; // Example: Halve confidence
+                this.currentPrediction.confidenceText = this.getConfidenceText(this.currentPrediction.confidence);
+                this.currentPrediction.isDisputed = true;
+                this.currentPrediction.playerAcknowledged = false;
+
+                this.needsNewPredictionSearch = true;
+                this.lastDisputedPredictionDetails = {
+                    targetArea: { ...this.currentPrediction.targetArea }
+                };
+                 if (this.currentPrediction.path && this.currentPrediction.path.length > 0) {
+                     this.lastDisputedPredictionDetails.attackerCentroid = { ...this.currentPrediction.attackerCentroid }; // Use attackerCentroid
                 }
-                // console.log(`[StrategicAI-${this.team}] Player acknowledged prediction ${this.currentPrediction.id}. Marked and confidence potentially boosted to ${this.currentPrediction.confidence}.`);
+                this.predictionUpdateCooldown = 0;
+
+                // console.log(`[StrategicAI-${this.team}] Player DISPUTED prediction ${this.currentPrediction.id}. Confidence: ${this.currentPrediction.confidenceText}. Flagged for new search.`);
+            } else if (event.type === 'PlayerInteraction_NewThreatDesignation') {
+                // Add to a list of player-designated threats to be prioritized
+                if (!this.playerDesignatedThreats) this.playerDesignatedThreats = [];
+                this.playerDesignatedThreats.push({
+                    x: event.payload.x,
+                    y: event.payload.y,
+                    radius: event.payload.radius || 100, // Default radius if not specified
+                    timestamp: Date.now()
+                });
+                this.needsNewPredictionSearch = true; // Trigger a new prediction cycle
+                this.predictionUpdateCooldown = 0;
+                // console.log(`[StrategicAI-${this.team}] Player DESIGNATED new threat area. Flagged for new search.`);
             }
-            // TODO: Implement handling for other player interaction types,
-            // e.g., 'DisputeMonitor' or 'NewThreatDesignation', when those events are dispatched.
         }
     }
 }
@@ -1210,28 +1375,42 @@ function renderAIPredictionsDebug(ctx, gameContext) {
         return;
     }
 
-    let baseFillR = 255, baseFillG = 255, baseFillB = 0; // Yellow for low
+    // Default colors & icon
+    let baseFillR = 255, baseFillG = 255, baseFillB = 0; // Yellow for low confidence (default)
     let pathAlpha = 0.4;
     let fillAlpha = 0.15;
+    let icon = "";
+    let iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.9)`; // Default icon color
 
-    if (prediction.confidence === 'medium') {
-        baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
-        pathAlpha = 0.6;
-        fillAlpha = 0.2;
-    } else if (prediction.confidence === 'high') {
-        baseFillR = 255; baseFillG = 0; baseFillB = 0;    // Red
-        pathAlpha = 0.8;
+    // Adjust colors and icon based on prediction state
+    if (prediction.isDisputed) {
+        baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange for disputed
+        pathAlpha = 0.7; // More visible path for disputed
         fillAlpha = 0.25;
+        icon = "?";
+    } else if (prediction.playerAcknowledged) {
+        baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan for acknowledged
+        pathAlpha = 0.9;
+        fillAlpha = 0.3;
+        icon = "✓";
+    } else { // Neutral / Uninteracted - use confidence level from numeric value
+        const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3; // Default to low if text
+        if (confidenceNum >= 0.75) { // High
+            baseFillR = 255; baseFillG = 0; baseFillB = 0;    // Red
+            pathAlpha = 0.8;
+            fillAlpha = 0.25;
+        } else if (confidenceNum >= 0.4) { // Medium
+            baseFillR = 255; baseFillG = 200; baseFillB = 0; // Brighter Yellow/Orange
+            pathAlpha = 0.6;
+            fillAlpha = 0.2;
+        }
+        // Low confidence uses the default yellow set above
     }
 
     let finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
     let finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+    iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`; // Icon color matches the state color, less transparent
 
-    if (prediction.playerAcknowledged) {
-        // Override with a distinct "acknowledged" color, e.g., Cyan or Bright Green
-        finalPathStrokeColor = 'rgba(0, 255, 255, 0.9)'; // Bright Cyan
-        finalFillColor = 'rgba(0, 255, 255, 0.3)';
-    }
 
     // Render Path
     if (prediction.path && prediction.path.length >= 2) {
@@ -1277,8 +1456,8 @@ function renderAIPredictionsDebug(ctx, gameContext) {
     // Render Target Area
     if (prediction.targetArea) {
         ctx.fillStyle = finalFillColor;
-        ctx.strokeStyle = finalPathStrokeColor;
-        ctx.lineWidth = Math.max(1, 1 * camera.zoom);
+        ctx.strokeStyle = finalPathStrokeColor; // Use the same color for stroke unless specified otherwise
+        ctx.lineWidth = Math.max(1, 1.5 * camera.zoom); // Slightly thicker border for clarity
 
         const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
         const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
@@ -1287,7 +1466,17 @@ function renderAIPredictionsDebug(ctx, gameContext) {
         ctx.beginPath();
         ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke(); // Optional border
+        ctx.stroke();
+
+        // Render Icon if any
+        if (icon) {
+            ctx.fillStyle = iconColor;
+            const iconSize = Math.max(12, 20 * camera.zoom); // Scale icon size
+            ctx.font = `bold ${iconSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, targetScreenX, targetScreenY);
+        }
     }
 }
 
@@ -1392,6 +1581,402 @@ if (typeof window !== 'undefined') {
                 ctx.fill();
             }
         });
+        ctx.textAlign = 'left';
+    };
+
+    // Overwriting renderAIPredictionsDebug with enhanced version for UI display
+    window.debugRTS.renderAIPredictionsDebug = function(ctx, gameContext) {
+        const prediction = gameContext.strategicAI ? gameContext.strategicAI.currentPrediction : null;
+        const camera = gameContext.camera;
+
+        if (!camera) return;
+
+        // Render Player-Designated Threats (even before they become full predictions)
+        if (gameContext.strategicAI && gameContext.strategicAI.playerDesignatedThreats) {
+            gameContext.strategicAI.playerDesignatedThreats.forEach(threat => {
+                // Only render if not yet processed into the current main prediction, or if it's a persistent marker
+                // For now, let's assume we always render them as long as they are in the array.
+                // A 'processed' flag or lifetime could be added to the threat object.
+                // if (threat.processed && threat.id === prediction?.id && prediction?.isPlayerDesignated) return;
+
+                const screenX = (threat.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (threat.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const radiusScreen = (threat.radius || 100) * camera.zoom;
+
+                ctx.strokeStyle = 'rgba(220, 50, 220, 0.8)'; // Vibrant Purple for player designated areas
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.2)';   // Lighter fill
+                ctx.lineWidth = Math.max(1, 2.5 * camera.zoom); // Slightly thicker line
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, radiusScreen, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                const iconSize = Math.max(12, 22 * camera.zoom); // Larger icon for player threats
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.95)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("!", screenX, screenY); // Exclamation mark for pending player threat
+            });
+        }
+
+        if (!prediction || prediction.type !== 'ENEMY_GROUND_ATTACK') {
+            ctx.textAlign = 'left'; // Reset text align if we return early
+            return;
+        }
+
+        let baseFillR = 255, baseFillG = 255, baseFillB = 0;
+        let pathAlpha = 0.4;
+        let fillAlpha = 0.15;
+        let icon = "";
+
+        if (prediction.isPlayerDesignated) {
+            baseFillR = 128; baseFillG = 0; baseFillB = 128; // Purple
+            pathAlpha = 0.9; fillAlpha = 0.35; icon = "🎯"; // Target symbol
+        } else if (prediction.isDisputed) {
+            baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
+            pathAlpha = 0.7; fillAlpha = 0.25; icon = "?";
+        } else if (prediction.playerAcknowledged) {
+            baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan
+            pathAlpha = 0.9; fillAlpha = 0.3; icon = "✓";
+        } else {
+            const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3;
+            if (confidenceNum >= 0.75) { baseFillR = 255; baseFillG = 0; baseFillB = 0; pathAlpha = 0.8; fillAlpha = 0.25; } // Red
+            else if (confidenceNum >= 0.4) { baseFillR = 255; baseFillG = 200; baseFillB = 0; pathAlpha = 0.6; fillAlpha = 0.2; } // Yellow-Orange
+        }
+
+        const finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
+        const finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+        const iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`;
+
+        if (prediction.path && prediction.path.length >= 2) {
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 3 * camera.zoom);
+            ctx.beginPath();
+            for (let i = 0; i < prediction.path.length; i++) {
+                const point = prediction.path[i];
+                const screenX = (point.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (point.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+            ctx.stroke();
+
+            for (let i = 0; i < prediction.path.length - 1; i++) {
+                const p1 = prediction.path[i];
+                const p2 = prediction.path[i+1];
+                const screenX1 = (p1.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY1 = (p1.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const screenX2 = (p2.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY2 = (p2.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                const midX = (screenX1 + screenX2) / 2;
+                const midY = (screenY1 + screenY2) / 2;
+                const angle = Math.atan2(screenY2 - screenY1, screenX2 - screenX1);
+                const arrowSize = 5 * camera.zoom;
+
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize * Math.cos(angle - Math.PI / 6), midY - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(midX - arrowSize * Math.cos(angle + Math.PI / 6), midY - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.strokeStyle = finalPathStrokeColor;
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                ctx.stroke();
+            }
+        }
+
+        if (prediction.targetArea) {
+            ctx.fillStyle = finalFillColor;
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 1.5 * camera.zoom);
+
+            const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            const radiusScreen = prediction.targetArea.radius * camera.zoom;
+
+            ctx.beginPath();
+            ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (icon) {
+                ctx.fillStyle = iconColor;
+                const iconSize = Math.max(12, 20 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon, targetScreenX, targetScreenY);
+            }
+        }
+        ctx.textAlign = 'left';
+    };
+
+    // Overwriting renderAIPredictionsDebug with enhanced version for UI display
+    window.debugRTS.renderAIPredictionsDebug = function(ctx, gameContext) {
+        const prediction = gameContext.strategicAI ? gameContext.strategicAI.currentPrediction : null;
+        const camera = gameContext.camera;
+
+        if (!camera) return;
+
+        // Render Player-Designated Threats (even before they become full predictions)
+        if (gameContext.strategicAI && gameContext.strategicAI.playerDesignatedThreats) {
+            gameContext.strategicAI.playerDesignatedThreats.forEach(threat => {
+                // Example: Don't render if it's already the current main prediction and isPlayerDesignated
+                if (prediction && prediction.isPlayerDesignated &&
+                    prediction.targetArea.x === threat.x && prediction.targetArea.y === threat.y) {
+                    // This threat is now the active, player-designated prediction, so it will be rendered by the main logic below
+                    return;
+                }
+
+                const screenX = (threat.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (threat.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const radiusScreen = (threat.radius || 100) * camera.zoom;
+
+                ctx.strokeStyle = 'rgba(220, 50, 220, 0.8)'; // Vibrant Purple for player designated areas
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.2)';   // Lighter fill
+                ctx.lineWidth = Math.max(1, 2.5 * camera.zoom);
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, radiusScreen, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                const iconSize = Math.max(12, 22 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.95)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("!", screenX, screenY);
+            });
+        }
+
+        if (!prediction || prediction.type !== 'ENEMY_GROUND_ATTACK') {
+            ctx.textAlign = 'left';
+            return;
+        }
+
+        let baseFillR = 255, baseFillG = 255, baseFillB = 0;
+        let pathAlpha = 0.4;
+        let fillAlpha = 0.15;
+        let icon = "";
+
+        if (prediction.isPlayerDesignated) {
+            baseFillR = 128; baseFillG = 0; baseFillB = 128; // Purple
+            pathAlpha = 0.9; fillAlpha = 0.35; icon = "🎯";
+        } else if (prediction.isDisputed) {
+            baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
+            pathAlpha = 0.7; fillAlpha = 0.25; icon = "?";
+        } else if (prediction.playerAcknowledged) {
+            baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan
+            pathAlpha = 0.9; fillAlpha = 0.3; icon = "✓";
+        } else {
+            const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3;
+            if (confidenceNum >= 0.75) { baseFillR = 255; baseFillG = 0; baseFillB = 0; pathAlpha = 0.8; fillAlpha = 0.25; } // Red
+            else if (confidenceNum >= 0.4) { baseFillR = 255; baseFillG = 200; baseFillB = 0; pathAlpha = 0.6; fillAlpha = 0.2; } // Yellow-Orange
+        }
+
+        const finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
+        const finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+        const iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`;
+
+        if (prediction.path && prediction.path.length >= 2) {
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 3 * camera.zoom);
+            ctx.beginPath();
+            for (let i = 0; i < prediction.path.length; i++) {
+                const point = prediction.path[i];
+                const screenX = (point.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (point.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+            ctx.stroke();
+
+            for (let i = 0; i < prediction.path.length - 1; i++) {
+                const p1 = prediction.path[i];
+                const p2 = prediction.path[i+1];
+                const screenX1 = (p1.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY1 = (p1.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const screenX2 = (p2.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY2 = (p2.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                const midX = (screenX1 + screenX2) / 2;
+                const midY = (screenY1 + screenY2) / 2;
+                const angle = Math.atan2(screenY2 - screenY1, screenX2 - screenX1);
+                const arrowSize = 5 * camera.zoom;
+
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize * Math.cos(angle - Math.PI / 6), midY - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(midX - arrowSize * Math.cos(angle + Math.PI / 6), midY - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.strokeStyle = finalPathStrokeColor;
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                ctx.stroke();
+            }
+        }
+
+        if (prediction.targetArea) {
+            ctx.fillStyle = finalFillColor;
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 1.5 * camera.zoom);
+
+            const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            const radiusScreen = prediction.targetArea.radius * camera.zoom;
+
+            ctx.beginPath();
+            ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (icon) {
+                ctx.fillStyle = iconColor;
+                const iconSize = Math.max(12, 20 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon, targetScreenX, targetScreenY);
+            }
+        }
+        ctx.textAlign = 'left';
+    };
+
+    // Overwriting renderAIPredictionsDebug with enhanced version for UI display
+    window.debugRTS.renderAIPredictionsDebug = function(ctx, gameContext) {
+        const strategicAI = gameContext.strategicAI; // Ensure we're getting the AI instance correctly
+        const prediction = strategicAI ? strategicAI.currentPrediction : null;
+        const camera = gameContext.camera;
+
+        if (!camera) return;
+
+        // Render Player-Designated Threats (even before they become full predictions)
+        if (strategicAI && strategicAI.playerDesignatedThreats) {
+            strategicAI.playerDesignatedThreats.forEach(threat => {
+                // Only render if not yet processed into the current main prediction, or if it's a persistent marker
+                if (prediction && prediction.isPlayerDesignated &&
+                    prediction.targetArea.x === threat.x && prediction.targetArea.y === threat.y &&
+                    prediction.targetArea.radius === (threat.radius || 100) ) {
+                    // This threat is now the active, player-designated prediction, so it will be rendered by the main logic below
+                    return;
+                }
+
+                const screenX = (threat.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (threat.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const radiusScreen = (threat.radius || 100) * camera.zoom;
+
+                ctx.strokeStyle = 'rgba(220, 50, 220, 0.8)'; // Vibrant Purple for player designated areas
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.2)';   // Lighter fill
+                ctx.lineWidth = Math.max(1, 2.5 * camera.zoom);
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, radiusScreen, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                const iconSize = Math.max(12, 22 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.95)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("!", screenX, screenY);
+            });
+        }
+
+        if (!prediction || prediction.type !== 'ENEMY_GROUND_ATTACK') {
+            ctx.textAlign = 'left';
+            return;
+        }
+
+        let baseFillR = 255, baseFillG = 255, baseFillB = 0;
+        let pathAlpha = 0.4;
+        let fillAlpha = 0.15;
+        let icon = "";
+
+        if (prediction.isPlayerDesignated) {
+            baseFillR = 128; baseFillG = 0; baseFillB = 128; // Purple
+            pathAlpha = 0.9; fillAlpha = 0.35; icon = "🎯";
+        } else if (prediction.isDisputed) {
+            baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
+            pathAlpha = 0.7; fillAlpha = 0.25; icon = "?";
+        } else if (prediction.playerAcknowledged) {
+            baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan
+            pathAlpha = 0.9; fillAlpha = 0.3; icon = "✓";
+        } else {
+            const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3;
+            if (confidenceNum >= 0.75) { baseFillR = 255; baseFillG = 0; baseFillB = 0; pathAlpha = 0.8; fillAlpha = 0.25; } // Red
+            else if (confidenceNum >= 0.4) { baseFillR = 255; baseFillG = 200; baseFillB = 0; pathAlpha = 0.6; fillAlpha = 0.2; } // Yellow-Orange
+        }
+
+        const finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
+        const finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+        const iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`;
+
+        if (prediction.path && prediction.path.length >= 2) {
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 3 * camera.zoom);
+            ctx.beginPath();
+            for (let i = 0; i < prediction.path.length; i++) {
+                const point = prediction.path[i];
+                const screenX = (point.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (point.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+            ctx.stroke();
+
+            for (let i = 0; i < prediction.path.length - 1; i++) {
+                const p1 = prediction.path[i];
+                const p2 = prediction.path[i+1];
+                const screenX1 = (p1.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY1 = (p1.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const screenX2 = (p2.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY2 = (p2.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                const midX = (screenX1 + screenX2) / 2;
+                const midY = (screenY1 + screenY2) / 2;
+                const angle = Math.atan2(screenY2 - screenY1, screenX2 - screenX1);
+                const arrowSize = 5 * camera.zoom;
+
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize * Math.cos(angle - Math.PI / 6), midY - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(midX - arrowSize * Math.cos(angle + Math.PI / 6), midY - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.strokeStyle = finalPathStrokeColor;
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                ctx.stroke();
+            }
+        }
+
+        if (prediction.targetArea) {
+            ctx.fillStyle = finalFillColor;
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 1.5 * camera.zoom);
+
+            const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            const radiusScreen = prediction.targetArea.radius * camera.zoom;
+
+            ctx.beginPath();
+            ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (icon) {
+                ctx.fillStyle = iconColor;
+                const iconSize = Math.max(12, 20 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon, targetScreenX, targetScreenY);
+            }
+        }
         ctx.textAlign = 'left';
     };
 }
