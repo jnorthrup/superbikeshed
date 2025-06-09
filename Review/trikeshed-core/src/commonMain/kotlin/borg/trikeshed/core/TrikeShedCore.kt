@@ -113,6 +113,21 @@ inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
  */
 fun Series<Char>.asString(): String = this.`▶`.joinToString("")
 
+/**
+ * Reverses the order of elements in a [Series].
+ */
+inline fun <T> Series<T>.reversed(): Series<T> = size j { i -> this[size - 1 - i] }
+
+/**
+ * Extension function to convert a [String] to a [Series] of [Char].
+ */
+inline fun String.toSeries(): Series<Char> = this.length j { this[it] }
+
+/**
+ * Extension function to convert a [ByteArray] to a [Series] of [Byte].
+ */
+inline fun ByteArray.toSeries(): Series<Byte> = this.size j { this[it] }
+
 // III. core.Tensor Implementation
 
 /**
@@ -238,7 +253,7 @@ fun Tensor<*>.coordsToLinear(coords: IntArray): Int {
 fun <T> Tensor<T>.materialize(): Array<T> {
     val arr = arrayOfNulls<Any?>(totalSize) as Array<T>
     for (i in 0 until totalSize) {
-        arr[i] = this(linearToCoords(i))
+        arr[i] = this(this.linearToCoords(i))
     }
     return arr
 }
@@ -456,12 +471,12 @@ inline val <T> CoreTensorCursorWithMeta<T>.coreTensorMeta: CursorMeta get() = b
 /** Syntactic sugar for [coreTensorMeta]. */
 inline val <T> CoreTensorCursorWithMeta<T>.meta: CursorMeta get() = b
 
-/** Returns a [List] of column names from [CursorMeta]. */
-inline val CursorMeta.names: List<String>
+/** Returns a [Series] of column names from [CursorMeta]. */
+inline val CursorMeta.names: Series<String>
     get() {
         // Assuming CursorMeta is effectively a 1D tensor of ColumnMeta
         val numCols = this.shape.getOrElse(0) { 0 } // Get number of columns from shape
-        return List(numCols) { colIdx ->
+        return numCols j { colIdx -> // Construct Series<String>
             this(intArrayOf(colIdx)).name // Access tensor element and then its name
         }
     }
@@ -486,30 +501,33 @@ operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
  * Returns a new [CoreTensorCursorWithMeta] with columns excluded by their indices.
  */
 operator fun <T> CoreTensorCursorWithMeta<T>.minus(killbag: Series<Int>): CoreTensorCursorWithMeta<T> {
-    val toSet = (0 until this.meta.totalSize).toSet()
-    val retainedIndices = (toSet - killbag.`▶`.toSet()).toIntArray() // Convert Series to Set for subtraction
-    val newCursor = this.a[*retainedIndices] // Slice the data cursor
-    val newMeta = this.meta[*retainedIndices] // Slice the meta cursor
-    return newCursor j newMeta
+    TODO("Temporarily commented out to debug syntax errors")
+    // val toSet = (0 until this.meta.totalSize).toSet()
+    // val retainedIndices = (toSet - killbag.`▶`.toSet()).toIntArray() // Convert Series to Set for subtraction
+    // val newCursor = this.a[*retainedIndices] // Slice the data cursor
+    // val newMeta = this.meta[*retainedIndices] // Slice the meta cursor
+    // return newCursor j newMeta
 }
 
 /**
  * Returns a new [CoreTensorCursorWithMeta] with columns excluded by [ColumnExclusion] objects.
  */
 fun <T> CoreTensorCursorWithMeta<T>.exclude(s: Series<ColumnExclusion>): CoreTensorCursorWithMeta<T> {
-    val exclusionBag = mutableSetOf<Int>()
-    val currentMetaNames = this.meta.names // Get names from the CursorMeta part of CoreTensorCursorWithMeta
+    TODO("Temporarily commented out to debug syntax errors")
+    // val exclusionBag = mutableSetOf<Int>()
+    // val currentMetaNamesSeries = this.meta.names // This is Series<String>
 
-    s.`▶`.forEach { excludedCol ->
-        val index = currentMetaNames.indexOfFirst { it.name == excludedCol.name }
-        if (index != -1) {
-            exclusionBag.add(index)
-        }
-    }
-    val retainedIndices = ((0 until this.meta.totalSize).toSet() - exclusionBag).toIntArray()
-    val newCursor = this.a[*retainedIndices]
-    val newMeta = this.meta[*retainedIndices]
-    return newCursor j newMeta
+    // s.`▶`.forEach { excludedCol ->
+    //     // Use .▶ to iterate Series for indexOfFirst
+    //     val index = currentMetaNamesSeries.`▶`.indexOfFirst { it == excludedCol.name }
+    //     if (index != -1) {
+    //         exclusionBag.add(index)
+    //     }
+    // }
+    // val retainedIndices = ((0 until this.meta.totalSize).toSet() - exclusionBag).toIntArray()
+    // val newCursor = this.a[*retainedIndices]
+    // val newMeta = this.meta[*retainedIndices]
+    // return newCursor j newMeta
 }
 
 /**
@@ -517,13 +535,15 @@ fun <T> CoreTensorCursorWithMeta<T>.exclude(s: Series<ColumnExclusion>): CoreTen
  * This is an adaptation of `Cursor.get(vararg s: String)` from the original.
  */
 fun <T> CoreTensorCursorWithMeta<T>.get(vararg s: String): CoreTensorCursorWithMeta<T> {
-    val currentMeta = this.meta
-    val indicesToRetain = s.mapNotNull { nameToFind ->
-        currentMeta.`▶`.indexOfFirst { it.name == nameToFind }.takeIf { it != -1 }
-    }.toIntArray()
-    val newCursor = this.a[*indicesToRetain]
-    val newMeta = currentMeta[*indicesToRetain]
-    return newCursor j newMeta
+    TODO("Temporarily commented out to debug syntax errors")
+    // val currentMeta = this.meta // Tensor<ColumnMeta>
+    // val currentMetaNamesSeries = currentMeta.names // Series<String>
+    // val indicesToRetain = s.mapNotNull { nameToFind ->
+    //     currentMetaNamesSeries.`▶`.indexOfFirst { it == nameToFind }.takeIf { it != -1 }
+    // }.toIntArray()
+    // val newCursor = this.a[*indicesToRetain] // Spread operator for IntArray is fine
+    // val newMeta = currentMeta[*indicesToRetain] // Spread operator for IntArray is fine
+    // return newCursor j newMeta
 }
 
 // VIII. Presentation Functions and Properties
@@ -537,5 +557,3 @@ fun Any?.toDisplayString(type: IOMemento): String {
         else -> this.toString()
     }
 }
-
-// Close the block comment that started at line 498

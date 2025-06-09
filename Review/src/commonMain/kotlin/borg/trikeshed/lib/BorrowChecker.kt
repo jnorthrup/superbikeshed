@@ -10,9 +10,6 @@ import borg.trikeshed.core.j // For the infix j function
 // borg.trikeshed.core.toSeries might not be directly used here for new series creation from raw types.
 // but ByteSeries and Series<Byte> parameters will now correctly refer to core types.
 
-// Type alias for the underlying structure of Series<Byte> to improve readability locally
-private typealias ByteSeriesData = Pair<Int, (Int) -> Byte>
-
 // === BORROW CHECKER MEMORY MANAGEMENT ===
 // Rust-inspired borrow checking for safe ByteArray management with TrikeShed patterns
 
@@ -66,9 +63,9 @@ class BorrowedBuffer internal constructor( // Made internal as it was private, c
         fun borrowFromSeries(series: ByteSeries): BorrowedBuffer = 
             borrow(series.toArray())
             
-        // Create borrowed buffer from Series<Byte> (now Pair<Int, (Int) -> Byte>)
-        fun borrowFromSeries(seriesData: ByteSeriesData): BorrowedBuffer =
-            borrow(ByteArray(seriesData.first, seriesData.second)) // Reconstruct ByteArray from Pair
+        // Create borrowed buffer from Series<Byte>
+        fun borrowFromSeries(seriesData: ByteSeriesData): BorrowedBuffer = // ByteSeriesData is Series<Byte>
+            borrow(ByteArray(seriesData.a, seriesData.b)) // Use .a for size, .b for accessor
     }
     
     // Convert to ByteSeries for TrikeShed processing

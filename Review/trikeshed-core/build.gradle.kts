@@ -27,22 +27,12 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            // Include all sources from borg/trikeshed/core and borg/trikeshed/lib
             kotlin.srcDirs(
-                "$rootDir/src/commonMain/kotlin/borg/trikeshed/core",
-                "$rootDir/src/commonMain/kotlin/borg/trikeshed/lib"
+                "src/commonMain/kotlin", // Local sources like borg/trikeshed/core/TrikeShedCore.kt
+                "$rootDir/src/commonMain/kotlin/borg/trikeshed/lib" // Shared lib from root project's source tree
             )
-            // Exclude conflicting general 'core' and 'com/example/trikeshedcore' from this module's compilation
-            // These paths are relative to $rootDir/src/commonMain/kotlin, so they should be fine as they are
-            // not under borg/trikeshed/core or borg/trikeshed/lib which are now the source dirs.
-            // However, to be safe and ensure clarity, if these are meant to be excluded from the root,
-            // they should be in the root build.gradle.kts. Let's assume they are for any other sources
-            // that might accidentally be picked up if srcDirs was broader. Given the new specific srcDirs,
-            // these excludes might not be strictly necessary here anymore but are harmless.
-            kotlin {
-                exclude("$rootDir/src/commonMain/kotlin/core/**") // This effectively means these paths won't be included if they aren't under the specified srcDirs.
-                exclude("$rootDir/src/commonMain/kotlin/com/example/trikeshedcore/**")
-            }
+            // Excludes for $rootDir paths are not relevant here anymore for these specific srcDirs.
+            // Any other excludes for paths *within* these srcDirs could be placed in a nested kotlin {} block.
 
             dependencies {
                 implementation(kotlin("stdlib-common"))

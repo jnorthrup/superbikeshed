@@ -1,16 +1,27 @@
 package borg.trikeshed.net.http
 
+// Ensure correct imports for Series and Join, assuming com.example.trikeshedcore is canonical.
+// If borg.trikeshed.lib.Series/Join are preferred, adjust accordingly.
+// For now, let's assume the file already has the correct ones or they will be added if missing.
+// The existing file has "import borg.trikeshed.core.Join" and "import borg.trikeshed.core.Series"
+// These seem to be aliases or re-exports from borg.trikeshed.lib or com.example.trikeshedcore.
+// Let's check the provided file content for existing imports.
+// The file content shows:
+// import borg.trikeshed.core.Join
+// import borg.trikeshed.core.Series
+// These are likely the correct ones to use within this module.
+
 import borg.trikeshed.core.Join
 import borg.trikeshed.core.Series
+
 
 typealias HttpAuthority = String              // Host:port authority
 typealias HttpContentLength = ULong           // Content-Length header value
 typealias HttpContentType = String            // Content-Type header value
-typealias HttpHeader = Join<HttpHeaderName, HttpHeaderValue> // Remains from previous for now
 typealias HttpHeaderName = String             // Header field name
-// typealias HttpHeaders = Series<HttpHeader> // Replaced by simple Map typealias for now
-typealias HttpHeaders = Map<String, List<String>> // Simplified as per current subtask instruction
 typealias HttpHeaderValue = String            // Header field value
+typealias HttpHeader = Join<HttpHeaderName, HttpHeaderValue>
+typealias HttpHeaders = Series<HttpHeader> // Changed from Map<String, List<String>>
 
 /**
  * Standard HTTP methods.

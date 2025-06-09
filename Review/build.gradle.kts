@@ -6,6 +6,13 @@ plugins {
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
 kotlin {
     jvm()
     js {
@@ -24,15 +31,15 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-                implementation(project(":Review:trikeshed-core"))
+                implementation(project(":trikeshed-core"))
             }
             kotlin {
                 // Default srcDir is usually src/commonMain/kotlin
-                // exclude("borg/trikeshed/core/**") // Now compiled by :trikeshed-core
-                // exclude("borg/trikeshed/lib/**")   // Now compiled by :trikeshed-core
+                exclude("borg/trikeshed/core/**") // Now compiled by :trikeshed-core
+                exclude("borg/trikeshed/lib/**")   // Now compiled by :trikeshed-core
                 exclude("borg/trikeshed/net/**")
                 exclude("evolution/**")
-                exclude("com/example/trikeshedcore/**")
+                exclude("com/example/trikeshedcore/**") // This correctly excludes the old com.example path
                 exclude("gk/kademlia/**")
             }
         }
