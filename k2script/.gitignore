@@ -1,0 +1,10 @@
+.gradle
+build/
+target/
+out/
+
+*.iml
+.idea
+
+kscript.jar
+.aider*

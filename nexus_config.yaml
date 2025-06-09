@@ -1,0 +1,4 @@
+artificial_analysis:
+  api:
+    base_url: "https://artificialanalysis.ai/api/v2"
+    api_key_env_var: "AIA_API_KEY"
