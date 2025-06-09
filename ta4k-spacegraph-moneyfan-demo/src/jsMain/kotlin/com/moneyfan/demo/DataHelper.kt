@@ -1,7 +1,6 @@
 package com.moneyfan.demo
 
 import com.moneyfan.demo.model.JsKline
-import borg.trikeshed.core.Series
 
 /**
  * Simplified DataHelper for Kotlin/JS environment
@@ -39,13 +38,4 @@ object DataHelper {
         }
         return klines
     }
-
-    fun <T> List<T>.toSeries(): Series<T> {
-        return ListSeries(this)
-    }
-}
-
-class ListSeries<T>(private val list: List<T>) : Series<T> {
-    override val size: Int get() = list.size
-    override fun get(index: Int): T = list[index]
 }
