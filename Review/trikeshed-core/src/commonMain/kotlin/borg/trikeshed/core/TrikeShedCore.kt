@@ -12,6 +12,7 @@ package borg.trikeshed.core // Changed package from com.example.trikeshedcore
 
 import borg.trikeshed.core.name
 import borg.trikeshed.core.`▶`
+import kotlinx.serialization.Serializable
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 import kotlin.js.JsName
@@ -32,6 +33,7 @@ import kotlin.reflect.KClass
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
+// @Serializable // Removed from interface; implementations like SerializableJoin handle serialization
 interface Join<A, B> {
     val a: A
     val b: B
@@ -39,13 +41,14 @@ interface Join<A, B> {
     operator fun component2(): B = b
     val pair: Pair<A, B> get() = Pair(a, b)
 }
+
+@Serializable
+data class SerializableJoin<A, B>(override val a: A, override val b: B) : Join<A, B>
+
 /**
  * Syntactic sugar for  capture-based cost
  */
-internal inline infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
-    override val a: A get() = this@j
-    override val b: B get() = b
-}
+internal inline infix fun <A, B> A.j(b: B): Join<A, B> = SerializableJoin(this, b)
 
 infix fun <T, R> Tensor<T>.`▶` (transform: (IntArray) -> T) =a.drop(1).j { coords: IntArray -> transform(coords) }
 
@@ -123,6 +126,12 @@ internal inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSerie
 internal fun Series<Char>.asString(): String = this.`▶`.joinToString("")
 
 // III. core.Tensor Implementation
+
+@Serializable
+data class SerializableTensorData<T>(val shape: IntArray, val data: List<T>)
+
+@Serializable
+data class SerializableSeriesData<T>(val data: List<T>)
 
 /**
  * Type alias for a Tensor, which is a [Join] of its shape ([IntArray]) and an accessor function
@@ -467,6 +476,46 @@ typealias ColumnMeta = Join<String, TypeMemento>
 internal inline val ColumnMeta.name: String get() = a
 /** Returns the type memento of the column from [ColumnMeta]. */
 internal inline val ColumnMeta.type: TypeMemento get() = b
+
+// Extension to convert Tensor to its serializable form
+fun <T> Tensor<T>.toSerializable(): SerializableTensorData<T> {
+    val dataList = mutableListOf<T>()
+    // Iterate based on shape to collect all data points
+    // This is a simplified iteration logic, assuming a flat list is desired for serialization
+    if (this.totalSize > 0) {
+        for (i in 0 until this.totalSize) {
+            dataList.add(this(this.linearToCoords(i)))
+        }
+    }
+    return SerializableTensorData(this.shape, dataList)
+}
+
+// Extension to convert SerializableTensorData back to Tensor
+fun <T> SerializableTensorData<T>.toTensor(): Tensor<T> {
+    return TensorConstruct(this.shape) { coords ->
+        val linearIndex = TensorConstruct(this.shape) {}.coordsToLinear(coords) // Dummy tensor for coordsToLinear
+        this.data[linearIndex]
+    }
+}
+
+// Extension to convert Series to its serializable form
+fun <T> Series<T>.toSerializable(): SerializableSeriesData<T> {
+    val dataList = mutableListOf<T>()
+    for (i in 0 until this.size) {
+        dataList.add(this[i])
+    }
+    return SerializableSeriesData(dataList)
+}
+
+// Extension to convert SerializableSeriesData back to Series
+fun <T> SerializableSeriesData<T>.toSeries(): Series<T> {
+    return this.data.size j { index -> this.data[index] }
+}
+
+/**
+ * Provides an [Iterable] view of the [Series].
+ */
+internal inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
 
 /**
  * Returns the [CursorMeta] component (the metadata [Tensor]) from a [CoreTensorCursorWithMeta].
