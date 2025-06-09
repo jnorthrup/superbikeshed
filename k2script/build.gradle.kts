@@ -27,11 +27,11 @@ repositories {
     }
 }
 
-group = "io.github.kscripting"
+group = "io.github.k2scripting"
 version = "4.2.3"
 
 buildConfig {
-    packageName(project.group.toString() + "." + project.name)
+    packageName("k2script")
     useKotlinOutput()
 
     val dateTime = ZonedDateTime.now(ZoneOffset.UTC)
@@ -139,24 +139,24 @@ val copyJarToWrappers by tasks.register<Copy>("copyJarToWrappers") {
     into(project.projectDir.resolve("wrappers"))
 }
 
-val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
+val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
     dependsOn(copyJarToWrappers)
 
-    into(layout.buildDirectory.dir("kscript"))
+    into(layout.buildDirectory.dir("k2script"))
 
-    from(tasks.shadowJar.get().archiveFile) { // kscript.jar from shadowJar output
+    from(tasks.shadowJar.get().archiveFile) { // k2script.jar from shadowJar output
         into("bin")
     }
 
-    from("src/kscript") { // kscript shell script
+    from("src/k2script") { // k2script shell script
         into("bin")
     }
 
-    from("src/kscript.bat") { // kscript batch script
+    from("src/k2script.bat") { // k2script batch script
         into("bin")
     }
 
-    from("wrappers") { // Python and Nodejs wrappers + kscript.jar
+    from("wrappers") { // Python and Nodejs wrappers + k2script.jar
         into("wrappers")
     }
 
@@ -164,27 +164,27 @@ val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     from("package.json") // Nodejs packaging manifest
 }
 
-val packageKscriptDistribution by tasks.register<Zip>("packageKscriptDistribution") {
-    dependsOn(createKscriptLayout)
+val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribution") {
+    dependsOn(createK2scriptLayout)
 
-    from(layout.buildDirectory.dir("kscript")) {
-        into("kscript-${project.version}")
+    from(layout.buildDirectory.dir("k2script")) {
+        into("k2script-${project.version}")
     }
 
-    archiveFileName.set("kscript-${project.version}-bin.zip")
+    archiveFileName.set("k2script-${project.version}-bin.zip")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 
-    from(layout.buildDirectory.dir("kscript-${project.version}"))
+    from(layout.buildDirectory.dir("k2script-${project.version}"))
 }
 
 val shadowJar by tasks.getting(ShadowJar::class) {
-    // set empty string to classifier and version to get predictable jar file name: build/libs/kscript.jar
-    archiveFileName.set("kscript.jar")
+    // set empty string to classifier and version to get predictable jar file name: build/libs/k2script.jar
+    archiveFileName.set("k2script.jar")
     transform(ComponentsXmlResourceTransformer())
 }
 
 application {
-    mainClass.set(project.group.toString() + ".kscript.KscriptKt")
+    mainClass.set("k2script.K2scriptKt")
 }
 
 fun adjustVersion(archiveVersion: String): String {
@@ -230,7 +230,7 @@ val distZip: Task by tasks.getting {
 }
 
 val assemble: Task by tasks.getting {
-    dependsOn(packageKscriptDistribution)
+    dependsOn(packageK2scriptDistribution)
 }
 
 val test: Task by tasks.getting {
