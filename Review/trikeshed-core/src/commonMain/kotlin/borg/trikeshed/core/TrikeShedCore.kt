@@ -10,6 +10,11 @@
 
 package borg.trikeshed.core // Changed package from com.example.trikeshedcore
 
+import borg.trikeshed.core.git.GitRepositoryView // New import
+import borg.trikeshed.core.git.internal.platformIsDirectory // New import
+import borg.trikeshed.core.git.internal.platformIsFile // New import
+import borg.trikeshed.core.git.internal.platformJoinPath // New import
+// import borg.trikeshed.core.git.internal.readPlatformTextFile // Not used in final proposed code, but was in prompt
 import borg.trikeshed.core.name
 import borg.trikeshed.core.`▶`
 import kotlin.js.ExperimentalJsExport
@@ -570,31 +575,61 @@ internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = {
     //onw the tensor is the shorter shape
 }
 
-// --- GitRepoIndexer Integration ---
+// --- GitRepositoryView Integration ---
 
 /**
- * Loads and indexes a Git repository using GitRepoIndexer.
+ * Opens and indexes a Git repository using the TrikeShed-native Git indexer.
  *
- * @param repoPath The file system path to the Git repository (e.g., "/path/to/myrepo" or "/path/to/myrepo/.git").
- * @return A GitRepoIndexer instance with the indexed data, or null if indexing failed or the repo was empty.
+ * @param repositoryPath The file system path to the Git repository. This can be
+ *                       the root of the working directory (containing a .git folder)
+ *                       or the path directly to the .git folder.
+ * @return A GitRepositoryView instance with the indexed data, or null if indexing failed.
  */
 @JsExport // If this function should be accessible from JavaScript
-fun loadGitIndex(repoPath: String): GitRepoIndexer? {
-    val indexer = GitRepoIndexer()
-    try {
-        println("Attempting to index Git repository at: $repoPath")
-        indexer.indexRepo(repoPath)
+fun openGitRepository(repositoryPath: String): GitRepositoryView? {
+    // Determine the actual .git directory path
+    var dotGitPath = repositoryPath
+    // Normalize path by removing trailing slash for .endsWith check
+    val normalizedRepoPath = repositoryPath.removeSuffix("/")
 
-        // indexRepo logs errors internally. If it completes, we consider it "successful" for now.
-        // The consumer can check the contents of the index (e.g., indexer.getAllObjects().isEmpty())
-        // to determine if the repository was empty or if specific data was found.
-        // A more advanced error handling might involve indexRepo throwing specific exceptions
-        // or returning a status object.
-        println("GitRepoIndexer.indexRepo completed for $repoPath. Objects indexed: ${indexer.getAllObjects().size}")
-        return indexer
-    } catch (e: Exception) {
-        println("Failed to load or index Git repository at '$repoPath': ${e.message}")
-        e.printStackTrace() // Log the full stack trace for debugging
+    if (!normalizedRepoPath.endsWith(".git")) {
+        // Check if it's a directory containing a .git subdirectory
+        val potentialGitDir = platformJoinPath(repositoryPath, ".git")
+        if (platformIsDirectory(potentialGitDir)) {
+            dotGitPath = potentialGitDir
+        } else {
+            // If not a .git dir itself, and no .git subdir, then it might be a bare repo.
+            // Or the path IS the .git dir but not named ".git".
+            // We must ensure the path provided is a directory.
+            if (!platformIsDirectory(repositoryPath)) {
+                 println("Error: Repository path '$repositoryPath' is not a directory and does not contain a .git subdirectory.")
+                 return null
+            }
+            // If repositoryPath is a directory, we assume it IS the .git directory (e.g. for bare repos, or if user passed actual .git path)
+            // The validation below will check for HEAD, objects, refs.
+            dotGitPath = repositoryPath // Assume the given path is the .git dir
+        }
+    }
+     // Ensure dotGitPath is normalized (e.g. remove trailing slash if any was added by join)
+    dotGitPath = dotGitPath.removeSuffix("/")
+
+    // Basic validation: check for common files/dirs in a .git folder
+    if (!platformIsFile(platformJoinPath(dotGitPath, "HEAD")) ||
+        !platformIsDirectory(platformJoinPath(dotGitPath, "objects")) ||
+        !platformIsDirectory(platformJoinPath(dotGitPath, "refs"))) {
+        println("Error: '$dotGitPath' (resolved from '$repositoryPath') does not appear to be a valid .git directory (missing HEAD, objects, or refs).")
         return null
+    }
+
+    println("Attempting to open and index Git repository at .git path: $dotGitPath")
+    return try {
+        val repoView = GitRepositoryView(dotGitPath)
+        repoView.indexRepository() // This method now prints its own success/failure and counts
+
+        repoView
+    } catch (e: Exception) {
+        println("Failed to open or index Git repository at '$dotGitPath' (resolved from '$repositoryPath'): ${e.message}")
+        // e.printStackTrace() // For detailed debugging
+        null
     }
 }
