@@ -18,9 +18,30 @@ kotlin {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
         }
     }
-    linuxX64()
-    macosX64() // New target
-    macosArm64() // New target for Apple Silicon
+
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+
+    // Configure targets based on the current host OS for local development/testing.
+    if (hostOs == "Mac OS X") {
+        if (hostArch == "aarch64") {
+            macosArm64()
+        } else {
+            macosX64()
+        }
+    } else if (hostOs == "Linux") {
+        if (hostArch == "aarch64") {
+            linuxArm64()
+        } else {
+            linuxX64()
+        }
+    }
+    // If you need to define all targets regardless of host (e.g., for CI):
+    // macosX64()
+    // macosArm64()
+    // linuxX64()
+    // linuxArm64()
+
     js(IR) { // Use the IR compiler
         browser { // Target browser environment
             commonWebpackConfig {
@@ -111,8 +132,16 @@ kotlin {
         }
 
         val linuxX64Main by getting {
+            dependsOn(nativeMain)
             kotlin.srcDir("$rootDir/src/posixMain/kotlin")
             kotlin.srcDir("$rootDir/src/linuxMain/kotlin")
+        }
+
+        // Add linuxArm64Main
+        val linuxArm64Main by creating {
+            dependsOn(nativeMain)
+            kotlin.srcDir("$rootDir/src/posixMain/kotlin")
+            kotlin.srcDir("$rootDir/src/linuxArm64Main/kotlin") // Specific sources for linuxArm64 if any
         }
 
         val jsMain by getting {
