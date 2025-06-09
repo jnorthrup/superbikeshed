@@ -471,48 +471,76 @@ export function coordinateAttacks(gameContext) {
 function coordinateTacticalGroups(gameContext, team, teamUnits, ai) {
     const processed = new Set();
     const groups = [];
-    
-    // Form tactical groups based on proximity and unit types
-    for (const unit of teamUnits) {
-        if (processed.has(unit)) continue;
-        
-        const nearby = teamUnits.filter(u => {
-            if (processed.has(u)) return false;
-            const distance = Math.sqrt((u.x - unit.x) ** 2 + (u.y - unit.y) ** 2);
-            return distance < 120;
+
+    // Ensure all units have their effective authority calculated
+    teamUnits.forEach(u => {
+        if (typeof u.calculateEffectiveAuthority === 'function') {
+            u.calculateEffectiveAuthority();
+        } else {
+            // Fallback or default if method doesn't exist, though it should from previous subtask
+            if (u.effectiveAuthority === undefined) u.effectiveAuthority = u.type.tier || 1;
+        }
+    });
+
+    // Sort units by authority to prefer high-authority units as group cores/leaders
+    const sortedTeamUnits = [...teamUnits].sort((a, b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0));
+
+    // Form tactical groups based on proximity and unit types, prioritizing high-authority leaders
+    for (const potentialLeader of sortedTeamUnits) {
+        if (processed.has(potentialLeader)) continue;
+
+        const GROUP_FORMATION_RADIUS = 150;
+        const MIN_GROUP_SIZE = 3;
+        const MAX_GROUP_MEMBERS_FROM_NEARBY = 5; // Max additional members to pick from nearby
+
+        const nearbyUnits = sortedTeamUnits.filter(u => {
+            if (processed.has(u) || u === potentialLeader) return false;
+            const distance = getDistance(u, potentialLeader);
+            return distance < GROUP_FORMATION_RADIUS;
         });
+
+        // Group consists of the leader and some number of closest nearby units
+        const groupMembersFromNearby = nearbyUnits.slice(0, MAX_GROUP_MEMBERS_FROM_NEARBY);
+        const groupUnits = [potentialLeader, ...groupMembersFromNearby];
         
-        if (nearby.length >= 3) {
+        if (groupUnits.length >= MIN_GROUP_SIZE) {
             const group = {
-                units: [unit, ...nearby],
-                center: calculateGroupCenter([unit, ...nearby]),
-                strength: calculateGroupStrength([unit, ...nearby]),
-                role: determineGroupRole([unit, ...nearby])
+                leader: potentialLeader,
+                units: groupUnits,
+                center: calculateGroupCenter(groupUnits),
+                strength: calculateGroupStrength(groupUnits), // This will be updated later
+                role: determineGroupRole(groupUnits, potentialLeader) // This will be updated later
             };
             
             groups.push(group);
-            [unit, ...nearby].forEach(u => processed.add(u));
+            groupUnits.forEach(u => processed.add(u));
         }
     }
     
     // Coordinate group attacks
     groups.forEach(group => {
-        const target = selectOptimalTarget(gameContext, team, group);
+        // Prioritize protecting high-authority leaders within the group
+        if (group.leader && group.leader.hp < group.leader.maxHp * 0.5 && group.units.length > 1) {
+            // Placeholder for defensive adjustment for vulnerable leaders
+            // console.log(`AI group with leader ${group.leader.type.name} (Auth: ${group.leader.effectiveAuthority.toFixed(0)}) is damaged.`);
+        }
+
+        const target = selectOptimalTarget(gameContext, team, group); // This will be updated later
         if (target) {
-            assignGroupTarget(group, target);
+            assignGroupTarget(group, target, group.leader); // This will be updated later
             
-            // Pass gameContext to recordAIDecision
-            recordAIDecision(gameContext, team, 'COORDINATE_ATTACK', { // Pass gameContext
+            recordAIDecision(gameContext, team, 'COORDINATE_ATTACK', {
                 groupSize: group.units.length,
                 groupRole: group.role,
+                leaderType: group.leader.type.name,
+                leaderAuth: (group.leader.effectiveAuthority || 0).toFixed(0),
                 targetType: target.type?.name || 'unknown',
                 targetPosition: { x: target.x, y: target.y }
             });
             
-            // Visual feedback
             gameContext.entityManager.addCaption(new Caption(
                 group.center.x, group.center.y,
-                `${group.role} assault!`, '#ff4', 16
+                `${group.role} attacking! (L: ${group.leader.type.name.substring(0,3)})`, '#ff4', 16
             ));
         }
     });
@@ -865,89 +893,214 @@ function coordinateStrategicMovements(team, gameContext, ai) {
 }
 
 function repositionForOffensive(units, gameContext, team) {
+    // Ensure units have authority calculated
+    units.forEach(u => {
+        if (typeof u.calculateEffectiveAuthority === 'function') u.calculateEffectiveAuthority();
+        else if (u.effectiveAuthority === undefined) u.effectiveAuthority = u.type.tier || 1;
+    });
+
     const enemyCommander = gameContext.units.find(u => 
-        u.team !== team && u.type === UNIT_TYPES.commander
+        u.team !== team && u.type === UNIT_TYPES.commander && u.hp > 0
     );
-    
+    const enemyBuildings = gameContext.buildings.filter(b => b.team !== team && b.hp > 0);
+    let primaryTargetPos = null;
+
     if (enemyCommander) {
-        units.forEach(unit => {
-            // Move towards enemy commander area
-            const angle = Math.atan2(enemyCommander.y - unit.y, enemyCommander.x - unit.x);
-            const distance = 100 + gameContext.seedRandom.random() * 50; // Use seeded random
-            
-            unit.patrolTarget = {
-                x: enemyCommander.x - Math.cos(angle) * distance,
-                y: enemyCommander.y - Math.sin(angle) * distance
-            };
-        });
+        primaryTargetPos = { x: enemyCommander.x, y: enemyCommander.y };
+    } else if (enemyBuildings.length > 0) {
+        // Target a cluster of buildings if commander is not found
+        // Simplistic: find a central point among some enemy buildings
+        const targetBuildings = enemyBuildings.slice(0, 5); // Consider a few for centroid
+        primaryTargetPos = calculateGroupCenter(targetBuildings);
+    } else {
+        // Fallback: move towards a random point in enemy territory (e.g., enemy starting location if known)
+        // For now, if no specific target, AI might just rally or hold position.
+        return;
+    }
+
+    if (primaryTargetPos) {
+        // Identify high-authority units to lead the offensive
+        const highAuthorityUnits = units.filter(u => (u.effectiveAuthority || 0) > 10).sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0));
+        const otherUnits = units.filter(u => (u.effectiveAuthority || 0) <= 10);
+
+        let leaderUnit = highAuthorityUnits.length > 0 ? highAuthorityUnits[0] : (units.length > 0 ? units.sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0))[0] : null);
+
+        if (leaderUnit) {
+            // Leader moves towards the primary target
+            leaderUnit.patrolTarget = { x: primaryTargetPos.x, y: primaryTargetPos.y };
+            leaderUnit.aggressiveness = 0.9; // More aggressive for offensive posture
+
+            // Other units attempt to form up or support the leader
+            const supportUnits = highAuthorityUnits.slice(1).concat(otherUnits);
+            supportUnits.forEach(unit => {
+                if (unit === leaderUnit) return; // Skip self
+                const angleOffset = (gameContext.seedRandom.random() - 0.5) * Math.PI / 1.5; // Wider spread for offensive formation
+                const followDistance = 70 + gameContext.seedRandom.random() * 80; // Slightly larger, looser formation
+
+                // Patrol near the leader, but also generally towards the main target
+                let patrolX = leaderUnit.x + Math.cos(leaderUnit.angle + angleOffset) * followDistance;
+                let patrolY = leaderUnit.y + Math.sin(leaderUnit.angle + angleOffset) * followDistance;
+
+                // If leader is far from the primary target, supporting units also aim towards primary target
+                if (getDistance(leaderUnit, primaryTargetPos) > 200) {
+                    patrolX = primaryTargetPos.x + (gameContext.seedRandom.random() - 0.5) * 200;
+                    patrolY = primaryTargetPos.y + (gameContext.seedRandom.random() - 0.5) * 200;
+                }
+
+                unit.patrolTarget = { x: patrolX, y: patrolY };
+                unit.aggressiveness = 0.8;
+            });
+        }
     }
 }
 
 function repositionForDefense(units, gameContext, team) {
+    // Ensure units have authority calculated
+    units.forEach(u => {
+        if (typeof u.calculateEffectiveAuthority === 'function') u.calculateEffectiveAuthority();
+        else if (u.effectiveAuthority === undefined) u.effectiveAuthority = u.type.tier || 1;
+    });
+
     const myCommander = gameContext.units.find(u => 
-        u.team === team && u.type === UNIT_TYPES.commander
+        u.team === team && u.type === UNIT_TYPES.commander && u.hp > 0
     );
     
-    if (myCommander) {
-        units.forEach((unit, index) => {
-            // Defensive perimeter
-            const angle = (index / units.length) * Math.PI * 2; // This is deterministic, no random needed
-            const radius = 80 + gameContext.seedRandom.random() * 40; // Use seeded random
-            
+    let centralAssetToDefend = myCommander;
+    if (!centralAssetToDefend) {
+        const keyBuildings = gameContext.buildings.filter(b => b.team === team && b.type.producesUnits && b.hp > 0)
+                                           .sort((a,b) => (b.type.tier || 0) - (a.type.tier || 0));
+        if (keyBuildings.length > 0) {
+            centralAssetToDefend = keyBuildings[0];
+        } else if (units.length > 0) {
+            centralAssetToDefend = units.sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0))[0];
+        }
+    }
+
+    if (centralAssetToDefend) {
+        const highAuthorityUnits = units.filter(u => (u.effectiveAuthority || 0) > 10).sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0));
+        const otherUnits = units.filter(u => (u.effectiveAuthority || 0) <= 10);
+
+        // High authority units take key defensive positions or act as mobile reserve
+        highAuthorityUnits.forEach((unit, index) => {
+            const angle = (index / Math.max(1, highAuthorityUnits.length)) * Math.PI * 2; // Avoid division by zero
+            const radius = 60 + gameContext.seedRandom.random() * 30;
             unit.patrolTarget = {
-                x: myCommander.x + Math.cos(angle) * radius,
-                y: myCommander.y + Math.sin(angle) * radius
+                x: centralAssetToDefend.x + Math.cos(angle) * radius,
+                y: centralAssetToDefend.y + Math.sin(angle) * radius
             };
+            unit.aggressiveness = 0.7;
+            // If damaged and high authority, pull back slightly more to preserve them
+            if (unit.hp < unit.maxHp * 0.65) {
+                 unit.patrolTarget.x = centralAssetToDefend.x + Math.cos(angle) * (radius + 40);
+                 unit.patrolTarget.y = centralAssetToDefend.y + Math.sin(angle) * (radius + 40);
+                 unit.aggressiveness = 0.5; // More cautious
+            }
         });
+
+        otherUnits.forEach((unit, index) => {
+            const angle = (index / Math.max(1, otherUnits.length)) * Math.PI * 2; // Avoid division by zero
+            const radius = 100 + gameContext.seedRandom.random() * 50;
+            unit.patrolTarget = {
+                x: centralAssetToDefend.x + Math.cos(angle) * radius,
+                y: centralAssetToDefend.y + Math.sin(angle) * radius
+            };
+            unit.aggressiveness = 0.6;
+        });
+
+        // Basic command structure arrangement: idle lower-authority units move towards a high-authority field commander
+        if (highAuthorityUnits.length > 0) {
+            const fieldCommander = highAuthorityUnits[0]; // Highest authority unit present
+            otherUnits.forEach(unit => {
+                // If unit is relatively idle and within a certain range of the field commander
+                if (!unit.target && !unit.patrolTarget && getDistance(unit, fieldCommander) < 250) {
+                    // Suggest moving towards the commander as a rally point / to receive orders
+                    // Unit's own `followSuperiorOrders` should handle actual command chain adherence.
+                    // This is an AI nudge to promote cohesion.
+                    unit.patrolTarget = {x: fieldCommander.x - 20 + gameContext.seedRandom.random() * 40, y: fieldCommander.y - 20 + gameContext.seedRandom.random() * 40};
+                }
+            });
+        }
     }
 }
 
 // Helper functions for tactical coordination
 function calculateGroupCenter(units) {
+    if (!units || units.length === 0) return { x: 0, y: 0 }; // Guard against empty or null units array
     const x = units.reduce((sum, u) => sum + u.x, 0) / units.length;
     const y = units.reduce((sum, u) => sum + u.y, 0) / units.length;
     return { x, y };
 }
 
 function calculateGroupStrength(units) {
-    return units.reduce((sum, u) => sum + (u.type.damage || 10), 0);
+    // Consider incorporating authority into strength calculation or as a separate factor
+    // Higher authority units contribute more to the "effective strength" of a group
+    let totalStrength = units.reduce((sum, u) => {
+        const unitBasePower = u.type.damage || 10; // Base power from damage
+        const authorityBonus = (u.effectiveAuthority || 0) * 0.5; // Add a fraction of authority as bonus strength
+        return sum + unitBasePower + authorityBonus;
+    }, 0);
+    return totalStrength;
 }
 
-function determineGroupRole(units) {
-    const hasHeavy = units.some(u => u.type.name === 'Tank');
-    const hasArtillery = units.some(u => u.type.name === 'Artillery');
-    
-    if (hasArtillery) return 'Artillery';
-    if (hasHeavy) return 'Assault';
-    return 'Skirmish';
+function determineGroupRole(units, leader) {
+    // Leader's type or high authority can influence group role
+    if (leader) { // Ensure leader exists
+        if (leader.effectiveAuthority > 15) { // Example threshold for high authority leader
+            if (UNIT_TYPES.commander && leader.type.name === UNIT_TYPES.commander.name) return 'Command Group';
+            if (leader.type.range > 150 && leader.type.damage > 20) return 'Fire Support Group'; // Sniper/Artillery leader
+        }
+        // If leader is a specialized unit, it could define the group role
+        if (leader.type.name === 'Artillery' && units.length > 1) return 'Artillery Battery';
+        if (leader.type.name === 'Shield Generator' && units.length > 1) return 'Shielded Column';
+    }
+
+
+    const hasHeavy = units.some(u => u.type.name === 'Tank' || u.type.tier >= 2);
+    const hasArtillery = units.some(u => u.type.name === 'Artillery'); // May duplicate above leader check
+    const allAreFast = units.every(u => (u.type.speed || 0) > 2.5);
+
+    if (allAreFast && units.length < 5) return 'Harassment Group';
+    if (hasArtillery && units.length > 2) return 'Artillery Support'; // Renamed from 'Artillery'
+    if (hasHeavy) return 'Heavy Assault';
+    return 'Light Skirmish';
 }
 
 function selectOptimalTarget(gameContext, team, group) {
-    const enemies = [...gameContext.units.filter(u => u.team !== team),
-                    ...gameContext.buildings.filter(b => b.team !== team)];
+    const enemies = [...gameContext.units.filter(u => u.team !== team && u.hp > 0),
+                    ...gameContext.buildings.filter(b => b.team !== team && b.hp > 0)];
     
+    if (enemies.length === 0) return null;
+
     let bestTarget = null;
     let bestScore = -Infinity;
+
+    // If group has a high-authority leader, they might prefer high-value targets
+    const leaderInfluenceFactor = (group.leader && (group.leader.effectiveAuthority || 0) > 10) ? 1.2 : 1.0;
     
     for (const enemy of enemies) {
-        const dist = Math.sqrt(
-            (enemy.x - group.center.x) ** 2 + (enemy.y - group.center.y) ** 2
-        );
+        const dist = getDistance(enemy, group.center);
         
         const baseAssetScore = calculateAssetScore(enemy);
-        let currentScore = baseAssetScore / (dist + TARGET_SCORE_DISTANCE_DIVISOR);
+        let currentScore = (baseAssetScore * leaderInfluenceFactor) / (dist + TARGET_SCORE_DISTANCE_DIVISOR);
 
-        // Avoid pointless attacks: Penalize score if group is too weak for the target, unless it's a commander
-        // Assuming group.strength is a reasonable proxy for the group's collective power.
-        // A more accurate sum of calculateBasePower for group members could be used if available on 'group'.
         const groupEffectivePower = group.strength;
+
+        // Penalize if group is too weak, unless target is very high value (like a commander)
         if (enemy.type !== UNIT_TYPES.commander && groupEffectivePower < baseAssetScore * MIN_POWER_RATIO_TO_ENGAGE_ENEMY) {
-            currentScore *= 0.1; // Heavily penalize if group is much weaker and target isn't commander
+            currentScore *= 0.1;
         }
         
-        // Additional prioritization can be added here if needed,
-        // though calculateBasePower already handles commanders and experimentals.
-        // Example: if (enemy.type?.produces) currentScore *= 1.2; // Slightly boost factories if not covered enough
+        // High-authority groups might be more willing to take on slightly tougher targets or strategically important ones
+        if (group.leader && (group.leader.effectiveAuthority || 0) > 15) {
+            if (enemy.type === UNIT_TYPES.commander || (enemy.type.producesUnits && enemy.type.tier >=2) ) {
+                currentScore *= 1.5;
+            }
+            // If leader is defensive, might prefer targets threatening own assets
+            if (group.leader.coreFocusMode === 'DEFENSIVE' && enemy.target && enemy.target.team === team) {
+                 currentScore *= 1.3;
+            }
+        }
+
 
         if (currentScore > bestScore) {
             bestScore = currentScore;
@@ -958,11 +1111,25 @@ function selectOptimalTarget(gameContext, team, group) {
     return bestTarget;
 }
 
-function assignGroupTarget(group, target) {
+function assignGroupTarget(group, target, leader) { // Leader added as parameter
     group.units.forEach(unit => {
         unit.target = target;
-        unit.lastTargetSwitch = Date.now();
+        unit.lastTargetSwitch = Date.now(); // Consider gameTime from gameContext if available
+        // If a leader is designated, other units in the group could be set to assist/follow leader more closely
+        // This is primarily a targeting assignment. Unit's individual AI (like followSuperiorOrders) handles actual following.
+        if (leader && unit !== leader) {
+            // If the unit is idle and the group has a leader attacking, it should also attack.
+            if (!unit.task || unit.task === 'idle') {
+                 unit.aggressiveness = Math.max(unit.aggressiveness, 0.85); // Become more aggressive if leader is initiating
+            }
+        }
     });
+    // The leader should also target the selected enemy.
+    if (leader) {
+        leader.target = target;
+        leader.lastTargetSwitch = Date.now();
+        leader.aggressiveness = Math.max(leader.aggressiveness, 0.9); // Leader should be aggressive
+    }
 }
 
 function createAttackFormations(units, formationSize) {
@@ -1128,6 +1295,105 @@ function renderAIPredictionsDebug(ctx, gameContext) {
 if (typeof window !== 'undefined') {
     window.debugRTS = window.debugRTS || {}; // Ensure debugRTS object exists
     window.debugRTS.renderAIPredictionsDebug = renderAIPredictionsDebug;
+
+    // Overwriting renderCommandHierarchyDebug with enhanced version for UI display
+    // This is a workaround due to persistent issues modifying the original function directly.
+    window.debugRTS.renderCommandHierarchyDebug = function(ctx, gameContext) {
+        const { units } = gameContext.entityManager;
+        const camera = gameContext.camera;
+
+        if (!camera || !units) return;
+
+        units.forEach(unit => {
+            const screenX = (unit.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const screenY = (unit.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+
+            const unitVisualSize = (unit.type?.size || 10) * camera.zoom;
+            let yTextOffset = -(unitVisualSize * 0.5) - 5;
+
+            const rankToDisplay = unit.militaryRank || unit.veterancyLevel || null;
+            if (rankToDisplay) {
+                ctx.fillText(`${rankToDisplay}`, screenX, screenY + yTextOffset);
+                yTextOffset -= 12;
+            }
+
+            if (unit.effectiveAuthority !== undefined) {
+                if (typeof unit.calculateEffectiveAuthority === 'function' &&
+                    (unit.lastAuthorityUpdate === undefined || unit.lastAuthorityUpdate === 0 ||
+                     (gameContext.gameState?.gameTime && (gameContext.gameState.gameTime - unit.lastAuthorityUpdate > 5)))) {
+                     unit.calculateEffectiveAuthority();
+                }
+                ctx.fillText(`EA: ${unit.effectiveAuthority.toFixed(0)}`, screenX, screenY + yTextOffset);
+                // yTextOffset -= 12; // No decrement here if it's the last text line before icons/lines
+            }
+
+            if (unit.provideMoraleBonus) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                const auraRadius = Math.max(4 * camera.zoom, unitVisualSize * 0.7);
+                ctx.arc(screenX, screenY, auraRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            if (unit.canPromoteSubordinates) {
+                ctx.fillStyle = 'rgba(100, 170, 255, 0.95)';
+                const starBasePixelSize = 10;
+                const starRenderSize = Math.max(5, starBasePixelSize * camera.zoom);
+                ctx.font = `bold ${starRenderSize}px Arial`;
+
+                const starOffsetX = (unitVisualSize * 0.5) + (starRenderSize * 0.5);
+                const starOffsetY = -(unitVisualSize * 0.5) - (starRenderSize * 0.25);
+                ctx.fillText('★', screenX + starOffsetX, screenY + starOffsetY);
+            }
+
+            ctx.font = '10px Arial'; // Reset font
+
+            if (unit.currentCommander) {
+                const commanderScreenX = (unit.currentCommander.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const commanderScreenY = (unit.currentCommander.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                ctx.strokeStyle = '#ff0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY);
+                ctx.lineTo(commanderScreenX, commanderScreenY);
+                ctx.stroke();
+            }
+
+            if (unit.effectiveAuthority > 10) {
+                ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                const commandRangeSquad = (typeof COMMAND_CONFIG !== 'undefined' && COMMAND_CONFIG.COMMAND_RANGES?.SQUAD) ? COMMAND_CONFIG.COMMAND_RANGES.SQUAD : 150;
+                ctx.arc(screenX, screenY, commandRangeSquad * camera.zoom, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            if (unit.idealFormationSlotWorld) {
+                const idealSlotScreenX = (unit.idealFormationSlotWorld.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const idealSlotScreenY = (unit.idealFormationSlotWorld.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(idealSlotScreenX, idealSlotScreenY, 5 * camera.zoom, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (unit.leaderPredictedPosition) {
+                const predLeaderScreenX = (unit.leaderPredictedPosition.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const predLeaderScreenY = (unit.leaderPredictedPosition.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                ctx.beginPath();
+                ctx.arc(predLeaderScreenX, predLeaderScreenY, 3 * camera.zoom, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+        ctx.textAlign = 'left';
+    };
 }
 
 [end of rtsgame/js/ai/strategicAI.js]
