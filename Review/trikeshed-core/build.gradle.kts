@@ -143,6 +143,7 @@ kotlin {
             }
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+                implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
             }
         }
 
@@ -201,6 +202,20 @@ kotlin {
 
         val macosArm64Test by getting {
             dependsOn(macosTest)
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+
+        val jvmTest by getting {
+            dependsOn(commonTest)
+            kotlin.srcDir("$rootDir/src/jvmTest/kotlin")
+            dependencies {
+                implementation(kotlin("stdlib-jdk8")) // For JVM specific things if any in tests beyond jgit
+            }
         }
 
         // Define other source sets (nativeMain, etc.) similarly if they should also
