@@ -10,6 +10,7 @@
 
 package borg.trikeshed.core // Changed package from com.example.trikeshedcore
 
+import borg.trikeshed.core.name
 import borg.trikeshed.core.`▶`
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
@@ -46,6 +47,7 @@ internal inline infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
     override val b: B get() = b
 }
 
+infix fun <T, R> Tensor<T>.`▶` (transform: (IntArray) -> T) =a.drop(1).j { coords: IntArray -> transform(coords) }
 
 /** Accessor for the first element of a [Join]. */
 internal inline val <A, B> Join<A, B>.first: A get() = a
@@ -102,7 +104,7 @@ internal inline val <T> T.`↺`: () -> T get() = leftIdentity
  */
 // @JsExport // Removed as per plan
 /* Marking value class internal */ @JvmInline
-internal value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
+value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
     override fun iterator(): Iterator<A> = object : Iterator<A> {
         private var index = 0
         override fun hasNext(): Boolean = index < s.size
@@ -510,9 +512,10 @@ internal operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(thi
             killSet.add(item)
         }
         val retainedIndices = (0 until this.meta.totalSize).filterNot { it in killSet }.toIntArray()
-        val newCursor = TensorCursor(a.rows, retainedIndices.size) { r, c -> a(r, retainedIndices[c]) }
-        val newMeta = TensorSeries(retainedIndices.size) { i -> this.meta[retainedIndices[i]] }
-        return newCursor j newMeta
+        val newCursor: Tensor<T> = TensorCursor(a.rows, retainedIndices.size) { r, c -> a(r, retainedIndices[c]) }
+        val newMeta: Tensor<CoreTensorCursor<ColumnMeta>> = TensorSeries(retainedIndices.size) { i -> this.meta[retainedIndices[i]] }
+        return ((newCursor j newMeta) as CoreTensorCursorWithMeta<T>)
+
     }
 /**
      * Returns a new [CoreTensorCursorWithMeta] with columns excluded by [ColumnExclusion] objects.
@@ -529,21 +532,22 @@ internal operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(thi
         }
         val retainedIndices = ((0 until this.meta.totalSize).toSet() - exclusionBag).toIntArray()
         val newCursor = TensorCursor(this.a.rows, retainedIndices.size) { r, c -> this.a(r, retainedIndices[c]) }
-        val newMeta = TensorSeries(retainedIndices.size) { i -> this.meta[retainedIndices[i]] }
-        return newCursor j newMeta
+        val newMeta: Tensor<CoreTensorCursor<ColumnMeta>> = TensorSeries(retainedIndices.size) { i -> this.meta[retainedIndices[i]] }
+        return (newCursor j newMeta) as CoreTensorCursorWithMeta<T>
     }/**
   * Operator for CoreTensorCursorWithMeta to get a subset of columns by names.
   * This is an adaptation of `Cursor.get(vararg s: String)` from the original.
   */
  @JsName("getColsByNameCoreTensorCursorWithMeta")
- fun <T> CoreTensorCursorWithMeta<T>.get(vararg s: String): CoreTensorCursorWithMeta<T> {
-     val currentMeta = this.meta
+ operator fun <T> CoreTensorCursorWithMeta<T>.get(vararg s: String): CoreTensorCursorWithMeta<T> {
+     val currentMeta: CursorMeta = this.meta
      val indicesToRetain = s.mapNotNull { nameToFind ->
-         currentMeta.`▶`.indexOfFirst { meta -> meta.name == nameToFind }.takeIf { it != -1 }
+         currentMeta.`▶`.indexOfFirst {
+             meta -> meta.name == nameToFind }.takeIf { it != -1 }
      }.toIntArray()
      val newCursor = TensorCursor(this.a.rows, indicesToRetain.size) { r, c -> this.a(r, indicesToRetain[c]) }
      val newMeta = TensorSeries(indicesToRetain.size) { i -> currentMeta[indicesToRetain[i]] }
-     return newCursor j newMeta
+     return (newCursor j newMeta) as CoreTensorCursorWithMeta<T>
  }
 
 // VIII. Presentation Functions and Properties
@@ -558,27 +562,10 @@ fun Any?.toDisplayString(type: IOMemento): String {
     }
 }
 
-// Close the block comment that started at line 498
-
-// Actual problematic lines from error report that need commenting:
-// Around L508:
-// val গুণ = α * β
-// val ჰबंग = গুণ * 시간
-// val 시간 = Moment(config, α = α, β = β, γ = γ, δ = δ, ε = ε, ζ = ζ, η = η)..(α * β)
-
-// Around L527:
-// val গুণ = α * β
-// val ჰबंग = গুণ * 시간
-// val დრო = Moment(config, α = α, β = β, γ = γ, δ = δ, ε = ε, ζ = ζ, η = η)..(α * β)
-
-// Around L542:
-// val গুণ = α * β
-// val ჰबंग = গুণ * 시간
-// val დრო = Moment(config, α = α, β = β, γ = γ, δ = δ, ε = ε, ζ = ζ, η = η)..(α * β)
-
-// The comment block below was an attempt to list these, not to comment them.
-// The actual code causing these errors is not present in the provided snippet.
-// If these errors (L508, L527, L542, etc.) refer to code not shown,
-// I cannot comment them out. Assuming they are not in this file based on current content.
-// If they ARE in this file and were missed, they would need specific commenting.
-// For now, I'm ensuring the existing comments about them are just comments.
+/**
+ * Provides an [Iterable] view of the [Series].
+ */
+internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = {
+    val (s) = shape
+    //onw the tensor is the shorter shape
+}
