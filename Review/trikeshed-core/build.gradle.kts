@@ -40,7 +40,12 @@ kotlin {
         // OS-specific cinterop settings
         compilations["main"].cinterops {
             val native by creating {
-                val resolvedOsFamily = getOsFamily()
+                val resolvedOsFamily = when (this@withType.konanTarget.family) {
+                    org.jetbrains.kotlin.konan.target.Family.OSX -> "macos"
+                    org.jetbrains.kotlin.konan.target.Family.LINUX -> "linux"
+                    org.jetbrains.kotlin.konan.target.Family.MINGW -> "windows"
+                    else -> "unknown"
+                }
                 defFile(project.file("src/linuxMain/cinterop/native.def"))
                 packageName("cinterop.native")
                 compilerOpts("-DTARGET_OS_FAMILY=$resolvedOsFamily")
@@ -49,9 +54,13 @@ kotlin {
 
         compilations["main"].compileTaskProvider.configure {
             compilerOptions {
-                val resolvedOsFamily = getOsFamily()
-                val currentTarget = this@withType
-                println("Cinterop for ${currentTarget.name} on ${currentTarget.konanTarget} (OS: $resolvedOsFamily): Applying settings...")
+                val resolvedOsFamily = when (this@withType.konanTarget.family) {
+                    org.jetbrains.kotlin.konan.target.Family.OSX -> "macos"
+                    org.jetbrains.kotlin.konan.target.Family.LINUX -> "linux"
+                    org.jetbrains.kotlin.konan.target.Family.MINGW -> "windows"
+                    else -> "unknown"
+                }
+                println("Cinterop for ${this@withType.name} on ${this@withType.konanTarget} (OS: $resolvedOsFamily): Applying settings...")
 
                 when (resolvedOsFamily) {
                     "linux" -> {
@@ -143,20 +152,20 @@ kotlin {
 
         // Create nativeTest source set
         val nativeTest by creating {
-            dependsOn(commonTest)
+            dependsOn(commonTest.get())
         }
 
         val macosTest by creating {
-            dependsOn(nativeTest)
+            dependsOn(nativeTest.get())
             kotlin.srcDir("$rootDir/src/macosTest/kotlin")
         }
 
         val macosX64Test by getting {
-            dependsOn(macosTest)
+            dependsOn(macosTest.get())
         }
 
         val macosArm64Test by getting {
-            dependsOn(macosTest)
+            dependsOn(macosTest.get())
         }
     }
 }

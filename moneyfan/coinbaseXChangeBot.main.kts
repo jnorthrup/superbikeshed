@@ -53,7 +53,7 @@
  *    (Ensure the API key has permissions for viewing balances, market data, and trading).
  *
  * Running the Script:
- *   kscript coinbaseXChangeBot.main.kts
+ *   k2script coinbaseXChangeBot.main.kts
  *
  * Disclaimer:
  * TRADING CRYPTOCURRENCIES IS RISKY. THIS SCRIPT IS FOR EDUCATIONAL AND
