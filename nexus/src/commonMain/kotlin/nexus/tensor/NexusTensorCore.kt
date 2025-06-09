@@ -265,6 +265,257 @@ fun <T> NexusTensor<T>.toSeries(): Series<T> =
     this.materializeCold()
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// TENSOR IMPLEMENTATION HELPERS - Missing operations implemented
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Helper for IntArray operations
+fun IntArray.insertAt(index: Int, value: Int): IntArray =
+    this.sliceArray(0 until index) + value + this.sliceArray(index until size)
+
+fun IntArray.expandTo(targetSize: Int): IntArray =
+    this + IntArray(targetSize - size) { 0 }
+
+fun IntArray.removeIndices(indices: IntArray): IntArray =
+    this.filterIndexed { i, _ -> i !in indices }.toIntArray()
+
+val IntArray.indices: IntRange get() = 0 until size
+
+fun <T> List<T>.toSeries(): Series<T> = Series.of(*this.toTypedArray())
+
+// Tensor correlation operations
+fun <T> NexusTensor<T>.correlateWith(other: NexusTensor<T>): NexusTensor<Join<T, T>> =
+    this.α { (shape, accessor) ->
+        shape j { indices ->
+            val elem1 = accessor(indices)
+            val elem2 = other.at(TensorCoordinate(indices))
+            elem1 j elem2
+        }
+    }
+
+// Pattern extraction from correlations
+fun <T> NexusTensor<Join<T, T>>.extractPatterns(): PatternTensor =
+    this.transform { (a, b) ->
+        Pattern.from(a.toString() + "→" + b.toString())
+    }
+
+// Fitness calculation for solutions
+fun SolutionTensor.calculateFitness(): FitnessTensor =
+    this.transform { solution ->
+        FitnessValue.from(solution.complexity() + solution.quality())
+    }
+
+// Parent selection for evolution
+fun EvolutionTensor.selectParents(fitness: FitnessTensor): SolutionTensor =
+    this.α { (shape, accessor) ->
+        shape j { indices ->
+            val step = accessor(indices)
+            val fitnessValue = fitness.at(TensorCoordinate(indices))
+            Solution.fromEvolution(step, fitnessValue)
+        }
+    }
+
+// Offspring generation
+fun SolutionTensor.generateOffspring(): SolutionTensor =
+    this.transform { parent ->
+        Solution.mutate(parent)
+    }
+
+// Knowledge incorporation
+fun KnowledgeTensor.incorporate(insights: NexusTensor<Join<Knowledge, Knowledge>>): KnowledgeTensor =
+    this.α { (shape, accessor) ->
+        shape j { indices ->
+            val knowledge = accessor(indices)
+            val insight = insights.at(TensorCoordinate(indices))
+            Knowledge.merge(knowledge, insight.a, insight.b)
+        }
+    }
+
+// Outcome merging
+fun OutcomeTensor.merge(other: OutcomeTensor): OutcomeTensor =
+    this.α { (shape, accessor) ->
+        shape j { indices ->
+            val outcome1 = accessor(indices)
+            val outcome2 = other.at(TensorCoordinate(indices))
+            Outcome.combine(outcome1, outcome2)
+        }
+    }
+
+// Tensor agent operations
+fun TensorOperations.generateSolutions(request: NexusTensor<Request>, space: NexusTensorSpace): SolutionTensor =
+    this.α { (learning, evolution) ->
+        val solutionShape = intArrayOf(10) // Generate 10 solutions
+        solutionShape j { indices ->
+            val learningFunc = learning.at(TensorCoordinate(indices))
+            val evolutionFunc = evolution.at(TensorCoordinate(indices))
+            Solution.generate(learningFunc, evolutionFunc, request.at(TensorCoordinate(intArrayOf(0))))
+        }
+    }
+
+fun TensorOperations.evolveInSpace(solutionSpace: SolutionTensor): SolutionTensor =
+    solutionSpace.parallelEvolution(solutionSpace.calculateFitness())
+
+fun SolutionTensor.extractBestSolution(): Solution =
+    this.α { (shape, accessor) ->
+        val allSolutions = shape.indices.map { i -> accessor(intArrayOf(i)) }
+        allSolutions.maxByOrNull { it.quality() } ?: allSolutions.first()
+    }
+
+fun Solution.toResponse(): Response =
+    Series.of("Solution:", this.description(), this.implementation())
+
+fun NexusTensorSpace.incorporateInteraction(interaction: NexusTensor<Join<Request, Response>>): NexusTensorSpace =
+    this.α { (contextLearning, evolutionKnowledge) ->
+        val (context, learning) = contextLearning
+        val (evolution, knowledge) = evolutionKnowledge
+        
+        val updatedContext = context.transform { ctx ->
+            ContextTensorSpace.adapt(ctx, interaction)
+        }
+        val updatedLearning = learning.transform { learn ->
+            LearningTensorSpace.learn(learn, interaction)
+        }
+        val updatedEvolution = evolution.transform { evo ->
+            EvolutionTensorSpace.evolve(evo, interaction)
+        }
+        val updatedKnowledge = knowledge.transform { know ->
+            KnowledgeTensorSpace.update(know, interaction)
+        }
+        
+        (updatedContext j updatedLearning) j (updatedEvolution j updatedKnowledge)
+    }
+
+fun TensorOperations.enhance(interaction: NexusTensor<Join<Request, Response>>): TensorOperations =
+    this.α { (learning, evolution) ->
+        val enhancedLearning = learning.transform { func ->
+            LearningFunction.enhance(func, interaction)
+        }
+        val enhancedEvolution = evolution.transform { func ->
+            EvolutionFunction.enhance(func, interaction)
+        }
+        enhancedLearning j enhancedEvolution
+    }
+
+fun TensorOperations.predictInSpace(context: CCEKTensor, space: NexusTensorSpace): NexusTensor<Action> =
+    this.α { (learning, evolution) ->
+        val predictionShape = intArrayOf(5) // Predict 5 possible actions
+        predictionShape j { indices ->
+            val contextValue = context.at(TensorCoordinate(intArrayOf(0)))
+            val learningFunc = learning.at(TensorCoordinate(indices))
+            val evolutionFunc = evolution.at(TensorCoordinate(indices))
+            Action.predict(contextValue, learningFunc, evolutionFunc)
+        }
+    }
+
+fun NexusTensor<Action>.extractMostLikely(): Action =
+    this.α { (shape, accessor) ->
+        val actions = shape.indices.map { i -> accessor(intArrayOf(i)) }
+        actions.maxByOrNull { it.confidence() } ?: actions.first()
+    }
+
+fun Action.toAction(): Action = this
+
+fun Join<Request, Response>.toTensor(): NexusTensor<Join<Request, Response>> =
+    intArrayOf(1) j { _ -> this }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TENSOR TYPE DEFINITIONS - Missing types for tensor operations
+// ═══════════════════════════════════════════════════════════════════════════════
+
+typealias FitnessTensor = NexusTensor<FitnessValue>
+typealias LearningFunction = (Pattern, Outcome) -> LearningInstance
+typealias EvolutionFunction = (Solution, FitnessValue) -> Solution
+
+@JvmInline
+value class FitnessValue(val value: Double) {
+    companion object {
+        fun from(value: Double): FitnessValue = FitnessValue(value)
+    }
+}
+
+@JvmInline
+value class Knowledge(val data: String) {
+    companion object {
+        fun merge(k1: Knowledge, k2: Knowledge, k3: Knowledge): Knowledge =
+            Knowledge("${k1.data}|${k2.data}|${k3.data}")
+    }
+}
+
+// Pattern enhancement
+fun Pattern.Companion.from(description: String): Pattern =
+    Series.of(description)
+
+// Solution operations
+fun Solution.complexity(): Double = this.`▶`.sumOf { it.length }.toDouble()
+fun Solution.quality(): Double = when {
+    this.`▶`.size < 5 -> 0.9
+    this.`▶`.size < 20 -> 0.7
+    else -> 0.5
+}
+
+fun Solution.Companion.fromEvolution(step: EvolutionStep, fitness: FitnessValue): Solution =
+    Series.of("Evolved solution from step: $step with fitness: ${fitness.value}")
+
+fun Solution.Companion.mutate(parent: Solution): Solution =
+    parent.`▶`.map { line -> "$line [mutated]" }.let { Series.of(*it.toTypedArray()) }
+
+fun Solution.Companion.generate(learning: LearningFunction, evolution: EvolutionFunction, request: Request): Solution =
+    Series.of("Generated solution for: ${request.`▶`.joinToString(" ")}")
+
+fun Solution.description(): String = this.`▶`.take(2).joinToString(" ")
+fun Solution.implementation(): String = this.`▶`.drop(2).joinToString("\n")
+
+fun Outcome.Companion.combine(o1: Outcome, o2: Outcome): Outcome =
+    Outcome("${o1.data} + ${o2.data}")
+
+// Action operations
+fun Action.confidence(): Double = kotlin.random.Random.nextDouble()
+
+fun Action.Companion.predict(context: CCEKContext, learning: LearningFunction, evolution: EvolutionFunction): Action =
+    Action("predicted_action_for_${context.extractCurrentScope()}")
+
+// LearningInstance operations
+fun LearningInstance.Companion.from(pattern: Join<Pattern, Outcome>): LearningInstance =
+    "learned_from_${pattern.a.`▶`.joinToString()}_outcome_${pattern.b.data}"
+
+// Tensor space operations
+object ContextTensorSpace {
+    fun adapt(ctx: CCEKContext, interaction: NexusTensor<Join<Request, Response>>): CCEKContext =
+        ctx // For now, return unchanged
+}
+
+object LearningTensorSpace {
+    fun learn(learning: LearningInstance, interaction: NexusTensor<Join<Request, Response>>): LearningInstance =
+        "$learning + interaction_learning"
+}
+
+object EvolutionTensorSpace {
+    fun evolve(evolution: EvolutionStep, interaction: NexusTensor<Join<Request, Response>>): EvolutionStep =
+        "$evolution + interaction_evolution"
+}
+
+object KnowledgeTensorSpace {
+    fun update(knowledge: Knowledge, interaction: NexusTensor<Join<Request, Response>>): Knowledge =
+        Knowledge("${knowledge.data} + interaction_knowledge")
+}
+
+// Function enhancements
+object LearningFunction {
+    fun enhance(func: LearningFunction, interaction: NexusTensor<Join<Request, Response>>): LearningFunction =
+        { pattern, outcome -> func(pattern, outcome) + "_enhanced" }
+}
+
+object EvolutionFunction {
+    fun enhance(func: EvolutionFunction, interaction: NexusTensor<Join<Request, Response>>): EvolutionFunction =
+        { solution, fitness -> func(solution, fitness) }
+}
+
+// Environment adaptations
+fun <T> T.adaptTo(env: Environment): T = this
+
+fun CCEKContext.adaptTo(change: Change): CCEKContext = this
+fun Capability.adaptTo(change: Change): Capability = this
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PURE TENSOR-FIRST NEXUS AGENT
 // Everything is tensors. Learning, evolution, context, knowledge - all tensor operations.
 // Massive performance gains through columnar processing and vectorization.

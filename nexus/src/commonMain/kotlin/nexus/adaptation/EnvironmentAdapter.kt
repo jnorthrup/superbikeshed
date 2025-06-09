@@ -193,7 +193,15 @@ enum class ConnectionType {
  */
 @JvmInline
 value class Action(val data: String) {
-    val type: ActionType get() = TODO("Extract action type from data")
+    val type: ActionType get() = when {
+        data.contains("file:") || data.contains("mkdir") || data.contains("rm ") -> ActionType.FILE_OPERATION
+        data.contains("edit:") || data.contains("modify:") -> ActionType.CODE_EDIT
+        data.contains("build") || data.contains("compile") -> ActionType.BUILD
+        data.contains("test") || data.contains("unittest") -> ActionType.TEST
+        data.contains("git ") || data.contains("commit") || data.contains("push") -> ActionType.VCS
+        data.contains("deploy") || data.contains("release") -> ActionType.DEPLOY
+        else -> ActionType.FILE_OPERATION
+    }
 }
 
 enum class ActionType {
@@ -205,9 +213,29 @@ enum class ActionType {
  */
 @JvmInline
 value class Outcome(val data: String) {
-    val success: Boolean get() = TODO("Extract success from data")
-    val changes: Series<Change> get() = TODO("Extract changes from outcome")
-    val affectsCapabilities: Boolean get() = TODO("Check if outcome affects capabilities")
+    val success: Boolean get() = 
+        data.contains("success") || data.contains("completed") || 
+        data.contains("ok") || !data.contains("error")
+    
+    val changes: Series<Change> get() {
+        val changeLines = data.lines().filter { it.contains("changed:") || it.contains("modified:") }
+        return changeLines.map { line ->
+            Change(
+                type = when {
+                    line.contains("file") -> ChangeType.FILE_SYSTEM
+                    line.contains("tool") -> ChangeType.TOOL_STATE
+                    line.contains("env") -> ChangeType.ENVIRONMENT
+                    else -> ChangeType.FILE_SYSTEM
+                },
+                source = "outcome",
+                data = line
+            )
+        }.let { Series.of(*it.toTypedArray()) }
+    }
+    
+    val affectsCapabilities: Boolean get() = 
+        data.contains("capabilities") || data.contains("tools") || 
+        changes.`▶`.any { it.affectsCapabilities }
 }
 
 /**
