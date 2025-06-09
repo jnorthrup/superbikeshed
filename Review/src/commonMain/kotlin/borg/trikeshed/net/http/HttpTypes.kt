@@ -2,7 +2,7 @@ package borg.trikeshed.net.http
 
 import borg.trikeshed.core.Join
 import borg.trikeshed.core.Series
-import kotlinx.serialization.Serializable
+// import kotlinx.serialization.Serializable // Removed
 
 typealias HttpAuthority = String              // Host:port authority
 typealias HttpContentLength = ULong           // Content-Length header value
@@ -16,7 +16,7 @@ typealias HttpHeaderValue = String            // Header field value
 /**
  * Standard HTTP methods.
  */
-@Serializable
+// @Serializable // Removed
 enum class HttpMethod {
     GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH, CONNECT
 }
@@ -38,21 +38,21 @@ typealias HttpUserAgent = String              // User-Agent header value
 /**
  * Represents structured HTTP authentication schemes.
  */
-@Serializable
+// @Serializable // Removed
 sealed interface HttpAuthentication {
     /**
      * Represents HTTP Basic Authentication.
      * @property username The username.
      * @property password The password.
      */
-    @Serializable
+    // @Serializable // Removed
     data class BasicAuth(val username: String, val password: String) : HttpAuthentication
 
     /**
      * Represents Bearer Token Authentication.
      * @property token The bearer token.
      */
-    @Serializable
+    // @Serializable // Removed
     data class BearerToken(val token: String) : HttpAuthentication
 
     /**
@@ -60,18 +60,18 @@ sealed interface HttpAuthentication {
      * @property headerName The name of the HTTP header to use for the API key.
      * @property keyValue The value of the API key.
      */
-    @Serializable
+    // @Serializable // Removed
     data class ApiKeyAuth(val headerName: String, val keyValue: String) : HttpAuthentication
 }
 
 /**
  * Represents the body of an HTTP request.
  */
-@Serializable
+// @Serializable // Removed
 sealed class RequestBody {
-    @Serializable
+    // @Serializable // Removed
     data object Empty : RequestBody()
-    @Serializable
+    // @Serializable // Removed
     data class Bytes(val content: ByteArray) : RequestBody() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -86,11 +86,11 @@ sealed class RequestBody {
 /**
  * Represents the body of an HTTP response.
  */
-@Serializable
+// @Serializable // Removed
 sealed class ResponseBody {
-    @Serializable
+    // @Serializable // Removed
     data object Empty : ResponseBody()
-    @Serializable
+    // @Serializable // Removed
     data class Bytes(val content: ByteArray) : ResponseBody() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -121,7 +121,7 @@ sealed class ResponseBody {
  * @property headers The HTTP headers for the request.
  * @property body The body of the request.
  */
-@Serializable
+// @Serializable // Removed
 data class HttpRequest(
     val url: String,
     val method: HttpMethod,
@@ -136,7 +136,7 @@ data class HttpRequest(
  * @property headers The HTTP headers from the response.
  * @property body The body of the response.
  */
-@Serializable
+// @Serializable // Removed
 data class HttpResponse(
     val statusCode: Int, // Changed from UShort to Int for commonality
     val headers: HttpHeaders,
@@ -149,7 +149,7 @@ data class HttpResponse(
  * @param errorCode An optional numeric error code (e.g., from QUIC transport or HTTP/3).
  * @param cause The underlying cause of this exception, if any.
  */
-@Serializable
+// @Serializable // Removed
 class QuicCurlException(
     message: String,
     val errorCode: Long? = null, // Changed to Long to accommodate various error code types (e.g. QUIC varint error codes)

@@ -12,7 +12,7 @@ package borg.trikeshed.core // Changed package from com.example.trikeshedcore
 
 import borg.trikeshed.core.name
 import borg.trikeshed.core.`▶`
-import kotlinx.serialization.Serializable
+// import kotlinx.serialization.Serializable // Removed
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 import kotlin.js.JsName
@@ -33,8 +33,7 @@ import kotlin.reflect.KClass
  */
 @OptIn(ExperimentalJsExport::class)
 @JsExport
-// @Serializable // Removed from interface; implementations like SerializableJoin handle serialization
-interface Join<A, B> {
+interface Join<A, B> { // @Serializable removed
     val a: A
     val b: B
     operator fun component1(): A = a
@@ -42,7 +41,7 @@ interface Join<A, B> {
     val pair: Pair<A, B> get() = Pair(a, b)
 }
 
-@Serializable
+// @Serializable // Removed
 data class SerializableJoin<A, B>(override val a: A, override val b: B) : Join<A, B>
 
 /**
@@ -127,10 +126,10 @@ internal fun Series<Char>.asString(): String = this.`▶`.joinToString("")
 
 // III. core.Tensor Implementation
 
-@Serializable
+// @Serializable // Removed
 data class SerializableTensorData<T>(val shape: IntArray, val data: List<T>)
 
-@Serializable
+// @Serializable // Removed
 data class SerializableSeriesData<T>(val data: List<T>)
 
 /**
