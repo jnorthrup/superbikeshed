@@ -1,0 +1,1 @@
+rootProject.name = "ta4k-spacegraph-moneyfan-demo" 

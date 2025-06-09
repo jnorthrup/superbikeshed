@@ -1,0 +1,29 @@
+datasets
+anthropic
+anthropic[bedrock]
+backoff
+botocore
+boto3
+openai
+
+# SWE-Bench
+beautifulsoup4
+chardet
+docker
+ghapi
+GitPython
+pre-commit
+python-dotenv>=1.0.0
+rich
+unidiff
+
+# pytest
+pytest>=7.4.0
+pytest-asyncio
+async_timeout
+pytest-mock>=3.11.1
+
+# New additions
+langchain>=0.1.0
+typing-extensions>=4.7.1
+pydantic>=2.4.2

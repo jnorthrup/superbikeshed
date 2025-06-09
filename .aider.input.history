@@ -1,0 +1,2055 @@
+
+# 2025-06-09 00:38:35.923823
++Okay, I understand you're looking to incorporate asynchronous I/O capabilities leveraging `io_uring` for Linux and `kqueue` for macOS/BSD into your `trikeshed-core` project. This will involve defining new `expect` declarations in your common Kotlin code and then providing the platform-specific `actual` implementations.
++
++Here's a plan for these additions, focusing on creating new CCEK (Common Coroutine Element Key) style `expect` declarations for a completion-queue-based asynchronous I/O engine. This new engine would operate alongside or could eventually integrate with your existing reactor pattern.
++
++**I. New `expect` Declarations for Asynchronous I/O (in `commonMain`)**
++
++I'll place these in a new file, `AsyncIo.kt`, within the `borg.trikeshed.reactor` package for organization.
++
++**File: `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/reactor/AsyncIo.kt`**
++```kotlin
++package borg.trikeshed.reactor
++
++import borg.trikeshed.lib.ByteBuffer // Assuming this is your common ByteBuffer interface
++import borg.trikeshed.io.network.NetworkAddress // Assuming this is your common NetworkAddress type
++import kotlin.coroutines.CoroutineContext
++
++/**
++ * An opaque handle representing a submitted asynchronous I/O operation.
++ * Used to correlate completion events back to their original requests.
++ */
++expect class AsyncOperationHandle
++
++/**
++ * Represents a completed asynchronous I/O operation.
++ *
++ * @property handle The handle of the operation that completed.
++ * @property attachment The user-defined data associated with the operation when it was submitted.
++ * @property result For read/write operations, the number of bytes transferred. For accept, the new client FD. For connect, often 0 on success.
++ *                  Negative values typically indicate an error specific to the operation itself before OS errors.
++ * @property errorCode A platform-specific error code (e.g., errno from POSIX) if the operation failed at the OS level. Null on success.
++ */
++data class AsyncCompletionEvent(
++    val handle: AsyncOperationHandle,
++    val attachment: Any?,
++    val result: Int,
++    val errorCode: Int? // POSIX errno or equivalent
++)
++
++/**
++ * Defines the contract for a platform-agnostic asynchronous I/O engine,
++ * inspired by completion-queue models like io_uring and kqueue.
++ * This engine allows submitting various I/O operations and polling for their completions.
++ */
++expect class AsyncIoEngine() : CoroutineContext.Element {
++
++    /** The key for [AsyncIoEngine] in a [CoroutineContext]. */
++    companion object Key : CoroutineContext.Key<AsyncIoEngine>
++
++    override val key: CoroutineContext.Key<*> // Implements CoroutineContext.Element
++
++    /**
++     * Prepares a file descriptor (or equivalent platform handle) for use with this engine.
++     * For some backends like io_uring, this might involve registering the FD.
++     * @param fd The platform-specific file descriptor (Int for POSIX).
++     */
++    fun registerDescriptor(fd: Int)
++
++    /**
++     * Removes a file descriptor from the engine's management.
++     * @param fd The platform-specific file descriptor.
++     */
++    fun unregisterDescriptor(fd: Int)
++
++    /**
++     * Submits an asynchronous read operation.
++     *
++     * @param fd The file descriptor to read from.
++     * @param buffer The ByteBuffer to read data into. Its position and limit determine where data is read and how much.
++     * @param fileOffset For seekable files, the offset at which to read. Use -1 for current file position or for non-seekable FDs like sockets.
++     * @param attachment Optional user-defined data to associate with this operation.
++     * @return An [AsyncOperationHandle] to track this specific operation.
++     * @throws IllegalStateException if the engine is closed or submission fails.
++     */
++    fun submitRead(
++        fd: Int,
++        buffer: ByteBuffer,
++        fileOffset: Long = -1L, // -1 for current position / not applicable
++        attachment: Any? = null
++    ): AsyncOperationHandle
++
++    /**
++     * Submits an asynchronous write operation.
++     *
++     * @param fd The file descriptor to write to.
++     * @param buffer The ByteBuffer containing data to write. Its position and limit determine what data is written.
++     * @param fileOffset For seekable files, the offset at which to write. Use -1 for current file position or for non-seekable FDs.
++     * @param attachment Optional user-defined data to associate with this operation.
++     * @return An [AsyncOperationHandle] to track this specific operation.
++     * @throws IllegalStateException if the engine is closed or submission fails.
++     */
++    fun submitWrite(
++        fd: Int,
++        buffer: ByteBuffer,
++        fileOffset: Long = -1L, // -1 for current position / not applicable
++        attachment: Any? = null
++    ): AsyncOperationHandle
++
++    /**
++     * Submits an asynchronous accept operation for a listening server socket.
++     *
++     * @param serverFd The file descriptor of the listening server socket.
++     * @param attachment Optional user-defined data to associate with this operation.
++     * @return An [AsyncOperationHandle] to track this specific operation. The `result` in its [AsyncCompletionEvent] will be the new client FD.
++     * @throws IllegalStateException if the engine is closed or submission fails.
++     */
++    fun submitAccept(serverFd: Int, attachment: Any? = null): AsyncOperationHandle
++
++    /**
++     * Submits an asynchronous connect operation for a client socket.
++     *
++     * @param clientFd The file descriptor of the client socket.
++     * @param remoteAddress The [NetworkAddress] to connect to.
++     * @param attachment Optional user-defined data to associate with this operation.
++     * @return An [AsyncOperationHandle] to track this specific operation.
++     * @throws IllegalStateException if the engine is closed or submission fails.
++     */
++    fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any? = null): AsyncOperationHandle
++
++    /**
++     * Submits a request to cancel a previously submitted operation.
++     * Note: Cancellation is best-effort and may not always succeed if the operation is already in progress or completed.
++     *
++     * @param handle The [AsyncOperationHandle] of the operation to cancel.
++     * @param attachment Optional user-defined data for this cancellation request (can be different from the original op's attachment).
++     * @return An [AsyncOperationHandle] for the cancellation operation itself. Its completion indicates the cancellation attempt finished.
++     * @throws IllegalStateException if the engine is closed or submission fails.
++     */
++    fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any? = null): AsyncOperationHandle
++
++    /**
++     * Polls for completed I/O operations. This function may suspend if `timeoutMillis` is positive
++     * and no events are immediately available, or block if `timeoutMillis` is -1 (infinite).
++     *
++     * @param maxEvents The maximum number of completion events to retrieve in one call.
++     * @param timeoutMillis The maximum time to wait for completions:
++     *                      - 0: Non-blocking, returns immediately with any available completions.
++     *                      - >0: Waits up to this many milliseconds.
++     *                      - -1: Waits indefinitely until at least one event completes (or an error occurs).
++     * @return A list of [AsyncCompletionEvent]s that have completed. Empty if timeout occurs or no events.
++     * @throws IllegalStateException if the engine is closed.
++     * @throws InterruptedException if the waiting thread is interrupted (platform-dependent).
++     */
++    suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent>
++
++    /**
++     * Closes the asynchronous I/O engine and releases any associated resources.
++     * Attempts to cancel any pending operations.
++     */
++    fun close()
++}
++```
++
++**II. `actual` Implementations (Sketch)**
++
++**A. Linux (`linuxMain` - using `io_uring`)**
++
++The files you provided in `linux_uring/include/` (like `UringSetupFlags.kt`, `UringOpcode.kt`, `helpers.kt` containing `t_create_ring_params`) form a very good basis for the `actual` implementation of `AsyncIoEngine` on Linux.
++
++**File: `trikeshed-core/src/linuxMain/kotlin/borg/trikeshed/reactor/ActualLinuxAsyncIoEngine.kt` (New File)**
++```kotlin
++package borg.trikeshed.reactor
++
++import kotlinx.cinterop.*
++import platform.posix.*
++import zlinux_uring.* // Assuming this brings in io_uring specific bindings from your .def file
++import linux_uring.include.* // For your existing helpers and enums
++import borg.trikeshed.lib.ByteBuffer
++import borg.trikeshed.io.network.NetworkAddress
++import borg.trikeshed.nio.NativeArrayByteBuffer // Assuming your ByteBuffer actual
++import kotlin.coroutines.CoroutineContext
++
++@OptIn(ExperimentalForeignApi::class)
++actual class AsyncIoEngine actual constructor() : CoroutineContext.Element {
++    actual companion object Key : CoroutineContext.Key<AsyncIoEngine>
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    private val ring: io_uring = nativeHeap.alloc()
++    private val ringInitialized: Boolean
++
++    // Mapped memory pointers for SQ, CQ, SQEs
++    private var sqPtr: CPointer<io_uring_sq>? = null
++    private var cqPtr: CPointer<io_uring_cq>? = null
++    private var sqesPtr: CPointer<io_uring_sqe>? = null
++
++    // Ring buffer details (head, tail pointers, masks)
++    private var sq_head_ptr: CPointer<UIntVar>? = null
++    private var sq_tail_ptr: CPointer<UIntVar>? = null
++    private var sq_ring_mask: UInt = 0U
++    // ... and similar for CQ ...
++    private var cq_head_ptr: CPointer<UIntVar>? = null
++
++
++    // Store OperationHandle to user_data mappings
++    private val activeOperations = mutableMapOf<ULong, Pair<AsyncOperationHandle, Any?>>()
++    private var nextUserData = 0UL
++
++
++    init {
++        memScoped {
++            val params = alloc<io_uring_params>()
++            // Optionally set flags in params.flags, e.g., UringSetupFlags.uringSetupIopoll.src
++            // params.flags = UringSetupFlags.uringSetupSqpoll.src or UringSetupFlags.uringSetupSq_aff.src // Example
++
++            val ret = io_uring_queue_init_params(CATQUEUE_DEPTH_ACTUAL, ring.ptr, params.ptr)
++            if (ret < 0) {
++                nativeHeap.free(ring.rawPtr)
++                throw RuntimeException("io_uring_queue_init_params failed: ${strerror(-ret)?.toKString()}")
++            }
++            ringInitialized = true
++
++            // Map the rings (simplified, adapt from your KioUring example)
++            val p = params.pointed
++            val sring_sz = p.sq_off.array + p.sq_entries * sizeOf<UIntVar>().toUInt()
++            sqPtr = mmap(null, sring_sz.convert(), PROT_READ or PROT_WRITE, MAP_SHARED or MAP_POPULATE, ring.ring_fd, IORING_OFF_SQ_RING.toLong())
++                ?.reinterpret() ?: throw RuntimeException("mmap SQ ring failed")
++
++            sq_head_ptr = (sqPtr!!.rawValue.toLong() + p.sq_off.head.toLong()).toCPointer()
++            sq_tail_ptr = (sqPtr!!.rawValue.toLong() + p.sq_off.tail.toLong()).toCPointer()
++            sq_ring_mask = p.sq_off.ring_mask
++
++            // CQ ring
++            val cring_sz = p.cq_off.cqes + p.cq_entries * sizeOf<io_uring_cqe>().toUInt()
++            val singleMmap = (p.features and IORING_FEAT_SINGLE_MMAP.toUInt()) != 0u
++            cqPtr = if(singleMmap) sqPtr!!.reinterpret() // If single mmap, CQ is part of SQ mapping
++                     else mmap(null, cring_sz.convert(), PROT_READ or PROT_WRITE, MAP_SHARED or MAP_POPULATE, ring.ring_fd, IORING_OFF_CQ_RING.toLong())
++                        ?.reinterpret() ?: throw RuntimeException("mmap CQ ring failed")
++
++            cq_head_ptr = (cqPtr!!.rawValue.toLong() + p.cq_off.head.toLong()).toCPointer()
++
++            // SQEs array
++            sqesPtr = mmap(null, (p.sq_entries * sizeOf<io_uring_sqe>().toUInt()).convert(), PROT_READ or PROT_WRITE, MAP_SHARED or MAP_POPULATE, ring.ring_fd, IORING_OFF_SQES.toLong())
++                ?.reinterpret() ?: throw RuntimeException("mmap SQEs failed")
++        }
++    }
++
++    private fun get_sqe(): CPointer<io_uring_sqe>? {
++        val sqe = io_uring_get_sqe(ring.ptr)
++        // If sqe is null, SQ is full. Need to submit and potentially wait.
++        // For simplicity now, assume SQ always has space or user handles full queue externally.
++        // A robust version would call io_uring_submit() if sqe is null and retry, or handle full queue.
++        return sqe
++    }
++
++    private fun submit(): Int {
++        return io_uring_submit(ring.ptr)
++    }
++
++    actual override fun registerDescriptor(fd: Int) {
++        // For io_uring, FDs can be registered for more efficient access with IOSQE_FIXED_FILE.
++        // This function could call io_uring_register(ring.ptr, IORING_REGISTER_FILES, &fd, 1).
++        // For now, direct FD use is simpler and common.
++        println("Native AsyncIoEngine: registerDescriptor($fd) - No-op in this basic version, direct FD used.")
++    }
++
++    actual override fun unregisterDescriptor(fd: Int) {
++        println("Native AsyncIoEngine: unregisterDescriptor($fd) - No-op in this basic version.")
++    }
++
++    actual override fun submitRead(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        val sqe = get_sqe() ?: throw IllegalStateException("io_uring submission queue full")
++        val handle = NativeAsyncOperationHandle(nextUserData++)
++        activeOperations[handle.id] = Pair(handle, attachment)
++
++        // Assuming buffer is NativeArrayByteBuffer or provides direct access
++        val nioBuffer = (buffer as NativeArrayByteBuffer).getInternalNativeArray()
++        val length = buffer.remaining().toUInt()
++
++        nioBuffer.usePinned { pinned ->
++            io_uring_prep_read(sqe, fd, pinned.addressOf(buffer.position()), length, fileOffset.convert())
++        }
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(handle.id.toLong())) // Pass handle ID as user_data
++
++        submit() // Consider batching submissions for performance
++        return handle
++    }
++
++    actual override fun submitWrite(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        val sqe = get_sqe() ?: throw IllegalStateException("io_uring submission queue full")
++        val handle = NativeAsyncOperationHandle(nextUserData++)
++        activeOperations[handle.id] = Pair(handle, attachment)
++
++        val nioBuffer = (buffer as NativeArrayByteBuffer).getInternalNativeArray()
++        val length = buffer.remaining().toUInt()
++
++        nioBuffer.usePinned { pinned ->
++            io_uring_prep_write(sqe, fd, pinned.addressOf(buffer.position()), length, fileOffset.convert())
++        }
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(handle.id.toLong()))
++        submit()
++        return handle
++    }
++
++    actual override fun submitAccept(serverFd: Int, attachment: Any?): AsyncOperationHandle {
++        val sqe = get_sqe() ?: throw IllegalStateException("io_uring submission queue full")
++        val handle = NativeAsyncOperationHandle(nextUserData++)
++        activeOperations[handle.id] = Pair(handle, attachment)
++        memScoped {
++             val clientAddr = alloc<sockaddr_storage>()
++             val clientAddrLen = alloc<socklen_tVar>()
++             clientAddrLen.value = sizeOf<sockaddr_storage>().convert()
++             io_uring_prep_accept(sqe, serverFd, clientAddr.ptr.reinterpret(), clientAddrLen.ptr, 0)
++        }
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(handle.id.toLong()))
++        submit()
++        return handle
++    }
++
++    actual override fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any?): AsyncOperationHandle {
++        TODO("io_uring connect not implemented in this sketch")
++    }
++
++    actual override fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any?): AsyncOperationHandle {
++        val sqe = get_sqe() ?: throw IllegalStateException("io_uring submission queue full")
++        val cancelHandle = NativeAsyncOperationHandle(nextUserData++)
++        activeOperations[cancelHandle.id] = Pair(cancelHandle, attachment)
++
++        val userDataToCancel = (handleToCancel as NativeAsyncOperationHandle).id
++        io_uring_prep_cancel(sqe, interpretCPointer<COpaquePointerVar>(userDataToCancel.toLong()), 0)
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(cancelHandle.id.toLong()))
++        submit()
++        return cancelHandle
++    }
++
++    actual override suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent> {
++        val completions = mutableListOf<AsyncCompletionEvent>()
++        memScoped {
++            val cqePtr = alloc<CPointerVar<io_uring_cqe>>() // For io_uring_wait_cqe or peek
++            val ts: CPointer<__kernel_timespec>? = if (timeoutMillis > 0) {
++                alloc<__kernel_timespec> {
++                    tv_sec = timeoutMillis / 1000
++                    tv_nsec = (timeoutMillis % 1000) * 1_000_000
++                }.ptr
++            } else null
++
++            // If timeoutMillis is 0, use io_uring_peek_cqe.
++            // If timeoutMillis is >0, use io_uring_wait_cqe_timeout.
++            // If timeoutMillis is -1, use io_uring_wait_cqe.
++            // Simplified: Use submit_and_wait for positive timeout or indefinite wait.
++            // Peek for non-blocking.
++            var toWaitCount = if (timeoutMillis == 0L) 0U else 1U // Wait for at least 1 if blocking/timeout
++                                                                   // For peek (timeout 0), just check current.
++
++            if (timeoutMillis != 0L) {
++                // This requires submitting any pending SQEs first. A more robust loop might call io_uring_submit first.
++                // For blocking call, wait for at least one event.
++                val ret = io_uring_submit_and_wait_timeout(ring.ptr, cqePtr.ptr, 1U /* wait_nr*/ , ts, null /* sigmask */)
++                if (ret < 0 && ret != -ETIME && ret != -EINTR) { // ETIME is timeout, EINTR is interrupt
++                     throw RuntimeException("io_uring_submit_and_wait_timeout failed: ${strerror(-ret)?.toKString()}")
++                }
++            }
++            
++            var cqe: CPointer<io_uring_cqe>?
++            var count = 0
++            while (count < maxEvents) {
++                 // Alternative loop for peeking:
++                 // var head = cq_head_ptr!!.pointed.value
++                 // if (head == io_uring_cq_tail(ring.ptr)) break // CQ is empty
++
++                val retPeek = io_uring_peek_cqe(ring.ptr, cqePtr.ptr)
++                if (retPeek < 0) { // No more events immediately available or error
++                    if(retPeek == -EAGAIN) break // Empty queue
++                    throw RuntimeException("io_uring_peek_cqe failed: ${strerror(-retPeek)?.toKString()}")
++                }
++                cqe = cqePtr.value ?: break // No CQE available (shouldn't happen if retPeek was 0)
++
++                val userData = cqe.pointed.user_data.toLong().toULong() // retrieve user_data (handle id)
++                val opInfo = activeOperations.remove(userData)
++                if (opInfo != null) {
++                    val (originalHandle, originalAttachment) = opInfo
++                    val result = cqe.pointed.res
++                    val error = if (result < 0) -result else null
++                    completions.add(AsyncCompletionEvent(originalHandle, originalAttachment, result, error))
++                } else {
++                    // Spurious completion or user_data mismatch
++                }
++                io_uring_cqe_seen(ring.ptr, cqe) // Mark as consumed
++                count++
++            }
++        }
++        return completions
++    }
++
++    actual override fun close() {
++        if (ringInitialized) {
++            // Unmap memory
++            if (sqPtr != null) {
++                munmap(sqPtr, (p.sq_off.array + p.sq_entries * sizeOf<UIntVar>().toUInt()).convert())
++            }
++            if (cqPtr != null && cqPtr != sqPtr) { // If not single mmap
++                 munmap(cqPtr, (p.cq_off.cqes + p.cq_entries * sizeOf<io_uring_cqe>().toUInt()).convert())
++            }
++            if (sqesPtr != null) {
++                munmap(sqesPtr, (p.sq_entries * sizeOf<io_uring_sqe>().toUInt()).convert())
++            }
++            io_uring_queue_exit(ring.ptr)
++            // No nativeHeap.free for `ring` as it was stack allocated in a block, or needs to be managed with init{}
++            // If `ring` was from nativeHeap.alloc() at class level, then nativeHeap.free(ring.rawPtr)
++            println("Native AsyncIoEngine (io_uring) closed.")
++        }
++    }
++}
++
++// Wrapper for ULong handle IDs
++@JvmInline
++actual value class NativeAsyncOperationHandle(val id: ULong) : AsyncOperationHandle
++
++// Needed by the above `init {}` block because `p` (io_uring_params) is defined there
++// Placeholder definition until the proper context is clarified.
++private val p = nativeHeap.alloc<io_uring_params>().pointed //This would normally be part of init
++private const val CATQUEUE_DEPTH_ACTUAL = 32U // Or your chosen depth
++```
++*Important Notes for `io_uring` implementation:*
++    *   Error handling using `strerror(errno)` for POSIX calls is crucial.
++    *   Memory management for buffers passed to `io_uring_prep_*` needs care. `usePinned` is good for temporary pinning. For long-lived registered buffers, you'd use `io_uring_register_buffers`.
++    *   The mapping of memory for SQ, CQ, and SQEs needs to be done correctly as shown (similar to your `KioUring` example).
++    *   This is a simplified sketch. A production-ready `io_uring` engine requires careful management of submission queue (SQ) full conditions, batching submissions, handling linked operations, and more advanced features like `IOSQE_IO_LINK`.
++    *   `submitCancel` implementation uses `io_uring_prep_cancel` which has specific kernel version requirements (5.5+).
++
++**B. macOS/BSD (`darwinMain` or `posixMain` with conditional logic - using `kqueue`)**
++
++**File: `trikeshed-core/src/nativeMain/kotlin/borg/trikeshed/reactor/ActualNativeKqueueAsyncIoEngine.kt` (New File, adjust target dir based on your KMP setup)**
++```kotlin
++package borg.trikeshed.reactor
++
++import kotlinx.cinterop.*
++import platform.posix.* // Provides kqueue, kevent, EV_SET, EVFILT_READ/WRITE etc.
++import borg.trikeshed.lib.ByteBuffer
++import borg.trikeshed.io.network.NetworkAddress
++import borg.trikeshed.nio.NativeArrayByteBuffer
++import kotlin.coroutines.CoroutineContext
++
++@OptIn(ExperimentalForeignApi::class)
++actual class AsyncIoEngine actual constructor() : CoroutineContext.Element {
++    actual companion object Key : CoroutineContext.Key<AsyncIoEngine>
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    private val kq: Int = kqueue()
++    private val activeOps = mutableMapOf<AsyncOperationHandle, KeventOp>() // Store pending ops
++
++    private var nextId: ULong = 0UL
++    private fun newHandle() = NativeAsyncOperationHandle(nextId++)
++
++    private data class KeventOp(val handle: AsyncOperationHandle, val fd: Int, val filter: Short, val attachment: Any?, val buffer: ByteBuffer?, var fileOffset: Long = -1L)
++
++
++    init {
++        if (kq == -1) {
++            throw RuntimeException("kqueue() creation failed: ${strerror(errno)?.toKString()}")
++        }
++    }
++
++    actual override fun registerDescriptor(fd: Int) {
++        // kqueue usually auto-registers FDs when an event filter is added for them.
++        // No explicit separate registration step like io_uring might need for fixed files.
++        println("Kqueue AsyncIoEngine: registerDescriptor($fd) - implicit via submit.")
++    }
++
++    actual override fun unregisterDescriptor(fd: Int) {
++        // To unregister, remove all event filters associated with fd.
++        // EV_DELETE on existing kevent structs.
++        // For this sketch, not fully implemented cleanup on unregister.
++        println("Kqueue AsyncIoEngine: unregisterDescriptor($fd) - would remove kevent filters.")
++    }
++
++
++    private fun submitOperation(
++        fd: Int,
++        filter: Short, // EVFILT_READ or EVFILT_WRITE
++        buffer: ByteBuffer?, // Null for accept/connect that don't transfer data in submission
++        fileOffset: Long,
++        attachment: Any?
++    ): AsyncOperationHandle = memScoped {
++        val handle = newHandle()
++        val operation = KeventOp(handle, fd, filter, attachment, buffer, fileOffset)
++        activeOps[handle] = operation
++
++        val ke = alloc<kevent>()
++        EV_SET(ke.ptr, fd.convert(), filter, (EV_ADD or EV_ONESHOT).toUShort(), 0u, 0, interpretCPointer<COpaquePointerVar>(handle.id.toLong())) // Store handle ID in udata
++        // EV_ONESHOT: event is reported once and then automatically deleted.
++        
++        if (kevent(kq, ke.ptr, 1, null, 0, null) == -1) {
++            activeOps.remove(handle) // Rollback
++            throw RuntimeException("kevent add failed for fd $fd, filter $filter: ${strerror(errno)?.toKString()}")
++        }
++        return handle
++    }
++
++
++    actual override fun submitRead(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        return submitOperation(fd, EVFILT_READ, buffer, fileOffset, attachment)
++    }
++
++    actual override fun submitWrite(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++       return submitOperation(fd, EVFILT_WRITE, buffer, fileOffset, attachment)
++    }
++
++    actual override fun submitAccept(serverFd: Int, attachment: Any?): AsyncOperationHandle {
++        // For accept, we register EVFILT_READ on the server socket.
++        // The completion will indicate readability, then we call accept().
++        return submitOperation(serverFd, EVFILT_READ, null, -1, attachment)
++    }
++    
++    actual override fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any?): AsyncOperationHandle {
++        // For non-blocking connect, call connect() which might return EINPROGRESS.
++        // Then monitor fd for writability (EVFILT_WRITE) for connect completion.
++        // Store remoteAddress with attachment for use in pollCompletions.
++        val connectOpData = Pair(remoteAddress, attachment) // Bundle address for processing connect
++        val result = UdpSocketServiceUtilsNative.socketAddressToNative(remoteAddress)!!.usePinned {pinnedAddr->
++          platform.posix.connect(clientFd, pinnedAddr.get().ptr.reinterpret(), sizeOf<sockaddr_in>().convert())
++        }
++
++        if (result == 0) { // Connected immediately
++            // Create a synthetic handle and immediately signal completion
++            val handle = newHandle()
++            // TODO: This immediate completion needs to be fed back into the poll loop model.
++            // This is a simplification. A real implementation would queue this for pollCompletions.
++            // For now, assume connect is always async pending.
++            // throw NotImplementedError("Immediate connect success handling not fully sketched for kqueue engine")
++             return submitOperation(clientFd, EVFILT_WRITE /* or synthetic completed event */, null, -1L, connectOpData)
++        } else if (errno != EINPROGRESS) {
++            throw RuntimeException("connect() failed: ${strerror(errno)?.toKString()}")
++        }
++        // If EINPROGRESS, monitor for writability
++        return submitOperation(clientFd, EVFILT_WRITE, null, -1L, connectOpData)
++    }
++    
++    actual override fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any?): AsyncOperationHandle {
++        val opToCancel = activeOps[handleToCancel]
++        if (opToCancel != null) {
++            memScoped {
++                val ke = alloc<kevent>()
++                EV_SET(ke.ptr, opToCancel.fd.convert(), opToCancel.filter, EV_DELETE.toUShort(), 0u, 0, null)
++                if (kevent(kq, ke.ptr, 1, null, 0, null) == -1) {
++                    // Error deleting, but proceed. May complete normally or error.
++                    println("Kqueue: Error trying to delete event for fd ${opToCancel.fd}")
++                }
++            }
++            activeOps.remove(handleToCancel) // Assume cancellation means it won't complete "normally"
++            // A real cancel SQE would yield a completion event for the cancel itself.
++            // For kqueue EV_DELETE, there isn't a direct "cancel completion".
++            // The original operation might still complete if already processed by kernel.
++            // This is simplified. We remove it from activeOps; it won't be processed.
++            val cancelHandle = newHandle() // Dummy handle for the cancel op itself
++            // Caller might want to know if cancel *attempt* succeeded.
++            // Kqueue EV_DELETE just removes it; no specific completion.
++            // We can immediately complete the cancellation handle as "successful attempt".
++             return cancelHandle
++        }
++         throw IllegalArgumentException("Handle not found for cancellation")
++    }
++
++    actual override suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent> = memScoped {
++        val events = allocArray<kevent>(maxEvents)
++        val ts: CPointer<timespec>? = if (timeoutMillis >= 0) {
++            alloc<timespec> {
++                tv_sec = timeoutMillis / 1000
++                tv_nsec = (timeoutMillis % 1000) * 1_000_000
++            }.ptr
++        } else null // Infinite timeout if null
++
++        val nev = kevent(kq, null, 0, events, maxEvents, ts)
++
++        if (nev == -1) {
++            throw RuntimeException("kevent poll failed: ${strerror(errno)?.toKString()}")
++        }
++
++        val completions = mutableListOf<AsyncCompletionEvent>()
++        for (i in 0 until nev) {
++            val currentEvent = events[i]
++            val handleId = currentEvent.udata.toLong().toULong()
++            val operationData = activeOps.remove(NativeAsyncOperationHandle(handleId)) // Operation completes, remove
++
++            if (operationData == null) continue // Already cancelled or spurious
++
++            val (originalHandle, fd, filter, attachment, buffer, fileOffset) = operationData
++            
++            var result = 0
++            var errorCode: Int? = null
++
++            if ((currentEvent.flags.toInt() and EV_ERROR) != 0) {
++                errorCode = currentEvent.data.toInt() // data field contains errno on EV_ERROR
++                result = -1 // Indicate operation error
++            } else {
++                when (filter) {
++                    EVFILT_READ -> {
++                        if (attachment is Pair<*,*>) { // Indicates it was a submitAccept call
++                            val newClientFd = platform.posix.accept(fd, null, null)
++                            if (newClientFd == -1) { result = -1; errorCode = errno }
++                            else result = newClientFd
++                        } else { // Regular read
++                            val nioBuffer = (buffer as NativeArrayByteBuffer).getInternalNativeArray() // Assuming access
++                            result = if (fileOffset != -1L) {
++                                pread(fd, nioBuffer.refTo(0), buffer.remaining().convert(), fileOffset).toInt()
++                            } else {
++                                platform.posix.read(fd, nioBuffer.refTo(0), buffer.remaining().convert()).toInt()
++                            }
++                            if (result == -1) errorCode = errno else buffer.position(buffer.position() + result)
++                        }
++                    }
++                    EVFILT_WRITE -> {
++                        if (attachment is Pair<*, *>) { // Indicates it was a connect operation
++                             val errorOptVal = alloc<IntVar>()
++                             val errorOptLen = alloc<socklen_tVar>()
++                             errorOptLen.value = sizeOf<IntVar>().convert()
++                             if (getsockopt(fd, SOL_SOCKET, SO_ERROR, errorOptVal.ptr, errorOptLen.ptr) == -1) {
++                                 result = -1; errorCode = errno
++                             } else if (errorOptVal.value != 0) {
++                                 result = -1; errorCode = errorOptVal.value
++                             } else {
++                                 result = 0 // Connect success
++                             }
++                        } else { // Regular write
++                            val nioBuffer = (buffer as NativeArrayByteBuffer).getInternalNativeArray()
++                            result = if (fileOffset != -1L) {
++                                pwrite(fd, nioBuffer.refTo(buffer.position()), buffer.remaining().convert(), fileOffset).toInt()
++                            } else {
++                                platform.posix.write(fd, nioBuffer.refTo(buffer.position()), buffer.remaining().convert()).toInt()
++                            }
++                             if (result == -1) errorCode = errno else buffer.position(buffer.position() + result)
++                        }
++                    }
++                }
++            }
++            completions.add(AsyncCompletionEvent(originalHandle, attachment, result, errorCode))
++        }
++        return completions
++    }
++
++    actual override fun close() {
++        if (kq != -1) {
++            platform.posix.close(kq)
++        }
++        // TODO: Cancel any pending operations/clear activeOps?
++        // The scope managing this engine would typically cancel ongoing suspend calls to pollCompletions.
++    }
++}
++
++// Simple handle for kqueue; may be a ULong internally.
++@JvmInline
++actual value class NativeAsyncOperationHandle(val id: ULong) : AsyncOperationHandle
++
++```
++*Important Notes for `kqueue` implementation:*
++    *   It uses `EV_ONESHOT` which means events need to be re-armed if persistent monitoring is needed for a descriptor. For one-shot async operations like submitRead/submitWrite that expect one completion, this is suitable.
++    *   Non-blocking `connect()` for sockets is complex: after `connect()` returns `EINPROGRESS`, you monitor the socket for writability (`EVFILT_WRITE`). When it becomes writable, you check `SO_ERROR` socket option to confirm if connect succeeded or failed.
++    *   The `fileOffset` for `pread`/`pwrite` is used if `fileOffset` is not -1. Otherwise, standard `read`/`write` are used. This is a common pattern.
++    *   This sketch is simplified. Error handling, edge cases, and resource management would need to be more robust in production. For example, properly handling partial reads/writes if the filter isn't `EV_ONESHOT` or if not all data could be processed.
++    *   `submitCancel` is simplified. Actual cancellation in `kqueue` is achieved by removing the event filter (EV_DELETE).
++
++
++**C. JVM (`jvmMain` - using NIO `Selector` and `AsynchronousFileChannel/AsynchronousSocketChannel`)**
++
++The JVM already has mature asynchronous I/O capabilities.
++*   **For Network I/O:** `java.nio.channels.AsynchronousServerSocketChannel` and `java.nio.channels.AsynchronousSocketChannel` provide callback-based or `Future`-based async operations. These could be wrapped. The existing `Selector` mechanism also provides non-blocking I/O that can be integrated into an async pattern using a dedicated thread or coroutines.
++*   **For File I/O:** `java.nio.channels.AsynchronousFileChannel` provides true async file operations.
++
++**File: `trikeshed-core/src/jvmMain/kotlin/borg/trikeshed/reactor/ActualJvmAsyncIoEngine.kt` (New File)**
++```kotlin
++package borg.trikeshed.reactor
++
++import java.nio.ByteBuffer as JvmByteBuffer
++import java.nio.channels.*
++import java.util.concurrent.ConcurrentHashMap
++import java.util.concurrent.atomic.AtomicLong
++import kotlinx.coroutines.*
++import borg.trikeshed.lib.ByteBuffer
++import borg.trikeshed.io.network.NetworkAddress
++import borg.trikeshed.nio.JvmByteBuffer // Your common ByteBuffer wrapper for JVM
++import java.net.StandardSocketOptions
++import java.net.InetSocketAddress
++import kotlin.coroutines.CoroutineContext
++import kotlin.coroutines.resume
++import kotlin.coroutines.resumeWithException
++import kotlin.coroutines.suspendCoroutine
++
++@OptIn(ExperimentalCoroutinesApi::class) // For suspendCancellableCoroutine
++actual class AsyncIoEngine actual constructor() : CoroutineContext.Element {
++    actual companion object Key : CoroutineContext.Key<AsyncIoEngine>
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    // For JVM, AsynchronousChannelGroup manages thread pool for async I/O.
++    // Can use default group or create a custom one.
++    private val group: AsynchronousChannelGroup = AsynchronousChannelGroup.withકર્તવ્યThreadPool(
++        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()), // Use a cached or fixed thread pool
++        Runtime.getRuntime().availableProcessors()
++    )
++
++    private val nextId = AtomicLong(0)
++    private fun newHandle() = JvmAsyncOperationHandle(nextId.incrementAndGet())
++
++    // Map to track ongoing operations (handle.id -> Pair<OperationData, CancellableContinuation<AsyncCompletionEvent>>>)
++    // This is highly conceptual. A real implementation needs robust tracking and completion handling.
++    private val pendingOperations = ConcurrentHashMap<Long, Pair<Any?, CancellableContinuation<AsyncCompletionEvent>>>()
++
++
++    actual override fun registerDescriptor(fd: Int) {
++        // Not directly applicable as AsynchronousChannels manage their own resources.
++        // We operate on Channel objects, not raw FDs here.
++        println("JVM AsyncIoEngine: registerDescriptor($fd) - No-op, uses AsynchronousChannel objects.")
++    }
++
++    actual override fun unregisterDescriptor(fd: Int) {
++        println("JVM AsyncIoEngine: unregisterDescriptor($fd) - No-op.")
++    }
++    
++    // NOTE: The 'fd' parameter in JVM for async channels would ideally be the channel object itself or an ID mapping to it.
++    // Since the 'expect' API uses Int, this JVM actual will need a way to map 'fd' to the correct AsynchronousChannel.
++    // This is a mismatch and typically indicates the 'expect' API should be more abstract (e.g., use an opaque ChannelHandle).
++    // For this sketch, we'll assume 'fd' can be ignored or used if it was part of some internal mapping
++    // that maps Int FDs (if obtained somehow, e.g., from Selector use) to AsynchronousChannels.
++    // However, a more idiomatic JVM approach for `AsyncIoEngine` would directly accept/manage AsynchronousChannel instances.
++    // The provided sketch WILL NOT WORK AS-IS for JVM with 'fd: Int' without such a mapping layer.
++    // For this sketch, the methods will largely be TODO or conceptual due to this impedance mismatch.
++    
++    actual override fun submitRead(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        // TODO: Map fd to AsynchronousFileChannel or AsynchronousSocketChannel
++        // Example for AsynchronousFileChannel, assuming 'fd' can give us one
++        // val channel: AsynchronousFileChannel = getFileChannelForFd(fd)
++        // val jvmBuffer = (buffer as JvmByteBuffer).getInternal() // Get java.nio.ByteBuffer
++        // val handle = newHandle()
++        // channel.read(jvmBuffer, fileOffset, attachment, CompletionHandlerForOps(handle, attachment, ...))
++        throw NotImplementedError("JVM submitRead with fd: Int needs a robust Channel mapping or API change.")
++    }
++
++    actual override fun submitWrite(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        throw NotImplementedError("JVM submitWrite with fd: Int needs robust Channel mapping.")
++    }
++
++    actual override fun submitAccept(serverFd: Int, attachment: Any?): AsyncOperationHandle {
++        // Example for AsynchronousServerSocketChannel
++        // val serverChannel: AsynchronousServerSocketChannel = getServerChannelForFd(serverFd)
++        // val handle = newHandle()
++        // serverChannel.accept(attachment, CompletionHandlerForOps(handle, attachment, ...))
++        throw NotImplementedError("JVM submitAccept with serverFd: Int needs robust Channel mapping.")
++    }
++
++    actual override fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any?): AsyncOperationHandle {
++        // Example for AsynchronousSocketChannel
++        // val clientChannel: AsynchronousSocketChannel = getSocketChannelForFd(clientFd)
++        // val handle = newHandle()
++        // clientChannel.connect(InetSocketAddress(remoteAddress.host, remoteAddress.port), attachment, CompletionHandlerForOps(handle, attachment, ...))
++        throw NotImplementedError("JVM submitConnect with clientFd: Int needs robust Channel mapping.")
++    }
++    
++    actual override fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any?): AsyncOperationHandle {
++        // For Java NIO async channels, cancellation is typically via Future.cancel() if Future was used.
++        // With CompletionHandlers, cancelling an in-flight OS operation is harder.
++        // This is simplified.
++        val opId = (handleToCancel as JvmAsyncOperationHandle).id
++        pendingOperations.remove(opId)?.second?.cancel() // Try to cancel coroutine if waiting
++        println("JVM: Attempted cancel for op handle ${handleToCancel.id}. Result depends on underlying op state.")
++        return newHandle() // Return a new handle for the cancel op itself (often completes immediately if op found)
++    }
++
++    actual override suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent> {
++        // JVM async operations with CompletionHandler don't typically use a poll model like this.
++        // Completions arrive on callback threads.
++        // To fit this model, we would need a queue populated by CompletionHandlers.
++        // This method would then poll that queue.
++        // This is a significant adaptation.
++        // A more coroutine-idiomatic way in JVM might be to return a Flow<AsyncCompletionEvent>
++        // or make each submit operation a suspend fun returning the result directly.
++        
++        // Conceptual: Poll an internal completion queue
++        // withContext(Dispatchers.IO) { // Ensure non-blocking of caller for simulated poll
++        //    delay(minOf(10, timeoutMillis.coerceAtLeast(0))) // Simulate some non-blocking check or short wait
++        //    // Retrieve from internal concurrent queue populated by completion handlers
++        // }
++        // This is a TODO: Requires full plumbing with an internal queue and CompletionHandlers.
++        throw NotImplementedError("JVM pollCompletions with internal queue for CompletionHandlers not fully sketched.")
++        // return emptyList() // Placeholder
++    }
++
++    actual override fun close() {
++        group.shutdownNow() // Forcefully shutdown the thread pool
++        try {
++            if (!group.awaitTermination(5, TimeUnit.SECONDS)) {
++                println("JVM AsyncIoEngine: AsynchronousChannelGroup did not terminate in time.")
++            }
++        } catch (e: InterruptedException) {
++            Thread.currentThread().interrupt()
++        }
++        println("JVM AsyncIoEngine closed.")
++    }
++
++    // Inner helper for CompletionHandler
++    // This needs to be carefully designed to bridge CompletionHandler to pollCompletions
++    // or a Flow model.
++    // For instance, it could offer results to a Channel polled by pollCompletions.
++}
++
++@JvmInline
++actual value class JvmAsyncOperationHandle(val id: Long) : AsyncOperationHandle
++
++// Re-added some missing imports/types for JVM, made functions in Native more concrete.
++```
++*Important Notes for JVM `actual` implementation:*
++    *   The `fd: Int` parameter for `submitRead/Write/Accept/Connect` is problematic for JVM's `java.nio.channels.AsynchronousChannel` API, which operates on channel objects directly, not integer file descriptors like POSIX. A robust JVM `actual AsyncIoEngine` would likely need to manage a map of `Int` (synthetic FDs or hashCodes) to actual `AsynchronousChannel` objects, or the `expect` API would need to be abstracted to use an opaque `ChannelHandle` instead of `fd: Int`. **The sketch above acknowledges this mismatch and is largely a placeholder for JVM `submit` methods.**
++    *   The `pollCompletions` model is also not a direct fit for `java.nio.CompletionHandler` which is callback-based. To adapt, completion handlers would need to enqueue results into a thread-safe queue, which `pollCompletions` would then dequeue. This requires significant bridging logic.
++    *   Alternatively, each `submitXYZ` method could become a `suspendCancellableCoroutine` that resumes when its specific `CompletionHandler` is called. This would make the API more idiomatic for Kotlin coroutines on JVM and avoid the `pollCompletions` model entirely for JVM, making its `pollCompletions` a no-op or an error. This might be a better fit if the common API is flexible.
++    *   `AsynchronousChannelGroup` is used to manage threads. Ensure it's shut down properly in `close()`.
++
++**III. Summary and Next Steps**
++
++1.  **Integrate `AsyncIo.kt`:** Add the `expect` declarations to your commonMain source set.
++2.  **Implement Linux Actual:** Create `ActualLinuxAsyncIoEngine.kt` in `linuxMain` (or equivalent KMP source set for Linux). Implement the `actual class AsyncIoEngine` using `io_uring` C interop. Leverage your existing `linux_uring/include/` helpers. Pay close attention to memory management with `memScoped`, `usePinned`, and the lifecycle of the io_uring ring and its mapped memory.
++3.  **Implement macOS/BSD Actual:** Create `ActualNativeKqueueAsyncIoEngine.kt` in `nativeMain` (or a specific `appleMain`/`darwinMain`/`bsdMain` source set). Implement using `kqueue` C interop. This will be similar in spirit to the Linux version but using `kevent` system calls.
++4.  **Implement JVM Actual (Challenging with current API):** Create `ActualJvmAsyncIoEngine.kt`. The main challenge here is adapting the `fd: Int` and `pollCompletions` model to Java's `AsynchronousChannel` API. Consider the alternatives mentioned (mapping `fd` to channels, internal queue for completions, or revising the `expect` API for JVM to be more suspend/callback-oriented per operation). For now, I've sketched a basic structure assuming a way to map FD or that it's a placeholder.
++
++This addition introduces a new, distinct asynchronous I/O mechanism. Your existing `Reactor` components (based on readiness selection) could potentially be layered on top of this new engine for native platforms if desired, or this engine could become the primary way for performing I/O in native targets.
++
++Remember, proper error handling, resource management (especially native memory and file descriptors), and thread safety (if accessed from multiple coroutines/threads) are paramount for these native implementations. The use of `kotlinx-atomicfu` might be needed for shared state across threads if your `Dispatchers.Default` on native maps to a multi-threaded pool and your engine state needs concurrent access protection. The provided sketches assume basic single-threaded interaction with the engine instance after creation, but concurrent submissions or completion processing would need careful synchronization.Okay, this is a significant request involving adding new asynchronous I/O capabilities (`io_uring` for Linux, `kqueue` for macOS/BSD) to `trikeshed-core`, using Kotlin Multiplatform's `expect`/`actual` mechanism.
++
++Here's a structured approach based on your requirements:
++
++**I. New `expect` Declarations for Asynchronous I/O (in `commonMain`)**
++
++We'll define these in a new file, `AsyncIo.kt`, within the `borg.trikeshed.reactor` package. This new system will provide a completion-queue-based model suitable for `io_uring` and `kqueue`.
++
++**File: `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/reactor/AsyncIo.kt`**
++```kotlin
++package borg.trikeshed.reactor
++
++// Ensure these are the correct common types for your project.
++// If NetworkAddress or ByteBuffer are specific to a sub-module, adjust imports.
++import borg.trikeshed.io.network.NetworkAddress
++import borg.trikeshed.nio.ByteBuffer // Expect from borg.trikeshed.nio
++
++import kotlin.coroutines.CoroutineContext
++
++/**
++ * An opaque handle representing a submitted asynchronous I/O operation.
++ * Used to correlate completion events back to their original requests.
++ * The actual representation is platform-specific.
++ */
++expect class AsyncOperationHandle
++
++/**
++ * Represents a completed asynchronous I/O operation.
++ *
++ * @property handle The handle of the operation that completed.
++ * @property attachment The user-defined data associated with the operation when it was submitted.
++ * @property result For read/write operations, the number of bytes transferred.
++ *                  For accept, this could be a new client file descriptor (as Int).
++ *                  For connect, typically 0 on success.
++ *                  Negative values often indicate an error related to the operation itself before OS errors.
++ * @property errorCode A platform-specific error code (e.g., POSIX errno) if the operation failed at the OS level. Null on success.
++ */
++data class AsyncCompletionEvent(
++    val handle: AsyncOperationHandle,
++    val attachment: Any?,
++    val result: Int,
++    val errorCode: Int? // POSIX errno or equivalent platform error code
++)
++
++/**
++ * Defines the contract for a platform-agnostic asynchronous I/O engine,
++ * inspired by completion-queue models like io_uring and kqueue.
++ * This engine allows submitting various I/O operations and polling for their completions.
++ * It implements CoroutineContext.Element to be potentially part of a CoroutineContext (CCEK).
++ */
++expect class AsyncIoEngine() : CoroutineContext.Element {
++
++    /**
++     * The key for [AsyncIoEngine] in a [CoroutineContext].
++     */
++    companion object Key : CoroutineContext.Key<AsyncIoEngine>
++
++    override val key: CoroutineContext.Key<*>
++
++    /**
++     * Prepares a file descriptor (or equivalent platform handle) for use with this engine.
++     * For some backends like io_uring, this might involve registering the FD for more efficient operations.
++     *
++     * @param fd The platform-specific file descriptor (typically an Int for POSIX-based systems).
++     */
++    fun registerDescriptor(fd: Int)
++
++    /**
++     * Removes a file descriptor from the engine's management if it was previously registered.
++     *
++     * @param fd The platform-specific file descriptor.
++     */
++    fun unregisterDescriptor(fd: Int)
++
++    /**
++     * Submits an asynchronous read operation.
++     *
++     * @param fd The file descriptor to read from.
++     * @param buffer The ByteBuffer where read data will be placed. The buffer's `position` and `limit`
++     *               define the target area and maximum bytes to read. Implementations should update
++     *               the buffer's position upon completion.
++     * @param fileOffset For seekable files (e.g., regular files), the offset at which to start reading.
++     *                   Use -1 or 0 for current file position if applicable to the platform,
++     *                   or for non-seekable descriptors like sockets.
++     * @param attachment Optional user-defined data to associate with this operation, returned in the [AsyncCompletionEvent].
++     * @return An [AsyncOperationHandle] to track this specific operation.
++     * @throws IllegalStateException if the engine is closed or if submission fails due to an internal error.
++     * @throws IllegalArgumentException if parameters are invalid.
++     */
++    fun submitRead(
++        fd: Int,
++        buffer: ByteBuffer,
++        fileOffset: Long = -1L,
++        attachment: Any? = null
++    ): AsyncOperationHandle
++
++    /**
++     * Submits an asynchronous write operation.
++     *
++     * @param fd The file descriptor to write to.
++     * @param buffer The ByteBuffer containing data to be written. The buffer's `position` and `limit`
++     *               define the data to be written. Implementations should update the buffer's position
++     *               upon completion based on bytes written.
++     * @param fileOffset For seekable files, the offset at which to start writing.
++     *                   Use -1 or 0 for current file position or for non-seekable descriptors.
++     * @param attachment Optional user-defined data associated with this operation.
++     * @return An [AsyncOperationHandle] for tracking.
++     */
++    fun submitWrite(
++        fd: Int,
++        buffer: ByteBuffer,
++        fileOffset: Long = -1L,
++        attachment: Any? = null
++    ): AsyncOperationHandle
++
++    /**
++     * Submits an asynchronous accept operation for a listening server socket.
++     *
++     * @param serverFd The file descriptor of the listening server socket.
++     * @param attachment Optional user-defined data. The [AsyncCompletionEvent.result] will contain the new client FD.
++     * @return An [AsyncOperationHandle] for tracking.
++     */
++    fun submitAccept(serverFd: Int, attachment: Any? = null): AsyncOperationHandle
++
++    /**
++     * Submits an asynchronous connect operation for a client socket.
++     *
++     * @param clientFd The file descriptor of the client socket (usually created in non-blocking mode).
++     * @param remoteAddress The [NetworkAddress] (host/port pair) to connect to.
++     * @param attachment Optional user-defined data.
++     * @return An [AsyncOperationHandle] for tracking.
++     */
++    fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any? = null): AsyncOperationHandle
++
++    /**
++     * Submits a request to cancel a previously submitted asynchronous operation.
++     * Cancellation is best-effort and may not always succeed if the operation is already in progress or completed.
++     *
++     * @param handleToCancel The [AsyncOperationHandle] of the operation to attempt to cancel.
++     * @param attachment Optional user-defined data for this cancellation request (can be different from the original op's attachment).
++     * @return An [AsyncOperationHandle] for the cancellation operation itself. The completion of this new handle indicates
++     *         that the cancellation attempt has finished. The result in its [AsyncCompletionEvent] can indicate
++     *         if the cancellation was successful or if the original operation had already completed.
++     */
++    fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any? = null): AsyncOperationHandle
++
++    /**
++     * Polls for completed I/O operations. This function may suspend if `timeoutMillis` is positive
++     * and no events are immediately available, or if `timeoutMillis` is -1 (infinite wait).
++     *
++     * @param maxEvents The maximum number of completion events to retrieve in this call.
++     * @param timeoutMillis The maximum time in milliseconds to wait for completions:
++     *                      - 0: Non-blocking. Returns immediately with any available completions.
++     *                      - >0: Waits up to this many milliseconds for at least one completion.
++     *                      - -1 (or any negative value): Waits indefinitely until at least one event completes or an error occurs.
++     * @return A list of [AsyncCompletionEvent]s that have completed. The list might be empty if a timeout occurs
++     *         before any events complete or if `timeoutMillis` was 0 and no events were ready.
++     * @throws IllegalStateException if the engine is closed.
++     * @throws InterruptedException if the waiting thread/coroutine is interrupted (platform-dependent behavior).
++     */
++    suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent>
++
++    /**
++     * Closes the asynchronous I/O engine, releasing any associated system resources.
++     * This method should attempt to cancel any pending operations.
++     * Further calls to submit operations after closing should result in an [IllegalStateException].
++     * This method should be idempotent (safe to call multiple times).
++     */
++    fun close()
++}
++```
++
++**II. `actual` Implementations (Structural Outline)**
++
++**A. Linux (`linuxX64Main` or `linuxMain` - using `io_uring`)**
++
++You've already provided significant ground-work with files in `linux_uring/include/`. This `actual` implementation would heavily rely on those C interop bindings (`zlinux_uring.*`) and your helper functions.
++
++**File: `trikeshed-core/src/linuxX64Main/kotlin/borg/trikeshed/reactor/ActualLinuxAsyncIoEngine.kt`**
++```kotlin
++package borg.trikeshed.reactor
++
++import kotlinx.cinterop.*
++import platform.posix.*
++import zlinux_uring.*         // Your C-interop bindings for liburing
++import linux_uring.include.*  // Your helper enums/constants (UringOpcode, UringSqeFlags, etc.)
++import borg.trikeshed.nio.ByteBuffer
++import borg.trikeshed.io.network.NetworkAddress
++import borg.trikeshed.nio.NativeArrayByteBuffer // Your commonMain ByteBuffer actual for native
++import kotlin.coroutines.CoroutineContext
++import kotlinx.coroutines.runBlocking // If any setup needs to be sync or complex parts are outside suspend funcs
++
++@OptIn(ExperimentalForeignApi::class, ExperimentalStdlibApi::class)
++actual class AsyncIoEngine actual constructor() : CoroutineContext.Element {
++    actual companion object Key : CoroutineContext.Key<AsyncIoEngine> {
++        private const val QUEUE_DEPTH = 32 // Example, make configurable
++    }
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    private val ring: io_uring = nativeHeap.alloc() // Allocate on native heap
++    private val ringFd: Int = ring.ring_fd // Convenience
++    
++    private val submissionQueue: CPointer<io_uring_sqe>
++    private val completionQueue: CPointer<io_uring_cqe>
++    private val sqRingPtr: CPointer<io_uring_sq>
++    private val cqRingPtr: CPointer<io_uring_cq>
++
++    // Pointers to ring buffer metadata (head, tail, mask, etc.)
++    // Example for SQ:
++    private var sq_head: CPointer<UIntVar>
++    private var sq_tail: CPointer<UIntVar>
++    private var sq_ring_mask: UInt
++    private var sq_ring_entries: UInt
++    private var sq_flags: CPointer<UIntVar>
++    // ... similar for CQ ...
++    private var cq_head: CPointer<UIntVar>
++    private var cq_tail: CPointer<UIntVar>
++    private var cq_ring_mask: UInt
++    private var cq_ring_entries: UInt
++
++
++    private val activeOperations = mutableMapOf<ULong, Pair<AsyncOperationHandle, Any?>>()
++    private var nextUserData: ULong = 1UL // User data for io_uring_sqe, must be non-zero for cancellation
++
++    init {
++        memScoped { // For allocating params struct temporarily
++            val params = alloc<io_uring_params>()
++            platform.posix.memset(params.ptr, 0, sizeOf<io_uring_params>().convert())
++            // Set flags in params if needed, e.g., UringSetupFlags.uringSetupSqpoll.src
++            // params.flags = UringSetupFlags.uringSetupIopoll.src // Example for IORING_SETUP_IOPOLL
++
++            val ret = io_uring_queue_init_params(QUEUE_DEPTH.toUInt(), ring.ptr, params.ptr)
++            if (ret < 0) {
++                nativeHeap.free(ring.rawPtr)
++                throw RuntimeException("io_uring_queue_init_params failed: ${strerror(-ret)?.toKString()}")
++            }
++            // Setup SQ/CQ ring pointers from `params.pointed` after successful init
++            // This is similar to your KioUring example:
++            val p = params.pointed
++            val sringSz = p.sq_off.array + p.sq_entries * sizeOf<UIntVar>().toUInt()
++            sqRingPtr = mmap(
++                null, sringSz.convert(), PROT_READ or PROT_WRITE,
++                MAP_SHARED or MAP_POPULATE, ring.ring_fd, IORING_OFF_SQ_RING.toLong()
++            )!!.reinterpret()
++
++            // Initialize sq_head, sq_tail, etc. from sqRingPtr and p.sq_off
++            sq_head = (sqRingPtr.rawValue.toLong() + p.sq_off.head).toCPointer()!!
++            sq_tail = (sqRingPtr.rawValue.toLong() + p.sq_off.tail).toCPointer()!!
++            sq_ring_mask = p.sq_off.ring_mask.toUInt()
++            sq_ring_entries = p.sq_off.ring_entries.toUInt()
++            sq_flags = (sqRingPtr.rawValue.toLong() + p.sq_off.flags).toCPointer()!!
++
++            // Similarly for CQ ring mapping from p.cq_off...
++            val cringSz = p.cq_off.cqes + p.cq_entries * sizeOf<io_uring_cqe>().toUInt()
++            cqRingPtr = if ((p.features and IORING_FEAT_SINGLE_MMAP.toUInt()) != 0U) {
++                sqRingPtr.reinterpret() // Single mmap feature
++            } else {
++                mmap(
++                    null, cringSz.convert(), PROT_READ or PROT_WRITE,
++                    MAP_SHARED or MAP_POPULATE, ring.ring_fd, IORING_OFF_CQ_RING.toLong()
++                )!!.reinterpret()
++            }
++            cq_head = (cqRingPtr.rawValue.toLong() + p.cq_off.head).toCPointer()!!
++            cq_tail = (cqRingPtr.rawValue.toLong() + p.cq_off.tail).toCPointer()!!
++            cq_ring_mask = p.cq_off.ring_mask.toUInt()
++            cq_ring_entries = p.cq_off.ring_entries.toUInt()
++            
++            // Map Submission Queue Entries (SQEs)
++            submissionQueue = mmap(
++                null, (QUEUE_DEPTH.toUInt() * sizeOf<io_uring_sqe>().toUInt()).convert(),
++                PROT_READ or PROT_WRITE, MAP_SHARED or MAP_POPULATE, ring.ring_fd, IORING_OFF_SQES.toLong()
++            )!!.reinterpret()
++            
++             // CQEs are accessed via an array starting at offset p.cq_off.cqes from cqRingPtr
++             completionQueue = (cqRingPtr.rawValue.toLong() + p.cq_off.cqes.toLong()).toCPointer()!!
++        }
++    }
++
++    private fun getSqeAndUserData(): Pair<CPointer<io_uring_sqe>, ULong> {
++        val sqe = io_uring_get_sqe(ring.ptr) ?: run {
++            // Submission queue is full. We need to submit and potentially wait.
++            // This simplified version throws. A robust one would call submit() and retry.
++            val submitResult = io_uring_submit(ring.ptr)
++            if (submitResult < 0) throw RuntimeException("io_uring_submit failed on full queue: ${strerror(-submitResult)?.toKString()}")
++            val newSqe = io_uring_get_sqe(ring.ptr) ?: throw IllegalStateException("SQ full even after submit")
++            newSqe
++        }
++        val userData = nextUserData++
++        val handle = LinuxAsyncOperationHandle(userData)
++        return Pair(sqe, userData)
++    }
++
++    actual override fun registerDescriptor(fd: Int) {
++        // Example using IORING_REGISTER_FILES if you want to use fixed files (IOSQE_FIXED_FILE flag in SQEs)
++        // val fds = intArrayOf(fd)
++        // fds.usePinned { pinnedFds ->
++        //     val ret = io_uring_register(ring.ptr, IORING_REGISTER_FILES, pinnedFds.addressOf(0), 1u)
++        //     if (ret < 0) throw RuntimeException("io_uring_register_files failed for fd $fd: ${strerror(-ret)?.toKString()}")
++        // }
++        // For basic operation, explicit registration for every FD might not be needed if not using IOSQE_FIXED_FILE.
++        println("LinuxAsyncIoEngine: registerDescriptor($fd) - Typically handled implicitly or via IORING_REGISTER_FILES.")
++    }
++
++    actual override fun unregisterDescriptor(fd: Int) {
++        // If files were registered with IORING_REGISTER_FILES, use IORING_UNREGISTER_FILES.
++        // val ret = io_uring_register(ring.ptr, IORING_UNREGISTER_FILES, null, 0u) // Unregister all at once if needed, or by index.
++        println("LinuxAsyncIoEngine: unregisterDescriptor($fd) - If using registered files, needs IORING_UNREGISTER_FILES.")
++    }
++
++    actual override fun submitRead(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        val (sqe, userData) = getSqeAndUserData()
++        val handle = LinuxAsyncOperationHandle(userData)
++        activeOperations[userData] = Pair(handle, attachment)
++
++        val internalBuffer = (buffer as NativeArrayByteBuffer).getInternalNativeArray() // Access underlying ByteArray
++        internalBuffer.usePinned { pinned ->
++            // io_uring_prep_readv is generally preferred for flexibility, but read also works
++            io_uring_prep_read(sqe, fd, pinned.addressOf(buffer.position()), buffer.remaining().toUInt(), fileOffset.convert())
++        }
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(userData.toLong()))
++        return handle
++    }
++
++    actual override fun submitWrite(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        val (sqe, userData) = getSqeAndUserData()
++        val handle = LinuxAsyncOperationHandle(userData)
++        activeOperations[userData] = Pair(handle, attachment)
++
++        val internalBuffer = (buffer as NativeArrayByteBuffer).getInternalNativeArray()
++        internalBuffer.usePinned { pinned ->
++            io_uring_prep_write(sqe, fd, pinned.addressOf(buffer.position()), buffer.remaining().toUInt(), fileOffset.convert())
++        }
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(userData.toLong()))
++        return handle
++    }
++     actual override fun submitAccept(serverFd: Int, attachment: Any?): AsyncOperationHandle = memScoped {
++        val (sqe, userData) = getSqeAndUserData()
++        val handle = LinuxAsyncOperationHandle(userData)
++
++        val clientAddr = alloc<sockaddr_storage>() // Enough space for IPv4/IPv6
++        val clientAddrLen = alloc<socklen_tVar>()
++        clientAddrLen.value = sizeOf<sockaddr_storage>().convert()
++
++        io_uring_prep_accept(sqe, serverFd, clientAddr.ptr.reinterpret(), clientAddrLen.ptr, 0 /* flags */)
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(userData.toLong()))
++        activeOperations[userData] = Pair(handle, attachment)
++        return handle
++    }
++
++    actual override fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any?): AsyncOperationHandle {
++        val (sqe, userData) = getSqeAndUserData()
++        val handle = LinuxAsyncOperationHandle(userData)
++        
++        UdpSocketServiceUtilsNative.socketAddressToNative(borg.trikeshed.net.common.UdpSocketService.SocketAddress(remoteAddress.first, remoteAddress.second))!!.usePinned { pinnedAddr ->
++            io_uring_prep_connect(sqe, clientFd, pinnedAddr.get().ptr.reinterpret(), sizeOf<sockaddr_in>().convert())
++        }
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(userData.toLong()))
++        activeOperations[userData] = Pair(handle, attachment)
++        return handle
++    }
++    
++    actual override fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any?): AsyncOperationHandle {
++        val (sqe, userData) = getSqeAndUserData()
++        val cancelHandle = LinuxAsyncOperationHandle(userData)
++        activeOperations[userData] = Pair(cancelHandle, attachment)
++
++        val userDataToCancel = (handleToCancel as LinuxAsyncOperationHandle).id
++        io_uring_prep_cancel(sqe, interpretCPointer<COpaquePointerVar>(userDataToCancel.toLong()), 0) // flags=0
++        io_uring_sqe_set_data(sqe, interpretCPointer<COpaquePointerVar>(userData.toLong())) // user_data for THIS cancel op
++        return cancelHandle
++    }
++
++    actual override suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent> = withContext(Dispatchers.Default) {
++        val completions = mutableListOf<AsyncCompletionEvent>()
++        val numSubmitted = io_uring_submit(ring.ptr) // Submit any pending SQEs
++        if (numSubmitted < 0 && numSubmitted != -EBUSY) { // EBUSY might mean kernel is busy, not necessarily fatal for completions
++            // Skip waiting for completions if submit itself failed critically
++             println("Warning: io_uring_submit failed with ${-numSubmitted} before polling completions. Err: ${strerror(-numSubmitted)?.toKString()}")
++             return@withContext completions
++        }
++
++
++        memScoped {
++            val cqePtr = alloc<CPointerVar<io_uring_cqe>>()
++            
++            // For timeouts with io_uring_wait_cqe_timeout or similar blocking calls:
++            // The `io_uring_enter` syscall with IORING_ENTER_GETEVENTS can also be used with a timeout.
++            // However, the loop below with `io_uring_peek_cqe` is for non-blocking drain or after a wait.
++            // For now, using a loop with io_uring_peek_cqe to process up to maxEvents non-blockingly.
++            // A true timed poll needs `io_uring_wait_cqe_timeout` or `io_uring_enter` with a timeout.
++            // This simplification is a non-blocking drain after an assumed timed wait has already occurred.
++            // TODO: Implement proper timed wait logic if timeoutMillis > 0 using io_uring_wait_cqe_timeout.
++            // If timeoutMillis == 0, this non-blocking loop is fine.
++            // If timeoutMillis < 0, would need io_uring_wait_cqe.
++            
++            // Let's implement a basic io_uring_wait_cqe_timeout loop.
++            var eventsProcessed = 0
++            var loopTimeout = timeoutMillis // Use up the timeout
++
++            while(eventsProcessed < maxEvents && isActive) { // `isActive` from CoroutineScope
++                val ts: __kernel_timespec? = if (loopTimeout >= 0) {
++                    alloc<__kernel_timespec> {
++                        tv_sec = loopTimeout / 1000
++                        tv_nsec = (loopTimeout % 1000) * 1_000_000
++                    }.ptr.pointed // Pass CValue
++                } else null // Infinite timeout
++
++                val ret = if (loopTimeout >= 0) {
++                    // Need to pass CValuesRef<__kernel_timespec> (pointer)
++                    // Note: __kernel_timespec definition may differ from POSIX timespec. Check your interop.
++                    val timespecForWait = ts?.readValue() // Pass pointer to allocated struct
++                    io_uring_wait_cqe_timeout(ring.ptr, cqePtr.ptr, timespecForWait?.ptr)
++                } else { // Infinite timeout
++                    io_uring_wait_cqe(ring.ptr, cqePtr.ptr)
++                }
++                
++                if (ret < 0) {
++                    if (ret == -ETIME && loopTimeout >= 0) break // Timeout expired
++                    if (ret == -EINTR) continue // Interrupted, retry
++                    throw RuntimeException("io_uring_wait_cqe_timeout failed: ${strerror(-ret)?.toKString()}")
++                }
++
++                // If wait succeeded, process available CQEs without further blocking
++                var cqeInPeekLoop: CPointer<io_uring_cqe>?
++                while (eventsProcessed < maxEvents) {
++                     val peekRet = io_uring_peek_cqe(ring.ptr, cqePtr.ptr)
++                     if (peekRet < 0) { // No more CQEs available in this peek
++                        if (peekRet == -EAGAIN) break // Queue empty
++                        throw RuntimeException("io_uring_peek_cqe failed: ${strerror(-peekRet)?.toKString()}")
++                     }
++                     cqeInPeekLoop = cqePtr.value ?: break // Should not happen if peekRet == 0
++
++                    val userData = cqeInPeekLoop.pointed.user_data.toLong().toULong()
++                    val opInfo = activeOperations.remove(userData)
++
++                    if (opInfo != null) {
++                        val (handle, attachment) = opInfo
++                        val result = cqeInPeekLoop.pointed.res
++                        val error = if (result < 0) -result else null // POSIX errno style
++                        // Adjust result for read/write: if result < 0, it's an error code. Bytes transferred is 0 or positive.
++                        val actualResult = if (result < 0) result else result 
++                        completions.add(AsyncCompletionEvent(handle, attachment, actualResult, error))
++                        eventsProcessed++
++                    }
++                    io_uring_cqe_seen(ring.ptr, cqeInPeekLoop)
++                }
++                if (loopTimeout >= 0) break // If timed, one pass of wait + peek loop is enough.
++            }
++        }
++        return completions
++    }
++
++    actual override fun close() {
++        if (ringFd != -1) { // Check if already closed
++            // Unmap memory regions before closing the ring_fd
++             val pLocal = ring // Access fields assuming `ring` itself has the relevant info if not using `p` directly
++             val sringSz = pLocal.sq.sqe_head + pLocal.sq.sqe_tail + pLocal.sq.ring_entries // Simplified based on general idea
++                                             // A more correct way to get the sizes used at init is needed, or if
++                                             // they were members of io_uring struct directly that cinterop picked up.
++                                             // This uses assumptions about the zlinux_uring.io_uring structure having direct access.
++                                             // The sizes need to be obtained from p.sq_off and p.cq_off as done in your init.
++
++            // Placeholder: Replace with correct size calculations based on your `params` or ring setup
++            munmap(sqRingPtr, 16384) // Placeholder sizes
++            if (cqRingPtr != sqRingPtr) munmap(cqRingPtr, 16384)
++            munmap(submissionQueue, 16384)
++
++
++            platform.posix.close(ringFd) // ring.ring_fd if direct member
++        }
++        nativeHeap.free(ring.rawPtr) // Free the memory allocated for the io_uring struct itself
++        activeOperations.clear()
++        println("Linux AsyncIoEngine (io_uring) closed.")
++    }
++}
++
++// Internal handle for Linux io_uring
++@JvmInline
++internal actual value class LinuxAsyncOperationHandle(val id: ULong) : AsyncOperationHandle
++
++// Helper function from your other code snippet (UdpSocketServiceUtilsNative), adapted.
++// THIS SHOULD BE A SHARED UTILITY or defined within a common native networking utils file.
++@OptIn(ExperimentalForeignApi::class)
++private object UdpSocketServiceUtilsNative {
++    fun socketAddressToNative(socketAddress: borg.trikeshed.net.common.UdpSocketService.SocketAddress): CValue<sockaddr_in>? {
++        return memScoped {
++            val addrInfo = allocPointerTo<addrinfo>()
++            val hints = alloc<addrinfo>()
++            platform.posix.memset(hints.ptr, 0, sizeOf<addrinfo>().convert())
++            hints.ai_family = AF_INET
++            hints.ai_socktype = SOCK_DGRAM
++            hints.ai_flags = AI_PASSIVE or AI_NUMERICSERV
++
++            val result = getaddrinfo(socketAddress.host, socketAddress.port.toString(), hints.ptr, addrInfo)
++            if (result != 0) {
++                println("getaddrinfo failed for ${socketAddress.host}: ${gai_strerror(result)?.toKString()}")
++                return@memScoped null
++            }
++            val resolvedAddrInfo = addrInfo.pointed ?: return@memScoped null
++            val sockaddrPtr = resolvedAddrInfo.ai_addr?.reinterpret<sockaddr_in>() ?: return@memScoped null
++
++            val nativeAddr = alloc<sockaddr_in>()
++            nativeAddr.sin_family = sockaddrPtr.pointed.sin_family
++            nativeAddr.sin_port = sockaddrPtr.pointed.sin_port
++            nativeAddr.sin_addr.s_addr = sockaddrPtr.pointed.sin_addr.s_addr
++            freeaddrinfo(addrInfo.value)
++            return@memScoped nativeAddr.readValue()
++        }
++    }
++}
++```
++**B. macOS/BSD (`appleMain` or other native target - using `kqueue`)**
++An `actual class AsyncIoEngine` implementation for these platforms would use `kqueue` system calls.
++   *   **Initialization:** `kqueue()` creates the kqueue descriptor.
++   *   **Submitting Operations:** For read/write readiness, `kevent()` is used to add `EVFILT_READ` or `EVFILT_WRITE` filters for a file descriptor. User data (`udata` field in `kevent` struct) can store the `AsyncOperationHandle`. Operations like `accept` also monitor `EVFILT_READ` on the server socket. `connect` on a non-blocking socket involves monitoring `EVFILT_WRITE`. Actual I/O (read, write, accept) happens when `kevent()` signals readiness.
++   *   **Polling Completions:** `kevent()` is called to retrieve events. The `result` for read/write is the bytes transferred, and for accept is the new client FD. `connect` completion status needs `getsockopt(SO_ERROR)`.
++   *   **Cancellation:** `EV_DELETE` flag with `kevent()` removes an event filter.
++   *   **Closing:** `close()` the kqueue descriptor.
++
++**C. JVM (`jvmMain`)**
++
++This is trickier due to the `fd: Int` API if trying to map directly to Java NIO `AsynchronousChannel`s, which don't use integer FDs.
++
++**Option 1: Adapt `fd:Int` API (Complex)**
++   *   Maintain an internal map `Map<Int, AsynchronousChannel>` (file or socket). `registerDescriptor` could add to this map using a synthetic FD.
++   *   `submitRead/Write` would look up the channel, then use its async methods (`read()`, `write()`) which take `java.nio.ByteBuffer` and `CompletionHandler`.
++   *   `pollCompletions` would need to poll a queue populated by these `CompletionHandler`s. This turns the callback model into a polling model.
++
++**Option 2: Different `expect` API for JVM (Potentially cleaner but breaks commonality)**
++   *   The `expect AsyncIoEngine` for JVM could have a different signature, e.g., taking `AsynchronousChannel` objects directly. This diverges from the `fd:Int` used for POSIX.
++
++**Option 3: Layer on existing `SelectorInterface` (Less direct async)**
++   *   The existing `Selector` in JVM handles readiness. Async operations could be faked by using a `Selector` with non-blocking channels and dispatching operations to a thread pool when ready. This isn't true OS-level async completion queues like `io_uring`.
++
++**Given the directive "mostly none" for NIO async, and the `fd:Int` API, Option 1 is the most direct mapping of the `expect` but also the most cumbersome for JVM.** A minimal functional placeholder for JVM might throw `UnsupportedOperationException` for many methods, or implement a very basic version on top of a single-threaded executor + `Selector`.
++
++**File: `trikeshed-core/src/jvmMain/kotlin/borg/trikeshed/reactor/ActualJvmAsyncIoEngine.kt` (Simplified Sketch)**
++```kotlin
++package borg.trikeshed.reactor
++
++import kotlinx.coroutines.*
++import java.nio.channels.AsynchronousChannelGroup
++import java.util.concurrent.Executors
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.ConcurrentHashMap
++import java.util.concurrent.atomic.AtomicLong
++import borg.trikeshed.nio.ByteBuffer // Your common expect ByteBuffer
++import borg.trikeshed.io.network.NetworkAddress // Your common expect NetworkAddress
++// Assuming JvmByteBuffer is the actual class for borg.trikeshed.nio.ByteBuffer on JVM
++import borg.trikeshed.nio.JvmByteBuffer
++import java.net.InetSocketAddress
++import java.nio.channels.AsynchronousServerSocketChannel
++import java.nio.channels.AsynchronousSocketChannel
++import java.nio.channels.CompletionHandler
++import kotlin.coroutines.CoroutineContext
++import kotlin.coroutines.resume
++import kotlin.coroutines.resumeWithException
++
++@OptIn(ExperimentalCoroutinesApi::class) // For suspendCancellableCoroutine
++actual class AsyncIoEngine actual constructor() : CoroutineContext.Element {
++    actual companion object Key : CoroutineContext.Key<AsyncIoEngine>
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    private val group: AsynchronousChannelGroup = AsynchronousChannelGroup.withThreadPool(
++        Executors.newCachedThreadPool() // Or a fixed thread pool
++    )
++
++    private val nextOpId = AtomicLong(0)
++    private val channelMap = ConcurrentHashMap<Int, Channel>() // Map FD (synthetic) to Java NIO Channel
++    private val completionQueue = kotlinx.coroutines.channels.Channel<AsyncCompletionEvent>(kotlinx.coroutines.channels.Channel.UNLIMITED)
++
++    actual override fun registerDescriptor(fd: Int) {
++        // For JVM, this implies that 'fd' must correspond to a channel object we already know about or can create.
++        // This method could be used to associate a raw fd (if obtained externally, unlikely) with a NIO channel.
++        // Or, it's a no-op if channels are passed directly to submit methods (which is more Java-idiomatic).
++        // Given the current API, this mapping is problematic on JVM without more context on where 'fd' comes from.
++        println("JVM AsyncIoEngine: registerDescriptor($fd) - not directly used unless mapping to NIO channels.")
++    }
++    actual override fun unregisterDescriptor(fd: Int) {
++        channelMap.remove(fd)?.close() // Close the associated NIO channel
++    }
++
++
++    // Helper to bridge CompletionHandler to suspendCoroutine or offer to completionQueue
++    private inner class OperationCompletionHandler<V>(
++        private val handle: AsyncOperationHandle,
++        private val attachment: Any?,
++        private val continuation: CancellableContinuation<AsyncCompletionEvent>? = null // For direct suspension model
++    ) : CompletionHandler<V, Any?> {
++
++        override fun completed(resultValue: V, att: Any?) { // `att` is what was passed to async op as attachment
++            val numericResult: Int = when (resultValue) {
++                is Number -> resultValue.toInt()
++                is AsynchronousSocketChannel -> 0 // Connect success
++                else -> 0 // Or -1 for unexpected types if not specific to operation
++            }
++            val event = AsyncCompletionEvent(handle, attachment, numericResult, null)
++            continuation?.resume(event) ?: runBlocking { completionQueue.send(event) }
++        }
++
++        override fun failed(exc: Throwable, att: Any?) {
++            // Map Java IOExceptions to some form of errno or just pass -1 and message
++            val errorCode = (exc as? java.io.IOException)?.hashCode() ?: -1 // Simplistic error code
++            val event = AsyncCompletionEvent(handle, attachment, -1, errorCode)
++            continuation?.resumeWithException(exc) ?: runBlocking { completionQueue.send(event) }
++        }
++    }
++
++    private fun <T: Channel> getChannel(fd: Int, type: Class<T>): T? {
++         val channel = channelMap[fd]
++         return if (type.isInstance(channel)) type.cast(channel) else null
++    }
++    
++    // Simplified submit for READ, assumes fd maps to an AsynchronousSocketChannel or AsynchronousFileChannel
++    // THIS IS VERY CONCEPTUAL and requires a robust fd -> Channel mapping.
++    actual override fun submitRead(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        val handle = JvmAsyncOperationHandle(nextOpId.incrementAndGet())
++        val nioChannel = channelMap[fd] // Needs population when FDs are "opened" and mapped.
++        val jvmBuffer = (buffer as JvmByteBuffer).delegate // Get java.nio.ByteBuffer
++
++        when (nioChannel) {
++            is AsynchronousSocketChannel -> {
++                nioChannel.read(jvmBuffer, attachment, OperationCompletionHandler(handle, attachment))
++            }
++            is AsynchronousFileChannel -> {
++                nioChannel.read(jvmBuffer, fileOffset, attachment, OperationCompletionHandler(handle, attachment))
++            }
++            else -> throw IllegalArgumentException("Unsupported channel type for fd $fd for read, or fd not mapped.")
++        }
++        return handle
++    }
++    
++    // Similar conceptual implementations for submitWrite, submitAccept, submitConnect needed.
++    // They would map `fd` to the appropriate AsynchronousChannel type and call its async methods
++    // with a new OperationCompletionHandler that offers to `completionQueue`.
++    actual override fun submitWrite(fd: Int, buffer: ByteBuffer, fileOffset: Long, attachment: Any?): AsyncOperationHandle {
++        TODO("JVM write not implemented in this sketch, needs channel mapping and NIO async calls.")
++    }
++    actual override fun submitAccept(serverFd: Int, attachment: Any?): AsyncOperationHandle {
++        val handle = JvmAsyncOperationHandle(nextOpId.incrementAndGet())
++        val serverChannel = getChannel(serverFd, AsynchronousServerSocketChannel::class.java)
++            ?: throw IllegalArgumentException("No AsynchronousServerSocketChannel mapped for fd $serverFd")
++
++        serverChannel.accept(attachment, object : CompletionHandler<AsynchronousSocketChannel, Any?> {
++            override fun completed(clientChannel: AsynchronousSocketChannel, att: Any?) {
++                val newClientFd = clientChannel.hashCode() // Create a synthetic FD for the new client channel
++                channelMap[newClientFd] = clientChannel // Store it for future ops
++                // TODO: clientChannel.setOption for non-blocking/configs if needed for further interaction through this engine
++                runBlocking { completionQueue.send(AsyncCompletionEvent(handle, attachment, newClientFd, null)) }
++            }
++            override fun failed(exc: Throwable, att: Any?) {
++                 runBlocking { completionQueue.send(AsyncCompletionEvent(handle, attachment, -1, exc.hashCode())) }
++            }
++        })
++        return handle
++    }
++    actual override fun submitConnect(clientFd: Int, remoteAddress: NetworkAddress, attachment: Any?): AsyncOperationHandle { TODO("Implement") }
++    actual override fun submitCancel(handleToCancel: AsyncOperationHandle, attachment: Any?): AsyncOperationHandle { TODO("Implement, possibly via Future from submit if not using queue") }
++
++
++    actual override suspend fun pollCompletions(maxEvents: Int, timeoutMillis: Long): List<AsyncCompletionEvent> {
++        val events = mutableListOf<AsyncCompletionEvent>()
++        // Non-blocking immediate check
++        if (timeoutMillis == 0L) {
++            for (i in 0 until maxEvents) {
++                events.add(completionQueue.tryReceive().getOrNull() ?: break)
++            }
++            return events
++        }
++        
++        // Blocking or timed wait for the first event
++        val firstEvent = try {
++            if (timeoutMillis < 0) completionQueue.receive()
++            else withTimeout(timeoutMillis) { completionQueue.receive() }
++        } catch (e: TimeoutCancellationException) {
++            return emptyList() // Timeout occurred
++        }
++        events.add(firstEvent)
++
++        // Poll for more events without blocking, up to maxEvents
++        for (i in 1 until maxEvents) {
++             events.add(completionQueue.tryReceive().getOrNull() ?: break)
++        }
++        return events
++    }
++
++    actual override fun close() {
++        if (!group.isShutdown) {
++            try {
++                completionQueue.close()
++                group.shutdownNow() // Attempt to cancel ongoing tasks
++                if (!group.awaitTermination(5, TimeUnit.SECONDS)) {
++                    System.err.println("AsyncChannelGroup did not terminate in time.")
++                }
++            } catch (e: InterruptedException) {
++                Thread.currentThread().interrupt()
++            }
++        }
++        channelMap.values.forEach { try { it.close() } catch(e: Exception) { /*ignore*/ } }
++        channelMap.clear()
++        println("JVM AsyncIoEngine closed.")
++    }
++}
++
++@JvmInline
++actual value class JvmAsyncOperationHandle(val id: Long) : AsyncOperationHandle
++```
++
++This provides the `expect` structure for your async I/O engine. The `actual` implementations for Linux (`io_uring`) and macOS/BSD (`kqueue`) would involve significant C interop work. The JVM version sketches how Java NIO's `AsynchronousChannel` API (which uses `CompletionHandler`s or `Future`s) could be adapted to the polling model of `pollCompletions`, which is a non-trivial impedance mismatch. For JVM, a more idiomatic approach for the `actual` implementation might involve returning `Deferred` or using `Flow` directly from the submit methods if the `expect` API could be made more flexible or platform-specific.
+
+# 2025-06-09 00:45:16.298781
++Integrating the Vulkan standard, like `io_uring` and `kqueue`, would involve creating `expect` declarations in `commonMain` for the desired Vulkan functionalities and then providing platform-specific `actual` implementations.
++
++The Vulkan API is extremely large and complex, covering graphics rendering, compute operations, memory management, synchronization, and much more. "Bringing over the Vulkan standard" in its entirety as `expect`/`actual` declarations would be a monumental task, akin to writing comprehensive Vulkan bindings from scratch in Kotlin.
++
++**To provide a useful response, I need more specific information about what aspects of Vulkan you are interested in integrating into `trikeshed-core` and how you envision them being used.**
++
++Could you please clarify:
++
++1.  **What specific Vulkan functionalities are you looking to use within `trikeshed-core`?** For example, are you primarily interested in:
++    *   GPU-accelerated compute (e.g., for tensor operations, physics simulations)?
++    *   Graphics rendering capabilities?
++    *   Vulkan's explicit memory management features? Represents a handle to a Vulkan queue (`VkQueue`). */
++expect class QueueHandle
++
++// --- Informational Data Classes (Common) ---
++
++/** Basic information about a physical device. */
++data class PhysicalDeviceInfo(
++    val deviceName: String,
++    val deviceID: UInt,
++    val vendorID: UInt,
++    val deviceType: String, // e.g., "INTEGRATED_GPU", "DISCRETE_GPU", "CPU", "OTHER"
++    val apiVersionMajor: UInt,
++    val apiVersionMinor: UInt,
++    val apiVersionPatch: UInt
++) {
++    val apiVersionString: String get() = "$apiVersionMajor.$apiVersionMinor.$apiVersionPatch"
++}
++
++/** Basic information about a queue family on a physical device. */
++data class QueueFamilyInfo(
++    val index: UInt,
++    val queueCount: UInt,
++    val supportsGraphics: Boolean,
++    val supportsCompute: Boolean,
++    val supportsTransfer: Boolean,
++    val supportsSparseBinding: Boolean
++    // timestampValidBits could be added if needed
++)
++
++// --- Vulkan Service CCEK ---
++
++/**
++ * Defines the contract for a platform-agnostic Vulkan service.
++ * This provides a very high-level interface to Vulkan initialization,
++ * device enumeration, and logical device creation. It does not cover
++ * rendering, compute, memory management, or synchronization primitives of Vulkan,
++ * which are extensive.
++ */
++expect class VulkanService() : CoroutineContext.Element {
++    companion object Key : CoroutineContext.Key<VulkanService>
++    override val key: CoroutineContext.Key<*>
++
++    /**
++     * Checks if the Vulkan loader and a compatible runtime are available on the system.
++     * This might involve trying to load the Vulkan library or checking for specific system properties.
++     * @return True if Vulkan appears to be available, false otherwise.
++     */
++    fun isVulkanAvailable(): Boolean
++
++    /**
++     * Creates a Vulkan instance.
++     *
++     * @param applicationName The name of the application.
++     * @param applicationVersion The version of the application (encoded as per Vulkan spec, e.g., `VK_MAKE_VERSION(1,0,0)`).
++     * @param engineName Optional name of the engine.
++     * @param engineVersion Optional version of the engine.
++     * @param requiredInstanceExtensions A list of required instance-level extension names (e.g., "VK_KHR_surface").
++     * @param enableValidationLayers If true, attempts to enable standard Vulkan validation layers (primarily for debugging).
++     * @return A [Result] containing the [VulkanInstanceHandle] on success, or an [Exception] (e.g., VulkanException) on failure.
++     */
++    suspend fun createInstance(
++        applicationName: String,
++        applicationVersion: UInt = 0u, // VK_MAKE_VERSION(1,0,0)
++        engineName: String? = "TrikeShedEngine",
++        engineVersion: UInt = 0u,
++        requiredInstanceExtensions: List<String> = emptyList(),
++        enableValidationLayers: Boolean = false
++    ): Result<VulkanInstanceHandle>
++
++    /**
++     * Destroys a Vulkan instance and releases its resources.
++     * @param instanceHandle The handle of the instance to destroy.
++     */
++    fun destroyInstance(instanceHandle: VulkanInstanceHandle)
++
++    /**
++     * Enumerates physical devices (GPUs, CPUs with Vulkan support) available to a Vulkan instance.
++     *
++     * @param instanceHandle The handle of the Vulkan instance.
++     * @return A list of pairs, where each pair contains a [PhysicalDeviceHandle] and its corresponding [PhysicalDeviceInfo].
++     * @throws VulkanException if the instance is
++    *   Synchronization primitives (fences, semaphores, events)?
++2.  **How do you envision these Vulkan capabilities integrating with the existing or new asynchronous patterns (like `io_uring`/`kqueue` discussed earlier, or your reactor)?** Are you looking for an asynchronous way to submit Vulkan commands and await their completion?
++3.  **Are there any particular parts of the Vulkan standard (e.g., instance/device setup, buffer management, shader compilation, command submission) that are of immediate interest for `expect`/`actual` declarations?**
++
++Based on your previous request focusing on Linux and macOS specific codebases for asynchronous I/O, it's possible you're thinking of Vulkan for asynchronous compute tasks. Vulkan itself has sophisticated mechanisms for submitting work to the GPU asynchronously and synchronizing with the CPU.
++
++**Conceptual Sketch for a Minimal Asynchronous Vulkan Compute Service (`expect` declarations):**
++
++As a highly simplified example of how one might *begin* to approach abstracting a very small part of Vulkan for asynchronous compute, here's a conceptual sketch. **This is not comprehensive or directly usable without extensive `actual` implementations and further refinement based on your specific needs.**
++
++```kotlin
++// In: trikeshed-core/src/commonMain/kotlin/borg/trikeshed/vulkan/AsyncVulkanCompute.kt (New File/Package)
++package borg.trikeshed.vulkan
++
++import kotlin.coroutines.CoroutineContext
++// Potentially your common ByteBuffer if used for shader code or data transfer
++import borg.trikeshed.nio.ByteBuffer
++
++// Opaque handles for Vulkan objects (platform-specific representations)
++expect class VulkanDeviceHandle
++expect class VulkanQueueHandle
++expect class VulkanShaderModuleHandle
++expect class VulkanBufferHandle
++expect class VulkanComputeCommandHandle // Represents a submitted compute operation
++expect class VulkanFenceHandle          // For CPU-GPU synchronization
++
++/**
++ * Information to create a Vulkan buffer for compute.
++ */
++data class VulkanComputeBufferInfo(
++    val size: Long, // in bytes
++    val isInput: Boolean,
++    val isOutput: Boolean
++    // Add other relevant flags like memory properties if needed
++)
++
++/**
++ * Information to describe a compute shader.
++ */
++data class VulkanComputeShaderInfo(
++    val spirvCode: ByteArray,
++    val entryPointName: String = "main"
++)
++
++/**
++ * Describes the dispatch dimensions for a compute operation.
++ */
++data class VulkanComputeDispatchArgs(
++    val groupCountX: Int,
++    val groupCountY: Int,
++    val groupCountZ: Int
++)
++
++/**
++ * Result of a compute operation, potentially including profiling information.
++ */
++data class VulkanComputeResult(
++    val success: Boolean,
++    val executionTimeNanos: Long? = null, // Optional
++    val errorMessage: String? = null
++)
++
++/**
++ * Defines an asynchronous Vulkan compute service.
++ */
++expect class AsyncVulkanComputeService() : CoroutineContext.Element {
++    companion object Key : CoroutineContext.Key<AsyncVulkanComputeService>
++    override val key: CoroutineContext.Key<*>
++
++    /**
++     * Initializes the Vulkan environment (instance, physical device, logical device, compute queue).
++     *
++     * @param preferHighPerformanceGpu Whether to prefer a discrete/high-performance GPU if multiple are available.
++     * @return True if initialization was successful, false otherwise.
++     */
++    suspend fun initialize(preferHighPerformanceGpu: Boolean = true): Boolean
++
++    /**
++     * Checks if the service has been successfully initialized.
++     */
++    fun isInitialized(): Boolean
++
++    /**
++     * Creates a Vulkan buffer suitable for compute shader input/output.
++     *
++     * @param info Description of the buffer to create.
++     * @return A handle to the created buffer, or null on failure.
++     */
++    suspend fun createComputeBuffer(info: VulkanComputeBufferInfo): VulkanBufferHandle?
++
++    /**
++     * Writes data from a host ByteBuffer to a Vulkan device buffer.
++     * This operation itself might be asynchronous, with completion signaled separately or waited upon.
++     *
++     * @param deviceBuffer The target Vulkan buffer handle.
++     * @param data The source ByteBuffer (data to write).
++     * @param deviceOffset The offset in the device buffer to start writing.
++     * @param fence An optional fence to signal when this transfer completes.
++     * @return True if the write operation was successfully submitted.
++     */
++    suspend fun writeToBuffer(
++        deviceBuffer: VulkanBufferHandle,
++        data: ByteBuffer, // Using your common ByteBuffer
++        deviceOffset: Long = 0L,
++         invalid or enumeration fails.
++     */
++    suspend fun enumeratePhysicalDevices(instanceHandle: VulkanInstanceHandle): List<Pair<PhysicalDeviceHandle, PhysicalDeviceInfo>>
++
++    /**
++     * Gets detailed queue family properties for a given physical device.
++     *
++     * @param physicalDeviceHandle The handle of the physical device.
++     * @return A list of [QueueFamilyInfo] describing each queue family.
++     * @throws VulkanException if the handle is invalid or the query fails.
++     */
++    suspend fun getQueueFamilyProperties(physicalDeviceHandle: PhysicalDeviceHandle): List<QueueFamilyInfo>
++
++    /**
++     * Creates a logical device and one or more queues from a physical device.
++     * This is a simplified interface; real device creation is complex involving features, multiple queue families, etc.
++     *
++     * @param physicalDeviceHandle The handle of the physical device.
++     * @param queueFamilyIndex The index of the queue family from which to create queues. This must be a valid index
++     *                         obtained from [getQueueFamilyProperties].
++     * @param queuePriorities A list of priorities (0.0f to 1.0f) for the queues to be created from the specified family.
++     *                        The number of priorities determines the number of queues created from this family.
++     *                        The count must not exceed the `queueCount` of the chosen family.
++     * @param requiredDeviceExtensions A list of required device-level extension names (e.g., "VK_KHR_swapchain").
++     * @param enabledFeatures A data structure (platform-specific or a common one if designed) representing
++     *                        `VkPhysicalDeviceFeatures` to enable. For this sketch, we omit it for simplicity,
++     *                        implying default features or that the platform actual handles common features.
++     * @return A [Result] containing a Pair of the [LogicalDeviceHandle] and a list of [QueueHandle]s on success,
++     *         or an [Exception] (e.g., VulkanException) on failure.
++     */
++    suspend fun createLogicalDevice(
++        physicalDeviceHandle: PhysicalDeviceHandle,
++        queueFamilyIndex: UInt,
++        queuePriorities: List<Float> = listOf(1.0f),
++        requiredDeviceExtensions: List<String> = emptyList()
++        // enabledFeatures: Any? = null // Placeholder for VkPhysicalDeviceFeatures
++    ): Result<Pair<LogicalDeviceHandle, List<QueueHandle>>>
++
++    /**
++     * Destroys a logical Vulkan device.
++     * This will also implicitly destroy queues obtained from it.
++     * @param deviceHandle The handle of the logical device to destroy.
++     */
++    fun destroyLogicalDevice(deviceHandle: LogicalDeviceHandle)
++
++    /**
++     * Optional: Shuts down the VulkanService, cleaning up any global resources it might hold (e.g. loaded loader).
++     * This might be relevant on some platforms or if a global context is initialized.
++     */
++    fun shutdownService()
++}
++
++/** Custom exception type for Vulkan related errors. */
++class VulkanException(message: String, val errorCode: Int? = null, cause: Throwable? = null) : RuntimeException(message, cause)
++```
++
++**II. `actual` Placeholder Implementations**
++
++**A. JVM (`jvmMain`)**
++
++**File: `trikeshed-core/src/jvmMain/kotlin/borg/trikeshed/vulkan/ActualJvmVulkan.kt`**
++```kotlin
++package borg.trikeshed.vulkan
++
++import kotlin.coroutines.CoroutineContext
++import kotlinx.coroutines.*
++
++// For JVM, Vulkan is typically accessed via libraries like LWJGL or JogAmp's JOGL.
++// These handles would wrap the corresponding Vulkan objects from such a library.
++actual class VulkanInstanceHandle(internal val lwjglInstance: Any? = null) // e.g., org.lwjgl.vulkan.VkInstance
++actual class PhysicalDeviceHandle(internal val lwjglPhysicalDevice: Any? = null) // e.g., org.lwjgl.vulkan.VkPhysicalDevice
++actual class LogicalDeviceHandle(internal val lwjglDevice: Any? = null) // e.g., org.lwjgl.vulkan.VkDevice
++actual class QueueHandle(internal val lwjglQueue: Any? = null) // e.g., org.lwjgl.vulkan.VkQueue
++
++
++actual class VulkanService actual constructor() : CoroutineContext.Element {
++    actual companion object Key : CoroutineContext.Key<VulkanService>
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    // Initialize LWJGL Vulkan bindings (conceptual, usually done once)
++    initfenceToSignal: VulkanFenceHandle? = null
++    ): Boolean
++
++    /**
++     * Reads data from a Vulkan device buffer into a host ByteBuffer.
++     * This operation might be asynchronous.
++     *
++     * @param deviceBuffer The source Vulkan buffer handle.
++     * @param destinationBuffer The host ByteBuffer to read data into.
++     * @param deviceOffset The offset in the device buffer to start reading.
++     * @param fenceToSignal An optional fence to signal when this transfer completes.
++     * @return True if the read operation was successfully submitted.
++     */
++    suspend fun readFromBuffer(
++        deviceBuffer: VulkanBufferHandle,
++        destinationBuffer: ByteBuffer,
++        deviceOffset: Long = 0L,
++        fenceToSignal: VulkanFenceHandle? = null
++    ): Boolean
++
++    /**
++     * Destroys a Vulkan buffer and frees its memory.
++     * @param bufferHandle The handle of the buffer to destroy.
++     */
++    suspend fun destroyComputeBuffer(bufferHandle: VulkanBufferHandle)
++
++    /**
++     * Creates a Vulkan shader module from SPIR-V bytecode.
++     * @param shaderInfo Information about the shader.
++     * @return A handle to the created shader module, or null on failure.
++     */
++    suspend fun createComputeShaderModule(shaderInfo: VulkanComputeShaderInfo): VulkanShaderModuleHandle?
++
++    /**
++     * Destroys a Vulkan shader module.
++     * @param shaderModuleHandle The handle of the shader module to destroy.
++     */
++    suspend fun destroyComputeShaderModule(shaderModuleHandle: VulkanShaderModuleHandle)
++
++    /**
++     * Submits an asynchronous compute operation to a GPU queue.
++     * This is a simplified representation. A real version would involve creating compute pipelines,
++     * descriptor sets for binding buffers, command buffer recording, etc.
++     *
++     * @param shaderModule The compiled compute {
++        try {
++            // org.lwjgl.vulkan.VK.create(); // Example of LWJGL Vulkan static initialization
++            println("JVM VulkanService: Conceptually initialized (e.g., LWJGL VK.create()).")
++        } catch (e: Throwable) {
++            println("JVM VulkanService: Failed to initialize Vulkan bindings: ${e.message}")
++        }
++    }
++
++    actual fun isVulkanAvailable(): Boolean {
++        // TODO: Implement actual check, e.g., by trying to load Vulkan library or enumerate layers.
++        // With LWJGL, vkEnumerateInstanceVersion can be used, or just see if VK.create() succeeded.
++        println("JVM VulkanService: isVulkanAvailable() called (placeholder: returns true)")
++        return true
++    }
++
++    actual suspend fun createInstance(
++        applicationName: String, applicationVersion: UInt,
++        engineName: String?, engineVersion: UInt,
++        requiredInstanceExtensions: List<String>, enableValidationLayers: Boolean
++    ): Result<VulkanInstanceHandle> = withContext(Dispatchers.IO) {
++        println("JVM VulkanService: createInstance placeholder called. App: $applicationName, Validation: $enableValidationLayers")
++        // TODO: Use LWJGL/JOGL to call vkCreateInstance
++        // Example (conceptual for LWJGL VkInstance handle, which might be a Long):
++        // val vkInstancePtr = 0L // Placeholder
++        // if (vkInstancePtr == 0L) Result.failure(VulkanException("JVM: Failed to create VkInstance"))
++        // else Result.success(VulkanInstanceHandle shader to execute.
++     * @param inputBuffers A list of input buffer handles and their binding information (simplified).
++     * @param outputBuffers A list of output buffer handles and their binding information (simplified).
++     * @param dispatchArgs The dimensions for the compute grid.
++     * @param fenceToSignal An optional fence to signal upon completion of this compute dispatch.
++     * @return A [VulkanComputeCommandHandle] representing the submitted work, or null on failure.
++     */
++    suspend fun submitAsyncCompute(
++        shaderModule: VulkanShaderModuleHandle,
++        inputBuffers: List<VulkanBufferHandle>,  // Simplified binding
++        outputBuffers: List<VulkanBufferHandle>, // Simplified binding
++        dispatchArgs: VulkanComputeDispatchArgs,
++        fenceToSignal: VulkanFenceHandle? = null
++    ): VulkanComputeCommandHandle?
++
++    /**
++     * Creates a Vulkan fence that can be used for synchronization.
++     * @param signaled If true, the fence is created in a signaled state.
++     * @return A handle to the created fence, or null on failure.
++     */
++    suspend fun createFence(signaled: Boolean = false): VulkanFenceHandle?
++
++    /**
++     * Waits for one or more fences to be signaled.
++     * @param fences A list of fence handles to wait for.
++     * @param waitAll If true, waits for all fences. If false, waits for any one fence.
++     * @param timeoutMillis Maximum time to wait in milliseconds. A negative value means infinite wait.
++     * @return(vkInstancePtr as Any))
++        Result.failure(UnsupportedOperationException("JVM Vulkan createInstance not fully implemented"))
++    }
++
++    actual fun destroyInstance(instanceHandle: VulkanInstanceHandle) {
++        println("JVM VulkanService: destroyInstance placeholder called for handle: ${instanceHandle.lwjglInstance}")
++        // TODO: LWJGL/JOGL: vkDestroyInstance(instanceHandle.lwjglInstance, null)
++    }
++
++    actual suspend fun enumeratePhysicalDevices(instanceHandle: VulkanInstanceHandle): List<Pair<PhysicalDeviceHandle, PhysicalDeviceInfo>> = withContext(Dispatchers.IO) {
++        println("JVM VulkanService: enumeratePhysicalDevices placeholder for instance: ${instanceHandle.lwjglInstance}")
++        // TODO: LW True if the condition (all/any) was met, false on timeout or error.
++     */
++    suspend fun waitForFences(fences: List<VulkanFenceHandle>, waitAll: Boolean = true, timeoutMillis: Long): Boolean
++
++    /**
++     * Resets one or more fences to the unsignaled state.
++     * @param fences The list of fence handles to reset.
++     * @return True if reset was successful for all specified fences.
++     */
++    suspend fun resetFences(fences: List<VulkanFenceHandle>): Boolean
++
++    /**
++     * Destroys a Vulkan fence.
++     * @param fenceHandle The handle of the fence to destroy.
++     */
++    susJGL/JOGL: vkEnumeratePhysicalDevices, then vkGetPhysicalDeviceProperties for info.
++        Result.failure(UnsupportedOperationException("JVM Vulkan enumeratePhysicalDevices not fully implemented")).getOrThrow() // Force failpend fun destroyFence(fenceHandle: VulkanFenceHandle)
++
++    /**
++     * Shuts down the Vulkan compute service, releasing all associated resources (device, instance, etc.).
++     */
++    fun shutdown()
++}
++```
++
++**
++        // return emptyList() // Placeholder
++    }
++
++    actual suspend fun getQueueFamilyProperties(physicalDeviceHandle: PhysicalDeviceHandle): List<QueueFamilyInfo> = withContext(Dispatchers.IO) {
++        println("JVM VulkanService: getQueueFamilyProperties placeholder for device: ${physicalDeviceHandle.lwjglPhysicalDevice}")
++        // TODO: LWJGL/JOGL: vk`actual` Implementations (Conceptual Outline):**
++
++*   **`linuxX64Main` / `nativeMain` (for macOS):**
++    *   Would use `kotlinx.cinterop` to bind to the Vulkan C API (GetPhysicalDeviceQueueFamilyProperties
++        Result.failure(UnsupportedOperationException("JVM Vulkan getQueueFamilyProperties not fully implemented")).get`libvulkan.so` or `libvulkan.dylib`).
++    *   Implementations would involve:
++        *   LoadingOrThrow()
++    }
++
++    actual suspend fun createLogicalDevice(
++        physicalDeviceHandle: PhysicalDeviceHandle,
++        queueFamilyIndex: UInt,
++        queuePriorities: List<Float>,
++        requiredDeviceExtensions: List<String> the Vulkan library dynamically (`dlopen`).
++        *   Getting function pointers (`dlsym`).
++        *   Managing
++    ): Result<Pair<LogicalDeviceHandle, List<QueueHandle>>> = withContext(Dispatchers.IO) {
++        println(" Vulkan object lifecycles (e.g., `vkCreateInstance`, `vkDestroyInstance`, `vkCreateJVM VulkanService: createLogicalDevice placeholder for device: ${physicalDeviceHandle.lwjglPhysicalDevice}")
++        // TODO: LWDevice`, `vkAllocateMemory`, `vkCreateComputePipelines`, `vkCmdDispatch`, `vkQueueSubmit`, `vkWaitForFences`).JGL/JOGL: vkCreateDevice, then vkGetDeviceQueue
++        Result.failure(UnsupportedOperationException("JVM Vulkan createLogicalDevice not fully implemented"))
++    }
++
++    actual fun destroyLogicalDevice(deviceHandle: LogicalDeviceHandle) {
++        println("JVM VulkanService: destroyLogicalDevice placeholder for device: ${deviceHandle.lwjglDevice}")
++        // TODO: LW
++        *   Translating Kotlin data structures to C structs for Vulkan calls and vice-versa.
++        *   Error checkingJGL/JOGL: vkDestroyDevice(deviceHandle.lwjglDevice, null)
++    }
++
++    actual fun Vulkan return codes (`VkResult`).
++        *   For asynchronous operations, this might integrate with your `AsyncIoEngine` ( shutdownService() {
++        println("JVM VulkanService: shutdownService() called.")
++        // Cleanup global Vulif submitting Vulkan work triggers events that can be polled by `io_uring` or `kqueue` through eventfdskan resources if any managed by this service instance.
++        // For LWJGL, explicit global cleanup (like VK.destroy()) is usually not needed if managed by VK.create().
++    }
++}
++```
++
++**B. Linux (`linuxX64Main`)**
++
++**File: `trikeshed-core/src/linuxX64Main/kotlin/borg/, which is advanced) or more likely, manage Vulkan fences and semaphores directly with Vulkan API calls for waiting.
++
++*   **trikeshed/vulkan/ActualLinuxVulkan.kt`**
++```kotlin
++package borg.trikeshed.vulkan
++
++`jvmMain`:**
++    *   Typically use existing Java bindings like LWJGL (Lightweight Java Game Library) which provide Vulkan wrappers.
++    *   This involves translating the `expect` API calls to LWJGL's Vulimport kotlinx.cinterop.*
++import platform.posix.dlopen // For checking Vulkan loader
++import platform.posix.RTLD_LAZY
++import platform.posix.dlclose
++import platform.posix.dlsym //kan API calls.
++    *   If the "no external libraries" constraint applies strictly *beyond just Python/Sympy* (meaning no LWJGL either), then a JVM `actual` for Vulkan would be very difficult, likely resulting If needed to check for a specific Vulkan function like vkGetInstanceProcAddr
++import vulkan.* // Assuming cinterop with in `UnsupportedOperationException` or requiring JNI to talk to native Vulkan. This needs clarification.
++
++*   **`js vulkan.h provides types like VkInstance, VkPhysicalDevice, etc.
++                // This means you need a vulkan.def file for cinterop.
++import kotlin.coroutines.CoroutineContext
++import kotlinx.coroutines.*
++
++
++Main` / `wasmJsMain`:**
++    *   **No direct Vulkan support in browsers.** The closest equivalent is WebGPU.
++    *   An `actual` implementation for JS would either:
++        *   Throw `UnsupportedOperationException`.// Native actual classes for handles might wrap C pointers directly.
++@OptIn(ExperimentalForeignApi::class)
++actual class VulkanInstanceHandle(internal val vkInstancePtr: CPointer<VkInstance_T>? = null)
++@OptIn(ExperimentalForeignApi::class)
++actual class PhysicalDeviceHandle(internal val vkPhysicalDevicePtr: CPointer<VkPhysicalDevice_T>? = null)
++@OptIn(ExperimentalForeignApi::class)
++actual class LogicalDeviceHandle(internal val vkDevicePtr
++        *   Attempt to map the `expect` API to WebGPU if the functionalities are analogous and WebGPU is available: CPointer<VkDevice_T>? = null)
++@OptIn(ExperimentalForeignApi::class)
++actual class QueueHandle(internal val vkQueuePtr: CPointer<VkQueue_T>? = null)
++
++
++@. This would be a significant adaptation, not a direct Vulkan implementation.
++
++**Considerations:**
++
++*   **MassOptIn(ExperimentalForeignApi::class)
++actual class VulkanService actual constructor() : CoroutineContext.Element {
++    actualive API Surface:** The Vulkan API is very large. The `expect` interface sketched above is a tiny fraction focusing companion object Key : CoroutineContext.Key<VulkanService>
++    override val key: CoroutineContext.Key<*> get() = Key
++
++    private var vulkanLoaderHandle: COpaquePointer? = null
++
++    init {
++        // Try on a conceptual async compute service. Defining a comprehensive cross-platform Vulkan abstraction in this way is a very ambitious goal to load libvulkan.so.1 to confirm availability.
++        // dlopen can also be used to dynamically load Vulkan functions if static linking is not used.
++        vulkanLoaderHandle = dlopen("libvulkan..
++*   **Platform Divergence:** Vulkan setup, error handling, and available extensions can vary slightly by platform andso.1", RTLD_LAZY)
++        if (vulkanLoaderHandle == null) {
++            // Also driver. WebGPU for JS is a different API altogether.
++*   **Complexity:** Implementing `actual` Vulkan wrappers involves deep try without ".1" if common symlink exists or system uses that name.
++            vulkanLoaderHandle = dlopen("libvulkan.so", RTLD_LAZY)
++        }
++        if (vulkanLoaderHandle != null) {
++            println("Native knowledge of the Vulkan C API, memory management, and synchronization, plus the CCEK pattern if you want to integrate it into a Cor VulkanService (Linux): libvulkan.so.1 loaded successfully.")
++            // You don't typicallyoutineContext.
++*   **Resource Management:** Vulkan is explicit about resource creation and destruction. `actual` implementations keep it open unless you are dynamically loading *all* Vulkan functions.
++            // For typical SDK usage, linking must handle this meticulously.
++*   **Shader Management:** Dealing with SPIR-V shaders (compilation, loading) is against libvulkan at compile time is common.
++            // For this availability check, we can close it if we just another significant part.
++
++If you can specify which particular aspect of Vulkan (e.g., "I want to submit compute wanted to test load.
++            // dlclose(vulkanLoaderHandle)
++            // vulkanLoaderHandle = null // shaders asynchronously and wait for results using a model similar to the `AsyncIoEngine`") and what kind of data you Reset if not kept open for dynamic function loading
++        } else {
++            println("Native VulkanService (Linux): Failed to load libvulkan.so.1 or libvulkan.so.")
++        }
++    }
++
++
++    actual fun'd be processing (e.g., operations on your `Tensor` type), a more targeted and useful `expect`/`actual` structure can be proposed.
