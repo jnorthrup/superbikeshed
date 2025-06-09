@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tensor-Core Live Trading Agents - MDI Interface</title>
+    
+    <!-- React from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Market Data JSON APIs via CDN -->
+    <link rel="preconnect" href="https://api.binance.com">
+    <link rel="preconnect" href="https://api.coinbase.com">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            overflow: hidden;
+        }
+        
+        .mdi-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .mdi-toolbar {
+            height: 40px;
+            background: linear-gradient(90deg, #161b22 0%, #21262d 100%);
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .window-container {
+            flex: 1;
+            position: relative;
+            background: #0d1117;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 10px;
+            overflow: auto;
+        }
+        
+        .agent-window {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .agent-window.active {
+            border-color: #238636;
+            box-shadow: 0 0 0 2px rgba(35, 134, 54, 0.3);
+        }
+        
+        .agent-window:hover {
+            border-color: #58a6ff;
+            transform: translateY(-2px);
+        }
+        
+        .window-title {
+            background: linear-gradient(90deg, #21262d 0%, #30363d 100%);
+            padding: 12px 16px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .window-title span {
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .window-controls button {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-minimize {
+            background: #f85149;
+            color: white;
+        }
+        
+        .btn-close {
+            background: #da3633;
+            color: white;
+        }
+        
+        .window-controls button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        .window-content {
+            flex: 1;
+            padding: 16px;
+            overflow: auto;
+            background: #0d1117;
+        }
+        
+        .status-panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .status-panel h4 {
+            color: #58a6ff;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .status-panel p {
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #8b949e;
+        }
+        
+        .signals-container {
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        
+        .signal-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #21262d;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .signal-item:last-child {
+            border-bottom: none;
+        }
+        
+        .signal-buy {
+            background: linear-gradient(90deg, #0d4e20 0%, #1a5f2b 100%);
+            color: #56d364;
+        }
+        
+        .signal-sell {
+            background: linear-gradient(90deg, #5d1a1a 0%, #6f2020 100%);
+            color: #f85149;
+        }
+        
+        .signal-hold {
+            background: linear-gradient(90deg, #2d333b 0%, #373e47 100%);
+            color: #8b949e;
+        }
+        
+        .chart-placeholder {
+            height: 200px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8b949e;
+            font-size: 14px;
+            margin-top: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(88, 166, 255, 0.1), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .toolbar-button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar-button:hover {
+            background: #2ea043;
+            transform: translateY(-1px);
+        }
+        
+        .toolbar-select {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        
+        .market-status {
+            margin-left: auto;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #0d4e20;
+            color: #56d364;
+        }
+        
+        .market-status.disconnected {
+            background: #5d1a1a;
+            color: #f85149;
+        }
+        
+        .tensor-visualization {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .viz-toolbar {
+            height: 32px;
+            background: #21262d;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+        }
+        
+        .viz-button {
+            background: #373e47;
+            color: #c9d1d9;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .viz-button.active {
+            background: #238636;
+            color: white;
+        }
+        
+        .viz-content {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .live-chart {
+            width: 100%;
+            height: 150px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-line {
+            stroke: #238636;
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(0 0 4px rgba(35, 134, 54, 0.6));
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-radius: 50%;
+            border-top-color: #58a6ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- React app will mount here -->
+        <div class="loading-container" style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            flex-direction: column;
+            gap: 16px;
+        ">
+            <div class="loading"></div>
+            <div style="color: #8b949e; font-size: 14px;">
+                Loading Tensor-Core Trading Agents...
+            </div>
+        </div>
+    </div>
+    
+    <!-- JSON Interning from CDN -->
+    <script>
+        // JSON data interning for market data
+        window.TensorCore = {
+            marketDataCache: new Map(),
+            jsonIntern: function(url, key) {
+                if (this.marketDataCache.has(key)) {
+                    return Promise.resolve(this.marketDataCache.get(key));
+                }
+                
+                return fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.marketDataCache.set(key, data);
+                        return data;
+                    })
+                    .catch(error => {
+                        console.error('Failed to intern JSON from CDN:', error);
+                        return null;
+                    });
+            },
+            
+            // Preload common market data
+            preloadMarketData: function() {
+                const symbols = ['BTCUSDT', 'ETHUSDT', 'ADAUSDT'];
+                symbols.forEach(symbol => {
+                    this.jsonIntern(
+                        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=100`,
+                        `klines_${symbol}`
+                    );
+                });
+            }
+        };
+        
+        // Start preloading
+        window.TensorCore.preloadMarketData();
+        
+        // WebSocket connection for live data
+        window.TensorCore.connectLiveData = function() {
+            const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                window.dispatchEvent(new CustomEvent('marketTick', { detail: data }));
+            };
+            return ws;
+        };
+    </script>
+    
+    <!-- Kotlin/JS build will be included here -->
+    <script src="tensor-core.js"></script>
+    
+    <script>
+        // Launch the application
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.evolution && window.evolution.ui) {
+                const launcher = new window.evolution.ui.TradingInterfaceLauncher();
+                launcher.launch();
+            } else {
+                console.error('Tensor-Core modules not loaded');
+            }
+        });
+    </script>
+</body>
+</html>

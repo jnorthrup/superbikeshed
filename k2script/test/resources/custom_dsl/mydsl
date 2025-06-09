@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+export KSCRIPT_PREAMBLE='
+// declare dependencies
+@file:DependsOn("com.github.holgerbrandl:kutils:0.12")
+
+// make sure to also support includes in here
+// @file:Import("util.kt")
+@file:Import("https://raw.githubusercontent.com/holgerbrandl/kscript/master/test/resources/custom_dsl/test_dsl_include.kt")
+
+
+// also adjust jvm settings
+@file:KotlinOptions("-J-Xmx5g")
+
+
+// define some important variables to be used throughout the dsl
+val foo = "bar"
+'
+
+exec kscript $@
