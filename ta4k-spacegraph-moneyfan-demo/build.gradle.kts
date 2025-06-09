@@ -31,8 +31,32 @@ kotlin {
         binaries.executable()
     }
 
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+
+    if (hostOs == "Mac OS X") {
+        if (hostArch == "aarch64") {
+            macosArm64()
+        } else {
+            macosX64()
+        }
+    } else if (hostOs == "Linux") {
+        if (hostArch == "aarch64") {
+            linuxArm64()
+        } else {
+            linuxX64()
+        }
+    }
+
     sourceSets {
+        val commonMain by creating {
+            dependencies {
+                implementation(kotlin("stdlib-common"))
+            }
+        }
+
         val jsMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(kotlin("stdlib-js")) // Standard JS library for Kotlin
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Add serialization
@@ -48,6 +72,31 @@ kotlin {
             }
             resources.srcDirs(project.file("src/jsMain/resources"))
         }
+
+        val commonTest by creating { // Create commonTest
+            dependencies {
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
+            }
+        }
+
+        val nativeMain by creating {
+            dependsOn(commonMain)
+        }
+
+        val nativeTest by creating {
+            dependsOn(commonTest)
+        }
+
+        val linuxX64Main by creating { dependsOn(nativeMain) }
+        val linuxArm64Main by creating { dependsOn(nativeMain) }
+        val macosX64Main by creating { dependsOn(nativeMain) }
+        val macosArm64Main by creating { dependsOn(nativeMain) }
+
+        val linuxX64Test by creating { dependsOn(nativeTest) }
+        val linuxArm64Test by creating { dependsOn(nativeTest) }
+        val macosX64Test by creating { dependsOn(nativeTest) }
+        val macosArm64Test by creating { dependsOn(nativeTest) }
     }
 }
 
