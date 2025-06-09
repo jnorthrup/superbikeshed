@@ -2,7 +2,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 fun getOsFamily(): String {
-    val osName = System.getProperty("os.name").toLowerCase()
+    val osName = System.getProperty("os.name").lowercase()
     return when {
         osName.contains("mac") || osName.contains("darwin") -> "macos"
         osName.contains("nix") || osName.contains("nux") -> "linux"
@@ -53,11 +53,19 @@ println("Detected OS Version Details: $currentOsVersionDetails")
 
 plugins {
     kotlin("multiplatform")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
 }
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
+repositories {
+    mavenCentral()
+    google() // Often needed for Android or other Google libraries, good to have
+    // You might also need specific repositories like:
+    // maven("https://plugins.gradle.org/m2/") for Gradle plugins if not automatically resolved
+    // maven("https://europe-west3-maven.pkg.dev/androidx-dev/androidx-public") for androidx snapshot
+}
 
 kotlin {
     jvm {
@@ -89,7 +97,7 @@ kotlin {
             val resolvedOsFamily = getOsFamily() // Renamed to avoid conflict
             // val resolvedOsVersion = getOsVersion(resolvedOsFamily) // Potentially needed
 
-            defines("TARGET_OS_FAMILY", resolvedOsFamily)
+            compilerOpts("-DTARGET_OS_FAMILY=${resolvedOsFamily}") // Use compilerOpts with -D
 
             println("Cinterop for $name on $konanTarget (OS: $resolvedOsFamily): Applying settings...")
 
@@ -111,73 +119,57 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            // Include all sources from borg/trikeshed/core and borg/trikeshed/lib
-            kotlin.srcDirs(
-                "$rootDir/src/commonMain/kotlin/borg/trikeshed/core",
-                "$rootDir/src/commonMain/kotlin/borg/trikeshed/lib"
-            )
-            // Exclude conflicting general 'core' and 'com/example/trikeshedcore' from this module's compilation
-            // These paths are relative to $rootDir/src/commonMain/kotlin, so they should be fine as they are
-            // not under borg/trikeshed/core or borg/trikeshed/lib which are now the source dirs.
-            // However, to be safe and ensure clarity, if these are meant to be excluded from the root,
-            // they should be in the root build.gradle.kts. Let's assume they are for any other sources
-            // that might accidentally be picked up if srcDirs was broader. Given the new specific srcDirs,
-            // these excludes might not be strictly necessary here anymore but are harmless.
-            kotlin {
-                exclude("$rootDir/src/commonMain/kotlin/core/**") // This effectively means these paths won't be included if they aren't under the specified srcDirs.
-                exclude("$rootDir/src/commonMain/kotlin/com/example/trikeshedcore/**")
-            }
-
+            // Default srcDir is "src/commonMain/kotlin" which is "Review/trikeshed-core/src/commonMain/kotlin"
+            // All new files like TrikeShedCore.kt, serialization/JsonSerialization.kt, services/IncrementalDataService.kt
+            // are correctly placed under this path. No need to reference $rootDir for these.
+            // Original conflicting files from the root project will not be included here.
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
             }
         }
 
         val jvmMain by getting {
-            kotlin.srcDir("$rootDir/src/jvmMain/kotlin")
-            kotlin {
-                exclude("**/QuicCurl.kt")
-                exclude("**/QuicMain.kt")
-            }
+            // Default srcDir is "src/jvmMain/kotlin". If trikeshed-core needs specific JVM implementations
+            // for its common code, they would go into "Review/trikeshed-core/src/jvmMain/kotlin".
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
             }
         }
 
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+
+        val nativeMainShared by creating {
+            dependsOn(commonMain)
+            // If you have shared native sources for trikeshed-core, they go in "Review/trikeshed-core/src/nativeMainShared/kotlin" (or similar)
+            // e.g. kotlin.srcDir("src/nativeMainShared/kotlin")
+        }
+
         val linuxX64Main by getting {
-            kotlin.srcDir("$rootDir/src/posixMain/kotlin")
-            kotlin.srcDir("$rootDir/src/linuxMain/kotlin")
-            // No specific native dependencies for coroutines/datetime listed for now,
-            // relying on commonMain's. Add if build shows they are needed.
+            dependsOn(nativeMainShared)
+            // Default srcDir is "src/linuxX64Main/kotlin". For any trikeshed-core specific linuxX64 code.
+            // Do NOT include $rootDir/src/linuxMain/kotlin etc. here.
         }
 
         val jsMain by getting {
-            // Point to specific JS sources for trikeshed-core if they exist,
-            // and potentially common JS libs if needed by core.
-            kotlin.setSrcDirs(files(
-                "$rootDir/src/jsMain/kotlin/borg/trikeshed/core/", // If core-specific JS exists
-                "$rootDir/src/jsMain/kotlin/borg/trikeshed/lib/",   // If lib has JS parts
-                "$rootDir/src/jsMain/kotlin/lib/" // A general lib for JS too
-            ))
-            kotlin {
-                exclude("$rootDir/src/jsMain/kotlin/com/example/trikeshedcore/**")
-                exclude("$rootDir/src/jsMain/kotlin/core/**") // Exclude general core JS if it exists
-            }
+            // Default srcDir is "src/jsMain/kotlin". For any trikeshed-core specific JS code.
+            // Do NOT include $rootDir/src/jsMain/kotlin/* here.
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                // Add other js-specific dependencies if necessary
             }
         }
 
         // macOS source sets
-        val nativeMain by getting
-
         val macosMain by creating {
-            dependsOn(nativeMain)
-            kotlin.srcDir("$rootDir/src/posixMain/kotlin")
-            kotlin.srcDir("$rootDir/src/macosMain/kotlin")
+            dependsOn(nativeMainShared)
+            // Default srcDir for macosMain would be something like "src/macosMain/kotlin".
+            // Do NOT include $rootDir/src/macosMain/kotlin etc. here.
         }
 
         val macosX64Main by getting {
@@ -188,10 +180,24 @@ kotlin {
             dependsOn(macosMain)
         }
 
-        val nativeTest by getting
+        // Removed the problematic 'val nativeTest by getting' block
+
+        val nativeTestShared by creating { // Renamed from nativeTest for clarity
+            dependsOn(commonTest)
+            // If you have shared native test sources:
+            // kotlin.srcDir("$rootDir/src/nativeTest/kotlin")
+        }
+
+        // Ensure specific native test source sets like linuxX64Test, macosX64Test depend on nativeTestShared
+        // Example for linuxX64Test (if it were defined, add if needed):
+        // val linuxX64Test by getting {
+        //     dependsOn(nativeTestShared)
+        //     kotlin.srcDir("$rootDir/src/linuxX64Test/kotlin") // Or similar
+        // }
+
 
         val macosTest by creating {
-            dependsOn(nativeTest)
+            dependsOn(nativeTestShared) // Ensure nativeTest exists and is correctly configured
             kotlin.srcDir("$rootDir/src/macosTest/kotlin")
         }
 
@@ -206,5 +212,31 @@ kotlin {
         // Define other source sets (nativeMain, etc.) similarly if they should also
         // draw from the root project's structure for this module.
         // For now, focus on common, jvm, linuxX64, js.
+        // Ensure all test source sets are correctly defined and dependent.
+        // For example, jvmTest should depend on commonTest.
+        val jvmTest by getting {
+            dependsOn(commonTest) // Explicit dependency
+            dependencies {
+                implementation(kotlin("test-junit")) // For running tests on JVM
+            }
+        }
+        val jsTest by getting {
+            dependsOn(commonTest) // Explicit dependency
+            dependencies {
+                implementation(kotlin("test-js")) // For running tests on JS
+            }
+        }
+
+        // Define linuxX64Test and other native test source sets
+        val linuxX64Test by getting {
+            dependsOn(nativeTestShared)
+            // kotlin.srcDir("$rootDir/src/linuxX64Test/kotlin") // if specific sources exist
+        }
+
+        // macosX64Test and macosArm64Test were already correctly defined earlier and depend on macosTest
+        // which in turn depends on nativeTestShared. No need to redefine them here.
+    }
+    targets.withType(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget::class.java) {
+        binaries.executable() // Ensure test executables are built for native targets
     }
 }
