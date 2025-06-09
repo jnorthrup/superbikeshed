@@ -53,6 +53,7 @@ println("Detected OS Version Details: $currentOsVersionDetails")
 
 plugins {
     kotlin("multiplatform")
+    `maven-publish`
 }
 
 group = "borg.trikeshed"

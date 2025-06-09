@@ -330,6 +330,485 @@ fun <A, B> Series<A>.zip(other: Series<B>): Series<Pair<A, B>> {
     return (this.size j { i -> Pair(this[i], other[i]) })
 }
 
+/**
+ * Represents a single candlestick (Kline) data point.
+ * Adapted from ta4k.core.model.Kline.
+ *
+ * @property openTimeMillis The timestamp when the kline opened, in milliseconds since epoch.
+ * @property openPrice The opening price for the kline period.
+ * @property highPrice The highest price during the kline period.
+ * @property lowPrice The lowest price during the kline period.
+ * @property closePrice The closing price for the kline period.
+ * @property volume The trading volume during the kline period (in base asset).
+ * @property closeTimeMillis The timestamp when the kline closed, in milliseconds since epoch.
+ * // Optional fields from ta4k's Kline, can be added if necessary later:
+ * // val quoteAssetVolume: BigDecimal,
+ * // val numberOfTrades: Int,
+ * // val takerBuyBaseAssetVolume: BigDecimal,
+ * // val takerBuyQuoteAssetVolume: BigDecimal
+ */
+data class Kline(
+    val openTimeMillis: Long, // Using Long directly, equivalent to EpochMillis
+    val openPrice: BigDecimal,
+    val highPrice: BigDecimal,
+    val lowPrice: BigDecimal,
+    val closePrice: BigDecimal,
+    val volume: BigDecimal,
+    val closeTimeMillis: Long // Using Long directly
+) {
+    val openTime: java.time.Instant
+        get() = java.time.Instant.ofEpochMilli(openTimeMillis)
+
+    val closeTime: java.time.Instant
+        get() = java.time.Instant.ofEpochMilli(closeTimeMillis)
+
+    fun openLocalDateTime(zoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC): java.time.LocalDateTime =
+        java.time.LocalDateTime.ofInstant(openTime, zoneOffset)
+
+    fun closeLocalDateTime(zoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC): java.time.LocalDateTime =
+        java.time.LocalDateTime.ofInstant(closeTime, zoneOffset)
+
+    override fun toString(): String {
+        return "Kline(T=${openTimeMillis}, O=${openPrice.toPlainString()}, H=${highPrice.toPlainString()}, L=${lowPrice.toPlainString()}, C=${closePrice.toPlainString()}, V=${volume.toPlainString()})"
+    }
+}
+
+/**
+ * Type alias for a time series of [Kline] objects, using the script's Series.
+ */
+typealias KlineSeries = Series<Kline>
+
+// --- Technical Indicators (Re-implemented based on ta4k) ---
+
+/**
+ * Simple Moving Average (SMA) indicator.
+ * Calculates the average of a kline property (typically close price) over a specified period.
+ * Operates on the script's [KlineSeries].
+ */
+class SMAIndicator(
+    private val klineSeries: KlineSeries,
+    private val period: Int,
+    private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
+) {
+    init {
+        require(period > 0) { "Period must be positive" }
+    }
+
+    private val results = mutableListOf<BigDecimal?>()
+    private var calculatedUpToIndex = -1
+
+    private fun ensureCalculatedUpTo(targetIndex: Int) {
+        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+            return
+        }
+
+        if (results.size < klineSeries.size) {
+            for (k in results.size until klineSeries.size) {
+                results.add(null)
+            }
+        }
+
+        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
+
+        for (i in startIndex..targetIndex) {
+            if (i < period - 1) {
+                results[i] = null // Not enough data
+                continue
+            }
+
+            var sum = BigDecimal.ZERO
+            for (j in 0 until period) {
+                sum += klinePropertySelector(klineSeries[i - j])
+            }
+
+            val currentKlinePrice = klinePropertySelector(klineSeries[i])
+            // Use a fixed scale for division, or derive from price scale.
+            // Adding a few extra decimal places for precision in average.
+            val calculationScale = (currentKlinePrice.scale() + 4).coerceAtLeast(8)
+            results[i] = sum.divide(BigDecimal(period), calculationScale, java.math.RoundingMode.HALF_UP)
+        }
+        calculatedUpToIndex = targetIndex
+    }
+
+    fun getValue(index: Int): BigDecimal? {
+        if (index < 0 || index >= klineSeries.size) {
+            return null
+        }
+        ensureCalculatedUpTo(index)
+        return results.getOrNull(index) // Use getOrNull for safety, though pre-padding should ensure it exists
+    }
+
+    val values: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            // Ensure 'j' (the Series constructor infix fun) is accessible in this scope.
+            // It's defined in the TrikeShed Core Definitions section of the script.
+            return klineSeries.size j { index ->
+                results.getOrNull(index)
+            }
+        }
+}
+
+/**
+ * Average True Range (ATR) indicator.
+ * Measures market volatility.
+ * Operates on the script's [KlineSeries].
+ * Re-implemented based on ta4k.indicators.ATRIndicator.
+ */
+class ATRIndicator(
+    private val klineSeries: KlineSeries,
+    private val period: Int
+) {
+    init {
+        require(period > 0) { "Period must be positive" }
+    }
+
+    private val trueRangeResults = mutableListOf<BigDecimal?>()
+    private val atrResults = mutableListOf<BigDecimal?>()
+    private var calculatedUpToIndex = -1
+
+    // Attempt to get a sensible scale from the first kline's close price, default if not possible.
+    private val defaultPriceScale = 4 // Default scale if price data is unavailable or has no scale
+    private val resultScale = klineSeries.let { ks ->
+        if (ks.size > 0) {
+            val firstKline = ks[0]
+            (firstKline.closePrice.scale() + 2).coerceAtLeast(defaultPriceScale)
+        } else {
+            defaultPriceScale
+        }
+    }
+    private val calculationScale = (resultScale + 4).coerceAtLeast(8)
+
+
+    private fun ensureCalculatedUpTo(targetIndex: Int) {
+        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+            return
+        }
+
+        val periodBigDecimal = BigDecimal(period)
+
+        if (calculatedUpToIndex == -1 && klineSeries.size > 0) { // First major run
+            for (k in 0 until klineSeries.size) {
+                trueRangeResults.add(null)
+                atrResults.add(null)
+            }
+        } else { // Ensure lists are large enough if called again to extend
+            while (trueRangeResults.size < klineSeries.size) trueRangeResults.add(null)
+            while (atrResults.size < klineSeries.size) atrResults.add(null)
+        }
+
+        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
+
+        for (i in startIndex..targetIndex) {
+            val currentKline = klineSeries[i]
+            val high = currentKline.highPrice
+            val low = currentKline.lowPrice
+
+            val currentRawTR: BigDecimal
+            if (i == 0) {
+                currentRawTR = high.subtract(low)
+            } else {
+                val prevClose = klineSeries[i - 1].closePrice
+                var tr = high.subtract(low)
+                tr = tr.max(high.subtract(prevClose).abs())
+                tr = tr.max(low.subtract(prevClose).abs())
+                currentRawTR = tr
+            }
+            trueRangeResults[i] = currentRawTR
+
+            if (i < period - 1) {
+                // atrResults[i] remains null
+            } else if (i == period - 1) {
+                var sumTR = BigDecimal.ZERO
+                for (j in 0 until period) {
+                    sumTR += trueRangeResults[j] ?: BigDecimal.ZERO
+                }
+                val firstAtr = sumTR.divide(periodBigDecimal, calculationScale, java.math.RoundingMode.HALF_UP)
+                atrResults[i] = firstAtr
+            } else { // i >= period
+                val prevAtr = atrResults[i - 1] ?: BigDecimal.ZERO
+                val currentTRForSmoothing = trueRangeResults[i] ?: BigDecimal.ZERO
+
+                // Wilder's smoothing: ATR = [(Prior ATR * (n-1)) + Current TR] / n
+                val atr = (prevAtr.multiply(periodBigDecimal.subtract(BigDecimal.ONE)).add(currentTRForSmoothing))
+                    .divide(periodBigDecimal, calculationScale, java.math.RoundingMode.HALF_UP)
+                atrResults[i] = atr
+            }
+        }
+        calculatedUpToIndex = targetIndex
+    }
+
+    fun getTrueRange(index: Int): BigDecimal? {
+        if (index < 0 || index >= klineSeries.size) {
+            return null
+        }
+        ensureCalculatedUpTo(index)
+        val rawTR = trueRangeResults.getOrNull(index)
+        return rawTR?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
+    }
+
+    fun getValue(index: Int): BigDecimal? {
+        if (index < 0 || index >= klineSeries.size) {
+            return null
+        }
+        ensureCalculatedUpTo(index)
+        val rawAtr = atrResults.getOrNull(index)
+        return rawAtr?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
+    }
+
+    val values: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx ->
+                this.getValue(idx)
+            }
+        }
+
+    val trueRangeValues: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx ->
+                this.getTrueRange(idx)
+            }
+        }
+}
+
+/**
+ * Utility functions for smoothing indicator values.
+ */
+object SmoothingUtils {
+    /**
+     * Applies Wilder's smoothing.
+     * Formula: NewValue = PreviousSmoothedValue - PreviousSmoothedValue/Period + CurrentValueToSmooth
+     * The first smoothed value is the simple average of the first 'period' values from the input.
+     *
+     * @param valuesToSmooth A List of BigDecimal values to be smoothed. Nulls are treated as zero in the initial sum.
+     * @param period The smoothing period.
+     * @param calculationScale The scale for internal calculations and the output.
+     * @return A List of smoothed BigDecimal values, same size as input. Initial values before enough data will be null.
+     */
+    fun wildersSmooth(
+        valuesToSmooth: List<BigDecimal?>,
+        period: Int,
+        calculationScale: Int
+    ): List<BigDecimal?> {
+        require(period > 0) { "Period must be positive" }
+        if (valuesToSmooth.isEmpty()) return emptyList()
+
+        val smoothedValues = MutableList<BigDecimal?>(valuesToSmooth.size) { null }
+
+        if (valuesToSmooth.size < period) return smoothedValues // Not enough data for even the first SMA
+
+        val periodBd = BigDecimal(period)
+        var previousSmoothedValue: BigDecimal? = null
+
+        for (i in valuesToSmooth.indices) {
+            if (i < period - 1) {
+                // smoothedValues[i] is already null
+                continue
+            }
+
+            val currentValueToSmooth = valuesToSmooth[i]
+
+            if (i == period - 1) {
+                // First smoothed value is the average of the initial 'period' values
+                var sumOfFirstPeriod = BigDecimal.ZERO
+                for (k in 0 until period) {
+                    sumOfFirstPeriod += valuesToSmooth[k] ?: BigDecimal.ZERO // Treat null as zero for initial sum
+                }
+                previousSmoothedValue = sumOfFirstPeriod.divide(periodBd, calculationScale, java.math.RoundingMode.HALF_UP)
+                smoothedValues[i] = previousSmoothedValue
+            } else {
+                // Subsequent values use Wilder's smoothing formula
+                if (previousSmoothedValue == null || currentValueToSmooth == null) {
+                    // If previous smoothed value is null (e.g. due to prior null inputs),
+                    // or current raw value is null, propagate null.
+                    previousSmoothedValue = null
+                } else {
+                    // Wilder's: Smoothed_prev - Smoothed_prev/N + Current_raw_value
+                    previousSmoothedValue = previousSmoothedValue.subtract(
+                        previousSmoothedValue.divide(periodBd, calculationScale, java.math.RoundingMode.HALF_UP)
+                    ).add(currentValueToSmooth)
+                }
+                smoothedValues[i] = previousSmoothedValue
+            }
+        }
+        return smoothedValues
+    }
+}
+
+/**
+ * Average Directional Index (ADX) indicator.
+ * Measures trend strength.
+ * Re-implemented based on ta4k.indicators.ADXIndicator.
+ */
+class ADXIndicator(
+    private val klineSeries: KlineSeries,
+    private val period: Int
+) {
+    init {
+        require(period > 0) { "Period must be positive" }
+    }
+
+    // Store raw calculated values before smoothing
+    private val _plusDMValues = mutableListOf<BigDecimal?>()
+    private val _minusDMValues = mutableListOf<BigDecimal?>()
+    private val _trueRangeValuesDI = mutableListOf<BigDecimal?>() // TR for DI calculation
+
+    // Store smoothed values
+    private var _smoothedPlusDM: List<BigDecimal?> = emptyList()
+    private var _smoothedMinusDM: List<BigDecimal?> = emptyList()
+    private var _smoothedTRDI: List<BigDecimal?> = emptyList() // Smoothed TR for DI calculation
+
+    // Store DI and DX values
+    private val _plusDIValues = mutableListOf<BigDecimal?>()
+    private val _minusDIValues = mutableListOf<BigDecimal?>()
+    private val _dxValues = mutableListOf<BigDecimal?>()
+
+    // Store final ADX
+    private var _adxSeriesValues: List<BigDecimal?> = emptyList()
+
+    private val calculationScale = 8 // Internal precision
+    private val resultScale = 2    // Standard scale for ADX, DI output
+
+    private var calculatedUpToIndex = -1
+
+    private fun ksHigh(index: Int): BigDecimal = klineSeries[index].highPrice
+    private fun ksLow(index: Int): BigDecimal = klineSeries[index].lowPrice
+    private fun ksClose(index: Int): BigDecimal = klineSeries[index].closePrice
+
+    private fun ensureCalculatedUpTo(targetIndex: Int) {
+        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+            return
+        }
+
+        val requiredSize = klineSeries.size
+        while (_plusDMValues.size < requiredSize) _plusDMValues.add(null)
+        while (_minusDMValues.size < requiredSize) _minusDMValues.add(null)
+        while (_trueRangeValuesDI.size < requiredSize) _trueRangeValuesDI.add(null)
+        while (_plusDIValues.size < requiredSize) _plusDIValues.add(null)
+        while (_minusDIValues.size < requiredSize) _minusDIValues.add(null)
+        while (_dxValues.size < requiredSize) _dxValues.add(null)
+
+        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
+
+        // 1. Calculate raw +DM, -DM, TR for DI
+        for (i in startIndex..targetIndex) {
+            if (i == 0) {
+                _plusDMValues[i] = BigDecimal.ZERO
+                _minusDMValues[i] = BigDecimal.ZERO
+                _trueRangeValuesDI[i] = ksHigh(0).subtract(ksLow(0))
+                continue
+            }
+
+            val currentHigh = ksHigh(i)
+            val currentLow = ksLow(i)
+            val prevHigh = ksHigh(i - 1)
+            val prevLow = ksLow(i - 1)
+            val prevClose = ksClose(i - 1)
+
+            val upMove = currentHigh.subtract(prevHigh)
+            val downMove = prevLow.subtract(currentLow)
+
+            _plusDMValues[i] = if (upMove.compareTo(downMove) > 0 && upMove.compareTo(BigDecimal.ZERO) > 0) upMove else BigDecimal.ZERO
+            _minusDMValues[i] = if (downMove.compareTo(upMove) > 0 && downMove.compareTo(BigDecimal.ZERO) > 0) downMove else BigDecimal.ZERO
+
+            var tr = currentHigh.subtract(currentLow)
+            tr = tr.max(currentHigh.subtract(prevClose).abs())
+            tr = tr.max(currentLow.subtract(prevClose).abs())
+            _trueRangeValuesDI[i] = tr
+        }
+
+        val subListEnd = targetIndex + 1
+
+        // 2. Smooth +DM, -DM, TR (if enough data up to targetIndex)
+        if (targetIndex >= period - 1) {
+             _smoothedPlusDM = SmoothingUtils.wildersSmooth(_plusDMValues.subList(0, subListEnd), period, calculationScale)
+             _smoothedMinusDM = SmoothingUtils.wildersSmooth(_minusDMValues.subList(0, subListEnd), period, calculationScale)
+             _smoothedTRDI = SmoothingUtils.wildersSmooth(_trueRangeValuesDI.subList(0, subListEnd), period, calculationScale)
+        }
+
+        // 3. Calculate +DI, -DI, DX (iterating only over parts that can be calculated now)
+        for (i in startIndex..targetIndex) {
+            if (i >= period - 1) {
+                val sPlusDM = _smoothedPlusDM.getOrNull(i)
+                val sMinusDM = _smoothedMinusDM.getOrNull(i)
+                val sTR = _smoothedTRDI.getOrNull(i)
+
+                val pdi = if (sTR != null && sTR.compareTo(BigDecimal.ZERO) != 0 && sPlusDM != null) {
+                    sPlusDM.multiply(BigDecimal(100)).divide(sTR, calculationScale, java.math.RoundingMode.HALF_UP)
+                } else BigDecimal.ZERO
+                _plusDIValues[i] = pdi
+
+                val mdi = if (sTR != null && sTR.compareTo(BigDecimal.ZERO) != 0 && sMinusDM != null) {
+                    sMinusDM.multiply(BigDecimal(100)).divide(sTR, calculationScale, java.math.RoundingMode.HALF_UP)
+                } else BigDecimal.ZERO
+                _minusDIValues[i] = mdi
+
+                val diSum = pdi.add(mdi)
+                _dxValues[i] = if (diSum.compareTo(BigDecimal.ZERO) != 0) {
+                    (pdi.subtract(mdi)).abs().multiply(BigDecimal(100)).divide(diSum, calculationScale, java.math.RoundingMode.HALF_UP)
+                } else BigDecimal.ZERO
+            }
+        }
+
+        // 4. Smooth DX to get ADX
+        if (targetIndex >= (2 * period - 2)) { // Enough DX values for ADX smoothing
+             _adxSeriesValues = SmoothingUtils.wildersSmooth(_dxValues.subList(0, subListEnd), period, calculationScale)
+        }
+
+        calculatedUpToIndex = targetIndex
+    }
+
+    fun getPlusDI(index: Int): BigDecimal? {
+        if (index < 0 || index >= klineSeries.size) return null
+        ensureCalculatedUpTo(index)
+        return if (index >= period -1) _plusDIValues.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP) else null
+    }
+
+    fun getMinusDI(index: Int): BigDecimal? {
+        if (index < 0 || index >= klineSeries.size) return null
+        ensureCalculatedUpTo(index)
+        return if (index >= period -1) _minusDIValues.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP) else null
+    }
+
+    fun getADX(index: Int): BigDecimal? {
+        if (index < 0 || index >= klineSeries.size) return null
+        ensureCalculatedUpTo(index)
+        return if (index >= (2 * period - 2)) _adxSeriesValues.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP) else null
+    }
+
+    val plusDISeries: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx -> this.getPlusDI(idx) }
+        }
+
+    val minusDISeries: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx -> this.getMinusDI(idx) }
+        }
+
+    val adxValueSeries: Series<BigDecimal?>
+        get() {
+            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                ensureCalculatedUpTo(klineSeries.size - 1)
+            }
+            return klineSeries.size j { idx -> this.getADX(idx) }
+        }
+}
+
 // --- Bot Specific Typealiases ---
 typealias PriceSeries = Series<java.math.BigDecimal?>
 typealias QuantitySeries = Series<java.math.BigDecimal>
@@ -444,6 +923,14 @@ const val CP_TRIGGER_MIN_NEGATIVE_DEV_PERCENT = -0.01
 const val CRASH_PROTECTION_THRESHOLD_INCREASE = 2
 const val CRASH_PROTECTION_PARTIAL_RECOVERY_PERCENT_FACTOR = 0.55 / 0.875
 
+
+// --- Kline Aggregation Constants and State ---
+const val KLINE_INTERVAL_SECONDS = 60 // 1 minute
+const val KLINE_INTERVAL_MS = KLINE_INTERVAL_SECONDS * 1000L
+const val MAX_KLINES_PER_SERIES = 200 // Store up to 200 klines, adjust as needed for indicator periods
+
+val klineSeriesData = mutableMapOf<CurrencyPair, MutableList<Kline>>()
+val currentOpenKlines = mutableMapOf<CurrencyPair, Kline>() // Tracks the currently forming kline
 
 val latestPrices = mutableMapOf<CurrencyPair, Ticker>()
 data class PriceTick(val price: BigDecimal, val timestamp: Long)
@@ -821,6 +1308,64 @@ object ExchangeService {
     }
 }
 
+// --- Kline Aggregation Logic ---
+fun processTickForKlineAggregation(
+    pair: CurrencyPair,
+    price: BigDecimal,
+    timestamp: Long,
+    // Assuming volume per tick is not readily available,
+    // we'll derive kline volume from changes in total traded volume if possible,
+    // or make it a simple count/placeholder if not.
+    // For a robust solution, actual trade data stream is better for volume.
+    // For now, let's use a placeholder volume of 1 per tick that contributes to a kline.
+    tickVolume: BigDecimal = BigDecimal.ONE
+) {
+    val series = klineSeriesData.getOrPut(pair) { mutableListOf() }
+    var currentKline = currentOpenKlines[pair]
+
+    val klineOpenTimeForTick = timestamp - (timestamp % KLINE_INTERVAL_MS)
+
+    if (currentKline == null || klineOpenTimeForTick > currentKline.openTimeMillis) {
+        // Finalize previous kline if it exists
+        if (currentKline != null) {
+            series.add(currentKline)
+            if (series.size > MAX_KLINES_PER_SERIES) {
+                series.removeAt(0) // Keep the list from growing indefinitely
+            }
+        }
+        // Start new kline
+        currentKline = Kline(
+            openTimeMillis = klineOpenTimeForTick,
+            openPrice = price,
+            highPrice = price,
+            lowPrice = price,
+            closePrice = price,
+            volume = tickVolume, // Initial volume for the new kline
+            closeTimeMillis = klineOpenTimeForTick + KLINE_INTERVAL_MS -1 // Tentative close time
+        )
+        mainLoopLogger.debug("New Kline started for $pair: $currentKline")
+    } else {
+        // Update existing kline
+        currentKline = currentKline.copy(
+            highPrice = currentKline.highPrice.max(price),
+            lowPrice = currentKline.lowPrice.min(price),
+            closePrice = price,
+            volume = currentKline.volume.add(tickVolume), // Accumulate volume
+            closeTimeMillis = currentKline.openTimeMillis + KLINE_INTERVAL_MS - 1 // Ensure close time is consistent
+        )
+    }
+    currentOpenKlines[pair] = currentKline
+}
+
+fun getKlineSeriesForPair(pair: CurrencyPair): KlineSeries? {
+    val klines = klineSeriesData[pair] ?: return null
+    if (klines.isEmpty()) return null
+    // Return a read-only copy as a Series for indicators
+    // The Series constructor `size j { accessor }` is from the TrikeShed definition
+    // Ensure 'j' is available in scope.
+    val currentList = klines.toList() // Create a snapshot
+    return currentList.size j { index -> currentList[index] }
+}
 
 // --- Main Function ---
 fun main() = runBlocking {
@@ -929,6 +1474,25 @@ fun main() = runBlocking {
                         val existingHistory = latestPriceInfo[ticker.currencyPair]
                         latestPriceInfo[ticker.currencyPair] = Pair(newPriceTick, existingHistory?.first)
                     }
+
+                    // >>> New Kline Aggregation Call <<<
+                    try {
+                        if (ticker.last != null && ticker.currencyPair != null) {
+                             // Assuming ticker.volume is available and represents volume for this tick/update.
+                             // If not, a placeholder or alternative volume logic is needed.
+                             // XChange Ticker DTO usually has a 'volume' field for the last 24h, not per-tick.
+                             // So, we'll use the default tickVolume = 1 as defined in the function.
+                             processTickForKlineAggregation(
+                                 pair = ticker.currencyPair,
+                                 price = ticker.last,
+                                 timestamp = newPriceTick.timestamp // Use the consistent timestamp
+                                 // tickVolume = ticker.volume ?: BigDecimal.ONE // Use if ticker.volume is meaningful per tick
+                             )
+                        }
+                    } catch (e: Exception) {
+                        mainLoopLogger.error("Error during kline aggregation for $pair: ${e.message}", e)
+                    }
+                    // >>> End of New Kline Aggregation Call <<<
                 }
                 if (subscription != null) {
                     activeSubscriptions[pair] = subscription
