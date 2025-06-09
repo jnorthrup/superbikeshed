@@ -22,6 +22,9 @@ import kotlin.reflect.KClass
 
 /**
  * Interface representing a fundamental Join operation, similar to a Pair but with named `a` and `b` components.
+ *
+ * capture based storage!  don't make a class make 2 getters instead.
+ *
  */
 @JsExport
 interface Join<A, B> {
@@ -31,16 +34,14 @@ interface Join<A, B> {
     operator fun component2(): B = b
     val pair: Pair<A, B> get() = Pair(a, b)
 }
-
 /**
- * A concrete data class implementation of the [Join] interface.
+ * Syntactic sugar for  capture-based cost
  */
-private class _Join<A, B>(override val a: A, override val b: B) : Join<A, B>
+internal inline infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
+    override val a: A get() = this@j
+    override val b: B get() = b
+}
 
-/**
- * Infix operator to create a [Join] instance. This is the primary construction mechanism.
- */
-infix fun <A, B> A.j(b: B): Join<A, B> = _Join(this, b)
 
 /** Accessor for the first element of a [Join]. */
 internal inline val <A, B> Join<A, B>.first: A get() = a
