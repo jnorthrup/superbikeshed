@@ -22,7 +22,13 @@
 		"changeset:version": "cp CHANGELOG.md src/CHANGELOG.md && changeset version && cp -vf src/CHANGELOG.md .",
 		"knip": "knip --include files",
 		"update-contributors": "node scripts/update-contributors.js",
-		"evals": "docker compose -f packages/evals/docker-compose.yml --profile server --profile runner up --build --scale runner=0"
+		"evals": "docker compose -f packages/evals/docker-compose.yml --profile server --profile runner up --build --scale runner=0",
+		"build:kotlin": "gradlew kotlinNpmInstall kotlinUpgradeYarnLock kotlinBrowserProductionWebpack"
+	},
+	"dependencies": {
+		"kotlin": "1.9.22",
+		"kotlinx-coroutines-core": "1.7.3",
+		"kotlinx-serialization-json": "1.6.2"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.27.10",

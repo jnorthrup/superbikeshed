@@ -47,11 +47,22 @@ def any_exceeding_context_length(output_dir, commit_id, instance_ids):
             return True
     return False
 
-def choose_selfimproves(output_dir, archive, selfimprove_size, method='random', run_baseline=None, polyglot=False):
+def choose_selfimproves(output_dir, archive, selfimprove_size, method='random', run_baseline=None, polyglot=False, target_parent_commit=None, target_improvement_entry=None, balance_weight_score=1.0, balance_weight_children=0.5):
     """
     Choose self-improve attempts for the current generation.
     """
     selfimprove_entries = []
+
+    # Handle targeted runs first (Nexus driven)
+    if target_parent_commit and target_improvement_entry:
+        # Ensure the target_parent_commit is valid (exists in archive or is 'initial')
+        if target_parent_commit not in archive and target_parent_commit != 'initial':
+            # Or, if output_dir/target_parent_commit doesn't exist (more robust check)
+            if not os.path.exists(os.path.join(output_dir, target_parent_commit)):
+                print(f"Error: target_parent_commit '{target_parent_commit}' not found in archive or output directory. Cannot proceed with targeted run.")
+                return [] # Return empty list if target parent is invalid
+        print(f"Targeted run: parent_commit='{target_parent_commit}', entry='{target_improvement_entry}'")
+        return [(target_parent_commit, target_improvement_entry)]
 
     # Get parent candidates
     candidates = {}
@@ -65,6 +76,7 @@ def choose_selfimproves(output_dir, archive, selfimprove_size, method='random', 
                 'total_emptypatch_ids': metadata['overall_performance']['total_emptypatch_ids'],
                 'total_resolved_ids': metadata['overall_performance']['total_resolved_ids'],
                 'children_count': 0,
+                'tags': metadata.get('tags', []), # Add tags placeholder
             }
             # update children count, parent should already be in the archive
             if commit != 'initial':
@@ -98,6 +110,29 @@ def choose_selfimproves(output_dir, archive, selfimprove_size, method='random', 
         probabilities = [score * count for score, count in zip(scores, children_counts)]
         probabilities = [prob / sum(probabilities) for prob in probabilities]
         parent_commits = random.choices(commits, probabilities, k=selfimprove_size)
+    elif method == 'balanced_selection':
+        commits = list(candidates.keys())
+        if not commits:
+            return [] # No candidates to choose from
+
+        fitness_scores = []
+        for commit in commits:
+            accuracy_score = candidates[commit]['accuracy_score']
+            children_count = candidates[commit]['children_count']
+            # fitness = (accuracy_score * weight_score) / (1 + children_count * weight_children_count)
+            # Sigmoid for score to keep it in a 0-1 range and amplify differences around 0.5
+            transformed_score = 1 / (1 + math.exp(-10 * (accuracy_score - 0.5)))
+            fitness = (transformed_score * balance_weight_score) / (1 + children_count * balance_weight_children)
+            fitness_scores.append(fitness)
+
+        if sum(fitness_scores) == 0: # Avoid division by zero if all fitness scores are 0
+             probabilities = [1/len(fitness_scores)] * len(fitness_scores) # Uniform probability
+        else:
+            probabilities = [f_score / sum(fitness_scores) for f_score in fitness_scores]
+
+        print(f"Balanced selection probabilities: {list(zip(commits, probabilities))}")
+        parent_commits = random.choices(commits, probabilities, k=selfimprove_size)
+
     elif method == 'best':
         # Choose parents with the best score
         sorted_commits = sorted(candidates, key=lambda x: candidates[x]['accuracy_score'])
@@ -225,9 +260,11 @@ def main():
     parser.add_argument("--selfimprove_workers", type=int, default=2, help="Number of parallel workers for self-improvement attempts.")
     parser.add_argument(
         "--choose_selfimproves_method", type=str, default='score_child_prop',
-        choices=['random', 'score_prop', 'score_child_prop' 'best'],
+        choices=['random', 'score_prop', 'score_child_prop', 'best', 'balanced_selection'],
         help="Method to choose self-improve attempts.",
     )
+    parser.add_argument("--balance_weight_score", type=float, default=1.0, help="Weight for score in balanced_selection.")
+    parser.add_argument("--balance_weight_children", type=float, default=0.5, help="Weight for penalizing children count in balanced_selection.")
     parser.add_argument("--continue_from", type=str, default=None, help="Directory to continue the run from.")
     parser.add_argument("--update_archive", type=str, default='keep_all', choices=['keep_better', 'keep_all'], help="Method to update the archive.")
     # self-improve arguments
@@ -270,12 +307,16 @@ def main():
     for gen_num in range(start_gen_num, args.max_generation):
         # Choose self-improve attempts
         selfimprove_entries = choose_selfimproves(
-            output_dir, archive, args.selfimprove_size,
+            output_dir, archive, current_selfimprove_size, # Use current_selfimprove_size
             method=args.choose_selfimproves_method,
             run_baseline=args.run_baseline,
             polyglot=args.polyglot,
+            target_parent_commit=args.target_parent_commit, # Pass through Nexus args
+            target_improvement_entry=args.target_improvement_entry,
+            balance_weight_score=args.balance_weight_score, # Pass through new balance weights
+            balance_weight_children=args.balance_weight_children
         )
-        logger.info(f"Self-improve entries for generation {gen_num}: {selfimprove_entries}")
+        logger.info(f"{log_prefix}Self-improve entries for generation {gen_num}: {selfimprove_entries}")
 
         # Run self-improvement processes
         selfimprove_ids = []
