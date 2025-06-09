@@ -31,7 +31,7 @@ class CowSeriesHandle<T>(
     var observer: ((Twin<SeriesData<T>>) -> Unit)? = null, // Changed Series<T> to SeriesData<T>
     var versionObserver: ((Twin<Long?>) -> Unit)? = null,
 
-    ) : MutableSeries<T> { // MutableSeries<T> extends borg.trikeshed.lib.Series<T> (alias to core.Series<T>)
+    ) { // REMOVED MutableSeries<T>
 
     var letter: COWSeriesBody<T> by Delegates.observable(letter1) { _, old, new ->
         // old and new are COWSeriesBody. As COWSeriesBody itself will provide SeriesData via its 'backing'
@@ -47,62 +47,67 @@ class CowSeriesHandle<T>(
         observer?.invoke(old.asSeriesData() j new.asSeriesData())
     }
 
-    // Implementation of Series<T> from MutableSeries<T>
-    override val size: Int get() = letter.size // Delegates to COWSeriesBody's size
-    override operator fun get(index: Int): T = letter[index] // Delegates to COWSeriesBody's get
+    // Became direct members of CowSeriesHandle after removing MutableSeries<T>
+    val size: Int get() = letter.size // Delegates to COWSeriesBody's size
+    operator fun get(index: Int): T = letter[index] // Delegates to COWSeriesBody's get
 
-    // Implementation of MutableSeries<T> methods
-    override fun set(index: Int, item: T) {
+    // Became direct members of CowSeriesHandle
+    fun set(index: Int, item: T) {
         letter = letter.set(index, item) // COWSeriesBody.set returns a new COWSeriesBody
     }
 
-    override fun add(item: T) {
+    fun add(item: T) {
         letter = letter.append(item) // COWSeriesBody.append returns a new COWSeriesBody
     }
 
-    override fun add(index: Int, item: T) {
+    fun add(index: Int, item: T) {
         letter = letter.insert(index, item) // COWSeriesBody.insert returns a new COWSeriesBody
     }
 
-    override fun removeAt(index: Int): T {
+    fun removeAt(index: Int): T {
         val item = letter[index] // Use new get
         letter = letter.removeAt(index) // COWSeriesBody.removeAt returns a new COWSeriesBody
         return item
     }
 
-    override fun remove(item: T): Boolean {
-        // letter.backing is now Pair. Need to iterate it to find index.
-        // This is inefficient. COWSeriesBody should provide an indexOf or contains method.
-        // For now, convert to list to find index.
-        val currentList = List(letter.size) { letter[it] }
-        val i = currentList.indexOf(item)
-        if (i != -1) {
-            letter = letter.removeAt(i) // COWSeriesBody.removeAt
+    fun remove(item: T): Boolean {
+        var indexToRemove = -1
+        // letter is COWSeriesBody, which implements Series<T> via get/size
+        for (i in 0 until letter.size) {
+            if (letter[i] == item) {
+                indexToRemove = i
+                break
+            }
+        }
+        if (indexToRemove != -1) {
+            letter = letter.removeAt(indexToRemove) // This calls COWSeriesBody.removeAt
             return true
         }
         return false
     }
 
-    override fun clear() {
+    fun clear() {
         letter = letter.clear() // COWSeriesBody.clear returns a new COWSeriesBody
     }
 
     // Note: Standard MutableCollection operators like plus/minus typically return new collections,
-    // not modify in place and return this. This might be a custom interpretation in MutableSeries.
-    override fun plus(item: T): MutableSeries<T> {
-        letter = letter.append(item); return this // Assuming this behavior is intended for MutableSeries
+    // not modify in place and return this.
+    // Changed return type from MutableSeries<T> to CowSeriesHandle<T>
+    fun plus(item: T): CowSeriesHandle<T> {
+        letter = letter.append(item); return this
     }
 
-    override fun minus(item: T): MutableSeries<T> {
+    // Changed return type from MutableSeries<T> to CowSeriesHandle<T>
+    fun minus(item: T): CowSeriesHandle<T> {
         // remove() in COWSeriesBody returns a new COWSeriesBody, so this assignment is correct.
-        letter = letter.remove(item); return this  // Assuming this behavior is intended for MutableSeries
+        letter = letter.remove(item); return this
     }
 
-    override fun plusAssign(item: T) {
+    fun plusAssign(item: T) {
         letter = letter.append(item) // COWSeriesBody.append returns a new COWSeriesBody
     }
 
-    override fun minusAssign(item: T) {
+    fun minusAssign(item: T) {
         letter = letter.remove(item) // COWSeriesBody.remove returns a new COWSeriesBody
     }
 
@@ -146,16 +151,24 @@ class COWSeriesBody<T>(
 
     /** create a new copy of this, with the given item appended */
     fun append(item: T): COWSeriesBody<T> {
-        // Reconstruct as a list, append, then convert back to SeriesData
-        val newList = List(size) { this[it] } + item
-        return copy(backing = newList.size j newList::get)
+        val newSize = size + 1
+        // newBacking defines how to access elements: original ones or the new item at the end
+        val newBacking: SeriesData<T> = newSize j { idx ->
+            if (idx < size) this[idx] else item
+        }
+        return copy(backing = newBacking) // version will be incremented by copy
     }
 
     /** create a new copy of this, with the given item removed */
     fun remove(item: T): COWSeriesBody<T> {
-        val currentList = List(size) { this[it] }
-        val i = currentList.indexOf(item)
-        return if (i != -1) removeAt(i) else this
+        var indexToRemove = -1
+        for (i in 0 until size) { // Iterate directly on SeriesData via 'this' (COWSeriesBody's get)
+            if (this[i] == item) {
+                indexToRemove = i
+                break
+            }
+        }
+        return if (indexToRemove != -1) removeAt(indexToRemove) else this
     }
 
     fun insert(index: Int, item: T): COWSeriesBody<T> {

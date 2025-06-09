@@ -29,8 +29,12 @@ import borg.trikeshed.lib.size
 import borg.trikeshed.lib.take
 import borg.trikeshed.lib.trim
 import borg.trikeshed.lib.zipWithNext
-import borg.trikeshed.lib.MutableSeries
-import borg.trikeshed.lib.mutableSeriesOf
+// Removed MutableSeries and mutableSeriesOf imports
+// import borg.trikeshed.lib.MutableSeries
+// import borg.trikeshed.lib.mutableSeriesOf
+import borg.trikeshed.core.emptySeries // Ensure core imports if not covered by lib
+import borg.trikeshed.core.toSeries // Ensure core imports if not covered by lib
+
 
 // Type aliases for clarity and expressiveness
 typealias JsonBounds = Twin<Int> // (openIdx j closeIdx)
@@ -78,20 +82,19 @@ object JsonParser {
     /** includes open and close braces and provides a list of comma indexes*/
     fun index(
         src: Series<Char>,
-        /** depths is passed in for the purpose of queries being able to skip a slot if it is too shallow;
-         * format is _a[1,1,2,] where any valid segment is at least 1.
-         * */
-        depths: MutableSeries<Int>? = null,
+        /** depths parameter removed for this refactoring iteration.
+         * depths: MutableSeries<Int>? = null,
+         */
         /*  * an optional int that gives you n commas max, presuming undefined null bias in the last comma */
         takeFirst: Int? = null,
     ): JsonStructuralIndices {
         var depth = 0
         var openIdx = -1
         var closeIdx = -1
-        val commaIdxs: MutableSeries<Int> = mutableSeriesOf()
+        val tempCommaIdxs = mutableListOf<Int>() // Changed from MutableSeries to MutableList
         var insideQuote = false
         var escapeNextChar = false
-        var maxDepth = 0
+        var maxDepth = 0 // Retained for depth calculation, but not added to any collection in this func
         for (i in 0 until src.size) {
             val c: Char = src[i]
             when {
@@ -110,8 +113,7 @@ object JsonParser {
                     }
 
                     '}', ']' -> {
-                        if (depth == 1) depths?.add(maxDepth)
-
+                        // if (depth == 1) depths?.add(maxDepth) // depths related logic removed
                         depth--
                         if (depth == 0) {
                             closeIdx = i
@@ -120,19 +122,19 @@ object JsonParser {
                     }
 
                     ',' -> if (depth == 1) {
-                        commaIdxs.add(i)
+                        tempCommaIdxs.add(i) // Changed from commaIdxs.add(i)
 
                         //record and reset maxDepth
-                        depths?.add(maxDepth)
-                        maxDepth = 0
-                        if (takeFirst != null && commaIdxs.size >= takeFirst) break
+                        // depths?.add(maxDepth) // depths related logic removed
+                        maxDepth = 0 // maxDepth reset retained for correct depth calculation if needed later
+                        if (takeFirst != null && tempCommaIdxs.size >= takeFirst) break // Used tempCommaIdxs
                     }
 
                     '"' -> insideQuote = true
                 }
             }
         }
-        return (openIdx j closeIdx) j commaIdxs.toIntArray().toSeries()
+        return (openIdx j closeIdx) j tempCommaIdxs.toSeries() // Convert temp list to Series
 
 
     }
@@ -281,14 +283,14 @@ object JsonParser {
             if (reifyResult) reify(tmp.slice) else tmp.slice
 
         } else {
-            val depths1: MutableSeries<Int> = mutableSeriesOf()
-
+            // val depths1: MutableSeries<Int> = mutableSeriesOf() // Removed depths1
             val nextPath = pathTail.take(1).first()
             jsPath(
-                index(tmp, depths1, nextPath.rightOrNull?.inc()) j tmp,
+                // index no longer takes depths1. Pass null for depths in jsPath call.
+                index(tmp, takeFirst = nextPath.rightOrNull?.inc()) j tmp,
                 pathTail,
                 reifyResult,
-                depths1
+                null // depths argument to jsPath is now null
             )
         }
     }
