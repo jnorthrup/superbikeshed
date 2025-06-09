@@ -8,6 +8,7 @@ import borg.trikeshed.lib.FileSize
 import borg.trikeshed.lib.BufferSize
 import borg.trikeshed.lib.FileMode
 import borg.trikeshed.lib.Join // For streamLines return type
+import borg.trikeshed.lib.Series
 
 // Key for accessing the FileSystemService in a CoroutineContext
 object FileSystemServiceKey : CoroutineContext.Key<FileSystemService>
@@ -26,7 +27,7 @@ interface FileSystemService : CoroutineContext.Element {
     suspend fun readAllBytes(path: FilePath): ByteArray
 
     /** Reads all lines from a file. Throws exception if file not found or not readable. */
-    suspend fun readAllLines(path: FilePath): List<String>
+    suspend fun readAllLines(path: FilePath): Series<String>
 
     /** Reads the entire file content as a single String. */
     suspend fun readString(path: FilePath): String
@@ -35,7 +36,7 @@ interface FileSystemService : CoroutineContext.Element {
     suspend fun writeAllBytes(path: FilePath, bytes: ByteArray)
 
     /** Writes a list of strings as lines to a file, overwriting if it exists, creating if not. */
-    suspend fun writeLines(path: FilePath, lines: List<String>)
+    suspend fun writeLines(path: FilePath, lines: Series<String>)
 
     /** Writes a string to a file, overwriting if it exists, creating if not. */
     suspend fun writeString(path: FilePath, content: String)

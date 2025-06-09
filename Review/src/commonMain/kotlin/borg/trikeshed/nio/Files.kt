@@ -9,11 +9,11 @@ import borg.trikeshed.lib.FileOffset
 
 /** not unlike nio.Files */
 expect object Files {
-    fun readAllLines(filePath: FilePath): List<String>
+    fun readAllLines(filePath: FilePath): Series<String>
     fun readAllBytes(filePath: FilePath): ByteArray
     fun readString(filePath: FilePath): String
     fun write(filePath: FilePath, bytes: ByteArray)
-    fun write(filePath: FilePath, lines: List<String>)
+    fun write(filePath: FilePath, lines: Series<String>)
     fun write(filePath: FilePath, string: String)
     fun cwd(): DirectoryPath
     fun exists(filePath: FilePath): Boolean

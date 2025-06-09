@@ -5,13 +5,17 @@ import borg.trikeshed.lib.Series
 import kotlinx.cinterop.*
 import platform.posix.*
 import simple.PosixFile
+import borg.trikeshed.lib.FileOffset // Assuming FileOffset is a value class/type here
+import borg.trikeshed.lib.BufferSize // Assuming BufferSize is a value class/type here
+import borg.trikeshed.lib.`▶`
+
 
 actual object Files {
-    actual fun readAllLines(filename: String): List<String> = readLines(filename)
+    actual fun readAllLines(filename: String): Series<String> = readLines(filename) // readLines from borg.trikeshed.io now returns Series<String>
     actual fun readAllBytes(filename: String): ByteArray = simple.PosixFile.readAllBytes(filename)
     actual fun readString(filename: String): String = simple.PosixFile.readString(filename)
     actual fun write(filename: String, bytes: ByteArray): Unit = simple.PosixFile.writeBytes(filename, bytes).let { }
-    actual fun write(filename: String, lines: List<String>): Unit = simple.PosixFile.writeLines(filename, lines)
+    actual fun write(filename: String, lines: Series<String>): Unit = simple.PosixFile.writeLines(filename, lines.`▶`.toList())
     actual fun write(filename: String, string: String): Unit = simple.PosixFile.writeString(filename, string).let { }
 
     /**cinterop to get cwd from posix */
@@ -27,15 +31,15 @@ actual object Files {
     /** read offsets and lines accompanying*/
     actual fun streamLines(
         fileName: String,
-        bufsize: Int,
-    ): Sequence<Join<Long, ByteArray>> = sequence {
+        bufsize: Int, // TODO: Should be BufferSize if aligning with FileSystemService
+    ): Sequence<Join<FileOffset, ByteArray>> = sequence { // Changed Long to FileOffset
         val file = simple.PosixFile(fileName)
         val fp = fdopen(file.fd, "r")
         val line: CPointerVarOf<CPointer<ByteVarOf<Byte>>> = alloc()
         val len: ULongVarOf<size_t> = alloc()
         len.value = 0u
         var read: ssize_t
-        var offset = 0L
+        var currentOffset = 0L // Renamed for clarity
 
         while (true) {
             read = getline(line.ptr, len.ptr, fp)
@@ -44,8 +48,8 @@ actual object Files {
             for (i in 0 until read.toInt()) {
                 lineBytes[i] = line.value!![i]
             }
-            yield(Join(offset, lineBytes))
-            offset += read
+            yield(Join(FileOffset(currentOffset), lineBytes)) // Wrap in FileOffset
+            currentOffset += read
         }
 
         free(line.value)
