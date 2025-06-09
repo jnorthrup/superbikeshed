@@ -569,3 +569,32 @@ internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = {
     val (s) = shape
     //onw the tensor is the shorter shape
 }
+
+// --- GitRepoIndexer Integration ---
+
+/**
+ * Loads and indexes a Git repository using GitRepoIndexer.
+ *
+ * @param repoPath The file system path to the Git repository (e.g., "/path/to/myrepo" or "/path/to/myrepo/.git").
+ * @return A GitRepoIndexer instance with the indexed data, or null if indexing failed or the repo was empty.
+ */
+@JsExport // If this function should be accessible from JavaScript
+fun loadGitIndex(repoPath: String): GitRepoIndexer? {
+    val indexer = GitRepoIndexer()
+    try {
+        println("Attempting to index Git repository at: $repoPath")
+        indexer.indexRepo(repoPath)
+
+        // indexRepo logs errors internally. If it completes, we consider it "successful" for now.
+        // The consumer can check the contents of the index (e.g., indexer.getAllObjects().isEmpty())
+        // to determine if the repository was empty or if specific data was found.
+        // A more advanced error handling might involve indexRepo throwing specific exceptions
+        // or returning a status object.
+        println("GitRepoIndexer.indexRepo completed for $repoPath. Objects indexed: ${indexer.getAllObjects().size}")
+        return indexer
+    } catch (e: Exception) {
+        println("Failed to load or index Git repository at '$repoPath': ${e.message}")
+        e.printStackTrace() // Log the full stack trace for debugging
+        return null
+    }
+}
