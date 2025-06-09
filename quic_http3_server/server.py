@@ -2,7 +2,7 @@ import asyncio
 import os
 from pathlib import Path
 import ssl
-from typing import Dict, Optional, Union, cast, Any
+from typing import Dict, Optional, Union, cast, Any, List, Tuple # Added List, Tuple
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -13,6 +13,11 @@ from aioquic.h3.connection import H3_ALPN, H3Connection
 from aioquic.h3.events import DataReceived, H3Event, HeadersReceived
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
+
+# Import new core types
+from .core_types import HttpMethod, HttpPath, HttpHeaderKey, HttpHeaderValue, HttpHeaders, HttpStatusCode, ParsedHttpRequest, ServerHttpResponse, HttpBody # Added HttpBody
+from .app_router import ApplicationRouter # Import ApplicationRouter
+import functools # Import functools
 
 CERT_FILE = "cert.pem"
 KEY_FILE = "key.pem"
@@ -71,70 +76,34 @@ def generate_self_signed_cert(cert_path_str: str, key_path_str: str):
         f.write(certificate.public_bytes(serialization.Encoding.PEM))
     print(f"Certificate saved to {cert_path_str}")
 
-
-class HttpRequest:
-    def __init__(self, method: str, path: str, headers: Dict[str, str]):
-        self.method = method
-        self.path = path
-        self.headers = headers
-        self.body: bytes = b""
-
-class HttpResponse:
-    def __init__(self, status_code: int, headers: Optional[Dict[str, str]] = None, body: bytes = b""):
-        self.status_code = status_code
-        self.headers = headers if headers is not None else {}
-        self.body = body
+# Old HttpRequest and HttpResponse classes are removed as per instructions.
 
 class Http3ServerProtocol(QuicConnectionProtocol):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, app_router: ApplicationRouter, **kwargs): # Added app_router
         super().__init__(*args, **kwargs)
         self._http: Optional[H3Connection] = None
-        self._active_streams: Dict[int, HttpRequest] = {}
-        self._routes = {
-            "/": {
-                "GET": self._handle_get_root,
-                "POST": self._handle_post_root,
-                "PUT": self._handle_put_root,
-                "DELETE": self._handle_delete_root,
-            }
-        }
+        self._active_streams: Dict[int, ParsedHttpRequest] = {} # Updated type hint
+        self.app_router = app_router # Store app_router
+        # _routes dictionary and handler methods are removed
 
-    def _handle_get_root(self, stream_id: int, request: HttpRequest) -> None:
-        print(f"Handling GET for /: Headers: {request.headers}")
-        response = HttpResponse(status_code=200, headers={"content-type": "text/plain"}, body=b"Hello HTTP/3 from aioquic server!")
+    async def _process_request(self, stream_id: int, request: ParsedHttpRequest) -> None: # Made async
+        print(f"H3 Protocol: Processing request for stream {stream_id}: {request.method.value} {request.path}")
+        try:
+            response = await self.app_router.route_request(request)
+        except Exception as e:
+            # Log error, create a 500 response
+            print(f"H3 Protocol: Error routing request for stream {stream_id}: {e}")
+            response = ServerHttpResponse(
+                status_code=HttpStatusCode(500),
+                headers=HttpHeaders([(HttpHeaderKey("Content-Type"), HttpHeaderValue("text/plain; charset=utf-8"))]),
+                body=HttpBody(b"Internal Server Error")
+            )
+
         self._send_response(stream_id, response)
 
-    def _handle_post_root(self, stream_id: int, request: HttpRequest) -> None:
-        print(f"Handling POST for /: Headers: {request.headers}, Body: {request.body.decode()}")
-        response = HttpResponse(status_code=201, headers={"content-type": "text/plain"}, body=b"Resource created.")
-        self._send_response(stream_id, response)
-
-    def _handle_put_root(self, stream_id: int, request: HttpRequest) -> None:
-        print(f"Handling PUT for /: Headers: {request.headers}, Body: {request.body.decode()}")
-        response = HttpResponse(status_code=200, headers={"content-type": "text/plain"}, body=b"Resource updated.")
-        self._send_response(stream_id, response)
-
-    def _handle_delete_root(self, stream_id: int, request: HttpRequest) -> None:
-        print(f"Handling DELETE for /: Headers: {request.headers}")
-        response = HttpResponse(status_code=200, headers={"content-type": "text/plain"}, body=b"Resource deleted.")
-        self._send_response(stream_id, response)
-
-    def _process_request(self, stream_id: int, request: HttpRequest) -> None:
-        print(f"Processing request: {request.method} {request.path}")
-        if request.path in self._routes:
-            path_handlers = self._routes[request.path]
-            if request.method in path_handlers:
-                handler = path_handlers[request.method]
-                handler(stream_id, request)
-            else:
-                response = HttpResponse(status_code=405, headers={"content-type": "text/plain"}, body=b"Method Not Allowed")
-                self._send_response(stream_id, response)
-        else:
-            response = HttpResponse(status_code=404, headers={"content-type": "text/plain"}, body=b"Not Found")
-            self._send_response(stream_id, response)
-
+        # Clean up from _active_streams (if stream_id was added there by _h3_event_received)
         if stream_id in self._active_streams:
-            del self._active_streams[stream_id] # Clean up
+            del self._active_streams[stream_id]
 
     def quic_event_received(self, event: QuicEvent) -> None:
         if isinstance(event, H3Event):
@@ -144,50 +113,72 @@ class Http3ServerProtocol(QuicConnectionProtocol):
             for h3_event in self._http.handle_event(event):
                 self._h3_event_received(h3_event)
 
-    def _send_response(self, stream_id: int, response: HttpResponse) -> None:
-        response_headers = [
-            (b":status", str(response.status_code).encode()),
-            (b"server", b"aioquic-h3"),
-        ]
-        if response.headers:
-            for k, v in response.headers.items():
-                response_headers.append((k.encode(), v.encode()))
+    def _send_response(self, stream_id: int, response: ServerHttpResponse) -> None: # Updated signature
+        aioquic_resp_headers: List[Tuple[bytes, bytes]] = [(b":status", str(response.status_code).encode('utf-8'))]
+        # Add a server header for identification
+        aioquic_resp_headers.append((b"server", b"aioquic-h3-refactored")) # Corrected: direct bytes tuple
 
-        self._http.send_headers(stream_id=stream_id, headers=response_headers)
-        self._http.send_data(stream_id=stream_id, data=response.body, end_stream=True)
+        for key_str, val_str in response.headers:
+            aioquic_resp_headers.append((key_str.encode('utf-8'), val_str.encode('utf-8')))
+
+        self._http.send_headers(stream_id=stream_id, headers=aioquic_resp_headers)
+        if response.body: # Check if there is a body to send
+            self._http.send_data(stream_id=stream_id, data=response.body, end_stream=True)
+        else: # If no body, end stream with headers
+            self._http.send_data(stream_id=stream_id, data=b'', end_stream=True)
         print(f"Sent response for stream {stream_id} with status {response.status_code}")
 
     def _h3_event_received(self, event: H3Event) -> None:
         if isinstance(event, HeadersReceived):
-            headers_dict = {k.decode(): v.decode() for k, v in event.headers}
-            method = headers_dict.get(":method")
-            path = headers_dict.get(":path")
+            method_str: Optional[str] = None
+            path_str: Optional[str] = None
+            received_headers = HttpHeaders([])
 
-            if not method or not path:
-                # Malformed request, consider sending a 400 Bad Request
-                print(f"Malformed request on stream {event.stream_id}: Missing :method or :path")
-                # Potentially send a 400 response here, but _send_response needs a stream_id
-                # and an HttpResponse object. This case needs careful handling.
+            for k_bytes, v_bytes in event.headers:
+                k_str = k_bytes.decode('utf-8')
+                v_str = v_bytes.decode('utf-8')
+                received_headers.append((HttpHeaderKey(k_str), HttpHeaderValue(v_str)))
+                if k_str == ":method":
+                    method_str = v_str
+                if k_str == ":path":
+                    path_str = v_str
+
+            if method_str is None or path_str is None:
+                print(f"Malformed H3 request on stream {event.stream_id}: :method or :path pseudo-header missing.")
+                # Consider sending a 400 Bad Request response
+                # For now, just return to avoid processing a bad request
                 return
 
-            request = HttpRequest(method=method, path=path, headers=headers_dict)
+            try:
+                http_method = HttpMethod.from_string(method_str)
+            except ValueError as e:
+                print(f"Unsupported HTTP method '{method_str}' on stream {event.stream_id}: {e}")
+                # Optionally send 405 Method Not Allowed or 501 Not Implemented
+                # For now, just return
+                # Example for sending 405:
+                # error_response = ServerHttpResponse(status_code=HttpStatusCode(405), body=HttpBody(f"Method {method_str} Not Allowed".encode()))
+                # self._send_response(event.stream_id, error_response)
+                return
+
+            http_path = HttpPath(path_str)
+            request = ParsedHttpRequest(method=http_method, path=http_path, headers=received_headers)
             self._active_streams[event.stream_id] = request
 
-            print(f"Received headers for stream {event.stream_id}: {method} {path}")
+            print(f"Received headers for stream {event.stream_id}: {http_method.value} {http_path}")
 
-            if event.stream_ended: # e.g., GET request with no body
-                self._process_request(event.stream_id, request)
+            if event.stream_ended:  # e.g., GET request with no body
+                asyncio.create_task(self._process_request(event.stream_id, request)) # Schedule as task
 
         elif isinstance(event, DataReceived):
             if event.stream_id in self._active_streams:
                 request = self._active_streams[event.stream_id]
-                request.body += event.data
+                # Assuming body is bytes, directly append. HttpBody is NewType for bytes.
+                request.body = HttpBody(request.body + event.data) # type: ignore
                 print(f"Received data for stream {event.stream_id}, size: {len(event.data)}, total body size: {len(request.body)}")
 
                 if event.stream_ended:
-                    self._process_request(event.stream_id, request)
+                    asyncio.create_task(self._process_request(event.stream_id, request)) # Schedule as task
             else:
-                # This case should ideally not happen if HeadersReceived is always processed first
                 print(f"Warning: DataReceived for unknown stream {event.stream_id}")
 
 
@@ -196,6 +187,8 @@ async def main(
     port: int = SERVER_PORT,
     configuration: Optional[QuicConfiguration] = None,
 ) -> None:
+    router = ApplicationRouter() # Create ApplicationRouter instance
+
     if configuration is None:
         configuration = QuicConfiguration(
             alpn_protocols=H3_ALPN, is_client=False
@@ -209,12 +202,14 @@ async def main(
     generate_self_signed_cert(str(cert_path), str(key_path))
     configuration.load_cert_chain(cert_path, key_path)
 
+    protocol_factory = functools.partial(Http3ServerProtocol, app_router=router)
+
     print(f"Starting QUIC HTTP/3 server on {host}:{port}")
     await serve(
         host,
         port,
         configuration=configuration,
-        create_protocol=Http3ServerProtocol,
+        create_protocol=protocol_factory, # Use partial to pass router
     )
     print(f"Server listening on {host}:{port}. Press Ctrl+C to stop.")
     await asyncio.Future()  # Run forever

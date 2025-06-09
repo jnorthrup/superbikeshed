@@ -2,8 +2,12 @@ import unittest
 from unittest.mock import MagicMock, call
 
 from aioquic.h3.events import DataReceived, HeadersReceived, H3Event
-# Assuming server.py is in the same directory or accessible via PYTHONPATH
-from server import Http3ServerProtocol, HttpRequest, HttpResponse
+# Updated imports
+from server import Http3ServerProtocol
+from .core_types import (
+    HttpMethod, HttpPath, HttpHeaderKey, HttpHeaderValue, HttpHeaders,
+    HttpStatusCode, ParsedHttpRequest, ServerHttpResponse
+)
 
 # Dummy QuicConnection for protocol initialization
 class DummyQuicConnection:
@@ -42,30 +46,32 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         event = DataReceived(stream_id=stream_id, data=data, stream_ended=stream_ended, flow_id=None) # flow_id deprecated
         return event
 
-    def assert_response_sent(self, stream_id: int, status_code: int, expected_headers: dict, expected_body: bytes):
+    def assert_response_sent(self, stream_id: int, status_code: HttpStatusCode, expected_custom_headers: HttpHeaders, expected_body: bytes):
         # Check headers
-        expected_h3_headers = [(b":status", str(status_code).encode()), (b"server", b"aioquic-h3")]
-        for k, v in expected_headers.items():
-            expected_h3_headers.append((k.encode(), v.encode()))
+        expected_aioquic_headers = [
+            (b":status", str(status_code).encode('utf-8')),
+            (b"server", b"aioquic-h3-refactored") # Updated server name
+        ]
+        for k_str, v_str in expected_custom_headers:
+            expected_aioquic_headers.append((k_str.encode('utf-8'), v_str.encode('utf-8')))
 
-        self.mock_http.send_headers.assert_any_call(stream_id=stream_id, headers=expected_h3_headers)
+        self.mock_http.send_headers.assert_any_call(stream_id=stream_id, headers=expected_aioquic_headers)
 
         # Check body
-        if expected_body is not None: # Allow for no body check if None
-            self.mock_http.send_data.assert_any_call(stream_id=stream_id, data=expected_body, end_stream=True)
-        else: # Ensure send_headers was called with end_stream=True if no body
-             self.mock_http.send_headers.assert_any_call(stream_id=stream_id, headers=expected_h3_headers)
+        # The refactored server.py _send_response now always calls send_data,
+        # with data=b'' if the response body is empty.
+        self.mock_http.send_data.assert_any_call(stream_id=stream_id, data=expected_body, end_stream=True)
 
 
     def test_get_root(self):
         stream_id = 1
         event = self._create_headers_event(stream_id, [(b":method", b"GET"), (b":path", b"/")], stream_ended=True)
-
-        # Simulate H3Connection.handle_event yielding our event
-        # For unit testing _h3_event_received, we can call it directly.
         self.protocol._h3_event_received(event)
 
-        self.assert_response_sent(stream_id, 200, {"content-type": "text/plain"}, b"Hello HTTP/3 from aioquic server!")
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(200), custom_headers, b"Hello HTTP/3 from refactored server!")
 
     def test_post_root(self):
         stream_id = 2
@@ -75,9 +81,10 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         self.protocol._h3_event_received(headers_event)
         self.protocol._h3_event_received(data_event)
 
-        self.assert_response_sent(stream_id, 201, {"content-type": "text/plain"}, b"Resource created.")
-        # Check if request body was logged (by checking print output or if we stored it on HttpRequest)
-        # For now, we assume the print in the actual code is sufficient for "logging" in this context.
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(201), custom_headers, b"Resource created.")
 
     def test_put_root(self):
         stream_id = 3
@@ -87,42 +94,51 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         self.protocol._h3_event_received(headers_event)
         self.protocol._h3_event_received(data_event)
 
-        self.assert_response_sent(stream_id, 200, {"content-type": "text/plain"}, b"Resource updated.")
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(200), custom_headers, b"Resource updated.")
 
     def test_delete_root(self):
         stream_id = 4
         event = self._create_headers_event(stream_id, [(b":method", b"DELETE"), (b":path", b"/")], stream_ended=True)
-
         self.protocol._h3_event_received(event)
 
-        self.assert_response_sent(stream_id, 200, {"content-type": "text/plain"}, b"Resource deleted.")
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(200), custom_headers, b"Resource deleted.")
 
     def test_not_found(self):
         stream_id = 5
         event = self._create_headers_event(stream_id, [(b":method", b"GET"), (b":path", b"/unknown")], stream_ended=True)
-
         self.protocol._h3_event_received(event)
 
-        self.assert_response_sent(stream_id, 404, {"content-type": "text/plain"}, b"Not Found")
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(404), custom_headers, b"Not Found")
 
     def test_method_not_allowed(self):
         stream_id = 6
+        # Using "PATCH" which is a valid HttpMethod but not configured in server routes for "/"
         event = self._create_headers_event(stream_id, [(b":method", b"PATCH"), (b":path", b"/")], stream_ended=True)
-
         self.protocol._h3_event_received(event)
 
-        self.assert_response_sent(stream_id, 405, {"content-type": "text/plain"}, b"Method Not Allowed")
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(405), custom_headers, b"Method Not Allowed")
 
     def test_request_body_accumulation(self):
         stream_id = 7
         headers_event = self._create_headers_event(stream_id, [(b":method", b"POST"), (b":path", b"/")])
 
-        self.protocol._h3_event_received(headers_event) # Creates entry in _active_streams
+        self.protocol._h3_event_received(headers_event)
 
-        # Check if HttpRequest object was created
         self.assertIn(stream_id, self.protocol._active_streams)
         request_obj = self.protocol._active_streams[stream_id]
-        self.assertEqual(request_obj.body, b"")
+        self.assertEqual(request_obj.body, b"") # HttpBody is NewType('HttpBody', bytes)
 
         data_event1 = self._create_data_event(stream_id, b"Part1", stream_ended=False)
         self.protocol._h3_event_received(data_event1)
@@ -130,11 +146,13 @@ class TestHttp3ServerProtocol(unittest.TestCase):
 
         data_event2 = self._create_data_event(stream_id, b"Part2", stream_ended=True)
         self.protocol._h3_event_received(data_event2)
-        self.assertEqual(request_obj.body, b"Part1Part2") # Body fully accumulated before handler is called
+        self.assertEqual(request_obj.body, b"Part1Part2")
 
-        # Handler is called when stream_ended=True for DataReceived
-        self.assert_response_sent(stream_id, 201, {"content-type": "text/plain"}, b"Resource created.")
-        self.assertNotIn(stream_id, self.protocol._active_streams) # Check cleanup
+        custom_headers = HttpHeaders([
+            (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
+        ])
+        self.assert_response_sent(stream_id, HttpStatusCode(201), custom_headers, b"Resource created.")
+        self.assertNotIn(stream_id, self.protocol._active_streams)
 
 
 if __name__ == "__main__":
