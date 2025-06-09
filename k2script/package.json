@@ -1,25 +1,28 @@
 {
-  "name": "kscript",
-  "version": "4.2.3",
-  "description": "KScript - easy scripting with Kotlin",
-  "author": "Holger Brandl, Marcin Kuszczak",
+  "name": "k2script",
+  "version": "1.0.0", 
+  "description": "K2script - Enhanced Kotlin 2.x scripting",
+  "author": "K2script Team",
   "license": "MIT",
-  "homepage": "https://github.com/kscripting/kscript",
+  "homepage": "https://github.com/k2scripting/k2script",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kscripting/kscript.git"
+    "url": "git+https://github.com/k2scripting/k2script.git"
   },
   "keywords": [
     "kotlin",
     "scripting",
-    "kscript"
+    "k2script",
+    "kotlin2",
+    "ai",
+    "llm"
   ],
   "bin": {
-    "kscript": "./wrappers/kscript_js_wrapper.js"
+    "k2script": "./wrappers/k2script_js_wrapper.js"
   },
   "files": [
-    "wrappers/kscript_js_wrapper.js",
-    "wrappers/kscript.jar"
+    "wrappers/k2script_js_wrapper.js",
+    "wrappers/k2script.jar"
   ],
   "engines": {
     "node": ">=12"

@@ -1,4 +1,4 @@
-#!/usr/bin/env kscript
+#!/usr/bin/env k2script
 // TODO fill here what your script does
 
 import kotlin.system.exitProcess
