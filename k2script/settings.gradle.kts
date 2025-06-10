@@ -1,5 +1,6 @@
 rootProject.name = "kscript"
 
+<<<<<<< HEAD
 rootProject.name = "k2script"
 
 include(":trikeshed-core")

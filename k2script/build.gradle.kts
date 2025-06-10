@@ -34,6 +34,7 @@ version = "4.2.3"
 buildConfig {
     packageName("k2script")
 
+
 group = "io.github.kscripting"
 version = "4.2.3"
 
@@ -218,7 +219,6 @@ val shadowJar by tasks.getting(ShadowJar::class) {
 val shadowJar by tasks.getting(ShadowJar::class) {
     // set empty string to classifier and version to get predictable jar file name: build/libs/kscript.jar
     archiveFileName.set("kscript.jar")
->>>>>>> origin/jules_wip_12008771546559725757
     transform(ComponentsXmlResourceTransformer())
 }
 

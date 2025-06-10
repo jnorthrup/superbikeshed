@@ -405,6 +405,7 @@ function hello() {
 <<<<<<< SEARCH
 				onScroll={() => updateHighlights()}
 =======
+=======
 				onScroll={() => updateHighlights()}
 				onDragOver={(e) => {
 					e.preventDefault()
