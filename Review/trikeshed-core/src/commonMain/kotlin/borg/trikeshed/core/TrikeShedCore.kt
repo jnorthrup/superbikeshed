@@ -11,6 +11,11 @@
 
 package borg.trikeshed.core
 
+import borg.trikeshed.core.git.GitRepositoryView // New import
+import borg.trikeshed.core.git.internal.platformIsDirectory // New import
+import borg.trikeshed.core.git.internal.platformIsFile // New import
+import borg.trikeshed.core.git.internal.platformJoinPath // New import
+// import borg.trikeshed.core.git.internal.readPlatformTextFile // Not used in final proposed code, but was in prompt
 import borg.trikeshed.core.name
 import borg.trikeshed.core.`▶`
 // import kotlinx.serialization.Serializable // Removed
@@ -1168,12 +1173,51 @@ private fun Long.unitizer(seriesConstant: Int, seriesDoubleConstant: Double, lnO
 
     return roundedString + " " + pre + (if (seriesConstant == 1024) "iB" else "B")
 }
-=======
+
 /**
  * Provides an [Iterable] view of the [Series].
  */
-internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = {
-    val (s) = shape
-    //onw the tensor is the shorter shape
+internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = TODO("Not fully implemented")
+
+// --- GitRepositoryView Integration ---
+
+/**
+ * Opens and indexes a Git repository using the TrikeShed-native Git indexer.
+ *
+ * @param repositoryPath The file system path to the Git repository. This can be
+ *                       the root of the working directory (containing a .git folder)
+ *                       or the path directly to the .git folder.
+ * @return A GitRepositoryView instance with the indexed data, or null if indexing failed.
+ */
+@JsExport
+fun openGitRepository(repositoryPath: String): GitRepositoryView? {
+    var dotGitPath = repositoryPath
+    val normalizedRepoPath = repositoryPath.removeSuffix("/")
+
+    if (!normalizedRepoPath.endsWith(".git")) {
+        val potentialGitDir = platformJoinPath(repositoryPath, ".git")
+        if (platformIsDirectory(potentialGitDir)) {
+            dotGitPath = potentialGitDir
+        } else {
+            if (!platformIsDirectory(repositoryPath)) {
+                 return null
+            }
+            dotGitPath = repositoryPath
+        }
+    }
+    dotGitPath = dotGitPath.removeSuffix("/")
+
+    if (!platformIsFile(platformJoinPath(dotGitPath, "HEAD")) ||
+        !platformIsDirectory(platformJoinPath(dotGitPath, "objects")) ||
+        !platformIsDirectory(platformJoinPath(dotGitPath, "refs"))) {
+        return null
+    }
+
+    return try {
+        val repoView = GitRepositoryView(dotGitPath)
+        repoView.indexRepository()
+        repoView
+    } catch (e: Exception) {
+        null
+    }
 }
->>>>>>> origin/jules_wip_12008771546559725757

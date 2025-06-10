@@ -119,6 +119,7 @@ kotlin {
             // for its common code, they would go into "Review/trikeshed-core/src/jvmMain/kotlin".
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+                implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
             }
         }
 
