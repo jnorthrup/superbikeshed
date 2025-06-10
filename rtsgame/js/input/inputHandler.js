@@ -229,8 +229,12 @@ export function initInputHandling(gameContext) {
         
         // Game state related commands are now sent to InputManager
         switch (e.key.toLowerCase()) {
-            case ' ': 
-                inputManager.handleKeyPress(' '); 
+            case ' ': // Or e.code === 'Space'
+                e.preventDefault();
+                if (gameContext.supComCamera && typeof gameContext.supComCamera.startSpacebarRotationMode === 'function') {
+                    gameContext.supComCamera.startSpacebarRotationMode();
+                }
+                // inputManager.handleKeyPress(' '); // Original line, decide if space still has other general game functions
                 break;
             case 'p': 
                 inputManager.handleKeyPress('p');
@@ -326,6 +330,34 @@ export function initInputHandling(gameContext) {
                 break;
         }
     });
+
+    // Add a new keyup listener to the document for global key releases like Spacebar.
+    // Ensure this is added only once if initInputHandling can be called multiple times,
+    // or ideally, structure input handling to have one central keyup listener.
+    // For this subtask, we'll add it directly here.
+    // A flag could be used to ensure it's added only once if initInputHandling can be recalled.
+    if (!gameContext.globalKeyupListenerAttached) {
+        document.addEventListener('keyup', (e) => {
+            // Handle Spacebar release for camera rotation
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                if (gameContext.supComCamera && typeof gameContext.supComCamera.stopSpacebarRotationMode === 'function') {
+                    gameContext.supComCamera.stopSpacebarRotationMode();
+                }
+            }
+
+            // Delegate other keyups (like W,A,S,D,Q,E) to supComCamera if it handles them
+            // This assumes supComCamera.handleKeyUp exists and is designed for this.
+            if (gameContext.supComCamera && typeof gameContext.supComCamera.handleKeyUp === 'function') {
+                // We need to ensure that the keyup for movement/rotation (W,A,S,D,Q,E)
+                // is still passed to supComCamera's own keyup handler if it exists.
+                // The supComCamera.js provided doesn't show its own document-level keyup listener
+                // for these keys, but it has handleKeyUp.
+                 gameContext.supComCamera.handleKeyUp(e);
+            }
+        });
+        gameContext.globalKeyupListenerAttached = true;
+    }
 
     // --- Window Resize Listener ---
     window.addEventListener('resize', () => {
