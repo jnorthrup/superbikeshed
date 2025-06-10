@@ -80,14 +80,6 @@ typealias Environment = Any
 typealias GossipPayload = Series<Join<String, String>> // A series of key-value pairs for the gossip message content
 // Topic is handled by the PubSub system directly, not part of this payload type definition.
 // No separate GossipMessage typealias needed if the payload is what's published.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
-=======
- 
->>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce
 
 // Additional missing types for HybridIntelligence
 enum class Preference {
@@ -182,14 +174,3 @@ data class WorkflowStep(val action: Action, val order: Int)
 // Helper extension for Series filtering nulls
 fun <T> Series<T?>.filterNotNull(): Series<T> = 
     this.`▶`.filterNotNull().let { filtered -> Series.of(*filtered.toTypedArray()) }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
-=======
-
-    
-    enjoy you some jules slop
->>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce

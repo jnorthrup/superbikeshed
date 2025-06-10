@@ -397,10 +397,6 @@ interface ProjectAnalyzer {
     suspend fun buildDependencyGraph(): DependencyGraph
     suspend fun detectFrameworks(): Series<FrameworkInfo>
     suspend fun updateCodebaseContext(current: CodebaseContext, change: Change): CodebaseContext
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -846,11 +842,4 @@ data class Recommendation(
     val reason: String,
     val confidence: Double,
     val category: String
-<<<<<<< HEAD
 )
-=======
-}
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-)
->>>>>>> origin/command-hierarchy-enhancements
