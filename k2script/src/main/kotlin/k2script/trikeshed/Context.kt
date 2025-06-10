@@ -100,6 +100,13 @@ infix fun <A, B> A.j(other: B): Join<A, B> = Join(this to other)
 typealias Tensor<T> = Join<IntArray, (IntArray) -> T>
 
 /**
+ * Legacy compatibility typealiases - point to proper TrikeShed types
+ * Use Join<A,B> and Series<T> directly in new code
+ */
+typealias Pai2<A, B> = Join<A, B>  // Legacy Pair -> Join
+typealias Vect0r<T> = Series<T>    // Legacy Vector -> Series
+
+/**
  * Hot/cold path optimization marker
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)

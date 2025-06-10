@@ -1,4 +1,41 @@
 // NEXUS PROVIDER DEMONSTRATION
+import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
+import org.knowm.xchange.*
+import org.knowm.xchange.coinbasepro.CoinbaseProExchange
+import org.knowm.xchange.currency.Currency
+import org.knowm.xchange.currency.CurrencyPair
+import org.knowm.xchange.dto.Order
+import org.knowm.xchange.dto.account.Balance
+import org.knowm.xchange.dto.marketdata.Ticker
+import org.knowm.xchange.dto.meta.CurrencyMetaData
+import org.knowm.xchange.dto.meta.CurrencyPairMetaData
+import org.knowm.xchange.dto.meta.ExchangeMetaData
+import org.knowm.xchange.dto.trade.MarketOrder
+import org.knowm.xchange.service.account.AccountService
+import org.knowm.xchange.service.marketdata.MarketDataService
+import org.knowm.xchange.service.trade.TradeService
+import org.knowm.xchange.streaming.StreamingExchange
+import org.knowm.xchange.streaming.StreamingMarketDataService
+import org.slf4j.LoggerFactory
+import java.math.BigDecimal
+import java.math.MathContext
+import java.math.RoundingMode
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.disposables.Disposable
+import java.io.File
+import java.time.Instant
+import java.time.Duration
+import kotlin.math.max
+import kotlin.jvm.JvmInline
+
+// Import from demo.kt
+import extractCurrentScope
+import extractCurrentCapabilities
+import substringBetween
+
 fun main() {
     println("=== NEXUS PROVIDER DEMONSTRATION ===")
     
@@ -175,9 +212,3 @@ fun EnhancedNexus.generate(prompt: String): String {
         "Provider ${provider.name} would generate response for: $prompt"
     }
 }
-
-fun CCEKContext.extractCurrentScope(): String = this.first.first.scope.ifEmpty { "default" }
-fun CCEKContext.extractCurrentCapabilities(): String = this.second.first.capabilities.ifEmpty { "basic" }
-
-fun String.substringBetween(start: String, end: String): String = 
-    substringAfter(start).substringBefore(end)
