@@ -2,17 +2,13 @@ import unittest
 from unittest.mock import MagicMock, call
 
 from aioquic.h3.events import DataReceived, HeadersReceived, H3Event
-<<<<<<< HEAD
-# Assuming server.py is in the same directory or accessible via PYTHONPATH
-from server import Http3ServerProtocol, HttpRequest, HttpResponse
-=======
+
 # Updated imports
 from server import Http3ServerProtocol
 from .core_types import (
     HttpMethod, HttpPath, HttpHeaderKey, HttpHeaderValue, HttpHeaders,
     HttpStatusCode, ParsedHttpRequest, ServerHttpResponse
 )
->>>>>>> origin/jules_wip_12008771546559725757
 
 # Dummy QuicConnection for protocol initialization
 class DummyQuicConnection:
@@ -51,10 +47,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         event = DataReceived(stream_id=stream_id, data=data, stream_ended=stream_ended, flow_id=None) # flow_id deprecated
         return event
 
-<<<<<<< HEAD
-    def assert_response_sent(self, stream_id: int, status_code: int, expected_headers: dict, expected_body: bytes):
-        # Check headers
-        expected_h3_headers = [(b":status", str(status_code).encode()), (b"server", b"aioquic-h3")]
         for k, v in expected_headers.items():
             expected_h3_headers.append((k.encode(), v.encode()))
 
@@ -65,7 +57,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
             self.mock_http.send_data.assert_any_call(stream_id=stream_id, data=expected_body, end_stream=True)
         else: # Ensure send_headers was called with end_stream=True if no body
              self.mock_http.send_headers.assert_any_call(stream_id=stream_id, headers=expected_h3_headers)
-=======
     def assert_response_sent(self, stream_id: int, status_code: HttpStatusCode, expected_custom_headers: HttpHeaders, expected_body: bytes):
         # Check headers
         expected_aioquic_headers = [
@@ -81,13 +72,11 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         # The refactored server.py _send_response now always calls send_data,
         # with data=b'' if the response body is empty.
         self.mock_http.send_data.assert_any_call(stream_id=stream_id, data=expected_body, end_stream=True)
->>>>>>> origin/jules_wip_12008771546559725757
 
 
     def test_get_root(self):
         stream_id = 1
         event = self._create_headers_event(stream_id, [(b":method", b"GET"), (b":path", b"/")], stream_ended=True)
-<<<<<<< HEAD
 
         # Simulate H3Connection.handle_event yielding our event
         # For unit testing _h3_event_received, we can call it directly.
@@ -111,9 +100,7 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         self.protocol._h3_event_received(headers_event)
         self.protocol._h3_event_received(data_event)
 
-<<<<<<< HEAD
         self.assert_response_sent(stream_id, 201, {"content-type": "text/plain"}, b"Resource created.")
-        # Check if request body was logged (by checking print output or if we stored it on HttpRequest)
         # For now, we assume the print in the actual code is sufficient for "logging" in this context.
 =======
         custom_headers = HttpHeaders([
@@ -130,9 +117,7 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         self.protocol._h3_event_received(headers_event)
         self.protocol._h3_event_received(data_event)
 
-<<<<<<< HEAD
         self.assert_response_sent(stream_id, 200, {"content-type": "text/plain"}, b"Resource updated.")
-=======
         custom_headers = HttpHeaders([
             (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
         ])
@@ -142,7 +127,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
     def test_delete_root(self):
         stream_id = 4
         event = self._create_headers_event(stream_id, [(b":method", b"DELETE"), (b":path", b"/")], stream_ended=True)
-<<<<<<< HEAD
 
         self.protocol._h3_event_received(event)
 
@@ -159,7 +143,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
     def test_not_found(self):
         stream_id = 5
         event = self._create_headers_event(stream_id, [(b":method", b"GET"), (b":path", b"/unknown")], stream_ended=True)
-<<<<<<< HEAD
 
         self.protocol._h3_event_received(event)
 
@@ -170,7 +153,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         event = self._create_headers_event(stream_id, [(b":method", b"PATCH"), (b":path", b"/")], stream_ended=True)
 
         self.protocol._h3_event_received(event)
-
         self.assert_response_sent(stream_id, 405, {"content-type": "text/plain"}, b"Method Not Allowed")
 =======
         self.protocol._h3_event_received(event)
@@ -196,7 +178,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
         stream_id = 7
         headers_event = self._create_headers_event(stream_id, [(b":method", b"POST"), (b":path", b"/")])
 
-<<<<<<< HEAD
         self.protocol._h3_event_received(headers_event) # Creates entry in _active_streams
 
         # Check if HttpRequest object was created

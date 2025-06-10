@@ -101,6 +101,7 @@ enum class QuicPacketType { INITIAL }
 }
 
 
+
 internal actual suspend fun protectPacket(
     context: CoroutineContext,
     packet: QuicPacket,       // packet.header is IN/OUT (will be modified)
@@ -173,7 +174,6 @@ internal actual suspend fun protectPacket(
         if (pnOffset + i < headerCopy.size) {
             headerCopy[pnOffset + i] = (headerCopy[pnOffset + i].toInt() xor hpMaskFirst5Bytes[i + 1].toInt()).toByte()
         } else {
-<<<<<<< HEAD
             break // Packet number field in header is shorter than 4 bytes
             break
         }
@@ -189,7 +189,6 @@ internal actual suspend fun unprotectPacket(
     context: CoroutineContext,
     protectedPacketBytes: ByteArray,
     keys: QuicInitialKeys,
-<<<<<<< HEAD
     connection: QuicConnection // Used for PN reconstruction, error reporting etc.
     connection: QuicConnection
 ): QuicPacket? {
@@ -233,7 +232,6 @@ internal actual suspend fun unprotectPacket(
     val fullHpMask = aesService.ecbEncrypt(hpKey, sample)
     val hpMaskFirst5Bytes = fullHpMask.copyOfRange(0, 5)
 
-<<<<<<< HEAD
     // Now unmask the header part.
     // The header part is from byte 0 to payloadCiphertextOffset - 1.
     val headerCandidate = protectedPacketBytes.copyOfRange(0, payloadCiphertextOffset)
@@ -260,7 +258,6 @@ internal actual suspend fun unprotectPacket(
             break
         }
     }
-<<<<<<< HEAD
     // Now, `headerCandidate` is the unprotected header.
     // A full parser would now use this to determine actual PN length, packet type, CIDs, etc.
 
@@ -279,7 +276,6 @@ internal actual suspend fun unprotectPacket(
     val decryptedPayload = try {
         aesService.gcmDecrypt(payloadKey, payloadIv, payloadCiphertextWithTag, aadForPayload)
     } catch (e: Exception) {
-<<<<<<< HEAD
         // GCM decryption failure (e.g., tag mismatch)
         return null // Indicate unprotection failure
     }
