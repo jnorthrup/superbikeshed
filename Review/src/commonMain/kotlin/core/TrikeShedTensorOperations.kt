@@ -4,7 +4,10 @@ package core
 
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
+<<<<<<< HEAD
 import kotlin.NoSuchElementException // Added for _l
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * UNIFIED TRIKESHED TENSOR OPERATIONS
@@ -178,6 +181,7 @@ inline fun <T> Tensor<T>.tensorForEachIndexed(action: (Int, T) -> Unit) {
     }
 }
 
+<<<<<<< HEAD
 // Tensor Syntactic Sugars (Moved from TrikeShedCore.kt)
 
 /**
@@ -243,6 +247,8 @@ fun <N : Number> Tensor<N>.s_(): Double {
     return sum
 }
 
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
 inline fun <T> Tensor<T>.forEachCoords(action: (IntArray, T) -> Unit) {
     var i = 0
     while (i < this.totalSize) {
