@@ -1,6 +1,5 @@
 {
 
-<<<<<<< HEAD
   "name": "k2script",
   "version": "1.0.0", 
   "description": "K2script - Enhanced Kotlin 2.x scripting",
@@ -41,11 +40,13 @@
     "kscript": "./wrappers/kscript_js_wrapper.js"
   },
   "files": [
+  "files": [
+    "wrappers/k2script_js_wrapper.js",
+    "wrappers/k2script.jar"
     "wrappers/kscript_js_wrapper.js",
     "wrappers/kscript.jar"
->>>>>>> origin/jules_wip_12008771546559725757
   ],
   "engines": {
     "node": ">=12"
-  }
+  } 
 }

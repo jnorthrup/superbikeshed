@@ -102,7 +102,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
 
         self.assert_response_sent(stream_id, 201, {"content-type": "text/plain"}, b"Resource created.")
         # For now, we assume the print in the actual code is sufficient for "logging" in this context.
-=======
         custom_headers = HttpHeaders([
             (HttpHeaderKey("content-type"), HttpHeaderValue("text/plain"))
         ])
@@ -151,9 +150,7 @@ class TestHttp3ServerProtocol(unittest.TestCase):
     def test_method_not_allowed(self):
         stream_id = 6
         event = self._create_headers_event(stream_id, [(b":method", b"PATCH"), (b":path", b"/")], stream_ended=True)
-
-        self.protocol._h3_event_received(event)
-        self.assert_response_sent(stream_id, 405, {"content-type": "text/plain"}, b"Method Not Allowed")
+        self.protocol._h3_event_received(event)        self.assert_response_sent(stream_id, 405, {"content-type": "text/plain"}, b"Method Not Allowed")
 =======
         self.protocol._h3_event_received(event)
 
@@ -198,7 +195,6 @@ class TestHttp3ServerProtocol(unittest.TestCase):
 
         data_event2 = self._create_data_event(stream_id, b"Part2", stream_ended=True)
         self.protocol._h3_event_received(data_event2)
-<<<<<<< HEAD
         self.assertEqual(request_obj.body, b"Part1Part2") # Body fully accumulated before handler is called
 
         # Handler is called when stream_ended=True for DataReceived
