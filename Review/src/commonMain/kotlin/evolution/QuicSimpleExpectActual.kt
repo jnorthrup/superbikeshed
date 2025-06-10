@@ -1,26 +1,16 @@
 package evolution
 
 // Imports for new IO services
-import evolution.io.PlatformIoService
-import evolution.io.PlatformIoServiceKey
-import evolution.io.PlatformUdpChannel
-import evolution.io.PlatformUdpChannelKey // If we decide to put created channels in context
-import evolution.io.SocketAddress
-import evolution.io.InterestOp
-import evolution.io.SelectionEvent
 
-<<<<<<< HEAD
 // Keep UdpSocket import for the deprecated function for now
 import borg.trikeshed.reactor.UdpSocket
-=======
 // import borg.trikeshed.reactor.UdpSocket // REMOVED
 >>>>>>> origin/jules_wip_6906935130323988499
 
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
-<<<<<<< HEAD
+
 // import kotlinx.coroutines.withContext // Not directly used at top-level after edit
-=======
 // Import new types from QuicSpecTypes.kt
 import evolution.* // Using wildcard import for simplicity here
 >>>>>>> origin/jules_wip_8844705664950451013
@@ -28,10 +18,7 @@ import evolution.* // Using wildcard import for simplicity here
 // Expect declarations for platform-specific dispatchers
 expect fun getIODispatcher(): CoroutineDispatcher // Remains for now, not directly replaced
 
-<<<<<<< HEAD
-@Deprecated("Use PlatformIoService.createUdpChannel() instead.", replaceWith = ReplaceWith("coroutineContext[PlatformIoServiceKey]?.createUdpChannel()", "evolution.io.PlatformIoServiceKey"))
 expect fun createUdpSocket(): UdpSocket
-=======
 // @Deprecated(...) expect fun createUdpSocket(): UdpSocket // REMOVED
 >>>>>>> origin/jules_wip_6906935130323988499
 
@@ -39,10 +26,7 @@ expect fun createUdpSocket(): UdpSocket
 expect object QuicConnectionContextKey : CoroutineContext.Key<QuicConnectionContextValue>
 expect object QuicCryptoContextKey : CoroutineContext.Key<QuicCryptoContextValue>
 
-<<<<<<< HEAD
-@Deprecated("Replaced by direct use of PlatformUdpChannel and PlatformIoService from context.")
 expect object QuicSocketContextKey : CoroutineContext.Key<QuicSocketContextValue>
-=======
 // @Deprecated(...) expect object QuicSocketContextKey ... // REMOVED
 >>>>>>> origin/jules_wip_6906935130323988499
 
@@ -52,7 +36,8 @@ expect object QuicObservabilityContextKey : CoroutineContext.Key<QuicObservabili
 // Base context value interfaces (simple, common API)
 expect interface QuicConnectionContextValue : CoroutineContext.Element {
     override val key: CoroutineContext.Key<*> get() = QuicConnectionContextKey
-<<<<<<< HEAD
+    val connection: QuicConnection
+
     val connection: QuicConnection
 =======
     val connection: QuicConnection // Provides access to the mutable connection state
@@ -70,7 +55,7 @@ expect interface QuicCryptoContextValue : CoroutineContext.Element {
     // Handshake messages are byte arrays at this level.
     fun generateClientHello(serverName: String): ByteArray
     fun processServerResponse(response: ByteArray): Boolean
-<<<<<<< HEAD
+
     suspend fun deriveInitialSecrets(context: CoroutineContext, clientDstConnId: ByteArray): QuicInitialKeys
 =======
     // clientDstConnId is now strongly typed. QuicInitialKeys is not from QuicSpecTypes.kt.
@@ -78,11 +63,11 @@ expect interface QuicCryptoContextValue : CoroutineContext.Element {
 >>>>>>> origin/jules_wip_8844705664950451013
 }
 
-<<<<<<< HEAD
+
 @Deprecated("Replaced by direct use of PlatformUdpChannel and PlatformIoService from context.")
 expect interface QuicSocketContextValue : CoroutineContext.Element {
     override val key: CoroutineContext.Key<*> get() = QuicSocketContextKey
-<<<<<<< HEAD
+
     val socket: UdpSocket // Old UdpSocket type
     val host: String
     val port: Int
@@ -103,7 +88,7 @@ expect interface QuicSocketContextValue : CoroutineContext.Element {
 
 expect interface QuicProtectionContextValue : CoroutineContext.Element {
     override val key: CoroutineContext.Key<*> get() = QuicProtectionContextKey
-<<<<<<< HEAD
+
     suspend fun protectPacket(context: CoroutineContext, packet: QuicPacket, keys: QuicInitialKeys, connection: QuicConnection): ByteArray
     suspend fun unprotectPacket(context: CoroutineContext, packet: ByteArray, keys: QuicInitialKeys, connection: QuicConnection): QuicPacket?
 =======
@@ -136,8 +121,8 @@ expect class SimpleQuicContextBuilder() {
     fun build(): CoroutineContext
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+
+
 // Define a placeholder for where host/port might come from for the target server.
 // In a real app, this would be from config or method parameters.
 // For these examples, let's assume there's some way to get targetHost/Port.
@@ -168,7 +153,6 @@ suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort
     // val socketContext = this[QuicSocketContextKey] ?: error("QuicSocketContext not found") // OLD
     val protectionContext = this[QuicProtectionContextKey] ?: error("QuicProtectionContext not found")
     val observabilityContext = this[QuicObservabilityContextKey] ?: error("QuicObservabilityContext not found")
-=======
 suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort: Int): Boolean {
     val connectionContext = this[QuicConnectionContextKey] ?: error("QuicConnectionContext not found")
     val cryptoContext = this[QuicCryptoContextKey] ?: error("QuicCryptoContext not found")
@@ -191,10 +175,10 @@ suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort
 
     // Ensure channel is closed if handshake fails or completes
     try {
-<<<<<<< HEAD
+
         observabilityContext.recordHandshakeAttempt()
 
-<<<<<<< HEAD
+
         val clientHelloPayload = cryptoContext.generateClientHello(targetHost) // serverName = targetHost
 =======
         val clientHelloPayload = cryptoContext.generateClientHello(targetHost)
@@ -208,10 +192,9 @@ suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort
         val initialKeys = cryptoContext.deriveInitialSecrets(this, connectionContext.connection.connectionId)
         val serializedPacket = protectionContext.protectPacket(this, initialPacket, initialKeys, connectionContext.connection)
 
-<<<<<<< HEAD
+
         val targetAddress = SocketAddress(targetHost, targetPort)
-<<<<<<< HEAD
-        val bytesSent = udpChannel.send(serializedPacket, targetAddress) // NEW
+
         if (bytesSent <= 0) { // send returns bytes sent, or error code (usually via exception for suspend fun)
 =======
         val bytesSent = udpChannel.send(serializedPacket, targetAddress)
@@ -231,8 +214,8 @@ suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort
         }
 
         val buffer = ByteArray(1500)
-<<<<<<< HEAD
-<<<<<<< HEAD
+
+
         // Assuming receive also needs a target address for some reason, or this is a general receive.
         // PlatformUdpChannel.receive does not take a target address.
         val (bytesReceived, sourceAddress) = udpChannel.receive(buffer) // NEW
@@ -251,7 +234,7 @@ suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort
                  return false
             }
 
-<<<<<<< HEAD
+
             // Process server hello from parsedPacket.payload
 =======
 >>>>>>> origin/jules_wip_6906935130323988499
@@ -291,12 +274,12 @@ suspend fun CoroutineContext.performQuicHandshake(targetHost: String, targetPort
         observabilityContext.recordHandshakeError(e)
         return false
     } finally {
-<<<<<<< HEAD
+
         udpChannel.close() // Ensure channel created for handshake is closed
     }
 }
 
-<<<<<<< HEAD
+
 // For sendQuicData, assume PlatformUdpChannel is already in the context,
 // established by some prior connection setup.
 =======
@@ -311,7 +294,7 @@ suspend fun CoroutineContext.sendQuicData(data: ByteArray, targetHost: String, t
     val protectionContext = this[QuicProtectionContextKey] ?: error("QuicProtectionContext not found")
     val observabilityContext = this[QuicObservabilityContextKey] ?: error("QuicObservabilityContext not found")
 
-<<<<<<< HEAD
+
     // NEW: Expect PlatformUdpChannel to be in the context for sending data
 =======
 >>>>>>> origin/jules_wip_6906935130323988499
@@ -330,16 +313,16 @@ suspend fun CoroutineContext.sendQuicData(data: StreamFrameData): Boolean {
 
     return try {
         val dataPacket = connectionContext.createDataPacket(data)
-<<<<<<< HEAD
+
         // Placeholder for deriving current keys. In a real scenario, this would use established keys.
 =======
 >>>>>>> origin/jules_wip_6906935130323988499
         val currentKeys = cryptoContext.deriveInitialSecrets(this, connectionContext.connection.connectionId)
         val serializedPacket = protectionContext.protectPacket(this, dataPacket, currentKeys, connectionContext.connection)
 
-<<<<<<< HEAD
+
         val targetAddress = SocketAddress(targetHost, targetPort)
-<<<<<<< HEAD
+
         val bytesSent = udpChannel.send(serializedPacket, targetAddress) // NEW
 =======
         val bytesSent = udpChannel.send(serializedPacket, targetAddress)
@@ -368,7 +351,7 @@ suspend fun CoroutineContext.sendQuicData(data: StreamFrameData): Boolean {
     }
 }
 
-<<<<<<< HEAD
+
 // QuicPacket, QuicInitialKeys, QuicConnection, parseQuicPacket are assumed accessible.
 // (They are defined in evolution.QuicCurl.kt)
 =======

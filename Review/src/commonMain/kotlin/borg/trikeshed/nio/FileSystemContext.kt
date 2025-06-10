@@ -178,7 +178,7 @@ enum class FileMapFlags {
 
 // Consider adding a FileSystemException class
 // class FileSystemException(message: String, val ioErrorCode: Int? = null) : Exception(message)
->>>>>>> origin/jules_wip_8844705664950451013
+
 =======
 import borg.trikeshed.lib.FilePath
 import borg.trikeshed.lib.DirectoryPath
@@ -357,4 +357,4 @@ enum class FileMapFlags {
 
 // Consider adding a FileSystemException class
 // class FileSystemException(message: String, val ioErrorCode: Int? = null) : Exception(message)
->>>>>>> origin/jules_wip_8844705664950451013
+
