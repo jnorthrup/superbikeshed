@@ -71,8 +71,8 @@ kotlin {
         }
     }
     linuxX64()
-    macosX64() // New target
-    macosArm64() // New target for Apple Silicon
+    macosX64()
+    macosArm64()
     js(IR) { // Use the IR compiler
         browser { // Target browser environment
             commonWebpackConfig {
@@ -149,8 +149,6 @@ kotlin {
         // macOS source sets
         val macosMain by creating {
             dependsOn(nativeMainShared)
-            // Default srcDir for macosMain would be something like "src/macosMain/kotlin".
-            // Do NOT include $rootDir/src/macosMain/kotlin etc. here.
         }
 
         val macosX64Main by getting {
