@@ -324,6 +324,7 @@ dependencies {
 
     implementation("org.semver4j:semver4j:4.3.0")
 
+    implementation(project(":trikeshed-core"))
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
