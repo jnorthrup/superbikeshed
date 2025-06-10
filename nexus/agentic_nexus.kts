@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/usr/bin/env /Users/jim/work/superbikeshed/k2script/src/k2script
+=======
+#!/usr/bin/env kotlin
+>>>>>>> origin/command-hierarchy-enhancements
 
 @file:Repository("https://repo1.maven.org/maven2/")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
@@ -189,9 +193,15 @@ class AgenticNexus(
                 // Simulate environment changes
                 val capabilities = detectCapabilities()
                 val context = CCEKContext(mapOf(
+<<<<<<< HEAD
                     "scope" to "development",
                     "capabilities" to capabilities.joinToString(","),
                     "timestamp" to System.currentTimeMillis().toString()
+=======
+                    "scope" -> "development",
+                    "capabilities" -> capabilities.joinToString(","),
+                    "timestamp" -> System.currentTimeMillis().toString()
+>>>>>>> origin/command-hierarchy-enhancements
                 ))
                 
                 // Generate adaptive tasks based on environment

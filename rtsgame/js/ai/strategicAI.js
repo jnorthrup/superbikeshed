@@ -68,6 +68,10 @@ function getDistance(objA, objB) {
 }
 
 class StrategicAI {
+    static CLUSTER_RADIUS = 150;
+    static DEFENSE_ASSESSMENT_RADIUS = 200;
+    static MIN_CLUSTER_THREAT_FOR_PREDICTION = 50; // Example value
+
     constructor(team) {
         this.team = team; // The team this AI instance is controlling (e.g., 'red', 'blue').
         this.personality = AI_PERSONALITIES.BALANCED; // Default personality, can be overridden.
@@ -87,6 +91,107 @@ class StrategicAI {
         this.predictionUpdateCooldown = 0;
         // Interval in seconds at which the AI attempts to generate a new prediction.
         this.PREDICTION_UPDATE_INTERVAL = 10;
+        this.needsNewPredictionSearch = false; // Flag to encourage seeking alternative predictions
+        this.lastDisputedPredictionDetails = null; // Store details of the last disputed prediction {targetArea: {x,y,radius}}
+    }
+
+    _calculateDistanceSq(pos1, pos2) {
+        const dx = pos1.x - pos2.x;
+        const dy = pos1.y - pos2.y;
+        return dx * dx + dy * dy;
+    }
+
+    _getUnitStrength(unit, unitTypesConfig) {
+        // Ensure unit and unit.type are valid and unitTypesConfig is available
+        if (!unit || !unit.type || !unitTypesConfig || !unitTypesConfig[unit.type.name]) { // unit.type is the object, unit.type.name is the key
+            // console.warn(`_getUnitStrength: Invalid unit, unit.type, or unitTypesConfig for unit:`, unit);
+            return unit && unit.hp > 0 ? unit.hp : 0; // Fallback to HP if type data is missing
+        }
+        const typeData = unitTypesConfig[unit.type.name]; // Access type data using unit.type.name
+        let strength = unit.hp > 0 ? unit.hp : 0; // Current HP
+
+        // Check if typeData exists after access
+        if (typeData) {
+            strength += (typeData.damage || 0) * 5; // Factor in damage potential
+            strength += (typeData.maxHp || unit.hp || 0) / 2; // Factor in max HP as general robustness
+        } else {
+            // console.warn(`_getUnitStrength: typeData not found for unit type: ${unit.type.name}`);
+        }
+        return strength;
+    }
+
+    _clusterEnemyUnits(enemyUnits, gameContext, unitTypesConfig) {
+        const clusters = [];
+        let unclusteredUnits = [...enemyUnits.filter(u => u.hp > 0)];
+        const CLUSTER_RADIUS_SQUARED = StrategicAI.CLUSTER_RADIUS * StrategicAI.CLUSTER_RADIUS;
+
+        while (unclusteredUnits.length > 0) {
+            const firstUnit = unclusteredUnits.shift();
+            if (!firstUnit) continue;
+
+            const currentClusterUnits = [firstUnit];
+            const queue = [firstUnit];
+
+            let head = 0;
+            while (head < queue.length) {
+                const unitA = queue[head++];
+                for (let i = unclusteredUnits.length - 1; i >= 0; i--) {
+                    const unitB = unclusteredUnits[i];
+                    if (this._calculateDistanceSq(unitA, unitB) < CLUSTER_RADIUS_SQUARED) {
+                        currentClusterUnits.push(unitB);
+                        queue.push(unitB);
+                        unclusteredUnits.splice(i, 1);
+                    }
+                }
+            }
+
+            if (currentClusterUnits.length > 0) {
+                let sumX = 0, sumY = 0, totalStrength = 0;
+                const composition = {};
+                currentClusterUnits.forEach(u => {
+                    sumX += u.x;
+                    sumY += u.y;
+                    totalStrength += this._getUnitStrength(u, unitTypesConfig);
+                    composition[u.type.name] = (composition[u.type.name] || 0) + 1; // Use u.type.name
+                });
+                clusters.push({
+                    id: 'cluster_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    centroid: { x: sumX / currentClusterUnits.length, y: sumY / currentClusterUnits.length },
+                    units: currentClusterUnits,
+                    totalStrength: totalStrength,
+                    composition: composition
+                });
+            }
+        }
+        return clusters;
+    }
+
+    _assessPlayerDefenses(targetPosition, gameContext, unitTypesConfig) {
+        let defenseScore = 0;
+        // Assuming gameContext.entityManager.getPlayerEntities() exists and returns units and buildings for the AI's team.
+        // If not, this needs to be:
+        // const playerUnits = gameContext.entityManager.units.filter(u => u.team === this.team && u.hp > 0);
+        // const playerBuildings = gameContext.entityManager.buildings.filter(b => b.team === this.team && b.hp > 0);
+        // const playerEntities = [...playerUnits, ...playerBuildings];
+
+        // Let's assume getPlayerEntities() is a method on entityManager that returns both units and buildings of the AI's team (player to the AI)
+        // For this AI, "player" is its own team. So we need to get entities of `this.team`.
+        const playerEntities = [];
+        gameContext.entityManager.units.forEach(u => {
+            if (u.team === this.team && u.hp > 0) playerEntities.push(u);
+        });
+        gameContext.entityManager.buildings.forEach(b => {
+            if (b.team === this.team && b.hp > 0) playerEntities.push(b);
+        });
+
+        const DEFENSE_RADIUS_SQUARED = StrategicAI.DEFENSE_ASSESSMENT_RADIUS * StrategicAI.DEFENSE_ASSESSMENT_RADIUS;
+
+        playerEntities.forEach(entity => {
+            if (entity.hp > 0 && this._calculateDistanceSq(entity, targetPosition) < DEFENSE_RADIUS_SQUARED) {
+                defenseScore += this._getUnitStrength(entity, unitTypesConfig);
+            }
+        });
+        return defenseScore;
     }
 
     /**
@@ -138,6 +243,12 @@ class StrategicAI {
             // It needs access to all units and buildings to find enemies and its own assets (potential targets).
             this.generateAttackPrediction(gameContext, this.team, gameContext.entityManager.units, gameContext.entityManager.buildings, gameContext.resources);
             this.predictionUpdateCooldown = this.PREDICTION_UPDATE_INTERVAL; // Reset cooldown.
+            // Reset the flag after a prediction generation cycle
+            if (this.needsNewPredictionSearch) {
+                this.needsNewPredictionSearch = false;
+                // Potentially clear lastDisputedPredictionDetails if alternative search was "successful enough"
+                // For now, we'll let it be overwritten by a new dispute, or naturally fade if not re-predicted.
+            }
         }
     }
 
@@ -146,82 +257,109 @@ class StrategicAI {
      * This is a simplified heuristic for the initial implementation.
      * @param {object} gameContext - The main game simulation object.
      * @param {string} aiTeam - The team for which this AI is making predictions (its own team, i.e., `this.team`).
-     * @param {Array<Unit>} allUnits - Global list of all units.
-     * @param {Array<Building>} allBuildings - Global list of all buildings.
+     * @param {Array<Unit>} allUnits - Global list of all units. (Now obtained from gameContext.entityManager)
+     * @param {Array<Building>} allBuildings - Global list of all buildings. (Now obtained from gameContext.entityManager)
      * @param {object} allResources - Global resources object (not directly used in this simple heuristic but available).
      */
-    generateAttackPrediction(gameContext, aiTeam, allUnits, allBuildings, allResources) {
-        // Determine the enemy team based on this AI's team.
+    generateAttackPrediction(gameContext, aiTeam, allUnits_deprecated, allBuildings_deprecated, allResources_deprecated) {
+        // UNIT_TYPES is imported at the top of the file. gameContext.UNIT_TYPES can be a fallback.
+        const unitTypesConfig = UNIT_TYPES || gameContext.UNIT_TYPES || window.UNIT_TYPES;
+        if (!unitTypesConfig) {
+            console.error(`[StrategicAI-${this.team}] UNIT_TYPES configuration not found! Cannot generate prediction.`);
+            this.currentPrediction = null;
+            return;
+        }
+
         const enemyTeam = aiTeam === 'blue' ? 'red' : 'blue';
+        // Use gameContext.entityManager to get units and buildings
+        const enemyUnits = gameContext.entityManager.units.filter(u => u.team === enemyTeam && u.hp > 0);
 
-        // Filter for active, land-based enemy units that could form an attacking force.
-        const enemyGroundUnits = allUnits.filter(u => u.team === enemyTeam && u.type.movementType === 'land' && u.hp > 0);
-
-        if (enemyGroundUnits.length === 0) {
-            this.currentPrediction = null; // No enemy ground units, so no attack prediction.
+        if (enemyUnits.length === 0) {
+            this.currentPrediction = null;
             return;
         }
 
-        // Identify potential targets: buildings belonging to this AI's team.
-        const ownPlayerBuildings = allBuildings.filter(b => b.team === aiTeam && b.hp > 0);
+        const enemyClusters = this._clusterEnemyUnits(enemyUnits, gameContext, unitTypesConfig);
+        if (enemyClusters.length === 0) {
+            this.currentPrediction = null;
+            return;
+        }
+
+        enemyClusters.sort((a, b) => b.totalStrength - a.totalStrength);
+        const mostThreateningCluster = enemyClusters[0];
+
+        if (!mostThreateningCluster || mostThreateningCluster.totalStrength < StrategicAI.MIN_CLUSTER_THREAT_FOR_PREDICTION) {
+            this.currentPrediction = null;
+            return;
+        }
+
+        // AI's own buildings are the potential targets
+        const ownPlayerBuildings = gameContext.entityManager.buildings.filter(b => b.team === aiTeam && b.hp > 0);
         if (ownPlayerBuildings.length === 0) {
-            this.currentPrediction = null; // No buildings for the AI to defend, so no prediction of an attack against them.
+            this.currentPrediction = null;
             return;
         }
 
-        // Simplistic Target Selection: Pick the first of its own buildings as the potential target.
-        // Future improvements: Rank targets by strategic value, vulnerability, proximity to front lines, etc.
-        const potentialTarget = ownPlayerBuildings[0];
+        let bestTargetInfo = { target: null, score: -Infinity, defenseScore: 0 };
 
-        // Simplified Attacker Identification: Find the enemy ground unit closest to this AI's `potentialTarget`.
-        // This unit represents the spearhead or centroid of the predicted attacking force.
-        // Future improvements: Identify enemy clusters or staging areas, consider unit strength.
-        let closestEnemyUnit = null;
-        let minDistanceToTarget = Infinity;
+        ownPlayerBuildings.forEach(building => {
+            // Assess defenses around this specific building (which belongs to the AI team)
+            const defenseScore = this._assessPlayerDefenses(building, gameContext, unitTypesConfig);
+            const distanceToTargetSq = this._calculateDistanceSq(mostThreateningCluster.centroid, building);
+            // Score inversely proportional to defense and distance, directly to cluster strength.
+            // Add small epsilon to distance to avoid division by zero if centroid is on building.
+            const score = mostThreateningCluster.totalStrength / ((1 + defenseScore) * (1 + Math.sqrt(distanceToTargetSq) * 0.05));
 
-        for (const enemy of enemyGroundUnits) {
-            const dist = getDistance(enemy, potentialTarget);
-            if (dist < minDistanceToTarget) {
-                minDistanceToTarget = dist;
-                closestEnemyUnit = enemy;
+            if (score > bestTargetInfo.score) {
+                bestTargetInfo = { target: building, score: score, defenseScore: defenseScore };
             }
-        }
+        });
 
-        if (!closestEnemyUnit) {
-            this.currentPrediction = null; // Should ideally not happen if enemyGroundUnits.length > 0.
-            return;
-        }
-        // The starting point of the predicted attack vector.
-        const attackerCentroid = { x: closestEnemyUnit.x, y: closestEnemyUnit.y };
+        if (!bestTargetInfo.target) { this.currentPrediction = null; return; }
+        const targetBuilding = bestTargetInfo.target;
+        const defenseAtTarget = bestTargetInfo.defenseScore;
 
-        // Pathfinding: Calculate a likely path from the identified attacker to the potential target.
-        // `gameContext.gameContext` is passed as `findPath` expects the simulation's core context (which holds terrain data).
-        const predictedPath = findPath(attackerCentroid, { x: potentialTarget.x, y: potentialTarget.y }, gameContext.gameContext, 'land');
-
+        const predictedPath = findPath(mostThreateningCluster.centroid, { x: targetBuilding.x, y: targetBuilding.y }, gameContext.gameContext, 'land'); // Assuming 'land' for ground attacks
         if (!predictedPath || predictedPath.length === 0) {
-            this.currentPrediction = null; // No valid path found.
+            this.currentPrediction = null;
             return;
         }
 
-        // Confidence Heuristic: Base confidence on the proximity of the "attacking" unit to the target.
-        // Closer attackers might indicate a more imminent or committed attack.
-        let confidence = 'low';
-        if (minDistanceToTarget < 300) confidence = 'medium';
-        if (minDistanceToTarget < 150) confidence = 'high';
-        // TODO: Enhance confidence logic (e.g., factor in size/strength of nearby enemy cluster, recent enemy movements, unit types).
+        // Initialize or update currentPrediction
+        // For this subtask, let's simplify and assume we create a new one or overwrite if ID matches or status implies it's old.
+        // A more robust system would check if the new prediction is significantly different from the old one.
+        if (!this.currentPrediction || this.currentPrediction.status === 'handled_or_expired') { // Simplified condition
+            this.currentPrediction = { id: `pred_${aiTeam}_${Date.now()}_${Math.random().toString(36).substr(2,5)}` };
+        }
 
-        // Store the generated prediction.
-        this.currentPrediction = {
-            id: `pred_${aiTeam}_${Date.now()}`, // Unique ID for the prediction.
-            path: predictedPath, // The calculated path (array of points).
-            targetArea: { x: potentialTarget.x, y: potentialTarget.y, radius: 50 }, // Target area (fixed radius for now).
-            confidence: confidence, // 'low', 'medium', or 'high'.
-            type: 'ENEMY_GROUND_ATTACK', // Type of prediction.
-            timestamp: gameContext.gameState ? gameContext.gameState.gameTime : Date.now() / 1000, // Timestamp of generation.
-            playerAcknowledged: false // Flag for player interaction feedback, initialized to false.
-        };
+        this.currentPrediction.timestamp = gameContext.gameState ? gameContext.gameState.gameTime : Date.now() / 1000;
+        this.currentPrediction.isPlayerDesignated = false; // Reset for a standard AI prediction
+        this.currentPrediction.isDisputed = false;
+        this.currentPrediction.playerAcknowledged = false;
 
-        // console.log(`[StrategicAI-${this.team}] Generated prediction: ${this.currentPrediction.confidence} enemy attack towards ${potentialTarget.type.name} (ID: ${this.currentPrediction.id})`);
+        this.currentPrediction.attackerCentroid = mostThreateningCluster.centroid;
+        const compositionKeys = Object.keys(mostThreateningCluster.composition);
+        this.currentPrediction.attackerUnitType = compositionKeys.length > 0 ? compositionKeys.reduce((a, b) => mostThreateningCluster.composition[a] > mostThreateningCluster.composition[b] ? a : b) : 'unknown_force';
+        this.currentPrediction.targetArea = { x: targetBuilding.x, y: targetBuilding.y, radius: (targetBuilding.type.radius || targetBuilding.type.size || 20) + 15 };
+        this.currentPrediction.path = predictedPath;
+
+        let confidence = 0.5; // Base confidence
+        confidence += Math.min(0.35, mostThreateningCluster.totalStrength / 3000); // Adjusted divisor
+        confidence -= Math.min(0.45, defenseAtTarget / 2000); // Adjusted divisor
+        const distanceToTarget = Math.sqrt(this._calculateDistanceSq(mostThreateningCluster.centroid, targetBuilding));
+        confidence -= Math.min(0.15, distanceToTarget / 2500); // Adjusted divisor
+
+        this.currentPrediction.confidence = Math.max(0.05, Math.min(0.95, confidence));
+        this.currentPrediction.confidenceText = this.getConfidenceText(this.currentPrediction.confidence);
+        this.currentPrediction.type = 'ENEMY_GROUND_ATTACK'; // Ensure type is set
+
+        // console.log(`[StrategicAI-${this.team}] Generated prediction: ${this.currentPrediction.confidenceText} (val: ${this.currentPrediction.confidence.toFixed(2)}) target: ${targetBuilding.type.name} by cluster (Strength: ${mostThreateningCluster.totalStrength.toFixed(0)}) (ID: ${this.currentPrediction.id})`);
+    }
+
+    getConfidenceText(numericConfidence) {
+        if (numericConfidence >= 0.75) return 'high';
+        if (numericConfidence >= 0.4) return 'medium';
+        return 'low';
     }
 
     /**
@@ -238,20 +376,47 @@ class StrategicAI {
 
         // Check if the interaction event corresponds to the AI's current active prediction.
         if (this.currentPrediction && this.currentPrediction.id === event.payload.predictedPathID) {
-            // Handle "Acknowledge & Reinforce" interaction type.
-            if (event.payload.playerReinforceFocus === true) {
-                this.currentPrediction.playerAcknowledged = true; // Mark the prediction as acknowledged by the player.
+            if (event.type === 'PlayerInteraction_AckReinforce_AttackVector' && event.payload.playerReinforceFocus === true) {
+                this.currentPrediction.playerAcknowledged = true;
+                this.currentPrediction.isDisputed = false; // Acknowledging clears dispute
 
-                // Optionally, boost the AI's confidence in this prediction.
-                if (this.currentPrediction.confidence === 'low') {
-                    this.currentPrediction.confidence = 'medium';
-                } else if (this.currentPrediction.confidence === 'medium') {
-                    this.currentPrediction.confidence = 'high';
+                // Boost confidence numerically
+                if (this.currentPrediction.confidence < 0.4) this.currentPrediction.confidence = 0.5; // low to medium threshold
+                else if (this.currentPrediction.confidence < 0.75) this.currentPrediction.confidence = 0.8; // medium to high threshold
+                else this.currentPrediction.confidence = Math.min(1.0, this.currentPrediction.confidence * 1.1); // Cap at 1.0 for high
+
+                this.currentPrediction.confidenceText = this.getConfidenceText(this.currentPrediction.confidence);
+                // console.log(`[StrategicAI-${this.team}] Player ACKNOWLEDGED prediction ${this.currentPrediction.id}. Confidence: ${this.currentPrediction.confidenceText} (val: ${this.currentPrediction.confidence.toFixed(2)}).`);
+
+            } else if (event.type === 'PlayerInteraction_DisputeMonitor_AttackVector') { // Check for correct event type
+                this.currentPrediction.confidence *= 0.5; // Example: Halve confidence
+                this.currentPrediction.confidenceText = this.getConfidenceText(this.currentPrediction.confidence);
+                this.currentPrediction.isDisputed = true;
+                this.currentPrediction.playerAcknowledged = false;
+
+                this.needsNewPredictionSearch = true;
+                this.lastDisputedPredictionDetails = {
+                    targetArea: { ...this.currentPrediction.targetArea }
+                };
+                 if (this.currentPrediction.path && this.currentPrediction.path.length > 0) {
+                     this.lastDisputedPredictionDetails.attackerCentroid = { ...this.currentPrediction.attackerCentroid }; // Use attackerCentroid
                 }
-                // console.log(`[StrategicAI-${this.team}] Player acknowledged prediction ${this.currentPrediction.id}. Marked and confidence potentially boosted to ${this.currentPrediction.confidence}.`);
+                this.predictionUpdateCooldown = 0;
+
+                // console.log(`[StrategicAI-${this.team}] Player DISPUTED prediction ${this.currentPrediction.id}. Confidence: ${this.currentPrediction.confidenceText}. Flagged for new search.`);
+            } else if (event.type === 'PlayerInteraction_NewThreatDesignation') {
+                // Add to a list of player-designated threats to be prioritized
+                if (!this.playerDesignatedThreats) this.playerDesignatedThreats = [];
+                this.playerDesignatedThreats.push({
+                    x: event.payload.x,
+                    y: event.payload.y,
+                    radius: event.payload.radius || 100, // Default radius if not specified
+                    timestamp: Date.now()
+                });
+                this.needsNewPredictionSearch = true; // Trigger a new prediction cycle
+                this.predictionUpdateCooldown = 0;
+                // console.log(`[StrategicAI-${this.team}] Player DESIGNATED new threat area. Flagged for new search.`);
             }
-            // TODO: Implement handling for other player interaction types,
-            // e.g., 'DisputeMonitor' or 'NewThreatDesignation', when those events are dispatched.
         }
     }
 }
@@ -471,48 +636,76 @@ export function coordinateAttacks(gameContext) {
 function coordinateTacticalGroups(gameContext, team, teamUnits, ai) {
     const processed = new Set();
     const groups = [];
-    
-    // Form tactical groups based on proximity and unit types
-    for (const unit of teamUnits) {
-        if (processed.has(unit)) continue;
-        
-        const nearby = teamUnits.filter(u => {
-            if (processed.has(u)) return false;
-            const distance = Math.sqrt((u.x - unit.x) ** 2 + (u.y - unit.y) ** 2);
-            return distance < 120;
+
+    // Ensure all units have their effective authority calculated
+    teamUnits.forEach(u => {
+        if (typeof u.calculateEffectiveAuthority === 'function') {
+            u.calculateEffectiveAuthority();
+        } else {
+            // Fallback or default if method doesn't exist, though it should from previous subtask
+            if (u.effectiveAuthority === undefined) u.effectiveAuthority = u.type.tier || 1;
+        }
+    });
+
+    // Sort units by authority to prefer high-authority units as group cores/leaders
+    const sortedTeamUnits = [...teamUnits].sort((a, b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0));
+
+    // Form tactical groups based on proximity and unit types, prioritizing high-authority leaders
+    for (const potentialLeader of sortedTeamUnits) {
+        if (processed.has(potentialLeader)) continue;
+
+        const GROUP_FORMATION_RADIUS = 150;
+        const MIN_GROUP_SIZE = 3;
+        const MAX_GROUP_MEMBERS_FROM_NEARBY = 5; // Max additional members to pick from nearby
+
+        const nearbyUnits = sortedTeamUnits.filter(u => {
+            if (processed.has(u) || u === potentialLeader) return false;
+            const distance = getDistance(u, potentialLeader);
+            return distance < GROUP_FORMATION_RADIUS;
         });
+
+        // Group consists of the leader and some number of closest nearby units
+        const groupMembersFromNearby = nearbyUnits.slice(0, MAX_GROUP_MEMBERS_FROM_NEARBY);
+        const groupUnits = [potentialLeader, ...groupMembersFromNearby];
         
-        if (nearby.length >= 3) {
+        if (groupUnits.length >= MIN_GROUP_SIZE) {
             const group = {
-                units: [unit, ...nearby],
-                center: calculateGroupCenter([unit, ...nearby]),
-                strength: calculateGroupStrength([unit, ...nearby]),
-                role: determineGroupRole([unit, ...nearby])
+                leader: potentialLeader,
+                units: groupUnits,
+                center: calculateGroupCenter(groupUnits),
+                strength: calculateGroupStrength(groupUnits), // This will be updated later
+                role: determineGroupRole(groupUnits, potentialLeader) // This will be updated later
             };
             
             groups.push(group);
-            [unit, ...nearby].forEach(u => processed.add(u));
+            groupUnits.forEach(u => processed.add(u));
         }
     }
     
     // Coordinate group attacks
     groups.forEach(group => {
-        const target = selectOptimalTarget(gameContext, team, group);
+        // Prioritize protecting high-authority leaders within the group
+        if (group.leader && group.leader.hp < group.leader.maxHp * 0.5 && group.units.length > 1) {
+            // Placeholder for defensive adjustment for vulnerable leaders
+            // console.log(`AI group with leader ${group.leader.type.name} (Auth: ${group.leader.effectiveAuthority.toFixed(0)}) is damaged.`);
+        }
+
+        const target = selectOptimalTarget(gameContext, team, group); // This will be updated later
         if (target) {
-            assignGroupTarget(group, target);
+            assignGroupTarget(group, target, group.leader); // This will be updated later
             
-            // Pass gameContext to recordAIDecision
-            recordAIDecision(gameContext, team, 'COORDINATE_ATTACK', { // Pass gameContext
+            recordAIDecision(gameContext, team, 'COORDINATE_ATTACK', {
                 groupSize: group.units.length,
                 groupRole: group.role,
+                leaderType: group.leader.type.name,
+                leaderAuth: (group.leader.effectiveAuthority || 0).toFixed(0),
                 targetType: target.type?.name || 'unknown',
                 targetPosition: { x: target.x, y: target.y }
             });
             
-            // Visual feedback
             gameContext.entityManager.addCaption(new Caption(
                 group.center.x, group.center.y,
-                `${group.role} assault!`, '#ff4', 16
+                `${group.role} attacking! (L: ${group.leader.type.name.substring(0,3)})`, '#ff4', 16
             ));
         }
     });
@@ -865,89 +1058,214 @@ function coordinateStrategicMovements(team, gameContext, ai) {
 }
 
 function repositionForOffensive(units, gameContext, team) {
+    // Ensure units have authority calculated
+    units.forEach(u => {
+        if (typeof u.calculateEffectiveAuthority === 'function') u.calculateEffectiveAuthority();
+        else if (u.effectiveAuthority === undefined) u.effectiveAuthority = u.type.tier || 1;
+    });
+
     const enemyCommander = gameContext.units.find(u => 
-        u.team !== team && u.type === UNIT_TYPES.commander
+        u.team !== team && u.type === UNIT_TYPES.commander && u.hp > 0
     );
-    
+    const enemyBuildings = gameContext.buildings.filter(b => b.team !== team && b.hp > 0);
+    let primaryTargetPos = null;
+
     if (enemyCommander) {
-        units.forEach(unit => {
-            // Move towards enemy commander area
-            const angle = Math.atan2(enemyCommander.y - unit.y, enemyCommander.x - unit.x);
-            const distance = 100 + gameContext.seedRandom.random() * 50; // Use seeded random
-            
-            unit.patrolTarget = {
-                x: enemyCommander.x - Math.cos(angle) * distance,
-                y: enemyCommander.y - Math.sin(angle) * distance
-            };
-        });
+        primaryTargetPos = { x: enemyCommander.x, y: enemyCommander.y };
+    } else if (enemyBuildings.length > 0) {
+        // Target a cluster of buildings if commander is not found
+        // Simplistic: find a central point among some enemy buildings
+        const targetBuildings = enemyBuildings.slice(0, 5); // Consider a few for centroid
+        primaryTargetPos = calculateGroupCenter(targetBuildings);
+    } else {
+        // Fallback: move towards a random point in enemy territory (e.g., enemy starting location if known)
+        // For now, if no specific target, AI might just rally or hold position.
+        return;
+    }
+
+    if (primaryTargetPos) {
+        // Identify high-authority units to lead the offensive
+        const highAuthorityUnits = units.filter(u => (u.effectiveAuthority || 0) > 10).sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0));
+        const otherUnits = units.filter(u => (u.effectiveAuthority || 0) <= 10);
+
+        let leaderUnit = highAuthorityUnits.length > 0 ? highAuthorityUnits[0] : (units.length > 0 ? units.sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0))[0] : null);
+
+        if (leaderUnit) {
+            // Leader moves towards the primary target
+            leaderUnit.patrolTarget = { x: primaryTargetPos.x, y: primaryTargetPos.y };
+            leaderUnit.aggressiveness = 0.9; // More aggressive for offensive posture
+
+            // Other units attempt to form up or support the leader
+            const supportUnits = highAuthorityUnits.slice(1).concat(otherUnits);
+            supportUnits.forEach(unit => {
+                if (unit === leaderUnit) return; // Skip self
+                const angleOffset = (gameContext.seedRandom.random() - 0.5) * Math.PI / 1.5; // Wider spread for offensive formation
+                const followDistance = 70 + gameContext.seedRandom.random() * 80; // Slightly larger, looser formation
+
+                // Patrol near the leader, but also generally towards the main target
+                let patrolX = leaderUnit.x + Math.cos(leaderUnit.angle + angleOffset) * followDistance;
+                let patrolY = leaderUnit.y + Math.sin(leaderUnit.angle + angleOffset) * followDistance;
+
+                // If leader is far from the primary target, supporting units also aim towards primary target
+                if (getDistance(leaderUnit, primaryTargetPos) > 200) {
+                    patrolX = primaryTargetPos.x + (gameContext.seedRandom.random() - 0.5) * 200;
+                    patrolY = primaryTargetPos.y + (gameContext.seedRandom.random() - 0.5) * 200;
+                }
+
+                unit.patrolTarget = { x: patrolX, y: patrolY };
+                unit.aggressiveness = 0.8;
+            });
+        }
     }
 }
 
 function repositionForDefense(units, gameContext, team) {
+    // Ensure units have authority calculated
+    units.forEach(u => {
+        if (typeof u.calculateEffectiveAuthority === 'function') u.calculateEffectiveAuthority();
+        else if (u.effectiveAuthority === undefined) u.effectiveAuthority = u.type.tier || 1;
+    });
+
     const myCommander = gameContext.units.find(u => 
-        u.team === team && u.type === UNIT_TYPES.commander
+        u.team === team && u.type === UNIT_TYPES.commander && u.hp > 0
     );
     
-    if (myCommander) {
-        units.forEach((unit, index) => {
-            // Defensive perimeter
-            const angle = (index / units.length) * Math.PI * 2; // This is deterministic, no random needed
-            const radius = 80 + gameContext.seedRandom.random() * 40; // Use seeded random
-            
+    let centralAssetToDefend = myCommander;
+    if (!centralAssetToDefend) {
+        const keyBuildings = gameContext.buildings.filter(b => b.team === team && b.type.producesUnits && b.hp > 0)
+                                           .sort((a,b) => (b.type.tier || 0) - (a.type.tier || 0));
+        if (keyBuildings.length > 0) {
+            centralAssetToDefend = keyBuildings[0];
+        } else if (units.length > 0) {
+            centralAssetToDefend = units.sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0))[0];
+        }
+    }
+
+    if (centralAssetToDefend) {
+        const highAuthorityUnits = units.filter(u => (u.effectiveAuthority || 0) > 10).sort((a,b) => (b.effectiveAuthority || 0) - (a.effectiveAuthority || 0));
+        const otherUnits = units.filter(u => (u.effectiveAuthority || 0) <= 10);
+
+        // High authority units take key defensive positions or act as mobile reserve
+        highAuthorityUnits.forEach((unit, index) => {
+            const angle = (index / Math.max(1, highAuthorityUnits.length)) * Math.PI * 2; // Avoid division by zero
+            const radius = 60 + gameContext.seedRandom.random() * 30;
             unit.patrolTarget = {
-                x: myCommander.x + Math.cos(angle) * radius,
-                y: myCommander.y + Math.sin(angle) * radius
+                x: centralAssetToDefend.x + Math.cos(angle) * radius,
+                y: centralAssetToDefend.y + Math.sin(angle) * radius
             };
+            unit.aggressiveness = 0.7;
+            // If damaged and high authority, pull back slightly more to preserve them
+            if (unit.hp < unit.maxHp * 0.65) {
+                 unit.patrolTarget.x = centralAssetToDefend.x + Math.cos(angle) * (radius + 40);
+                 unit.patrolTarget.y = centralAssetToDefend.y + Math.sin(angle) * (radius + 40);
+                 unit.aggressiveness = 0.5; // More cautious
+            }
         });
+
+        otherUnits.forEach((unit, index) => {
+            const angle = (index / Math.max(1, otherUnits.length)) * Math.PI * 2; // Avoid division by zero
+            const radius = 100 + gameContext.seedRandom.random() * 50;
+            unit.patrolTarget = {
+                x: centralAssetToDefend.x + Math.cos(angle) * radius,
+                y: centralAssetToDefend.y + Math.sin(angle) * radius
+            };
+            unit.aggressiveness = 0.6;
+        });
+
+        // Basic command structure arrangement: idle lower-authority units move towards a high-authority field commander
+        if (highAuthorityUnits.length > 0) {
+            const fieldCommander = highAuthorityUnits[0]; // Highest authority unit present
+            otherUnits.forEach(unit => {
+                // If unit is relatively idle and within a certain range of the field commander
+                if (!unit.target && !unit.patrolTarget && getDistance(unit, fieldCommander) < 250) {
+                    // Suggest moving towards the commander as a rally point / to receive orders
+                    // Unit's own `followSuperiorOrders` should handle actual command chain adherence.
+                    // This is an AI nudge to promote cohesion.
+                    unit.patrolTarget = {x: fieldCommander.x - 20 + gameContext.seedRandom.random() * 40, y: fieldCommander.y - 20 + gameContext.seedRandom.random() * 40};
+                }
+            });
+        }
     }
 }
 
 // Helper functions for tactical coordination
 function calculateGroupCenter(units) {
+    if (!units || units.length === 0) return { x: 0, y: 0 }; // Guard against empty or null units array
     const x = units.reduce((sum, u) => sum + u.x, 0) / units.length;
     const y = units.reduce((sum, u) => sum + u.y, 0) / units.length;
     return { x, y };
 }
 
 function calculateGroupStrength(units) {
-    return units.reduce((sum, u) => sum + (u.type.damage || 10), 0);
+    // Consider incorporating authority into strength calculation or as a separate factor
+    // Higher authority units contribute more to the "effective strength" of a group
+    let totalStrength = units.reduce((sum, u) => {
+        const unitBasePower = u.type.damage || 10; // Base power from damage
+        const authorityBonus = (u.effectiveAuthority || 0) * 0.5; // Add a fraction of authority as bonus strength
+        return sum + unitBasePower + authorityBonus;
+    }, 0);
+    return totalStrength;
 }
 
-function determineGroupRole(units) {
-    const hasHeavy = units.some(u => u.type.name === 'Tank');
-    const hasArtillery = units.some(u => u.type.name === 'Artillery');
-    
-    if (hasArtillery) return 'Artillery';
-    if (hasHeavy) return 'Assault';
-    return 'Skirmish';
+function determineGroupRole(units, leader) {
+    // Leader's type or high authority can influence group role
+    if (leader) { // Ensure leader exists
+        if (leader.effectiveAuthority > 15) { // Example threshold for high authority leader
+            if (UNIT_TYPES.commander && leader.type.name === UNIT_TYPES.commander.name) return 'Command Group';
+            if (leader.type.range > 150 && leader.type.damage > 20) return 'Fire Support Group'; // Sniper/Artillery leader
+        }
+        // If leader is a specialized unit, it could define the group role
+        if (leader.type.name === 'Artillery' && units.length > 1) return 'Artillery Battery';
+        if (leader.type.name === 'Shield Generator' && units.length > 1) return 'Shielded Column';
+    }
+
+
+    const hasHeavy = units.some(u => u.type.name === 'Tank' || u.type.tier >= 2);
+    const hasArtillery = units.some(u => u.type.name === 'Artillery'); // May duplicate above leader check
+    const allAreFast = units.every(u => (u.type.speed || 0) > 2.5);
+
+    if (allAreFast && units.length < 5) return 'Harassment Group';
+    if (hasArtillery && units.length > 2) return 'Artillery Support'; // Renamed from 'Artillery'
+    if (hasHeavy) return 'Heavy Assault';
+    return 'Light Skirmish';
 }
 
 function selectOptimalTarget(gameContext, team, group) {
-    const enemies = [...gameContext.units.filter(u => u.team !== team),
-                    ...gameContext.buildings.filter(b => b.team !== team)];
+    const enemies = [...gameContext.units.filter(u => u.team !== team && u.hp > 0),
+                    ...gameContext.buildings.filter(b => b.team !== team && b.hp > 0)];
     
+    if (enemies.length === 0) return null;
+
     let bestTarget = null;
     let bestScore = -Infinity;
+
+    // If group has a high-authority leader, they might prefer high-value targets
+    const leaderInfluenceFactor = (group.leader && (group.leader.effectiveAuthority || 0) > 10) ? 1.2 : 1.0;
     
     for (const enemy of enemies) {
-        const dist = Math.sqrt(
-            (enemy.x - group.center.x) ** 2 + (enemy.y - group.center.y) ** 2
-        );
+        const dist = getDistance(enemy, group.center);
         
         const baseAssetScore = calculateAssetScore(enemy);
-        let currentScore = baseAssetScore / (dist + TARGET_SCORE_DISTANCE_DIVISOR);
+        let currentScore = (baseAssetScore * leaderInfluenceFactor) / (dist + TARGET_SCORE_DISTANCE_DIVISOR);
 
-        // Avoid pointless attacks: Penalize score if group is too weak for the target, unless it's a commander
-        // Assuming group.strength is a reasonable proxy for the group's collective power.
-        // A more accurate sum of calculateBasePower for group members could be used if available on 'group'.
         const groupEffectivePower = group.strength;
+
+        // Penalize if group is too weak, unless target is very high value (like a commander)
         if (enemy.type !== UNIT_TYPES.commander && groupEffectivePower < baseAssetScore * MIN_POWER_RATIO_TO_ENGAGE_ENEMY) {
-            currentScore *= 0.1; // Heavily penalize if group is much weaker and target isn't commander
+            currentScore *= 0.1;
         }
         
-        // Additional prioritization can be added here if needed,
-        // though calculateBasePower already handles commanders and experimentals.
-        // Example: if (enemy.type?.produces) currentScore *= 1.2; // Slightly boost factories if not covered enough
+        // High-authority groups might be more willing to take on slightly tougher targets or strategically important ones
+        if (group.leader && (group.leader.effectiveAuthority || 0) > 15) {
+            if (enemy.type === UNIT_TYPES.commander || (enemy.type.producesUnits && enemy.type.tier >=2) ) {
+                currentScore *= 1.5;
+            }
+            // If leader is defensive, might prefer targets threatening own assets
+            if (group.leader.coreFocusMode === 'DEFENSIVE' && enemy.target && enemy.target.team === team) {
+                 currentScore *= 1.3;
+            }
+        }
+
 
         if (currentScore > bestScore) {
             bestScore = currentScore;
@@ -958,11 +1276,25 @@ function selectOptimalTarget(gameContext, team, group) {
     return bestTarget;
 }
 
-function assignGroupTarget(group, target) {
+function assignGroupTarget(group, target, leader) { // Leader added as parameter
     group.units.forEach(unit => {
         unit.target = target;
-        unit.lastTargetSwitch = Date.now();
+        unit.lastTargetSwitch = Date.now(); // Consider gameTime from gameContext if available
+        // If a leader is designated, other units in the group could be set to assist/follow leader more closely
+        // This is primarily a targeting assignment. Unit's individual AI (like followSuperiorOrders) handles actual following.
+        if (leader && unit !== leader) {
+            // If the unit is idle and the group has a leader attacking, it should also attack.
+            if (!unit.task || unit.task === 'idle') {
+                 unit.aggressiveness = Math.max(unit.aggressiveness, 0.85); // Become more aggressive if leader is initiating
+            }
+        }
     });
+    // The leader should also target the selected enemy.
+    if (leader) {
+        leader.target = target;
+        leader.lastTargetSwitch = Date.now();
+        leader.aggressiveness = Math.max(leader.aggressiveness, 0.9); // Leader should be aggressive
+    }
 }
 
 function createAttackFormations(units, formationSize) {
@@ -1043,28 +1375,42 @@ function renderAIPredictionsDebug(ctx, gameContext) {
         return;
     }
 
-    let baseFillR = 255, baseFillG = 255, baseFillB = 0; // Yellow for low
+    // Default colors & icon
+    let baseFillR = 255, baseFillG = 255, baseFillB = 0; // Yellow for low confidence (default)
     let pathAlpha = 0.4;
     let fillAlpha = 0.15;
+    let icon = "";
+    let iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.9)`; // Default icon color
 
-    if (prediction.confidence === 'medium') {
-        baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
-        pathAlpha = 0.6;
-        fillAlpha = 0.2;
-    } else if (prediction.confidence === 'high') {
-        baseFillR = 255; baseFillG = 0; baseFillB = 0;    // Red
-        pathAlpha = 0.8;
+    // Adjust colors and icon based on prediction state
+    if (prediction.isDisputed) {
+        baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange for disputed
+        pathAlpha = 0.7; // More visible path for disputed
         fillAlpha = 0.25;
+        icon = "?";
+    } else if (prediction.playerAcknowledged) {
+        baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan for acknowledged
+        pathAlpha = 0.9;
+        fillAlpha = 0.3;
+        icon = "✓";
+    } else { // Neutral / Uninteracted - use confidence level from numeric value
+        const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3; // Default to low if text
+        if (confidenceNum >= 0.75) { // High
+            baseFillR = 255; baseFillG = 0; baseFillB = 0;    // Red
+            pathAlpha = 0.8;
+            fillAlpha = 0.25;
+        } else if (confidenceNum >= 0.4) { // Medium
+            baseFillR = 255; baseFillG = 200; baseFillB = 0; // Brighter Yellow/Orange
+            pathAlpha = 0.6;
+            fillAlpha = 0.2;
+        }
+        // Low confidence uses the default yellow set above
     }
 
     let finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
     let finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+    iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`; // Icon color matches the state color, less transparent
 
-    if (prediction.playerAcknowledged) {
-        // Override with a distinct "acknowledged" color, e.g., Cyan or Bright Green
-        finalPathStrokeColor = 'rgba(0, 255, 255, 0.9)'; // Bright Cyan
-        finalFillColor = 'rgba(0, 255, 255, 0.3)';
-    }
 
     // Render Path
     if (prediction.path && prediction.path.length >= 2) {
@@ -1110,8 +1456,8 @@ function renderAIPredictionsDebug(ctx, gameContext) {
     // Render Target Area
     if (prediction.targetArea) {
         ctx.fillStyle = finalFillColor;
-        ctx.strokeStyle = finalPathStrokeColor;
-        ctx.lineWidth = Math.max(1, 1 * camera.zoom);
+        ctx.strokeStyle = finalPathStrokeColor; // Use the same color for stroke unless specified otherwise
+        ctx.lineWidth = Math.max(1, 1.5 * camera.zoom); // Slightly thicker border for clarity
 
         const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
         const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
@@ -1120,7 +1466,17 @@ function renderAIPredictionsDebug(ctx, gameContext) {
         ctx.beginPath();
         ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke(); // Optional border
+        ctx.stroke();
+
+        // Render Icon if any
+        if (icon) {
+            ctx.fillStyle = iconColor;
+            const iconSize = Math.max(12, 20 * camera.zoom); // Scale icon size
+            ctx.font = `bold ${iconSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, targetScreenX, targetScreenY);
+        }
     }
 }
 
@@ -1128,6 +1484,501 @@ function renderAIPredictionsDebug(ctx, gameContext) {
 if (typeof window !== 'undefined') {
     window.debugRTS = window.debugRTS || {}; // Ensure debugRTS object exists
     window.debugRTS.renderAIPredictionsDebug = renderAIPredictionsDebug;
+
+    // Overwriting renderCommandHierarchyDebug with enhanced version for UI display
+    // This is a workaround due to persistent issues modifying the original function directly.
+    window.debugRTS.renderCommandHierarchyDebug = function(ctx, gameContext) {
+        const { units } = gameContext.entityManager;
+        const camera = gameContext.camera;
+
+        if (!camera || !units) return;
+
+        units.forEach(unit => {
+            const screenX = (unit.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const screenY = (unit.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+
+            const unitVisualSize = (unit.type?.size || 10) * camera.zoom;
+            let yTextOffset = -(unitVisualSize * 0.5) - 5;
+
+            const rankToDisplay = unit.militaryRank || unit.veterancyLevel || null;
+            if (rankToDisplay) {
+                ctx.fillText(`${rankToDisplay}`, screenX, screenY + yTextOffset);
+                yTextOffset -= 12;
+            }
+
+            if (unit.effectiveAuthority !== undefined) {
+                if (typeof unit.calculateEffectiveAuthority === 'function' &&
+                    (unit.lastAuthorityUpdate === undefined || unit.lastAuthorityUpdate === 0 ||
+                     (gameContext.gameState?.gameTime && (gameContext.gameState.gameTime - unit.lastAuthorityUpdate > 5)))) {
+                     unit.calculateEffectiveAuthority();
+                }
+                ctx.fillText(`EA: ${unit.effectiveAuthority.toFixed(0)}`, screenX, screenY + yTextOffset);
+                // yTextOffset -= 12; // No decrement here if it's the last text line before icons/lines
+            }
+
+            if (unit.provideMoraleBonus) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                const auraRadius = Math.max(4 * camera.zoom, unitVisualSize * 0.7);
+                ctx.arc(screenX, screenY, auraRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            if (unit.canPromoteSubordinates) {
+                ctx.fillStyle = 'rgba(100, 170, 255, 0.95)';
+                const starBasePixelSize = 10;
+                const starRenderSize = Math.max(5, starBasePixelSize * camera.zoom);
+                ctx.font = `bold ${starRenderSize}px Arial`;
+
+                const starOffsetX = (unitVisualSize * 0.5) + (starRenderSize * 0.5);
+                const starOffsetY = -(unitVisualSize * 0.5) - (starRenderSize * 0.25);
+                ctx.fillText('★', screenX + starOffsetX, screenY + starOffsetY);
+            }
+
+            ctx.font = '10px Arial'; // Reset font
+
+            if (unit.currentCommander) {
+                const commanderScreenX = (unit.currentCommander.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const commanderScreenY = (unit.currentCommander.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                ctx.strokeStyle = '#ff0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY);
+                ctx.lineTo(commanderScreenX, commanderScreenY);
+                ctx.stroke();
+            }
+
+            if (unit.effectiveAuthority > 10) {
+                ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                const commandRangeSquad = (typeof COMMAND_CONFIG !== 'undefined' && COMMAND_CONFIG.COMMAND_RANGES?.SQUAD) ? COMMAND_CONFIG.COMMAND_RANGES.SQUAD : 150;
+                ctx.arc(screenX, screenY, commandRangeSquad * camera.zoom, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            if (unit.idealFormationSlotWorld) {
+                const idealSlotScreenX = (unit.idealFormationSlotWorld.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const idealSlotScreenY = (unit.idealFormationSlotWorld.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                ctx.fillStyle = 'rgba(0, 0, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(idealSlotScreenX, idealSlotScreenY, 5 * camera.zoom, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (unit.leaderPredictedPosition) {
+                const predLeaderScreenX = (unit.leaderPredictedPosition.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const predLeaderScreenY = (unit.leaderPredictedPosition.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                ctx.beginPath();
+                ctx.arc(predLeaderScreenX, predLeaderScreenY, 3 * camera.zoom, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+        ctx.textAlign = 'left';
+    };
+
+    // Overwriting renderAIPredictionsDebug with enhanced version for UI display
+    window.debugRTS.renderAIPredictionsDebug = function(ctx, gameContext) {
+        const prediction = gameContext.strategicAI ? gameContext.strategicAI.currentPrediction : null;
+        const camera = gameContext.camera;
+
+        if (!camera) return;
+
+        // Render Player-Designated Threats (even before they become full predictions)
+        if (gameContext.strategicAI && gameContext.strategicAI.playerDesignatedThreats) {
+            gameContext.strategicAI.playerDesignatedThreats.forEach(threat => {
+                // Only render if not yet processed into the current main prediction, or if it's a persistent marker
+                // For now, let's assume we always render them as long as they are in the array.
+                // A 'processed' flag or lifetime could be added to the threat object.
+                // if (threat.processed && threat.id === prediction?.id && prediction?.isPlayerDesignated) return;
+
+                const screenX = (threat.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (threat.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const radiusScreen = (threat.radius || 100) * camera.zoom;
+
+                ctx.strokeStyle = 'rgba(220, 50, 220, 0.8)'; // Vibrant Purple for player designated areas
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.2)';   // Lighter fill
+                ctx.lineWidth = Math.max(1, 2.5 * camera.zoom); // Slightly thicker line
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, radiusScreen, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                const iconSize = Math.max(12, 22 * camera.zoom); // Larger icon for player threats
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.95)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("!", screenX, screenY); // Exclamation mark for pending player threat
+            });
+        }
+
+        if (!prediction || prediction.type !== 'ENEMY_GROUND_ATTACK') {
+            ctx.textAlign = 'left'; // Reset text align if we return early
+            return;
+        }
+
+        let baseFillR = 255, baseFillG = 255, baseFillB = 0;
+        let pathAlpha = 0.4;
+        let fillAlpha = 0.15;
+        let icon = "";
+
+        if (prediction.isPlayerDesignated) {
+            baseFillR = 128; baseFillG = 0; baseFillB = 128; // Purple
+            pathAlpha = 0.9; fillAlpha = 0.35; icon = "🎯"; // Target symbol
+        } else if (prediction.isDisputed) {
+            baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
+            pathAlpha = 0.7; fillAlpha = 0.25; icon = "?";
+        } else if (prediction.playerAcknowledged) {
+            baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan
+            pathAlpha = 0.9; fillAlpha = 0.3; icon = "✓";
+        } else {
+            const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3;
+            if (confidenceNum >= 0.75) { baseFillR = 255; baseFillG = 0; baseFillB = 0; pathAlpha = 0.8; fillAlpha = 0.25; } // Red
+            else if (confidenceNum >= 0.4) { baseFillR = 255; baseFillG = 200; baseFillB = 0; pathAlpha = 0.6; fillAlpha = 0.2; } // Yellow-Orange
+        }
+
+        const finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
+        const finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+        const iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`;
+
+        if (prediction.path && prediction.path.length >= 2) {
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 3 * camera.zoom);
+            ctx.beginPath();
+            for (let i = 0; i < prediction.path.length; i++) {
+                const point = prediction.path[i];
+                const screenX = (point.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (point.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+            ctx.stroke();
+
+            for (let i = 0; i < prediction.path.length - 1; i++) {
+                const p1 = prediction.path[i];
+                const p2 = prediction.path[i+1];
+                const screenX1 = (p1.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY1 = (p1.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const screenX2 = (p2.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY2 = (p2.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                const midX = (screenX1 + screenX2) / 2;
+                const midY = (screenY1 + screenY2) / 2;
+                const angle = Math.atan2(screenY2 - screenY1, screenX2 - screenX1);
+                const arrowSize = 5 * camera.zoom;
+
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize * Math.cos(angle - Math.PI / 6), midY - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(midX - arrowSize * Math.cos(angle + Math.PI / 6), midY - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.strokeStyle = finalPathStrokeColor;
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                ctx.stroke();
+            }
+        }
+
+        if (prediction.targetArea) {
+            ctx.fillStyle = finalFillColor;
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 1.5 * camera.zoom);
+
+            const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            const radiusScreen = prediction.targetArea.radius * camera.zoom;
+
+            ctx.beginPath();
+            ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (icon) {
+                ctx.fillStyle = iconColor;
+                const iconSize = Math.max(12, 20 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon, targetScreenX, targetScreenY);
+            }
+        }
+        ctx.textAlign = 'left';
+    };
+
+    // Overwriting renderAIPredictionsDebug with enhanced version for UI display
+    window.debugRTS.renderAIPredictionsDebug = function(ctx, gameContext) {
+        const prediction = gameContext.strategicAI ? gameContext.strategicAI.currentPrediction : null;
+        const camera = gameContext.camera;
+
+        if (!camera) return;
+
+        // Render Player-Designated Threats (even before they become full predictions)
+        if (gameContext.strategicAI && gameContext.strategicAI.playerDesignatedThreats) {
+            gameContext.strategicAI.playerDesignatedThreats.forEach(threat => {
+                // Example: Don't render if it's already the current main prediction and isPlayerDesignated
+                if (prediction && prediction.isPlayerDesignated &&
+                    prediction.targetArea.x === threat.x && prediction.targetArea.y === threat.y) {
+                    // This threat is now the active, player-designated prediction, so it will be rendered by the main logic below
+                    return;
+                }
+
+                const screenX = (threat.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (threat.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const radiusScreen = (threat.radius || 100) * camera.zoom;
+
+                ctx.strokeStyle = 'rgba(220, 50, 220, 0.8)'; // Vibrant Purple for player designated areas
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.2)';   // Lighter fill
+                ctx.lineWidth = Math.max(1, 2.5 * camera.zoom);
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, radiusScreen, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                const iconSize = Math.max(12, 22 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.95)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("!", screenX, screenY);
+            });
+        }
+
+        if (!prediction || prediction.type !== 'ENEMY_GROUND_ATTACK') {
+            ctx.textAlign = 'left';
+            return;
+        }
+
+        let baseFillR = 255, baseFillG = 255, baseFillB = 0;
+        let pathAlpha = 0.4;
+        let fillAlpha = 0.15;
+        let icon = "";
+
+        if (prediction.isPlayerDesignated) {
+            baseFillR = 128; baseFillG = 0; baseFillB = 128; // Purple
+            pathAlpha = 0.9; fillAlpha = 0.35; icon = "🎯";
+        } else if (prediction.isDisputed) {
+            baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
+            pathAlpha = 0.7; fillAlpha = 0.25; icon = "?";
+        } else if (prediction.playerAcknowledged) {
+            baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan
+            pathAlpha = 0.9; fillAlpha = 0.3; icon = "✓";
+        } else {
+            const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3;
+            if (confidenceNum >= 0.75) { baseFillR = 255; baseFillG = 0; baseFillB = 0; pathAlpha = 0.8; fillAlpha = 0.25; } // Red
+            else if (confidenceNum >= 0.4) { baseFillR = 255; baseFillG = 200; baseFillB = 0; pathAlpha = 0.6; fillAlpha = 0.2; } // Yellow-Orange
+        }
+
+        const finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
+        const finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+        const iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`;
+
+        if (prediction.path && prediction.path.length >= 2) {
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 3 * camera.zoom);
+            ctx.beginPath();
+            for (let i = 0; i < prediction.path.length; i++) {
+                const point = prediction.path[i];
+                const screenX = (point.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (point.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+            ctx.stroke();
+
+            for (let i = 0; i < prediction.path.length - 1; i++) {
+                const p1 = prediction.path[i];
+                const p2 = prediction.path[i+1];
+                const screenX1 = (p1.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY1 = (p1.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const screenX2 = (p2.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY2 = (p2.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                const midX = (screenX1 + screenX2) / 2;
+                const midY = (screenY1 + screenY2) / 2;
+                const angle = Math.atan2(screenY2 - screenY1, screenX2 - screenX1);
+                const arrowSize = 5 * camera.zoom;
+
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize * Math.cos(angle - Math.PI / 6), midY - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(midX - arrowSize * Math.cos(angle + Math.PI / 6), midY - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.strokeStyle = finalPathStrokeColor;
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                ctx.stroke();
+            }
+        }
+
+        if (prediction.targetArea) {
+            ctx.fillStyle = finalFillColor;
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 1.5 * camera.zoom);
+
+            const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            const radiusScreen = prediction.targetArea.radius * camera.zoom;
+
+            ctx.beginPath();
+            ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (icon) {
+                ctx.fillStyle = iconColor;
+                const iconSize = Math.max(12, 20 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon, targetScreenX, targetScreenY);
+            }
+        }
+        ctx.textAlign = 'left';
+    };
+
+    // Overwriting renderAIPredictionsDebug with enhanced version for UI display
+    window.debugRTS.renderAIPredictionsDebug = function(ctx, gameContext) {
+        const strategicAI = gameContext.strategicAI; // Ensure we're getting the AI instance correctly
+        const prediction = strategicAI ? strategicAI.currentPrediction : null;
+        const camera = gameContext.camera;
+
+        if (!camera) return;
+
+        // Render Player-Designated Threats (even before they become full predictions)
+        if (strategicAI && strategicAI.playerDesignatedThreats) {
+            strategicAI.playerDesignatedThreats.forEach(threat => {
+                // Only render if not yet processed into the current main prediction, or if it's a persistent marker
+                if (prediction && prediction.isPlayerDesignated &&
+                    prediction.targetArea.x === threat.x && prediction.targetArea.y === threat.y &&
+                    prediction.targetArea.radius === (threat.radius || 100) ) {
+                    // This threat is now the active, player-designated prediction, so it will be rendered by the main logic below
+                    return;
+                }
+
+                const screenX = (threat.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (threat.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const radiusScreen = (threat.radius || 100) * camera.zoom;
+
+                ctx.strokeStyle = 'rgba(220, 50, 220, 0.8)'; // Vibrant Purple for player designated areas
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.2)';   // Lighter fill
+                ctx.lineWidth = Math.max(1, 2.5 * camera.zoom);
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, radiusScreen, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                const iconSize = Math.max(12, 22 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.fillStyle = 'rgba(220, 50, 220, 0.95)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText("!", screenX, screenY);
+            });
+        }
+
+        if (!prediction || prediction.type !== 'ENEMY_GROUND_ATTACK') {
+            ctx.textAlign = 'left';
+            return;
+        }
+
+        let baseFillR = 255, baseFillG = 255, baseFillB = 0;
+        let pathAlpha = 0.4;
+        let fillAlpha = 0.15;
+        let icon = "";
+
+        if (prediction.isPlayerDesignated) {
+            baseFillR = 128; baseFillG = 0; baseFillB = 128; // Purple
+            pathAlpha = 0.9; fillAlpha = 0.35; icon = "🎯";
+        } else if (prediction.isDisputed) {
+            baseFillR = 255; baseFillG = 165; baseFillB = 0; // Orange
+            pathAlpha = 0.7; fillAlpha = 0.25; icon = "?";
+        } else if (prediction.playerAcknowledged) {
+            baseFillR = 0; baseFillG = 255; baseFillB = 255; // Cyan
+            pathAlpha = 0.9; fillAlpha = 0.3; icon = "✓";
+        } else {
+            const confidenceNum = typeof prediction.confidence === 'number' ? prediction.confidence : 0.3;
+            if (confidenceNum >= 0.75) { baseFillR = 255; baseFillG = 0; baseFillB = 0; pathAlpha = 0.8; fillAlpha = 0.25; } // Red
+            else if (confidenceNum >= 0.4) { baseFillR = 255; baseFillG = 200; baseFillB = 0; pathAlpha = 0.6; fillAlpha = 0.2; } // Yellow-Orange
+        }
+
+        const finalPathStrokeColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${pathAlpha})`;
+        const finalFillColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, ${fillAlpha})`;
+        const iconColor = `rgba(${baseFillR}, ${baseFillG}, ${baseFillB}, 0.95)`;
+
+        if (prediction.path && prediction.path.length >= 2) {
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 3 * camera.zoom);
+            ctx.beginPath();
+            for (let i = 0; i < prediction.path.length; i++) {
+                const point = prediction.path[i];
+                const screenX = (point.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY = (point.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                if (i === 0) {
+                    ctx.moveTo(screenX, screenY);
+                } else {
+                    ctx.lineTo(screenX, screenY);
+                }
+            }
+            ctx.stroke();
+
+            for (let i = 0; i < prediction.path.length - 1; i++) {
+                const p1 = prediction.path[i];
+                const p2 = prediction.path[i+1];
+                const screenX1 = (p1.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY1 = (p1.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+                const screenX2 = (p2.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+                const screenY2 = (p2.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+
+                const midX = (screenX1 + screenX2) / 2;
+                const midY = (screenY1 + screenY2) / 2;
+                const angle = Math.atan2(screenY2 - screenY1, screenX2 - screenX1);
+                const arrowSize = 5 * camera.zoom;
+
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize * Math.cos(angle - Math.PI / 6), midY - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(midX, midY);
+                ctx.lineTo(midX - arrowSize * Math.cos(angle + Math.PI / 6), midY - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.strokeStyle = finalPathStrokeColor;
+                ctx.lineWidth = Math.max(1, 2 * camera.zoom);
+                ctx.stroke();
+            }
+        }
+
+        if (prediction.targetArea) {
+            ctx.fillStyle = finalFillColor;
+            ctx.strokeStyle = finalPathStrokeColor;
+            ctx.lineWidth = Math.max(1, 1.5 * camera.zoom);
+
+            const targetScreenX = (prediction.targetArea.x - camera.x) * camera.zoom + camera.canvasWidth / 2;
+            const targetScreenY = (prediction.targetArea.y - camera.y) * camera.zoom + camera.canvasHeight / 2;
+            const radiusScreen = prediction.targetArea.radius * camera.zoom;
+
+            ctx.beginPath();
+            ctx.arc(targetScreenX, targetScreenY, radiusScreen, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (icon) {
+                ctx.fillStyle = iconColor;
+                const iconSize = Math.max(12, 20 * camera.zoom);
+                ctx.font = `bold ${iconSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(icon, targetScreenX, targetScreenY);
+            }
+        }
+        ctx.textAlign = 'left';
+    };
 }
 
 [end of rtsgame/js/ai/strategicAI.js]

@@ -11,6 +11,20 @@ export class ModernUIManager {
         this.lastAlertTime = 0;
         this.minimapCanvas = null;
         this.minimapCtx = null;
+
+        this.alertContainer = document.getElementById('alertContainer');
+        if (!this.alertContainer) {
+            console.error("ModernUIManager: #alertContainer DOM element not found.");
+        }
+
+        // Cache DOM elements for Blue team resources (already done implicitly by getElementById in update)
+        // Explicitly cache Red team resource display elements
+        this.redMassDisplay = document.getElementById('red-mass');
+        this.redMassIncomeDisplay = document.getElementById('red-mass-income');
+        this.redEnergyDisplay = document.getElementById('red-energy');
+        this.redEnergyIncomeDisplay = document.getElementById('red-energy-income');
+        this.redComputroniumDisplay = document.getElementById('red-computronium');
+        this.redComputroniumIncomeDisplay = document.getElementById('red-computronium-income');
         
         this.init();
     }
@@ -58,8 +72,39 @@ export class ModernUIManager {
         this.updateTeamStatus(gameContext);
         this.updateMinimap(gameContext);
         this.updateUnitSelection(gameContext);
-        this.updateAlerts(gameContext);
+        // this.updateAlerts(gameContext); // Old alert logic, will be replaced by callout rendering
         this.updateProductionQueue(gameContext);
+
+        // Render callouts
+        if (this.gameContext.calloutManager && this.alertContainer) {
+            const activeCallouts = this.gameContext.calloutManager.activeCallouts;
+            this.alertContainer.innerHTML = '';
+
+            for (const callout of activeCallouts) {
+                const calloutDiv = document.createElement('div');
+                calloutDiv.className = `alert alert-priority-${callout.priority}`;
+                if (callout.acknowledged) {
+                    calloutDiv.classList.add('acknowledged');
+                }
+
+                const titleNode = document.createElement('strong');
+                titleNode.textContent = callout.title;
+                const messageNode = document.createElement('small');
+                messageNode.textContent = callout.message;
+
+                calloutDiv.appendChild(titleNode);
+                calloutDiv.appendChild(document.createElement('br'));
+                calloutDiv.appendChild(messageNode);
+
+                calloutDiv.title = `Click to acknowledge. ID: ${callout.id}. Location: ${callout.location ? Math.round(callout.location.x)+','+Math.round(callout.location.y) : 'N/A'}`;
+
+                calloutDiv.onclick = (e) => {
+                    e.stopPropagation();
+                    this.gameContext.calloutManager.acknowledgeCallout(callout.id);
+                };
+                this.alertContainer.appendChild(calloutDiv);
+            }
+        }
     }
     
     updateResourceBar(gameContext) {
@@ -83,6 +128,37 @@ export class ModernUIManager {
             const compIncomeEl = document.getElementById('blue-computronium-income');
             if (compEl) compEl.textContent = (resources.blue.computronium || 0).toFixed(1);
             if (compIncomeEl) compIncomeEl.textContent = (resources.blue.computroniumIncome || 0).toFixed(1);
+        }
+
+        // Update Red team resources
+        if (resources && resources.red) {
+            const redResources = resources.red;
+            if (this.redMassDisplay) {
+                this.redMassDisplay.textContent = Math.floor(redResources.mass || 0);
+            }
+            if (this.redMassIncomeDisplay) {
+                this.redMassIncomeDisplay.textContent = Math.floor(redResources.currentMassIncome || 0);
+            }
+            if (this.redEnergyDisplay) {
+                this.redEnergyDisplay.textContent = Math.floor(redResources.energy || 0);
+            }
+            if (this.redEnergyIncomeDisplay) {
+                this.redEnergyIncomeDisplay.textContent = Math.floor(redResources.currentEnergyIncome || 0);
+            }
+            if (this.redComputroniumDisplay) {
+                this.redComputroniumDisplay.textContent = Math.floor(redResources.computronium || 0);
+            }
+            if (this.redComputroniumIncomeDisplay) {
+                this.redComputroniumIncomeDisplay.textContent = Math.floor(redResources.currentComputroniumIncome || 0);
+            }
+        } else {
+            // Handle case where red resources might not be available by zeroing them out
+            if (this.redMassDisplay) this.redMassDisplay.textContent = '0';
+            if (this.redMassIncomeDisplay) this.redMassIncomeDisplay.textContent = '0';
+            if (this.redEnergyDisplay) this.redEnergyDisplay.textContent = '0';
+            if (this.redEnergyIncomeDisplay) this.redEnergyIncomeDisplay.textContent = '0';
+            if (this.redComputroniumDisplay) this.redComputroniumDisplay.textContent = '0';
+            if (this.redComputroniumIncomeDisplay) this.redComputroniumIncomeDisplay.textContent = '0';
         }
     }
     
@@ -275,6 +351,9 @@ export class ModernUIManager {
         if (this.alertQueue.length > 5) {
             this.alertQueue.shift();
         }
+        // This method is now largely superseded by the callout rendering logic in update()
+        // but is kept if other parts of the game still use it directly.
+        // For new callout system, rendering happens in update() method directly.
     }
     
     handleCommand(action) {

@@ -3,6 +3,7 @@ import { UNIT_TYPES } from '../config/unitTypes.js';
 import { BUILDING_TYPES } from '../config/buildingTypes.js'; // Added for performSupportRole tests
 import { TERRAIN_TYPES, TILE_SIZE, GRID_SIZE } from '../config/gameConstants.js'; // Added TILE_SIZE, GRID_SIZE
 import { ALLOY_TYPES } from '../config/alloyTypes.js'; // Import new Alloy types
+import { COMMAND_CONFIG } from '../config/commandConfig.js'; // Added for Authority tests
 
 // Mock Implementations (from existing test file)
 const getMockGameState = () => {
@@ -208,6 +209,218 @@ describe('Unit', () => {
 
   // ... other existing describe blocks ...
 
+  describe('Authority Calculations', () => {
+    let testUnit;
+    let testType;
+
+    beforeEach(() => {
+      // Use a fresh type and unit for each authority test to avoid interference
+      testType = cloneDeep(UNIT_TYPES.testUnitBase);
+      // Set a base commandAuthority for the type, which translates to baseAuthority for the unit
+      testType.tier = 2; // tier 2 * 10 = 20 baseAuthority
+      testType.support = false; // not a support unit, so no +5
+      // Ensure calculateEffectiveAuthority will have predictable inputs for veterancy and health
+      testType.maxHp = 100;
+
+
+      UNIT_TYPES.authorityTestUnit = testType;
+      testUnit = new Unit(0, 0, 'blue', UNIT_TYPES.authorityTestUnit, mockSim);
+      testUnit.hp = testUnit.maxHp; // Full health
+      testUnit.combatExperience = 0; // Green veterancy
+      testUnit.survivalTime = 0;
+      testUnit.commandExperience = 0;
+      testUnit.killCount = 0;
+
+      // Manually set default values for modifiers to ensure clean state for each test
+      testUnit.healthAuthorityModifier = 0;
+      testUnit.veterancyAuthorityModifier = 0;
+      testUnit.contextAuthorityModifier = 0;
+      testUnit.computroniumAuthorityModifier = 0;
+      // Recalculate to establish baseline with full health and green status before each specific test
+      testUnit.calculateEffectiveAuthority();
+    });
+
+    describe('Constructor Initialization', () => {
+      it('should initialize contextAuthorityModifier to 0', () => {
+        const unit = new Unit(0, 0, 'blue', UNIT_TYPES.testUnitBase, mockSim);
+        expect(unit.contextAuthorityModifier).toBe(0);
+      });
+
+      it('should initialize computroniumAuthorityModifier to 0', () => {
+        const unit = new Unit(0, 0, 'blue', UNIT_TYPES.testUnitBase, mockSim);
+        expect(unit.computroniumAuthorityModifier).toBe(0);
+      });
+    });
+
+    describe('calculateEffectiveAuthority', () => {
+      it('should calculate base effectiveAuthority correctly with all modifiers at 0', () => {
+        // Initial calculation in beforeEach already sets health/veterancy mods.
+        // For this test, we want them to be their "neutral" state (full health, green vet)
+        // baseAuthority for tier 2 non-support = 20
+        // healthAuthorityModifier for full health = +5
+        // veterancyAuthorityModifier for green = 0
+        // context and computronium are 0 by default.
+        // Expected: 20 (base) + 5 (health) + 0 (vet) + 0 (context) + 0 (comp) = 25
+        expect(testUnit.effectiveAuthority).toBe(testUnit.baseAuthority + 5 + 0 + 0 + 0);
+        expect(testUnit.effectiveAuthority).toBe(25);
+      });
+
+      it('should correctly factor in a non-default contextAuthorityModifier', () => {
+        const initialAuthority = testUnit.effectiveAuthority;
+        testUnit.contextAuthorityModifier = 10;
+        testUnit.calculateEffectiveAuthority();
+        expect(testUnit.effectiveAuthority).toBe(initialAuthority + 10);
+      });
+
+      it('should correctly factor in a non-default computroniumAuthorityModifier', () => {
+        const initialAuthority = testUnit.effectiveAuthority;
+        testUnit.computroniumAuthorityModifier = 7;
+        testUnit.calculateEffectiveAuthority();
+        expect(testUnit.effectiveAuthority).toBe(initialAuthority + 7);
+      });
+
+      it('should correctly factor in both context and computronium modifiers when non-default', () => {
+        const initialAuthority = testUnit.effectiveAuthority;
+        testUnit.contextAuthorityModifier = 3;
+        testUnit.computroniumAuthorityModifier = 4;
+        testUnit.calculateEffectiveAuthority();
+        expect(testUnit.effectiveAuthority).toBe(initialAuthority + 3 + 4);
+      });
+
+      it('should work with existing modifiers (health and veterancy)', () => {
+        // Base: 20
+        testUnit.hp = testUnit.maxHp * 0.1; // Critical status, health mod: -10
+        testUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.VETERAN; // Veteran, vet mod: +5
+        testUnit.contextAuthorityModifier = 2;
+        testUnit.computroniumAuthorityModifier = 3;
+
+        testUnit.calculateEffectiveAuthority();
+        // Expected: 20 (base) - 10 (health) + 5 (vet) + 2 (context) + 3 (comp) = 20
+        expect(testUnit.effectiveAuthority).toBe(20 - 10 + 5 + 2 + 3);
+        expect(testUnit.commandFitness).toBe('COMBAT_INEFFECTIVE'); // Due to very low health
+        expect(testUnit.veterancyLevel).toBe('VETERAN');
+      });
+
+      it('should handle negative modifiers correctly', () => {
+        const initialAuthority = testUnit.effectiveAuthority;
+        testUnit.contextAuthorityModifier = -5;
+        testUnit.computroniumAuthorityModifier = -2;
+        testUnit.calculateEffectiveAuthority();
+        expect(testUnit.effectiveAuthority).toBe(initialAuthority - 5 - 2);
+      });
+    });
+  });
+
+  describe('UI Data Availability', () => {
+    let uiTestUnit;
+    let uiTestType;
+
+    beforeEach(() => {
+      uiTestType = cloneDeep(UNIT_TYPES.testUnitBase);
+      // Ensure all relevant properties for veterancy exist for the base type
+      uiTestType.damage = 10;
+      uiTestType.speed = 50;
+      uiTestType.range = 100;
+
+      UNIT_TYPES.uiTestUnitType = uiTestType;
+      uiTestUnit = new Unit(0, 0, 'blue', UNIT_TYPES.uiTestUnitType, mockSim);
+      // Reset relevant properties before each test
+      uiTestUnit.combatExperience = 0;
+      uiTestUnit.survivalTime = 0;
+      uiTestUnit.commandExperience = 0;
+      uiTestUnit.killCount = 0;
+      uiTestUnit.veterancyLevel = 'GREEN';
+      uiTestUnit.canPromoteSubordinates = false;
+      uiTestUnit.provideMoraleBonus = false;
+      uiTestUnit.effectiveAuthority = 0; // Will be recalculated
+      uiTestUnit.lastAuthorityUpdate = 0; // Force recalculation
+      uiTestUnit.militaryRank = uiTestUnit.determineMilitaryRank(); // Recalculate rank based on type
+    });
+
+    it('should correctly determine militaryRank based on type and tier', () => {
+      const commanderType = { ...UNIT_TYPES.testUnitBase, name: UNIT_TYPES.commander.name, tier: UNIT_TYPES.commander.tier };
+      UNIT_TYPES.testCommanderTypeForRank = commanderType;
+      const commanderUnit = new Unit(0,0, 'blue', UNIT_TYPES.testCommanderTypeForRank, mockSim);
+      expect(commanderUnit.militaryRank).toBe('GENERAL');
+
+      const t3SupportType = { ...UNIT_TYPES.testUnitBase, tier: 3, support: true };
+      UNIT_TYPES.testT3SupportType = t3SupportType;
+      const t3SupportUnit = new Unit(0,0, 'blue', UNIT_TYPES.testT3SupportType, mockSim);
+      expect(t3SupportUnit.militaryRank).toBe('COLONEL');
+
+      const t2FighterType = { ...UNIT_TYPES.testUnitBase, tier: 2, support: false };
+      UNIT_TYPES.testT2FighterType = t2FighterType;
+      const t2FighterUnit = new Unit(0,0, 'blue', UNIT_TYPES.testT2FighterType, mockSim);
+      expect(t2FighterUnit.militaryRank).toBe('MAJOR');
+
+      const t1SupportType = { ...UNIT_TYPES.testUnitBase, tier: 1, support: true };
+       UNIT_TYPES.testT1SupportType = t1SupportType;
+      const t1SupportUnit = new Unit(0,0, 'blue', UNIT_TYPES.testT1SupportType, mockSim);
+      expect(t1SupportUnit.militaryRank).toBe('LIEUTENANT');
+
+      const t1RegularType = { ...UNIT_TYPES.testUnitBase, tier: 1, support: false };
+      UNIT_TYPES.testT1RegularType = t1RegularType;
+      const t1RegularUnit = new Unit(0,0, 'blue', UNIT_TYPES.testT1RegularType, mockSim);
+      expect(t1RegularUnit.militaryRank).toBe('SERGEANT');
+    });
+
+    it('should update veterancyLevel based on experience and apply benefits', () => {
+      // Test for REGULAR
+      uiTestUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.REGULAR;
+      uiTestUnit.updateVeterancyProgress(mockSim); // This calls calculateEffectiveAuthority which updates veterancyLevel
+      expect(uiTestUnit.veterancyLevel).toBe('REGULAR');
+      // applyVeterancyBenefits is called by processPromotion, which is called by updateVeterancyProgress
+      // We need to ensure processPromotion is triggered. A simple way is to manually set oldLevel different.
+      // Or better, ensure enough time passed for promotion cooldown.
+      uiTestUnit.lastPromotionTime = 0; // Reset promotion cooldown
+      uiTestUnit.processPromotion('GREEN', mockSim); // Manually trigger with old level
+      expect(uiTestUnit.damage).toBeCloseTo(UNIT_TYPES.uiTestUnitType.damage * 1.1);
+
+      // Test for VETERAN
+      uiTestUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.VETERAN;
+      uiTestUnit.lastPromotionTime = 0;
+      uiTestUnit.updateVeterancyProgress(mockSim);
+      uiTestUnit.processPromotion('REGULAR', mockSim);
+      expect(uiTestUnit.veterancyLevel).toBe('VETERAN');
+      expect(uiTestUnit.damage).toBeCloseTo(UNIT_TYPES.uiTestUnitType.damage * 1.2);
+
+      // Test for ELITE - should set canPromoteSubordinates
+      uiTestUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.ELITE;
+      uiTestUnit.lastPromotionTime = 0;
+      uiTestUnit.updateVeterancyProgress(mockSim);
+      uiTestUnit.processPromotion('VETERAN', mockSim);
+      expect(uiTestUnit.veterancyLevel).toBe('ELITE');
+      expect(uiTestUnit.canPromoteSubordinates).toBe(true);
+      expect(uiTestUnit.provideMoraleBonus).toBe(false); // Should not be true yet
+
+      // Test for HERO - should set canPromoteSubordinates and provideMoraleBonus
+      uiTestUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.HERO;
+      uiTestUnit.lastPromotionTime = 0;
+      uiTestUnit.updateVeterancyProgress(mockSim);
+      uiTestUnit.processPromotion('ELITE', mockSim);
+      expect(uiTestUnit.veterancyLevel).toBe('HERO');
+      expect(uiTestUnit.canPromoteSubordinates).toBe(true);
+      expect(uiTestUnit.provideMoraleBonus).toBe(true);
+    });
+
+    it('should have canPromoteSubordinates false at lower veterancy levels', () => {
+      uiTestUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.VETERAN;
+       uiTestUnit.lastPromotionTime = 0;
+      uiTestUnit.updateVeterancyProgress(mockSim);
+      uiTestUnit.processPromotion('REGULAR', mockSim);
+      expect(uiTestUnit.veterancyLevel).toBe('VETERAN');
+      expect(uiTestUnit.canPromoteSubordinates).toBe(false);
+    });
+
+    it('should have provideMoraleBonus false at lower than HERO veterancy levels', () => {
+      uiTestUnit.combatExperience = COMMAND_CONFIG.VETERANCY_THRESHOLDS.ELITE;
+       uiTestUnit.lastPromotionTime = 0;
+      uiTestUnit.updateVeterancyProgress(mockSim);
+      uiTestUnit.processPromotion('VETERAN', mockSim);
+      expect(uiTestUnit.veterancyLevel).toBe('ELITE');
+      expect(uiTestUnit.provideMoraleBonus).toBe(false);
+    });
+  });
 });
 
 // Jest setup for global types if not using modules (from existing file)

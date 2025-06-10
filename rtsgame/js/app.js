@@ -50,6 +50,7 @@ import { Caption } from './core/entities/caption.js'; // Import Caption class
 import { initThreeRenderer } from './rendering/threeRenderer.js'; // Import Three.js renderer
 // Minimap functionality removed
 import { ModernUIManager } from './ui/modernUIManager.js'; // NEW: Import Modern UI Manager
+import { CalloutManager } from './ui/calloutManager.js';
 import { exportGameStateToSpaceGraphData } from './visualization/spacegraphExporter.js';
 <<<<<<< HEAD
 import { CommandHierarchyUI } from './ui/commandHierarchyUI.js';
@@ -259,6 +260,10 @@ if (!gameContext.HEADLESS_MODE) {
     modernUIManager = new ModernUIManager(gameContext);
     console.log("Modern RTS UI initialized.");
 
+    gameContext.playerTeam = 'blue'; // Define playerTeam for simulated trigger
+    gameContext.calloutManager = new CalloutManager(gameContext);
+    gameContext.calloutManager.init();
+
     // Start the game loop
     console.log("Starting game loop with new Simulation engine...");
     let lastFrameTime = 0;
@@ -268,6 +273,43 @@ if (!gameContext.HEADLESS_MODE) {
     function animate(timestamp) {
         const deltaTime = lastFrameTime > 0 ? (timestamp - lastFrameTime) / 1000 : (1/60); // seconds
         lastFrameTime = timestamp;
+
+        if (gameContext.calloutManager) {
+            gameContext.calloutManager.update(deltaTime);
+        }
+
+        // SIMULATED TRIGGER FOR TESTING - REMOVE FOR PRODUCTION
+        if (simulation && simulation.gameState) {
+            if (!simulation.gameState.lastCalloutTestTime) simulation.gameState.lastCalloutTestTime = 0;
+            const currentTimeForCallout = simulation.gameState.gameTime || 0;
+
+            if (currentTimeForCallout > simulation.gameState.lastCalloutTestTime + 20) { // Every 20 game seconds
+                if (gameContext.calloutManager) {
+                    let playerBuilding = null;
+                    if (simulation.entityManager && simulation.entityManager.buildings) {
+                        playerBuilding = simulation.entityManager.buildings.find(b => b.team === gameContext.playerTeam && b.hp > 0);
+                    }
+
+                    const calloutData = {
+                        type: 'BASE_UNDER_ATTACK',
+                        title: 'TEST: Base Under Attack!',
+                        priority: 1,
+                        duration: 15000
+                    };
+                    if (playerBuilding) {
+                        calloutData.message = `Your ${(playerBuilding.type && playerBuilding.type.name) || 'building'} at (${Math.round(playerBuilding.x)}, ${Math.round(playerBuilding.y)}) is under attack!`;
+                        calloutData.location = { x: playerBuilding.x, y: playerBuilding.y };
+                        calloutData.targetEntityId = playerBuilding.id;
+                    } else {
+                        calloutData.message = 'You are under attack (simulated at default location)!';
+                        calloutData.location = { x: 2500, y: 2500 };
+                    }
+                    gameContext.calloutManager.addCallout(calloutData);
+                }
+                simulation.gameState.lastCalloutTestTime = currentTimeForCallout;
+            }
+        }
+        // END SIMULATED TRIGGER
         
         // Update SpaceGraph visualization periodically
         if (timestamp - lastSpacegraphUpdate > SPACEGRAPH_UPDATE_INTERVAL) {

@@ -34,13 +34,20 @@ export class SupComCamera {
             
             // Team orientation
             teamRotation: { blue: 0, red: 180 }, // Default facing directions
-            currentTeam: 'blue'
+            currentTeam: 'blue',
+            zoomSmoothingFactor: 0.2,
+            panSmoothingFactor: 0.25, // Added pan smoothing factor
         };
         
         // State tracking
         this.state = {
+            targetX: this.camera.x, // Initialize targetX with current camera position
+            targetY: this.camera.y, // Initialize targetY with current camera position
+            targetZoom: this.camera.zoom, // Initialize targetZoom with current zoom
+            isKeyboardPanningActive: false,
+            isEdgeScrollingActive: false,
             isDragging: false,
-            isEdgeScrolling: false,
+            // isEdgeScrolling: false, // Removed duplicate, isEdgeScrollingActive will be used
             lastMouseX: 0,
             lastMouseY: 0,
             velocityX: 0,
@@ -93,23 +100,37 @@ export class SupComCamera {
         // Clamp zoom
         const clampedZoom = Math.max(this.settings.minZoom, Math.min(this.settings.maxZoom, newZoom));
         
-        if (clampedZoom !== this.camera.zoom) {
-            // Zoom to cursor position
+        if (clampedZoom !== this.camera.zoom) { // Check against current camera zoom, not targetZoom, to see if a change is warranted
+            // Simplified "zoom to cursor" logic:
+            // Calculate world point under cursor BEFORE zoom change (using current camera.zoom)
             const worldX = (mouseX - this.camera.canvasWidth / 2) / this.camera.zoom + this.camera.x;
             const worldY = (mouseY - this.camera.canvasHeight / 2) / this.camera.zoom + this.camera.y;
+
+            // Set the target zoom for smooth interpolation in the update loop
+            this.state.targetZoom = clampedZoom;
+
+            // Calculate world point under cursor AFTER conceptual instant zoom to targetZoom (for panning adjustment)
+            // This uses the targetZoom (clampedZoom) for calculation
+            const newWorldX = (mouseX - this.camera.canvasWidth / 2) / clampedZoom + this.camera.x;
+            const newWorldY = (mouseY - this.camera.canvasHeight / 2) / clampedZoom + this.camera.y;
             
-            this.camera.zoom = clampedZoom;
-            
-            // Adjust camera position to keep mouse cursor over same world point
-            const newWorldX = (mouseX - this.camera.canvasWidth / 2) / this.camera.zoom + this.camera.x;
-            const newWorldY = (mouseY - this.camera.canvasHeight / 2) / this.camera.zoom + this.camera.y;
-            
+            // Adjust camera position to effectively keep the world point under the cursor fixed
+            // This adjustment is applied instantly to camera.x/y, the visual zoom will catch up.
             this.camera.x += worldX - newWorldX;
             this.camera.y += worldY - newWorldY;
-            
-            // Add zoom velocity for smooth follow-up
-            this.state.velocityZoom = (clampedZoom - this.camera.zoom) * 0.1;
+
+            // Removed: this.state.velocityZoom = (clampedZoom - this.camera.zoom) * 0.1;
         }
+    }
+
+    // Helper method to convert screen coordinates to world coordinates for a given zoom level
+    screenToWorld(screenX, screenY, zoomToUse) {
+        const canvasWidth = this.camera.canvasWidth || this.gameContext.canvas.width;
+        const canvasHeight = this.camera.canvasHeight || this.gameContext.canvas.height;
+        return {
+            x: (screenX - canvasWidth / 2) / zoomToUse + this.camera.x,
+            y: (screenY - canvasHeight / 2) / zoomToUse + this.camera.y
+        };
     }
     
     handleMouseDown(e) {
@@ -138,9 +159,9 @@ export class SupComCamera {
             const worldDeltaX = deltaX / this.camera.zoom;
             const worldDeltaY = deltaY / this.camera.zoom;
             
-            // Move camera (invert for natural drag feel)
-            this.camera.x -= worldDeltaX;
-            this.camera.y -= worldDeltaY;
+            // Update target camera position (invert for natural drag feel)
+            this.state.targetX -= worldDeltaX;
+            this.state.targetY -= worldDeltaY;
             
             // Store velocity for momentum
             this.state.velocityX = -worldDeltaX * 60; // Convert to per-second
@@ -246,12 +267,18 @@ export class SupComCamera {
         }
         
         if (scrollX !== 0 || scrollY !== 0) {
-            this.state.isEdgeScrolling = true;
-            const speed = this.settings.edgeScrollSpeed / this.camera.zoom;
-            this.state.velocityX = scrollX * speed;
-            this.state.velocityY = scrollY * speed;
+            if (!this.state.isEdgeScrollingActive) {
+                this.state.velocityX = 0; // Stop momentum
+                this.state.velocityY = 0;
+                this.state.isEdgeScrollingActive = true;
+            }
+            const moveAmount = (this.settings.edgeScrollSpeed / this.camera.zoom) * (16 / 1000); // Approximate deltaTime
+            this.state.targetX += scrollX * moveAmount;
+            this.state.targetY += scrollY * moveAmount;
+            this.state.isEdgeScrolling = true; // Keep for compatibility if other logic uses it
         } else {
-            this.state.isEdgeScrolling = false;
+            this.state.isEdgeScrollingActive = false;
+            this.state.isEdgeScrolling = false; // Keep for compatibility
         }
     }
     
@@ -283,15 +310,85 @@ export class SupComCamera {
     
     update(deltaTime) {
         this.updateKeyboardMovement(deltaTime);
+        // Momentum is applied to targetX/Y, so it should be calculated before smooth pan.
+        // But momentum should only kick in if there's no other active panning.
         this.updateMomentum(deltaTime);
+
+        this.updateSmoothPan(deltaTime);
+
+        if (typeof this.updateSmoothZoom === 'function') {
+            this.updateSmoothZoom(deltaTime);
+        }
+
         this.updateRotation(deltaTime);
-        this.updateCamera(deltaTime);
         this.update3DMode(deltaTime);
-        this.clampCameraPosition();
+
+        this.clampCameraPosition(); // Clamps actual camera.x/y/zoom
+
+        // After clamping, ensure targetX/Y/Zoom are consistent with the clamped camera values
+        // if no other user input is actively changing them. This prevents divergence.
+        if (!this.state.isDragging && !this.state.isKeyboardPanningActive && !this.state.isEdgeScrollingActive) {
+            this.state.targetX = this.camera.x;
+            this.state.targetY = this.camera.y;
+        }
+        // targetZoom is handled by its own logic (snapping when close)
+
+        this.updateCamera(deltaTime); // Updates renderer camera from this.camera
+    }
+
+    updateSmoothPan(deltaTime) {
+        const panFactor = this.settings.panSmoothingFactor;
+
+        if (Math.abs(this.camera.x - this.state.targetX) > 0.01) {
+            this.camera.x += (this.state.targetX - this.camera.x) * panFactor;
+        } else {
+            this.camera.x = this.state.targetX;
+        }
+
+        if (Math.abs(this.camera.y - this.state.targetY) > 0.01) {
+            this.camera.y += (this.state.targetY - this.camera.y) * panFactor;
+        } else {
+            this.camera.y = this.state.targetY;
+        }
+    }
+
+    updateSmoothZoom(deltaTime) {
+        if (Math.abs(this.camera.zoom - this.state.targetZoom) > 0.0001) {
+            const zoomDiff = this.state.targetZoom - this.camera.zoom;
+            const zoomChange = zoomDiff * this.settings.zoomSmoothingFactor;
+
+            // Store world point under cursor before zoom, using current actual zoom
+            const mouseWorldPosBefore = this.screenToWorld(this.state.mousePosition.x, this.state.mousePosition.y, this.camera.zoom);
+
+            this.camera.zoom += zoomChange;
+
+            // Adjust camera position to keep mouse cursor over the same world point after this incremental zoom
+            const mouseWorldPosAfter = this.screenToWorld(this.state.mousePosition.x, this.state.mousePosition.y, this.camera.zoom);
+
+            this.camera.x += mouseWorldPosBefore.x - mouseWorldPosAfter.x;
+            this.camera.y += mouseWorldPosBefore.y - mouseWorldPosAfter.y;
+
+            if (Math.abs(this.camera.zoom - this.state.targetZoom) < 0.0001) {
+                this.camera.zoom = this.state.targetZoom;
+            }
+        }
     }
     
     updateKeyboardMovement(deltaTime) {
-        if (this.state.isDragging) return; // Don't interfere with drag
+        if (this.state.isDragging) {
+             this.state.isKeyboardPanningActive = false; // Ensure flag is off if dragging
+             return; // Don't interfere with drag
+        }
+
+        if (this.state.keys.w || this.state.keys.a || this.state.keys.s || this.state.keys.d) {
+            if (!this.state.isKeyboardPanningActive) {
+                this.state.velocityX = 0; // Stop momentum when keyboard panning starts
+                this.state.velocityY = 0;
+                this.state.isKeyboardPanningActive = true;
+            }
+        } else {
+            this.state.isKeyboardPanningActive = false;
+        }
         
         const speed = this.settings.keyboardMoveSpeed / this.camera.zoom;
         const moveSpeed = speed * deltaTime;
@@ -300,10 +397,10 @@ export class SupComCamera {
         const multiplier = this.state.keys.shift ? 3 : this.state.keys.ctrl ? 0.3 : 1;
         const adjustedSpeed = moveSpeed * multiplier;
         
-        if (this.state.keys.w) this.camera.y -= adjustedSpeed;
-        if (this.state.keys.s) this.camera.y += adjustedSpeed;
-        if (this.state.keys.a) this.camera.x -= adjustedSpeed;
-        if (this.state.keys.d) this.camera.x += adjustedSpeed;
+        if (this.state.keys.w) this.state.targetY -= adjustedSpeed;
+        if (this.state.keys.s) this.state.targetY += adjustedSpeed;
+        if (this.state.keys.a) this.state.targetX -= adjustedSpeed;
+        if (this.state.keys.d) this.state.targetX += adjustedSpeed;
         
         // Rotation
         if (this.state.keys.q) {
@@ -317,14 +414,38 @@ export class SupComCamera {
     }
     
     updateMomentum(deltaTime) {
-        if (this.state.isDragging || this.state.isEdgeScrolling) return;
+        const isActivelyPanning = this.state.isDragging || this.state.isKeyboardPanningActive || this.state.isEdgeScrollingActive;
+
+        // If there's active input or camera is not yet at its target, momentum should not apply or should be reset.
+        if (isActivelyPanning) {
+            // If user takes over with active panning, kill existing momentum.
+            // Exception: Dragging sets its own velocity which then becomes momentum.
+            if (!this.state.isDragging) {
+                 this.state.velocityX = 0;
+                 this.state.velocityY = 0;
+            }
+            return;
+        }
+
+        // Check if camera has (practically) reached its smooth pan target.
+        // Only apply momentum if it has.
+        const isAtTargetX = Math.abs(this.camera.x - this.state.targetX) < 0.1; // Increased threshold
+        const isAtTargetY = Math.abs(this.camera.y - this.state.targetY) < 0.1; // Increased threshold
+
+        if (isAtTargetX && isAtTargetY) {
+            if (Math.abs(this.state.velocityX) > 0.1 || Math.abs(this.state.velocityY) > 0.1) {
+                // Apply momentum to the targetX/Y, which camera.x/y will then smoothly follow.
+                this.state.targetX += this.state.velocityX * deltaTime;
+                this.state.targetY += this.state.velocityY * deltaTime;
+            }
+        }
         
-        // Apply momentum
-        this.camera.x += this.state.velocityX * deltaTime;
-        this.camera.y += this.state.velocityY * deltaTime;
-        
-        // Decay momentum
-        this.state.velocityX *= this.settings.momentum;
+        // Decay momentum regardless of whether it was applied this frame,
+        // unless dragging is actively setting new velocity.
+        if (!this.state.isDragging) {
+            this.state.velocityX *= this.settings.momentum;
+            this.state.velocityY *= this.settings.momentum;
+        }
         this.state.velocityY *= this.settings.momentum;
         
         // Stop very small velocities
@@ -411,10 +532,16 @@ export class SupComCamera {
     
     // Focus camera on specific position
     focusOn(x, y, zoom = null) {
-        this.camera.x = x;
+        this.camera.x = x; // Snap current camera position
         this.camera.y = y;
+        this.state.targetX = x; // Set target for smooth panning
+        this.state.targetY = y;
+
         if (zoom !== null) {
-            this.camera.zoom = zoom;
+            this.camera.zoom = zoom; // Snap current zoom
+            if (this.state.targetZoom !== undefined) { // Check if targetZoom exists
+                this.state.targetZoom = zoom; // Set target for smooth zooming
+            }
         }
         
         // Clear momentum
