@@ -412,6 +412,19 @@ class Unit {
 
         // Update veterancy tracking (as per implementation-guide.md Section 1.3)
         this.updateVeterancyProgress(simulation); // Pass simulation as gameContext
+<<<<<<< HEAD
+        
+        // Apply morale bonus if capable
+        if (this.provideMoraleBonus) {
+            this.applyMoraleBonus(simulation);
+        }
+        
+        // Handle subordinate promotions if capable
+        if (this.canPromoteSubordinates) {
+            this.handleSubordinatePromotions(simulation);
+        }
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
     }
 
     defaultMovementAndTargeting(simulation, deltaTime) { // Renamed gameContext, added deltaTime
@@ -1668,6 +1681,42 @@ class Unit {
     }
 
     processPromotion(oldLevel, gameContext) {
+<<<<<<< HEAD
+        const newLevel = this.getVeterancyLevel();
+        if (newLevel !== oldLevel) {
+            console.log(`[Unit] ${this.type.name} promoted from ${oldLevel} to ${newLevel}`);
+            
+            // Apply veterancy benefits based on new level
+            this.applyVeterancyBenefits();
+            
+            // Update command authority
+            this.updateVeterancyAuthorityModifier();
+            
+            // Trigger promotion callback if set
+            if (this.onPromotion) {
+                this.onPromotion(this, oldLevel, newLevel);
+            }
+            
+            // Update last promotion time
+            this.lastPromotionTime = Date.now();
+            
+            // Show promotion effect
+            if (gameContext) {
+                const effect = new Effect(this.x, this.y, 'promotion', gameContext);
+                gameContext.entityManager.addEffect(effect);
+                
+                // Show promotion caption
+                const caption = new Caption(
+                    this.x,
+                    this.y - 30,
+                    `Promoted to ${newLevel}!`,
+                    '#FFD700',
+                    2000,
+                    gameContext
+                );
+                gameContext.entityManager.addCaption(caption);
+            }
+=======
         const { entityManager, gameState } = gameContext;
         const now = performance.now();
 
@@ -1692,10 +1741,158 @@ class Unit {
         if (gameState && typeof gameState.addEvent === 'function') {
             gameState.addEvent('promotion',
                 `${this.team} ${this.type.name} promoted to ${this.veterancyLevel}`, 2);
+>>>>>>> origin/jules_wip_12008771546559725757
         }
     }
 
     applyVeterancyBenefits() {
+<<<<<<< HEAD
+        const level = this.getVeterancyLevel();
+        
+        // Reset benefits
+        this.canPromoteSubordinates = false;
+        this.provideMoraleBonus = false;
+        
+        // Apply benefits based on veterancy level
+        switch (level) {
+            case 'REGULAR':
+                // Basic stat improvements
+                this.maxHp *= 1.1;
+                this.hp = this.maxHp;
+                this.speed *= 1.05;
+                break;
+                
+            case 'VETERAN':
+                // Enhanced combat capabilities
+                this.maxHp *= 1.15;
+                this.hp = this.maxHp;
+                this.speed *= 1.1;
+                this.armorValue *= 1.1;
+                this.provideMoraleBonus = true; // Can provide morale bonus to nearby units
+                break;
+                
+            case 'ELITE':
+                // Advanced combat and command capabilities
+                this.maxHp *= 1.2;
+                this.hp = this.maxHp;
+                this.speed *= 1.15;
+                this.armorValue *= 1.2;
+                this.provideMoraleBonus = true;
+                this.canPromoteSubordinates = true; // Can promote subordinates
+                break;
+                
+            case 'HERO':
+                // Maximum capabilities
+                this.maxHp *= 1.3;
+                this.hp = this.maxHp;
+                this.speed *= 1.2;
+                this.armorValue *= 1.3;
+                this.provideMoraleBonus = true;
+                this.canPromoteSubordinates = true;
+                // Additional hero benefits
+                this.shieldRegenRate *= 1.5;
+                this.coreEfficiency *= 1.2;
+                break;
+        }
+        
+        // Update flee threshold based on new maxHp
+        this.fleeThreshold = this.maxHp * 0.2;
+    }
+
+    updateVeterancyAuthorityModifier() {
+        const level = this.getVeterancyLevel();
+        let modifier = 0;
+        
+        switch (level) {
+            case 'REGULAR':
+                modifier = 2;
+                break;
+            case 'VETERAN':
+                modifier = 5;
+                break;
+            case 'ELITE':
+                modifier = 10;
+                break;
+            case 'HERO':
+                modifier = COMMAND_CONFIG.AUTHORITY_WEIGHTS.VETERANCY_MAX_MODIFIER;
+                break;
+        }
+        
+        this.veterancyAuthorityModifier = modifier;
+        this.calculateEffectiveAuthority();
+    }
+
+    // Add method to apply morale bonus to nearby units
+    applyMoraleBonus(gameContext) {
+        if (!this.provideMoraleBonus) return;
+        
+        const units = gameContext.entityManager.units;
+        const MORALE_RANGE = 100; // Range for morale bonus effect
+        
+        for (const unit of units) {
+            if (unit.team === this.team && unit !== this) {
+                const distance = this.getDistance(unit);
+                if (distance <= MORALE_RANGE) {
+                    // Apply scaling bonus based on distance
+                    const distanceFactor = 1 - (distance / MORALE_RANGE);
+                    const bonus = 0.1 * distanceFactor; // 10% max bonus
+                    
+                    // Apply temporary combat bonuses
+                    unit.tempCombatBonus = (unit.tempCombatBonus || 0) + bonus;
+                    
+                    // Show morale effect
+                    if (Math.random() < 0.1) { // 10% chance per frame to show effect
+                        const effect = new Effect(unit.x, unit.y, 'morale', gameContext);
+                        gameContext.entityManager.addEffect(effect);
+                    }
+                }
+            }
+        }
+    }
+
+    // Add method to handle subordinate promotions
+    handleSubordinatePromotions(gameContext) {
+        if (!this.canPromoteSubordinates) return;
+        
+        const units = gameContext.entityManager.units;
+        const PROMOTION_RANGE = 150; // Range for promotion influence
+        const PROMOTION_COOLDOWN = COMMAND_CONFIG.UPDATE_INTERVALS.PROMOTION_COOLDOWN;
+        
+        for (const unit of units) {
+            if (unit.team === this.team && 
+                unit !== this && 
+                unit.currentCommander === this &&
+                Date.now() - unit.lastPromotionTime > PROMOTION_COOLDOWN) {
+                
+                const distance = this.getDistance(unit);
+                if (distance <= PROMOTION_RANGE) {
+                    // Check if unit is close to next veterancy level
+                    const nextThreshold = COMMAND_CONFIG.VETERANCY_THRESHOLDS[unit.getVeterancyLevel()];
+                    const currentProgress = unit.combatExperience / nextThreshold;
+                    
+                    if (currentProgress >= 0.9) { // 90% to next level
+                        // Grant bonus experience to push over threshold
+                        const bonusExp = nextThreshold - unit.combatExperience + 1;
+                        unit.combatExperience += bonusExp;
+                        
+                        // Show promotion effect
+                        const effect = new Effect(unit.x, unit.y, 'promotion', gameContext);
+                        gameContext.entityManager.addEffect(effect);
+                        
+                        // Show promotion caption
+                        const caption = new Caption(
+                            unit.x,
+                            unit.y - 30,
+                            'Promoted by Commander!',
+                            '#FFD700',
+                            2000,
+                            gameContext
+                        );
+                        gameContext.entityManager.addCaption(caption);
+                    }
+                }
+            }
+=======
         const baseDamage = this.type.damage;
         const baseSpeed = this.type.speed; // Assuming this.type.speed is the base speed
         const baseRange = this.type.range;
@@ -1737,6 +1934,7 @@ class Unit {
         // Ensure speed does not become negative
         if (this.speed < 0) {
             this.speed = 0;
+>>>>>>> origin/jules_wip_12008771546559725757
         }
     }
 }

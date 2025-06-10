@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as cp from "child_process";
 import * as path from "path";
 import * as os from "os";
-import { IpcServer } from "@roocode/ipc";
+import { IpcServer } from "@roo-code/ipc";
 import {
     DGMTaskCommandName,
     IpcMessage,
@@ -12,7 +12,7 @@ import {
     dgmToUpperEchoResponsePayloadSchema,
     DGMToUpperEchoResponsePayload,
     TaskEvent
-} from "@roocode/types";
+} from "@roo-code/types";
 import { LLMAttentionPortalPanel } from "../panels/LLMAttentionPortalPanel"; // Added import
 
 // Helper to generate a unique socket path
