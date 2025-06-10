@@ -330,806 +330,6 @@ fun <A, B> Series<A>.zip(other: Series<B>): Series<Pair<A, B>> {
     return (this.size j { i -> Pair(this[i], other[i]) })
 }
 
-/**
- * Represents a single candlestick (Kline) data point.
- * Adapted from ta4k.core.model.Kline.
- *
- * @property openTimeMillis The timestamp when the kline opened, in milliseconds since epoch.
- * @property openPrice The opening price for the kline period.
- * @property highPrice The highest price during the kline period.
- * @property lowPrice The lowest price during the kline period.
- * @property closePrice The closing price for the kline period.
- * @property volume The trading volume during the kline period (in base asset).
- * @property closeTimeMillis The timestamp when the kline closed, in milliseconds since epoch.
- * // Optional fields from ta4k's Kline, can be added if necessary later:
- * // val quoteAssetVolume: BigDecimal,
- * // val numberOfTrades: Int,
- * // val takerBuyBaseAssetVolume: BigDecimal,
- * // val takerBuyQuoteAssetVolume: BigDecimal
- */
-data class Kline(
-    val openTimeMillis: Long, // Using Long directly, equivalent to EpochMillis
-    val openPrice: BigDecimal,
-    val highPrice: BigDecimal,
-    val lowPrice: BigDecimal,
-    val closePrice: BigDecimal,
-    val volume: BigDecimal,
-    val closeTimeMillis: Long // Using Long directly
-) {
-    val openTime: java.time.Instant
-        get() = java.time.Instant.ofEpochMilli(openTimeMillis)
-
-    val closeTime: java.time.Instant
-        get() = java.time.Instant.ofEpochMilli(closeTimeMillis)
-
-    fun openLocalDateTime(zoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC): java.time.LocalDateTime =
-        java.time.LocalDateTime.ofInstant(openTime, zoneOffset)
-
-    fun closeLocalDateTime(zoneOffset: java.time.ZoneOffset = java.time.ZoneOffset.UTC): java.time.LocalDateTime =
-        java.time.LocalDateTime.ofInstant(closeTime, zoneOffset)
-
-    override fun toString(): String {
-        return "Kline(T=${openTimeMillis}, O=${openPrice.toPlainString()}, H=${highPrice.toPlainString()}, L=${lowPrice.toPlainString()}, C=${closePrice.toPlainString()}, V=${volume.toPlainString()})"
-    }
-}
-
-/**
- * Type alias for a time series of [Kline] objects, using the script's Series.
- */
-typealias KlineSeries = Series<Kline>
-
-// --- Technical Indicators (Re-implemented based on ta4k) ---
-
-/**
- * Simple Moving Average (SMA) indicator.
- * Calculates the average of a kline property (typically close price) over a specified period.
- * Operates on the script's [KlineSeries].
- */
-class SMAIndicator(
-    private val klineSeries: KlineSeries,
-    private val period: Int,
-    private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
-) {
-    init {
-        require(period > 0) { "Period must be positive" }
-    }
-
-    private val results = mutableListOf<BigDecimal?>()
-    private var calculatedUpToIndex = -1
-
-    private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
-            return
-        }
-
-        if (results.size < klineSeries.size) {
-            for (k in results.size until klineSeries.size) {
-                results.add(null)
-            }
-        }
-
-        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
-
-        for (i in startIndex..targetIndex) {
-            if (i < period - 1) {
-                results[i] = null // Not enough data
-                continue
-            }
-
-            var sum = BigDecimal.ZERO
-            for (j in 0 until period) {
-                sum += klinePropertySelector(klineSeries[i - j])
-            }
-
-            val currentKlinePrice = klinePropertySelector(klineSeries[i])
-            // Use a fixed scale for division, or derive from price scale.
-            // Adding a few extra decimal places for precision in average.
-            val calculationScale = (currentKlinePrice.scale() + 4).coerceAtLeast(8)
-            results[i] = sum.divide(BigDecimal(period), calculationScale, java.math.RoundingMode.HALF_UP)
-        }
-        calculatedUpToIndex = targetIndex
-    }
-
-    fun getValue(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
-            return null
-        }
-        ensureCalculatedUpTo(index)
-        return results.getOrNull(index) // Use getOrNull for safety, though pre-padding should ensure it exists
-    }
-
-    val values: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            // Ensure 'j' (the Series constructor infix fun) is accessible in this scope.
-            // It's defined in the TrikeShed Core Definitions section of the script.
-            return klineSeries.size j { index ->
-                results.getOrNull(index)
-            }
-        }
-}
-
-/**
- * Average True Range (ATR) indicator.
- * Measures market volatility.
- * Operates on the script's [KlineSeries].
- * Re-implemented based on ta4k.indicators.ATRIndicator.
- */
-class ATRIndicator(
-    private val klineSeries: KlineSeries,
-    private val period: Int
-) {
-    init {
-        require(period > 0) { "Period must be positive" }
-    }
-
-    private val trueRangeResults = mutableListOf<BigDecimal?>()
-    private val atrResults = mutableListOf<BigDecimal?>()
-    private var calculatedUpToIndex = -1
-
-    // Attempt to get a sensible scale from the first kline's close price, default if not possible.
-    private val defaultPriceScale = 4 // Default scale if price data is unavailable or has no scale
-    private val resultScale = klineSeries.let { ks ->
-        if (ks.size > 0) {
-            val firstKline = ks[0]
-            (firstKline.closePrice.scale() + 2).coerceAtLeast(defaultPriceScale)
-        } else {
-            defaultPriceScale
-        }
-    }
-    private val calculationScale = (resultScale + 4).coerceAtLeast(8)
-
-
-    private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
-            return
-        }
-
-        val periodBigDecimal = BigDecimal(period)
-
-        if (calculatedUpToIndex == -1 && klineSeries.size > 0) { // First major run
-            for (k in 0 until klineSeries.size) {
-                trueRangeResults.add(null)
-                atrResults.add(null)
-            }
-        } else { // Ensure lists are large enough if called again to extend
-            while (trueRangeResults.size < klineSeries.size) trueRangeResults.add(null)
-            while (atrResults.size < klineSeries.size) atrResults.add(null)
-        }
-
-        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
-
-        for (i in startIndex..targetIndex) {
-            val currentKline = klineSeries[i]
-            val high = currentKline.highPrice
-            val low = currentKline.lowPrice
-
-            val currentRawTR: BigDecimal
-            if (i == 0) {
-                currentRawTR = high.subtract(low)
-            } else {
-                val prevClose = klineSeries[i - 1].closePrice
-                var tr = high.subtract(low)
-                tr = tr.max(high.subtract(prevClose).abs())
-                tr = tr.max(low.subtract(prevClose).abs())
-                currentRawTR = tr
-            }
-            trueRangeResults[i] = currentRawTR
-
-            if (i < period - 1) {
-                // atrResults[i] remains null
-            } else if (i == period - 1) {
-                var sumTR = BigDecimal.ZERO
-                for (j in 0 until period) {
-                    sumTR += trueRangeResults[j] ?: BigDecimal.ZERO
-                }
-                val firstAtr = sumTR.divide(periodBigDecimal, calculationScale, java.math.RoundingMode.HALF_UP)
-                atrResults[i] = firstAtr
-            } else { // i >= period
-                val prevAtr = atrResults[i - 1] ?: BigDecimal.ZERO
-                val currentTRForSmoothing = trueRangeResults[i] ?: BigDecimal.ZERO
-
-                // Wilder's smoothing: ATR = [(Prior ATR * (n-1)) + Current TR] / n
-                val atr = (prevAtr.multiply(periodBigDecimal.subtract(BigDecimal.ONE)).add(currentTRForSmoothing))
-                    .divide(periodBigDecimal, calculationScale, java.math.RoundingMode.HALF_UP)
-                atrResults[i] = atr
-            }
-        }
-        calculatedUpToIndex = targetIndex
-    }
-
-    fun getTrueRange(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
-            return null
-        }
-        ensureCalculatedUpTo(index)
-        val rawTR = trueRangeResults.getOrNull(index)
-        return rawTR?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
-    }
-
-    fun getValue(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
-            return null
-        }
-        ensureCalculatedUpTo(index)
-        val rawAtr = atrResults.getOrNull(index)
-        return rawAtr?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
-    }
-
-    val values: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx ->
-                this.getValue(idx)
-            }
-        }
-
-    val trueRangeValues: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx ->
-                this.getTrueRange(idx)
-            }
-        }
-}
-
-/**
- * Utility functions for smoothing indicator values.
- */
-object SmoothingUtils {
-    /**
-     * Applies Wilder's smoothing.
-     * Formula: NewValue = PreviousSmoothedValue - PreviousSmoothedValue/Period + CurrentValueToSmooth
-     * The first smoothed value is the simple average of the first 'period' values from the input.
-     *
-     * @param valuesToSmooth A List of BigDecimal values to be smoothed. Nulls are treated as zero in the initial sum.
-     * @param period The smoothing period.
-     * @param calculationScale The scale for internal calculations and the output.
-     * @return A List of smoothed BigDecimal values, same size as input. Initial values before enough data will be null.
-     */
-    fun wildersSmooth(
-        valuesToSmooth: List<BigDecimal?>,
-        period: Int,
-        calculationScale: Int
-    ): List<BigDecimal?> {
-        require(period > 0) { "Period must be positive" }
-        if (valuesToSmooth.isEmpty()) return emptyList()
-
-        val smoothedValues = MutableList<BigDecimal?>(valuesToSmooth.size) { null }
-
-        if (valuesToSmooth.size < period) return smoothedValues // Not enough data for even the first SMA
-
-        val periodBd = BigDecimal(period)
-        var previousSmoothedValue: BigDecimal? = null
-
-        for (i in valuesToSmooth.indices) {
-            if (i < period - 1) {
-                // smoothedValues[i] is already null
-                continue
-            }
-
-            val currentValueToSmooth = valuesToSmooth[i]
-
-            if (i == period - 1) {
-                // First smoothed value is the average of the initial 'period' values
-                var sumOfFirstPeriod = BigDecimal.ZERO
-                for (k in 0 until period) {
-                    sumOfFirstPeriod += valuesToSmooth[k] ?: BigDecimal.ZERO // Treat null as zero for initial sum
-                }
-                previousSmoothedValue = sumOfFirstPeriod.divide(periodBd, calculationScale, java.math.RoundingMode.HALF_UP)
-                smoothedValues[i] = previousSmoothedValue
-            } else {
-                // Subsequent values use Wilder's smoothing formula
-                if (previousSmoothedValue == null || currentValueToSmooth == null) {
-                    // If previous smoothed value is null (e.g. due to prior null inputs),
-                    // or current raw value is null, propagate null.
-                    previousSmoothedValue = null
-                } else {
-                    // Wilder's: Smoothed_prev - Smoothed_prev/N + Current_raw_value
-                    previousSmoothedValue = previousSmoothedValue.subtract(
-                        previousSmoothedValue.divide(periodBd, calculationScale, java.math.RoundingMode.HALF_UP)
-                    ).add(currentValueToSmooth)
-                }
-                smoothedValues[i] = previousSmoothedValue
-            }
-        }
-        return smoothedValues
-    }
-}
-
-/**
- * Average Directional Index (ADX) indicator.
- * Measures trend strength.
- * Re-implemented based on ta4k.indicators.ADXIndicator.
- */
-class ADXIndicator(
-    private val klineSeries: KlineSeries,
-    private val period: Int
-) {
-    init {
-        require(period > 0) { "Period must be positive" }
-    }
-
-    // Store raw calculated values before smoothing
-    private val _plusDMValues = mutableListOf<BigDecimal?>()
-    private val _minusDMValues = mutableListOf<BigDecimal?>()
-    private val _trueRangeValuesDI = mutableListOf<BigDecimal?>() // TR for DI calculation
-
-    // Store smoothed values
-    private var _smoothedPlusDM: List<BigDecimal?> = emptyList()
-    private var _smoothedMinusDM: List<BigDecimal?> = emptyList()
-    private var _smoothedTRDI: List<BigDecimal?> = emptyList() // Smoothed TR for DI calculation
-
-    // Store DI and DX values
-    private val _plusDIValues = mutableListOf<BigDecimal?>()
-    private val _minusDIValues = mutableListOf<BigDecimal?>()
-    private val _dxValues = mutableListOf<BigDecimal?>()
-
-    // Store final ADX
-    private var _adxSeriesValues: List<BigDecimal?> = emptyList()
-
-    private val calculationScale = 8 // Internal precision
-    private val resultScale = 2    // Standard scale for ADX, DI output
-
-    private var calculatedUpToIndex = -1
-
-    private fun ksHigh(index: Int): BigDecimal = klineSeries[index].highPrice
-    private fun ksLow(index: Int): BigDecimal = klineSeries[index].lowPrice
-    private fun ksClose(index: Int): BigDecimal = klineSeries[index].closePrice
-
-    private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
-            return
-        }
-
-        val requiredSize = klineSeries.size
-        while (_plusDMValues.size < requiredSize) _plusDMValues.add(null)
-        while (_minusDMValues.size < requiredSize) _minusDMValues.add(null)
-        while (_trueRangeValuesDI.size < requiredSize) _trueRangeValuesDI.add(null)
-        while (_plusDIValues.size < requiredSize) _plusDIValues.add(null)
-        while (_minusDIValues.size < requiredSize) _minusDIValues.add(null)
-        while (_dxValues.size < requiredSize) _dxValues.add(null)
-
-        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
-
-        // 1. Calculate raw +DM, -DM, TR for DI
-        for (i in startIndex..targetIndex) {
-            if (i == 0) {
-                _plusDMValues[i] = BigDecimal.ZERO
-                _minusDMValues[i] = BigDecimal.ZERO
-                _trueRangeValuesDI[i] = ksHigh(0).subtract(ksLow(0))
-                continue
-            }
-
-            val currentHigh = ksHigh(i)
-            val currentLow = ksLow(i)
-            val prevHigh = ksHigh(i - 1)
-            val prevLow = ksLow(i - 1)
-            val prevClose = ksClose(i - 1)
-
-            val upMove = currentHigh.subtract(prevHigh)
-            val downMove = prevLow.subtract(currentLow)
-
-            _plusDMValues[i] = if (upMove.compareTo(downMove) > 0 && upMove.compareTo(BigDecimal.ZERO) > 0) upMove else BigDecimal.ZERO
-            _minusDMValues[i] = if (downMove.compareTo(upMove) > 0 && downMove.compareTo(BigDecimal.ZERO) > 0) downMove else BigDecimal.ZERO
-
-            var tr = currentHigh.subtract(currentLow)
-            tr = tr.max(currentHigh.subtract(prevClose).abs())
-            tr = tr.max(currentLow.subtract(prevClose).abs())
-            _trueRangeValuesDI[i] = tr
-        }
-
-        val subListEnd = targetIndex + 1
-
-        // 2. Smooth +DM, -DM, TR (if enough data up to targetIndex)
-        if (targetIndex >= period - 1) {
-             _smoothedPlusDM = SmoothingUtils.wildersSmooth(_plusDMValues.subList(0, subListEnd), period, calculationScale)
-             _smoothedMinusDM = SmoothingUtils.wildersSmooth(_minusDMValues.subList(0, subListEnd), period, calculationScale)
-             _smoothedTRDI = SmoothingUtils.wildersSmooth(_trueRangeValuesDI.subList(0, subListEnd), period, calculationScale)
-        }
-
-        // 3. Calculate +DI, -DI, DX (iterating only over parts that can be calculated now)
-        for (i in startIndex..targetIndex) {
-            if (i >= period - 1) {
-                val sPlusDM = _smoothedPlusDM.getOrNull(i)
-                val sMinusDM = _smoothedMinusDM.getOrNull(i)
-                val sTR = _smoothedTRDI.getOrNull(i)
-
-                val pdi = if (sTR != null && sTR.compareTo(BigDecimal.ZERO) != 0 && sPlusDM != null) {
-                    sPlusDM.multiply(BigDecimal(100)).divide(sTR, calculationScale, java.math.RoundingMode.HALF_UP)
-                } else BigDecimal.ZERO
-                _plusDIValues[i] = pdi
-
-                val mdi = if (sTR != null && sTR.compareTo(BigDecimal.ZERO) != 0 && sMinusDM != null) {
-                    sMinusDM.multiply(BigDecimal(100)).divide(sTR, calculationScale, java.math.RoundingMode.HALF_UP)
-                } else BigDecimal.ZERO
-                _minusDIValues[i] = mdi
-
-                val diSum = pdi.add(mdi)
-                _dxValues[i] = if (diSum.compareTo(BigDecimal.ZERO) != 0) {
-                    (pdi.subtract(mdi)).abs().multiply(BigDecimal(100)).divide(diSum, calculationScale, java.math.RoundingMode.HALF_UP)
-                } else BigDecimal.ZERO
-            }
-        }
-
-        // 4. Smooth DX to get ADX
-        if (targetIndex >= (2 * period - 2)) { // Enough DX values for ADX smoothing
-             _adxSeriesValues = SmoothingUtils.wildersSmooth(_dxValues.subList(0, subListEnd), period, calculationScale)
-        }
-
-        calculatedUpToIndex = targetIndex
-    }
-
-    fun getPlusDI(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
-        ensureCalculatedUpTo(index)
-        return if (index >= period -1) _plusDIValues.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP) else null
-    }
-
-    fun getMinusDI(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
-        ensureCalculatedUpTo(index)
-        return if (index >= period -1) _minusDIValues.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP) else null
-    }
-
-    fun getADX(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
-        ensureCalculatedUpTo(index)
-        return if (index >= (2 * period - 2)) _adxSeriesValues.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP) else null
-    }
-
-    val plusDISeries: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx -> this.getPlusDI(idx) }
-        }
-
-    val minusDISeries: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx -> this.getMinusDI(idx) }
-        }
-
-    val adxValueSeries: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx -> this.getADX(idx) }
-        }
-}
-
-/**
- * Bollinger Bands indicator.
- * Consists of a middle band (SMA) and upper/lower bands based on standard deviation.
- * Re-implemented based on ta4k.indicators.BollingerBandsIndicator.
- */
-class BollingerBandsIndicator(
-    private val klineSeries: KlineSeries,
-    private val period: Int,
-    private val standardDeviationMultiplier: BigDecimal = BigDecimal("2.0"),
-    private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
-) {
-    init {
-        require(period > 0) { "Period must be positive" }
-        require(standardDeviationMultiplier.compareTo(BigDecimal.ZERO) > 0) { "Standard deviation multiplier must be positive" }
-    }
-
-    val middleBandIndicator: SMAIndicator = SMAIndicator(klineSeries, period, klinePropertySelector)
-
-    private val upperBandResults = mutableListOf<BigDecimal?>()
-    private val lowerBandResults = mutableListOf<BigDecimal?>()
-
-    private var calculatedUpToIndex = -1
-
-    private val defaultPriceScale = klineSeries.let { ks ->
-        if (ks.size > 0) {
-            val firstKline = ks[0]
-            firstKline.closePrice.scale()
-        } else {
-            4
-        }
-    }
-    private val resultScale = defaultPriceScale
-    private val calculationScale = (defaultPriceScale + 4).coerceAtLeast(8)
-
-
-    private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
-            return
-        }
-
-        if (calculatedUpToIndex == -1 && klineSeries.size > 0) {
-            for (k in 0 until klineSeries.size) {
-                upperBandResults.add(null)
-                lowerBandResults.add(null)
-            }
-        } else {
-             while (upperBandResults.size < klineSeries.size) upperBandResults.add(null)
-             while (lowerBandResults.size < klineSeries.size) lowerBandResults.add(null)
-        }
-
-        middleBandIndicator.getValue(targetIndex)
-
-        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
-        for (i in startIndex..targetIndex) {
-            val smaValue = middleBandIndicator.getValue(i)
-
-            if (smaValue == null || i < period - 1) {
-                continue
-            }
-
-            var sumOfSquares = BigDecimal.ZERO
-            for (j in 0 until period) {
-                val price = klinePropertySelector(klineSeries[i - j])
-                val deviation = price.subtract(smaValue)
-                sumOfSquares += deviation.pow(2)
-            }
-
-            val variance = sumOfSquares.divide(BigDecimal(period), calculationScale, java.math.RoundingMode.HALF_UP)
-
-            val varianceAsDouble = if (variance.compareTo(BigDecimal.ZERO) < 0) 0.0 else variance.toDouble()
-            val standardDeviation = BigDecimal(kotlin.math.sqrt(varianceAsDouble))
-                                    .setScale(calculationScale, java.math.RoundingMode.HALF_UP)
-
-            val bandOffset = standardDeviation.multiply(standardDeviationMultiplier)
-
-            upperBandResults[i] = smaValue.add(bandOffset)
-            lowerBandResults[i] = smaValue.subtract(bandOffset)
-        }
-        calculatedUpToIndex = targetIndex
-    }
-
-    fun getUpperBand(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
-        ensureCalculatedUpTo(index)
-        return upperBandResults.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
-    }
-
-    fun getLowerBand(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
-        ensureCalculatedUpTo(index)
-        return lowerBandResults.getOrNull(index)?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
-    }
-
-    fun getMiddleBand(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
-        val smaValue = middleBandIndicator.getValue(index)
-        return smaValue?.setScale(resultScale, java.math.RoundingMode.HALF_UP)
-    }
-
-    val upperBandValues: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx -> this.getUpperBand(idx) }
-        }
-
-    val lowerBandValues: Series<BigDecimal?>
-        get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
-            }
-            return klineSeries.size j { idx -> this.getLowerBand(idx) }
-        }
-
-    val middleBandValues: Series<BigDecimal?>
-        get() {
-             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size -1 ) {
-                 middleBandIndicator.getValue(klineSeries.size-1)
-                 ensureCalculatedUpTo(klineSeries.size-1)
-             }
-            return klineSeries.size j { idx -> this.getMiddleBand(idx) }
-        }
-}
-
-// --- Chop Detection Logic ---
-
-/**
- * Determines if the market is likely in a "choppy" (low volatility, non-trending) state
- * at a given index in the kline series.
- *
- * @param klineSeries The series of klines to analyze.
- * @param index The current index in the klineSeries for which to detect chop.
- * @param adxPeriod The period to use for the ADX indicator.
- * @param adxThreshold The ADX value below which the trend is considered weak.
- * @param atrPeriod The period to use for the ATR indicator.
- * @param atrRelativeThresholdPercent The ATR (as a percentage of the closing price) below which
- *                                    volatility is considered low.
- * @return True if the market is considered choppy, false otherwise.
- */
-fun isChoppy(
-    klineSeries: KlineSeries,
-    index: Int,
-    adxPeriod: Int = CHOP_DETECTION_ADX_PERIOD,
-    adxThreshold: Double = CHOP_DETECTION_ADX_THRESHOLD,
-    atrPeriod: Int = CHOP_DETECTION_ATR_PERIOD,
-    atrRelativeThresholdPercent: Double = CHOP_DETECTION_ATR_RELATIVE_THRESHOLD_PERCENT
-): Boolean {
-    if (index < 0 || index >= klineSeries.size) {
-        mainLoopLogger.warn("isChoppy: Index $index out of bounds for klineSeries size ${klineSeries.size}")
-        return false
-    }
-
-    val adxIndicator = ADXIndicator(klineSeries, adxPeriod)
-    val adxValue = adxIndicator.getADX(index)
-
-    val atrIndicator = ATRIndicator(klineSeries, atrPeriod)
-    val atrValue = atrIndicator.getValue(index)
-
-    val currentKline = klineSeries[index] ?: run {
-        mainLoopLogger.warn("isChoppy: Kline object at index $index is unexpectedly null.")
-        return false
-    }
-    val currentClosePrice = currentKline.closePrice
-
-    if (adxValue == null || atrValue == null || currentClosePrice.compareTo(BigDecimal.ZERO) == 0) {
-        mainLoopLogger.debug("isChoppy: ADX ($adxValue), ATR ($atrValue), or Close Price ($currentClosePrice) is null/zero at index $index. Not enough data or zero price.")
-        return false
-    }
-
-    val adxIsLow = adxValue.toDouble() < adxThreshold
-
-    val atrThresholdValue = currentClosePrice.multiply(BigDecimal(atrRelativeThresholdPercent / 100.0))
-                                .setScale(atrValue.scale(), java.math.RoundingMode.HALF_UP)
-    val atrIsLow = atrValue.compareTo(atrThresholdValue) < 0
-
-    val seriesContextLog = if (klineSeries.size > 0) {
-        klineSeries[0]?.let { "Series starting ${it.openTime}" } ?: "Series has null at index 0"
-    } else {
-        "Empty series"
-    }
-    mainLoopLogger.debug("isChoppy Check at index $index ($seriesContextLog): ADX=${adxValue.toPlainString()} (Threshold < $adxThreshold -> $adxIsLow), ATR=${atrValue.toPlainString()} (Threshold < ${atrThresholdValue.toPlainString()} -> $atrIsLow)")
-
-    return adxIsLow && atrIsLow
-}
-
-// --- Energy Buoy Strategy Logic ---
-// (Using this section title as per original prompt for function placement, will contain breakout logic)
-// --- Breakout Strategy Logic ---
-fun executeBreakoutTradeStrategy(
-    pair: CurrencyPair,
-    brokenZone: ChopZoneData, // The zone data from recentlyBrokenOutChozZone
-    klineSeries: KlineSeries, // The full kline series for the pair
-    currentIndex: Int // The current latest bar index in klineSeries
-) {
-    val potentialBreakoutBarIndex = brokenZone.potentialBreakoutBarIndex ?: run {
-        mainLoopLogger.error("executeBreakoutTradeStrategy: potentialBreakoutBarIndex is null for $pair. This should not happen.")
-        recentlyBrokenOutChozZone.remove(pair) // Clean up inconsistent state
-        return
-    }
-
-    // Ensure we have enough bars for the confirmation window
-    val lastBarNeededForConfirmation = potentialBreakoutBarIndex + BREAKOUT_CONFIRMATION_BARS - 1
-    if (currentIndex < lastBarNeededForConfirmation) {
-        mainLoopLogger.debug("BREAKOUT_TRADE: Waiting for more bars for $pair. Need index $lastBarNeededForConfirmation, current is $currentIndex.")
-        return // Not enough bars yet, keep in recentlyBrokenOutChozZone for next cycle
-    }
-
-    val zoneHigh = brokenZone.zoneHigh
-    val zoneLow = brokenZone.zoneLow
-    val zoneHeight = zoneHigh.subtract(zoneLow)
-
-    if (zoneLow.compareTo(BigDecimal.ZERO) <= 0 || zoneHeight.compareTo(BigDecimal.ZERO) <= 0) {
-        mainLoopLogger.warn("BREAKOUT_TRADE: Invalid zone dimensions for $pair (Low: ${zoneLow.toPlainString()}, Height: ${zoneHeight.toPlainString()}). Skipping trade.")
-        recentlyBrokenOutChozZone.remove(pair)
-        return
-    }
-
-    val zoneHeightPercent = zoneHeight.divide(zoneLow, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal(100))
-    if (zoneHeightPercent.compareTo(BigDecimal(MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE)) < 0) {
-        mainLoopLogger.info("BREAKOUT_TRADE: Chop zone height ${zoneHeightPercent.toPlainString()}% for $pair is below minimum ${MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE}%. No trade.")
-        recentlyBrokenOutChozZone.remove(pair)
-        return
-    }
-
-    val bufferAmountHigh = zoneHigh.multiply(BigDecimal(BREAKOUT_ZONE_BUFFER_PERCENT / 100.0))
-    val breakoutHighTrigger = zoneHigh.add(bufferAmountHigh)
-    val bufferAmountLow = zoneLow.multiply(BigDecimal(BREAKOUT_ZONE_BUFFER_PERCENT / 100.0))
-    val breakoutLowTrigger = zoneLow.subtract(bufferAmountLow)
-
-    var tradeDirection: Order.OrderType? = null
-    var entryPrice: BigDecimal? = null // This will be the close price of the last confirmation bar
-    var stopLossPrice: BigDecimal? = null
-    var takeProfitPrice: BigDecimal? = null
-    var confirmedBreakout = false // Assume not confirmed until all confirmation bars pass
-
-    // Check bars from the potential breakout up to the required confirmation point
-    // The loop should go from potentialBreakoutBarIndex up to lastBarNeededForConfirmation inclusive.
-    for (i in potentialBreakoutBarIndex..lastBarNeededForConfirmation) {
-        val confirmationKline = klineSeries[i] ?: run {
-            mainLoopLogger.warn("BREAKOUT_TRADE: Kline at confirmation index $i is null for $pair.")
-            recentlyBrokenOutChozZone.remove(pair) // Critical error in data, remove zone
-            return
-        }
-
-        if (confirmationKline.closePrice.compareTo(breakoutHighTrigger) > 0) {
-            if (tradeDirection == Order.OrderType.ASK) { // Price broke high then low during confirmation window
-                confirmedBreakout = false; // Failed confirmation
-                break
-            }
-            tradeDirection = Order.OrderType.BID // Buy
-            entryPrice = confirmationKline.closePrice // Tentative entry, updated if more conf bars
-            stopLossPrice = zoneLow.subtract(bufferAmountLow)
-            takeProfitPrice = entryPrice.add(zoneHeight.multiply(BigDecimal(BREAKOUT_TAKE_PROFIT_RRR)))
-            confirmedBreakout = true // So far so good for this bar
-        } else if (confirmationKline.closePrice.compareTo(breakoutLowTrigger) < 0) {
-            if (tradeDirection == Order.OrderType.BID) { // Price broke low then high during confirmation window
-                confirmedBreakout = false; // Failed confirmation
-                break
-            }
-            tradeDirection = Order.OrderType.ASK // Sell
-            entryPrice = confirmationKline.closePrice // Tentative entry
-            stopLossPrice = zoneHigh.add(bufferAmountHigh)
-            takeProfitPrice = entryPrice.subtract(zoneHeight.multiply(BigDecimal(BREAKOUT_TAKE_PROFIT_RRR)))
-            confirmedBreakout = true // So far so good for this bar
-        } else {
-            // Price closed back within the zone (or buffer zone) during confirmation period
-            confirmedBreakout = false
-            break // Breakout failed confirmation
-        }
-    }
-
-    if (confirmedBreakout && tradeDirection != null && entryPrice != null) {
-        mainLoopLogger.info("BREAKOUT_CONFIRMED: $pair, Direction: $tradeDirection, Entry: ${entryPrice.toPlainString()}, SL: ${stopLossPrice?.toPlainString()}, TP: ${takeProfitPrice?.toPlainString()}")
-
-        val baseCurrencySymbol = pair.base.currencyCode
-        val quoteCurrencySymbol = pair.quote.currencyCode
-
-        var quantityToTrade = BigDecimal.ZERO
-        if (entryPrice.compareTo(BigDecimal.ZERO) > 0) {
-             quantityToTrade = BigDecimal(BREAKOUT_TRADE_QUOTE_AMOUNT).divide(entryPrice, 8, java.math.RoundingMode.DOWN)
-        } else {
-            mainLoopLogger.error("BREAKOUT_TRADE: Entry price is zero for $pair, cannot calculate quantity.")
-            recentlyBrokenOutChozZone.remove(pair) // Remove due to error
-            return
-        }
-
-        if (quantityToTrade.compareTo(BigDecimal.ZERO) == 0) {
-             mainLoopLogger.warn("BREAKOUT_TRADE: Calculated quantity to trade is zero for $pair (Quote Amount: $BREAKOUT_TRADE_QUOTE_AMOUNT, Entry: $entryPrice). No trade.")
-             recentlyBrokenOutChozZone.remove(pair) // Remove as it's a no-trade
-             return
-        }
-
-        logTrade(
-            asset = baseCurrencySymbol,
-            side = tradeDirection.toString(),
-            quantity = quantityToTrade.toPlainString(),
-            price = entryPrice.toPlainString(),
-            orderId = "sim_${System.currentTimeMillis()}",
-            note = "Chop Breakout. Zone H:${zoneHigh.toPlainString()} L:${zoneLow.toPlainString()}"
-        )
-        // TODO: Call ExchangeService.placeMarketOrder with appropriate OrderAmount
-        // TODO: Implement actual stop-loss/take-profit order placement
-        // TODO: Manage state of this active trade (e.g. add to a list of open positions)
-
-    } else {
-        // Only log rejection if all confirmation bars were checked (i.e., currentIndex allowed full check)
-        // The check `currentIndex < lastBarNeededForConfirmation` at the start handles cases where we are still waiting.
-        // If we are here, it means either the loop completed and confirmedBreakout is false, or it broke early.
-        if (currentIndex >= lastBarNeededForConfirmation) {
-             mainLoopLogger.info("BREAKOUT_REJECTED: No confirmed breakout for $pair from zone ending at ${brokenZone.endIndex} (last checked bar index $currentIndex).")
-        }
-    }
-
-    // Remove from map only if a decision (trade or reject after all conf bars) was made.
-    // If we returned early due to insufficient bars (at the top of the function), it stays for next cycle.
-    if (confirmedBreakout || currentIndex >= lastBarNeededForConfirmation) {
-        recentlyBrokenOutChozZone.remove(pair)
-    }
-}
-
 // --- Bot Specific Typealiases ---
 typealias PriceSeries = Series<java.math.BigDecimal?>
 typealias QuantitySeries = Series<java.math.BigDecimal>
@@ -1244,32 +444,6 @@ const val CP_TRIGGER_MIN_NEGATIVE_DEV_PERCENT = -0.01
 const val CRASH_PROTECTION_THRESHOLD_INCREASE = 2
 const val CRASH_PROTECTION_PARTIAL_RECOVERY_PERCENT_FACTOR = 0.55 / 0.875
 
-
-// --- Kline Aggregation Constants and State ---
-const val KLINE_INTERVAL_SECONDS = 60 // 1 minute
-const val KLINE_INTERVAL_MS = KLINE_INTERVAL_SECONDS * 1000L
-const val MAX_KLINES_PER_SERIES = 200 // Store up to 200 klines, adjust as needed for indicator periods
-
-val klineSeriesData = mutableMapOf<CurrencyPair, MutableList<Kline>>()
-val currentOpenKlines = mutableMapOf<CurrencyPair, Kline>() // Tracks the currently forming kline
-
-// --- Chop Detection Strategy Constants ---
-const val CHOP_DETECTION_ADX_PERIOD = 14 // Standard period for ADX
-const val CHOP_DETECTION_ADX_THRESHOLD = 25.0 // ADX below this value suggests weak trend
-const val CHOP_DETECTION_ATR_PERIOD = 14 // Standard period for ATR
-// ATR threshold can be more nuanced. For now, a simple relative threshold:
-// e.g., ATR is less than X% of the close price.
-const val CHOP_DETECTION_ATR_RELATIVE_THRESHOLD_PERCENT = 1.5 // e.g., ATR < 1.5% of close price
-
-// --- Energy Buoy Wave Generator Strategy Constants & State ---
-// (Placeholder for future constants, the breakout ones will go under here as per original intent)
-
-// --- Breakout Strategy Constants --- (Adjusted title for clarity in this step)
-const val BREAKOUT_CONFIRMATION_BARS = 1 // Number of bars (including the breakout bar itself) that must close outside the zone. 1 means breakout bar closes outside.
-const val BREAKOUT_ZONE_BUFFER_PERCENT = 0.05 // e.g., 0.05% buffer outside the zone high/low for breakout trigger
-const val BREAKOUT_TRADE_QUOTE_AMOUNT = 10.0 // e.g., trade $10 worth for a breakout (simulated)
-const val MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE = 0.3 // Minimum chop zone height (as % of low price) to consider a trade
-const val BREAKOUT_TAKE_PROFIT_RRR = 1.5 // Risk/Reward Ratio for Take Profit (e.g., 1.5 means TP is 1.5x risk)
 
 val latestPrices = mutableMapOf<CurrencyPair, Ticker>()
 data class PriceTick(val price: BigDecimal, val timestamp: Long)
@@ -1647,64 +821,6 @@ object ExchangeService {
     }
 }
 
-// --- Kline Aggregation Logic ---
-fun processTickForKlineAggregation(
-    pair: CurrencyPair,
-    price: BigDecimal,
-    timestamp: Long,
-    // Assuming volume per tick is not readily available,
-    // we'll derive kline volume from changes in total traded volume if possible,
-    // or make it a simple count/placeholder if not.
-    // For a robust solution, actual trade data stream is better for volume.
-    // For now, let's use a placeholder volume of 1 per tick that contributes to a kline.
-    tickVolume: BigDecimal = BigDecimal.ONE
-) {
-    val series = klineSeriesData.getOrPut(pair) { mutableListOf() }
-    var currentKline = currentOpenKlines[pair]
-
-    val klineOpenTimeForTick = timestamp - (timestamp % KLINE_INTERVAL_MS)
-
-    if (currentKline == null || klineOpenTimeForTick > currentKline.openTimeMillis) {
-        // Finalize previous kline if it exists
-        if (currentKline != null) {
-            series.add(currentKline)
-            if (series.size > MAX_KLINES_PER_SERIES) {
-                series.removeAt(0) // Keep the list from growing indefinitely
-            }
-        }
-        // Start new kline
-        currentKline = Kline(
-            openTimeMillis = klineOpenTimeForTick,
-            openPrice = price,
-            highPrice = price,
-            lowPrice = price,
-            closePrice = price,
-            volume = tickVolume, // Initial volume for the new kline
-            closeTimeMillis = klineOpenTimeForTick + KLINE_INTERVAL_MS -1 // Tentative close time
-        )
-        mainLoopLogger.debug("New Kline started for $pair: $currentKline")
-    } else {
-        // Update existing kline
-        currentKline = currentKline.copy(
-            highPrice = currentKline.highPrice.max(price),
-            lowPrice = currentKline.lowPrice.min(price),
-            closePrice = price,
-            volume = currentKline.volume.add(tickVolume), // Accumulate volume
-            closeTimeMillis = currentKline.openTimeMillis + KLINE_INTERVAL_MS - 1 // Ensure close time is consistent
-        )
-    }
-    currentOpenKlines[pair] = currentKline
-}
-
-fun getKlineSeriesForPair(pair: CurrencyPair): KlineSeries? {
-    val klines = klineSeriesData[pair] ?: return null
-    if (klines.isEmpty()) return null
-    // Return a read-only copy as a Series for indicators
-    // The Series constructor `size j { accessor }` is from the TrikeShed definition
-    // Ensure 'j' is available in scope.
-    val currentList = klines.toList() // Create a snapshot
-    return currentList.size j { index -> currentList[index] }
-}
 
 // --- Main Function ---
 fun main() = runBlocking {
@@ -1813,25 +929,6 @@ fun main() = runBlocking {
                         val existingHistory = latestPriceInfo[ticker.currencyPair]
                         latestPriceInfo[ticker.currencyPair] = Pair(newPriceTick, existingHistory?.first)
                     }
-
-                    // >>> New Kline Aggregation Call <<<
-                    try {
-                        if (ticker.last != null && ticker.currencyPair != null) {
-                             // Assuming ticker.volume is available and represents volume for this tick/update.
-                             // If not, a placeholder or alternative volume logic is needed.
-                             // XChange Ticker DTO usually has a 'volume' field for the last 24h, not per-tick.
-                             // So, we'll use the default tickVolume = 1 as defined in the function.
-                             processTickForKlineAggregation(
-                                 pair = ticker.currencyPair,
-                                 price = ticker.last,
-                                 timestamp = newPriceTick.timestamp // Use the consistent timestamp
-                                 // tickVolume = ticker.volume ?: BigDecimal.ONE // Use if ticker.volume is meaningful per tick
-                             )
-                        }
-                    } catch (e: Exception) {
-                        mainLoopLogger.error("Error during kline aggregation for $pair: ${e.message}", e)
-                    }
-                    // >>> End of New Kline Aggregation Call <<<
                 }
                 if (subscription != null) {
                     activeSubscriptions[pair] = subscription
@@ -1846,30 +943,6 @@ fun main() = runBlocking {
             if (pairsToSubscribe.isNotEmpty() && newPairsToSubscribe.isNotEmpty()) {
                 mainLoopLogger.info("Allowing 1s for new tickers to stream initial prices...")
                 delay(1000)
-            }
-
-            // --- Execute Breakout Strategy Checks ---
-            // Iterate over pairs that had recent breakout signals
-            // Create a copy of keys to avoid concurrent modification if executeBreakoutTradeStrategy modifies the map
-            val pairsWithBrokenZones = recentlyBrokenOutChozZone.keys.toList()
-            pairsWithBrokenZones.forEach { pair ->
-                val brokenZoneToCheck = recentlyBrokenOutChozZone[pair] // Re-fetch, might have been removed by another call
-                if (brokenZoneToCheck != null) {
-                    val klineSeriesForPair = getKlineSeriesForPair(pair)
-                    if (klineSeriesForPair != null && klineSeriesForPair.size > 0) {
-                        val latestBarIndex = klineSeriesForPair.size - 1
-                        // Ensure we are checking against the most up-to-date kline data
-                        // and that potentialBreakoutBarIndex is valid before proceeding
-                        if (brokenZoneToCheck.potentialBreakoutBarIndex != null &&
-                            latestBarIndex >= brokenZoneToCheck.potentialBreakoutBarIndex) {
-                           executeBreakoutTradeStrategy(pair, brokenZoneToCheck, klineSeriesForPair, latestBarIndex)
-                        } else if (brokenZoneToCheck.potentialBreakoutBarIndex == null) {
-                            mainLoopLogger.warn("Skipping breakout check for $pair due to null potentialBreakoutBarIndex in recentlyBrokenOutChozZone.")
-                             recentlyBrokenOutChozZone.remove(pair) // Clean up bad state
-                        }
-                        // If latestBarIndex < potentialBreakoutBarIndex, it means we are waiting for more bars, handled in executeBreakoutTradeStrategy
-                    }
-                }
             }
 
             // --- Transform currentHoldings into Series ---
@@ -2197,5 +1270,169 @@ fun main() = runBlocking {
         activeSubscriptions.clear()
         ExchangeService.cleanup()
         mainLoopLogger.info("Main loop and ExchangeService cleaned up. Exiting.")
+    }
+}
+
+// --- Constants for ATR-based Stop-Loss/Take-Profit (To be moved to relevant constants section) ---
+const val SLTP_ATR_PERIOD = 14 // Period for ATR calculation for SL/TP
+const val BREAKOUT_SL_ATR_MULTIPLIER = 2.0 // Multiplier for ATR to set stop-loss (e.g., 2.0 * ATR)
+// BREAKOUT_TAKE_PROFIT_RRR is assumed to be already defined (e.g., 1.5)
+// --- End of ATR-based SL/TP Constants ---
+
+
+// --- Modified executeBreakoutTradeStrategy (To be moved to relevant location) ---
+// This version includes ATR-based Stop-Loss and Take-Profit.
+fun executeBreakoutTradeStrategy(
+    pair: CurrencyPair,
+    brokenZone: ChopZoneData, // The zone data from recentlyBrokenOutChozZone
+    klineSeries: KlineSeries, // The full kline series for the pair
+    currentIndex: Int // The current latest bar index in klineSeries
+) {
+    val potentialBreakoutBarIndex = brokenZone.potentialBreakoutBarIndex ?: run {
+        mainLoopLogger.error("executeBreakoutTradeStrategy: potentialBreakoutBarIndex is null for $pair. This should not happen.")
+        recentlyBrokenOutChozZone.remove(pair) // Clean up inconsistent state
+        return
+    }
+
+    val lastBarNeededForConfirmation = potentialBreakoutBarIndex + BREAKOUT_CONFIRMATION_BARS - 1
+    if (currentIndex < lastBarNeededForConfirmation) {
+        mainLoopLogger.debug("BREAKOUT_TRADE: Waiting for more bars for $pair. Need index $lastBarNeededForConfirmation, current is $currentIndex.")
+        return
+    }
+
+    val zoneHigh = brokenZone.zoneHigh
+    val zoneLow = brokenZone.zoneLow
+    val zoneHeight = zoneHigh.subtract(zoneLow)
+
+    if (zoneLow.compareTo(BigDecimal.ZERO) <= 0 || zoneHeight.compareTo(BigDecimal.ZERO) <= 0) {
+        mainLoopLogger.warn("BREAKOUT_TRADE: Invalid zone dimensions for $pair (Low: ${zoneLow.toPlainString()}, Height: ${zoneHeight.toPlainString()}). Skipping trade.")
+        recentlyBrokenOutChozZone.remove(pair)
+        return
+    }
+
+    val zoneHeightPercent = zoneHeight.divide(zoneLow, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal(100))
+    if (zoneHeightPercent.compareTo(BigDecimal(MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE)) < 0) {
+        mainLoopLogger.info("BREAKOUT_TRADE: Chop zone height ${zoneHeightPercent.toPlainString()}% for $pair is below minimum ${MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE}%. No trade.")
+        recentlyBrokenOutChozZone.remove(pair)
+        return
+    }
+
+    val bufferAmountHigh = zoneHigh.multiply(BigDecimal(BREAKOUT_ZONE_BUFFER_PERCENT / 100.0))
+    val breakoutHighTrigger = zoneHigh.add(bufferAmountHigh)
+    val bufferAmountLow = zoneLow.multiply(BigDecimal(BREAKOUT_ZONE_BUFFER_PERCENT / 100.0))
+    val breakoutLowTrigger = zoneLow.subtract(bufferAmountLow)
+
+    var tradeDirection: Order.OrderType? = null
+    var entryPrice: BigDecimal? = null
+    var stopLossPrice: BigDecimal? = null
+    var takeProfitPrice: BigDecimal? = null
+    var confirmedBreakout = false
+    var entryBarIndex = -1
+
+
+    for (i in potentialBreakoutBarIndex..lastBarNeededForConfirmation) {
+        val confirmationKline = klineSeries[i] ?: run {
+            mainLoopLogger.warn("BREAKOUT_TRADE: Kline at confirmation index $i is null for $pair.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        if (confirmationKline.closePrice.compareTo(breakoutHighTrigger) > 0) {
+            if (tradeDirection == Order.OrderType.ASK) {
+                confirmedBreakout = false; break
+            }
+            tradeDirection = Order.OrderType.BID
+            entryPrice = confirmationKline.closePrice
+            entryBarIndex = i
+            // SL/TP will be calculated after loop using entryBarIndex for ATR
+            confirmedBreakout = true
+        } else if (confirmationKline.closePrice.compareTo(breakoutLowTrigger) < 0) {
+            if (tradeDirection == Order.OrderType.BID) {
+                confirmedBreakout = false; break
+            }
+            tradeDirection = Order.OrderType.ASK
+            entryPrice = confirmationKline.closePrice
+            entryBarIndex = i
+            // SL/TP will be calculated after loop using entryBarIndex for ATR
+            confirmedBreakout = true
+        } else {
+            confirmedBreakout = false
+            break
+        }
+    }
+
+    if (confirmedBreakout && tradeDirection != null && entryPrice != null && entryBarIndex != -1) {
+        // ATR-based SL/TP Calculation
+        val atrIndicator = ATRIndicator(klineSeries, SLTP_ATR_PERIOD) // Use SLTP_ATR_PERIOD
+        val atrValueAtEntry = atrIndicator.getValue(entryBarIndex)
+
+        if (atrValueAtEntry == null || atrValueAtEntry.compareTo(BigDecimal.ZERO) <= 0) {
+            mainLoopLogger.warn("BREAKOUT_TRADE: ATR value is null or not positive at entry bar index $entryBarIndex for $pair. Skipping trade due to inability to set ATR-based SL.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        val atrOffset = atrValueAtEntry.multiply(BigDecimal(BREAKOUT_SL_ATR_MULTIPLIER))
+        val riskAmountPerUnit: BigDecimal
+
+        if (tradeDirection == Order.OrderType.BID) { // Buy
+            stopLossPrice = entryPrice.subtract(atrOffset)
+            riskAmountPerUnit = entryPrice.subtract(stopLossPrice) // Should be positive: entry - (entry - atrOffset) = atrOffset
+            takeProfitPrice = entryPrice.add(riskAmountPerUnit.multiply(BigDecimal(BREAKOUT_TAKE_PROFIT_RRR)))
+        } else { // Sell (Order.OrderType.ASK)
+            stopLossPrice = entryPrice.add(atrOffset)
+            riskAmountPerUnit = stopLossPrice.subtract(entryPrice) // Should be positive: (entry + atrOffset) - entry = atrOffset
+            takeProfitPrice = entryPrice.subtract(riskAmountPerUnit.multiply(BigDecimal(BREAKOUT_TAKE_PROFIT_RRR)))
+        }
+
+        if (tradeDirection == Order.OrderType.BID && (stopLossPrice.compareTo(entryPrice) >= 0 || takeProfitPrice.compareTo(entryPrice) <= 0 || takeProfitPrice.compareTo(stopLossPrice) <=0 )) {
+            mainLoopLogger.warn("BREAKOUT_TRADE: Invalid SL/TP for BID on $pair. Entry: $entryPrice, SL: $stopLossPrice, TP: $takeProfitPrice. Skipping trade.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+        if (tradeDirection == Order.OrderType.ASK && (stopLossPrice.compareTo(entryPrice) <= 0 || takeProfitPrice.compareTo(entryPrice) >= 0 || takeProfitPrice.compareTo(stopLossPrice) >=0 )) {
+            mainLoopLogger.warn("BREAKOUT_TRADE: Invalid SL/TP for ASK on $pair. Entry: $entryPrice, SL: $stopLossPrice, TP: $takeProfitPrice. Skipping trade.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        mainLoopLogger.info("BREAKOUT_CONFIRMED (ATR SL/TP): $pair, Direction: $tradeDirection, Entry: ${entryPrice.toPlainString()}, SL: ${stopLossPrice.toPlainString()}, TP: ${takeProfitPrice.toPlainString()}, ATR@Entry($entryBarIndex): ${atrValueAtEntry.toPlainString()}")
+
+        val baseCurrencySymbol = pair.base.currencyCode
+        val quoteCurrencySymbol = pair.quote.currencyCode
+
+        var quantityToTrade = BigDecimal.ZERO
+        if (entryPrice.compareTo(BigDecimal.ZERO) > 0) {
+             quantityToTrade = BigDecimal(BREAKOUT_TRADE_QUOTE_AMOUNT).divide(entryPrice, 8, java.math.RoundingMode.DOWN)
+        } else {
+            mainLoopLogger.error("BREAKOUT_TRADE: Entry price is zero for $pair, cannot calculate quantity.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        if (quantityToTrade.compareTo(BigDecimal.ZERO) == 0) {
+             mainLoopLogger.warn("BREAKOUT_TRADE: Calculated quantity to trade is zero for $pair (Quote Amount: $BREAKOUT_TRADE_QUOTE_AMOUNT, Entry: $entryPrice). No trade.")
+             recentlyBrokenOutChozZone.remove(pair)
+             return
+        }
+
+        logTrade(
+            asset = baseCurrencySymbol,
+            side = tradeDirection.toString(),
+            quantity = quantityToTrade.toPlainString(),
+            price = entryPrice.toPlainString(),
+            orderId = "sim_ATR_${System.currentTimeMillis()}",
+            note = "Chop Breakout (ATR SL/TP). Zone H:${zoneHigh.toPlainString()} L:${zoneLow.toPlainString()}, ATR:${atrValueAtEntry.toPlainString()}"
+        )
+        // TODO: Actual order placement & SL/TP order management
+
+    } else {
+        if (currentIndex >= lastBarNeededForConfirmation) {
+             mainLoopLogger.info("BREAKOUT_REJECTED: No confirmed breakout for $pair from zone ending at ${brokenZone.endIndex} (last checked bar index $currentIndex).")
+        }
+    }
+
+    if (confirmedBreakout || currentIndex >= lastBarNeededForConfirmation) {
+        recentlyBrokenOutChozZone.remove(pair)
     }
 }
