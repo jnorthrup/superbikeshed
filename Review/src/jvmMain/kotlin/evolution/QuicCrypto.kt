@@ -72,13 +72,11 @@ actual class QuicConnection actual constructor() {
 // For dummy class to compile, it's defined here.
 enum class QuicPacketType { INITIAL }
 
-<<<<<<< HEAD
 
 @Deprecated(
     message = "Use CCEK-based crypto services (HkdfService, AesService) instead.",
     replaceWith = ReplaceWith("coroutineContext[HkdfServiceKey] or coroutineContext[AesServiceKey]", "evolution.HkdfServiceKey", "evolution.AesServiceKey")
 )
-actual object Crypto {
     // ... (deprecated methods remain unchanged - throwing exceptions)
     @Deprecated("Use HkdfService from CoroutineContext")
     actual fun hkdfExtract(salt: ByteArray, ikm: ByteArray): ByteArray {
@@ -101,9 +99,7 @@ actual object Crypto {
         throw UnsupportedOperationException("Crypto.aesEcbEncrypt is deprecated. Use suspend AesService.ecbEncrypt from context.")
     }
 }
-=======
 // actual object Crypto block removed
->>>>>>> origin/jules_wip_6906935130323988499
 
 internal actual suspend fun protectPacket(
     context: CoroutineContext,
@@ -139,9 +135,7 @@ internal actual suspend fun protectPacket(
     // Apply the mask to the packet header (modifies packet.header directly)
     // This is a simplified application. Real QUIC protection is bit-specific.
 
-<<<<<<< HEAD
     // Determine Packet Number Length (PNL) and offset from header's first byte.
-    // This requires parsing packet.header[0].
     // For Long Headers (first bit is 1): PNL = (packet.header[0] & 0x03) + 1
     // For Short Headers (first bit is 0): PNL = (packet.header[0] & 0x03) + 1 (careful, different bits might be protected)
     // For simplicity, assume PNL is known or fixed for this dummy, and PN starts after some fixed offset.
@@ -173,14 +167,6 @@ internal actual suspend fun protectPacket(
     val pnOffset = 1 // Conceptual offset of Packet Number field in the header
     val maxPnLengthInMask = 4 // hpMaskFirst5Bytes[1] to hpMaskFirst5Bytes[4] cover up to 4 bytes of PN
 =======
-    val headerCopy = packet.header.copyOf() // Work on a copy
-
-    if (headerCopy.isNotEmpty()) {
-        headerCopy[0] = (headerCopy[0].toInt() xor hpMaskFirst5Bytes[0].toInt()).toByte()
-    }
-
-    val pnOffset = 1
-    val maxPnLengthInMask = 4
 >>>>>>> origin/jules_wip_6906935130323988499
 
     for (i in 0 until maxPnLengthInMask) {
@@ -189,11 +175,6 @@ internal actual suspend fun protectPacket(
         } else {
 <<<<<<< HEAD
             break // Packet number field in header is shorter than 4 bytes
-        }
-    }
-
-    packet.header = headerCopy // Update packet with protected header
-=======
             break
         }
     }
@@ -210,9 +191,7 @@ internal actual suspend fun unprotectPacket(
     keys: QuicInitialKeys,
 <<<<<<< HEAD
     connection: QuicConnection // Used for PN reconstruction, error reporting etc.
-=======
     connection: QuicConnection
->>>>>>> origin/jules_wip_6906935130323988499
 ): QuicPacket? {
     val aesService = context[AesServiceKey]
         ?: throw IllegalStateException("AesService not found in CoroutineContext for unprotection.")
@@ -328,7 +307,6 @@ internal actual suspend fun unprotectPacket(
         // The secondary constructor for QuicPacket that takes packetType, CIDs etc. is more for constructing
         // packets for sending. For received packets, we've now got the actual header bytes.
         // Ensure the QuicPacket's internal `packetType`, `connectionId`, `packetNumber` could be set if needed by parsing `headerCandidate`.
-        // For this dummy, setting `this.header` is sufficient.
 =======
         return null
     }
