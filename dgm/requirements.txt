@@ -5,6 +5,7 @@ backoff
 botocore
 boto3
 openai
+requests
 
 # SWE-Bench
 beautifulsoup4
