@@ -9,8 +9,13 @@ typealias Capability = Join<String, Series<String>> // Capability Name j Series 
 typealias ProjectContext = Series<Join<String, String>> // Key-Value pairs for project context
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> origin/command-hierarchy-enhancements
+=======
+ typealias Problem = Series<String> // A series of text describing the problem aspects
+ 
+>>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce
 
 fun ProjectContext.extractKeywords(): List<String> =
     this.`▶`.flatMap { (key, value) -> "$key $value".lowercase().split(" ") }.filter { it.length > 3 }
@@ -42,11 +47,18 @@ data class ProblemExtended(
     enum class Complexity { LOW, MEDIUM, HIGH }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 typealias Problem = Series<String> // A series of text describing the problem aspects
 >>>>>>> origin/jules_wip_12008771546559725757
 =======
 >>>>>>> origin/command-hierarchy-enhancements
+=======
+//=======
+typealias Problem = Series<String> // A series of text describing the problem aspects
+//>>>>>>> origin/jules_wip_12008771546559725757
+//>>>>>>> main
+>>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce
 typealias Solution = Series<String> // A proposed solution, e.g., lines of code or steps
 typealias Feedback = Join<String, Series<String>> // FeedbackType j Series of Details/Parameters
 typealias LearningUpdate = Join<String, String> // UpdateType j UpdateSummary
@@ -81,8 +93,12 @@ typealias GossipPayload = Series<Join<String, String>> // A series of key-value 
 // No separate GossipMessage typealias needed if the payload is what's published.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> origin/command-hierarchy-enhancements
+=======
+ 
+>>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce
 
 // Additional missing types for HybridIntelligence
 enum class Preference {
@@ -178,7 +194,13 @@ data class WorkflowStep(val action: Action, val order: Int)
 fun <T> Series<T?>.filterNotNull(): Series<T> = 
     this.`▶`.filterNotNull().let { filtered -> Series.of(*filtered.toTypedArray()) }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> origin/jules_wip_12008771546559725757
 =======
 >>>>>>> origin/command-hierarchy-enhancements
+=======
+
+    
+    enjoy you some jules slop
+>>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce

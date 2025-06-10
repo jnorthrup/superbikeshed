@@ -95,6 +95,10 @@ target/
 .metals/
 .bloop/
 
+# Kotlin
+.kotlin/
+*.kotlin
+
 # Python
 __pycache__/
 *.py[cod]
