@@ -18,6 +18,7 @@ dont even talk about a demo of a goddamn thing ever.  do not write gaslighting p
 - **series `▶` //(THE PLAY BUTTON) ** - gateway to `AbstractList,Iterable<T>` for .map and list
 - **`@JvmInline value class`** - the ONLY wrapper mechanism
 - **`typealias`** - descriptive names for ANY OR ALL RECURRING primitives
+- **`.z` / `.nz` on `Number`** - for zero/non-zero checks (e.g., `myNumber.z` or `myNumber.nz`)
 - ** use map with the play button
 
 ## BANNED PRACTICES - convert to TODOs or remove when un-DRY
