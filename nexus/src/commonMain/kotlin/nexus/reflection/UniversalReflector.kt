@@ -397,6 +397,7 @@ interface ProjectAnalyzer {
     suspend fun buildDependencyGraph(): DependencyGraph
     suspend fun detectFrameworks(): Series<FrameworkInfo>
     suspend fun updateCodebaseContext(current: CodebaseContext, change: Change): CodebaseContext
+<<<<<<< HEAD
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -843,3 +844,6 @@ data class Recommendation(
     val confidence: Double,
     val category: String
 )
+=======
+}
+>>>>>>> origin/jules_wip_12008771546559725757

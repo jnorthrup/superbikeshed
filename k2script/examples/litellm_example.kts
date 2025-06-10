@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/usr/bin/env k2script
 
 // k2script example for LiteLLM integration
@@ -8,6 +9,18 @@ import k2script.api.ai.askLLMForContent
 import k2script.api.ai.stopLiteLLMService // Optional: for explicit service shutdown
 
 println("K2script LiteLLM Integration Example")
+=======
+#!/usr/bin/env kscript
+
+// kscript example for LiteLLM integration
+
+// Import the necessary functions from the kscript AI API
+import kscript.api.ai.askLLM
+import kscript.api.ai.askLLMForContent
+import kscript.api.ai.stopLiteLLMService // Optional: for explicit service shutdown
+
+println("Kscript LiteLLM Integration Example")
+>>>>>>> origin/jules_wip_12008771546559725757
 println("===================================")
 
 // Ensure your API keys are set as environment variables.

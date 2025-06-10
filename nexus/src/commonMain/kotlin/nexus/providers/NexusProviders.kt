@@ -49,6 +49,7 @@ class AnthropicProvider(
     }
     
     private suspend fun makeAnthropicRequest(prompt: String, context: CCEKContext): String {
+<<<<<<< HEAD
         // Real Anthropic API implementation
         val requestBody = buildString {
             append("""{"model":"$model","max_tokens":4096,"messages":[{"role":"user","content":""")
@@ -86,6 +87,9 @@ class AnthropicProvider(
                 "I can optimize this by identifying bottlenecks and applying best practices."
             else -> "I understand your request and will provide a comprehensive solution."
         }
+=======
+        return buildContextualResponse(prompt, context)
+>>>>>>> origin/jules_wip_12008771546559725757
     }
 }
 
@@ -115,6 +119,7 @@ class OpenAIProvider(
     }
     
     private suspend fun makeOpenAIRequest(prompt: String, context: CCEKContext): String {
+<<<<<<< HEAD
         // Real OpenAI API implementation
         val requestBody = buildString {
             append("""{"model":"$model","messages":[{"role":"user","content":""")
@@ -152,6 +157,10 @@ class OpenAIProvider(
                 "Here are comprehensive tests for the $scope functionality:"
             else -> "Based on the $scope context, here's my detailed response to your request."
         }
+=======
+        // TODO: Implement actual HTTP request to OpenAI API
+        return buildContextualResponse(prompt, context)
+>>>>>>> origin/jules_wip_12008771546559725757
     }
 }
 
@@ -181,6 +190,7 @@ class LocalProvider(
     }
     
     private suspend fun makeLocalRequest(prompt: String, context: CCEKContext): String {
+<<<<<<< HEAD
         // Real Ollama API implementation
         val requestBody = buildString {
             append("""{"model":"$model","prompt":""")
@@ -217,6 +227,10 @@ class LocalProvider(
             appendLine("Local analysis suggests focusing on practical, efficient solutions")
             appendLine("that work within the current environment and constraints.")
         }
+=======
+        // TODO: Implement HTTP request to local Ollama endpoint
+        return buildContextualResponse(prompt, context)
+>>>>>>> origin/jules_wip_12008771546559725757
     }
 }
 

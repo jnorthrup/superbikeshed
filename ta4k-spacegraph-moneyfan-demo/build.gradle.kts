@@ -1,5 +1,6 @@
 // ta4k-spacegraph-moneyfan-demo/build.gradle.kts
 plugins {
+<<<<<<< HEAD
     kotlin("multiplatform") version "2.2.0-RC2"
     kotlin("plugin.serialization") version "2.2.0-RC2"
     // No application plugin here as this module primarily produces JS for the browser
@@ -11,6 +12,12 @@ repositories {
     maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
 }
 
+=======
+    kotlin("multiplatform") // Inherit version from root project
+    // No application plugin here as this module primarily produces JS for the browser
+}
+
+>>>>>>> origin/jules_wip_12008771546559725757
 kotlin {
     js(IR) { // Target JavaScript with the IR compiler
         browser {
@@ -32,14 +39,33 @@ kotlin {
     }
 
     sourceSets {
+<<<<<<< HEAD
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js")) // Standard JS library for Kotlin
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Add serialization
+=======
+        // Common source set (not used much in this primarily JS demo)
+        // val commonMain by getting {
+        //     dependencies {
+        //         // implementation(kotlin("stdlib-common")) // Already included by default
+        //     }
+        // }
+
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js")) // Standard JS library for Kotlin
+
+                // Project dependencies
+                implementation(project(":ta4k"))                          // For Kline, parsing, DSEL-native indicators
+                implementation(project(":Review"))                        // For TrikeShedCore DSEL definitions
+                implementation(project(":spacegraphjs:kotlin-spacegraph")) // For AgentAPI
+>>>>>>> origin/jules_wip_12008771546559725757
 
                 // NPM dependencies required by spacegraph.js (and potentially its Kotlin wrapper)
                 implementation(npm("three", "0.166.1")) // Specify version used by spacegraph.js
                 implementation(npm("gsap", "3.12.5"))   // Specify version used by spacegraph.js
+<<<<<<< HEAD
                 implementation(npm("three-orbit-controls", "82.1.0")) // Add OrbitControls
 
                 // Coroutines for async operations like fetch
@@ -48,6 +74,24 @@ kotlin {
             }
             resources.srcDirs(project.file("src/jsMain/resources"))
         }
+=======
+
+                // Coroutines for async operations like fetch
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.7.3") // Use js artifact
+            }
+            // Ensure the resources directory is correctly identified for the JS source set
+            // This makes files in src/jsMain/resources available, e.g. index.html, data files.
+            // The devServer.staticResourcesDirectory handles serving, but this ensures build awareness.
+            resources.srcDirs(project.file("src/jsMain/resources"))
+        }
+
+        // Optional JVM source set if any JVM-specific helper tasks were needed
+        // val jvmMain by getting {
+        //     dependencies {
+        //         implementation(kotlin("stdlib-jdk8"))
+        //     }
+        // }
+>>>>>>> origin/jules_wip_12008771546559725757
     }
 }
 

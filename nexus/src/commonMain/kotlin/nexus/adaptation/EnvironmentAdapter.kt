@@ -193,6 +193,7 @@ enum class ConnectionType {
  */
 @JvmInline
 value class Action(val data: String) {
+<<<<<<< HEAD
     val type: ActionType get() = when {
         data.contains("file:") || data.contains("mkdir") || data.contains("rm ") -> ActionType.FILE_OPERATION
         data.contains("edit:") || data.contains("modify:") -> ActionType.CODE_EDIT
@@ -202,6 +203,9 @@ value class Action(val data: String) {
         data.contains("deploy") || data.contains("release") -> ActionType.DEPLOY
         else -> ActionType.FILE_OPERATION
     }
+=======
+    val type: ActionType get() = TODO("Extract action type from data")
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 enum class ActionType {
@@ -213,6 +217,7 @@ enum class ActionType {
  */
 @JvmInline
 value class Outcome(val data: String) {
+<<<<<<< HEAD
     val success: Boolean get() = 
         data.contains("success") || data.contains("completed") || 
         data.contains("ok") || !data.contains("error")
@@ -236,6 +241,11 @@ value class Outcome(val data: String) {
     val affectsCapabilities: Boolean get() = 
         data.contains("capabilities") || data.contains("tools") || 
         changes.`▶`.any { it.affectsCapabilities }
+=======
+    val success: Boolean get() = TODO("Extract success from data")
+    val changes: Series<Change> get() = TODO("Extract changes from outcome")
+    val affectsCapabilities: Boolean get() = TODO("Check if outcome affects capabilities")
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 /**
