@@ -11,7 +11,8 @@ import borg.trikeshed.common.collections.s_ // Seems to be a specific collection
 import kotlin.properties.Delegates
 
 // Local type alias for the underlying structure of Series<T>
-private typealias SeriesData<T> = Pair<Int, (Int) -> T>
+// Changed from Pair<Int, (Int) -> T> to Series<T>
+private typealias SeriesData<T> = Series<T>
 
 // inline factory value for CopyOnWriteSeries
 // The receiver 'this' is Series<T> (from core), which is Pair<Int, (Int)->T>
@@ -28,23 +29,16 @@ inline val <reified T> Series<T>.cow: CowSeriesHandle<T> get() = CowSeriesHandle
  */
 class CowSeriesHandle<T>(
     letter1: COWSeriesBody<T>,
-    var observer: ((Twin<SeriesData<T>>) -> Unit)? = null, // Changed Series<T> to SeriesData<T>
+    var observer: ((Twin<Series<T>>) -> Unit)? = null, // Changed SeriesData<T> to Series<T>
     var versionObserver: ((Twin<Long?>) -> Unit)? = null,
 
     ) { // REMOVED MutableSeries<T>
 
     var letter: COWSeriesBody<T> by Delegates.observable(letter1) { _, old, new ->
-        // old and new are COWSeriesBody. As COWSeriesBody itself will provide SeriesData via its 'backing'
-        // or if it still implements Series<T>, this j needs to be compatible.
-        // Assuming 'j' can join COWSeriesBody instances or their relevant SeriesData parts.
-        // If observer expects SeriesData: old.seriesData j new.seriesData
-        // If observer expects Series<T> (Pair): old.asSeriesData() j new.asSeriesData()
-        // For now, let's assume COWSeriesBody will be treated as Series<T> by 'j' due to its interface,
-        // or j is smart enough. This might need adjustment based on how 'j' and Twin work.
-        // The safest is to make Twin expect SeriesData if that's the common currency.
-        // However, observer is (Twin<Series<T>>) -> Unit. Series<T> is Pair<Int, (Int)->T>.
-        // So, old j new should produce Twin<Pair<Int,(Int)->T>>
-        observer?.invoke(old.asSeriesData() j new.asSeriesData())
+        // old and new are COWSeriesBody.
+        // observer now expects Twin<Series<T>>.
+        // old.asSeries() and new.asSeries() will return Series<T>.
+        observer?.invoke(old.asSeries() j new.asSeries())
     }
 
     // Became direct members of CowSeriesHandle after removing MutableSeries<T>
@@ -119,12 +113,12 @@ class CowSeriesHandle<T>(
     // COWSeriesBody has 'version', and also 'size'/'get' which makes it Series-like.
     val version: Any get() = letter.version ?: letter.toString() // Delegates to COWSeriesBody
 
-    // Helper to expose SeriesData for observer
-    fun asSeriesData(): SeriesData<T> = letter.asSeriesData()
+    // Helper to expose Series<T> for observer
+    fun asSeries(): Series<T> = letter.asSeries()
 }
 
-// Extension to get SeriesData from COWSeriesBody
-fun <T> COWSeriesBody<T>.asSeriesData(): SeriesData<T> = this.backing // Assuming backing is now SeriesData
+// Extension to get Series<T> from COWSeriesBody
+fun <T> COWSeriesBody<T>.asSeries(): Series<T> = this.backing
 
 
 /**
@@ -136,13 +130,14 @@ fun <T> COWSeriesBody<T>.asSeriesData(): SeriesData<T> = this.backing // Assumin
  * object-identity is good enough for unordered version discriminator
  */
 class COWSeriesBody<T>(
-    val backing: SeriesData<T> = emptySeries<T>(), // Changed Series<T> to SeriesData<T>, and default
+    val backing: Series<T> = emptySeries<T>(), // Type changed to Series<T>
     override val version: Long? = null
 ) : VersionedSeries<T> { // VersionedSeries extends Series<T> (core)
 
     // Explicit implementation of Series<T> (from VersionedSeries<T>)
-    override val size: Int get() = backing.first
-    override operator fun get(index: Int): T = backing.second(index)
+    // Accessing Join components using .a and .b
+    override val size: Int get() = backing.a
+    override operator fun get(index: Int): T = backing.b(index)
 
     /** create a new copy of this, with the given item inserted at the given index */
     fun set(index: Int, item: T): COWSeriesBody<T> {
@@ -173,7 +168,8 @@ class COWSeriesBody<T>(
 
     fun insert(index: Int, item: T): COWSeriesBody<T> {
         val newSize = size + 1
-        val newBacking: SeriesData<T> = newSize to { i ->
+        // Changed 'to' to 'j' to create Series<T> (Join)
+        val newBacking: Series<T> = newSize j { i ->
             when {
                 i < index -> this[i]
                 i > index -> this[i - 1]
@@ -186,23 +182,26 @@ class COWSeriesBody<T>(
     /** create a new copy of this, with the given item removed at the given index */
     fun removeAt(index: Int): COWSeriesBody<T> {
         val newSize = size - 1
-        val newBacking: SeriesData<T> = newSize to { i ->
+        // Changed 'to' to 'j' to create Series<T> (Join)
+        val newBacking: Series<T> = newSize j { i ->
             if (i < index) this[i] else this[i + 1]
         }
         return copy(backing = newBacking)
     }
 
-    fun clear(): COWSeriesBody<T> = copy(backing = emptySeries<T>())
+    fun clear(): COWSeriesBody<T> = copy(backing = emptySeries<T>()) // emptySeries<T>() is already Series<T>
 
     operator fun get(range: IntRange): COWSeriesBody<T> {
         val newSize = range.last - range.first + 1
         require(newSize >= 0) { "Range must not be empty" }
         val offset = range.first
-        return copy(backing = newSize to { i -> this[offset + i] })
+        // Changed 'to' to 'j' to create Series<T> (Join)
+        return copy(backing = newSize j { i -> this[offset + i] })
     }
 
     /** create a new copy of this, with potentially new backing and version */
-    private fun copy(backing: SeriesData<T> = this.backing, version: Long? = this.version?.inc()): COWSeriesBody<T> =
+    // Changed backing type to Series<T>
+    private fun copy(backing: Series<T> = this.backing, version: Long? = this.version?.inc()): COWSeriesBody<T> =
         COWSeriesBody(backing, version)
 }
 
