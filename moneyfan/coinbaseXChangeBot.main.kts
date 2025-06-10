@@ -54,6 +54,7 @@
  *
  * Running the Script:
 
+<<<<<<< HEAD
  * Running the Script:
  *   k2script coinbaseXChangeBot.main.kts
 =======

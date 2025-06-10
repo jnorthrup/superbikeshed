@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 #!/usr/bin/env k2script
 
 // k2script example for LiteLLM integration
