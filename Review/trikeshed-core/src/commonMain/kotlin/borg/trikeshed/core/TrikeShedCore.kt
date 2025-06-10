@@ -576,13 +576,7 @@ internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = TODO(
 
 // --- m (map/transform) ---
 
-/**
- * Applies a lambda to each element of the [Tensor] and returns a new [Tensor] with the transformed elements.
- * The new [Tensor] will have the same shape as the original.
- */
-@JsExport
-inline infix fun <T, R> Tensor<T>.m(crossinline transform: (T) -> R): Tensor<R> =
-    this.shape j { coords: IntArray -> transform(this.accessor(coords)) }
+// Tensor<T>.m(transform) moved to core.TrikeShedTensorOperations.kt
 
 /**
  * Applies a lambda to each element of the [Series] and returns a new [Series] with the transformed elements.
@@ -594,27 +588,7 @@ inline infix fun <T, R> Series<T>.m(crossinline transform: (T) -> R): Series<R> 
 
 // --- d (drop) ---
 
-/**
- * Returns a new [Tensor] with the first `n` elements removed, based on a linear view of the tensor elements.
- * The resulting [Tensor] will be 1-dimensional (a Series-like Tensor).
- * If `n` is non-positive, the original [Tensor] is returned as a 1D Tensor.
- * If `n` is greater than or equal to [totalSize], an empty 1D [Tensor] is returned.
- */
-@JsExport
-fun <T> Tensor<T>.d(n: Int): Tensor<T> {
-    val originalTotalSize = this.totalSize
-    if (n <= 0) {
-        // Return original tensor as a 1D tensor
-        return TensorSeries(originalTotalSize) { i -> this(this.linearToCoords(i)) }
-    }
-    if (n >= originalTotalSize) {
-        return TensorSeries(0) { throw IndexOutOfBoundsException("Cannot access elements from an empty tensor resulting from drop.") }
-    }
-    val newSize = originalTotalSize - n
-    return TensorSeries(newSize) { i ->
-        this(this.linearToCoords(i + n))
-    }
-}
+// Tensor<T>.d(n) moved to core.TrikeShedTensorOperations.kt
 
 /**
  * Returns a new [Series] with the first `n` elements removed.
@@ -632,16 +606,7 @@ fun <T> Series<T>.d(n: Int): Series<T> {
 
 // --- _l (last/tail) ---
 
-/**
- * Returns the last element of the [Tensor], based on a linear view.
- * Throws [NoSuchElementException] if the tensor is empty.
- */
-@JsExport
-val <T> Tensor<T>._l: T
-    get() {
-        if (totalSize == 0) throw NoSuchElementException("Tensor is empty.")
-        return this(linearToCoords(totalSize - 1))
-    }
+// Tensor<T>._l moved to core.TrikeShedTensorOperations.kt
 
 /**
  * Returns the last element of the [Series].
@@ -656,25 +621,7 @@ val <T> Series<T>._l: T
 
 // --- _v (values/vector) ---
 
-/**
- * Returns an [Iterable] view of the [Tensor]'s elements, based on a linear traversal.
- */
-@JsExport
-val <T> Tensor<T>._v: Iterable<T>
-    get() = object : Iterable<T> {
-        override fun iterator(): Iterator<T> = object : Iterator<T> {
-            private var currentIndex = 0
-            private val total = this@_v.totalSize
-            private val tensorRef = this@_v // Keep a reference to the outer Tensor
-
-            override fun hasNext(): Boolean = currentIndex < total
-
-            override fun next(): T {
-                if (!hasNext()) throw NoSuchElementException()
-                return tensorRef(tensorRef.linearToCoords(currentIndex++))
-            }
-        }
-    }
+// Tensor<T>._v moved to core.TrikeShedTensorOperations.kt
 
 /**
  * Returns an [Iterable] view of the [Series]'s elements.
@@ -686,20 +633,7 @@ val <T> Series<T>._v: Iterable<T>
 
 // --- s_ (sum) ---
 
-/**
- * Calculates and returns the sum of elements in a [Tensor] of [Number]s.
- * Elements are converted to [Double] for summation.
- * Returns `0.0` for an empty tensor.
- */
-@JsExport
-fun <N : Number> Tensor<N>.s_(): Double {
-    if (totalSize == 0) return 0.0
-    var sum = 0.0
-    for (i in 0 until totalSize) {
-        sum += this(linearToCoords(i)).toDouble()
-    }
-    return sum
-}
+// Tensor<N>.s_() moved to core.TrikeShedTensorOperations.kt
 
 /**
  * Calculates and returns the sum of elements in a [Series] of [Number]s.
