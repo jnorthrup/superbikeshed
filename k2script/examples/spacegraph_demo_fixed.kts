@@ -1,6 +1,9 @@
-#!/usr/bin/env kotlin
+#!/usr/bin/env k2script
 
 // SpaceGraph Kotlin Demo - Fixed visualization with working layout
+// Updated to use TrikeShed patterns: Series<T>, Join<A,B>, j operator, α transforms
+
+@file:Import("k2script.trikeshed.*")
 
 println("=== SpaceGraph Kotlin Demo (Fixed Layout) ===")
 println()
@@ -16,11 +19,14 @@ data class Vector3D(val x: Double, val y: Double, val z: Double) {
     override fun toString() = "(${"%.2f".format(x)}, ${"%.2f".format(y)}, ${"%.2f".format(z)})"
 }
 
+@JvmInline
+value class NodeData(val entries: Series<Join<String, Any>>)
+
 data class GraphNode(
     val id: String,
     val label: String,
     var position: Vector3D,
-    val data: Map<String, Any> = emptyMap()
+    val data: NodeData = NodeData(Series.empty())
 )
 
 data class GraphEdge(
@@ -32,61 +38,71 @@ data class GraphEdge(
 )
 
 class SpaceGraphKt {
-    private val nodes = mutableMapOf<String, GraphNode>()
-    private val edges = mutableMapOf<String, GraphEdge>()
+    private var nodes = Series.empty<Join<String, GraphNode>>()
+    private var edges = Series.empty<Join<String, GraphEdge>>()
     
-    fun addNode(id: String, label: String, position: Vector3D = Vector3D(0.0, 0.0, 0.0), data: Map<String, Any> = emptyMap()): GraphNode {
+    fun addNode(id: String, label: String, position: Vector3D = Vector3D(0.0, 0.0, 0.0), data: NodeData = NodeData(Series.empty())): GraphNode {
         val node = GraphNode(id, label, position, data)
-        nodes[id] = node
+        val nodeEntry = id j node
+        nodes = Series.of(*nodes.▶.toTypedArray(), nodeEntry)
         println("  Added node: $id -> $label at $position")
         return node
     }
     
+    private fun findNode(id: String): GraphNode? {
+        return nodes.▶.find { it.first == id }?.second
+    }
+    
     fun addEdge(sourceId: String, targetId: String, weight: Double = 1.0, label: String? = null): GraphEdge? {
-        val source = nodes[sourceId] ?: return null.also { println("  Error: Source node $sourceId not found") }
-        val target = nodes[targetId] ?: return null.also { println("  Error: Target node $targetId not found") }
+        val source = findNode(sourceId) ?: return null.also { println("  Error: Source node $sourceId not found") }
+        val target = findNode(targetId) ?: return null.also { println("  Error: Target node $targetId not found") }
         
         val edgeId = "$sourceId-$targetId"
         val edge = GraphEdge(edgeId, source, target, weight, label)
-        edges[edgeId] = edge
+        val edgeEntry = edgeId j edge
+        edges = Series.of(*edges.▶.toTypedArray(), edgeEntry)
         println("  Added edge: $sourceId -> $targetId (weight: $weight)")
         return edge
     }
     
-    fun getNodes() = nodes.values.toList()
-    fun getEdges() = edges.values.toList()
+    fun getNodes(): Series<GraphNode> = nodes.α { it.second }
+    fun getEdges(): Series<GraphEdge> = edges.α { it.second }
     
     fun calculateGraphMetrics() {
         println("Graph Metrics:")
         println("  Nodes: ${nodes.size}")
         println("  Edges: ${edges.size}")
         
-        val connectivity = nodes.values.map { node ->
-            edges.values.count { it.source == node || it.target == node }
+        val nodeList = getNodes()
+        val edgeList = getEdges()
+        
+        val connectivity = nodeList.α { node ->
+            edgeList.▶.count { it.source == node || it.target == node }
         }
-        println("  Average connectivity: ${"%.2f".format(connectivity.average())}")
+        println("  Average connectivity: ${"%.2f".format(connectivity.▶.average())}")
         
         val maxPossibleEdges = nodes.size * (nodes.size - 1) / 2
         val density = if (maxPossibleEdges > 0) edges.size.toDouble() / maxPossibleEdges else 0.0
         println("  Graph density: ${"%.2f".format(density)}")
     }
     
-    fun findShortestPath(startId: String, endId: String): List<GraphNode>? {
-        val start = nodes[startId] ?: return null
-        val end = nodes[endId] ?: return null
+    fun findShortestPath(startId: String, endId: String): Series<GraphNode>? {
+        val start = findNode(startId) ?: return null
+        val end = findNode(endId) ?: return null
         
-        val queue = mutableListOf(listOf(start))
+        val queue = mutableListOf(Series.of(start))
         val visited = mutableSetOf<String>()
         
         while (queue.isNotEmpty()) {
             val path = queue.removeAt(0)
-            val current = path.last()
+            val current = path.▶.last()
             
             if (current == end) return path
             if (current.id in visited) continue
             visited.add(current.id)
             
-            val connectedNodes = edges.values.filter { 
+            val edgeList = getEdges()
+            val connectedNodes = edgeList.▶.filter { 
                 it.source == current || it.target == current 
             }.map { 
                 if (it.source == current) it.target else it.source 
@@ -94,7 +110,8 @@ class SpaceGraphKt {
             
             connectedNodes.forEach { neighbor ->
                 if (neighbor.id !in visited) {
-                    queue.add(path + neighbor)
+                    val newPath = Series.of(*path.▶.toTypedArray(), neighbor)
+                    queue.add(newPath)
                 }
             }
         }

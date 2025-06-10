@@ -5,8 +5,7 @@ import k2script.trikeshed.*
 import java.io.File
 
 /**
- * Simplified script engine for k2script with TrikeShed integration
- * TODO: Implement full Kotlin scripting when dependencies are available
+ * Simplified script engine with TrikeShed integration
  */
 class ScriptEngine {
     
@@ -21,7 +20,7 @@ class ScriptEngine {
     }
     
     /**
-     * Execute a Kotlin script file - currently a simplified mock implementation
+     * Execute a Kotlin script file
      */
     @HotPath
     fun executeScript(scriptFile: File, args: Array<String> = emptyArray()): Boolean {
@@ -38,7 +37,7 @@ class ScriptEngine {
     }
     
     /**
-     * Execute script with provided context - simplified implementation
+     * Execute script with context
      */
     @ColdPath
     private fun executeScriptWithContext(
@@ -52,9 +51,12 @@ class ScriptEngine {
         logger.info("Starting script execution: ${scriptFile.name}")
         
         return try {
-            // For demonstration purposes, just execute the script as a process
-            // This allows us to show what k2script can do while we work on full integration
-            val processBuilder = ProcessBuilder("kotlin", scriptFile.absolutePath, *args)
+            val processBuilder = ProcessBuilder(
+                "kotlin", 
+                "-J--enable-native-access=ALL-UNNAMED",
+                scriptFile.absolutePath, 
+                *args
+            )
             processBuilder.environment().putAll(EnvironmentManager.getAllAsMap())
             processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
             processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
@@ -63,10 +65,10 @@ class ScriptEngine {
             val exitCode = process.waitFor()
             
             if (exitCode == 0) {
-                logger.info("Script completed successfully")
+                logger.info("Script completed")
                 true
             } else {
-                logger.error("Script failed with exit code: $exitCode")
+                logger.error("Script failed: $exitCode")
                 false
             }
         } catch (e: Exception) {

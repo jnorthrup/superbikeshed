@@ -7,7 +7,7 @@ import kotlin.script.experimental.api.ide
 import kotlin.script.experimental.api.refineConfiguration
 import kotlin.script.experimental.jvm.dependenciesFromCurrentContext
 import kotlin.script.experimental.jvm.jvm
-
+ 
 /**
  * K2script script template definition
  * 

@@ -68,3 +68,9 @@ Put nio target overrides into borg.trikeshed.nio.
 - you will always proceed "without any destructive change"
 - whatever thinking caused QuicInstant to have a Quic prefix needs to end for general reuse
 - when writing a test, do not create new turds
+
+
+# Workflow
+
+one task does the (thin+-king) and planning for two tasks -- the first one starts up with the large context and starts to curate a smaller context loop adequate to anneal tests, docs, and code ; the other is architecting the integration and authoring fully informed tests and proofs, axiomatic and poignant, not boilerplate --- with the context it remains with.
+second will be a lesser GDM capability if its still highcompetence with IKR (Incomplete knowledge, resources (to win!))
