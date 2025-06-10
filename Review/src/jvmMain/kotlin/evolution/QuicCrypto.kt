@@ -99,7 +99,7 @@ enum class QuicPacketType { INITIAL }
         throw UnsupportedOperationException("Crypto.aesEcbEncrypt is deprecated. Use suspend AesService.ecbEncrypt from context.")
     }
 }
-// actual object Crypto block removed
+
 
 internal actual suspend fun protectPacket(
     context: CoroutineContext,
@@ -196,9 +196,7 @@ internal actual suspend fun unprotectPacket(
     val aesService = context[AesServiceKey]
         ?: throw IllegalStateException("AesService not found in CoroutineContext for unprotection.")
 
-<<<<<<< HEAD
     // Simplified parsing: Assume a fixed conceptual header length for this example.
-    // In real QUIC, header length is variable and determined by parsing initial bytes, CIDs etc.
     // This is a major simplification point for this subtask.
     // A real implementation would parse the header structure first.
 
@@ -224,7 +222,6 @@ internal actual suspend fun unprotectPacket(
 
     // Extract sample for HP from the *protected* payload (ciphertext)
 =======
-    val payloadCiphertextOffset = 20
 
     if (protectedPacketBytes.size < payloadCiphertextOffset + 16) {
         return null
@@ -241,9 +238,7 @@ internal actual suspend fun unprotectPacket(
     // The header part is from byte 0 to payloadCiphertextOffset - 1.
     val headerCandidate = protectedPacketBytes.copyOfRange(0, payloadCiphertextOffset)
 
-    // Apply unmasking to a copy of the relevant header part
     // The first byte and the PN field need to be unmasked.
-    // Assume the PN field is within the first few bytes of the header for this simplification.
 =======
     val headerCandidate = protectedPacketBytes.copyOfRange(0, payloadCiphertextOffset)
 
@@ -252,7 +247,6 @@ internal actual suspend fun unprotectPacket(
         headerCandidate[0] = (headerCandidate[0].toInt() xor hpMaskFirst5Bytes[0].toInt()).toByte()
     }
 
-<<<<<<< HEAD
     // Unmask conceptual PN (e.g., at offset 1 for up to 4 bytes)
     val pnOffsetInHeader = 1 // Conceptual
     for (i in 0 until 4) { // Unmask up to 4 bytes for PN
@@ -270,7 +264,6 @@ internal actual suspend fun unprotectPacket(
     // Now, `headerCandidate` is the unprotected header.
     // A full parser would now use this to determine actual PN length, packet type, CIDs, etc.
 
-    // Payload Decryption
     val payloadKey = keys.payloadProtectionKey(context)
     val payloadIv = keys.payloadIv(context)
     val aadForPayload = headerCandidate.copyOf() // Use the now unprotected header as AAD
