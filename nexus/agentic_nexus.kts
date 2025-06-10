@@ -1,4 +1,4 @@
-#!/usr/bin/env kotlin
+#!/usr/bin/env /Users/jim/work/superbikeshed/k2script/src/k2script
 
 @file:Repository("https://repo1.maven.org/maven2/")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
@@ -189,9 +189,9 @@ class AgenticNexus(
                 // Simulate environment changes
                 val capabilities = detectCapabilities()
                 val context = CCEKContext(mapOf(
-                    "scope" -> "development",
-                    "capabilities" -> capabilities.joinToString(","),
-                    "timestamp" -> System.currentTimeMillis().toString()
+                    "scope" to "development",
+                    "capabilities" to capabilities.joinToString(","),
+                    "timestamp" to System.currentTimeMillis().toString()
                 ))
                 
                 // Generate adaptive tasks based on environment
