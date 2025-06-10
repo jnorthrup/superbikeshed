@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+#!/usr/bin/env k2script
+=======
 #!/usr/bin/env kscript
+>>>>>>> origin/jules_wip_12008771546559725757
 // TODO fill here what your script does
 
 import kotlin.system.exitProcess

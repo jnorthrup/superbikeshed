@@ -5,7 +5,64 @@ import { fileURLToPath } from "url"
 import process from "node:process"
 import * as console from "node:console"
 
-import { copyPaths, copyWasms, copyLocales, setupLocaleWatcher } from "@roo-code/build"
+// Build utilities inlined
+function copyPaths(paths, srcDir, buildDir) {
+	paths.forEach(([src, dest, options = {}]) => {
+		const srcPath = path.resolve(srcDir, src)
+		const destPath = path.resolve(buildDir, dest)
+		
+		if (options.optional && !fs.existsSync(srcPath)) return
+		
+		if (fs.existsSync(srcPath)) {
+			const destDir = path.dirname(destPath)
+			if (!fs.existsSync(destDir)) {
+				fs.mkdirSync(destDir, { recursive: true })
+			}
+			
+			if (fs.lstatSync(srcPath).isDirectory()) {
+				if (fs.existsSync(destPath)) {
+					fs.rmSync(destPath, { recursive: true, force: true })
+				}
+				fs.mkdirSync(destPath, { recursive: true })
+				const files = fs.readdirSync(srcPath)
+				files.forEach(file => {
+					const srcFile = path.join(srcPath, file)
+					const destFile = path.join(destPath, file)
+					if (fs.lstatSync(srcFile).isDirectory()) {
+						copyPaths([[file, file]], srcPath, destPath)
+					} else {
+						fs.copyFileSync(srcFile, destFile)
+					}
+				})
+			} else {
+				fs.copyFileSync(srcPath, destPath)
+			}
+		}
+	})
+}
+
+function copyWasms(srcDir, distDir) {
+	// Copy WASM files if they exist
+	const wasmSrc = path.join(srcDir, "node_modules/tree-sitter-wasms")
+	const wasmDest = path.join(distDir, "tree-sitter-wasms")
+	if (fs.existsSync(wasmSrc) && fs.lstatSync(wasmSrc).isDirectory()) {
+		copyPaths([["node_modules/tree-sitter-wasms", "tree-sitter-wasms"]], srcDir, distDir)
+	}
+}
+
+function copyLocales(srcDir, distDir) {
+	// Copy locale files
+	const localesPattern = "package.nls.*.json"
+	const files = fs.readdirSync(srcDir).filter(f => f.match(/package\.nls\.[^.]+\.json$/))
+	files.forEach(file => {
+		fs.copyFileSync(path.join(srcDir, file), path.join(distDir, file))
+	})
+}
+
+function setupLocaleWatcher(srcDir, distDir) {
+	// Simple watcher for locale files - could be enhanced
+	console.log("Locale watcher not implemented for simplified build")
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

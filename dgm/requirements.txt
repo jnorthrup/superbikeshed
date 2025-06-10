@@ -13,11 +13,27 @@ docker
 ghapi
 GitPython
 pre-commit
+<<<<<<< HEAD
+python-dotenv>=1.0.0
+=======
 python-dotenv
+>>>>>>> origin/jules_wip_12008771546559725757
 rich
 unidiff
 
 # pytest
+<<<<<<< HEAD
+pytest>=7.4.0
+pytest-asyncio
+async_timeout
+pytest-mock>=3.11.1
+
+# New additions
+langchain>=0.1.0
+typing-extensions>=4.7.1
+pydantic>=2.4.2
+=======
 pytest
 pytest-asyncio
 async_timeout
+>>>>>>> origin/jules_wip_12008771546559725757
