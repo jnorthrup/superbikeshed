@@ -53,7 +53,11 @@
  *    (Ensure the API key has permissions for viewing balances, market data, and trading).
  *
  * Running the Script:
+<<<<<<< HEAD
+ *   k2script coinbaseXChangeBot.main.kts
+=======
  *   kscript coinbaseXChangeBot.main.kts
+>>>>>>> origin/jules_wip_12008771546559725757
  *
  * Disclaimer:
  * TRADING CRYPTOCURRENCIES IS RISKY. THIS SCRIPT IS FOR EDUCATIONAL AND
