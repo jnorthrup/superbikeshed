@@ -51,9 +51,12 @@ import { initThreeRenderer } from './rendering/threeRenderer.js'; // Import Thre
 // Minimap functionality removed
 import { ModernUIManager } from './ui/modernUIManager.js'; // NEW: Import Modern UI Manager
 import { exportGameStateToSpaceGraphData } from './visualization/spacegraphExporter.js';
+<<<<<<< HEAD
 import { CommandHierarchyUI } from './ui/commandHierarchyUI.js';
 import { FormationSystem } from './systems/formationSystem.js';
 import { FormationControls } from './ui/formationControls.js';
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
 
 // Initial game setup
 // Initialize gameContext properties for the first time
@@ -446,6 +449,7 @@ gameInitializer.initialize().catch(error => {
     console.error("Failed to initialize game:", error);
 });
 */
+<<<<<<< HEAD
 
 class Game {
     constructor() {
@@ -498,3 +502,5 @@ class Game {
         }
     }
 }
+=======
+>>>>>>> origin/jules_wip_12008771546559725757

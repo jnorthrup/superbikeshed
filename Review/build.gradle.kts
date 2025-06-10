@@ -1,6 +1,9 @@
 plugins {
     kotlin("multiplatform") version "2.2.0-RC2"
+<<<<<<< HEAD
     kotlin("plugin.serialization") version "2.2.0-RC2"
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 

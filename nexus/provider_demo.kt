@@ -1,4 +1,5 @@
 // NEXUS PROVIDER DEMONSTRATION
+<<<<<<< HEAD
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -36,6 +37,8 @@ import extractCurrentScope
 import extractCurrentCapabilities
 import substringBetween
 
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
 fun main() {
     println("=== NEXUS PROVIDER DEMONSTRATION ===")
     
@@ -211,4 +214,14 @@ fun EnhancedNexus.generate(prompt: String): String {
     } else {
         "Provider ${provider.name} would generate response for: $prompt"
     }
+<<<<<<< HEAD
 }
+=======
+}
+
+fun CCEKContext.extractCurrentScope(): String = this.first.first.scope.ifEmpty { "default" }
+fun CCEKContext.extractCurrentCapabilities(): String = this.second.first.capabilities.ifEmpty { "basic" }
+
+fun String.substringBetween(start: String, end: String): String = 
+    substringAfter(start).substringBefore(end)
+>>>>>>> origin/jules_wip_12008771546559725757

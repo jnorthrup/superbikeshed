@@ -176,7 +176,11 @@ class HybridIntelligence(
         val solutions = generateSolutions(problem, context, Series.empty())
         val bestSolution = solutions.best()
         
+<<<<<<< HEAD
         return Series.of("Generated solution:", "", bestSolution.`▶`.joinToString("\n"))
+=======
+        return Response("Generated solution:\n\n${bestSolution.implementation}")
+>>>>>>> origin/jules_wip_12008771546559725757
     }
     
     private suspend fun handleProblemSolving(request: Request, context: ProjectContext): Response {
@@ -184,7 +188,11 @@ class HybridIntelligence(
         val evolvedSolutions = evolveSolutionsInteractively(problem, context)
         val explanation = explainSolution(evolvedSolutions.first(), problem)
         
+<<<<<<< HEAD
         return Series.of("Solution with explanation:", "", explanation)
+=======
+        return Response("Solution with explanation:\n\n$explanation")
+>>>>>>> origin/jules_wip_12008771546559725757
     }
     
     private suspend fun evolveSolutionsInteractively(
@@ -234,7 +242,12 @@ class HybridIntelligence(
     }
     
     private fun classifyRequest(request: Request): RequestType {
+<<<<<<< HEAD
         val content = request.`▶`.joinToString(" ").lowercase()
+=======
+        // Simple classification based on keywords - could be ML-based
+        val content = request.content.lowercase()
+>>>>>>> origin/jules_wip_12008771546559725757
         return when {
             content.contains("generate") || content.contains("create") -> RequestType.CODE_GENERATION
             content.contains("solve") || content.contains("fix") -> RequestType.PROBLEM_SOLVING
@@ -242,6 +255,7 @@ class HybridIntelligence(
             content.contains("optimize") || content.contains("performance") -> RequestType.OPTIMIZATION
             content.contains("analyze") || content.contains("explain") -> RequestType.ANALYSIS
             content.contains("workflow") || content.contains("process") -> RequestType.WORKFLOW
+<<<<<<< HEAD
             else -> RequestType.PROBLEM_SOLVING
         }
     }
@@ -326,6 +340,11 @@ class HybridIntelligence(
                 description = suggestion
             )
         }
+=======
+            else -> RequestType.PROBLEM_SOLVING // Default
+        }
+    }
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 // Supporting types
@@ -336,6 +355,7 @@ enum class RequestType {
 enum class Approach {
     ALGORITHMIC, FUNCTIONAL, OBJECT_ORIENTED, DECLARATIVE, ITERATIVE, RECURSIVE;
     
+<<<<<<< HEAD
     fun adaptTo(problem: Problem, context: ProjectContext): Approach {
         val problemDomain = problem.extractDomain()
         val contextLanguages = context.extractLanguages()
@@ -350,10 +370,14 @@ enum class Approach {
             else -> this
         }
     }
+=======
+    fun adaptTo(problem: Problem, context: ProjectContext): Approach = this // TODO: Implement adaptation
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 @JvmInline
 value class HumanFeedback(val data: String) {
+<<<<<<< HEAD
     val preferences: Series<Preference> get() = parsePreferences(data)
     val isSatisfied: Boolean get() = data.contains("satisfied") || data.contains("good") || data.contains("approve")
     
@@ -389,10 +413,17 @@ value class HumanFeedback(val data: String) {
     
     private fun countNegativeKeywords(text: String): Int = 
         text.lowercase().split(" ").count { it in listOf("bad", "wrong", "no", "dislike", "hate", "poor", "terrible", "worse", "incorrect") }
+=======
+    val preferences: Series<Preference> get() = TODO("Extract preferences")
+    val isSatisfied: Boolean get() = TODO("Check satisfaction")
+    
+    fun evaluateSolution(solution: Solution): Double = TODO("Score solution based on feedback")
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 @JvmInline
 value class Suggestion(val content: String) {
+<<<<<<< HEAD
     val relevanceScore: Double get() = calculateRelevanceScore()
     
     fun withRelevanceScore(context: ProjectContext): Suggestion {
@@ -409,6 +440,11 @@ value class Suggestion(val content: String) {
         val importantCount = words.count { it in importantWords }
         return if (words.isEmpty()) 0.0 else importantCount.toDouble() / words.size
     }
+=======
+    val relevanceScore: Double get() = TODO("Get relevance score")
+    
+    fun withRelevanceScore(context: ProjectContext): Suggestion = TODO("Calculate relevance")
+>>>>>>> origin/jules_wip_12008771546559725757
 }
 
 data class WorkflowAnalysis(

@@ -412,6 +412,7 @@ class Unit {
 
         // Update veterancy tracking (as per implementation-guide.md Section 1.3)
         this.updateVeterancyProgress(simulation); // Pass simulation as gameContext
+<<<<<<< HEAD
         
         // Apply morale bonus if capable
         if (this.provideMoraleBonus) {
@@ -422,6 +423,8 @@ class Unit {
         if (this.canPromoteSubordinates) {
             this.handleSubordinatePromotions(simulation);
         }
+=======
+>>>>>>> origin/jules_wip_12008771546559725757
     }
 
     defaultMovementAndTargeting(simulation, deltaTime) { // Renamed gameContext, added deltaTime
@@ -1678,6 +1681,7 @@ class Unit {
     }
 
     processPromotion(oldLevel, gameContext) {
+<<<<<<< HEAD
         const newLevel = this.getVeterancyLevel();
         if (newLevel !== oldLevel) {
             console.log(`[Unit] ${this.type.name} promoted from ${oldLevel} to ${newLevel}`);
@@ -1712,10 +1716,37 @@ class Unit {
                 );
                 gameContext.entityManager.addCaption(caption);
             }
+=======
+        const { entityManager, gameState } = gameContext;
+        const now = performance.now();
+
+        // Prevent spam promotions
+        if (now - this.lastPromotionTime < COMMAND_CONFIG.UPDATE_INTERVALS.PROMOTION_COOLDOWN) return;
+
+        this.lastPromotionTime = now;
+
+        // Apply veterancy benefits
+        this.applyVeterancyBenefits();
+
+        // Visual feedback (Caption class is imported at the top)
+        if (entityManager && typeof entityManager.addCaption === 'function') {
+            entityManager.addCaption(new Caption(
+                this.x, this.y,
+                `${this.type.name} promoted to ${this.veterancyLevel}!`,
+                '#4f4', 16
+            ));
+        }
+
+        // Strategic event
+        if (gameState && typeof gameState.addEvent === 'function') {
+            gameState.addEvent('promotion',
+                `${this.team} ${this.type.name} promoted to ${this.veterancyLevel}`, 2);
+>>>>>>> origin/jules_wip_12008771546559725757
         }
     }
 
     applyVeterancyBenefits() {
+<<<<<<< HEAD
         const level = this.getVeterancyLevel();
         
         // Reset benefits
@@ -1861,6 +1892,49 @@ class Unit {
                     }
                 }
             }
+=======
+        const baseDamage = this.type.damage;
+        const baseSpeed = this.type.speed; // Assuming this.type.speed is the base speed
+        const baseRange = this.type.range;
+
+        // It's assumed that this.damage, this.speed, this.range are instance properties
+        // that might initially be copies of this.type.damage etc., or are used to store modified values.
+        // If not, this logic would need to adjust multipliers or store modifiers.
+
+        switch (this.veterancyLevel) {
+            case 'REGULAR':
+                this.damage = baseDamage * 1.1;
+                // Re-calculate effective speed if baseSpeed is modified
+                // For now, directly modifying this.speed. If this.speed is an effective speed already,
+                // this needs to apply to the base speed that this.speed is derived from.
+                // The current constructor calculates this.speed once.
+                // For simplicity, we'll assume this.speed can be directly modified here.
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.05 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+
+                break;
+            case 'VETERAN':
+                this.damage = baseDamage * 1.2;
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.1 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+                this.range = baseRange * 1.1; // Assuming this.range exists and can be modified
+                break;
+            case 'ELITE':
+                this.damage = baseDamage * 1.3;
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.15 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+                this.range = baseRange * 1.2;
+                this.canPromoteSubordinates = true;
+                break;
+            case 'HERO':
+                this.damage = baseDamage * 1.4;
+                this.speed = (this.type.speed || DEFAULT_UNIT_SPEED) * 1.2 / (1 + (this.type.unitWeight || DEFAULT_UNIT_WEIGHT) * WEIGHT_SPEED_PENALTY_FACTOR);
+                this.range = baseRange * 1.3;
+                this.provideMoraleBonus = true;
+                this.canPromoteSubordinates = true;
+                break;
+        }
+        // Ensure speed does not become negative
+        if (this.speed < 0) {
+            this.speed = 0;
+>>>>>>> origin/jules_wip_12008771546559725757
         }
     }
 }
