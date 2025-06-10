@@ -27,19 +27,18 @@ repositories {
     }
 }
 
-<<<<<<< HEAD
+
 group = "io.github.k2scripting"
 version = "4.2.3"
 
 buildConfig {
     packageName("k2script")
-=======
+
 group = "io.github.kscripting"
 version = "4.2.3"
 
 buildConfig {
     packageName(project.group.toString() + "." + project.name)
->>>>>>> origin/jules_wip_12008771546559725757
     useKotlinOutput()
 
     val dateTime = ZonedDateTime.now(ZoneOffset.UTC)
@@ -147,15 +146,12 @@ val copyJarToWrappers by tasks.register<Copy>("copyJarToWrappers") {
     into(project.projectDir.resolve("wrappers"))
 }
 
-<<<<<<< HEAD
+
 val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
     dependsOn(copyJarToWrappers)
 
     into(layout.buildDirectory.dir("k2script"))
 
-    from(tasks.shadowJar.get().archiveFile) { // k2script.jar from shadowJar output
-        into("bin")
-    }
 
     from("src/k2script") { // k2script shell script
         into("bin")
@@ -166,9 +162,6 @@ val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
     }
 
     from("wrappers") { // Python and Nodejs wrappers + k2script.jar
-=======
-val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
-    dependsOn(copyJarToWrappers)
 
     into(layout.buildDirectory.dir("kscript"))
 
@@ -185,7 +178,6 @@ val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     }
 
     from("wrappers") { // Python and Nodejs wrappers + kscript.jar
->>>>>>> origin/jules_wip_12008771546559725757
         into("wrappers")
     }
 
@@ -193,7 +185,7 @@ val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     from("package.json") // Nodejs packaging manifest
 }
 
-<<<<<<< HEAD
+
 val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribution") {
     dependsOn(createK2scriptLayout)
 
@@ -210,8 +202,7 @@ val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribut
 val shadowJar by tasks.getting(ShadowJar::class) {
     // set empty string to classifier and version to get predictable jar file name: build/libs/k2script.jar
     archiveFileName.set("k2script.jar")
-=======
-val packageKscriptDistribution by tasks.register<Zip>("packageKscriptDistribution") {
+
     dependsOn(createKscriptLayout)
 
     from(layout.buildDirectory.dir("kscript")) {
@@ -231,12 +222,9 @@ val shadowJar by tasks.getting(ShadowJar::class) {
     transform(ComponentsXmlResourceTransformer())
 }
 
-application {
-<<<<<<< HEAD
+
     mainClass.set("k2script.K2scriptKt")
-=======
-    mainClass.set(project.group.toString() + ".kscript.KscriptKt")
->>>>>>> origin/jules_wip_12008771546559725757
+
 }
 
 fun adjustVersion(archiveVersion: String): String {
@@ -281,12 +269,9 @@ val distZip: Task by tasks.getting {
     enabled = false
 }
 
-val assemble: Task by tasks.getting {
-<<<<<<< HEAD
+
     dependsOn(packageK2scriptDistribution)
-=======
-    dependsOn(packageKscriptDistribution)
->>>>>>> origin/jules_wip_12008771546559725757
+
 }
 
 val test: Task by tasks.getting {
@@ -380,10 +365,7 @@ dependencies {
 
     implementation("org.semver4j:semver4j:4.3.0")
 
-<<<<<<< HEAD
     implementation(project(":trikeshed-core"))
-=======
->>>>>>> origin/jules_wip_12008771546559725757
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
