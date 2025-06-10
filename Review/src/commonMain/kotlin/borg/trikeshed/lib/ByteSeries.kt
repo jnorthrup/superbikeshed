@@ -1,18 +1,20 @@
 package borg.trikeshed.lib
 
-package borg.trikeshed.lib
+// Removed duplicate package declaration
 
 // Import Series, Join, and related functions directly from borg.trikeshed.core
 import borg.trikeshed.core.Series // Still needed for extension functions at top/bottom of file
-import borg.trikeshed.core.Join // Potentially needed if Series is Pair<Int, Join<...>> or similar complex cases
+// import borg.trikeshed.core.Join // Join is Series, so direct usage might not be needed if Series is always used.
 import borg.trikeshed.core.j // For the infix j function
 import borg.trikeshed.core.toSeries // For ByteArray.toSeries() and String.toSeries()
 import borg.trikeshed.core.α // For the infix α function
+// Removed kotlin.Pair import if it was implicitly used by the typealias before
 
 import borg.trikeshed.lib.CZero.nz // This seems to be a local utility
 
 // Type alias for the underlying structure of Series<Byte> to improve readability locally
-private typealias ByteSeriesData = Pair<Int, (Int) -> Byte>
+// Changed from Pair<Int, (Int) -> Byte> to Series<Byte>
+private typealias ByteSeriesData = Series<Byte>
 
 // Extension functions defined on borg.trikeshed.core.Series<Byte> remain unchanged at the top
 fun Series<Byte>.decodeUtf8(charArray: CharArray? = null): Series<Char> =
@@ -52,24 +54,18 @@ fun Series<Byte>.asString(): String = toArray().decodeToString()
 /**
  * byte based spiritual successor to ByteBuffer for parsing
  */
-class ByteSeries(
-    // bufParameter type changed from Series<Byte> to ByteSeriesData (Pair<Int, (Int) -> Byte>)
-    bufParameter: ByteSeriesData,
-
+class ByteSeries internal constructor( // Made primary constructor internal or adjusted signature
+    private val internalSeriesData: Series<Byte>, // Changed type to Series<Byte>
     /** the mutable position accessor */
     var pos: Int = 0,
-
     /** the limit accessor */
-    var limit: Int = bufParameter.first, //initialized to size from the Pair's first element
-
+    var limit: Int = internalSeriesData.a, // Use .a for size from Series<Byte>
     /** the mark accessor */
-    var mark: Int = -1,
-    // Store the original series data internally
-    private val internalSeriesData: ByteSeriesData
-) { // No longer implements Series<Byte> in the signature
+    var mark: Int = -1
+) {
 
-    val size: Int get() = internalSeriesData.first
-    operator fun get(index: Int): Byte = internalSeriesData.second(index)
+    val size: Int get() = internalSeriesData.a // Use .a for size
+    operator fun get(index: Int): Byte = internalSeriesData.b(index) // Use .b for accessor
 
     /** get, the verb - the char at the current position and increment position */
     inline val get: Byte
@@ -80,24 +76,17 @@ class ByteSeries(
 
     //string ctor
     // s.toSeries() returns Series<Char>, encodeToByteArray() is on String or CharSequence, then .toSeries() returns Series<Byte>
-    // This Series<Byte> (which is Pair<Int, (Int)->Byte>) is then passed to the primary constructor.
+    // This Series<Byte> (which is Join<Int, (Int)->Byte>) is then passed to the primary constructor.
     constructor(s: String) : this(s.toSeries().encodeToByteArray().toSeries())
 
     // Secondary constructor for ByteArray
     constructor(buf: ByteArray, pos: Int = 0, limit: Int = buf.size) : this(
-        buf.toSeries(), // buf.toSeries() returns Series<Byte> (Pair<Int, (Int)->Byte>)
+        buf.toSeries(), // buf.toSeries() returns Series<Byte> (Join)
         pos,
         limit
     )
-
-    // Primary constructor now takes ByteSeriesData (Pair<Int, (Int) -> Byte>)
-    constructor(
-        buf: ByteSeriesData, // Changed from Series<Byte>
-        pos: Int = 0,
-        limit: Int = buf.first, // Use buf.first (size) for limit default
-        mark: Int = -1
-    ) : this(pos, limit, mark, internalSeriesData = buf)
-
+    // The intermediate constructor that took ByteSeriesData explicitly is removed,
+    // as the new primary constructor directly takes Series<Byte>.
 
     /**remaining chars*/
     val rem: Int get() = limit - pos
@@ -152,8 +141,8 @@ class ByteSeries(
             val pos1 = this.pos
             val limit1 = this.limit
             val rangeSize = limit1 - pos1
-            // Create a new Pair representing the slice
-            val slicedData: ByteSeriesData = rangeSize to { indexInSlice -> this[pos1 + indexInSlice] }
+            // Create a new Series<Byte> (Join) representing the slice using 'j'
+            val slicedData: Series<Byte> = rangeSize j { indexInSlice -> this[pos1 + indexInSlice] }
             return ByteSeries(slicedData, 0, rangeSize)
         }
 
@@ -268,11 +257,11 @@ class ByteSeries(
         return false
     }
 
-    fun seekTo(lit: ByteSeriesData): Boolean { // Parameter changed to ByteSeriesData
+    fun seekTo(lit: Series<Byte>): Boolean { // Parameter changed to Series<Byte>
         val anchor = pos
         var i = 0
-        val litSize = lit.first
-        val litGetter = lit.second
+        val litSize = lit.a // Use .a for size
+        val litGetter = lit.b // Use .b for accessor
         while (hasRemaining) {
             if (get == litGetter(i)) {
                 i++
