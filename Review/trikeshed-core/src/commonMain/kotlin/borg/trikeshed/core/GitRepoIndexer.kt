@@ -1,5 +1,7 @@
 package borg.trikeshed.core
 
+import borg.trikeshed.core.Series
+import borg.trikeshed.core.j
 import org.eclipse.jgit.lib.*
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import java.io.File
@@ -16,7 +18,7 @@ data class GitObjectInfo(val hash: String, val type: String, val size: Long)
 data class IndexedCommit(
     val commitInfo: GitObjectInfo,
     val treeHash: String,
-    val parentHashes: List<String>,
+    val parentHashes: Series<String>,
     val author: String, // Consider PersonIdent for richer info if needed later
     val committer: String, // Consider PersonIdent for richer info
     val message: String
@@ -24,7 +26,7 @@ data class IndexedCommit(
 
 data class IndexedTree(
     val treeInfo: GitObjectInfo,
-    val entries: MutableList<TreeEntryInfo> = mutableListOf()
+    val entries: Series<TreeEntryInfo>
 )
 
 data class TreeEntryInfo( // Information about an entry within a tree
@@ -168,7 +170,7 @@ class GitRepoIndexer {
         val indexedCommit = IndexedCommit(
             commitInfo = objInfo,
             treeHash = commit.tree.name, // commit.getTree().getId().name()
-            parentHashes = commit.parents.map { it.id.name },
+            parentHashes = commit.parents.size j { i -> commit.parents[i].id.name },
             author = commit.authorIdent.toExternalString(),
             committer = commit.committerIdent.toExternalString(),
             message = commit.fullMessage
@@ -195,9 +197,9 @@ class GitRepoIndexer {
         val objInfo = GitObjectInfo(treeHash, Constants.typeString(Constants.OBJ_TREE), treeSize)
         objects[treeHash] = objInfo
 
-        val currentIndexedTree = IndexedTree(objInfo)
-        trees[treeHash] = currentIndexedTree // Add to map before processing entries
-
+        // Collect entries using TrikeShed functional approach
+        val entriesData = mutableListOf<TreeEntryInfo>()
+        val subObjectIds = mutableListOf<Pair<ObjectId, Int>>() // Store for processing after entries collection
 
         TreeWalk(reader).use { treeWalk -> // Use the passed ObjectReader
             treeWalk.addTree(treeId)
@@ -215,17 +217,26 @@ class GitRepoIndexer {
                     else -> "unknown"
                 }
 
-                currentIndexedTree.entries.add(TreeEntryInfo(entryName, entryObjectId.name, entryTypeString, entryFileMode.bits.toString(8)))
+                entriesData.add(TreeEntryInfo(entryName, entryObjectId.name, entryTypeString, entryFileMode.bits.toString(8)))
+                subObjectIds.add(entryObjectId to entryFileMode.objectType)
+            }
+        }
 
-                when (entryFileMode.objectType) {
-                    Constants.OBJ_BLOB -> indexBlob(repository, reader, revWalk, entryObjectId)
-                    Constants.OBJ_TREE -> {
-                        // Recursive call for sub-trees
-                        indexTree(repository, reader, revWalk, entryObjectId)
-                    }
-                    // Constants.OBJ_COMMIT represents a submodule. For now, we just record its TreeEntryInfo.
-                    // Deeper indexing of submodules could be a future enhancement.
+        // Create Series from collected data using TrikeShed patterns
+        val entriesSeries = entriesData.size j { i -> entriesData[i] }
+        val currentIndexedTree = IndexedTree(objInfo, entriesSeries)
+        trees[treeHash] = currentIndexedTree
+
+        // Process sub-objects after tree creation
+        for ((entryObjectId, objectType) in subObjectIds) {
+            when (objectType) {
+                Constants.OBJ_BLOB -> indexBlob(repository, reader, revWalk, entryObjectId)
+                Constants.OBJ_TREE -> {
+                    // Recursive call for sub-trees
+                    indexTree(repository, reader, revWalk, entryObjectId)
                 }
+                // Constants.OBJ_COMMIT represents a submodule. For now, we just record its TreeEntryInfo.
+                // Deeper indexing of submodules could be a future enhancement.
             }
         }
     }
