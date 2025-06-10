@@ -8,7 +8,7 @@
     "TooManyFunctions"   // Suppress for large utility file
 )
 
-package borg.trikeshed.core // Changed package from com.example.trikeshedcore
+package borg.trikeshed.core
 
 import borg.trikeshed.core.name
 import borg.trikeshed.core.`▶`
@@ -39,20 +39,19 @@ interface Join<A, B> {
     operator fun component2(): B = b
     val pair: Pair<A, B> get() = Pair(a, b)
 }
+
 /**
  * Syntactic sugar for  capture-based cost
  */
-internal inline infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
+infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
     override val a: A get() = this@j
     override val b: B get() = b
 }
 
-infix fun <T, R> Tensor<T>.`▶` (transform: (IntArray) -> T) =a.drop(1).j { coords: IntArray -> transform(coords) }
-
 /** Accessor for the first element of a [Join]. */
-internal inline val <A, B> Join<A, B>.first: A get() = a
+inline val <A, B> Join<A, B>.first: A get() = a
 /** Accessor for the second element of a [Join]. */
-internal inline val <A, B> Join<A, B>.second: B get() = b
+inline val <A, B> Join<A, B>.second: B get() = b
 
 /**
  * Type alias for a [Join] where both elements are of the same type.
@@ -71,12 +70,12 @@ fun <T> T.twin(): Twin<T> = this j this
 typealias Series<T> = Join<Int, (Int) -> T>
 
 /** Returns the size of the [Series]. */
-internal inline val <T> Series<T>.size: Int get() = a
+inline val <T> Series<T>.size: Int get() = a
 
 /**
  * Operator to access an element of the [Series] by its index.
  */
-internal inline operator fun <T> Series<T>.get(i: Int): T = b(i)
+inline operator fun <T> Series<T>.get(i: Int): T = b(i)
 
 /**
  * An empty [Series] instance.
@@ -92,18 +91,17 @@ inline fun <T> emptySeries(): Series<T> = EmptySeries as Series<T>
  * Creates a lazy supplier (a lambda with no arguments) that returns `this` value.
  * Used for lazy meta-patterns.
  */
-internal inline val <T> T.leftIdentity: () -> T get() = { this }
+inline val <T> T.leftIdentity: () -> T get() = { this }
 
 /**
  * Syntactic sugar for [leftIdentity].
  */
-internal inline val <T> T.`↺`: () -> T get() = leftIdentity
+inline val <T> T.`↺`: () -> T get() = leftIdentity
 
 /**
  * A value class wrapper around [Series] that makes it [Iterable].
  */
-// @JsExport // Removed as per plan
-/* Marking value class internal */ @JvmInline
+@JvmInline
 value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
     override fun iterator(): Iterator<A> = object : Iterator<A> {
         private var index = 0
@@ -115,12 +113,12 @@ value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
 /**
  * Provides an [Iterable] view of the [Series].
  */
-internal inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
+inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
 
 /**
  * Extension function to convert a [Series] of [Char] to a String.
  */
-internal fun Series<Char>.asString(): String = this.`▶`.joinToString("")
+fun Series<Char>.asString(): String = this.`▶`.joinToString("")
 
 // III. core.Tensor Implementation
 
@@ -491,8 +489,7 @@ internal inline val CursorMeta.names: List<String>
 /**
  * A value class used to specify a column to be excluded by its name.
  */
-// @JsExport // Removed as per plan
-/* Marking value class internal */ @JvmInline
+@JvmInline
 internal value class ColumnExclusion(val name: String) {
     override fun toString(): String = "ColumnExclusion($name)"
 }
@@ -562,10 +559,23 @@ fun Any?.toDisplayString(type: IOMemento): String {
     }
 }
 
+operator fun <T> Series<T>.plus(other: Series<T>): Series<T> =
+    (this.size + other.size) j { i ->
+        if (i < this.size) this[i] else other[i - this.size]
+    }
+
 /**
- * Provides an [Iterable] view of the [Series].
+ * Functional tensor iterator that yields all index tuples and their corresponding tensor elements.
+ * This is a pure function that returns a Series of pairs (index tuple, element).
  */
-internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = {
-    val (s) = shape
-    //onw the tensor is the shorter shape
-}
+fun <T> Tensor<T>.iterate(): Series<Pair<IntArray, T>> =
+    (totalSize) j { linearIndex ->
+        val coords = IntArray(rank) { i ->
+            var idx = linearIndex
+            for (j in 0 until i) {
+                idx /= shape[j]
+            }
+            idx % shape[i]
+        }
+        coords to this(coords)
+    }

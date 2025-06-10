@@ -17,7 +17,7 @@ dont even talk about a demo of a goddamn thing ever.  do not write gaslighting p
 
 - **`a j b`** creates `Join<A,B>` - the ONLY composition operator
 - **`series.α { transform }`** - the ONLY transformation operator
-- **series `▶` //(THE PLAY BUTTON) ** - gateway to `AbstractList,Iterable<T>` for .map and list
+- **series \`▶\` //(THE PLAY BUTTON) ** - gateway to `AbstractList,Iterable<T>` for .map and list
 - **`@JvmInline value class`** - the ONLY wrapper mechanism
 - **`typealias`** - descriptive names for ANY OR ALL RECURRING primitives
 - ** use map with the play button
@@ -66,6 +66,7 @@ Put nio target overrides into borg.trikeshed.nio.
 
 **CODING STYLE PREFERENCES:**
 
+- **null as elvis conditional: short-circuit early and often
 - **1-liners, no braces**: Golf expressions preferred, concise elegant code
 - **Typealiased lambdas**: Must always type lambdas in Series and throughout
 - **Ternary Kotlin hack**: `yes!` love it, embrace creative shortcuts
