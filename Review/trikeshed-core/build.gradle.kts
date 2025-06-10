@@ -1,12 +1,8 @@
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-<<<<<<< HEAD
-// Removed OS detection functions and variables to avoid configuration cache issues
-// We'll use target-specific properties instead
-=======
 fun getOsFamily(): String {
-    val osName = System.getProperty("os.name").toLowerCase()
+    val osName = System.getProperty("os.name").lowercase()
     return when {
         osName.contains("mac") || osName.contains("darwin") -> "macos"
         osName.contains("nix") || osName.contains("nux") -> "linux"
@@ -45,24 +41,28 @@ fun getOsVersion(osFamily: String): Map<String, String> {
         }
     } catch (e: Exception) {
         println("Error getting OS version: ${e.message}")
-        // Optionally, log the stack trace or handle specific exceptions
     }
     return details
 }
 
 val currentOsFamily = getOsFamily()
 val currentOsVersionDetails = getOsVersion(currentOsFamily)
-println("Detected OS Family: $currentOsFamily")
-println("Detected OS Version Details: $currentOsVersionDetails")
->>>>>>> origin/jules_wip_12008771546559725757
 
 plugins {
     kotlin("multiplatform")
+    // id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20" // Removed
 }
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
+repositories {
+    mavenCentral()
+    google() // Often needed for Android or other Google libraries, good to have
+    // You might also need specific repositories like:
+    // maven("https://plugins.gradle.org/m2/") for Gradle plugins if not automatically resolved
+    // maven("https://europe-west3-maven.pkg.dev/androidx-dev/androidx-public") for androidx snapshot
+}
 
 kotlin {
     jvm {
@@ -89,65 +89,16 @@ kotlin {
         // Common compiler options for all native targets can be set here if needed
         // compilerOptions.options.add("-linker-option-...") // Example
 
-        // OS-specific cinterop settings
-<<<<<<< HEAD
-        compilations["main"].cinterops {
-            val native by creating {
-                val resolvedOsFamily = when (this@withType.konanTarget.family) {
-                    org.jetbrains.kotlin.konan.target.Family.OSX -> "macos"
-                    org.jetbrains.kotlin.konan.target.Family.LINUX -> "linux"
-                    org.jetbrains.kotlin.konan.target.Family.MINGW -> "windows"
-                    else -> "unknown"
-                }
-                defFile(project.file("src/linuxMain/cinterop/native.def"))
-                packageName("cinterop.native")
-                compilerOpts("-DTARGET_OS_FAMILY=$resolvedOsFamily")
-            }
-        }
-
-        compilations["main"].compileTaskProvider.configure {
-            compilerOptions {
-                val resolvedOsFamily = when (this@withType.konanTarget.family) {
-                    org.jetbrains.kotlin.konan.target.Family.OSX -> "macos"
-                    org.jetbrains.kotlin.konan.target.Family.LINUX -> "linux"
-                    org.jetbrains.kotlin.konan.target.Family.MINGW -> "windows"
-                    else -> "unknown"
-                }
-                println("Cinterop for ${this@withType.name} on ${this@withType.konanTarget} (OS: $resolvedOsFamily): Applying settings...")
-
-                when (resolvedOsFamily) {
-                    "linux" -> {
-                        freeCompilerArgs.add("-DENABLE_IO_URING=1")
-                        println("  Applied Linux specific: -DENABLE_IO_URING=1")
-                    }
-                    "macos" -> {
-                        freeCompilerArgs.add("-DAPPLE_ASYNC_POSIX=1")
-                        println("  Applied macOS specific: -DAPPLE_ASYNC_POSIX=1")
-                    }
-                    else -> {
-                        println("  No specific OS cinterop flags applied for $resolvedOsFamily.")
-                    }
-=======
         compilations["main"].cinterops.configureEach {
-            val resolvedOsFamily = getOsFamily() // Renamed to avoid conflict
-            // val resolvedOsVersion = getOsVersion(resolvedOsFamily) // Potentially needed
-
-            defines("TARGET_OS_FAMILY", resolvedOsFamily)
-
-            println("Cinterop for $name on $konanTarget (OS: $resolvedOsFamily): Applying settings...")
+            val resolvedOsFamily = getOsFamily()
+            compilerOpts("-DTARGET_OS_FAMILY=${resolvedOsFamily}")
 
             when (resolvedOsFamily) {
                 "linux" -> {
                     compilerOpts("-DENABLE_IO_URING=1")
-                    println("  Applied Linux specific: -DENABLE_IO_URING=1")
                 }
                 "macos" -> {
                     compilerOpts("-DAPPLE_ASYNC_POSIX=1")
-                    println("  Applied macOS specific: -DAPPLE_ASYNC_POSIX=1")
-                }
-                else -> {
-                    println("  No specific OS cinterop flags applied for $resolvedOsFamily.")
->>>>>>> origin/jules_wip_12008771546559725757
                 }
             }
         }
@@ -155,104 +106,51 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            // Include all sources from borg/trikeshed/core and borg/trikeshed/lib
-            kotlin.srcDirs(
-                "$rootDir/src/commonMain/kotlin/borg/trikeshed/core",
-                "$rootDir/src/commonMain/kotlin/borg/trikeshed/lib"
-            )
-            // Exclude conflicting general 'core' and 'com/example/trikeshedcore' from this module's compilation
-<<<<<<< HEAD
-            kotlin {
-                exclude("$rootDir/src/commonMain/kotlin/core/**")
-=======
-            // These paths are relative to $rootDir/src/commonMain/kotlin, so they should be fine as they are
-            // not under borg/trikeshed/core or borg/trikeshed/lib which are now the source dirs.
-            // However, to be safe and ensure clarity, if these are meant to be excluded from the root,
-            // they should be in the root build.gradle.kts. Let's assume they are for any other sources
-            // that might accidentally be picked up if srcDirs was broader. Given the new specific srcDirs,
-            // these excludes might not be strictly necessary here anymore but are harmless.
-            kotlin {
-                exclude("$rootDir/src/commonMain/kotlin/core/**") // This effectively means these paths won't be included if they aren't under the specified srcDirs.
->>>>>>> origin/jules_wip_12008771546559725757
-                exclude("$rootDir/src/commonMain/kotlin/com/example/trikeshedcore/**")
-            }
-
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                // implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Removed
             }
         }
 
         val jvmMain by getting {
-            kotlin.srcDir("$rootDir/src/jvmMain/kotlin")
-            kotlin {
-                exclude("**/QuicCurl.kt")
-                exclude("**/QuicMain.kt")
-            }
+            // Default srcDir is "src/jvmMain/kotlin". If trikeshed-core needs specific JVM implementations
+            // for its common code, they would go into "Review/trikeshed-core/src/jvmMain/kotlin".
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
             }
         }
 
-        val linuxX64Main by getting {
-            kotlin.srcDir("$rootDir/src/posixMain/kotlin")
-            kotlin.srcDir("$rootDir/src/linuxMain/kotlin")
-<<<<<<< HEAD
-        }
-
-        val jsMain by getting {
-            kotlin.setSrcDirs(files(
-                "$rootDir/src/jsMain/kotlin/borg/trikeshed/core/",
-                "$rootDir/src/jsMain/kotlin/borg/trikeshed/lib/",
-                "$rootDir/src/jsMain/kotlin/lib/"
-            ))
-            kotlin {
-                exclude("$rootDir/src/jsMain/kotlin/com/example/trikeshedcore/**")
-                exclude("$rootDir/src/jsMain/kotlin/core/**")
-            }
+        val commonTest by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                implementation(kotlin("test"))
             }
         }
 
-        // Create nativeMain source set
-        val nativeMain by creating {
+        val nativeMainShared by creating {
             dependsOn(commonMain)
+            // If you have shared native sources for trikeshed-core, they go in "Review/trikeshed-core/src/nativeMainShared/kotlin" (or similar)
+            // e.g. kotlin.srcDir("src/nativeMainShared/kotlin")
         }
 
-        // macOS source sets
-=======
-            // No specific native dependencies for coroutines/datetime listed for now,
-            // relying on commonMain's. Add if build shows they are needed.
+        val linuxX64Main by getting {
+            dependsOn(nativeMainShared)
         }
 
         val jsMain by getting {
-            // Point to specific JS sources for trikeshed-core if they exist,
-            // and potentially common JS libs if needed by core.
-            kotlin.setSrcDirs(files(
-                "$rootDir/src/jsMain/kotlin/borg/trikeshed/core/", // If core-specific JS exists
-                "$rootDir/src/jsMain/kotlin/borg/trikeshed/lib/",   // If lib has JS parts
-                "$rootDir/src/jsMain/kotlin/lib/" // A general lib for JS too
-            ))
-            kotlin {
-                exclude("$rootDir/src/jsMain/kotlin/com/example/trikeshedcore/**")
-                exclude("$rootDir/src/jsMain/kotlin/core/**") // Exclude general core JS if it exists
-            }
+            // Default srcDir is "src/jsMain/kotlin". For any trikeshed-core specific JS code.
+            // Do NOT include $rootDir/src/jsMain/kotlin/* here.
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                // Add other js-specific dependencies if necessary
             }
         }
 
         // macOS source sets
-        val nativeMain by getting
-
->>>>>>> origin/jules_wip_12008771546559725757
         val macosMain by creating {
-            dependsOn(nativeMain)
-            kotlin.srcDir("$rootDir/src/posixMain/kotlin")
-            kotlin.srcDir("$rootDir/src/macosMain/kotlin")
+            dependsOn(nativeMainShared)
+            // Default srcDir for macosMain would be something like "src/macosMain/kotlin".
+            // Do NOT include $rootDir/src/macosMain/kotlin etc. here.
         }
 
         val macosX64Main by getting {
@@ -263,32 +161,16 @@ kotlin {
             dependsOn(macosMain)
         }
 
-<<<<<<< HEAD
-        // Create nativeTest source set
-        val nativeTest by creating {
-            dependsOn(commonTest.get())
+        val nativeTestShared by creating {
+            dependsOn(commonTest)
         }
 
         val macosTest by creating {
-            dependsOn(nativeTest.get())
-=======
-        val nativeTest by getting
-
-        val macosTest by creating {
-            dependsOn(nativeTest)
->>>>>>> origin/jules_wip_12008771546559725757
+            dependsOn(nativeTestShared)
             kotlin.srcDir("$rootDir/src/macosTest/kotlin")
         }
 
         val macosX64Test by getting {
-<<<<<<< HEAD
-            dependsOn(macosTest.get())
-        }
-
-        val macosArm64Test by getting {
-            dependsOn(macosTest.get())
-        }
-=======
             dependsOn(macosTest)
         }
 
@@ -296,9 +178,24 @@ kotlin {
             dependsOn(macosTest)
         }
 
-        // Define other source sets (nativeMain, etc.) similarly if they should also
-        // draw from the root project's structure for this module.
-        // For now, focus on common, jvm, linuxX64, js.
->>>>>>> origin/jules_wip_12008771546559725757
+        val jvmTest by getting {
+            dependsOn(commonTest)
+            dependencies {
+                implementation(kotlin("test-junit"))
+            }
+        }
+        val jsTest by getting {
+            dependsOn(commonTest)
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
+
+        val linuxX64Test by getting {
+            dependsOn(nativeTestShared)
+        }
+    }
+    targets.withType(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget::class.java) {
+        binaries.executable()
     }
 }
