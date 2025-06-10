@@ -176,15 +176,7 @@ class HybridIntelligence(
         val solutions = generateSolutions(problem, context, Series.empty())
         val bestSolution = solutions.best()
         
-<<<<<<< HEAD
-<<<<<<< HEAD
         return Series.of("Generated solution:", "", bestSolution.`▶`.joinToString("\n"))
-=======
-        return Response("Generated solution:\n\n${bestSolution.implementation}")
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-        return Series.of("Generated solution:", "", bestSolution.`▶`.joinToString("\n"))
->>>>>>> origin/command-hierarchy-enhancements
     }
     
     private suspend fun handleProblemSolving(request: Request, context: ProjectContext): Response {
@@ -192,15 +184,7 @@ class HybridIntelligence(
         val evolvedSolutions = evolveSolutionsInteractively(problem, context)
         val explanation = explainSolution(evolvedSolutions.first(), problem)
         
-<<<<<<< HEAD
-<<<<<<< HEAD
         return Series.of("Solution with explanation:", "", explanation)
-=======
-        return Response("Solution with explanation:\n\n$explanation")
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-        return Series.of("Solution with explanation:", "", explanation)
->>>>>>> origin/command-hierarchy-enhancements
     }
     
     private suspend fun evolveSolutionsInteractively(
@@ -250,16 +234,7 @@ class HybridIntelligence(
     }
     
     private fun classifyRequest(request: Request): RequestType {
-<<<<<<< HEAD
-<<<<<<< HEAD
         val content = request.`▶`.joinToString(" ").lowercase()
-=======
-        // Simple classification based on keywords - could be ML-based
-        val content = request.content.lowercase()
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-        val content = request.`▶`.joinToString(" ").lowercase()
->>>>>>> origin/command-hierarchy-enhancements
         return when {
             content.contains("generate") || content.contains("create") -> RequestType.CODE_GENERATION
             content.contains("solve") || content.contains("fix") -> RequestType.PROBLEM_SOLVING
@@ -267,8 +242,6 @@ class HybridIntelligence(
             content.contains("optimize") || content.contains("performance") -> RequestType.OPTIMIZATION
             content.contains("analyze") || content.contains("explain") -> RequestType.ANALYSIS
             content.contains("workflow") || content.contains("process") -> RequestType.WORKFLOW
-<<<<<<< HEAD
-<<<<<<< HEAD
             else -> RequestType.PROBLEM_SOLVING
         }
     }
@@ -353,97 +326,6 @@ class HybridIntelligence(
                 description = suggestion
             )
         }
-=======
-            else -> RequestType.PROBLEM_SOLVING // Default
-        }
-    }
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-            else -> RequestType.PROBLEM_SOLVING
-        }
-    }
-    
-    // Helper functions for missing implementations
-    private fun extractProblem(request: Request): Problem = request
-    
-    private fun extractCodebase(context: ProjectContext): Series<String> =
-        context.`▶`.filter { it.a == "file_content" }.map { it.b }
-    
-    private fun identifyRefactoringTargets(codebase: Series<String>, problem: Problem): Series<String> =
-        codebase.α { code -> 
-            if (problem.`▶`.any { code.contains(it, ignoreCase = true) }) code else null
-        }.filterNotNull()
-    
-    private fun applyRefactorings(targets: Series<String>): Series<String> =
-        targets.α { "Refactor: $it -> [optimized version]" }
-    
-    private fun analyzePerformance(context: ProjectContext): Series<Join<String, Double>> =
-        Series.of("cpu_usage" j 0.7, "memory_usage" j 0.5, "io_latency" j 0.3)
-    
-    private fun generateOptimizations(metrics: Series<Join<String, Double>>, problem: Problem): Series<String> =
-        metrics.α { (metric, value) -> 
-            if (value > 0.6) "Optimize $metric (current: ${(value * 100).toInt()}%)" else null
-        }.filterNotNull()
-    
-    private fun determineAnalysisType(problem: Problem): String =
-        problem.extractDomain()
-    
-    private fun performAnalysis(type: String, context: ProjectContext): Series<String> =
-        Series.of("Analysis type: $type", "Context size: ${context.`▶`.size}", "Recommendations: [generated]")
-    
-    private fun designWorkflow(problem: Problem, context: ProjectContext): Workflow =
-        Series.of(
-            "analyze" j Series.of("input", "requirements"),
-            "design" j Series.of("architecture", "components"),
-            "implement" j Series.of("code", "tests"),
-            "validate" j Series.of("review", "deploy")
-        )
-    
-    private fun explainSolution(solution: Solution, problem: Problem): String =
-        "Solution explanation for problem '${problem.`▶`.take(3).joinToString(" ")}...': ${solution.`▶`.take(2).joinToString(" ")}..."
-    
-    // Additional missing helper functions
-    private fun analyzeOpportunities(context: ProjectContext): Series<Opportunity> =
-        context.extractKeywords().map { keyword ->
-            Opportunity("Opportunity related to $keyword", kotlin.random.Random.nextDouble())
-        }.let { Series.of(*it.toTypedArray()) }
-    
-    private fun selectParents(rankedSolutions: Series<Join<Solution, Double>>, preferences: Series<Preference>): Series<Join<Solution, Double>> =
-        rankedSolutions.sortedByDescending { it.b }.take(3)
-    
-    private fun generateNovelSolutions(parents: Series<Join<Solution, Double>>, feedback: HumanFeedback, iteration: Int): Series<Solution> =
-        Series.of(Series.of("Novel solution $iteration based on feedback: ${feedback.data.take(50)}..."))
-    
-    private fun prepareSolutionPresentation(solutions: Series<Solution>, problem: Problem): SolutionPresentation =
-        SolutionPresentation(solutions, problem)
-    
-    private fun analyzeWorkflowProgress(workflow: Workflow, results: Series<Outcome>): WorkflowAnalysis =
-        WorkflowAnalysis(
-            isOnTrack = results.`▶`.any { it.`▶`.any { it.contains("success") } },
-            issues = Series.of(Issue("warning", "Progress slower than expected", "Consider parallelization")),
-            suggestions = Series.of("Increase concurrency", "Add monitoring")
-        )
-    
-    private fun generateAdaptationOptions(workflow: Workflow, analysis: WorkflowAnalysis, context: ProjectContext): Series<AdaptationOption> =
-        Series.of(
-            AdaptationOption("Parallel execution", workflow, "Run steps in parallel"),
-            AdaptationOption("Simplified approach", workflow, "Reduce complexity")
-        )
-    
-    private fun applyAdaptation(workflow: Workflow, choice: AdaptationOption): Workflow = choice.workflow
-    
-    private fun analyzeError(error: Throwable, step: WorkflowStep, context: ProjectContext): ErrorAnalysis =
-        ErrorAnalysis(error, context, Series.of("Retry with different parameters", "Check dependencies"))
-    
-    private fun generateRecoveryStrategies(analysis: ErrorAnalysis): Series<RecoveryStrategy> =
-        analysis.suggestions.α { suggestion ->
-            RecoveryStrategy(
-                workflow = Series.of("recover" j Series.of(suggestion)),
-                confidence = 0.8,
-                description = suggestion
-            )
-        }
->>>>>>> origin/command-hierarchy-enhancements
 }
 
 // Supporting types
@@ -454,10 +336,6 @@ enum class RequestType {
 enum class Approach {
     ALGORITHMIC, FUNCTIONAL, OBJECT_ORIENTED, DECLARATIVE, ITERATIVE, RECURSIVE;
     
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
     fun adaptTo(problem: Problem, context: ProjectContext): Approach {
         val problemDomain = problem.extractDomain()
         val contextLanguages = context.extractLanguages()
@@ -472,18 +350,10 @@ enum class Approach {
             else -> this
         }
     }
-<<<<<<< HEAD
-=======
-    fun adaptTo(problem: Problem, context: ProjectContext): Approach = this // TODO: Implement adaptation
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
 }
 
 @JvmInline
 value class HumanFeedback(val data: String) {
-<<<<<<< HEAD
-<<<<<<< HEAD
     val preferences: Series<Preference> get() = parsePreferences(data)
     val isSatisfied: Boolean get() = data.contains("satisfied") || data.contains("good") || data.contains("approve")
     
@@ -519,55 +389,10 @@ value class HumanFeedback(val data: String) {
     
     private fun countNegativeKeywords(text: String): Int = 
         text.lowercase().split(" ").count { it in listOf("bad", "wrong", "no", "dislike", "hate", "poor", "terrible", "worse", "incorrect") }
-=======
-    val preferences: Series<Preference> get() = TODO("Extract preferences")
-    val isSatisfied: Boolean get() = TODO("Check satisfaction")
-    
-    fun evaluateSolution(solution: Solution): Double = TODO("Score solution based on feedback")
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-    val preferences: Series<Preference> get() = parsePreferences(data)
-    val isSatisfied: Boolean get() = data.contains("satisfied") || data.contains("good") || data.contains("approve")
-    
-    fun evaluateSolution(solution: Solution): Double {
-        val positive = countPositiveKeywords(data)
-        val negative = countNegativeKeywords(data)
-        val total = positive + negative
-        return if (total > 0) positive.toDouble() / total else 0.5
-    }
-    
-    private fun parsePreferences(feedback: String): Series<Preference> {
-        val keywords = feedback.lowercase().split(" ")
-        val prefs = mutableListOf<Preference>()
-        
-        if (keywords.any { it in listOf("simple", "clean", "minimal") }) {
-            prefs.add(Preference.SIMPLICITY)
-        }
-        if (keywords.any { it in listOf("fast", "performance", "efficient") }) {
-            prefs.add(Preference.PERFORMANCE)
-        }
-        if (keywords.any { it in listOf("readable", "clear", "understand") }) {
-            prefs.add(Preference.READABILITY)
-        }
-        if (keywords.any { it in listOf("flexible", "extensible", "modular") }) {
-            prefs.add(Preference.FLEXIBILITY)
-        }
-        
-        return Series.of(*prefs.toTypedArray())
-    }
-    
-    private fun countPositiveKeywords(text: String): Int = 
-        text.lowercase().split(" ").count { it in listOf("good", "great", "excellent", "perfect", "like", "love", "yes", "correct", "right", "better") }
-    
-    private fun countNegativeKeywords(text: String): Int = 
-        text.lowercase().split(" ").count { it in listOf("bad", "wrong", "no", "dislike", "hate", "poor", "terrible", "worse", "incorrect") }
->>>>>>> origin/command-hierarchy-enhancements
 }
 
 @JvmInline
 value class Suggestion(val content: String) {
-<<<<<<< HEAD
-<<<<<<< HEAD
     val relevanceScore: Double get() = calculateRelevanceScore()
     
     fun withRelevanceScore(context: ProjectContext): Suggestion {
@@ -584,29 +409,6 @@ value class Suggestion(val content: String) {
         val importantCount = words.count { it in importantWords }
         return if (words.isEmpty()) 0.0 else importantCount.toDouble() / words.size
     }
-=======
-    val relevanceScore: Double get() = TODO("Get relevance score")
-    
-    fun withRelevanceScore(context: ProjectContext): Suggestion = TODO("Calculate relevance")
->>>>>>> origin/jules_wip_12008771546559725757
-=======
-    val relevanceScore: Double get() = calculateRelevanceScore()
-    
-    fun withRelevanceScore(context: ProjectContext): Suggestion {
-        val contextKeywords = context.extractKeywords()
-        val suggestionKeywords = content.lowercase().split(" ").filter { it.length > 3 }
-        val overlap = suggestionKeywords.count { it in contextKeywords }
-        val score = if (suggestionKeywords.isEmpty()) 0.0 else overlap.toDouble() / suggestionKeywords.size
-        return Suggestion("$content [relevance: ${(score * 100).toInt()}%]")
-    }
-    
-    private fun calculateRelevanceScore(): Double {
-        val importantWords = listOf("implement", "fix", "optimize", "refactor", "enhance", "create", "build")
-        val words = content.lowercase().split(" ")
-        val importantCount = words.count { it in importantWords }
-        return if (words.isEmpty()) 0.0 else importantCount.toDouble() / words.size
-    }
->>>>>>> origin/command-hierarchy-enhancements
 }
 
 data class WorkflowAnalysis(

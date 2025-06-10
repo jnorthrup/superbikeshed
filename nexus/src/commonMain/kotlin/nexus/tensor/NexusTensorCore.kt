@@ -265,10 +265,6 @@ fun <T> NexusTensor<T>.toSeries(): Series<T> =
     this.materializeCold()
 
 // ═══════════════════════════════════════════════════════════════════════════════
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
 // TENSOR IMPLEMENTATION HELPERS - Missing operations implemented
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -520,11 +516,6 @@ fun CCEKContext.adaptTo(change: Change): CCEKContext = this
 fun Capability.adaptTo(change: Change): Capability = this
 
 // ═══════════════════════════════════════════════════════════════════════════════
-<<<<<<< HEAD
-=======
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
 // PURE TENSOR-FIRST NEXUS AGENT
 // Everything is tensors. Learning, evolution, context, knowledge - all tensor operations.
 // Massive performance gains through columnar processing and vectorization.

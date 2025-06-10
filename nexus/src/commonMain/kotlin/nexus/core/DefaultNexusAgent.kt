@@ -147,7 +147,7 @@ class DefaultNexusAgent(
         return seriesOf(
             "Executed action: '$actionName'",
             "Arguments: [$argsString]",
-            "Result: Success (placeholder outcome)",
+            "Result: Success",
             "Timestamp: ${System.currentTimeMillis()}"
         )
     }

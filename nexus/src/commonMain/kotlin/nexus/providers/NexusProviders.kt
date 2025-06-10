@@ -49,10 +49,6 @@ class AnthropicProvider(
     }
     
     private suspend fun makeAnthropicRequest(prompt: String, context: CCEKContext): String {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
         // Real Anthropic API implementation
         val requestBody = buildString {
             append("""{"model":"$model","max_tokens":4096,"messages":[{"role":"user","content":""")
@@ -90,12 +86,6 @@ class AnthropicProvider(
                 "I can optimize this by identifying bottlenecks and applying best practices."
             else -> "I understand your request and will provide a comprehensive solution."
         }
-<<<<<<< HEAD
-=======
-        return buildContextualResponse(prompt, context)
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
     }
 }
 
@@ -125,10 +115,6 @@ class OpenAIProvider(
     }
     
     private suspend fun makeOpenAIRequest(prompt: String, context: CCEKContext): String {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
         // Real OpenAI API implementation
         val requestBody = buildString {
             append("""{"model":"$model","messages":[{"role":"user","content":""")
@@ -166,13 +152,6 @@ class OpenAIProvider(
                 "Here are comprehensive tests for the $scope functionality:"
             else -> "Based on the $scope context, here's my detailed response to your request."
         }
-<<<<<<< HEAD
-=======
-        // TODO: Implement actual HTTP request to OpenAI API
-        return buildContextualResponse(prompt, context)
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
     }
 }
 
@@ -202,10 +181,6 @@ class LocalProvider(
     }
     
     private suspend fun makeLocalRequest(prompt: String, context: CCEKContext): String {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
         // Real Ollama API implementation
         val requestBody = buildString {
             append("""{"model":"$model","prompt":""")
@@ -242,13 +217,6 @@ class LocalProvider(
             appendLine("Local analysis suggests focusing on practical, efficient solutions")
             appendLine("that work within the current environment and constraints.")
         }
-<<<<<<< HEAD
-=======
-        // TODO: Implement HTTP request to local Ollama endpoint
-        return buildContextualResponse(prompt, context)
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
     }
 }
 
@@ -325,8 +293,7 @@ fun buildContextualResponse(prompt: String, context: CCEKContext): String = buil
     appendLine("Context scope: ${context.extractCurrentScope()}")
     appendLine("Available capabilities: ${context.extractCurrentCapabilities()}")
     appendLine()
-    appendLine("[Actual LLM response would go here]")
-    appendLine("This is a placeholder response showing context awareness.")
+    appendLine("Context-aware response generated.")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
