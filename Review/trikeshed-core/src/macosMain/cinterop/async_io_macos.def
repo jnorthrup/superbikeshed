@@ -1,0 +1,3 @@
+headers = ../../../nativeInterop/cinterop/async_io_macos.h
+headerFilter = async_io_macos.h
+# No specific linkerOpts needed for kqueue
