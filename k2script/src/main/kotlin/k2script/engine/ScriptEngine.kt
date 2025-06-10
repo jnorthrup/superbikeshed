@@ -1,8 +1,9 @@
 package k2script.engine
 
-import k2script.env.EnvironmentManager
-import k2script.trikeshed.*
-import java.io.File
+import java.io.*
+import k2script.engine.*
+import k2script.env.*
+import k2script.engine.Memory
 
 /**
  * Simplified script engine with TrikeShed integration
