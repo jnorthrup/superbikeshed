@@ -9,125 +9,58 @@ This document outlines prioritized tasks for the Superbikeshed project, organize
 ---
 ### P0 Tasks: Foundational Compliance
 
-**Task 1 (P0)**
-*   **Title:** TrikeShed Core: Implement `List<T>` to `Series<T>` Migration
-*   **Goal:** Replace all usages of the standard `List<T>` with the `Series<T>` type within the TrikeShed Kotlin codebase to comply with `CLAUDE.md` and establish `Series<T>` as the primary collection type.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  All instances of `List<T>` in the TrikeShed codebase are replaced with `Series<T>`.
-    2.  Code logic previously using `List<T>` methods is updated to use equivalent `Series<T>` operations, potentially involving `α` transforms.
-    3.  The project compiles successfully.
-    4.  Existing unit tests for affected components pass or are updated.
-    5.  No direct conversion from `Series<T>` to `List<T>` is performed unless through the sanctioned `▶` operator.
+- [x] **Task 1:** TrikeShed Core: Implement `List<T>` to `Series<T>` Migration
+- [x] **Task 2:** TrikeShed Core: Implement `MutableList<T>` to `Series<T>` with Alpha Transforms Migration
+- [x] **Task 3:** TrikeShed Core: Implement `Pair<A,B>` to `Join<A,B>` Migration
+- [x] **Task 4:** TrikeShed Core: Eliminate Raw Collection Usage
+- [x] **Task 5:** TrikeShed Core: Enforce `Join<A,B>` via `j` as Only Composition Operator
+- [x] **Task 6:** TrikeShed Core: Enforce Alpha Transform (`.α`) as Only Transformation Operator
+- [x] **Task 7:** TrikeShed Core: Implement Play Button (`▶`) Materialization
+- [x] **Task 8:** TrikeShed Core: Convert Wrappers to `@JvmInline value class`
+- [x] **Task 9:** TrikeShed Core: Define Permanent Type Aliases for Primitives
+- [x] **Task 10:** TrikeShed Core: Define `Tensor<T>` as `Join<IntArray,(IntArray)->T>`
+- [x] **Task 11:** TrikeShed Core: Clarify `Cursor` vs `Series<RowVec>`
+- [x] **Task 12:** TrikeShed Core: Remove "Quic" Prefix from `QuicInstant`
 
-**Task 2 (P0)**
-*   **Title:** TrikeShed Core: Implement `MutableList<T>` to `Series<T>` with Alpha Transforms Migration
-*   **Goal:** Eliminate `MutableList<T>` from the TrikeShed Kotlin codebase by refactoring mutable collection patterns to use `Series<T>` with immutable `α` (alpha) transforms, as per `CLAUDE.md`.
+**Task 13 (P0)**
+*   **Title:** TrikeShed Compliance: Eliminate Simulated Benchmarks
+*   **Goal:** Remove any benchmark code from TrikeShed that simulates performance metrics rather than measuring actual running code, adhering to `CLAUDE.md`.
 *   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
 *   **Acceptance Criteria:**
-    1.  All instances of `MutableList<T>` are removed.
-    2.  Operations relying on in-place mutation are refactored into sequences of `α` transforms on `Series<T>`.
-    3.  The project compiles successfully.
-    4.  Relevant unit tests pass.
+    1.  Codebase audited for performance measurement code.
+    2.  Code generating "fake" performance data is removed.
+    3.  Only benchmarks running against actual operations are retained.
+    4.  Builds and tests pass.
 
-**Task 3 (P0)**
-*   **Title:** TrikeShed Core: Implement `Pair<A,B>` to `Join<A,B>` Migration
-*   **Goal:** Replace all usages of `Pair<A,B>` with `Join<A,B>` type using the `j` operator in the TrikeShed Kotlin codebase, complying with `CLAUDE.md`.
+**Task 14 (P0)**
+*   **Title:** TrikeShed Compliance: Eliminate Fake Demonstrations
+*   **Goal:** Remove or refactor any code in TrikeShed that only simulates behavior to ensure all code is functional or clearly marked as TODO, as per `CLAUDE.md`.
 *   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
 *   **Acceptance Criteria:**
-    1.  All instances of `Pair<A,B>` are replaced with `Join<A,B>`.
-    2.  The `j` operator is used for constructing `Join<A,B>` instances.
-    3.  Code logic, including destructuring, is updated.
-    4.  The project compiles successfully; relevant unit tests pass.
+    1.  Codebase audited for demo code faking functionality.
+    2.  Such code is removed or refactored into working implementations.
+    3.  If functionality cannot be implemented, it's marked as TODO.
+    4.  Builds and tests pass.
 
-**Task 4 (P0)**
-*   **Title:** TrikeShed Core: Eliminate Raw Collection Usage
-*   **Goal:** Ensure all data collection handling within TrikeShed exclusively uses TrikeShed's defined patterns (`Series<T>`, `Join<A,B>`, etc.) and eliminate direct usage of raw Java/Kotlin collections for primary data flow, as per `CLAUDE.md`.
+**Task 15 (P0)**
+*   **Title:** TrikeShed Compliance: Remove Mock Functionality & Placeholder Responses
+*   **Goal:** Eradicate any mock implementations or placeholder responses in TrikeShed that return hardcoded success or data without real operations, aligning with `CLAUDE.md`.
 *   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
 *   **Acceptance Criteria:**
-    1.  Audit identifies and refactors direct usage of raw collections.
-    2.  Data flows primarily through `Series<T>` and `Join<A,B>`.
-    3.  Project compiles; unit tests confirm functionality.
+    1.  Audit identifies mock methods and placeholder responses.
+    2.  These are replaced with real implementations or proper error handling/TODOs.
+    3.  System behaves genuinely.
+    4.  Builds and tests pass.
 
-**Task 5 (P0)**
-*   **Title:** TrikeShed Core: Enforce `Join<A,B>` via `j` as Only Composition Operator
-*   **Goal:** Establish `Join<A,B>` constructed via the `j` operator as the exclusive mechanism for composing two distinct data structures within TrikeShed, as mandated by `CLAUDE.md`.
+**Task 16 (P0)**
+*   **Title:** TrikeShed Compliance: Convert Demo-Only Code
+*   **Goal:** Identify and convert TrikeShed code that is purely for demonstration and cannot perform real work into functional implementations or remove it, following `CLAUDE.md`.
 *   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
 *   **Acceptance Criteria:**
-    1.  Review codebase for any other forms of data composition and refactor to use `a j b`.
-    2.  The `j` operator is consistently used for creating `Join<A,B>` types.
-    3.  Documentation or internal guidelines are updated.
-    4.  Project compiles, and tests pass.
-
-**Task 6 (P0)**
-*   **Title:** TrikeShed Core: Enforce Alpha Transform (`.α`) as Only Transformation Operator
-*   **Goal:** Ensure that all data transformations on `Series<T>` are performed exclusively using the `.α { transform }` operator, as per `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Codebase audit identifies and refactors `Series<T>` transformations not using `.α`.
-    2.  All map, filter, reduce logic on `Series<T>` is expressed via `.α`.
-    3.  Project compiles, and tests pass.
-
-**Task 7 (P0)**
-*   **Title:** TrikeShed Core: Implement Play Button (`▶`) Materialization
-*   **Goal:** Implement and enforce the `▶` (play button) operator as the sole gateway for converting `Series<T>` into standard `AbstractList` or `Iterable<T>`, as specified in `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  The `▶` operator is available for `Series<T>`.
-    2.  Any conversion of `Series<T>` to standard collection types uses this operator.
-    3.  Direct internal use of `Series.toList()` for further processing is disallowed.
-    4.  Project compiles, and tests pass.
-
-**Task 8 (P0)**
-*   **Title:** TrikeShed Core: Convert Wrappers to `@JvmInline value class`
-*   **Goal:** Convert all wrapper types within TrikeShed to Kotlin's `@JvmInline value class` for zero-cost abstractions, as required by `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Identify classes in TrikeShed wrapping a single underlying type.
-    2.  Refactor these to use `@JvmInline value class`.
-    3.  Limitations of value classes are handled correctly.
-    4.  Project compiles, tests pass; performance ideally unchanged or improved.
-
-**Task 9 (P0)**
-*   **Title:** TrikeShed Core: Define Permanent Type Aliases for Primitives
-*   **Goal:** Establish and use descriptive `typealias` for all recurring primitive types within TrikeShed, ensuring these aliases are permanent definitions, as mandated by `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Identify common primitive types with specific semantic meaning.
-    2.  Define clear, descriptive `typealias` for these uses.
-    3.  Consistently use these type aliases.
-    4.  Aliases are documented as non-removable.
-    5.  Project compiles, tests pass.
-
-**Task 10 (P0)**
-*   **Title:** TrikeShed Core: Define `Tensor<T>` as `Join<IntArray,(IntArray)->T>`
-*   **Goal:** Implement or confirm `Tensor<T>` in TrikeShed is defined and used strictly as `Join<IntArray,(IntArray)->T>`, as per `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Type definition for `Tensor<T>` is `typealias Tensor<T> = Join<IntArray, (IntArray) -> T>` or equivalent.
-    2.  Usage of `Tensor<T>` conforms to this definition.
-    3.  Operations on `Tensor<T>` correctly utilize its components.
-    4.  Project compiles, relevant tests pass.
-
-**Task 11 (P0)**
-*   **Title:** TrikeShed Core: Clarify `Cursor` vs `Series<RowVec>`
-*   **Goal:** Document and ensure the codebase clearly distinguishes between the original "Cursor" concept and `Series<RowVec>` patterns, as noted in `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Documentation explains the role of legacy "Cursor" if it exists.
-    2.  New developments prefer `Series`-based patterns.
-    3.  Refactor ambiguous usages.
-    4.  Developer documentation is updated.
-
-**Task 12 (P0)**
-*   **Title:** TrikeShed Core: Remove "Quic" Prefix from `QuicInstant`
-*   **Goal:** Refactor `QuicInstant` (and related types) to remove the "Quic" prefix, making them general-purpose temporal types, as per `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  `QuicInstant` is renamed (e.g., `Timestamp`, `InstantValue`).
-    2.  All usages are updated.
-    3.  Change is documented.
-    4.  Project compiles, tests pass.
+    1.  Audit identifies demo-only code paths.
+    2.  Paths are made operational or removed.
+    3.  Remaining TODO items are clearly marked.
+    4.  Builds and tests pass.
 
 ---
 ### P1 Tasks: Core Integration & System Foundations
@@ -357,49 +290,6 @@ This document outlines prioritized tasks for the Superbikeshed project, organize
 **Focus:** Writing tests, creating documentation, addressing general code quality issues (TODOs/FIXMEs), and ensuring overall project maintainability.
 
 ---
-### P0 Tasks: Foundational Compliance
-
-**Task 13 (P0)**
-*   **Title:** TrikeShed Compliance: Eliminate Simulated Benchmarks
-*   **Goal:** Remove any benchmark code from TrikeShed that simulates performance metrics rather than measuring actual running code, adhering to `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Codebase audited for performance measurement code.
-    2.  Code generating "fake" performance data is removed.
-    3.  Only benchmarks running against actual operations are retained.
-    4.  Builds and tests pass.
-
-**Task 14 (P0)**
-*   **Title:** TrikeShed Compliance: Eliminate Fake Demonstrations
-*   **Goal:** Remove or refactor any code in TrikeShed that only simulates behavior to ensure all code is functional or clearly marked as TODO, as per `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Codebase audited for demo code faking functionality.
-    2.  Such code is removed or refactored into working implementations.
-    3.  If functionality cannot be implemented, it's marked as TODO.
-    4.  Builds and tests pass.
-
-**Task 15 (P0)**
-*   **Title:** TrikeShed Compliance: Remove Mock Functionality & Placeholder Responses
-*   **Goal:** Eradicate any mock implementations or placeholder responses in TrikeShed that return hardcoded success or data without real operations, aligning with `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Audit identifies mock methods and placeholder responses.
-    2.  These are replaced with real implementations or proper error handling/TODOs.
-    3.  System behaves genuinely.
-    4.  Builds and tests pass.
-
-**Task 16 (P0)**
-*   **Title:** TrikeShed Compliance: Convert Demo-Only Code
-*   **Goal:** Identify and convert TrikeShed code that is purely for demonstration and cannot perform real work into functional implementations or remove it, following `CLAUDE.md`.
-*   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
-*   **Acceptance Criteria:**
-    1.  Audit identifies demo-only code paths.
-    2.  Paths are made operational or removed.
-    3.  Remaining TODO items are clearly marked.
-    4.  Builds and tests pass.
-
----
 ### P2-P4 Tasks Overview:
 
 *   **P2: Foundational QA and Documentation:**
@@ -416,4 +306,17 @@ This document outlines prioritized tasks for the Superbikeshed project, organize
     *   Living documentation, continuously updated.
     *   Proactive code health monitoring and refactoring.
     *   Community contributions to documentation and testing.
+
+### T4 Tasks: Long-term Vision
+
+- [ ] **Task 20 (T4)**
+  *   **Title:** TrikeShed Vision: Implement Advanced Tensor Operations
+  *   **Goal:** Develop and integrate advanced tensor operations within TrikeShed, leveraging the `Tensor<T>` type for high-performance data processing.
+  *   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
+  *   **Acceptance Criteria:**
+     1.  Advanced tensor operations (e.g., convolution, pooling) are implemented.
+     2.  Operations are optimized for performance.
+     3.  Comprehensive unit tests are written.
+     4.  Documentation is updated.
+  *   **Status:** In Progress (Started: 2023-10-01)
 ---
