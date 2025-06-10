@@ -4,6 +4,7 @@ package core
 
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
+import kotlin.NoSuchElementException // Added for _l
 
 /**
  * UNIFIED TRIKESHED TENSOR OPERATIONS
@@ -175,6 +176,71 @@ inline fun <T> Tensor<T>.tensorForEachIndexed(action: (Int, T) -> Unit) {
     for (element in this) {
         action(index++, element)
     }
+}
+
+// Tensor Syntactic Sugars (Moved from TrikeShedCore.kt)
+
+/**
+ * Applies a lambda to each element of the [Tensor] and returns a new [Tensor] with the transformed elements.
+ * The new [Tensor] will have the same shape as the original.
+ */
+inline infix fun <T, R> Tensor<T>.m(crossinline transform: (T) -> R): Tensor<R> {
+    return TensorConstruct(this.shape) { coords -> transform(this.accessor(coords)) }
+}
+
+/**
+ * Returns a new [Tensor] with the first `n` elements removed, based on a linear view of the tensor elements.
+ * The resulting [Tensor] will be 1-dimensional (a Series-like Tensor).
+ * If `n` is non-positive, the original [Tensor]'s elements are returned as a new 1D Tensor.
+ * If `n` is greater than or equal to [totalSize], an empty 1D [Tensor] is returned.
+ */
+fun <T> Tensor<T>.d(n: Int): Tensor<T> { // Returns a 1D Tensor (TensorSeries)
+    val currentTotalSize = this.totalSize
+    if (n <= 0) {
+        return TensorSeries(currentTotalSize) { i -> this.invoke(this.tensorLinearToCoords(i)) }
+    }
+    if (n >= currentTotalSize) {
+        return TensorSeries(0) { throw IndexOutOfBoundsException("Drop results in empty tensor") }
+    }
+    val newSize = currentTotalSize - n
+    return TensorSeries(newSize) { i ->
+        val originalLinearIndex = i + n
+        this.invoke(this.tensorLinearToCoords(originalLinearIndex))
+    }
+}
+
+/**
+ * Returns the last element of the [Tensor], based on a linear view.
+ * Throws [NoSuchElementException] if the tensor is empty.
+ */
+val <T> Tensor<T>._l: T
+    get() {
+        if (this.totalSize == 0) throw NoSuchElementException("Tensor is empty.")
+        return this.invoke(this.tensorLinearToCoords(this.totalSize - 1))
+    }
+
+/**
+ * Returns an [Iterable] view of the [Tensor]'s elements, based on a linear traversal.
+ * This leverages the existing iterator() operator extension on Tensor.
+ */
+val <T> Tensor<T>._v: Iterable<T>
+    get() = object : Iterable<T> { // Explicitly return an iterable object
+        override fun iterator(): Iterator<T> = this@_v.iterator()
+    }
+
+/**
+ * Calculates and returns the sum of elements in a [Tensor] of [Number]s.
+ * Elements are converted to [Double] for summation.
+ * Returns `0.0` for an empty tensor.
+ * This leverages the existing iterator() operator extension on Tensor.
+ */
+fun <N : Number> Tensor<N>.s_(): Double {
+    if (this.totalSize == 0) return 0.0
+    var sum = 0.0
+    for (element in this) { // Uses the existing iterator in TrikeShedTensorOperations.kt
+        sum += element.toDouble()
+    }
+    return sum
 }
 
 inline fun <T> Tensor<T>.forEachCoords(action: (IntArray, T) -> Unit) {
