@@ -7,21 +7,23 @@ import borg.trikeshed.core.*
 typealias EnvironmentContext = Series<Join<String, String>> // Series of Key-Value pairs
 typealias Capability = Join<String, Series<String>> // Capability Name j Series of Parameters
 typealias ProjectContext = Series<Join<String, String>> // Key-Value pairs for project context
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> origin/command-hierarchy-enhancements
-=======
- typealias Problem = Series<String> // A series of text describing the problem aspects
- 
->>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce
+typealias Problem = Series<String> // A series of text describing the problem aspects
 
-fun ProjectContext.extractKeywords(): List<String> =
-    this.`▶`.flatMap { (key, value) -> "$key $value".lowercase().split(" ") }.filter { it.length > 3 }
+fun ProjectContext.extractKeywords(): Series<String> =
+    this.size j { i ->
+        val (key, value) = this[i]
+        "$key $value".lowercase().split(" ").filter { it.length > 3 }
+    }.let { seriesOfLists ->
+        // Flatten the series of lists into a single series
+        val allKeywords = mutableListOf<String>()
+        for (i in 0 until seriesOfLists.size) {
+            allKeywords.addAll(seriesOfLists[i])
+        }
+        allKeywords.size j { i -> allKeywords[i] }
+    }
 
-fun ProjectContext.extractLanguages(): List<String> =
-    this.`▶`.filter { it.a == "language" }.map { it.b } + 
+fun ProjectContext.extractLanguages(): Series<String> = 
+    (this.`▶`.filter { it.a == "language" }.map { it.b } + 
     this.`▶`.filter { it.a == "file_extension" }.map { ext ->
         when (ext) {
             ".kt" -> "kotlin"
@@ -33,8 +35,7 @@ fun ProjectContext.extractLanguages(): List<String> =
             ".scala" -> "scala"
             else -> "unknown"
         }
-    }
-typealias Problem = Series<String> // A series of text describing the problem aspects
+    }).let { list -> list.size j { i -> list[i] } }
 
 data class ProblemExtended(
     val description: Series<String>,
@@ -46,19 +47,7 @@ data class ProblemExtended(
     
     enum class Complexity { LOW, MEDIUM, HIGH }
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-typealias Problem = Series<String> // A series of text describing the problem aspects
->>>>>>> origin/jules_wip_12008771546559725757
-=======
->>>>>>> origin/command-hierarchy-enhancements
-=======
-//=======
-typealias Problem = Series<String> // A series of text describing the problem aspects
-//>>>>>>> origin/jules_wip_12008771546559725757
-//>>>>>>> main
->>>>>>> fee6c7072d6c064572d9d222d5ecbbd742324bce
+
 typealias Solution = Series<String> // A proposed solution, e.g., lines of code or steps
 typealias Feedback = Join<String, Series<String>> // FeedbackType j Series of Details/Parameters
 typealias LearningUpdate = Join<String, String> // UpdateType j UpdateSummary
