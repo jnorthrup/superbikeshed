@@ -15,16 +15,13 @@ dont even talk about a demo of a goddamn thing ever.  do not write gaslighting p
 
 **MANDATORY PATTERNS:**
 
-- **`a j b`** creates `Join<A,B>` - the ONLY composition operator
-- **`series.α { transform }`** - the ONLY transformation operator
-<<<<<<< HEAD
-- **series \`▶\` //(THE PLAY BUTTON) ** - gateway to `AbstractList,Iterable<T>` for .map and list
-=======
-- **series `▶` //(THE PLAY BUTTON) ** - gateway to `AbstractList,Iterable<T>` for .map and list
->>>>>>> origin/jules_wip_12008771546559725757
-- **`@JvmInline value class`** - the ONLY wrapper mechanism
-- **`typealias`** - descriptive names for ANY OR ALL RECURRING primitives
-- ** use map with the play button
+- **a j b** creates Join<A,B> - the ONLY composition operator
+- **series.α { transform }** - the ONLY transformation operator  
+- **series.\`▶\`** (THE PLAY BUTTON) - gateway to AbstractList,Iterable<T> for .map and list
+  **DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX NOT MARKDOWN**
+- **@JvmInline value class** - the ONLY wrapper mechanism
+- **typealias** - descriptive names for ANY OR ALL RECURRING primitives
+- use map with the play button
 
 ## BANNED PRACTICES - convert to TODOs or remove when un-DRY
 
@@ -66,7 +63,6 @@ Put nio target overrides into borg.trikeshed.nio.
 **TESTING GUIDELINES:**
 
 - when writing a test, do not create new turds
-<<<<<<< HEAD
 - mock tests dont count as gaslighting category, they should hold the code stable
 
 **CODING STYLE PREFERENCES:**
@@ -84,20 +80,15 @@ Put nio target overrides into borg.trikeshed.nio.
 - **Dynamic capture**: Most dynamic capture-based anonymous inner classes as subject of iterative JIT counters for locality
 - **Inline class preference**: If a class isn't an inline class, why not?
 - **Gossip tool**: Will use `gossip_about` llm tool as soon as we can write it and loft the Jetsam
-=======
->>>>>>> origin/jules_wip_12008771546559725757
 
 **CORE BEHAVIOR GUIDELINES:**
 
 - you will always proceed "without any destructive change"
 - whatever thinking caused QuicInstant to have a Quic prefix needs to end for general reuse
 - when writing a test, do not create new turds
-<<<<<<< HEAD
 
 
 # Workflow
 
 one task does the (thin+-king) and planning for two tasks -- the first one starts up with the large context and starts to curate a smaller context loop adequate to anneal tests, docs, and code ; the other is architecting the integration and authoring fully informed tests and proofs, axiomatic and poignant, not boilerplate --- with the context it remains with.
 second will be a lesser GDM capability if its still highcompetence with IKR (Incomplete knowledge, resources (to win!))
-=======
->>>>>>> origin/jules_wip_12008771546559725757
