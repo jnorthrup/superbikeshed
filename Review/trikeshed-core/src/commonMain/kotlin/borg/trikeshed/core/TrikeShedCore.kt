@@ -46,46 +46,18 @@ interface Join<A, B> { // @Serializable removed
     operator fun component2(): B = b
     val pair: Pair<A, B> get() = Pair(a, b)
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-/**
- * Syntactic sugar for  capture-based cost
- */
-infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
-=======
-/**
- * Syntactic sugar for  capture-based cost
- */
-internal inline infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B>   {
->>>>>>> origin/jules_wip_12008771546559725757
-    override val a: A get() = this@j
-    override val b: B get() = b
-}
-=======
-
 // @Serializable // Removed
 data class SerializableJoin<A, B>(override val a: A, override val b: B) : Join<A, B>
 
 /**
  * Syntactic sugar for  capture-based cost
  */
-internal inline infix fun <A, B> A.j(b: B): Join<A, B> = SerializableJoin(this, b)
->>>>>>> origin/feat/trikeshed-dgm-integration
+inline infix fun <A, B> A.j(b: B): Join<A, B> = SerializableJoin(this, b)
 
-<<<<<<< HEAD
 /** Accessor for the first element of a [Join]. */
 inline val <A, B> Join<A, B>.first: A get() = a
 /** Accessor for the second element of a [Join]. */
 inline val <A, B> Join<A, B>.second: B get() = b
-=======
-infix fun <T, R> Tensor<T>.`▶` (transform: (IntArray) -> T) =a.drop(1).j { coords: IntArray -> transform(coords) }
-
-/** Accessor for the first element of a [Join]. */
-internal inline val <A, B> Join<A, B>.first: A get() = a
-/** Accessor for the second element of a [Join]. */
-internal inline val <A, B> Join<A, B>.second: B get() = b
->>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * Type alias for a [Join] where both elements are of the same type.
@@ -104,20 +76,12 @@ fun <T> T.twin(): Twin<T> = this j this
 typealias Series<T> = Join<Int, (Int) -> T>
 
 /** Returns the size of the [Series]. */
-<<<<<<< HEAD
 inline val <T> Series<T>.size: Int get() = a
-=======
-internal inline val <T> Series<T>.size: Int get() = a
->>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * Operator to access an element of the [Series] by its index.
  */
-<<<<<<< HEAD
 inline operator fun <T> Series<T>.get(i: Int): T = b(i)
-=======
-internal inline operator fun <T> Series<T>.get(i: Int): T = b(i)
->>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * An empty [Series] instance.
@@ -133,30 +97,17 @@ inline fun <T> emptySeries(): Series<T> = EmptySeries as Series<T>
  * Creates a lazy supplier (a lambda with no arguments) that returns `this` value.
  * Used for lazy meta-patterns.
  */
-<<<<<<< HEAD
 inline val <T> T.leftIdentity: () -> T get() = { this }
-=======
-internal inline val <T> T.leftIdentity: () -> T get() = { this }
->>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * Syntactic sugar for [leftIdentity].
  */
-<<<<<<< HEAD
 inline val <T> T.`↺`: () -> T get() = leftIdentity
-=======
-internal inline val <T> T.`↺`: () -> T get() = leftIdentity
->>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * A value class wrapper around [Series] that makes it [Iterable].
  */
-<<<<<<< HEAD
 @JvmInline
-=======
-// @JsExport // Removed as per plan
-/* Marking value class internal */ @JvmInline
->>>>>>> origin/jules_wip_12008771546559725757
 value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
     override fun iterator(): Iterator<A> = object : Iterator<A> {
         private var index = 0
@@ -168,28 +119,20 @@ value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
 /**
  * Provides an [Iterable] view of the [Series].
  */
-<<<<<<< HEAD
 inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
-=======
-internal inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
->>>>>>> origin/jules_wip_12008771546559725757
 
 /**
  * Extension function to convert a [Series] of [Char] to a String.
  */
-<<<<<<< HEAD
 fun Series<Char>.asString(): String = this.`▶`.joinToString("")
-=======
-internal fun Series<Char>.asString(): String = this.`▶`.joinToString("")
->>>>>>> origin/jules_wip_12008771546559725757
 
 // III. core.Tensor Implementation
 
 // @Serializable // Removed
-data class SerializableTensorData<T>(val shape: IntArray, val data: List<T>)
+data class SerializableTensorData<T>(val shape: IntArray, val data: Series<T>)
 
 // @Serializable // Removed
-data class SerializableSeriesData<T>(val data: List<T>)
+data class SerializableSeriesData<T>(val data: Series<T>)
 
 /**
  * Type alias for a Tensor, which is a [Join] of its shape ([IntArray]) and an accessor function
@@ -537,15 +480,9 @@ internal inline val ColumnMeta.type: TypeMemento get() = b
 
 // Extension to convert Tensor to its serializable form
 fun <T> Tensor<T>.toSerializable(): SerializableTensorData<T> {
-    val dataList = mutableListOf<T>()
-    // Iterate based on shape to collect all data points
-    // This is a simplified iteration logic, assuming a flat list is desired for serialization
-    if (this.totalSize > 0) {
-        for (i in 0 until this.totalSize) {
-            dataList.add(this(this.linearToCoords(i)))
-        }
-    }
-    return SerializableTensorData(this.shape, dataList)
+    // Create a Series from tensor data using TrikeShed patterns
+    val dataSeries = this.totalSize j { i -> this(this.linearToCoords(i)) }
+    return SerializableTensorData(this.shape, dataSeries)
 }
 
 // Extension to convert SerializableTensorData back to Tensor
@@ -558,22 +495,15 @@ fun <T> SerializableTensorData<T>.toTensor(): Tensor<T> {
 
 // Extension to convert Series to its serializable form
 fun <T> Series<T>.toSerializable(): SerializableSeriesData<T> {
-    val dataList = mutableListOf<T>()
-    for (i in 0 until this.size) {
-        dataList.add(this[i])
-    }
-    return SerializableSeriesData(dataList)
+    // Already a Series, just wrap it
+    return SerializableSeriesData(this)
 }
 
 // Extension to convert SerializableSeriesData back to Series
 fun <T> SerializableSeriesData<T>.toSeries(): Series<T> {
-    return this.data.size j { index -> this.data[index] }
+    return this.data
 }
 
-/**
- * Provides an [Iterable] view of the [Series].
- */
-internal inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
 
 /**
  * Returns the [CursorMeta] component (the metadata [Tensor]) from a [CoreTensorCursorWithMeta].
@@ -582,12 +512,12 @@ internal inline val <T> CoreTensorCursorWithMeta<T>.coreTensorMeta: CursorMeta g
 /** Syntactic sugar for [coreTensorMeta]. */
 internal inline val <T> CoreTensorCursorWithMeta<T>.meta: CursorMeta get() = b
 
-/** Returns a [List] of column names from [CursorMeta]. */
-internal inline val CursorMeta.names: List<String>
+/** Returns a [Series] of column names from [CursorMeta]. */
+inline val CursorMeta.names: Series<String>
     get() {
         // Assuming CursorMeta is effectively a 1D tensor of ColumnMeta
         val numCols = this.shape.getOrElse(0) { 0 } // Get number of columns from shape
-        return List(numCols) { colIdx ->
+        return numCols j { colIdx ->
             // this(intArrayOf(colIdx)).name // Commented out L517 (approx)
             "placeholder_name_${colIdx}"
         }
@@ -598,13 +528,8 @@ internal inline val CursorMeta.names: List<String>
 /**
  * A value class used to specify a column to be excluded by its name.
  */
-<<<<<<< HEAD
 @JvmInline
-=======
-// @JsExport // Removed as per plan
-/* Marking value class internal */ @JvmInline
->>>>>>> origin/jules_wip_12008771546559725757
-internal value class ColumnExclusion(val name: String) {
+value class ColumnExclusion(val name: String) {
     override fun toString(): String = "ColumnExclusion($name)"
 }
 
@@ -612,7 +537,7 @@ internal value class ColumnExclusion(val name: String) {
  * Unary minus operator extension for [String] to create a [ColumnExclusion].
  * Example: `-"columnName"`
  */
-internal operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
+operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
 
 /**
      * Returns a new [CoreTensorCursorWithMeta] with columns excluded by their indices.
@@ -631,12 +556,12 @@ internal operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(thi
 /**
      * Returns a new [CoreTensorCursorWithMeta] with columns excluded by [ColumnExclusion] objects.
      */
-    internal fun <T> CoreTensorCursorWithMeta<T>.exclude(s: Series<ColumnExclusion>): CoreTensorCursorWithMeta<T> {
+    fun <T> CoreTensorCursorWithMeta<T>.exclude(s: Series<ColumnExclusion>): CoreTensorCursorWithMeta<T> {
         val exclusionBag = mutableSetOf<Int>()
         val currentMetaNames = this.meta.names // Get names from the CursorMeta part of CoreTensorCursorWithMeta
 
         for (excludedCol in s.`▶`) {
-            val index = currentMetaNames.indexOfFirst { it == excludedCol.name }
+            val index = currentMetaNames.`▶`.indexOfFirst { it == excludedCol.name }
             if (index != -1) {
                 exclusionBag.add(index)
             }
@@ -673,7 +598,6 @@ fun Any?.toDisplayString(type: IOMemento): String {
     }
 }
 
-<<<<<<< HEAD
 operator fun <T> Series<T>.plus(other: Series<T>): Series<T> =
     (this.size + other.size) j { i ->
         if (i < this.size) this[i] else other[i - this.size]
@@ -695,10 +619,7 @@ fun <T> Tensor<T>.iterate(): Series<Pair<IntArray, T>> =
         coords to this(coords)
     }
 
-internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = TODO("Not fully implemented")/*{
-    val (s) = shape
-    //onw the tensor is the shorter shape
-}*/ // TODO: Fix or remove this incomplete function
+// TODO: Implement front property if needed
 
 
 // IX. Shorthand Utility Functions and Properties
@@ -1174,10 +1095,7 @@ private fun Long.unitizer(seriesConstant: Int, seriesDoubleConstant: Double, lnO
     return roundedString + " " + pre + (if (seriesConstant == 1024) "iB" else "B")
 }
 
-/**
- * Provides an [Iterable] view of the [Series].
- */
-internal inline val <T> Tensor<T>.front: IterableSeries<Tensor<T>> get() = TODO("Not fully implemented")
+// TODO: Implement front property if needed
 
 // --- GitRepositoryView Integration ---
 

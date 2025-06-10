@@ -10,7 +10,7 @@ typealias HttpContentType = String            // Content-Type header value
 typealias HttpHeader = Join<HttpHeaderName, HttpHeaderValue> // Remains from previous for now
 typealias HttpHeaderName = String             // Header field name
 // typealias HttpHeaders = Series<HttpHeader> // Replaced by simple Map typealias for now
-typealias HttpHeaders = Map<String, List<String>> // Simplified as per current subtask instruction
+typealias HttpHeaders = Map<String, Series<String>> // Updated to use Series<T> as per CLAUDE.md
 typealias HttpHeaderValue = String            // Header field value
 
 /**
