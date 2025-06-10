@@ -49,15 +49,137 @@ actual class QuicConnection actual constructor() {
 // Simplified QuicPacketType for dummy constructor
 enum class QuicPacketType { INITIAL } // Matches other dummies
 
-actual object Crypto {
-    // ... (deprecated methods remain unchanged - throwing exceptions)
-    actual fun hkdfExtract(salt: ByteArray, ikm: ByteArray): ByteArray {
-        throw UnsupportedOperationException("Crypto.hkdfExtract is deprecated. Use suspend HkdfService.extract from context.")
+internal actual suspend fun protectPacket(
+    context: CoroutineContext,
+    packet: QuicPacket,       // packet.header is IN (not modified by HP if ECB fails), OUT (payload encrypted)
+    keys: QuicInitialKeys,
+    connection: QuicConnection
+): ByteArray {
+    val aesService = context[AesServiceKey]
+        ?: throw IllegalStateException("AesService not found in CoroutineContext.")
+
+    // 1. Payload Encryption (AES-GCM)
+    val payloadKey = keys.payloadProtectionKey(context)
+    val payloadIv = keys.payloadIv(context)
+    val aad = packet.header.copyOf()
+    packet.protectedPayload = aesService.gcmEncrypt(payloadKey, payloadIv, packet.payload, aad)
+
+    // 2. Header Protection Attempt
+    try {
+        val sampleLength = 16
+        if ((packet.protectedPayload?.size ?: 0) < sampleLength) {
+            // Not enough data for a sample, skip HP.
+            // console.warn if available: "Protected payload too short for HP sample."
+        } else {
+            val sample = packet.protectedPayload!!.copyOfRange(0, sampleLength)
+            val hpKey = keys.headerProtectionKey(context)
+            val fullHpMask = aesService.ecbEncrypt(hpKey, sample) // This line will throw on JS
+
+            val hpMaskFirst5Bytes = fullHpMask.copyOfRange(0, 5)
+
+            val headerCopy = packet.header.copyOf()
+            if (headerCopy.isNotEmpty()) {
+                // Simplified XOR for the first byte. Real protection is bit-specific.
+                headerCopy[0] = (headerCopy[0].toInt() xor hpMaskFirst5Bytes[0].toInt()).toByte()
+            }
+            val pnOffset = 1
+            val maxPnLengthInMask = 4
+            for (i in 0 until maxPnLengthInMask) {
+                if (pnOffset + i < headerCopy.size) {
+                    headerCopy[pnOffset + i] = (headerCopy[pnOffset + i].toInt() xor hpMaskFirst5Bytes[i + 1].toInt()).toByte()
+                } else {
+                    break
+                }
+            }
+            packet.header = headerCopy // Update packet with protected header
+        }
+    } catch (e: UnsupportedOperationException) {
+        // Expected for JsAesService.ecbEncrypt. Header protection is skipped.
+        // console.warn if available: "AES-ECB for header protection not supported. Packet sent with unprotected header."
     }
-    actual fun hkdfExpand(prk: ByteArray, info: ByteArray, len: Int): ByteArray {
-        throw UnsupportedOperationException("Crypto.hkdfExpand is deprecated. Use suspend HkdfService.expand from context.")
+    // If an error other than UnsupportedOperationException occurs, it will propagate.
+
+    return packet.getBytes()
+}
+
+internal actual suspend fun unprotectPacket(
+    context: CoroutineContext,
+    protectedPacketBytes: ByteArray,
+    keys: QuicInitialKeys,
+    connection: QuicConnection
+): QuicPacket? {
+    val aesService = context[AesServiceKey]
+        ?: throw IllegalStateException("AesService not found in CoroutineContext for JS unprotection.")
+
+    // Simplified parsing and offsets, similar to JVM/Native.
+    val payloadCiphertextOffset = 20 // Highly_Simplified_Offset_To_Payload_Ciphertext_Start
+
+    if (protectedPacketBytes.size < payloadCiphertextOffset + 16) { // Need 16B for GCM tag minimum in payload part
+        return null
     }
-    actual fun aesGcmEncrypt(key: ByteArray, iv: ByteArray, plaintext: ByteArray, aad: ByteArray): ByteArray {
-        throw UnsupportedOperationException("Crypto.aesGcmEncrypt is deprecated. Use suspend AesService.gcmEncrypt from context.")
+
+    var headerForAad = protectedPacketBytes.copyOfRange(0, payloadCiphertextOffset) // Initially, this is the protected header.
+
+    // Attempt Header Unprotection (expected to fail gracefully on JS)
+    try {
+        val sample = protectedPacketBytes.copyOfRange(payloadCiphertextOffset, payloadCiphertextOffset + 16)
+        val hpKey = keys.headerProtectionKey(context)
+        // This call will throw UnsupportedOperationException with JsAesService
+        val fullHpMask = aesService.ecbEncrypt(hpKey, sample)
+        val hpMaskFirst5Bytes = fullHpMask.copyOfRange(0, 5)
+
+        // If ecbEncrypt succeeded (it won't on JS), unmask headerForAad
+        val tempUnmaskedHeader = headerForAad.copyOf()
+        if (tempUnmaskedHeader.isNotEmpty()) {
+            tempUnmaskedHeader[0] = (tempUnmaskedHeader[0].toInt() xor hpMaskFirst5Bytes[0].toInt()).toByte()
+        }
+        val pnOffsetInHeader = 1
+        for (i in 0 until 4) {
+            if (pnOffsetInHeader + i < tempUnmaskedHeader.size && (i + 1) < hpMaskFirst5Bytes.size) {
+                tempUnmaskedHeader[pnOffsetInHeader + i] = (tempUnmaskedHeader[pnOffsetInHeader + i].toInt() xor hpMaskFirst5Bytes[i + 1].toInt()).toByte()
+            } else {
+                break
+            }
+        }
+        headerForAad = tempUnmaskedHeader // This line will not be reached if ECB fails.
+    } catch (e: UnsupportedOperationException) {
+        // Expected: AES-ECB for header protection is not supported.
+        // Header remains protected. AAD for payload decryption will be the protected header.
+        // console.warn if available: "AES-ECB for header unprotection not supported. Using protected header as AAD."
     }
-    actual fun aesGcmDecrypt(key: ByteArray, iv: ByteArray, ciphertext: ByteArray, aad: ByteArray)
+    // Any other exception from ECB (if it somehow didn't throw UnsupportedOperationException but failed) would propagate.
+
+    // Payload Decryption
+    val payloadKey = keys.payloadProtectionKey(context)
+    val payloadIv = keys.payloadIv(context)
+    // Use headerForAad (which is still the protected header on JS if ECB failed) as AAD.
+    val aadForPayload = headerForAad
+
+    val payloadCiphertextWithTag = protectedPacketBytes.copyOfRange(payloadCiphertextOffset, protectedPacketBytes.size)
+
+    val decryptedPayload = try {
+        aesService.gcmDecrypt(payloadKey, payloadIv, payloadCiphertextWithTag, aadForPayload)
+    } catch (e: Exception) {
+        // JsAesService.gcmDecrypt throws on failure.
+        return null
+    }
+
+    if (decryptedPayload == null) return null
+
+    // Reconstruct QuicPacket.
+    val parsedPacketType: QuicPacketType? = QuicPacketType.INITIAL // Placeholder
+    val parsedConnectionId: ByteArray = connection.connectionId     // Placeholder
+    val parsedPacketNumber: ULong = 0uL                             // Placeholder
+
+    return QuicPacket(
+        packetType = parsedPacketType,
+        connectionId = parsedConnectionId,
+        packetNumber = parsedPacketNumber,
+        payload = decryptedPayload,
+        protectionMask = null,
+        protectedPayload = null
+    ).apply {
+        // On JS, this 'header' will be the one that could not be unprotected by ECB.
+        this.header = headerForAad
+    }
+}
