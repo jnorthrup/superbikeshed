@@ -62,6 +62,22 @@ Put nio target overrides into borg.trikeshed.nio.
 **TESTING GUIDELINES:**
 
 - when writing a test, do not create new turds
+- mock tests dont count as gaslighting category, they should hold the code stable
+
+**CODING STYLE PREFERENCES:**
+
+- **1-liners, no braces**: Golf expressions preferred, concise elegant code
+- **Typealiased lambdas**: Must always type lambdas in Series and throughout
+- **Ternary Kotlin hack**: `yes!` love it, embrace creative shortcuts
+- **Null safety shortcuts**: `nz,z` - can't live without it
+- **Kotlin native**: `d, l, m, or n` - tiny bit of peek and poke
+- **Debug calls**: `-ea` only debug calls preferred in logging (they get inlined out)
+- **Immaculate specification**: Fully articulated taxonomical typealias models
+- **DSEL architecture**: Immaculate DSELs with CCEK and enum clusters of expertise
+- **Domain clustering**: Enum clusters organize domain code and expertise
+- **Dynamic capture**: Most dynamic capture-based anonymous inner classes as subject of iterative JIT counters for locality
+- **Inline class preference**: If a class isn't an inline class, why not?
+- **Gossip tool**: Will use `gossip_about` llm tool as soon as we can write it and loft the Jetsam
 
 **CORE BEHAVIOR GUIDELINES:**
 
