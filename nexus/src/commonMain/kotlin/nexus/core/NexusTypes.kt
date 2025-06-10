@@ -8,6 +8,9 @@ typealias EnvironmentContext = Series<Join<String, String>> // Series of Key-Val
 typealias Capability = Join<String, Series<String>> // Capability Name j Series of Parameters
 typealias ProjectContext = Series<Join<String, String>> // Key-Value pairs for project context
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> origin/command-hierarchy-enhancements
 
 fun ProjectContext.extractKeywords(): List<String> =
     this.`▶`.flatMap { (key, value) -> "$key $value".lowercase().split(" ") }.filter { it.length > 3 }
@@ -38,9 +41,12 @@ data class ProblemExtended(
     
     enum class Complexity { LOW, MEDIUM, HIGH }
 }
+<<<<<<< HEAD
 =======
 typealias Problem = Series<String> // A series of text describing the problem aspects
 >>>>>>> origin/jules_wip_12008771546559725757
+=======
+>>>>>>> origin/command-hierarchy-enhancements
 typealias Solution = Series<String> // A proposed solution, e.g., lines of code or steps
 typealias Feedback = Join<String, Series<String>> // FeedbackType j Series of Details/Parameters
 typealias LearningUpdate = Join<String, String> // UpdateType j UpdateSummary
@@ -74,6 +80,9 @@ typealias GossipPayload = Series<Join<String, String>> // A series of key-value 
 // Topic is handled by the PubSub system directly, not part of this payload type definition.
 // No separate GossipMessage typealias needed if the payload is what's published.
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> origin/command-hierarchy-enhancements
 
 // Additional missing types for HybridIntelligence
 enum class Preference {
@@ -168,5 +177,8 @@ data class WorkflowStep(val action: Action, val order: Int)
 // Helper extension for Series filtering nulls
 fun <T> Series<T?>.filterNotNull(): Series<T> = 
     this.`▶`.filterNotNull().let { filtered -> Series.of(*filtered.toTypedArray()) }
+<<<<<<< HEAD
 =======
 >>>>>>> origin/jules_wip_12008771546559725757
+=======
+>>>>>>> origin/command-hierarchy-enhancements
