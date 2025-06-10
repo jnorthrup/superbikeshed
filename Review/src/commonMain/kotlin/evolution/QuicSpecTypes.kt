@@ -353,7 +353,6 @@ value class StatelessResetToken(val value: ByteArray) {
     override fun hashCode(): Int = value.contentHashCode()
 }
 
-
 // --- QUIC Transport Layer Types (Moved from QuicTypes.kt) ---
 
 @JvmInline
