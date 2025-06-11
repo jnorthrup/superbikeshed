@@ -40,15 +40,12 @@ fun Series<Byte>.asString(): String = toArray().decodeToString()
 /**
  * byte based spiritual successor to ByteBuffer for parsing
  */
-class ByteSeries internal constructor(
+class ByteSeries internal constructor( // Changed to delegate Series<Byte>
     private val internalSeriesData: Series<Byte>,
     var pos: Int = 0,
-    var limit: Int = internalSeriesData.a,
+    var limit: Int = internalSeriesData.size, // Use .size (delegated from Series)
     var mark: Int = -1
-) {
-
-    val size: Int get() = internalSeriesData.a
-    operator fun get(index: Int): Byte = internalSeriesData.b(index)
+) : Series<Byte> by internalSeriesData {
 
     /** get, the verb - the char at the current position and increment position */
     inline val get: Byte
@@ -106,13 +103,15 @@ class ByteSeries internal constructor(
             while (hasRemaining && this[pos].toInt().toChar().isWhitespace()) {
                 pos++
             }
-        }
+        } // Corrected to use this[pos]
     val rtrim: ByteSeries
         get() = apply {
-            while (rem > 0 && this[limit - 1].toInt().toChar().isWhitespace()) limit--
+            while (rem > 0 && this[limit - 1].toInt().toChar().isWhitespace()) limit-- // Corrected to use this[limit - 1]
         }
 
-    fun clone(): ByteSeries = ByteSeries(internalSeriesData).also { it.pos = pos; it.limit = limit; it.mark = mark }
+    // Corrected clone to create a new series from the current view (pos, limit)
+    fun clone(): ByteSeries =
+        ByteSeries(this.size j this::get).also { it.pos = pos; it.limit = limit; it.mark = mark }
 
     val cacheCode: Int get() {
         var h = 1
@@ -156,8 +155,8 @@ class ByteSeries internal constructor(
     val trim: ByteSeries get() = apply {
         var p = pos
         var l = limit
-        while (p < l && (0xff and get(p).toInt()).toChar().isWhitespace()) p++
-        while (l > p && (0xff and get(l - 1).toInt()).toChar().isWhitespace()) l--
+        while (p < l && (0xff and this[p].toInt()).toChar().isWhitespace()) p++ // Corrected to use this[p]
+        while (l > p && (0xff and this[l - 1].toInt()).toChar().isWhitespace()) l-- // Corrected to use this[l-1]
         lim(l)
         pos(p)
     }
@@ -355,7 +354,7 @@ class CharSeries(
             }
         }
 
-    val rtrim: CharSeries get() = apply { while (rem > 0 && b(limit - 1).isWhitespace()) limit-- }
+    val rtrim: CharSeries get() = apply { while (rem > 0 && this[limit - 1].isWhitespace()) limit-- } // Corrected to use this[limit - 1]
 
 
     fun clone(): CharSeries = CharSeries(a j b).also { it.pos = pos; it.limit = limit; it.mark = mark }
