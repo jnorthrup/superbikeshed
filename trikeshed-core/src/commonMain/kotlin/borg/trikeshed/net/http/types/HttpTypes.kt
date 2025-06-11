@@ -1,212 +1,230 @@
-@file:Suppress("NonAsciiCharacters") // For potential future use of symbols if desired
-
 package borg.trikeshed.net.http.types
 
+import borg.trikeshed.lib.CoreTensorCursorWithMeta
+import borg.trikeshed.lib.DslHandle
+import borg.trikeshed.lib.Series
 import kotlin.jvm.JvmInline
-import borg.trikeshed.core.Join // For Join
-import borg.trikeshed.core.Series // For Series (e.g. if HttpBody.Bytes used Series<Byte>)
-import borg.trikeshed.core.Tensor // For HttpBody.Bytes using Tensor<Byte>
-import borg.trikeshed.core.CoreTensorCursor // For HttpHeadersCursor
-import borg.trikeshed.core.CoreTensorCursorWithMeta // For HttpHeaders (Join of cursor and meta)
-import borg.trikeshed.core.CursorMeta // For HttpHeadersMeta
-import borg.trikeshed.core.IOMemento // For HttpHeadersMeta ColumnMeta
-import borg.trikeshed.core.ColumnMeta // For HttpHeadersMeta
-import borg.trikeshed.core.j // For infix j constructor for Join
 
-// --- Foundational Typealiases and Value Classes ---
+/**
+ * HTTP/1.1 implementation based on RFC 7230-7235 (HTTP/1.1)
+ * RFC 7230: Message Syntax and Routing
+ * RFC 7231: Semantics and Content  
+ * RFC 7232: Conditional Requests
+ * RFC 7233: Range Requests
+ * RFC 7234: Caching
+ * RFC 7235: Authentication
+ * RFC 6265: HTTP State Management Mechanism (Cookies)
+ */
 
+/** RFC 7230 Section 2.6: Protocol Versioning */
 @JvmInline
 value class HttpVersion(val value: String) {
     companion object {
-        val HTTP_1_0 = HttpVersion("HTTP/1.0")
-        val HTTP_1_1 = HttpVersion("HTTP/1.1")
-        val HTTP_2_0 = HttpVersion("HTTP/2.0")
+        val HTTP_1_0 = HttpVersion("HTTP/1.0") // RFC 1945
+        val HTTP_1_1 = HttpVersion("HTTP/1.1") // RFC 7230
+        val HTTP_2_0 = HttpVersion("HTTP/2.0") // RFC 7540
     }
 }
 
-@JvmInline
-value class HttpMethod(val name: String) {
-    companion object {
-        // Common HTTP methods (RFC 7231 & RFC 5789)
-        val GET = HttpMethod("GET")
-        val HEAD = HttpMethod("HEAD")
-        val POST = HttpMethod("POST")
-        val PUT = HttpMethod("PUT")
-        val DELETE = HttpMethod("DELETE")
-        val CONNECT = HttpMethod("CONNECT")
-        val OPTIONS = HttpMethod("OPTIONS")
-        val TRACE = HttpMethod("TRACE")
-        val PATCH = HttpMethod("PATCH")
-    }
+/** RFC 7231 Section 4: Request Methods */
+enum class HttpMethod {
+    GET,     // RFC 7231 Section 4.3.1
+    POST,    // RFC 7231 Section 4.3.3
+    PUT,     // RFC 7231 Section 4.3.4
+    DELETE,  // RFC 7231 Section 4.3.5
+    HEAD,    // RFC 7231 Section 4.3.2
+    OPTIONS, // RFC 7231 Section 4.3.7
+    TRACE,   // RFC 7231 Section 4.3.8
+    CONNECT, // RFC 7231 Section 4.3.6
+    PATCH    // RFC 5789
 }
 
+/** RFC 7230 Section 5.3: Request Target */
 @JvmInline
-value class HttpRequestPath(val value: String) // Includes path and query string
+value class HttpRequestPath(val value: String)
 
+/** RFC 7231 Section 6: Response Status Codes */
 @JvmInline
-value class HttpStatusCode(val code: UShort) {
-    // Informational 1xx
-    fun isInformational(): Boolean = code in 100u..199u
-    // Successful 2xx
-    fun isSuccessful(): Boolean = code in 200u..299u
-    // Redirection 3xx
-    fun isRedirection(): Boolean = code in 300u..399u
-    // Client Error 4xx
-    fun isClientError(): Boolean = code in 400u..499u
-    // Server Error 5xx
-    fun isServerError(): Boolean = code in 500u..599u
+value class HttpStatusCode(val value: Int) {
+    fun isInformational(): Boolean = value in 100..199
+    fun isSuccessful(): Boolean = value in 200..299
+    fun isRedirection(): Boolean = value in 300..399
+    fun isClientError(): Boolean = value in 400..499
+    fun isServerError(): Boolean = value in 500..599
 
     companion object {
-        // Common Status Codes (non-exhaustive)
-        val CONTINUE = HttpStatusCode(100u)
-        val SWITCHING_PROTOCOLS = HttpStatusCode(101u)
-        val OK = HttpStatusCode(200u)
-        val CREATED = HttpStatusCode(201u)
-        val ACCEPTED = HttpStatusCode(202u)
-        val NO_CONTENT = HttpStatusCode(204u)
-        val MOVED_PERMANENTLY = HttpStatusCode(301u)
-        val FOUND = HttpStatusCode(302u)
-        val SEE_OTHER = HttpStatusCode(303u)
-        val NOT_MODIFIED = HttpStatusCode(304u)
-        val BAD_REQUEST = HttpStatusCode(400u)
-        val UNAUTHORIZED = HttpStatusCode(401u)
-        val FORBIDDEN = HttpStatusCode(403u)
-        val NOT_FOUND = HttpStatusCode(404u)
-        val METHOD_NOT_ALLOWED = HttpStatusCode(405u)
-        val INTERNAL_SERVER_ERROR = HttpStatusCode(500u)
-        val NOT_IMPLEMENTED = HttpStatusCode(501u)
-        val BAD_GATEWAY = HttpStatusCode(502u)
-        val SERVICE_UNAVAILABLE = HttpStatusCode(503u)
+        // RFC 7231 Section 6.2: Informational 1xx
+        val CONTINUE = HttpStatusCode(100)                    // RFC 7231 Section 6.2.1
+        val SWITCHING_PROTOCOLS = HttpStatusCode(101)         // RFC 7231 Section 6.2.2
+        
+        // RFC 7231 Section 6.3: Successful 2xx  
+        val OK = HttpStatusCode(200)                          // RFC 7231 Section 6.3.1
+        val CREATED = HttpStatusCode(201)                     // RFC 7231 Section 6.3.2
+        val ACCEPTED = HttpStatusCode(202)                    // RFC 7231 Section 6.3.3
+        val NO_CONTENT = HttpStatusCode(204)                  // RFC 7231 Section 6.3.5
+        
+        // RFC 7231 Section 6.4: Redirection 3xx
+        val MOVED_PERMANENTLY = HttpStatusCode(301)           // RFC 7231 Section 6.4.2
+        val FOUND = HttpStatusCode(302)                       // RFC 7231 Section 6.4.3
+        val SEE_OTHER = HttpStatusCode(303)                   // RFC 7231 Section 6.4.4
+        val NOT_MODIFIED = HttpStatusCode(304)                // RFC 7232 Section 4.1
+        
+        // RFC 7231 Section 6.5: Client Error 4xx
+        val BAD_REQUEST = HttpStatusCode(400)                 // RFC 7231 Section 6.5.1
+        val UNAUTHORIZED = HttpStatusCode(401)                // RFC 7235 Section 3.1
+        val FORBIDDEN = HttpStatusCode(403)                   // RFC 7231 Section 6.5.3
+        val NOT_FOUND = HttpStatusCode(404)                   // RFC 7231 Section 6.5.4
+        val METHOD_NOT_ALLOWED = HttpStatusCode(405)          // RFC 7231 Section 6.5.5
+        
+        // RFC 7231 Section 6.6: Server Error 5xx
+        val INTERNAL_SERVER_ERROR = HttpStatusCode(500)       // RFC 7231 Section 6.6.1
+        val NOT_IMPLEMENTED = HttpStatusCode(501)             // RFC 7231 Section 6.6.2
+        val BAD_GATEWAY = HttpStatusCode(502)                 // RFC 7231 Section 6.6.3
+        val SERVICE_UNAVAILABLE = HttpStatusCode(503)         // RFC 7231 Section 6.6.4
     }
 }
 
+/** RFC 7230 Section 3.1.2: Status Line */
 @JvmInline
 value class HttpReasonPhrase(val value: String)
 
+/** RFC 7230 Section 3.2: Header Fields */
 @JvmInline
-value class HttpHeaderName(val name: String) {
-    /** Returns a normalized (lowercase) version of the header name for case-insensitive comparisons. */
-    fun normalized(): String = name.lowercase()
-    // Consider if equals/hashCode should use normalized form, though JvmInline might handle this.
-    // For maps, if this is a key, the map itself should handle case-insensitivity if needed,
-    // or always store/lookup normalized names.
+value class HttpHeaderName(val value: String) {
+    companion object {
+        // RFC 7231 Section 5.3.2: Accept
+        const val ACCEPT = "Accept"                           // RFC 7231 Section 5.3.2
+        const val ACCEPT_CHARSET = "Accept-Charset"           // RFC 7231 Section 5.3.3
+        const val ACCEPT_ENCODING = "Accept-Encoding"         // RFC 7231 Section 5.3.4
+        const val ACCEPT_LANGUAGE = "Accept-Language"         // RFC 7231 Section 5.3.5
+        
+        // RFC 7235: Authentication
+        const val AUTHORIZATION = "Authorization"             // RFC 7235 Section 4.2
+        const val WWW_AUTHENTICATE = "WWW-Authenticate"       // RFC 7235 Section 4.1
+        const val PROXY_AUTHENTICATE = "Proxy-Authenticate"   // RFC 7235 Section 4.3
+        const val PROXY_AUTHORIZATION = "Proxy-Authorization" // RFC 7235 Section 4.4
+        
+        // RFC 7234: Caching
+        const val CACHE_CONTROL = "Cache-Control"            // RFC 7234 Section 5.2
+        const val EXPIRES = "Expires"                        // RFC 7234 Section 5.3
+        const val PRAGMA = "Pragma"                          // RFC 7234 Section 5.4
+        const val VARY = "Vary"                              // RFC 7234 Section 4.1
+        
+        // RFC 7230: Message Syntax and Routing
+        const val CONNECTION = "Connection"                  // RFC 7230 Section 6.1
+        const val HOST = "Host"                              // RFC 7230 Section 5.4
+        const val TRANSFER_ENCODING = "Transfer-Encoding"   // RFC 7230 Section 3.3.1
+        const val UPGRADE = "Upgrade"                       // RFC 7230 Section 6.7
+        const val VIA = "Via"                               // RFC 7230 Section 5.7.1
+        const val TE = "TE"                                 // RFC 7230 Section 4.3
+        const val TRAILER = "Trailer"                       // RFC 7230 Section 4.4
+        
+        // RFC 7231: Semantics and Content
+        const val CONTENT_ENCODING = "Content-Encoding"     // RFC 7231 Section 3.1.2.2
+        const val CONTENT_LANGUAGE = "Content-Language"     // RFC 7231 Section 3.1.3.2
+        const val CONTENT_LENGTH = "Content-Length"         // RFC 7230 Section 3.3.2
+        const val CONTENT_LOCATION = "Content-Location"     // RFC 7231 Section 3.1.4.2
+        const val CONTENT_TYPE = "Content-Type"             // RFC 7231 Section 3.1.1.5
+        const val DATE = "Date"                             // RFC 7231 Section 7.1.1.2
+        const val EXPECT = "Expect"                         // RFC 7231 Section 5.1.1
+        const val FROM = "From"                             // RFC 7231 Section 5.5.1
+        const val LOCATION = "Location"                     // RFC 7231 Section 7.1.2
+        const val MAX_FORWARDS = "Max-Forwards"             // RFC 7231 Section 5.1.2
+        const val REFERER = "Referer"                       // RFC 7231 Section 5.5.2
+        const val RETRY_AFTER = "Retry-After"               // RFC 7231 Section 7.1.3
+        const val SERVER = "Server"                         // RFC 7231 Section 7.4.2
+        const val USER_AGENT = "User-Agent"                 // RFC 7231 Section 5.5.3
+        
+        // RFC 7232: Conditional Requests
+        const val ETAG = "ETag"                             // RFC 7232 Section 2.3
+        const val IF_MATCH = "If-Match"                     // RFC 7232 Section 3.1
+        const val IF_MODIFIED_SINCE = "If-Modified-Since"   // RFC 7232 Section 3.3
+        const val IF_NONE_MATCH = "If-None-Match"           // RFC 7232 Section 3.2
+        const val IF_RANGE = "If-Range"                     // RFC 7233 Section 3.2
+        const val IF_UNMODIFIED_SINCE = "If-Unmodified-Since" // RFC 7232 Section 3.4
+        const val LAST_MODIFIED = "Last-Modified"           // RFC 7232 Section 2.2
+        
+        // RFC 7233: Range Requests
+        const val CONTENT_RANGE = "Content-Range"           // RFC 7233 Section 4.2
+        const val RANGE = "Range"                           // RFC 7233 Section 3.1
+        
+        // RFC 6265: HTTP State Management Mechanism (Cookies)
+        const val COOKIE = "Cookie"                         // RFC 6265 Section 4.2
+        const val SET_COOKIE = "Set-Cookie"                 // RFC 6265 Section 4.1
+        
+        // Obsolete/Legacy
+        const val CONTENT_MD5 = "Content-MD5"               // RFC 1864 (obsoleted)
+        const val WARNING = "Warning"                       // RFC 7234 Section 5.5 (obsolete)
+        
+        // Common Extensions
+        const val X_FORWARDED_FOR = "X-Forwarded-For"       // De facto standard
+    }
 }
 
+/** RFC 7230 Section 3.2: Header Fields */
 @JvmInline
 value class HttpHeaderValue(val value: String)
 
-// --- HTTP Headers Representation ---
-
-/**
- * Metadata for HTTP Headers when represented as a `CoreTensorCursor<String>`.
- * It's a 1D Tensor of `ColumnMeta`, typically with two columns: "Name" and "Value".
- */
-typealias HttpHeadersMeta = CursorMeta // Tensor<ColumnMeta> (rank 1)
-
-/**
- * HTTP Headers represented as a `CoreTensorCursor<String>`.
- * Rows represent individual header lines, columns are typically "Name" and "Value".
- * This allows leveraging tensor operations for header manipulation if beneficial.
- */
-typealias HttpHeadersCursor = CoreTensorCursor<String> // Tensor<String> (rank 2)
-
-/**
- * HTTP Headers as a `CoreTensorCursorWithMeta<String>`, combining the data cursor and its metadata.
- * This is `Join<HttpHeadersCursor, HttpHeadersMeta>`.
- */
+/** RFC 7230 Section 3.2: Header Fields - TrikeShed tensor representation */
 typealias HttpHeaders = CoreTensorCursorWithMeta<String>
 
-/**
- * Factory function to create an empty `HttpHeadersMeta`.
- * Assumes header names are "Name" and "Value".
- */
-fun emptyHttpHeadersMeta(): HttpHeadersMeta {
-    val nameCol = HttpHeaderName("Name").name j IOMemento.IoString
-    val valueCol = HttpHeaderName("Value").name j IOMemento.IoString
-    return borg.trikeshed.core.TensorSeries(2) { i -> if (i == 0) nameCol else valueCol } // Use core.TensorSeries
-}
+/** TrikeShed metadata for header processing context */
+@JvmInline
+value class HttpHeadersMeta(val value: DslHandle = DslHandle.NONE)
 
-/**
- * Factory function to create an empty `HttpHeadersCursor`.
- */
-fun emptyHttpHeadersCursor(): HttpHeadersCursor =
-    borg.trikeshed.core.TensorCursor(0, 2) { _, _ -> "" } // Use core.TensorCursor
-
-/**
- * Factory function to create empty `HttpHeaders`.
- */
-fun emptyHttpHeaders(): HttpHeaders =
-    emptyHttpHeadersCursor() j emptyHttpHeadersMeta()
-
-// --- HTTP Body Representation ---
-
-/**
- * Represents the body of an HTTP message.
- * It can be empty, a Tensor of bytes (for binary data), or a Tensor of chars (for text).
- */
+/** RFC 7230 Section 3.3: Message Body */
 sealed interface HttpBody {
-    data object Empty : HttpBody
-
-    /** A body represented by a rank-1 `Tensor<Byte>`. */
-    @JvmInline
-    value class Bytes(val data: Tensor<Byte>) : HttpBody { // Ensure Tensor<Byte> is rank 1 for typical byte stream
-        init { require(data.rank <= 1) { "HttpBody.Bytes data Tensor must be rank 0 or 1." } }
-    }
-
-    /** A body represented by a rank-1 `Tensor<Char>`. */
-    @JvmInline
-    value class Text(val data: Tensor<Char>) : HttpBody { // Ensure Tensor<Char> is rank 1
-        init { require(data.rank <= 1) { "HttpBody.Text data Tensor must be rank 0 or 1." } }
-    }
-    // Consider:
-    // data class Structured<T>(val data: CoreTensorCursor<T>, val meta: CursorMeta) : HttpBody
-    // data class Streaming(val producer: Flow<Tensor<Byte>>) : HttpBody // For true streaming
+    object Empty : HttpBody
+    data class Bytes(val data: Series<Byte>) : HttpBody    // Binary content
+    data class Text(val data: Series<Char>) : HttpBody     // Text content
 }
 
-// --- HTTP Request/Response Structures (using Join) ---
+/** RFC 7230 Section 3: Message Format */
+data class HttpRequest(
+    val method: HttpMethod,        // RFC 7231 Section 4
+    val path: HttpRequestPath,     // RFC 7230 Section 5.3 
+    val version: HttpVersion,      // RFC 7230 Section 2.6
+    val headers: HttpHeaders,      // RFC 7230 Section 3.2
+    val body: HttpBody            // RFC 7230 Section 3.3
+)
 
-/**
- * Represents the request line: `METHOD Path HTTP-Version`.
- */
-typealias HttpRequestLine = Join<HttpMethod, Join<HttpRequestPath, HttpVersion>>
+/** RFC 7230 Section 3: Message Format */  
+data class HttpResponse(
+    val version: HttpVersion,      // RFC 7230 Section 2.6
+    val statusCode: HttpStatusCode, // RFC 7231 Section 6
+    val reasonPhrase: HttpReasonPhrase, // RFC 7230 Section 3.1.2
+    val headers: HttpHeaders,      // RFC 7230 Section 3.2
+    val body: HttpBody            // RFC 7230 Section 3.3
+)
 
-/**
- * Represents the status line: `HTTP-Version StatusCode Reason-Phrase`.
- */
-typealias HttpResponseLine = Join<HttpVersion, Join<HttpStatusCode, HttpReasonPhrase>>
+// Ontological typealiases for content types
+typealias ContentTypeApplicationJsonValue = String
+typealias ContentTypeTextPlainValue = String
+typealias ContentTypeTextHtmlValue = String
 
-/**
- * Represents a full HTTP Request message.
- * `Join<HttpRequestLine, Join<HttpHeaders, HttpBody>>`
- */
-typealias HttpRequest = Join<HttpRequestLine, Join<HttpHeaders, HttpBody>>
+// Header indexing for fast lookups (relaxfactory pattern)
+@JvmInline
+value class HeaderIndex(val keyPositions: Series<Int>)
 
-/**
- * Represents a full HTTP Response message.
- * `Join<HttpResponseLine, Join<HttpHeaders, HttpBody>>`
- */
-typealias HttpResponse = Join<HttpResponseLine, Join<HttpHeaders, HttpBody>>
+@JvmInline
+value class CookieIndex(val cookiePositions: Series<Int>)
 
-// --- Utility functions for creating instances (examples) ---
+typealias HeaderRequestPattern = Series<HttpHeaderName>
+typealias CookieRequestPattern = Series<String> // Cookie names we care about
 
-fun HttpRequest(
-    method: HttpMethod,
-    path: HttpRequestPath,
-    version: HttpVersion,
-    headers: HttpHeaders,
-    body: HttpBody
-): HttpRequest {
-    val requestLine = method j (path j version)
-    return requestLine j (headers j body)
-}
+// RFC 6265: HTTP State Management Mechanism (Cookies)
+@JvmInline
+value class CookieName(val value: String)         // RFC 6265 Section 4.1.1
 
-fun HttpResponse(
-    version: HttpVersion,
-    statusCode: HttpStatusCode,
-    reasonPhrase: HttpReasonPhrase,
-    headers: HttpHeaders,
-    body: HttpBody
-): HttpResponse {
-    val statusLine = version j (statusCode j reasonPhrase)
-    return statusLine j (headers j body)
-}
+@JvmInline  
+value class CookieValue(val value: String)        // RFC 6265 Section 4.1.1
+
+@JvmInline
+value class CookieAttributes(val value: String)   // RFC 6265 Section 4.1.1 (Path, Domain, Secure, etc.)
+
+/** RFC 6265 Section 4.1.1: Set-Cookie */
+data class ParsedCookie(
+    val name: CookieName,
+    val value: CookieValue, 
+    val attributes: CookieAttributes = CookieAttributes("")
+)
