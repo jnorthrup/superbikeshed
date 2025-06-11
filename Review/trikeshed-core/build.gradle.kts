@@ -51,6 +51,7 @@ val currentOsVersionDetails = getOsVersion(currentOsFamily)
 plugins {
     kotlin("multiplatform")
     // id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20" // Removed
+    id("org.jetbrains.kotlin.plugin.atomicfu") version "0.23.2"
 }
 
 group = "borg.trikeshed"
@@ -110,6 +111,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.23.2")
                 // implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Removed
             }
         }
@@ -196,5 +198,9 @@ kotlin {
     }
     targets.withType(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget::class.java) {
         binaries.executable()
+    }
+
+    atomicfu {
+        transformations("js", "native")
     }
 }
