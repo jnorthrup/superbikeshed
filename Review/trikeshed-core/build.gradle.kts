@@ -146,6 +146,13 @@ kotlin {
             dependsOn(nativeMainShared)
         }
 
+        // Add linuxArm64Main
+        val linuxArm64Main by creating {
+            dependsOn(nativeMain)
+            kotlin.srcDir("$rootDir/src/posixMain/kotlin")
+            kotlin.srcDir("$rootDir/src/linuxArm64Main/kotlin") // Specific sources for linuxArm64 if any
+        }
+
         val jsMain by getting {
             // Default srcDir is "src/jsMain/kotlin". For any trikeshed-core specific JS code.
             // Do NOT include $rootDir/src/jsMain/kotlin/* here.

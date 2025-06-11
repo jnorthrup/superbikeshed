@@ -1,9 +1,7 @@
 // ta4k-spacegraph-moneyfan-demo/build.gradle.kts
 plugins {
-<<<<<<< HEAD
     kotlin("multiplatform") version "2.2.0-RC2"
     kotlin("plugin.serialization") version "2.2.0-RC2"
-    // No application plugin here as this module primarily produces JS for the browser
 }
 
 repositories {
@@ -11,13 +9,6 @@ repositories {
     google()
     maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
 }
-
-=======
-    kotlin("multiplatform") // Inherit version from root project
-    // No application plugin here as this module primarily produces JS for the browser
-}
-
->>>>>>> origin/jules_wip_12008771546559725757
 kotlin {
     js(IR) { // Target JavaScript with the IR compiler
         browser {
@@ -38,9 +29,36 @@ kotlin {
         binaries.executable()
     }
 
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+
+    if (hostOs == "Mac OS X") {
+        if (hostArch == "aarch64") {
+            macosArm64()
+        } else {
+            macosX64()
+        }
+    } else if (hostOs == "Linux") {
+        if (hostArch == "aarch64") {
+            linuxArm64()
+        } else {
+            linuxX64()
+        }
+    }
+
     sourceSets {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        val commonMain by creating {
+            dependencies {
+                implementation(kotlin("stdlib-common"))
+            }
+        }
+
+>>>>>>> jules_wip_15441682621147348775
         val jsMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(kotlin("stdlib-js")) // Standard JS library for Kotlin
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // Add serialization
@@ -74,6 +92,7 @@ kotlin {
             }
             resources.srcDirs(project.file("src/jsMain/resources"))
         }
+<<<<<<< HEAD
 =======
 
                 // Coroutines for async operations like fetch
@@ -92,6 +111,33 @@ kotlin {
         //     }
         // }
 >>>>>>> origin/jules_wip_12008771546559725757
+=======
+
+        val commonTest by creating { // Create commonTest
+            dependencies {
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
+            }
+        }
+
+        val nativeMain by creating {
+            dependsOn(commonMain)
+        }
+
+        val nativeTest by creating {
+            dependsOn(commonTest)
+        }
+
+        val linuxX64Main by creating { dependsOn(nativeMain) }
+        val linuxArm64Main by creating { dependsOn(nativeMain) }
+        val macosX64Main by creating { dependsOn(nativeMain) }
+        val macosArm64Main by creating { dependsOn(nativeMain) }
+
+        val linuxX64Test by creating { dependsOn(nativeTest) }
+        val linuxArm64Test by creating { dependsOn(nativeTest) }
+        val macosX64Test by creating { dependsOn(nativeTest) }
+        val macosArm64Test by creating { dependsOn(nativeTest) }
+>>>>>>> jules_wip_15441682621147348775
     }
 }
 
