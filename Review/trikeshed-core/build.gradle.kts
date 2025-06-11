@@ -50,7 +50,7 @@ val currentOsVersionDetails = getOsVersion(currentOsFamily)
 
 plugins {
     kotlin("multiplatform")
-    // id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20" // Removed
+    `maven-publish`
 }
 
 group = "borg.trikeshed"
