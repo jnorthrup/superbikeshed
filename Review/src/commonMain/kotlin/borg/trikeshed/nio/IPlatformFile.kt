@@ -13,6 +13,6 @@ expect interface IPlatformFile : HasDescriptor, HasSize {
         fun open(path: String?, O_FLAGS: Int): Int
         fun statk(path: String?, stat1: stat = TODO("implement in actual")): stat
         val page_size: Long
-        fun namedDirAndFile(file_path: String): List<String>
+        fun namedDirAndFile(file_path: String): Series<String>
     }
 }

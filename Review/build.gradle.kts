@@ -8,6 +8,13 @@ plugins {
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
 kotlin {
     jvm()
     js {
@@ -34,7 +41,7 @@ kotlin {
                 exclude("borg/trikeshed/lib/**")   // Now compiled by :trikeshed-core
                 exclude("borg/trikeshed/net/**")
                 exclude("evolution/**")
-                exclude("com/example/trikeshedcore/**")
+                exclude("com/example/trikeshedcore/**") // This correctly excludes the old com.example path
                 exclude("gk/kademlia/**")
             }
         }

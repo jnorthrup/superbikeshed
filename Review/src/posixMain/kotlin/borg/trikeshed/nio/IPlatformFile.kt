@@ -3,6 +3,8 @@ package borg.trikeshed.nio
 import borg.trikeshed.native.HasPosixErr
 import kotlinx.cinterop.*
 import platform.posix.*
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
 
 actual interface IPlatformFile {
     actual companion object {
@@ -18,6 +20,19 @@ actual interface IPlatformFile {
                 HasPosixErr.posixRequires(it.z) { "statx $path" }
             }
             return stat1
+        }
+
+        actual fun namedDirAndFile(file_path: String): Series<String> {
+            val lastSlash = file_path.lastIndexOf('/')
+            val dirName = if (lastSlash == -1) "." else file_path.substring(0, lastSlash).ifEmpty { "/" }
+            val fileName = file_path.substring(lastSlash + 1)
+            return 2 j { index ->
+                when (index) {
+                    0 -> dirName
+                    1 -> fileName
+                    else -> throw IndexOutOfBoundsException("Series index out of bounds for namedDirAndFile")
+                }
+            }
         }
     }
 }
