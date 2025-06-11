@@ -114,7 +114,7 @@ fun Cursor.showRandom(n: Int = 5) {
 /** simple printout macro*/
 fun Cursor.show(range: IntRange = 0 until size) {
     val meta: Series<ColumnMeta> = meta
-    println("rows:$size" to meta.names.toList())
+    println("rows:$size" to meta.names.`▶`.toList()) // Changed to use .▶ operator
     showValues(range)
 }
 

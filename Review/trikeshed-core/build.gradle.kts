@@ -106,6 +106,13 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
+            kotlin.srcDirs(
+                "src/commonMain/kotlin", // Local sources like borg/trikeshed/core/TrikeShedCore.kt
+                "$rootDir/src/commonMain/kotlin/borg/trikeshed/lib" // Shared lib from root project's source tree
+            )
+            // Excludes for $rootDir paths are not relevant here anymore for these specific srcDirs.
+            // Any other excludes for paths *within* these srcDirs could be placed in a nested kotlin {} block.
+
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
