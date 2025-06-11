@@ -2,6 +2,7 @@ package borg.trikeshed.acapulco
 
 import borg.trikeshed.core.Series
 import borg.trikeshed.core.j
+import borg.trikeshed.core.emptySeries
 
 class ExecutionEngine {
     fun initialize(initialWalletState: WalletState) {
@@ -10,7 +11,7 @@ class ExecutionEngine {
 
     suspend fun processTick(currentTick: MarketTick, agentAction: AgentAction): ExecutionResult {
         // Implementation placeholder
-        return ExecutionResult(0 j { _ -> throw IndexOutOfBoundsException() }, 0.0, WalletState(emptyMap()))
+        return ExecutionResult(emptySeries<FillInfo>(), 0.0, WalletState(emptyMap()))
     }
 }
 

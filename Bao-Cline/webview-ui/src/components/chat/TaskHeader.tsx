@@ -15,6 +15,7 @@ import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useSelectedModel } from "@/components/ui/hooks/useSelectedModel"
 
 import Thumbnails from "../common/Thumbnails"
+import Breadcrumbs from "../common/Breadcrumbs"; // Added import
 
 import { TaskActions } from "./TaskActions"
 import { ContextWindowProgress } from "./ContextWindowProgress"
@@ -70,6 +71,13 @@ const TaskHeader = ({
 
 	return (
 		<div className="py-2 px-3">
+			{/* Breadcrumbs added here */}
+			<div className="mb-2">
+				<Breadcrumbs segments={[
+					{ label: t("chat:task.breadcrumbBase", "Task") },
+					{ label: task.text?.substring(0, 30) + (task.text && task.text.length > 30 ? "..." : "") || t("chat:task.unnamedTask", "Unnamed Task") }
+				]} />
+			</div>
 			<div
 				className={cn(
 					"rounded-xs p-2.5 flex flex-col gap-1.5 relative z-1 border",

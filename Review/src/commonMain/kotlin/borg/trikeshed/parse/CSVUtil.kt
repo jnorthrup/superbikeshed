@@ -89,13 +89,17 @@ object CSVUtil {
                 }
 
                 is LexState.RecordEnd -> {
-                    currentRanges += ((rangeStart - curLine).toUShort() j (pos - rangeStart).toUShort()) // as DelimitRange
+                    // Refactor: currentRanges = currentRanges.add(...)
+                    currentRanges = currentRanges.add(((rangeStart - curLine).toUShort() j (pos - rangeStart).toUShort()))
 
                     // Add record to COW series
-                    ranges += (pos j currentRanges)
+                    // Refactor: ranges = ranges.add(...)
+                    // Use currentRanges.letter as COWSeriesBody<DelimitRange> is a Series<DelimitRange>
+                    ranges = ranges.add(pos j currentRanges.letter)
 
                     // Reset for next record
-                    currentRanges.clear()
+                    // Refactor: currentRanges = createEmpty()
+                    currentRanges = Join.emptySeriesOf<DelimitRange>().cow
                     rangeStart = pos + 1
                     // Skip whitespace at start of next record
                     data.skipWs
@@ -108,9 +112,12 @@ object CSVUtil {
         }
 
         // Add final record
-        currentRanges += ((rangeStart - curLine).toUShort() j (data.pos - rangeStart).toUShort()) // as DelimitRange
+        // Refactor: currentRanges = currentRanges.add(...)
+        currentRanges = currentRanges.add(((rangeStart - curLine).toUShort() j (data.pos - rangeStart).toUShort()))
 
-        ranges += (curLine j currentRanges)
+        // Refactor: ranges = ranges.add(...)
+        // Use currentRanges.letter as COWSeriesBody<DelimitRange> is a Series<DelimitRange>
+        ranges = ranges.add(curLine j currentRanges.letter)
 
         val cMeta: Series<ColumnMeta> by lazy {
             ranges.first().let { (lineStart, delim): Join<Long, Series<DelimitRange>> ->
