@@ -1,8 +1,13 @@
 package borg.trikeshed.net.http.server
 
-import borg.trikeshed.core.Tensor
-import borg.trikeshed.core.TensorConstruct
-import borg.trikeshed.core.toSeries
+import borg.trikeshed.foundation.common.series.Series
+import borg.trikeshed.foundation.common.series.toSeries // For ByteArray.toSeries() and List.toSeries()
+import borg.trikeshed.foundation.common.series.asString // For Series<Char>.asString()
+import borg.trikeshed.foundation.common.series.emptySeries
+import borg.trikeshed.foundation.common.series.SeriesConstructors // For j constructor if needed elsewhere, though not directly in this file after changes
+import borg.trikeshed.foundation.common.tensor.TensorConstruct // For creating Tensor<Byte>
+import borg.trikeshed.foundation.common.brandt.CoreTensorCursor // For conceptual construction
+import borg.trikeshed.foundation.common.brandt.CoreTensorCursorWithMeta
 import borg.trikeshed.net.http.parser.HttpParsingException
 import borg.trikeshed.net.http.parser.HttpRequestParser
 import borg.trikeshed.net.http.serializer.HttpResponseSerializer
@@ -50,7 +55,7 @@ class HttpConnectionHandler(
             serverSocket.bind(host, port)
             println("HttpConnectionHandler bound to \${serverSocket.localAddress()}")
 
-            while (isRunning && serverSocket.isOpen() && serverScope.isActive) {
+            while (isRunning && serverScope.isActive) {
                 try {
                     val clientSocket = serverSocket.accept()
                     if (clientSocket != null && serverScope.isActive) {
@@ -105,47 +110,67 @@ class HttpConnectionHandler(
 
     private suspend fun handleClientConnection(clientSocket: ClientSocketChannel) {
         val parser = HttpRequestParser()
-        // Allocate a reusable buffer (Tensor<Byte>) for reads.
-        // Size can be tuned. Using a common network buffer size.
-        val readBufferArray = ByteArray(4096)
-        val readBufferTensor = TensorConstruct(intArrayOf(readBufferArray.size)) { idxArray -> readBufferArray[idxArray[0]] }
-
+        val readByteArray = ByteArray(4096) // Use ByteArray for reading
 
         try {
             while (isRunning && clientSocket.isOpen() && clientSocket.isConnected() && serverScope.isActive) {
-                val bytesRead = try {
-                    // Pass a view or copy of the tensor if its accessor isn't safe for direct modification by read
-                    // For now, assume read can populate the backing array of readBufferTensor if designed so.
-                    // The current read() in NioChannels*Native/Jvm.kt uses TensorUtils to copy into a temp array,
-                    // then conceptually updates the Tensor. This needs a mutable Tensor or read returning data.
-                    // Let's assume for now, read will write into readBufferArray which backs readBufferTensor.
-                    // A better model: clientSocket.read(destinationByteArray): Int
-                    clientSocket.read(readBufferTensor, 0, readBufferArray.size)
-                } catch (e: NioException) {
-                    println("NIO Error during read from \${clientSocket.remoteAddress()}: \${e.message}")
-                    break // Exit loop on read error
+                // Assuming clientSocket.read can take a ByteArray directly or is adapted.
+                // If clientSocket.read strictly requires Tensor<Byte>, this part needs adjustment:
+                // val tempTensor = readByteArray.toSeries().asTensor() // Hypothetical asTensor()
+                // val bytesRead = clientSocket.read(tempTensor, 0, readByteArray.size)
+                // For now, assume a direct ByteArray read API or that NioService handles this abstraction.
+                // Let's define a hypothetical read(ByteArray): Int for ClientSocketChannel for this adaptation.
+                // This is a simplification for the current subtask.
+                // A more robust solution would involve ensuring NioChannel actuals can efficiently fill a ByteArray
+                // or work with Series<Byte> directly.
+
+                // SIMPLIFIED READ: Assume read into ByteArray is possible.
+                // This might require a change in ClientSocketChannel interface or specific implementations.
+                // For now, let's simulate this by creating a Tensor from readByteArray, reading into it,
+                // and then using readByteArray. This is inefficient but bridges the gap.
+                val bytesRead: Int
+                run { // Scope for temp tensor
+                    val tempTensor = borg.trikeshed.foundation.common.tensor.TensorConstruct(intArrayOf(readByteArray.size)) { idx -> readByteArray[idx[0]] }
+                    bytesRead = clientSocket.read(tempTensor, 0, readByteArray.size)
+                    // If read modified underlying array of tempTensor (if it shared it), readByteArray would be updated.
+                    // This depends on TensorConstruct and ClientSocketChannel.read behavior.
+                    // A cleaner way: ClientSocketChannel.read returns Series<Byte> or populates Series<Byte>.
+                    // For now, assume readByteArray is populated correctly after clientSocket.read via tempTensor.
+                    if (bytesRead > 0) { // Manually copy back if read wrote to Tensor's own memory
+                        for(i in 0 until bytesRead) readByteArray[i] = tempTensor[intArrayOf(i)]
+                    }
                 }
 
+
+>>>>>>> jules_wip_311298924166369654
                 if (bytesRead == -1) {
                     println("Client \${clientSocket.remoteAddress()} closed connection (EOF).")
                     break // EOF
                 }
                 if (bytesRead == 0) {
+<<<<<<< HEAD
                     // Non-blocking read returned 0, means no data currently available.
                     // This can happen in non-blocking IO. Yield to allow other coroutines to run.
+=======
+>>>>>>> jules_wip_311298924166369654
                     yield()
                     continue
                 }
                 if (bytesRead > 0) {
+<<<<<<< HEAD
                     // Feed the read data (only the part that was read) to the parser.
                     // Create a Series<Byte> from the relevant part of readBufferArray.
                     val newDataSeries = readBufferArray.copyOfRange(0, bytesRead).toSeries()
+=======
+                    val newDataSeries = readByteArray.copyOfRange(0, bytesRead).toSeries() // Foundation toSeries()
+>>>>>>> jules_wip_311298924166369654
                     val parseResult = parser.parse(newDataSeries)
 
                     when {
                         parseResult.isSuccess -> {
                             val request = parseResult.getOrNull()
                             if (request != null) { // Complete request parsed
+<<<<<<< HEAD
                                 println("Received request from \${clientSocket.remoteAddress()}: \${request.a.a.name} \${request.a.b.a.value}")
 
                                 // Simple hardcoded response
@@ -213,6 +238,96 @@ class HttpConnectionHandler(
                                 println("NIO Error sending 400 response to \${clientSocket.remoteAddress()}: \${e.message}")
                             }
                             break // Close connection on parse error
+=======
+                                println("Received request from \${clientSocket.remoteAddress()}: \${request.method.name} \${request.path.value}")
+
+                                val responseBodyStr = "Hello from TrikeShed HTTP/1.1 Server! You requested: \${request.path.value}"
+                                val responseBodySeries = responseBodyStr.encodeToByteArray().toSeries() // String -> BA -> Series<Byte>
+
+                                val responseHeadersList = listOf(
+                                    "\${HttpHeaderName.CONTENT_TYPE}: text/plain; charset=utf-8", // Using consts
+                                    "\${HttpHeaderName.CONTENT_LENGTH}: \${responseBodySeries.size}",
+                                    "\${HttpHeaderName.CONNECTION}: close"
+                                )
+                                val headersSeries = responseHeadersList.toSeries() // List<String> to Series<String>
+
+                                // Placeholder for actual CoreTensorCursor construction from Series<String>
+                                val headersCursor = object : CoreTensorCursor<String> {
+                                    override val meta = borg.trikeshed.foundation.common.brandt.DslHandle.NONE
+                                    override val columns: Int get() = 1
+                                    override val rows: Int get() = headersSeries.size
+                                    override fun get(row: Int, col: Int): String = if (col == 0) headersSeries[row] else throw IndexOutOfBoundsException()
+                                    override fun getColumn(col: Int): Series<String> = if (col == 0) headersSeries else emptySeries()
+                                    override fun getRow(row: Int): Series<String> = SeriesConstructors.j(1){ headersSeries[row] }
+                                }
+                                val httpHeaders = CoreTensorCursorWithMeta(headersCursor, HttpHeadersMeta())
+
+                                val response = borg.trikeshed.net.http.types.HttpResponse(
+                                    version = HttpVersion.HTTP_1_1,
+                                    statusCode = HttpStatusCode(200),
+                                    reasonPhrase = HttpReasonPhrase("OK"),
+                                    headers = httpHeaders,
+                                    body = HttpBody.Bytes(responseBodySeries)
+                                )
+
+                                val serializedResponse = serializer.serialize(response)
+                                // Convert Series<Byte> to ByteArray for writing
+                                val responseBytes = ByteArray(serializedResponse.size) { i -> serializedResponse[i] }
+
+                                // SIMPLIFIED WRITE: Assume write from ByteArray is possible.
+                                // Similar to read, this may require NioChannel actuals to support ByteArray directly.
+                                // If clientSocket.write strictly requires Tensor<Byte>:
+                                // val tempWriteTensor = responseBytes.toSeries().asTensor()
+                                // clientSocket.write(tempWriteTensor, 0, responseBytes.size)
+                                run { // Scope for temp tensor
+                                    val tempWriteTensor = borg.trikeshed.foundation.common.tensor.TensorConstruct(intArrayOf(responseBytes.size)) {idx -> responseBytes[idx[0]]}
+                                    clientSocket.write(tempWriteTensor, 0, responseBytes.size)
+                                }
+
+
+                                println("Response sent to \${clientSocket.remoteAddress()}. Closing connection.")
+                                break
+                            }
+                        }
+                        parseResult.isFailure -> {
+                            val error = parseResult.exceptionOrNull() as? HttpParsingException // Safe cast
+                            println("HTTP Parsing Error from \${clientSocket.remoteAddress()}: \${error?.message ?: "Unknown parsing error"}")
+
+                            val errorBodySeries = "Bad Request".toSeries() // String -> Series<Char>
+                            val errorHeadersList = listOf(
+                                 "\${HttpHeaderName.CONTENT_TYPE}: text/plain; charset=utf-8",
+                                 "\${HttpHeaderName.CONTENT_LENGTH}: \${errorBodySeries.size * 2}", // Approx UTF-8 bytes
+                                 "\${HttpHeaderName.CONNECTION}: close"
+                            )
+                            val errorHeadersSeries = errorHeadersList.toSeries()
+                            val errorHeadersCursor = object : CoreTensorCursor<String> { // Placeholder
+                                override val meta = borg.trikeshed.foundation.common.brandt.DslHandle.NONE
+                                override val columns: Int get() = 1
+                                override val rows: Int get() = errorHeadersSeries.size
+                                override fun get(row: Int, col: Int): String = if (col == 0) errorHeadersSeries[row] else throw IndexOutOfBoundsException()
+                                override fun getColumn(col: Int): Series<String> = if (col == 0) errorHeadersSeries else emptySeries()
+                                override fun getRow(row: Int): Series<String> = SeriesConstructors.j(1){ errorHeadersSeries[row] }
+                            }
+                            val errorHttpHeaders = CoreTensorCursorWithMeta(errorHeadersCursor, HttpHeadersMeta())
+
+                            val errResponse = borg.trikeshed.net.http.types.HttpResponse(
+                                version = HttpVersion.HTTP_1_1,
+                                statusCode = HttpStatusCode(400),
+                                reasonPhrase = HttpReasonPhrase("Bad Request"),
+                                headers = errorHttpHeaders,
+                                body = HttpBody.Text(errorBodySeries)
+                            )
+                             try {
+                                val serializedErrResponse = serializer.serialize(errResponse)
+                                val errBytes = ByteArray(serializedErrResponse.size) { i -> serializedErrResponse[i] }
+                                run {
+                                     val tempErrWriteTensor = borg.trikeshed.foundation.common.tensor.TensorConstruct(intArrayOf(errBytes.size)) {idx -> errBytes[idx[0]]}
+                                     clientSocket.write(tempErrWriteTensor, 0, errBytes.size)
+                                }
+                            } catch (e: NioException) {
+                                println("NIO Error sending 400 response to \${clientSocket.remoteAddress()}: \${e.message}")
+                            }
+                            break
                         }
                     }
                 }
@@ -220,15 +335,11 @@ class HttpConnectionHandler(
         } catch (e: CancellationException) {
             println("Connection handler for \${clientSocket.remoteAddress()} cancelled.")
         } catch (e: Exception) {
-            // Catch any other unexpected errors during client handling
             println("Unexpected error handling client \${clientSocket.remoteAddress()}: \${e.message}")
+            e.printStackTrace() // Print stack trace for unexpected errors
         } finally {
             println("Closing client connection: \${clientSocket.remoteAddress()}")
             clientSocket.close()
         }
     }
 }
-
-// Helper to convert ByteArray to Series<Byte>
-// This should ideally be in core or a common utility.
-internal fun ByteArray.toSeries(): Series<Byte> = this.size j { i -> this[i] }

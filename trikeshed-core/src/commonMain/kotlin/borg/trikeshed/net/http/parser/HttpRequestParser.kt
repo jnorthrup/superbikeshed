@@ -1,16 +1,16 @@
 package borg.trikeshed.net.http.parser
 
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.Tensor
-import borg.trikeshed.core.TensorConstruct // For creating Tensor<Byte>
-import borg.trikeshed.core.asString
-import borg.trikeshed.core.emptySeries
-import borg.trikeshed.core.j
-import borg.trikeshed.core.plus
-import borg.trikeshed.core.size
-import borg.trikeshed.core.slice // If Series has a slice operation like tensor
-import borg.trikeshed.core.toSeries // For ByteArray.toSeries()
-import borg.trikeshed.net.http.types.* // All our Http types
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.asString
+import borg.trikeshed.lib.emptySeries
+import borg.trikeshed.lib.plus
+import borg.trikeshed.lib.size
+import borg.trikeshed.lib.slice
+import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.CoreTensorCursor
+import borg.trikeshed.lib.CoreTensorCursorWithMeta
+import borg.trikeshed.net.http.types.*
 
 // --- HttpParsingException ---
 class HttpParsingException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -31,7 +31,7 @@ enum class HttpParsingState {
 class HttpRequestParser {
 
     private var currentState: HttpParsingState = HttpParsingState.REQUEST_LINE
-    private var bufferedData: Series<Byte> = emptySeries() // Accumulates bytes across parse calls
+    private var bufferedData: Series<Byte> = emptySeries()
 
     private var parsedMethod: HttpMethod? = null
     private var parsedPath: HttpRequestPath? = null
@@ -141,7 +141,11 @@ class HttpRequestParser {
             throw HttpParsingException("Malformed request line: '\$requestLineString'. Expected 3 parts.")
         }
 
-        parsedMethod = HttpMethod(parts[0].uppercase())
+        parsedMethod = try {
+            HttpMethod.valueOf(parts[0].uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw HttpParsingException("Invalid HTTP method: ${parts[0]}", e)
+        }
         parsedPath = HttpRequestPath(parts[1])
         parsedVersion = HttpVersion(parts[2].uppercase())
 
@@ -177,11 +181,11 @@ class HttpRequestParser {
                 bufferedData = bufferedData.slice(currentParseOffset + consumedThisLineAndTerminatorLength until bufferedData.size)
 
                 for ((name, value) in parsedHeadersList) {
-                    if (name.normalized() == "content-length") {
+                    if (name.value.equals("content-length", ignoreCase = true)) {
                         expectedBodyLength = value.value.toLongOrNull()
-                            ?: throw HttpParsingException("Invalid Content-Length value: \${value.value}")
+                            ?: throw HttpParsingException("Invalid Content-Length value: ${value.value}")
                         if (expectedBodyLength!! < 0) throw HttpParsingException("Content-Length cannot be negative.")
-                    } else if (name.normalized() == "transfer-encoding") {
+                    } else if (name.value.equals("transfer-encoding", ignoreCase = true)) {
                         // Simple check for "chunked". Does not handle multiple encodings.
                         if (value.value.contains("chunked", ignoreCase = true)) {
                             isChunkedTransfer = true
@@ -203,7 +207,7 @@ class HttpRequestParser {
             val name = HttpHeaderName(nameBytes.toSeriesOfChars().asString().trim())
             val value = HttpHeaderValue(valueBytes.toSeriesOfChars().asString().trim())
 
-            if (name.name.isEmpty()) throw HttpParsingException("Header name cannot be empty.")
+            if (name.value.isEmpty()) throw HttpParsingException("Header name cannot be empty.")
 
             parsedHeadersList.add(name to value)
             currentParseOffset += consumedThisLineAndTerminatorLength
@@ -233,10 +237,9 @@ class HttpRequestParser {
         } else if (expectedBodyLength != null && expectedBodyLength!! > 0L) {
             val bodyLen = expectedBodyLength!!.toInt()
             if (bufferedData.size >= bodyLen) {
-                val bodyBytes = bufferedData.slice(0 until bodyLen).toArray() // Convert Series<Byte> to ByteArray
-                // Construct Tensor<Byte> (rank 1)
-                val bodyTensor = TensorConstruct(intArrayOf(bodyLen)) { idxArray -> bodyBytes[idxArray[0]] }
-                parsedBody = HttpBody.Bytes(bodyTensor)
+                val bodyBytesArray = bufferedData.slice(0 until bodyLen).toArray()
+                val bodySeries = bodyBytesArray.toSeries()
+                parsedBody = HttpBody.Bytes(bodySeries)
                 bufferedData = bufferedData.slice(bodyLen until bufferedData.size)
                 return true
             } else {
@@ -250,18 +253,37 @@ class HttpRequestParser {
     }
 
     private fun constructHttpHeaders(): HttpHeaders {
-        val numHeaders = parsedHeadersList.size
-        val headersCursor = if (numHeaders > 0) {
-            borg.trikeshed.core.TensorCursor(numHeaders, 2) { r, c -> // Use core.TensorCursor
-                val headerPair = parsedHeadersList[r]
-                if (c == 0) headerPair.first.name else headerPair.second.value
+        if (parsedHeadersList.isEmpty()) {
+            val emptyHeaderSeries = emptySeries<String>()
+            val emptyCursor = object : CoreTensorCursor<String> {
+                override val meta: borg.trikeshed.lib.DslHandle = borg.trikeshed.lib.DslHandle.NONE
+                override val columns: Int get() = 1
+                override val rows: Int get() = 0
+                override fun get(row: Int, col: Int): String = throw IndexOutOfBoundsException()
+                override fun getColumn(col: Int): Series<String> = emptySeries()
+                override fun getRow(row: Int): Series<String> = emptySeries()
             }
-        } else {
-            emptyHttpHeadersCursor()
+            return CoreTensorCursorWithMeta(emptyCursor, HttpHeadersMeta())
         }
-        // Assuming HttpHeadersMeta defines "Name" and "Value" columns.
-        val headersMeta = emptyHttpHeadersMeta()
-        return headersCursor j headersMeta
+
+        val headerStrings = parsedHeadersList.map { "${it.first.value}: ${it.second.value}" }
+        val headersSeries: Series<String> = headerStrings.toSeries()
+
+        val cursor = object : CoreTensorCursor<String> {
+            override val meta: borg.trikeshed.lib.DslHandle = borg.trikeshed.lib.DslHandle.NONE
+            override val columns: Int get() = 1
+            override val rows: Int get() = headersSeries.size
+            override fun get(row: Int, col: Int): String {
+                if (col != 0) throw IndexOutOfBoundsException("Only one column for header strings")
+                return headersSeries[row]
+            }
+            override fun getColumn(col: Int): Series<String> {
+                 if (col != 0) throw IndexOutOfBoundsException("Only one column for header strings")
+                return headersSeries
+            }
+            override fun getRow(row: Int): Series<String> = borg.trikeshed.lib.j(1) { headersSeries[row] }
+        }
+        return CoreTensorCursorWithMeta(cursor, HttpHeadersMeta())
     }
 
     private fun Series<Byte>.indexOf(byte: Byte, startIndex: Int = 0): Int {
@@ -279,7 +301,7 @@ class HttpRequestParser {
     }
 
     private fun Series<Byte>.toSeriesOfChars(): Series<Char> {
-        return this.size j { i -> this[i].toInt().toChar() }
+        return borg.trikeshed.lib.j(this.size) { i -> this[i].toInt().toChar() }
     }
 
     fun reset() {
@@ -291,15 +313,19 @@ class HttpRequestParser {
         parsedHeadersList.clear()
         expectedBodyLength = null
         isChunkedTransfer = false
+        parsedBody = HttpBody.Empty
     }
 }
 
-// --- Extension for Series<Byte> slice (if not available from core) ---
-// This is a simplified slice. A proper one would handle negative indices or steps.
 internal fun Series<Byte>.slice(range: IntRange): Series<Byte> {
-    val start = range.first.coerceAtLeast(0)
+    val start = range.first.coerceAtLeast(0).coerceAtMost(this.size)
     val end = range.last.coerceAtMost(this.size - 1)
-    if (start > end) return emptySeries()
+    if (start > end || start >= this.size) return emptySeries()
     val newSize = end - start + 1
-    return newSize j { i -> this[start + i] }
+    return borg.trikeshed.lib.j(newSize) { i -> this[start + i] }
+}
+
+internal fun Series<Byte>.toArray(): ByteArray {
+    if (this.size == 0) return ByteArray(0)
+    return ByteArray(this.size) { i -> this[i] }
 }
