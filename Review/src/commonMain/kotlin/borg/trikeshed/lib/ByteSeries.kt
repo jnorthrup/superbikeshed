@@ -1,16 +1,12 @@
 package borg.trikeshed.lib
 
 import borg.trikeshed.core.Series
-import borg.trikeshed.core.Join
 import borg.trikeshed.core.j
 import borg.trikeshed.core.toSeries
 import borg.trikeshed.core.α
-import borg.trikeshed.core.size
-import borg.trikeshed.core.get
 import borg.trikeshed.lib.CZero.nz
 
-internal typealias ByteSeriesData = Series<Byte>
-
+private typealias ByteSeriesData = Series<Byte>
 fun Series<Byte>.decodeUtf8(charArray: CharArray? = null): Series<Char> =
     charArray?.let { decodeDirtyUtf8(it) } ?: if (isDirtyUTF8()) decodeDirtyUtf8() else (this α {
         it.toInt().toChar()
@@ -39,29 +35,36 @@ fun Series<Byte>.decodeDirtyUtf8(charArray: CharArray = CharArray(size)): Series
 
 fun Series<Byte>.asString(): String = toArray().decodeToString()
 
-class ByteSeries(
-    private val internalSeriesData: ByteSeriesData,
+/**
+ * byte based spiritual successor to ByteBuffer for parsing
+ */
+class ByteSeries internal constructor(
+    private val internalSeriesData: Series<Byte>,
     var pos: Int = 0,
-    var limit: Int = internalSeriesData.size,
+    var limit: Int = internalSeriesData.a,
     var mark: Int = -1
 ) {
-    val size: Int get() = internalSeriesData.size
-    operator fun get(index: Int): Byte = internalSeriesData[index]
 
+    val size: Int get() = internalSeriesData.a
+    operator fun get(index: Int): Byte = internalSeriesData.b(index)
+
+    /** get, the verb - the char at the current position and increment position */
     inline val get: Byte
         get() {
             if (!hasRemaining) throw IndexOutOfBoundsException("pos: $pos, limit: $limit")
             val c = this[pos]; pos++; return c
         }
 
-    constructor(s: String) : this(internalSeriesData = s.encodeToByteArray().toSeries())
+    //string ctor
+    constructor(s: String) : this(s.encodeToByteArray().toSeries())
 
     constructor(buf: ByteArray, pos: Int = 0, limit: Int = buf.size) : this(
-        internalSeriesData = buf.toSeries(),
-        pos = pos,
-        limit = limit
+        buf.toSeries(),
+        pos,
+        limit
     )
 
+    /**remaining chars*/
     val rem: Int get() = limit - pos
     val cap: Int get() = size
     val hasRemaining: Boolean get() = rem.nz
@@ -84,13 +87,15 @@ class ByteSeries(
 
     fun pos(p: Int): ByteSeries = apply { pos = p }
 
-    val slice: ByteSeries get() {
-        val pos1 = this.pos
-        val limit1 = this.limit
-        val rangeSize = limit1 - pos1
-        val slicedData: Series<Byte> = rangeSize j { indexInSlice -> this[pos1 + indexInSlice] }
-        return ByteSeries(slicedData, 0, rangeSize)
-    }
+    /** slice creates/returns a subrange ByteSeries from pos until limit */
+    val slice: ByteSeries
+        get() {
+            val pos1 = this.pos
+            val limit1 = this.limit
+            val rangeSize = limit1 - pos1
+            val slicedData: Series<Byte> = rangeSize j { indexInSlice -> this[pos1 + indexInSlice] }
+            return ByteSeries(slicedData, 0, rangeSize)
+        }
 
     fun lim(i: Int): ByteSeries = apply { limit = i }
 
@@ -175,13 +180,20 @@ class ByteSeries(
     fun seekTo(lit: Series<Byte>): Boolean {
         val anchor = pos
         var i = 0
-        val litSize = lit.size
-        while (hasRemaining && i < litSize) {
-            if (get != lit[i]) {
-                pos = anchor
-                return false
+        val litSize = lit.a
+        val litGetter = lit.b
+        while (hasRemaining) {
+            if (get == litGetter(i)) {
+                i++
+                if (i == litSize) return true
+            } else {
+                pos -= i
+                i = 0
+                if (hasRemaining && get == litGetter(i)) {
+                     i++
+                     if (i == litSize) return true
+                }
             }
-            i++
         }
         if (i == litSize) return true
         pos = anchor

@@ -4,6 +4,12 @@ import borg.trikeshed.core.CoreTensorCursorWithMeta
 import borg.trikeshed.core.Tensor
 import borg.trikeshed.core.Join
 import borg.trikeshed.core.TypeMemento
+import borg.trikeshed.core.Series
+import borg.trikeshed.core.toSeries
+import borg.trikeshed.core.get // For Series slicing and element access
+import borg.trikeshed.core.size // For Series.size
+import borg.trikeshed.core.α // For alpha transform
+import borg.trikeshed.core.toArray // For Series.toArray()
 // It seems klineCursorMeta is not directly used in these functions,
 // but was requested as an import. If it's needed for other parts of this file later, it's here.
 // import borg.trikeshed.util.klineCursorMeta
@@ -45,21 +51,42 @@ fun extractColumnData(cursor: CoreTensorCursorWithMeta<Double>, columnName: Stri
 }
 
 fun createSlidingWindowFeatures(data: DoubleArray, windowSize: Int): Pair<Array<DoubleArray>, DoubleArray>? {
-    if (data.size < windowSize + 1) {
-        println("Error: Data too short for window size. Need at least ${windowSize + 1} elements, got ${data.size}.")
+    val sourceSeries = data.toSeries() // Convert DoubleArray to Series<Double>
+
+    if (sourceSeries.size < windowSize + 1) {
+        println("Error: Data too short for window size. Need at least ${windowSize + 1} elements, got ${sourceSeries.size}.")
         return null
     }
 
-    val features: MutableList<DoubleArray> = mutableListOf()
-    val labels: MutableList<Double> = mutableListOf()
+    // Number of feature-label pairs we can create
+    // Loop goes from i = 0 up to sourceSeries.size - windowSize - 1
+    // e.g. size=5, window=2. Max i = 5-2-1 = 2. Iterations: 0, 1, 2. (3 pairs)
+    // numPairs = (sourceSeries.size - 1 - windowSize) - 0 + 1 = sourceSeries.size - windowSize
+    val numPairs = sourceSeries.size - windowSize
 
-    for (i in 0 .. (data.size - 1 - windowSize)) {
-        val window = data.sliceArray(i until i + windowSize)
-        features.add(window)
-        labels.add(data[i + windowSize])
+    if (numPairs <= 0) {
+        // This case should ideally be caught by the sourceSeries.size < windowSize + 1 check,
+        // but as a safeguard if windowSize is exactly sourceSeries.size or sourceSeries.size -1.
+        println("Warning: Not enough data to form any feature-label pairs. numPairs=$numPairs")
+        return Pair(emptyArray(), DoubleArray(0)) // Return empty structures
     }
 
-    return Pair(features.toTypedArray(), labels.toDoubleArray())
+    // Create a series of (feature_window, label) pairs
+    val featureLabelPairs = numPairs j { i ->
+        // The window is a slice of the source series
+        val window: Series<Double> = sourceSeries[i until (i + windowSize)]
+        // The label is the element immediately following the window
+        val label: Double = sourceSeries[i + windowSize]
+        window j label // Join<Series<Double>, Double>
+    }
+
+    // Convert the series of pairs into the required Array<DoubleArray> for features
+    // and DoubleArray for labels.
+    // featureLabelPairs.a is the window (Series<Double>), featureLabelPairs.b is the label (Double)
+    val featuresArray: Array<DoubleArray> = featureLabelPairs.α { it.a.toArray() }.toArray()
+    val labelsArray: DoubleArray = featureLabelPairs.α { it.b }.toArray()
+
+    return Pair(featuresArray, labelsArray)
 }
 
 fun trainRbfPredictor(

@@ -31,68 +31,67 @@ inline val <reified T> Series<T>.cow: CowSeriesHandle<T> get() = CowSeriesHandle
  */
 class CowSeriesHandle<T>(
     letter1: COWSeriesBody<T>,
-    var observer: ((Twin<SeriesData<T>>) -> Unit)? = null,
+    var observer: ((Twin<Series<T>>) -> Unit)? = null,
     var versionObserver: ((Twin<Long?>) -> Unit)? = null,
-) : MutableSeries<T> {
+) {
 
     var letter: COWSeriesBody<T> by Delegates.observable(letter1) { _, old, new ->
-        observer?.invoke(old.asSeriesData() j new.asSeriesData())
+        observer?.invoke(old.asSeries() j new.asSeries())
     }
 
-    // Implementation of Series<T> from MutableSeries<T>
-    override val size: Int get() = letter.size
-    override operator fun get(index: Int): T = letter[index]
+    val size: Int get() = letter.size
+    operator fun get(index: Int): T = letter[index]
 
-    // Implementation of MutableSeries<T> methods
-    override fun set(index: Int, item: T) {
+    fun set(index: Int, item: T) {
         letter = letter.set(index, item)
     }
 
-    override fun add(item: T) {
+    fun add(item: T) {
         letter = letter.append(item)
     }
 
-    override fun add(index: Int, item: T) {
+    fun add(index: Int, item: T) {
         letter = letter.insert(index, item)
     }
 
-    override fun removeAt(index: Int): T {
+    fun removeAt(index: Int): T {
         val item = letter[index]
         letter = letter.removeAt(index)
         return item
     }
 
-    override fun remove(item: T): Boolean {
-        val currentList = List(letter.size) { letter[it] }
-        val i = currentList.indexOf(item)
-        if (i != -1) {
-            letter = letter.removeAt(i)
+    fun remove(item: T): Boolean {
+        var indexToRemove = -1
+        for (i in 0 until letter.size) {
+            if (letter[i] == item) {
+                indexToRemove = i
+                break
+            }
+        }
+        if (indexToRemove != -1) {
+            letter = letter.removeAt(indexToRemove)
             return true
         }
         return false
     }
 
-    override fun clear() {
+    fun clear() {
         letter = letter.clear()
     }
 
-    // Note: Standard MutableCollection operators like plus/minus typically return new collections,
-    // not modify in place and return this. This might be a custom interpretation in MutableSeries.
-    override fun plus(item: T): MutableSeries<T> {
-        letter = letter.append(item)
-        return this
+    fun plus(item: T): CowSeriesHandle<T> {
+        letter = letter.append(item); return this
     }
 
-    override fun minus(item: T): MutableSeries<T> {
-        letter = letter.remove(item)
-        return this
+    fun minus(item: T): CowSeriesHandle<T> {
+        letter = letter.remove(item); return this
     }
 
-    override fun plusAssign(item: T) {
+    fun plusAssign(item: T) {
         letter = letter.append(item)
     }
 
-    override fun minusAssign(item: T) {
+    fun minusAssign(item: T) {
         letter = letter.remove(item)
     }
 
@@ -104,12 +103,12 @@ class CowSeriesHandle<T>(
     // COWSeriesBody has 'version', and also 'size'/'get' which makes it Series-like.
     val version: Any get() = letter.version ?: letter.toString()
 
-    // Helper to expose SeriesData for observer
-    fun asSeriesData(): SeriesData<T> = letter.asSeriesData()
+    // Helper to expose Series<T> for observer
+    fun asSeries(): Series<T> = letter.asSeries()
 }
 
-// Extension to get SeriesData from COWSeriesBody
-fun <T> COWSeriesBody<T>.asSeriesData(): SeriesData<T> = this.backing
+// Extension to get Series<T> from COWSeriesBody
+fun <T> COWSeriesBody<T>.asSeries(): Series<T> = this.backing
 
 
 /**
@@ -121,13 +120,13 @@ fun <T> COWSeriesBody<T>.asSeriesData(): SeriesData<T> = this.backing
  * object-identity is good enough for unordered version discriminator
  */
 class COWSeriesBody<T>(
-    val backing: SeriesData<T> = emptySeries(),
+    val backing: Series<T> = emptySeries<T>(),
     override val version: Long? = null
 ) : VersionedSeries<T> {
     
     // Explicit implementation of Series<T> (from VersionedSeries<T>)
-    override val size: Int get() = backing.size
-    override operator fun get(index: Int): T = backing[index]
+    override val size: Int get() = backing.a
+    override operator fun get(index: Int): T = backing.b(index)
 
     fun set(index: Int, item: T): COWSeriesBody<T> {
         val newBacking: SeriesData<T> = size j { i: Int -> if (i == index) item else this[i] }
@@ -135,39 +134,53 @@ class COWSeriesBody<T>(
     }
 
     fun append(item: T): COWSeriesBody<T> {
-        val newBacking: SeriesData<T> = (size + 1) j { i: Int -> if (i == size) item else this[i] }
-        return COWSeriesBody(newBacking, version?.inc())
+        val newSize = size + 1
+        val newBacking: SeriesData<T> = newSize j { idx ->
+            if (idx < size) this[idx] else item
+        }
+        return copy(backing = newBacking)
     }
 
     fun insert(index: Int, item: T): COWSeriesBody<T> {
-        val newBacking: SeriesData<T> = (size + 1) j { i: Int ->
+        val newSize = size + 1
+        val newBacking: Series<T> = newSize j { i ->
             when {
                 i < index -> this[i]
-                i == index -> item
-                else -> this[i - 1]
+                i > index -> this[i - 1]
+                else -> item
             }
         }
-        return COWSeriesBody(newBacking, version?.inc())
+        return copy(backing = newBacking)
     }
+
     fun remove(item: T): COWSeriesBody<T> {
-        val currentList = List(size) { this[it] }
-        val i = currentList.indexOf(item)
-        return if (i != -1) removeAt(i) else this
+        var indexToRemove = -1
+        for (i in 0 until size) {
+            if (this[i] == item) {
+                indexToRemove = i
+                break
+            }
+        }
+        return if (indexToRemove != -1) removeAt(indexToRemove) else this
     }
 
     fun removeAt(index: Int): COWSeriesBody<T> {
-        val newBacking: SeriesData<T> = (size - 1) j { i: Int ->
+        val newSize = size - 1
+        val newBacking: Series<T> = newSize j { i ->
             if (i < index) this[i] else this[i + 1]
         }
-        return COWSeriesBody(newBacking, version?.inc())
+        return copy(backing = newBacking)
     }
 
-    fun clear(): COWSeriesBody<T> = COWSeriesBody(emptySeries(), version?.inc())
+    fun clear(): COWSeriesBody<T> = copy(backing = emptySeries<T>())
 
     operator fun get(range: IntRange): COWSeriesBody<T> {
         val newSize = range.last - range.first + 1
         require(newSize >= 0) { "Range must not be empty" }
-        val newBacking: SeriesData<T> = newSize j { i: Int -> this[range.first + i] }
-        return COWSeriesBody(newBacking, version)
+        val offset = range.first
+        return copy(backing = newSize j { i -> this[offset + i] })
     }
+
+    private fun copy(backing: Series<T> = this.backing, version: Long? = this.version?.inc()): COWSeriesBody<T> =
+        COWSeriesBody(backing, version)
 }
