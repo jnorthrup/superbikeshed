@@ -101,8 +101,16 @@ class ByteSeries internal constructor(
 
     fun lim(i: Int): ByteSeries = apply { limit = i }
 
-    val skipWs: ByteSeries get() = apply { while (hasRemaining && mk.get.toInt().toChar().isWhitespace()); res }
-    val rtrim: ByteSeries get() = apply { while (rem > 0 && get(limit - 1).toInt().toChar().isWhitespace()) limit-- }
+    val skipWs: ByteSeries
+        get() = apply {
+            while (hasRemaining && this[pos].toInt().toChar().isWhitespace()) {
+                pos++
+            }
+        }
+    val rtrim: ByteSeries
+        get() = apply {
+            while (rem > 0 && this[limit - 1].toInt().toChar().isWhitespace()) limit--
+        }
 
     fun clone(): ByteSeries = ByteSeries(internalSeriesData).also { it.pos = pos; it.limit = limit; it.mark = mark }
 
@@ -181,24 +189,25 @@ class ByteSeries internal constructor(
 
     fun seekTo(lit: Series<Byte>): Boolean {
         val anchor = pos
-        var i = 0
+        if (lit.a == 0) return true // Empty literal always found at current position
+        if (lit.a > rem) return false // Literal longer than remaining data
+
         val litSize = lit.a
         val litGetter = lit.b
-        while (hasRemaining) {
-            if (get == litGetter(i)) {
-                i++
-                if (i == litSize) return true
-            } else {
-                pos -= i
-                i = 0
-                if (hasRemaining && get == litGetter(i)) {
-                     i++
-                     if (i == litSize) return true
+
+        for (startIdx in pos..(limit - litSize)) {
+            var match = true
+            for (k in 0 until litSize) {
+                if (this[startIdx + k] != litGetter(k)) {
+                    match = false
+                    break
                 }
             }
+            if (match) {
+                pos = startIdx + litSize
+                return true
+            }
         }
-        if (i == litSize) return true
-        pos = anchor
         return false
     }
 
@@ -208,6 +217,7 @@ class ByteSeries internal constructor(
     fun toArray(): ByteArray = ByteArray(rem) { this[pos + it] }
 }
 
+// This function is used by ByteSeries.decodeUtf8
 fun Series<Byte>.isDirtyUTF8(): Boolean {
     var dirty = false
     val bsz = this.size
@@ -225,6 +235,7 @@ fun Series<Byte>.isDirtyUTF8(): Boolean {
 
 fun ByteSeries.decodeToString() = decodeUtf8().asString()
 
+// These are extension functions on Series<Byte>, not ByteSeries
 fun Series<Byte>.startsWith(s: String): Boolean {
     val stringAsSeries = s.encodeToByteArray().toSeries()
     return stringAsSeries.size <= size && stringAsSeries.zip(this).`▶`.all { it.first == it.second }
@@ -234,6 +245,7 @@ fun Series<Byte>.endsWith(s: String): Boolean {
     val stringAsSeries = s.encodeToByteArray().toSeries()
     return stringAsSeries.size <= size && stringAsSeries.zip(this.reversed()).`▶`.all { it.first == it.second }
 }
+
 
 operator fun Series<Byte>.div(delim: Byte): Series<Series<Byte>> {
     val intList = mutableListOf<Int>()
@@ -335,8 +347,13 @@ class CharSeries(
     /** limit, the verb - redefines the last position accessable by get and redefines remaining accordingly*/
     fun lim(i: Int): CharSeries = apply { limit = i }
 
-    /** skip whitespace */
-    val skipWs: CharSeries get() = apply { while (hasRemaining && mk.get.isWhitespace()); res }
+    /** skip whitespace */ // This is an extension property on CharSeries
+    val skipWs: CharSeries
+        get() = apply {
+            while (hasRemaining && this[pos].isWhitespace()) {
+                pos++
+            }
+        }
 
     val rtrim: CharSeries get() = apply { while (rem > 0 && b(limit - 1).isWhitespace()) limit-- }
 
@@ -477,20 +494,27 @@ class CharSeries(
      *         `false` if the literal is not found and the position remains unchanged.
      */
     fun seekTo(lit: Series<Char>): Boolean {
-        val anchor = pos
-        var i = 0
-        while (hasRemaining) {
-            if (get == lit[i]) {
-                i++
-                if (i == lit.size) return true
-            } else {
-                i = 0
+        if (lit.size == 0) return true // Empty literal always found at current position
+        if (lit.size > rem) return false // Literal longer than remaining data
+
+        val litSize = lit.size
+        val litGetter = lit.b
+
+        for (startIdx in pos..(limit - litSize)) {
+            var match = true
+            for (k in 0 until litSize) {
+                if (this[startIdx + k] != litGetter(k)) {
+                    match = false
+                    break
+                }
+            }
+            if (match) {
+                pos = startIdx + litSize
+                return true
             }
         }
-        pos = anchor
         return false
     }
-
     /**
      * Moves the position back by one character.
      *
