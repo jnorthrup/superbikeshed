@@ -28,3 +28,11 @@ pytest-mock>=3.11.1
 langchain>=0.1.0
 typing-extensions>=4.7.1
 pydantic>=2.4.2
+
+# Selenium Console
+selenium>=4.15.2
+webdriver-manager>=4.0.1
+
+# aria2c RPC
+websocket-client>=1.6.4
+requests>=2.31.0

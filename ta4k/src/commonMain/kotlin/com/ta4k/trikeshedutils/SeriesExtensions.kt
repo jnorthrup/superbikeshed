@@ -1,62 +1,63 @@
 package com.ta4k.trikeshedutils
 
-import borg.trikeshed.core.Series // Import from the correct, new package
-import borg.trikeshed.core.j      // Import the infix constructor
-import borg.trikeshed.core.size   // Import Series.size extension
-import borg.trikeshed.core.get    // Import Series.get() operator extension
-import borg.trikeshed.core.emptySeries // Import emptySeries from borg.trikeshed.core
+import kotlin.jvm.JvmInline
+
+/**
+ * Simple data series implementation without external dependencies.
+ * Following TrikeShed patterns with @JvmInline value classes and typealiases.
+ */
+
+interface Series<T> {
+    val size: Int
+    operator fun get(index: Int): T
+}
+
+@JvmInline
+value class ArraySeries<T>(private val data: Array<T>) : Series<T> {
+    override val size: Int get() = data.size
+    override fun get(index: Int): T = data[index]
+}
+
+@JvmInline
+value class ListSeries<T>(private val data: List<T>) : Series<T> {
+    override val size: Int get() = data.size
+    override fun get(index: Int): T = data[index]
+}
 
 /**
  * Helper function to easily create a [Series] from a [List].
- * The resulting Series will have the same size and elements as the list.
- *
- * @param T The type of elements in the list and the resulting series.
- * @return A [borg.trikeshed.core.Series<T>] wrapping the given list.
  */
-fun <T> List<T>.toSeries(): Series<T> {
-    if (this.isEmpty()) return emptySeries() // Use the TrikeShedCore emptySeries
-    return this.size j { index ->
-        // The accessor function should handle its own bounds checks if necessary,
-        // but typically it's called for 0 until size-1.
-        // The original TrikeShed Series typealias implies the accessor is called with valid indices.
-        // Adding a check here can make the helper more robust if used carelessly,
-        // but strictly speaking, the Series contract is size + accessor.
-        // The 'j' infix creates a Join, and Series is Join<Int, (Int)->T>.
-        // The accessor here is { index -> this[index] }
-        if (index < 0 || index >= this.size) { // Defensive check
-            throw IndexOutOfBoundsException("Index $index out of bounds for list of size ${this.size} when creating Series via toSeries()")
-        }
-        this[index]
-    }
-}
+fun <T> List<T>.toSeries(): Series<T> = ListSeries(this)
 
 /**
- * Helper function to create a [Series] from a [List] of nullable elements.
- *
- * @param T The type of elements in the list and the resulting series.
- * @return A [borg.trikeshed.core.Series<T?>] wrapping the given list.
+ * Helper function to create a [Series] from an [Array].
  */
-fun <T> List<T?>.toNullableSeries(): Series<T?> {
-    if (this.isEmpty()) return emptySeries() // Use the TrikeShedCore emptySeries
-    return this.size j { index ->
-        if (index < 0 || index >= this.size) { // Defensive check
-            throw IndexOutOfBoundsException("Index $index out of bounds for list of size ${this.size} when creating Series via toNullableSeries()")
-        }
-        this[index]
-    }
-}
+fun <T> Array<T>.toSeries(): Series<T> = ArraySeries(this)
 
 /**
  * Helper function to collect all elements of a [Series] into a [List].
- * Useful for inspections, debugging, or when a concrete collection is needed (e.g., in tests).
- *
- * @param T The type of elements in the series.
- * @return A [List<T>] containing all elements from the series.
  */
-fun <T> Series<T>.toList(): List<T> {
-    // The Series.size extension and Series.get() operator are from borg.trikeshed.core
-    if (this.size == 0) return emptyList()
-    // Consider using this.`▶`.toList() if IterableSeries is preferred and fully functional.
-    // For now, direct construction:
-    return List(this.size) { index -> this[index] }
+fun <T> Series<T>.toList(): List<T> = List(size) { index -> this[index] }
+
+/**
+ * Maps each element of the series to a new type.
+ */
+fun <T, R> Series<T>.map(transform: (T) -> R): Series<R> {
+    val result = Array<Any?>(size) { transform(this[it]) }
+    @Suppress("UNCHECKED_CAST")
+    return ArraySeries(result as Array<R>)
+}
+
+/**
+ * Filters elements of the series based on a predicate.
+ */
+inline fun <T> Series<T>.filter(predicate: (T) -> Boolean): Series<T> {
+    val filtered = mutableListOf<T>()
+    for (i in 0 until size) {
+        val element = this[i]
+        if (predicate(element)) {
+            filtered.add(element)
+        }
+    }
+    return ListSeries(filtered)
 }

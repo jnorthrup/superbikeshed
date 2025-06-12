@@ -51,7 +51,7 @@ import { initThreeRenderer } from './rendering/threeRenderer.js'; // Import Thre
 // Minimap functionality removed
 import { ModernUIManager } from './ui/modernUIManager.js'; // NEW: Import Modern UI Manager
 import { CalloutManager } from './ui/calloutManager.js';
-import { exportGameStateToSpaceGraphData } from './visualization/spacegraphExporter.js';
+import { exportGameStateToSpaceGraphData } from './visualization/spacegraphExporter';
 import { CommandHierarchyUI } from './ui/commandHierarchyUI.js';
 import { FormationSystem } from './systems/formationSystem.js';
 import { FormationControls } from './ui/formationControls.js';

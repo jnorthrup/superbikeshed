@@ -5,10 +5,10 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
 
-val kotlinVersion: String = "2.2.0-RC2"
+val kotlinVersion: String = "2.1.21"
 
 plugins {
-    kotlin("jvm") version "2.2.0-RC2"
+    kotlin("jvm")
     application
     id("com.adarshr.test-logger") version "3.2.0"
     id("com.github.gmazzo.buildconfig") version "3.1.0"
@@ -26,13 +26,6 @@ repositories {
         url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
     }
 }
-
-
-group = "io.github.k2scripting"
-version = "4.2.3"
-
-buildConfig {
-    packageName("k2script")
 
 
 group = "io.github.kscripting"
@@ -351,7 +344,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven-all:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.2.0-RC2") // Added as requested
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
 
     implementation("org.apache.commons:commons-lang3:3.12.0")
     implementation("commons-io:commons-io:2.11.0")
@@ -365,7 +358,7 @@ dependencies {
 
     implementation("org.semver4j:semver4j:4.3.0")
 
-    implementation(project(":trikeshed-core"))
+    implementation(project(":Trikeshed"))
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")

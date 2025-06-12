@@ -5284,3 +5284,90 @@
 
 # 2025-06-11 21:43:19.619232
 +migrate  migtrate Review into Triekshed but make sure all are coherent
+
+# 2025-06-12 17:25:46.171020
++n
+
+# 2025-06-12 17:25:53.118868
++hi
+
+# 2025-06-12 17:26:19.048953
++/models nemo
+
+# 2025-06-12 17:26:34.793363
++/models nvidia
+
+# 2025-06-12 17:26:39.158721
++/models ultra
+
+# 2025-06-12 17:29:53.850532
++n
+
+# 2025-06-12 17:29:55.920977
++hi
+
+# 2025-06-12 17:31:56.282593
++env|grep nv
+
+# 2025-06-12 17:33:56.784697
++hi
+
+# 2025-06-12 17:37:04.731178
++d
+
+# 2025-06-12 17:37:09.319975
++hi
+
+# 2025-06-12 17:37:13.691545
++n
+
+# 2025-06-12 17:40:23.373593
++d
+
+# 2025-06-12 17:40:26.428281
++hi
+
+# 2025-06-12 17:40:30.699576
++n
+
+# 2025-06-12 17:40:53.030462
++d
+
+# 2025-06-12 17:40:55.800629
++hi
+
+# 2025-06-12 17:41:58.089986
++/add .
+
+# 2025-06-12 17:42:01.401059
++/add *
+
+# 2025-06-12 17:42:30.596467
++/run n
+
+# 2025-06-12 17:42:31.951585
++n
+
+# 2025-06-12 17:42:40.311768
++/run find * -type f
+
+# 2025-06-12 17:43:15.365743
++/run showfiles `find * -type f -iname \*kt`
+
+# 2025-06-12 17:45:14.200385
++convert rtsgame and spacegraph to kotlin native KMP projects with a harnass to be web wasm 
+
+# 2025-06-12 17:48:14.637651
++a
+
+# 2025-06-12 17:52:43.721282
++/add */*/src
+
+# 2025-06-12 17:52:57.374226
++/add */src
+
+# 2025-06-12 17:54:04.412312
++convert rtsgame and spacegraph to kotlin native KMP projects with a harnass to be web wasm 
+
+# 2025-06-12 17:57:23.298840
++convert rtsgame and moneyfan and  spacegraph to kotlin native KMP projects with a harnass to be web wasm if some kind of stubs are needed
