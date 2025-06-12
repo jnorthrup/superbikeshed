@@ -97,14 +97,13 @@ export default {
     },
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {
       '@config': path.resolve(__dirname, 'js/config'),
       '@core': path.resolve(__dirname, 'js/core'),
       '@ai': path.resolve(__dirname, 'js/ai'),
       '@ui': path.resolve(__dirname, 'js/ui'),
       '@rewritten': path.resolve(__dirname, 'js_rewritten'),
-      'trikeshed-ts': path.resolve(__dirname, '../trikeshed-core/src/jsMain/kotlin/trikeshed/index.js')
     }
   },
   optimization: {

@@ -1,35 +1,59 @@
-// settings.gradle.kts
 pluginManagement {
     repositories {
-        google()
         gradlePluginPortal()
         mavenCentral()
+        google()
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/maven/maven") }
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
+        maven { url = uri("https://www.jetbrains.com/intellij-repository/releases/") }
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/space-sdk/maven") }
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         mavenCentral()
-        gradlePluginPortal()
         google()
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev")
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap")
-        maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
-        maven("https://oss.sonatype.org/content/repositories/snapshots/")
-        maven("https://s01.oss.sonatype.org/content/repositories/snapshots")
-        maven("https://jitpack.io")
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
+    }
+    versionCatalogs {
+        create("libs") {
+            from(files("gradle/libs.versions.toml"))
+        }
     }
 }
 
 rootProject.name = "superbikeshed"
 
-// Include the Trikeshed module
-include(":Trikeshed")
-project(":Trikeshed").projectDir = file("Trikeshed")
+// Core TrikeShed modules (temporarily disabled due to compilation issues)
+// include(":Trikeshed")
+// include(":Trikeshed:trikeshed-core")
 
-// Include other modules as needed
+// K2Script (temporarily disabled due to build issues)
+// include(":k2script")
+
+// TA4K trading library
 include(":ta4k")
-include(":spacegraphjs:kotlin-spacegraph")
-project(":ta4k").projectDir = file("ta4k")
-project(":spacegraphjs:kotlin-spacegraph").projectDir = file("spacegraphjs/kotlin-spacegraph")
+
+// MoneyFan 
+include(":moneyfan")
+
+// RTS Game (temporarily disabled - no build.gradle.kts)
+// include(":rtsgame")
+
+// SpaceGraph JS (temporarily disabled - checking structure)
+// include(":spacegraphjs")
+// include(":spacegraphjs:kotlin-spacegraph")
+
+// Nexus (temporarily disabled - checking structure)
+// include(":nexus")
+
+// DGM (Darwin Gödel Machine) (temporarily disabled - Python project)
+// include(":dgm")
+
+// Bao-Cline
+include(":Bao-Cline")
+
+// Demo projects (temporarily disabled due to dependencies)
+// include(":ta4k-spacegraph-moneyfan-demo")

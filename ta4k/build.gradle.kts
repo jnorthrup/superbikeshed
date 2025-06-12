@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "2.2.0-RC2"
+    kotlin("multiplatform")
     `maven-publish`
 }
 
@@ -10,7 +10,7 @@ version = "1.0-SNAPSHOT"
 kotlin {
     jvm {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_18)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
@@ -66,7 +66,6 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
-                implementation(project(":Trikeshed"))
             }
         }
         val jvmTest by getting {

@@ -1,77 +1,74 @@
 package borg.ipfs
 
-import java.math.BigDecimal
-import java.math.RoundingMode
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.j
+import kotlin.jvm.JvmInline
 
 /**
  * Type aliases and value classes for financial data in TrikeShed.
+ * Using Double instead of BigDecimal for multiplatform compatibility.
  */
+
+/**
+ * Represents a Unix timestamp in seconds.
+ */
+@JvmInline 
+value class UnixTimestamp(val value: Long) {
+    companion object {
+        val ZERO = UnixTimestamp(0L)
+    }
+}
 
 /**
  * Represents a price value in the financial system.
  */
-@JvmInline value class Price(val value: BigDecimal) {
+@JvmInline 
+value class Price(val value: Double) {
     companion object {
-        val ZERO = Price(BigDecimal.ZERO)
-        val ONE = Price(BigDecimal.ONE)
+        val ZERO = Price(0.0)
+        val ONE = Price(1.0)
     }
 }
 
 /**
  * Represents a return value in the financial system.
  */
-@JvmInline value class Return(val value: BigDecimal) {
+@JvmInline 
+value class Return(val value: Double) {
     companion object {
-        val ZERO = Return(BigDecimal.ZERO)
-        val ONE = Return(BigDecimal.ONE)
+        val ZERO = Return(0.0)
+        val ONE = Return(1.0)
     }
 }
 
 /**
  * Represents a percentage value in the financial system.
  */
-@JvmInline value class Percentage(val value: BigDecimal) {
+@JvmInline 
+value class Percentage(val value: Double) {
     companion object {
-        val ZERO = Percentage(BigDecimal.ZERO)
-        val ONE = Percentage(BigDecimal.ONE)
-        val HUNDRED = Percentage(BigDecimal(100))
+        val ZERO = Percentage(0.0)
+        val ONE = Percentage(1.0)
+        val HUNDRED = Percentage(100.0)
     }
 }
 
 /**
- * Represents a standard deviation value in the financial system.
+ * Represents trading volume.
  */
-@JvmInline value class StandardDeviation(val value: BigDecimal) {
+@JvmInline 
+value class Volume(val value: Double) {
     companion object {
-        val ZERO = StandardDeviation(BigDecimal.ZERO)
+        val ZERO = Volume(0.0)
     }
 }
 
 /**
- * Represents a variance value in the financial system.
+ * Represents a period for calculations.
  */
-@JvmInline value class Variance(val value: BigDecimal) {
-    companion object {
-        val ZERO = Variance(BigDecimal.ZERO)
-    }
-}
-
-/**
- * Represents a drawdown value in the financial system.
- */
-@JvmInline value class Drawdown(val value: BigDecimal) {
-    companion object {
-        val ZERO = Drawdown(BigDecimal.ZERO)
-        val ONE = Drawdown(BigDecimal.ONE)
-    }
-}
-
-/**
- * Represents a duration in periods.
- */
-@JvmInline value class Period(val value: Int) {
+@JvmInline 
+value class Period(val value: Int) {
     companion object {
         val ZERO = Period(0)
         val ONE = Period(1)
@@ -79,111 +76,132 @@ import borg.trikeshed.lib.Join
 }
 
 /**
- * Represents a window size for calculations.
+ * Core series types for financial analysis
  */
-@JvmInline value class Window(val value: Int) {
+typealias PriceSeries = Series<Price>
+typealias ReturnSeries = Series<Return>
+typealias VolumeSeries = Series<Volume>
+
+/**
+ * Financial data structures using Join
+ */
+typealias PriceVolume = Join<Price, Volume>
+typealias TimestampedPrice = Join<Price, UnixTimestamp>
+typealias OHLC = Join<Price, Join<Price, Join<Price, Price>>> // Open, High, Low, Close
+
+/**
+ * Series of composite types
+ */
+typealias PriceVolumeSeries = Series<PriceVolume>
+typealias TimestampedPriceSeries = Series<TimestampedPrice>
+typealias OHLCSeries = Series<OHLC>
+
+/**
+ * Additional financial value classes for comprehensive analysis
+ */
+@JvmInline
+value class HighPrice(val value: Double) {
     companion object {
-        val ONE = Window(1)
+        val ZERO = HighPrice(0.0)
     }
 }
 
-/**
- * Represents a high price in a period.
- */
-@JvmInline value class HighPrice(val value: BigDecimal)
-
-/**
- * Represents a low price in a period.
- */
-@JvmInline value class LowPrice(val value: BigDecimal)
-
-/**
- * Represents a close price in a period.
- */
-@JvmInline value class ClosePrice(val value: BigDecimal)
-
-/**
- * Represents a type of return calculation.
- */
-enum class ReturnType {
-    GROSS,
-    LOG,
-    NET,
-    COMPOUND,
-    PERCENT
+@JvmInline
+value class LowPrice(val value: Double) {
+    companion object {
+        val ZERO = LowPrice(0.0)
+    }
 }
 
-/**
- * Represents a series of prices.
- */
-typealias PriceSeries = Series<Price>
+@JvmInline
+value class OpenPrice(val value: Double) {
+    companion object {
+        val ZERO = OpenPrice(0.0)
+    }
+}
 
-/**
- * Represents a series of returns.
- */
-typealias ReturnSeries = Series<Return>
+@JvmInline
+value class ClosePrice(val value: Double) {
+    companion object {
+        val ZERO = ClosePrice(0.0)
+    }
+}
 
-/**
- * Represents a series of percentages.
- */
-typealias PercentageSeries = Series<Percentage>
+@JvmInline
+value class StandardDeviation(val value: Double) {
+    companion object {
+        val ZERO = StandardDeviation(0.0)
+    }
+}
 
-/**
- * Represents a series of standard deviations.
- */
-typealias StandardDeviationSeries = Series<StandardDeviation>
+@JvmInline
+value class Variance(val value: Double) {
+    companion object {
+        val ZERO = Variance(0.0)
+    }
+}
 
-/**
- * Represents a series of variances.
- */
-typealias VarianceSeries = Series<Variance>
+@JvmInline
+value class Drawdown(val value: Double) {
+    companion object {
+        val ZERO = Drawdown(0.0)
+    }
+}
 
-/**
- * Represents a series of drawdowns.
- */
-typealias DrawdownSeries = Series<Drawdown>
+@JvmInline
+value class Mean(val value: Double) {
+    companion object {
+        val ZERO = Mean(0.0)
+    }
+}
 
-/**
- * Represents a series of high prices.
- */
-typealias HighPriceSeries = Series<HighPrice>
+@JvmInline
+value class Skewness(val value: Double) {
+    companion object {
+        val ZERO = Skewness(0.0)
+    }
+}
 
-/**
- * Represents a series of low prices.
- */
-typealias LowPriceSeries = Series<LowPrice>
+@JvmInline
+value class Kurtosis(val value: Double) {
+    companion object {
+        val ZERO = Kurtosis(0.0)
+    }
+}
 
-/**
- * Represents a series of close prices.
- */
-typealias ClosePriceSeries = Series<ClosePrice>
+@JvmInline
+value class Volatility(val value: Double) {
+    companion object {
+        val ZERO = Volatility(0.0)
+    }
+}
 
-/**
- * Represents a join of high, low, and close prices.
- */
-typealias PriceData = Join<HighPrice, Join<LowPrice, ClosePrice>>
+@JvmInline
+value class Liquidity(val value: Double) {
+    companion object {
+        val ZERO = Liquidity(0.0)
+    }
+}
 
-/**
- * Represents a series of price data.
- */
-typealias PriceDataSeries = Series<PriceData>
+@JvmInline
+value class Correlation(val value: Double) {
+    companion object {
+        val ZERO = Correlation(0.0)
+        val ONE = Correlation(1.0)
+        val NEGATIVE_ONE = Correlation(-1.0)
+    }
+}
 
-/**
- * Represents a join of a return and its timestamp.
- */
-typealias TimestampedReturn = Join<Return, UnixTimestamp>
+@JvmInline
+value class Asset(val value: String) {
+    companion object {
+        val EMPTY = Asset("")
+    }
+}
 
-/**
- * Represents a series of timestamped returns.
- */
-typealias TimestampedReturnSeries = Series<TimestampedReturn>
-
-/**
- * Represents a join of a drawdown and its duration.
- */
-typealias DrawdownWithDuration = Join<Drawdown, Period>
-
-/**
- * Represents a series of drawdowns with durations.
- */
-typealias DrawdownWithDurationSeries = Series<DrawdownWithDuration> 
+@JvmInline
+value class Portfolio(val value: String) {
+    companion object {
+        val EMPTY = Portfolio("")
+    }
+}

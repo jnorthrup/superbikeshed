@@ -1,7 +1,7 @@
 // ta4k-spacegraph-moneyfan-demo/build.gradle.kts
 plugins {
-    kotlin("multiplatform") version "2.2.0-RC2"
-    kotlin("plugin.serialization") version "2.2.0-RC2"
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 repositories {
@@ -9,6 +9,7 @@ repositories {
     google()
     maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
 }
+
 kotlin {
     js(IR) { // Target JavaScript with the IR compiler
         browser {
@@ -49,29 +50,28 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
+                implementation(libs.kotlin.stdlib.common)
             }
         }
 
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
+                implementation(libs.kotlin.test)
             }
         }
 
         val jsMain by getting {
             dependsOn(commonMain)
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                implementation(libs.kotlin.stdlib.js)
                 implementation(project(":ta4k"))
                 implementation(project(":Trikeshed"))
                 implementation(project(":spacegraphjs:kotlin-spacegraph"))
-                implementation(npm("three", "0.166.1"))
-                implementation(npm("gsap", "3.12.5"))
-                implementation(npm("three-orbit-controls", "82.1.0"))
-                implementation("org.jetbrains.kotlinx:kotlinx-browser:0.2.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.7.3")
+                implementation(npm("three", libs.versions.three.get()))
+                implementation(npm("gsap", libs.versions.gsap.get()))
+                implementation(npm("three-orbit-controls", libs.versions.three.orbit.controls.get()))
+                implementation(libs.kotlinx.browser)
+                implementation(libs.kotlinx.coroutines.core.js)
             }
             resources.srcDirs(project.file("src/jsMain/resources"))
         }
@@ -110,6 +110,12 @@ kotlin {
         findByName("macosArm64Test")?.let { macosArm64Test ->
             macosArm64Test.dependsOn(nativeTest)
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = libs.versions.jvm.get()
     }
 }
 

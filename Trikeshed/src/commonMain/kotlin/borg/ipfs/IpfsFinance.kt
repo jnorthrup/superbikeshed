@@ -1,29 +1,39 @@
 package borg.ipfs
 
-import java.math.BigDecimal
-import java.math.RoundingMode
 import kotlin.math.ln
 import kotlin.math.sqrt
+import kotlin.math.pow
 import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.α
-import borg.trikeshed.lib.combine
+import borg.trikeshed.lib.size
+import borg.trikeshed.lib.get
 
 /**
  * Financial operations for TrikeShed using immutable types and Series.
  */
 object IpfsFinance {
+    
+    /**
+     * Safe division with precision handling
+     */
+    private fun safeDivide(numerator: Double, denominator: Double, precision: Int = 8): Double {
+        if (denominator == 0.0) return 0.0
+        val result = numerator / denominator
+        val multiplier = 10.0.pow(precision.toDouble())
+        return kotlin.math.round(result * multiplier) / multiplier
+    }
+    
     /**
      * Calculates gross returns from a series of prices.
      * Returns a Series of size (prices.size - 1).
      */
     fun grossReturn(prices: PriceSeries): ReturnSeries =
-        (prices.a - 1) j { i: Int ->
-            val prev = prices.b(i)
-            val curr = prices.b(i + 1)
+        (prices.size - 1) j { i: Int ->
+            val prev = prices[i]
+            val curr = prices[i + 1]
             if (curr.value == prev.value) Return.ONE
-            else Return(curr.value.divide(prev.value, 8, RoundingMode.HALF_UP))
+            else Return(safeDivide(curr.value, prev.value))
         }
 
     /**
@@ -31,190 +41,91 @@ object IpfsFinance {
      * Returns a Series of size (prices.size - 1).
      */
     fun logReturn(prices: PriceSeries): ReturnSeries =
-        grossReturn(prices).let { gross ->
-            gross.a j { i: Int ->
-                val g = gross.b(i)
-                if (g.value <= BigDecimal.ZERO) Return.ZERO
-                else Return(BigDecimal(ln(g.value.toDouble())))
-            }
+        grossReturn(prices).α { g ->
+            if (g.value <= 0.0) Return.ZERO else Return(ln(g.value))
         }
 
     /**
      * Calculates net returns from a series of prices.
-     * Returns a Series of size (prices.size - 1), or (prices.size) if strict = false.
+     * Returns a Series of size (prices.size - 1).
      */
-    fun netReturn(prices: PriceSeries, strict: Boolean = true): ReturnSeries =
-        (prices.a - 1) j { i: Int ->
-            val prev = prices.b(i)
-            val curr = prices.b(i + 1)
+    fun netReturn(prices: PriceSeries): ReturnSeries =
+        (prices.size - 1) j { i: Int ->
+            val prev = prices[i]
+            val curr = prices[i + 1]
             if (curr.value == prev.value) Return.ZERO
-            else Return(curr.value.subtract(prev.value).divide(prev.value, 8, RoundingMode.HALF_UP))
-        }.let { returns ->
-            if (strict) returns else {
-                val s1 = 1 j { _: Int -> Return.ZERO }
-                val s2 = returns
-                val s1Pair = s1 as Pair<Int, (Int) -> Return>
-                val s2Pair = s2 as Pair<Int, (Int) -> Return>
-                val n1 = s1Pair.first
-                val f1 = s1Pair.second
-                val n2 = s2Pair.first
-                val f2 = s2Pair.second
-                val total = n1 + n2
-                total j { i: Int -> if (i < n1) f1(i) else f2(i - n1) }
-            }
+            else Return(safeDivide(curr.value - prev.value, prev.value))
         }
 
     /**
-     * Calculates compound returns from a series of prices.
-     * Returns a Series of size (prices.size - 1).
+     * Calculates cumulative returns from a return series.
      */
-    fun compoundReturn(prices: PriceSeries): ReturnSeries =
-        grossReturn(prices).let { gross ->
-            val arr = Array(gross.a + 1) { Return.ONE }
-            for (i in 1 until arr.size) {
-                arr[i] = Return(arr[i - 1].value.multiply(gross.b(i - 1).value))
-            }
-            (arr.size - 1) j { i: Int -> arr[i + 1] }
+    fun cumulativeReturn(returns: ReturnSeries): ReturnSeries {
+        var cumulative = 1.0
+        return returns.α { ret ->
+            cumulative *= (1.0 + ret.value)
+            Return(cumulative - 1.0)
         }
+    }
 
     /**
-     * Calculates percentage returns from a series of prices.
-     * Returns a Series of size (prices.size - 1).
+     * Calculates the Sharpe ratio for a return series.
      */
-    fun percentReturn(prices: PriceSeries): PercentageSeries =
-        compoundReturn(prices).let { compound ->
-            compound.a j { i: Int ->
-                Percentage(compound.b(i).value.subtract(BigDecimal.ONE)
-                    .multiply(BigDecimal(100))
-                    .setScale(2, RoundingMode.HALF_UP))
-            }
+    fun sharpeRatio(returns: ReturnSeries, riskFreeRate: Double = 0.0): Double {
+        val mean = returns.α { it.value }.let { series ->
+            var sum = 0.0
+            for (i in 0 until series.size) sum += series[i]
+            sum / series.size
         }
-
-    /**
-     * Calculates returns based on the specified type.
-     */
-    fun calculateReturns(prices: PriceSeries, returnType: ReturnType): Series<*> = when (returnType) {
-        ReturnType.GROSS -> grossReturn(prices) as Series<*>
-        ReturnType.LOG -> logReturn(prices) as Series<*>
-        ReturnType.NET -> netReturn(prices) as Series<*>
-        ReturnType.COMPOUND -> compoundReturn(prices) as Series<*>
-        ReturnType.PERCENT -> percentReturn(prices) as Series<*>
+        
+        val variance = returns.α { it.value }.let { series ->
+            var sumSquaredDiff = 0.0
+            for (i in 0 until series.size) {
+                val diff = series[i] - mean
+                sumSquaredDiff += diff * diff
+            }
+            sumSquaredDiff / series.size
+        }
+        
+        val stdDev = sqrt(variance)
+        return if (stdDev == 0.0) 0.0 else (mean - riskFreeRate) / stdDev
     }
 
     /**
-     * Calculates the Sharpe ratio for a series of returns.
+     * Calculates maximum drawdown from a price series.
      */
-    fun sharpe(returns: ReturnSeries): Return {
-        val mean = returns.average()
-        val std = returns.standardDeviation()
-        return if (std.value == BigDecimal.ZERO) Return.ZERO
-        else Return(mean.value.divide(std.value, 8, RoundingMode.HALF_UP)
-            .multiply(BigDecimal(sqrt(252.0))))
-    }
-
-    /**
-     * Calculates the information ratio comparing returns to a baseline.
-     */
-    fun informationRatio(returns: ReturnSeries, baseline: ReturnSeries): Return {
-        val mean = returns.average()
-        val baselineMean = baseline.average()
-        val diff = returns.a j { i: Int -> Return(returns.b(i).value.subtract(baseline.b(i).value)) }
-        val std = diff.standardDeviation()
-        return if (std.value == BigDecimal.ZERO) Return.ZERO
-        else Return(mean.value.subtract(baselineMean.value)
-            .multiply(BigDecimal(sqrt(252.0)))
-            .divide(std.value, 8, RoundingMode.HALF_UP))
-    }
-
-    /**
-     * Calculates maximum drawdown and its duration.
-     */
-    fun maxDrawdown(cumulativeReturns: ReturnSeries): DrawdownWithDuration {
-        data class DrawdownState(
-            val highWatermark: Return = Return.ONE,
-            val maxDrawdown: Drawdown = Drawdown.ZERO,
-            val maxDrawdownDuration: Period = Period.ZERO,
-            val currentDrawdownDuration: Period = Period.ZERO
-        )
-        var state = DrawdownState()
-        for (i in 0 until cumulativeReturns.a) {
-            val value = cumulativeReturns.b(i)
-            state = if (value.value > state.highWatermark.value) {
-                state.copy(
-                    highWatermark = value,
-                    currentDrawdownDuration = Period.ZERO
-                )
+    fun maxDrawdown(prices: PriceSeries): Double {
+        var peak = prices[0].value
+        var maxDD = 0.0
+        
+        for (i in 1 until prices.size) {
+            val price = prices[i].value
+            if (price > peak) {
+                peak = price
             } else {
-                val drawdown = Drawdown(BigDecimal.ONE.subtract(
-                    value.value.divide(state.highWatermark.value, 8, RoundingMode.HALF_UP)))
-                val newMaxDrawdown = if (drawdown.value > state.maxDrawdown.value) drawdown else state.maxDrawdown
-                val newDuration = Period(state.currentDrawdownDuration.value + 1)
-                val newMaxDuration = if (newDuration.value > state.maxDrawdownDuration.value)
-                    newDuration else state.maxDrawdownDuration
-                state.copy(
-                    maxDrawdown = newMaxDrawdown,
-                    maxDrawdownDuration = newMaxDuration,
-                    currentDrawdownDuration = newDuration
-                )
+                val drawdown = (peak - price) / peak
+                if (drawdown > maxDD) {
+                    maxDD = drawdown
+                }
             }
         }
-        return state.maxDrawdown j state.maxDrawdownDuration
+        return maxDD
     }
 
     /**
-     * Calculates portfolio metrics.
+     * Simple moving average calculation.
      */
-    fun portfolioMetrics(returns: ReturnSeries, baseline: ReturnSeries? = null): Map<String, Any> {
-        val mean = returns.average()
-        val std = returns.standardDeviation()
-        val sharpe = sharpe(returns)
-        val (maxDD, maxDDD) = maxDrawdown(returns.a j { i: Int -> Return(BigDecimal.ONE.add(returns.b(i).value)) })
-        return buildMap {
-            put("sharpe", sharpe)
-            put("meanReturn", mean)
-            put("stdDev", std)
-            put("maxDrawdown", maxDD)
-            put("maxDrawdownDuration", maxDDD)
-            put("maxReturn", returns.maxOrNull() ?: Return.ZERO)
-            put("minReturn", returns.minOrNull() ?: Return.ZERO)
-            if (baseline != null) put("informationRatio", informationRatio(returns, baseline))
+    fun simpleMovingAverage(prices: PriceSeries, period: Period): PriceSeries {
+        if (period.value <= 0 || period.value > prices.size) {
+            throw IllegalArgumentException("Invalid period: ${period.value}")
+        }
+        
+        return (prices.size - period.value + 1) j { i ->
+            var sum = 0.0
+            for (j in i until i + period.value) {
+                sum += prices[j].value
+            }
+            Price(sum / period.value)
         }
     }
-
-    // Helper: average for Series<Return>
-    private fun Series<Return>.average(): Return {
-        if (a == 0) return Return.ZERO
-        var sum = BigDecimal.ZERO
-        for (i in 0 until a) sum = sum.add(b(i).value)
-        return Return(sum.divide(BigDecimal(a), 8, RoundingMode.HALF_UP))
-    }
-
-    // Helper: standard deviation for Series<Return>
-    private fun Series<Return>.standardDeviation(): StandardDeviation {
-        if (a == 0) return StandardDeviation.ZERO
-        val mean = average().value
-        var sumSq = BigDecimal.ZERO
-        for (i in 0 until a) {
-            val diff = b(i).value.subtract(mean)
-            sumSq = sumSq.add(diff.multiply(diff))
-        }
-        val variance = sumSq.divide(BigDecimal(a), 8, RoundingMode.HALF_UP)
-        return StandardDeviation(BigDecimal(sqrt(variance.toDouble())))
-    }
-
-    // Helper: maxOrNull for Series<Return>
-    private fun Series<Return>.maxOrNull(): Return? {
-        if (a == 0) return null
-        var max = b(0)
-        for (i in 1 until a) if (b(i).value > max.value) max = b(i)
-        return max
-    }
-
-    // Helper: minOrNull for Series<Return>
-    private fun Series<Return>.minOrNull(): Return? {
-        if (a == 0) return null
-        var min = b(0)
-        for (i in 1 until a) if (b(i).value < min.value) min = b(i)
-        return min
-    }
-} 
+}

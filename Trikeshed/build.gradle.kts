@@ -1,6 +1,7 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "2.2.0-RC2"
 }
 
 group = "borg.trikeshed"
@@ -10,29 +11,51 @@ allprojects {
     repositories {
         mavenCentral()
         google()
+        maven("https://maven.pkg.jetbrains.space/public/p/space-sdk/maven")
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+        maven("https://www.jetbrains.com/intellij-repository/releases/")
+        maven("https://central.sonatype.com/")
+        maven("https://maven.pkg.jetbrains.space/public/p/maven/maven")
+        maven("https://dl.google.com/dl/android/maven2/")
+        maven("https://plugins.jetbrains.com/maven")
+        maven("https://repo.gradle.org/gradle/libs-releases")
+        maven("https://repository.jboss.org/nexus/content/repositories/releases")
+        maven("https://oss.sonatype.org/content/repositories/releases")
+        maven("https://oss.sonatype.org/content/repositories/snapshots")
     }
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
-    jvm {
-        compilations.all {
-            compilerOptions.configure {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            }
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
     
+    js(IR) {
+        browser()
+        nodejs()
+    }
+    
+    linuxX64()
+    linuxArm64()
+    macosX64()
+    macosArm64()
+    mingwX64()
+    
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-            }
+        commonMain.dependencies {
+            implementation(kotlin("stdlib"))
         }
         
-        val jvmMain by getting {
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+        
+        val desktopMain by getting {
             dependencies {
-                implementation(kotlin("stdlib"))
+                implementation(kotlin("stdlib-jdk8"))
             }
         }
     }
