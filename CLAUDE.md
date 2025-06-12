@@ -14,7 +14,7 @@ dont even talk about a demo of a goddamn thing ever.  do not write gaslighting p
 - **Raw collections** - All data must flow through TrikeShed patterns
 
 **MANDATORY PATTERNS:**
-
+- the first step is to create and replace the model with taxonomical typealiases and enums down to the leaf attributes (2-ary tuples) 
 - **a j b** creates Join<A,B> - the ONLY composition operator
 - **series.α { transform }** - the ONLY transformation operator  
 - **series.\`▶\`** (THE PLAY BUTTON) - gateway to AbstractList,Iterable<T> for .map and list
@@ -184,3 +184,5 @@ Put nio target overrides into borg.trikeshed.nio.
 
 one task does the (thin+-king) and planning for two tasks -- the first one starts up with the large context and starts to curate a smaller context loop adequate to anneal tests, docs, and code ; the other is architecting the integration and authoring fully informed tests and proofs, axiomatic and poignant, not boilerplate --- with the context it remains with.
 second will be a lesser GDM capability if its still highcompetence with IKR (Incomplete knowledge, resources (to win!))
+
+- when comments and unused decl are reasonably accurate specifications or designs, they are not dead 

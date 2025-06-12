@@ -67,3 +67,18 @@ Put nio target overrides into borg.trikeshed.nio.
 - you will always proceed "without any destructive change"
 - whatever thinking caused QuicInstant to have a Quic prefix needs to end for general reuse
 - when writing a test, do not create new turds
+
+# System Architecture vision 
+
+## Overview
+The prior system was designed to utilize a CouchDB instance that holds a codebase represented as a git hierarchy of attachments. This codebase serves as the git repository and includes a server that uses CouchDB as a middle-tier data key-value store for a web toolkit and a couchdb persistence factory. The internal CouchDB HTTP server serves content(a seperate port for html on VFS), which is structured as another attachment hierarchy created and maintained in a master-master configuration.
+
+## Key Features
+- **Master-Master Configuration:** Enables the delivery of fully working and configured point-in-time snapshots of the developer environment's CouchDB contents.
+- **Offline-First Data Handling:** Supports remote updates and fixes, allowing for the sending and receiving of offline-first data that has been waiting.
+- **Hierarchy and Corpus Import:** Provides an [rxf]rsync tool for file-watching and resyncing the CouchDB hierarchy.
+- **Channel Distribution Updates:** Ensures that updates are always fresh and up-to-date.
+- **Superbikeshed Review/:** Positioned to leverage all these capabilities and incorporate LLM understandings of itself.  serving agent gossip and couch over ipfs, http1,2,quic,  and agentically under private agent ipc networks native to the platform target
+
+## Integration
+This architecture creates organizational autonomy scales in unique ways 

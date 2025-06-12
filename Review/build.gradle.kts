@@ -59,13 +59,6 @@ kotlin {
                 implementation(project(":trikeshed-core"))
             }
             kotlin {
-                // Default srcDir is usually src/commonMain/kotlin
-                exclude("borg/trikeshed/core/**") // Now compiled by :trikeshed-core
-                exclude("borg/trikeshed/lib/**")   // Now compiled by :trikeshed-core
-                exclude("borg/trikeshed/net/**")
-                exclude("evolution/**")
-                exclude("com/example/trikeshedcore/**") // This correctly excludes the old com.example path
-                exclude("gk/kademlia/**")
             }
         }
         val commonTest by getting {

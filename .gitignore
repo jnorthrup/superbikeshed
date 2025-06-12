@@ -140,3 +140,4 @@ test-output/
 
 # Runtime configuration
 .vscode/settings.json
+.aider*

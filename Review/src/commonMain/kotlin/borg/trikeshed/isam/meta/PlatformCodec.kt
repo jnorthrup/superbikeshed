@@ -2,7 +2,10 @@ package borg.trikeshed.isam.meta
 
 import kotlin.experimental.or
 import kotlin.jvm.JvmStatic
-
+import borg.trikeshed.math.BigDecimal
+import borg.trikeshed.math.RoundingMode
+import borg.trikeshed.math.MathUtils
+import kotlin.math.pow
 
 interface PlatformCodec {
     val readLong: (ByteArray) -> Long
@@ -22,6 +25,10 @@ interface PlatformCodec {
     val writeUShort: (UShort) -> ByteArray
     val writeUInt: (UInt) -> ByteArray
     val writeULong: (ULong) -> ByteArray
+
+    // BigNum support
+    val readBigDecimal: (ByteArray) -> BigDecimal
+    val writeBigDecimal: (BigDecimal) -> ByteArray
 
     companion object {
         @JvmStatic
@@ -165,6 +172,21 @@ interface PlatformCodec {
             override val writeUInt: (UInt) -> ByteArray ={it->writeInt(it.toInt())}
             override val writeULong: (ULong) -> ByteArray ={it->writeLong(it.toLong())}
 
+            // BigNum implementation
+            override val readBigDecimal: (ByteArray) -> BigDecimal = { bytes ->
+                val scale = readInt(bytes)
+                val unscaledValue = readLong(bytes.sliceArray(4 until bytes.size))
+                val bd = MathUtils.createBigDecimal(unscaledValue)
+                with(MathUtils) { bd.setScale(scale, RoundingMode.UNNECESSARY) }
+            }
+
+            override val writeBigDecimal: (BigDecimal) -> ByteArray = { value ->
+                with(MathUtils) {
+                    val scale = value.scale()
+                    val unscaledValue = value.multiply(createBigDecimal(10.0.pow(scale.toDouble())))
+                    writeInt(scale) + writeLong(unscaledValue.toLong())
+                }
+            }
         }
     }
 

@@ -2,38 +2,29 @@
 
 package borg.trikeshed.parse.json
 
+// Removed MutableSeries and mutableSeriesOf imports
+// import borg.trikeshed.lib.MutableSeries
+// import borg.trikeshed.lib.mutableSeriesOf
 import borg.trikeshed.common.collections.s_
-
+import borg.trikeshed.core.Twin
+import borg.trikeshed.core.toSeries
+import borg.trikeshed.lib.CharSeries
 import borg.trikeshed.lib.CharSeries.Companion.unbrace
 import borg.trikeshed.lib.CharSeries.Companion.unquote
 import borg.trikeshed.lib.Either
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Twin
 import borg.trikeshed.lib.combine
-import borg.trikeshed.lib.first
-import borg.trikeshed.lib.get
-import borg.trikeshed.lib.second
-import borg.trikeshed.lib.toSeries
-import borg.trikeshed.lib.`▶`
-import borg.trikeshed.lib.α
-import borg.trikeshed.lib.CharSeries
-import borg.trikeshed.lib.debug
 import borg.trikeshed.lib.drop
-import borg.trikeshed.lib.isEmpty
+import borg.trikeshed.lib.get
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.map
 import borg.trikeshed.lib.parseDoubleOrNull
-import borg.trikeshed.lib.slice
+import borg.trikeshed.lib.second
 import borg.trikeshed.lib.size
-import borg.trikeshed.lib.take
-import borg.trikeshed.lib.trim
-import borg.trikeshed.lib.zipWithNext
-// Removed MutableSeries and mutableSeriesOf imports
-// import borg.trikeshed.lib.MutableSeries
-// import borg.trikeshed.lib.mutableSeriesOf
-import borg.trikeshed.core.emptySeries // Ensure core imports if not covered by lib
-import borg.trikeshed.core.toSeries // Ensure core imports if not covered by lib
+import borg.trikeshed.lib.slice
+import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.α
+import borg.trikeshed.lib.`▶`
 
 
 // Type aliases for clarity and expressiveness
