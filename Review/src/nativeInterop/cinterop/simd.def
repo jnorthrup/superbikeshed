@@ -1,8 +1,0 @@
-headers = immintrin.h
-compilerOpts = -mavx2 -mfma
-package = simd
-
----
-
-// AVX2 SIMD operations for hot path materialization
-// This will be populated when hot path optimization is needed

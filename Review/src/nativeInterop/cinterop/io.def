@@ -1,9 +1,0 @@
-headers = fcntl.h unistd.h sys/mman.h sys/stat.h
-compilerOpts = -O3
-package = io.native
-
----
-
-// High-performance IO operations for tensor data
-// Memory-mapped files, vectorized IO, and async operations
-// This will be populated as we reinvent IO operations

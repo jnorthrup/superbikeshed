@@ -42,7 +42,6 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(project(":Review:trikeshed-core"))
             }
         }
         val jsMain by getting {
@@ -53,7 +52,7 @@ kotlin {
             }
         }
 
-        val commonTest by creating {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
@@ -72,33 +71,33 @@ kotlin {
         }
 
         // Linux source sets
-        val linuxX64Main by creating {
-            dependsOn(nativeMain)
+        findByName("linuxX64Main")?.let { linuxX64Main ->
+            linuxX64Main.dependsOn(nativeMain)
         }
-        val linuxArm64Main by creating {
-            dependsOn(nativeMain)
+        findByName("linuxArm64Main")?.let { linuxArm64Main ->
+            linuxArm64Main.dependsOn(nativeMain)
         }
 
         // macOS source sets
-        val macosX64Main by creating {
-            dependsOn(nativeMain)
+        findByName("macosX64Main")?.let { macosX64Main ->
+            macosX64Main.dependsOn(nativeMain)
         }
-        val macosArm64Main by creating {
-            dependsOn(nativeMain)
+        findByName("macosArm64Main")?.let { macosArm64Main ->
+            macosArm64Main.dependsOn(nativeMain)
         }
 
         // Corresponding test source sets
-        val linuxX64Test by creating {
-            dependsOn(nativeTest)
+        findByName("linuxX64Test")?.let { linuxX64Test ->
+            linuxX64Test.dependsOn(nativeTest)
         }
-        val linuxArm64Test by creating {
-            dependsOn(nativeTest)
+        findByName("linuxArm64Test")?.let { linuxArm64Test ->
+            linuxArm64Test.dependsOn(nativeTest)
         }
-        val macosX64Test by creating {
-            dependsOn(nativeTest)
+        findByName("macosX64Test")?.let { macosX64Test ->
+            macosX64Test.dependsOn(nativeTest)
         }
-        val macosArm64Test by creating {
-            dependsOn(nativeTest)
+        findByName("macosArm64Test")?.let { macosArm64Test ->
+            macosArm64Test.dependsOn(nativeTest)
         }
     }
 }
