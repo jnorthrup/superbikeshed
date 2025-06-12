@@ -2,9 +2,19 @@
 
 package borg.trikeshed.cursor
 
-// import the IoMemento enum
-import borg.trikeshed.isam.meta.IOMemento.*
-import borg.trikeshed.lib.*
+// Imports from TrikeShedCore.kt (the new core library)
+import borg.trikeshed.core.IOMemento
+import borg.trikeshed.core.Join
+import borg.trikeshed.core.Series
+import borg.trikeshed.core.IterableSeries
+import borg.trikeshed.core.ColumnMeta
+import borg.trikeshed.core.alpha // The 'α' infix function
+import borg.trikeshed.core.asString
+import borg.trikeshed.core.j
+import borg.trikeshed.core.size
+import borg.trikeshed.core.`▶`
+
+
 import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmOverloads
 import kotlin.math.max
@@ -12,7 +22,8 @@ import kotlin.math.min
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
-typealias RowVec = Series2<Any?, () -> ColumnMeta>
+typealias RowVec = Series<Join<Any?, () -> ColumnMeta>>
+
 //val RowVec.left get() =  this α Join<*, () -> RecordMeta>::a
 
 /** Cursors are a columnar abstraction composed of Series of Joined value+meta pairs (RecordMeta) */
@@ -30,9 +41,9 @@ typealias Cursor = Series<RowVec>
  * returns Series<Series<A?>>> where the meta is stripped out and the values are cast using
  *
  * it "as?" A return only A values and null for non-A values */
-inline operator fun <A : Any, IR : Any?, SrInnr : Series<Join<A, *>>, SrOutr : Series<SrInnr>, RC : KClass<A?>> SrOutr.div(
+inline operator fun <A : Any, SrInnr : Series<Join<A, *>>, SrOutr : Series<SrInnr>> SrOutr.div( // Removed unused IR, RC
     c: KClass<out A>,
-): Series<Series<A?>> = this α { it α Join<A, *>::a } α { it α { it } } α { it α { it } }
+): Series<Series<A?>> = this α { rowVec -> rowVec α { join -> join.a as A? } } // Simplified alpha chain
 
 
 /** cursor get by IntRange -- return a Cursor with the columns specified by the IntRange */
@@ -50,9 +61,7 @@ operator fun Cursor.get(i: IntRange): Cursor {
 
 /** get meta for a cursor from row 0 */
 val Cursor.meta: Series<ColumnMeta>
-    get() = row(0) α { (_, b): Join<*, () -> ColumnMeta> ->
-        b()
-    }
+    get() = row(0) α { item: Join<Any?, () -> ColumnMeta> -> item.b() }
 
 /** create an Intarray of cursor meta by Strings of column names */
 fun Cursor.meta(vararg s: String): Series<Int> {
@@ -79,18 +88,22 @@ value class ColumnExclusion(val name: String) {
 operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
 
 /** Return cursor with columns excluded by indexes */
-operator fun Cursor.minus(killbag: Series<Int>) {
+operator fun Cursor.minus(killbag: Series<Int>): Cursor { // Added return type Cursor
     val toSet = (0 until meta.size).toSet()
-    val ints = (toSet - killbag.toSet()).toIntArray()
-    this[ints]
+    val ints = (toSet - killbag.`▶`.toSet()).toIntArray() // Use `▶` for Series to Set conversion
+    return this[ints] // Ensure this returns the modified cursor
 }
 
 /** cursor get by ColumnExclusion vararg -- return a Cursor with the columns excluded by the vararg */
 fun Cursor.get(s: Series<ColumnExclusion>): Cursor {
 
     val exclusionBag = mutableSetOf<Int>()
-    s.`▶`.forEachIndexed { i: Int, it: ColumnExclusion ->
-        exclusionBag.add(meta.`▶`.indexOfFirst { it.name == it.name })
+    s.`▶`.forEach { excludedCol -> // Removed unused index 'i'
+        // Corrected the logic to use excludedCol.name to find the index
+        val index = meta.`▶`.indexOfFirst { it.name == excludedCol.name }
+        if (index != -1) {
+            exclusionBag.add(index)
+        }
     }
     val retained = ((0 until meta.size).toSet() - exclusionBag).toIntArray()
     return this[retained]
@@ -114,7 +127,7 @@ fun Cursor.showRandom(n: Int = 5) {
 /** simple printout macro*/
 fun Cursor.show(range: IntRange = 0 until size) {
     val meta: Series<ColumnMeta> = meta
-    println("rows:$size" to meta.names.`▶`.toList()) // Changed to use .▶ operator
+    println("rows:$size" to meta.names.toList())
     showValues(range)
 }
 
@@ -123,21 +136,20 @@ fun Cursor.showValues(range: IntRange) {
         range.forEach { x: Int ->
             val row: RowVec = row(x)
 
-            val show=row α {(c,d)->
-                val meta=d()
-                meta.name to c
+            val show=row α { (c,d) -> // Destructure Join into c (value) and d (meta supplier)
+                val meta = d()
                 when(meta.type){
-                    IoCharSeries->meta.name to (c as Series<Char> ).asString()
-                    else-> c
+                    IOMemento.IoCharSeries -> meta.name to (c as Series<Char>).asString()
+                    else -> meta.name to c.toString() // Ensure it's a string for Pair
                 }
-
-
             }
 
             println(show.toList())
         }
-    } catch (e: NoSuchElementException) {
+    } catch (e: IndexOutOfBoundsException) { // Changed NoSuchElementException to IndexOutOfBoundsException for consistency
         println("cannot fully access range $range")
+    } catch (e: Exception) {
+        println("An error occurred displaying range $range: ${e.message}")
     }
 }
 
@@ -165,7 +177,7 @@ operator fun Cursor.get(vararg i: Int): Cursor = size j { y: Int ->
 val Cursor.isNumerical: Boolean
     get() = meta.`▶`.all {
         when (it.type) {
-            IoByte, IoShort, IoInt, IoFloat, IoDouble, IoLong -> true
+            IOMemento.IoByte, IOMemento.IoShort, IOMemento.IoInt, IOMemento.IoFloat, IOMemento.IoDouble, IOMemento.IoLong -> true
             else -> false
         }
     }

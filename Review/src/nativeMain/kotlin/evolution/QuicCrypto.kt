@@ -1,5 +1,6 @@
 package evolution
 
+actual class QuicCrypto // Actual implementation for Native
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.min
 

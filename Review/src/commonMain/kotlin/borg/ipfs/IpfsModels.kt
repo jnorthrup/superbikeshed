@@ -9,15 +9,15 @@ package borg.ipfs
  * @property dataCid The IPFS Content Identifier (CID) for the ISAM data file.
  * @property metaCid The IPFS Content Identifier (CID) for the ISAM metadata file.
  * @property name An optional human-readable name for the dataset.
- * @property timestamp An optional timestamp (e.g., Unix epoch milliseconds) indicating when the dataset was created or published.
+ * @property timestamp An optional timestamp indicating when the dataset was created or published.
  * @property previousManifestCid An optional CID of the previous version of this dataset's manifest, for version history.
  * @property customMetadata An optional map for arbitrary key-value metadata.
  */
 data class IpfsDatasetManifest(
-    val dataCid: String,
-    val metaCid: String,
+    val dataCid: IpfsCid,
+    val metaCid: IpfsCid,
     val name: String? = null,
-    val timestamp: Long? = null,
-    val previousManifestCid: String? = null,
-    val customMetadata: Map<String, String>? = null
+    val timestamp: UnixTimestamp? = null,
+    val previousManifestCid: IpfsCid? = null,
+    val customMetadata: CustomMetadata? = null
 )

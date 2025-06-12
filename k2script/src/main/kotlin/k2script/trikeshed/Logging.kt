@@ -38,9 +38,9 @@ object Log {
     @HotPath
     fun error(message: String, throwable: Throwable? = null) {
         System.err.println("[${timestamp()}] ERROR: $message")
-        throwable?.let { 
+        throwable?.let { it: Throwable ->
             if (EnvironmentManager.K2Script.isVerbose()) {
-                it.printStackTrace()
+                throwable.printStackTrace()
             } else {
                 System.err.println("  ${it.javaClass.simpleName}: ${it.message}")
             }

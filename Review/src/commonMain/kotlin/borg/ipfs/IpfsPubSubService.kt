@@ -19,19 +19,17 @@ interface IpfsPubSubService : CoroutineContext.Element {
     /**
      * Publishes a message to a given IPFS PubSub topic.
      *
-     * @param topic The topic string to publish the message to.
+     * @param topic The topic to publish the message to.
      * @param message The message content to publish.
      */
-    suspend fun publish(topic: String, message: String)
+    suspend fun publish(topic: IpfsTopic, message: IpfsMessage)
 
     /**
      * Subscribes to a given IPFS PubSub topic to receive messages.
      *
-     * @param topic The topic string to subscribe to.
-     * @return A [Flow] of strings, where each string is a message received on the topic.
+     * @param topic The topic to subscribe to.
+     * @return A [Flow] of messages received on the topic.
      *         The flow will emit messages as they arrive.
-     *         Consideration for future: A data class like IpfsPubSubMessage(from: String?, data: String, topic: String)
-     *         might be more robust than raw String for the Flow, providing more context about the message origin.
      */
-    fun subscribe(topic: String): Flow<String>
+    fun subscribe(topic: IpfsTopic): Flow<IpfsMessage>
 }

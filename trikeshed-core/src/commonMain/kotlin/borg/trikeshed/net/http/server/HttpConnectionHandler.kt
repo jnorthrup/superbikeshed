@@ -1,33 +1,34 @@
 package borg.trikeshed.net.http.server
 
-import borg.trikeshed.foundation.common.series.Series
-import borg.trikeshed.foundation.common.series.toSeries // For ByteArray.toSeries() and List.toSeries()
-import borg.trikeshed.foundation.common.series.asString // For Series<Char>.asString()
-import borg.trikeshed.foundation.common.series.emptySeries
-import borg.trikeshed.foundation.common.series.SeriesConstructors // For j constructor if needed elsewhere, though not directly in this file after changes
-import borg.trikeshed.foundation.common.tensor.TensorConstruct // For creating Tensor<Byte>
-import borg.trikeshed.foundation.common.brandt.CoreTensorCursor // For conceptual construction
-import borg.trikeshed.foundation.common.brandt.CoreTensorCursorWithMeta
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.asString
+import borg.trikeshed.lib.emptySeries
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.TensorConstruct
+import borg.trikeshed.lib.CoreTensorCursor
+import borg.trikeshed.lib.CoreTensorCursorWithMeta
 import borg.trikeshed.net.http.parser.HttpParsingException
 import borg.trikeshed.net.http.parser.HttpRequestParser
 import borg.trikeshed.net.http.serializer.HttpResponseSerializer
-import borg.trikeshed.net.http.types.* // All Http types
+import borg.trikeshed.net.http.types.*
+import borg.trikeshed.net.http.indexing.*
 import borg.trikeshed.nio.ClientSocketChannel
 import borg.trikeshed.nio.NioException
 import borg.trikeshed.nio.services.NioService
-import kotlinx.coroutines.* // For CoroutineScope, launch, Dispatchers, isActive
-import kotlin.coroutines.CoroutineContext // For CoroutineContext.Element
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 /**
- * Handles incoming HTTP/1.1 client connections.
+ * Handles incoming HTTP/1.1 client connections with CCEK context-aware capabilities.
  *
  * @param nioService The NIO service used to create server and client socket channels.
  * @param CCEKContext The CoroutineContext this handler and its spawned coroutines will run in.
- *                    This context should ideally contain necessary dispatchers (e.g., for IO).
+ *                    This context provides HTTP clients with contextual capabilities and scoped access patterns.
  */
 class HttpConnectionHandler(
     private val nioService: NioService,
-    private val CCEKContext: CoroutineContext // Renamed from context to CCEKContext for clarity
+    private val CCEKContext: CoroutineContext
 ) {
     private val serializer = HttpResponseSerializer()
     private val serverJob = SupervisorJob()
@@ -35,60 +36,51 @@ class HttpConnectionHandler(
 
     private var isRunning = false
 
-    /**
-     * Starts the HTTP server, listening on the specified host and port.
-     * This function will suspend until the server is stopped via [stop].
-     *
-     * @param host The hostname or IP address to bind to.
-     * @param port The port number to listen on.
-     */
     suspend fun start(host: String, port: Int) {
         if (isRunning) {
             println("HttpConnectionHandler is already running.")
             return
         }
         isRunning = true
-        println("HttpConnectionHandler starting on \$host:\$port...")
+        println("HttpConnectionHandler starting on $host:$port...")
 
         val serverSocket = nioService.createServerSocketChannel()
         try {
             serverSocket.bind(host, port)
-            println("HttpConnectionHandler bound to \${serverSocket.localAddress()}")
+            println("HttpConnectionHandler bound to ${serverSocket.localAddress()}")
 
             while (isRunning && serverScope.isActive) {
                 try {
                     val clientSocket = serverSocket.accept()
                     if (clientSocket != null && serverScope.isActive) {
-                        println("Accepted connection from: \${clientSocket.remoteAddress()}")
-                        serverScope.launch(CoroutineName("HttpClient-\${clientSocket.remoteAddress()}")) {
+                        println("Accepted connection from: ${clientSocket.remoteAddress()}")
+                        serverScope.launch(CoroutineName("HttpClient-${clientSocket.remoteAddress()}")) {
                             handleClientConnection(clientSocket)
                         }
                     } else if (!isRunning || !serverScope.isActive) {
-                        break // Server stopping
+                        break
                     }
                 } catch (e: NioException) {
-                    if (isRunning && serverScope.isActive) { // Only log if server is supposed to be running
-                        println("Error accepting connection: \${e.message}")
-                        // Potentially add a small delay before retrying accept on certain errors
+                    if (isRunning && serverScope.isActive) {
+                        println("Error accepting connection: ${e.message}")
                         delay(100)
                     } else {
-                        break // Server stopping
+                        break
                     }
                 } catch (e: CancellationException) {
                     println("Accept loop cancelled.")
                     break
                 } catch (e: Exception) {
-                    println("Unexpected error in accept loop: \${e.message}")
-                    // Consider if this should stop the server or just log and continue
-                    isRunning = false // Stop on unexpected errors for safety
+                    println("Unexpected error in accept loop: ${e.message}")
+                    isRunning = false
                     break
                 }
             }
         } catch (e: NioException) {
-            println("Failed to start HttpConnectionHandler: \${e.message}")
+            println("Failed to start HttpConnectionHandler: ${e.message}")
             isRunning = false
         } catch (e: Exception) {
-            println("Critical error starting HttpConnectionHandler: \${e.message}")
+            println("Critical error starting HttpConnectionHandler: ${e.message}")
             isRunning = false
         } finally {
             println("HttpConnectionHandler shutting down...")
@@ -98,171 +90,76 @@ class HttpConnectionHandler(
         }
     }
 
-    /**
-     * Stops the HTTP server and releases resources.
-     */
     fun stop() {
         println("HttpConnectionHandler.stop() called.")
         isRunning = false
-        serverJob.cancel() // Cancels all coroutines launched in serverScope
-        // ServerSocketChannel will be closed by the finally block in start()
+        serverJob.cancel()
     }
 
     private suspend fun handleClientConnection(clientSocket: ClientSocketChannel) {
         val parser = HttpRequestParser()
-        val readByteArray = ByteArray(4096) // Use ByteArray for reading
+        val readByteArray = ByteArray(4096)
 
         try {
             while (isRunning && clientSocket.isOpen() && clientSocket.isConnected() && serverScope.isActive) {
-                // Assuming clientSocket.read can take a ByteArray directly or is adapted.
-                // If clientSocket.read strictly requires Tensor<Byte>, this part needs adjustment:
-                // val tempTensor = readByteArray.toSeries().asTensor() // Hypothetical asTensor()
-                // val bytesRead = clientSocket.read(tempTensor, 0, readByteArray.size)
-                // For now, assume a direct ByteArray read API or that NioService handles this abstraction.
-                // Let's define a hypothetical read(ByteArray): Int for ClientSocketChannel for this adaptation.
-                // This is a simplification for the current subtask.
-                // A more robust solution would involve ensuring NioChannel actuals can efficiently fill a ByteArray
-                // or work with Series<Byte> directly.
-
-                // SIMPLIFIED READ: Assume read into ByteArray is possible.
-                // This might require a change in ClientSocketChannel interface or specific implementations.
-                // For now, let's simulate this by creating a Tensor from readByteArray, reading into it,
-                // and then using readByteArray. This is inefficient but bridges the gap.
                 val bytesRead: Int
-                run { // Scope for temp tensor
-                    val tempTensor = borg.trikeshed.foundation.common.tensor.TensorConstruct(intArrayOf(readByteArray.size)) { idx -> readByteArray[idx[0]] }
+                run {
+                    val tempTensor = TensorConstruct(intArrayOf(readByteArray.size)) { idx -> readByteArray[idx[0]] }
                     bytesRead = clientSocket.read(tempTensor, 0, readByteArray.size)
-                    // If read modified underlying array of tempTensor (if it shared it), readByteArray would be updated.
-                    // This depends on TensorConstruct and ClientSocketChannel.read behavior.
-                    // A cleaner way: ClientSocketChannel.read returns Series<Byte> or populates Series<Byte>.
-                    // For now, assume readByteArray is populated correctly after clientSocket.read via tempTensor.
-                    if (bytesRead > 0) { // Manually copy back if read wrote to Tensor's own memory
+                    if (bytesRead > 0) {
                         for(i in 0 until bytesRead) readByteArray[i] = tempTensor[intArrayOf(i)]
                     }
                 }
 
-
->>>>>>> jules_wip_311298924166369654
                 if (bytesRead == -1) {
-                    println("Client \${clientSocket.remoteAddress()} closed connection (EOF).")
-                    break // EOF
+                    println("Client ${clientSocket.remoteAddress()} closed connection (EOF).")
+                    break
                 }
                 if (bytesRead == 0) {
-<<<<<<< HEAD
-                    // Non-blocking read returned 0, means no data currently available.
-                    // This can happen in non-blocking IO. Yield to allow other coroutines to run.
-=======
->>>>>>> jules_wip_311298924166369654
                     yield()
                     continue
                 }
                 if (bytesRead > 0) {
-<<<<<<< HEAD
-                    // Feed the read data (only the part that was read) to the parser.
-                    // Create a Series<Byte> from the relevant part of readBufferArray.
-                    val newDataSeries = readBufferArray.copyOfRange(0, bytesRead).toSeries()
-=======
-                    val newDataSeries = readByteArray.copyOfRange(0, bytesRead).toSeries() // Foundation toSeries()
->>>>>>> jules_wip_311298924166369654
+                    val newDataSeries = readByteArray.copyOfRange(0, bytesRead).toSeries()
                     val parseResult = parser.parse(newDataSeries)
 
                     when {
                         parseResult.isSuccess -> {
                             val request = parseResult.getOrNull()
-                            if (request != null) { // Complete request parsed
-<<<<<<< HEAD
-                                println("Received request from \${clientSocket.remoteAddress()}: \${request.a.a.name} \${request.a.b.a.value}")
+                            if (request != null) {
+                                println("Received request from ${clientSocket.remoteAddress()}: ${request.method.name} ${request.path.value}")
 
-                                // Simple hardcoded response
-                                val responseBodyStr = "Hello from TrikeShed HTTP/1.1 Server! You asked for: \${request.a.b.a.value}"
-                                val responseBodyBytes = responseBodyStr.encodeToByteArray()
-                                val bodyTensor = TensorConstruct(intArrayOf(responseBodyBytes.size)) { idx -> responseBodyBytes[idx[0]] }
+                                // Use indexed header lookup (relaxfactory pattern)
+                                val headerIndex = request.headers.buildIndex(CommonHeaders.BASIC_REQUEST)
+                                val contentType = request.headers.lookup(HttpHeaderName("Content-Type"), headerIndex, CommonHeaders.BASIC_REQUEST)
+                                val cookieIndex = request.headers.buildCookieIndex(CommonCookies.SESSION_COOKIES)
+                                val sessionCookie = request.headers.lookupCookie(CookieName("sessionid"), cookieIndex, CommonCookies.SESSION_COOKIES)
+
+                                val responseBodyStr = buildString {
+                                    append("Hello from TrikeShed HTTP/1.1 Server! You requested: ${request.path.value}\n")
+                                    contentType?.let { append("Content-Type: ${it.value}\n") }
+                                    sessionCookie?.let { append("Session: ${it.value.value}\n") }
+                                }
+                                val responseBodySeries = responseBodyStr.encodeToByteArray().toSeries()
 
                                 val responseHeadersList = listOf(
-                                    HttpHeaderName("Content-Type") to HttpHeaderValue("text/plain; charset=utf-8"),
-                                    HttpHeaderName("Content-Length") to HttpHeaderValue(responseBodyBytes.size.toString()),
-                                    HttpHeaderName("Connection") to HttpHeaderValue("close") // Default to close for simplicity
+                                    "${HttpHeaderName.CONTENT_TYPE}: text/plain; charset=utf-8",
+                                    "${HttpHeaderName.CONTENT_LENGTH}: ${responseBodySeries.size}",
+                                    "${HttpHeaderName.CONNECTION}: close"
                                 )
-                                val headersCursor = borg.trikeshed.core.TensorCursor(responseHeadersList.size, 2) { r, c ->
-                                    if (c == 0) responseHeadersList[r].first.name else responseHeadersList[r].second.value
-                                }
-                                val headersMeta = emptyHttpHeadersMeta()
-                                val finalHeaders = headersCursor j headersMeta
+                                val headersSeries = responseHeadersList.toSeries()
 
-
-                                val response = HttpResponse(
-                                    HttpVersion.HTTP_1_1,
-                                    HttpStatusCode.OK,
-                                    HttpReasonPhrase("OK"),
-                                    finalHeaders,
-                                    HttpBody.Bytes(bodyTensor)
-                                )
-
-                                val serializedResponse = serializer.serialize(response)
-                                // Convert Series<Byte> to Tensor<Byte> for writing
-                                val responseTensorData = ByteArray(serializedResponse.size) { i -> serializedResponse[i] }
-                                val responseTensor = TensorConstruct(intArrayOf(responseTensorData.size)) { idx -> responseTensorData[idx[0]] }
-
-                                try {
-                                    clientSocket.write(responseTensor, 0, responseTensorData.size)
-                                } catch (e: NioException) {
-                                    println("NIO Error during write to \${clientSocket.remoteAddress()}: \${e.message}")
-                                    break // Exit loop on write error
-                                }
-
-                                // For simplicity, close after one request.
-                                // TODO: Implement keep-alive based on request.headers["Connection"]
-                                println("Response sent to \${clientSocket.remoteAddress()}. Closing connection.")
-                                break // Exit loop, will close socket in finally
-                            } else {
-                                // Need more data, continue reading
-                            }
-                        }
-                        parseResult.isFailure -> {
-                            val error = parseResult.exceptionOrNull() as HttpParsingException
-                            println("HTTP Parsing Error from \${clientSocket.remoteAddress()}: \${error.message}")
-                            // Send 400 Bad Request
-                            val errResponse = HttpResponse(
-                                HttpVersion.HTTP_1_1,
-                                HttpStatusCode.BAD_REQUEST,
-                                HttpReasonPhrase("Bad Request"),
-                                emptyHttpHeaders(),
-                                HttpBody.Text(TensorConstruct(intArrayOf("Bad Request".length)) { idx -> "Bad Request"[idx[0]] })
-                            )
-                             try {
-                                val serializedErrResponse = serializer.serialize(errResponse)
-                                val errTensorData = ByteArray(serializedErrResponse.size) { i -> serializedErrResponse[i] }
-                                val errTensor = TensorConstruct(intArrayOf(errTensorData.size)) { idx -> errTensorData[idx[0]] }
-                                clientSocket.write(errTensor, 0, errTensor.totalSize)
-                            } catch (e: NioException) {
-                                println("NIO Error sending 400 response to \${clientSocket.remoteAddress()}: \${e.message}")
-                            }
-                            break // Close connection on parse error
-=======
-                                println("Received request from \${clientSocket.remoteAddress()}: \${request.method.name} \${request.path.value}")
-
-                                val responseBodyStr = "Hello from TrikeShed HTTP/1.1 Server! You requested: \${request.path.value}"
-                                val responseBodySeries = responseBodyStr.encodeToByteArray().toSeries() // String -> BA -> Series<Byte>
-
-                                val responseHeadersList = listOf(
-                                    "\${HttpHeaderName.CONTENT_TYPE}: text/plain; charset=utf-8", // Using consts
-                                    "\${HttpHeaderName.CONTENT_LENGTH}: \${responseBodySeries.size}",
-                                    "\${HttpHeaderName.CONNECTION}: close"
-                                )
-                                val headersSeries = responseHeadersList.toSeries() // List<String> to Series<String>
-
-                                // Placeholder for actual CoreTensorCursor construction from Series<String>
                                 val headersCursor = object : CoreTensorCursor<String> {
-                                    override val meta = borg.trikeshed.foundation.common.brandt.DslHandle.NONE
+                                    override val meta = borg.trikeshed.lib.DslHandle.NONE
                                     override val columns: Int get() = 1
                                     override val rows: Int get() = headersSeries.size
                                     override fun get(row: Int, col: Int): String = if (col == 0) headersSeries[row] else throw IndexOutOfBoundsException()
                                     override fun getColumn(col: Int): Series<String> = if (col == 0) headersSeries else emptySeries()
-                                    override fun getRow(row: Int): Series<String> = SeriesConstructors.j(1){ headersSeries[row] }
+                                    override fun getRow(row: Int): Series<String> = borg.trikeshed.lib.j(1){ headersSeries[row] }
                                 }
                                 val httpHeaders = CoreTensorCursorWithMeta(headersCursor, HttpHeadersMeta())
 
-                                val response = borg.trikeshed.net.http.types.HttpResponse(
+                                val response = HttpResponse(
                                     version = HttpVersion.HTTP_1_1,
                                     statusCode = HttpStatusCode(200),
                                     reasonPhrase = HttpReasonPhrase("OK"),
@@ -271,46 +168,39 @@ class HttpConnectionHandler(
                                 )
 
                                 val serializedResponse = serializer.serialize(response)
-                                // Convert Series<Byte> to ByteArray for writing
                                 val responseBytes = ByteArray(serializedResponse.size) { i -> serializedResponse[i] }
 
-                                // SIMPLIFIED WRITE: Assume write from ByteArray is possible.
-                                // Similar to read, this may require NioChannel actuals to support ByteArray directly.
-                                // If clientSocket.write strictly requires Tensor<Byte>:
-                                // val tempWriteTensor = responseBytes.toSeries().asTensor()
-                                // clientSocket.write(tempWriteTensor, 0, responseBytes.size)
-                                run { // Scope for temp tensor
-                                    val tempWriteTensor = borg.trikeshed.foundation.common.tensor.TensorConstruct(intArrayOf(responseBytes.size)) {idx -> responseBytes[idx[0]]}
+                                run {
+                                    val tempWriteTensor = TensorConstruct(intArrayOf(responseBytes.size)) {idx -> responseBytes[idx[0]]}
                                     clientSocket.write(tempWriteTensor, 0, responseBytes.size)
                                 }
 
-
-                                println("Response sent to \${clientSocket.remoteAddress()}. Closing connection.")
+                                println("Response sent to ${clientSocket.remoteAddress()}. Closing connection.")
                                 break
                             }
                         }
                         parseResult.isFailure -> {
-                            val error = parseResult.exceptionOrNull() as? HttpParsingException // Safe cast
-                            println("HTTP Parsing Error from \${clientSocket.remoteAddress()}: \${error?.message ?: "Unknown parsing error"}")
+                            val error = parseResult.exceptionOrNull() as? HttpParsingException
+                            println("HTTP Parsing Error from ${clientSocket.remoteAddress()}: ${error?.message ?: "Unknown parsing error"}")
 
-                            val errorBodySeries = "Bad Request".toSeries() // String -> Series<Char>
+                            val errorBodySeries = "Bad Request".toSeries()
                             val errorHeadersList = listOf(
-                                 "\${HttpHeaderName.CONTENT_TYPE}: text/plain; charset=utf-8",
-                                 "\${HttpHeaderName.CONTENT_LENGTH}: \${errorBodySeries.size * 2}", // Approx UTF-8 bytes
-                                 "\${HttpHeaderName.CONNECTION}: close"
+                                 "${HttpHeaderName.CONTENT_TYPE}: text/plain; charset=utf-8",
+                                 "${HttpHeaderName.CONTENT_LENGTH}: ${errorBodySeries.size * 2}",
+                                 "${HttpHeaderName.CONNECTION}: close"
                             )
                             val errorHeadersSeries = errorHeadersList.toSeries()
-                            val errorHeadersCursor = object : CoreTensorCursor<String> { // Placeholder
-                                override val meta = borg.trikeshed.foundation.common.brandt.DslHandle.NONE
+                            val errorHeadersCursor = object : CoreTensorCursor<String> {
+                                override val meta = borg.trikeshed.lib.DslHandle.NONE
                                 override val columns: Int get() = 1
                                 override val rows: Int get() = errorHeadersSeries.size
                                 override fun get(row: Int, col: Int): String = if (col == 0) errorHeadersSeries[row] else throw IndexOutOfBoundsException()
                                 override fun getColumn(col: Int): Series<String> = if (col == 0) errorHeadersSeries else emptySeries()
-                                override fun getRow(row: Int): Series<String> = SeriesConstructors.j(1){ errorHeadersSeries[row] }
+                                override fun getRow(row: Int): Series<String> = borg.trikeshed.lib.j(1){ errorHeadersSeries[row] }
                             }
                             val errorHttpHeaders = CoreTensorCursorWithMeta(errorHeadersCursor, HttpHeadersMeta())
 
-                            val errResponse = borg.trikeshed.net.http.types.HttpResponse(
+                            val errResponse = HttpResponse(
                                 version = HttpVersion.HTTP_1_1,
                                 statusCode = HttpStatusCode(400),
                                 reasonPhrase = HttpReasonPhrase("Bad Request"),
@@ -321,11 +211,11 @@ class HttpConnectionHandler(
                                 val serializedErrResponse = serializer.serialize(errResponse)
                                 val errBytes = ByteArray(serializedErrResponse.size) { i -> serializedErrResponse[i] }
                                 run {
-                                     val tempErrWriteTensor = borg.trikeshed.foundation.common.tensor.TensorConstruct(intArrayOf(errBytes.size)) {idx -> errBytes[idx[0]]}
+                                     val tempErrWriteTensor = TensorConstruct(intArrayOf(errBytes.size)) {idx -> errBytes[idx[0]]}
                                      clientSocket.write(tempErrWriteTensor, 0, errBytes.size)
                                 }
                             } catch (e: NioException) {
-                                println("NIO Error sending 400 response to \${clientSocket.remoteAddress()}: \${e.message}")
+                                println("NIO Error sending 400 response to ${clientSocket.remoteAddress()}: ${e.message}")
                             }
                             break
                         }
@@ -333,12 +223,12 @@ class HttpConnectionHandler(
                 }
             }
         } catch (e: CancellationException) {
-            println("Connection handler for \${clientSocket.remoteAddress()} cancelled.")
+            println("Connection handler for ${clientSocket.remoteAddress()} cancelled.")
         } catch (e: Exception) {
-            println("Unexpected error handling client \${clientSocket.remoteAddress()}: \${e.message}")
-            e.printStackTrace() // Print stack trace for unexpected errors
+            println("Unexpected error handling client ${clientSocket.remoteAddress()}: ${e.message}")
+            e.printStackTrace()
         } finally {
-            println("Closing client connection: \${clientSocket.remoteAddress()}")
+            println("Closing client connection: ${clientSocket.remoteAddress()}")
             clientSocket.close()
         }
     }
