@@ -1,8 +1,13 @@
 package com.moneyfan.core
 
-import java.math.BigDecimal
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+// import com.ionspin.kotlin.bignum.decimal.RoundingMode // Not used yet
+import kotlinx.datetime.Instant
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.plus
+import kotlinx.datetime.truncatedTo
+// We might need this if comparison logic changes, but isAfter should work
+// import kotlinx.datetime.compareTo
 
 sealed class CandleState {
     object Initial : CandleState()
@@ -29,7 +34,7 @@ data class Candle(
 )
 
 class CandleFSM(
-    private val interval: ChronoUnit = ChronoUnit.MINUTES,
+    private val interval: DateTimeUnit = DateTimeUnit.MINUTE,
     private val intervalSize: Long = 1
 ) {
     private var currentState: CandleState = CandleState.Initial
@@ -97,24 +102,18 @@ class CandleFSM(
     }
 
     private fun isNewCandlePeriod(currentTime: Instant, startTime: Instant): Boolean {
-        return when (interval) {
-            ChronoUnit.MINUTES -> {
-                val currentMinute = currentTime.truncatedTo(ChronoUnit.MINUTES)
-                val startMinute = startTime.truncatedTo(ChronoUnit.MINUTES)
-                currentMinute.isAfter(startMinute.plus(intervalSize, ChronoUnit.MINUTES))
-            }
-            ChronoUnit.HOURS -> {
-                val currentHour = currentTime.truncatedTo(ChronoUnit.HOURS)
-                val startHour = startTime.truncatedTo(ChronoUnit.HOURS)
-                currentHour.isAfter(startHour.plus(intervalSize, ChronoUnit.HOURS))
-            }
-            ChronoUnit.DAYS -> {
-                val currentDay = currentTime.truncatedTo(ChronoUnit.DAYS)
-                val startDay = startTime.truncatedTo(ChronoUnit.DAYS)
-                currentDay.isAfter(startDay.plus(intervalSize, ChronoUnit.DAYS))
-            }
-            else -> throw IllegalArgumentException("Unsupported interval: $interval")
-        }
+        val truncatedCurrentTime = currentTime.truncatedTo(interval)
+        val truncatedStartTime = startTime.truncatedTo(interval)
+
+        // Calculate the end of the current candle's period
+        val periodEnd = truncatedStartTime.plus(intervalSize, interval)
+
+        // A new candle period starts if the current truncated time is at or after the periodEnd.
+        // Example: If interval is 1 MINUTE, startTime is 10:00:30 (truncated to 10:00:00).
+        // periodEnd will be 10:01:00.
+        // If currentTime is 10:01:00 or later, it's a new period.
+        // If currentTime is 10:00:59, it's not a new period.
+        return truncatedCurrentTime >= periodEnd
     }
 
     fun getCurrentState(): CandleState = currentState
