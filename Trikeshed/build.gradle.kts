@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-    kotlin("multiplatform")
- }
+    kotlin("multiplatform") version "2.1.21"
+}
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
