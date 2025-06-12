@@ -16,5 +16,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Trikeshed"
-include(":trikeshed-core")
-include(":trikeshed-ts")

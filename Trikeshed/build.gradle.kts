@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
     kotlin("multiplatform")
-}
+ }
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
@@ -31,6 +31,9 @@ kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
     }
     
     js(IR) {
@@ -46,7 +49,8 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
-            implementation(kotlin("stdlib"))
+            implementation(kotlin("stdlib-common"))
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
         }
         
         commonTest.dependencies {
@@ -56,6 +60,8 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+                implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
             }
         }
     }
