@@ -53,67 +53,7 @@ A cornerstone of TrikeShed's expressive and type-safe DSLs is the precise use of
     *   `typealias ContentTypeTextPlainValue = HttpHeaderValue("text/plain")`
 
 This disciplined approach ensures that TrikeShed's APIs are not just performant but also highly readable and robust against common errors.
-
-## TrikeShed HTTP/1.1 DSL (`borg.trikeshed.net.http.types`)
-
-The HTTP/1.1 DSL in TrikeShed provides a set of types for representing HTTP messages, drawing inspiration from established patterns (like those observed in the "rxf" codebase's `one.xio` package) while adhering to TrikeShed's core type system principles.
-
-**Core Components:**
-
-*   **`enum class HttpMethod`**: Defines standard HTTP methods (GET, POST, PUT, DELETE, HEAD, OPTIONS, TRACE, CONNECT, PATCH). This provides strong typing for method names, similar to `one.xio.HttpMethod`.
-    ```kotlin
-    enum class HttpMethod { GET, POST, /* ... */ PATCH }
-    ```
-
-*   **`HttpHeaderName`**: A `value class` wrapping a String. Common HTTP header names are provided as `const val` within its `companion object` (e.g., `HttpHeaderName.CONTENT_TYPE`, `HttpHeaderName.ACCEPT`). This approach offers type safety for known headers while allowing flexibility for custom ones, mirroring the utility of `one.xio.HttpHeaders` but with Kotlin idioms.
-    ```kotlin
-    @JvmInline value class HttpHeaderName(val value: String) {
-        companion object {
-            const val CONTENT_TYPE = "Content-Type"
-            // ... other common headers
-        }
-    }
-    ```
-
-*   **`HttpHeaders`**: Typealiased to `CoreTensorCursorWithMeta<String>`. Each string in the cursor is expected to represent a full "Name: Value" header line. `HttpHeadersMeta` (a `value class` wrapping `DslHandle`) can provide associated metadata.
-    ```kotlin
-    typealias HttpHeaders = CoreTensorCursorWithMeta<String>
-    @JvmInline value class HttpHeadersMeta(val value: DslHandle = DslHandle.NONE)
-    ```
-
-*   **`HttpBody`**: A `sealed interface` with implementations for `Empty`, `Bytes(Series<Byte>)`, and `Text(Series<Char>)`. This aligns with TrikeShed's `Series`-based data handling.
-    ```kotlin
-    sealed interface HttpBody {
-        object Empty : HttpBody
-        data class Bytes(val data: Series<Byte>) : HttpBody
-        data class Text(val data: Series<Char>) : HttpBody
-    }
-    ```
-
-*   **`HttpRequest` and `HttpResponse`**: These are `data class`es that compose the above types to represent full HTTP messages.
-    ```kotlin
-    data class HttpRequest(
-        val method: HttpMethod,
-        val path: HttpRequestPath,
-        val version: HttpVersion,
-        val headers: HttpHeaders,
-        val body: HttpBody
-    )
-
-    data class HttpResponse(
-        val version: HttpVersion,
-        val statusCode: HttpStatusCode,
-        val reasonPhrase: HttpReasonPhrase,
-        val headers: HttpHeaders,
-        val body: HttpBody
-    )
-    ```
-
-This DSL provides a foundation for building type-safe and performant HTTP/1.1 processing components within TrikeShed, such as parsers, serializers, and connection handlers.
-
----
-END OF NEW SECTIONS
----
+ 
 
 ## BANNED PRACTICES - convert to TODOs or remove when un-DRY
 

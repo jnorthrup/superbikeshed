@@ -16,7 +16,8 @@
       ]
     },
     "resolveJsonModule": true,              // Include modules imported with .json extension
-    "allowJs": true                         // Allow javascript files to be compiled
+    "allowJs": true,                         // Allow javascript files to be compiled
+    "jsx": "react"
     // "checkJs": true,                     // Report errors in .js files.
   },
   "include": [

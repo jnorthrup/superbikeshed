@@ -53,7 +53,6 @@ kotlin {
             // kotlin.srcDirs are now conventional: src/commonMain/kotlin
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(project(":Review:trikeshed-core"))
             }
         }
         val commonTest by getting {
@@ -67,6 +66,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
+                implementation(project(":Trikeshed"))
             }
         }
         val jvmTest by getting {

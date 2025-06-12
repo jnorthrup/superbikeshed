@@ -22,23 +22,14 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "dsel-moneyfan-demo-root"
+rootProject.name = "superbikeshed"
 
-// Include the new demo module
-include(":ta4k-spacegraph-moneyfan-demo")
+// Include the Trikeshed module
+include(":Trikeshed")
+project(":Trikeshed").projectDir = file("Trikeshed")
 
-// Include existing local modules as dependencies
+// Include other modules as needed
 include(":ta4k")
-include(":Review") // Provides TrikeShedCore DSEL
-include(":Review:trikeshed-core") // Include the trikeshed-core subproject
-include(":spacegraphjs:kotlin-spacegraph") // Provides AgentAPI for SpaceGraph
-
-// Define project directories for these local modules
-// Adjust paths if the directory structure of the overall project is different.
-// These paths are assumed relative to the root project directory where this settings.gradle.kts resides.
-project(":ta4k-spacegraph-moneyfan-demo").projectDir = file("ta4k-spacegraph-moneyfan-demo")
-project(":ta4k").projectDir = file("ta4k") // Assuming 'ta4k' is a sibling directory to the demo module
-project(":Review").projectDir = file("Review") // Assuming 'Review' is a sibling
-project(":Review:trikeshed-core").projectDir = file("Review/trikeshed-core") // Include the trikeshed-core subproject
-project(":spacegraphjs:kotlin-spacegraph").projectDir = file("spacegraphjs/kotlin-spacegraph") // Assuming nested structure
-// include(\nexus\)
+include(":spacegraphjs:kotlin-spacegraph")
+project(":ta4k").projectDir = file("ta4k")
+project(":spacegraphjs:kotlin-spacegraph").projectDir = file("spacegraphjs/kotlin-spacegraph")
