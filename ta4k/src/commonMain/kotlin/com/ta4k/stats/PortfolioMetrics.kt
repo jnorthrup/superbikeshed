@@ -121,4 +121,4 @@ class PortfolioMetrics {
         if (isEmpty()) return BigDecimal.ZERO
         return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
     }
-} 
+}

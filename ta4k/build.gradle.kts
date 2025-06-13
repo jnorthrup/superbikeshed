@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "1.9.23"
     `maven-publish`
 }
 
@@ -16,15 +16,17 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport {
-                    enabled.set(true)
-                }
-            }
-        }
-        binaries.executable()
+    wasmJs {
+        browser()
+        // If commonWebpackConfig is needed, it can be configured here, for example:
+        // browser {
+        //     commonWebpackConfig {
+        //         cssSupport {
+        //             enabled.set(true)
+        //         }
+        //     }
+        // }
+        binaries.executable() // Ensure this is valid for wasmJs, or adjust if needed
     }
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -53,44 +55,53 @@ kotlin {
             // kotlin.srcDirs are now conventional: src/commonMain/kotlin
             dependencies {
                 implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation("com.ionspin.kotlin:bignum:0.3.9")
             }
         }
         val commonTest by getting {
             // kotlin.srcDirs are now conventional: src/commonTest/kotlin
             dependencies {
-                implementation(kotlin("test"))
+                implementation(kotlin("test")) // This should cover common test needs
             }
         }
         val jvmMain by getting {
-            kotlin.srcDirs("src/jvmMain/kotlin") // JVM-specific code
+            // kotlin.srcDirs("src/jvmMain/kotlin") // Conventional, no need to specify if following convention
             dependencies {
-                implementation(kotlin("stdlib-jdk8"))
+                implementation(kotlin("stdlib-jdk8")) // For JVM specific APIs if needed beyond common
                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
             }
         }
         val jvmTest by getting {
-            kotlin.srcDirs("src/jvmTest/kotlin") // JVM-specific tests
+            // kotlin.srcDirs("src/jvmTest/kotlin") // Conventional
             dependencies {
-                implementation("org.jetbrains.kotlin:kotlin-test-junit5")
-                implementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+                implementation(kotlin("test-junit5")) // JUnit 5 for JVM tests
+                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Align with moneyfan
+                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Align with moneyfan
             }
         }
-        val jsMain by getting {
+        // jsMain and jsTest are removed in favor of wasmJsMain and wasmJsTest
+        val wasmJsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                // stdlib-js is usually added by default with wasmJs target
             }
         }
-        val jsTest by getting {
+        val wasmJsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
+                implementation(kotlin("test")) // Common test for wasmJs
             }
         }
         val nativeMain by getting {
              // kotlin.srcDirs are now conventional: src/nativeMain/kotlin
+            dependencies {
+                // Native specific dependencies if any beyond common
+            }
         }
         val nativeTest by getting {
              // kotlin.srcDirs are now conventional: src/nativeTest/kotlin
+            dependencies {
+                // Native specific test dependencies if any beyond commonTest
+            }
         }
     }
 }
