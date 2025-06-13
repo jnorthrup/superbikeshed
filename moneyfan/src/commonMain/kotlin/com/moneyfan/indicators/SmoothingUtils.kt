@@ -1,7 +1,7 @@
 package com.moneyfan.indicators
 
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.ionspin.kotlin.bignum.decimal.RoundingMode
 
 object SmoothingUtils {
     /**
@@ -21,20 +21,27 @@ object SmoothingUtils {
         val smoothedValues = MutableList<BigDecimal?>(series.size) { null }
         if (series.size < period) return smoothedValues
 
-        val periodBd = BigDecimal(period)
+        val periodBd = BigDecimal.fromInt(period)
         var previousSmoothedValue: BigDecimal? = null
 
         for (i in series.indices) {
-            if (i < period - 1) continue
+            // Ensure we only start calculating once we have enough data for the initial sum
+            if (i < period - 1) {
+                // smoothedValues[i] remains null as not enough data yet for this specific index based on period
+                continue
+            }
 
             if (i == period - 1) {
-                val sumOfFirstPeriod = initialSumProvider(i, series)
+                // Calculate the sum for the first 'period' elements
+                // The initialSumProvider should sum elements from index 0 to period-1
+                val sumOfFirstPeriod = initialSumProvider(i, series.subList(0, period))
                 previousSmoothedValue = sumOfFirstPeriod.divide(periodBd, calculationScale, RoundingMode.HALF_UP)
                 smoothedValues[i] = previousSmoothedValue
             } else {
+                // Subsequent values are smoothed based on the previous smoothed value
                 val currentValue = valueExtractor(series[i])
-                previousSmoothedValue = previousSmoothedValue?.let {
-                    (it.multiply(periodBd.subtract(BigDecimal.ONE)).add(currentValue))
+                previousSmoothedValue = previousSmoothedValue?.let { prev ->
+                    (prev * (periodBd - BigDecimal.ONE) + currentValue)
                         .divide(periodBd, calculationScale, RoundingMode.HALF_UP)
                 }
                 smoothedValues[i] = previousSmoothedValue
