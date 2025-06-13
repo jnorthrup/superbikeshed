@@ -12,6 +12,14 @@ export interface DGMInteractionLog { // Exporting for use in DGMService if neede
   status: "pending" | "completed" | "failed";
 }
 
+export interface DGMSummaryMetrics {
+  cyclesCompleted: number;
+  successfulActions: number;
+  failedActions: number;
+  totalProcessingTime: number; // e.g., in seconds
+  averageProcessingTimePerCycle: number;
+}
+
 export class LLMAttentionPortalPanel {
   public static currentPanel: LLMAttentionPortalPanel | undefined;
   private readonly panel: vscode.WebviewPanel;
@@ -98,6 +106,10 @@ export class LLMAttentionPortalPanel {
     }
   }
 
+  // Method to update DGM summary metrics in the webview
+  public updateMetrics(metrics: DGMSummaryMetrics) {
+    this.postMessageToWebview({ type: 'updateDgmMetrics', payload: metrics });
+  }
 
   private updateWebviewContent() {
     if (this.panel && this.panel.webview) {
@@ -105,6 +117,7 @@ export class LLMAttentionPortalPanel {
         // Instead of embedding all data in HTML, post it as a message
         // This is better for larger datasets and updates
         this.postMessageToWebview({ type: 'updateLogs', payload: this.interactionLogs });
+        this.postMessageToWebview({ type: 'updateDgmMetrics', payload: { cyclesCompleted: 0, successfulActions: 0, failedActions: 0, totalProcessingTime: 0, averageProcessingTimePerCycle: 0 } });
     }
   }
 

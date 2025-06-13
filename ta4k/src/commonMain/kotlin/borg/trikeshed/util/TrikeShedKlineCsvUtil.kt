@@ -1,86 +1,68 @@
 package borg.trikeshed.util
 
-import borg.trikeshed.core.CoreTensorCursorWithMeta
-import borg.trikeshed.core.IOMemento
-import borg.trikeshed.core.TensorCursor
-import borg.trikeshed.core.TensorSeries
-import borg.trikeshed.core.j
-import borg.trikeshed.core.TypeMemento
-import borg.trikeshed.core.Join
-import borg.trikeshed.core.Tensor
-import java.io.Reader
-import kotlin.collections.MutableList
-import kotlin.collections.List
+import kotlin.jvm.JvmInline
 
-// Assuming Tensor an interface like this for context:
-// interface Tensor<T> { val list: List<T>; val size: Int; val totalSize: Int /* Added based on usage */ }
-// And TensorSeries is a concrete implementation.
-// If totalSize is not part of the actual Tensor interface you are using, this will cause a compile error.
-// This change is made based on the explicit request to use 'totalSize'.
+// Type aliases for CSV parsing following TrikeShed patterns
+typealias KlineData = DoubleArray
+typealias CsvRow = List<String>
+typealias ParsedKlineRow = DoubleArray
 
-val klineCursorMeta: Tensor<Join<String, TypeMemento>> = TensorSeries(11) { index ->
-    when (index) {
-        0 -> "Open_time" j IOMemento.IoLong
-        1 -> "Open" j IOMemento.IoDouble
-        2 -> "High" j IOMemento.IoDouble
-        3 -> "Low" j IOMemento.IoDouble
-        4 -> "Close" j IOMemento.IoDouble
-        5 -> "Volume" j IOMemento.IoDouble
-        6 -> "Close_time" j IOMemento.IoLong
-        7 -> "Quote_asset_volume" j IOMemento.IoDouble
-        8 -> "Number_of_trades" j IOMemento.IoInt
-        9 -> "Taker_buy_base_asset_volume" j IOMemento.IoDouble
-        10 -> "Taker_buy_quote_asset_volume" j IOMemento.IoDouble
-        else -> throw IndexOutOfBoundsException("Invalid index for klineCursorMeta: $index")
+@JvmInline
+value class ColumnName(val value: String)
+
+@JvmInline  
+value class ColumnIndex(val value: Int)
+
+// TrikeShed metadata for Kline CSV structure
+val klineColumnNames = listOf(
+    "Open_time", "Open", "High", "Low", "Close", "Volume", 
+    "Close_time", "Quote_asset_volume", "Number_of_trades", 
+    "Taker_buy_base_asset_volume", "Taker_buy_quote_asset_volume"
+)
+
+val klineColumnCount = klineColumnNames.size
+
+fun parseKlineCsvLine(line: String): ParsedKlineRow? {
+    val fields = line.split(',')
+    if (fields.size < klineColumnCount) return null
+    
+    return try {
+        doubleArrayOf(
+            fields[0].trim().toLong().toDouble(),      // Open_time  
+            fields[1].trim().toDouble(),               // Open
+            fields[2].trim().toDouble(),               // High
+            fields[3].trim().toDouble(),               // Low
+            fields[4].trim().toDouble(),               // Close
+            fields[5].trim().toDouble(),               // Volume
+            fields[6].trim().toLong().toDouble(),      // Close_time
+            fields[7].trim().toDouble(),               // Quote_asset_volume
+            fields[8].trim().toInt().toDouble(),       // Number_of_trades
+            fields[9].trim().toDouble(),               // Taker_buy_base_asset_volume
+            fields[10].trim().toDouble()               // Taker_buy_quote_asset_volume
+        )
+    } catch (e: NumberFormatException) {
+        null
     }
 }
 
-fun parseKlineCsv(reader: Reader): CoreTensorCursorWithMeta<Double> {
-    println("parseKlineCsv called")
-    val parsedRowsData: MutableList<List<Double>> = mutableListOf()
-
-    reader.buffered().useLines { lines ->
-        lines.drop(1) // Skip header line
-            .forEach { line ->
-                val fields = line.split(',')
-                if (fields.size < 11) {
-                    println("Skipping malformed line: $line")
-                    return@forEach // Continue to next line
-                }
-                try {
-                    val rowData = listOf<Double>(
-                        fields[0].toLong().toDouble(),      // Open_time
-                        fields[1].toDouble(),               // Open
-                        fields[2].toDouble(),               // High
-                        fields[3].toDouble(),               // Low
-                        fields[4].toDouble(),               // Close
-                        fields[5].toDouble(),               // Volume
-                        fields[6].toLong().toDouble(),      // Close_time
-                        fields[7].toDouble(),               // Quote_asset_volume
-                        fields[8].toInt().toDouble(),       // Number_of_trades
-                        fields[9].toDouble(),               // Taker_buy_base_asset_volume
-                        fields[10].toDouble()               // Taker_buy_quote_asset_volume
-                    )
-                    parsedRowsData.add(rowData)
-                } catch (e: NumberFormatException) {
-                    println("Error parsing line: $line. Error: ${e.message}")
-                } catch (e: IndexOutOfBoundsException) {
-                    println("Error parsing line (not enough fields after split): $line. Error: ${e.message}")
-                }
-            }
-    }
-
-    if (parsedRowsData.isEmpty()) {
-        // Changed klineCursorMeta.size to klineCursorMeta.totalSize
-        val emptyData = TensorCursor(0, klineCursorMeta.totalSize) { _, _ -> 0.0 }
-        return emptyData j klineCursorMeta
-    } else {
-        val numRows = parsedRowsData.size
-        // Changed klineCursorMeta.size to klineCursorMeta.totalSize
-        val numCols = klineCursorMeta.totalSize
-        val dataTensor = TensorCursor(numRows, numCols) { rowIndex, colIndex ->
-            parsedRowsData[rowIndex][colIndex]
-        }
-        return dataTensor j klineCursorMeta
-    }
+fun parseKlineCsv(csvText: String): List<ParsedKlineRow> {
+    val lines = csvText.lines().filter { it.isNotBlank() }
+    if (lines.isEmpty()) return emptyList()
+    
+    // Skip header line if present
+    val dataLines = if (lines.first().contains("Open_time")) lines.drop(1) else lines
+    return dataLines.mapNotNull { parseKlineCsvLine(it) }
 }
+
+// Helper function to extract specific column data
+fun extractColumn(data: List<ParsedKlineRow>, columnIndex: ColumnIndex): KlineData {
+    return data.map { row -> row[columnIndex.value] }.toDoubleArray()
+}
+
+// Named column extractors for convenience
+fun extractOpenTime(data: List<ParsedKlineRow>): KlineData = extractColumn(data, ColumnIndex(0))
+fun extractOpen(data: List<ParsedKlineRow>): KlineData = extractColumn(data, ColumnIndex(1)) 
+fun extractHigh(data: List<ParsedKlineRow>): KlineData = extractColumn(data, ColumnIndex(2))
+fun extractLow(data: List<ParsedKlineRow>): KlineData = extractColumn(data, ColumnIndex(3))
+fun extractClose(data: List<ParsedKlineRow>): KlineData = extractColumn(data, ColumnIndex(4))
+fun extractVolume(data: List<ParsedKlineRow>): KlineData = extractColumn(data, ColumnIndex(5))

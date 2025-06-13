@@ -4,6 +4,16 @@ import java.io.*
 import k2script.engine.*
 import k2script.env.*
 import k2script.engine.Memory
+import k2script.trikeshed.Series
+import k2script.trikeshed.α
+import k2script.trikeshed.▶
+import k2script.trikeshed.Log
+import k2script.trikeshed.ContextualLogger
+import k2script.trikeshed.PerfMonitor
+import k2script.trikeshed.HotPath
+import k2script.trikeshed.ColdPath
+import k2script.trikeshed.Context
+import kotlin.reflect.KClass
 
 /**
  * Simplified script engine with TrikeShed integration
@@ -100,36 +110,35 @@ class ScriptEngine {
     fun parseDependencies(scriptFile: File): Series<String> {
         val lines = Series.of(*scriptFile.readLines().toTypedArray())
         
-        val dependencies = lines
+        return lines
             .α { line ->
                 if (line.startsWith("@file:DependsOn(")) {
                     val dependencyRegex = """@file:DependsOn\("([^"]+)"\)""".toRegex()
                     dependencyRegex.find(line)?.groupValues?.get(1)
                 } else null
             }
-            .`▶` // Gateway to stdlib
+            .▶
             .filterNotNull()
-        
-        return Series.of(*dependencies.toTypedArray())
+            .let { filtered -> Series.of(*filtered.toTypedArray()) }
     }
     
     /**
      * Validate a script file for common issues
      */
     @ColdPath
-    fun validateScript(scriptFile: File): List<String> {
-        val errors = mutableListOf<String>()
+    fun validateScript(scriptFile: File): Series<String> {
+        var errors = Series.of<String>()
         
         if (!scriptFile.exists()) {
-            errors.add("Script file does not exist: ${scriptFile.absolutePath}")
+            errors = errors + Series.of("Script file does not exist: ${scriptFile.absolutePath}")
         }
         
         if (!scriptFile.canRead()) {
-            errors.add("Cannot read script file: ${scriptFile.absolutePath}")
+            errors = errors + Series.of("Cannot read script file: ${scriptFile.absolutePath}")
         }
         
         if (!scriptFile.name.endsWith(".kts")) {
-            errors.add("Script file should have .kts extension: ${scriptFile.name}")
+            errors = errors + Series.of("Script file should have .kts extension: ${scriptFile.name}")
         }
         
         return errors

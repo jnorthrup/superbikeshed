@@ -147,6 +147,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const [wasStreaming, setWasStreaming] = useState<boolean>(false)
 	const [showCheckpointWarning, setShowCheckpointWarning] = useState<boolean>(false)
 	const [isCondensing, setIsCondensing] = useState<boolean>(false)
+	const [nexusInsights, setNexusInsights] = useState<string[]>([]);
+	const [showNexusInsightsPanel, setShowNexusInsightsPanel] = useState<boolean>(true); // Or false if preferred default
 	const everVisibleMessagesTsRef = useRef<LRUCache<number, boolean>>(
 		new LRUCache({
 			max: 250,
@@ -1317,6 +1319,24 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 	}, [handleKeyDown])
 
+	useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            const message = event.data; // The event data VSC sent
+            if (message.type === 'updateNexusChatInsights' && message.payload) {
+                setNexusInsights(message.payload);
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Signal that ChatView is ready for initial Nexus insights
+        vscode.postMessage({ type: "chatViewReadyForNexusInsights" });
+
+        return () => {
+            window.removeEventListener('message', handleMessage);
+        };
+    }, []); // Empty dependency array ensures this runs once on mount and cleans up on unmount
+
 	useImperativeHandle(ref, () => ({
 		acceptInput: () => {
 			if (enableButtons && primaryButtonText) {
@@ -1525,6 +1545,27 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					)}
 				</>
 			)}
+
+			{/* Nexus Insights Panel */}
+			<div style={{ border: '1px solid #007acc', margin: '10px 0', padding: '10px', borderRadius: '5px', backgroundColor: '#f0f8ff' }}>
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowNexusInsightsPanel(!showNexusInsightsPanel)}>
+					<h3 style={{ margin: 0 }}>Nexus Insights</h3>
+					<button>{showNexusInsightsPanel ? 'Hide' : 'Show'}</button>
+				</div>
+				{showNexusInsightsPanel && (
+					<div style={{ marginTop: '10px' }}>
+						{nexusInsights.length > 0 ? (
+							<ul style={{ listStyleType: 'disc', paddingLeft: '20px', margin: 0 }}>
+								{nexusInsights.map((insight, index) => (
+									<li key={index} style={{ marginBottom: '5px' }}>{insight}</li>
+								))}
+							</ul>
+						) : (
+							<p style={{ fontStyle: 'italic' }}>No Nexus insights available at the moment.</p>
+						)}
+					</div>
+				)}
+			</div>
 
 			<ChatTextArea
 				ref={textAreaRef}

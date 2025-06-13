@@ -110,6 +110,7 @@ Diff format:
 -------
 [exact content to find including whitespace]
 =======
+=======
 [new content to replace with]
 >>>>>>> REPLACE
 

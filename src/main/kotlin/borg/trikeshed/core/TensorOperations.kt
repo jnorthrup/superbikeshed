@@ -1,31 +1,26 @@
-package borg.trikeshed.core
+data class MyTensor(val data: MutableList<Double> = mutableListOf(1.0))
 
-import borg.trikeshed.core.Series
+data class TSeries(val data: List<Double>)
 
-data class TensorOperations<T>(
-    val tensor: Tensor<T>
+data class TensorOperations(
+    val tensor: MyTensor
 ) {
-    fun convolution(kernel: Tensor<T>, stride: Int = 1): Series<T> {
-        val result = mutableListOf<T>()
-        for (i in 0 until tensor.▶.size step stride) {
-            val convolvedValue = kernel.▶.mapIndexed { index, k -> tensor.▶[i + index] * k }.sum()
+    fun convolution(): TSeries {
+        val result = mutableListOf<Double>()
+        for (i in 0 until tensor.data.size) {
+            val convolvedValue: Double = tensor.data[i]
             result.add(convolvedValue)
         }
-        return result.toSeries()
+        return TSeries(result)
     }
 
-    fun pooling(poolSize: Int, stride: Int = 1): Series<T> {
-        val result = mutableListOf<T>()
-        for (i in 0 until tensor.▶.size step stride) {
-            val pool = tensor.▶.subList(i, minOf(i + poolSize, tensor.▶.size))
-            val pooledValue = pool.maxOrNull() ?: tensor.▶[i]
+    fun pooling(): TSeries {
+        val result = mutableListOf<Double>()
+        for (i in 0 until tensor.data.size) {
+            val pool = tensor.data.subList(i, minOf(i + 1, tensor.data.size))
+            val pooledValue = pool.maxOrNull() ?: 0.0
             result.add(pooledValue)
         }
-        return result.toSeries()
+        return TSeries(result)
     }
 }
-
-// Example usage:
-// val operations = TensorOperations(tensor)
-// val convolvedTensor = operations.convolution(kernel)
-// val pooledTensor = operations.pooling(2) 
