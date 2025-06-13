@@ -53,11 +53,13 @@
  *    (Ensure the API key has permissions for viewing balances, market data, and trading).
  *
  * Running the Script:
+
 <<<<<<< HEAD
+ * Running the Script:
  *   k2script coinbaseXChangeBot.main.kts
 =======
+ * Running the Script:
  *   kscript coinbaseXChangeBot.main.kts
->>>>>>> origin/jules_wip_12008771546559725757
  *
  * Disclaimer:
  * TRADING CRYPTOCURRENCIES IS RISKY. THIS SCRIPT IS FOR EDUCATIONAL AND
@@ -1274,5 +1276,169 @@ fun main() = runBlocking {
         activeSubscriptions.clear()
         ExchangeService.cleanup()
         mainLoopLogger.info("Main loop and ExchangeService cleaned up. Exiting.")
+    }
+}
+
+// --- Constants for ATR-based Stop-Loss/Take-Profit (To be moved to relevant constants section) ---
+const val SLTP_ATR_PERIOD = 14 // Period for ATR calculation for SL/TP
+const val BREAKOUT_SL_ATR_MULTIPLIER = 2.0 // Multiplier for ATR to set stop-loss (e.g., 2.0 * ATR)
+// BREAKOUT_TAKE_PROFIT_RRR is assumed to be already defined (e.g., 1.5)
+// --- End of ATR-based SL/TP Constants ---
+
+
+// --- Modified executeBreakoutTradeStrategy (To be moved to relevant location) ---
+// This version includes ATR-based Stop-Loss and Take-Profit.
+fun executeBreakoutTradeStrategy(
+    pair: CurrencyPair,
+    brokenZone: ChopZoneData, // The zone data from recentlyBrokenOutChozZone
+    klineSeries: KlineSeries, // The full kline series for the pair
+    currentIndex: Int // The current latest bar index in klineSeries
+) {
+    val potentialBreakoutBarIndex = brokenZone.potentialBreakoutBarIndex ?: run {
+        mainLoopLogger.error("executeBreakoutTradeStrategy: potentialBreakoutBarIndex is null for $pair. This should not happen.")
+        recentlyBrokenOutChozZone.remove(pair) // Clean up inconsistent state
+        return
+    }
+
+    val lastBarNeededForConfirmation = potentialBreakoutBarIndex + BREAKOUT_CONFIRMATION_BARS - 1
+    if (currentIndex < lastBarNeededForConfirmation) {
+        mainLoopLogger.debug("BREAKOUT_TRADE: Waiting for more bars for $pair. Need index $lastBarNeededForConfirmation, current is $currentIndex.")
+        return
+    }
+
+    val zoneHigh = brokenZone.zoneHigh
+    val zoneLow = brokenZone.zoneLow
+    val zoneHeight = zoneHigh.subtract(zoneLow)
+
+    if (zoneLow.compareTo(BigDecimal.ZERO) <= 0 || zoneHeight.compareTo(BigDecimal.ZERO) <= 0) {
+        mainLoopLogger.warn("BREAKOUT_TRADE: Invalid zone dimensions for $pair (Low: ${zoneLow.toPlainString()}, Height: ${zoneHeight.toPlainString()}). Skipping trade.")
+        recentlyBrokenOutChozZone.remove(pair)
+        return
+    }
+
+    val zoneHeightPercent = zoneHeight.divide(zoneLow, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal(100))
+    if (zoneHeightPercent.compareTo(BigDecimal(MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE)) < 0) {
+        mainLoopLogger.info("BREAKOUT_TRADE: Chop zone height ${zoneHeightPercent.toPlainString()}% for $pair is below minimum ${MIN_ZONE_HEIGHT_PERCENT_FOR_TRADE}%. No trade.")
+        recentlyBrokenOutChozZone.remove(pair)
+        return
+    }
+
+    val bufferAmountHigh = zoneHigh.multiply(BigDecimal(BREAKOUT_ZONE_BUFFER_PERCENT / 100.0))
+    val breakoutHighTrigger = zoneHigh.add(bufferAmountHigh)
+    val bufferAmountLow = zoneLow.multiply(BigDecimal(BREAKOUT_ZONE_BUFFER_PERCENT / 100.0))
+    val breakoutLowTrigger = zoneLow.subtract(bufferAmountLow)
+
+    var tradeDirection: Order.OrderType? = null
+    var entryPrice: BigDecimal? = null
+    var stopLossPrice: BigDecimal? = null
+    var takeProfitPrice: BigDecimal? = null
+    var confirmedBreakout = false
+    var entryBarIndex = -1
+
+
+    for (i in potentialBreakoutBarIndex..lastBarNeededForConfirmation) {
+        val confirmationKline = klineSeries[i] ?: run {
+            mainLoopLogger.warn("BREAKOUT_TRADE: Kline at confirmation index $i is null for $pair.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        if (confirmationKline.closePrice.compareTo(breakoutHighTrigger) > 0) {
+            if (tradeDirection == Order.OrderType.ASK) {
+                confirmedBreakout = false; break
+            }
+            tradeDirection = Order.OrderType.BID
+            entryPrice = confirmationKline.closePrice
+            entryBarIndex = i
+            // SL/TP will be calculated after loop using entryBarIndex for ATR
+            confirmedBreakout = true
+        } else if (confirmationKline.closePrice.compareTo(breakoutLowTrigger) < 0) {
+            if (tradeDirection == Order.OrderType.BID) {
+                confirmedBreakout = false; break
+            }
+            tradeDirection = Order.OrderType.ASK
+            entryPrice = confirmationKline.closePrice
+            entryBarIndex = i
+            // SL/TP will be calculated after loop using entryBarIndex for ATR
+            confirmedBreakout = true
+        } else {
+            confirmedBreakout = false
+            break
+        }
+    }
+
+    if (confirmedBreakout && tradeDirection != null && entryPrice != null && entryBarIndex != -1) {
+        // ATR-based SL/TP Calculation
+        val atrIndicator = ATRIndicator(klineSeries, SLTP_ATR_PERIOD) // Use SLTP_ATR_PERIOD
+        val atrValueAtEntry = atrIndicator.getValue(entryBarIndex)
+
+        if (atrValueAtEntry == null || atrValueAtEntry.compareTo(BigDecimal.ZERO) <= 0) {
+            mainLoopLogger.warn("BREAKOUT_TRADE: ATR value is null or not positive at entry bar index $entryBarIndex for $pair. Skipping trade due to inability to set ATR-based SL.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        val atrOffset = atrValueAtEntry.multiply(BigDecimal(BREAKOUT_SL_ATR_MULTIPLIER))
+        val riskAmountPerUnit: BigDecimal
+
+        if (tradeDirection == Order.OrderType.BID) { // Buy
+            stopLossPrice = entryPrice.subtract(atrOffset)
+            riskAmountPerUnit = entryPrice.subtract(stopLossPrice) // Should be positive: entry - (entry - atrOffset) = atrOffset
+            takeProfitPrice = entryPrice.add(riskAmountPerUnit.multiply(BigDecimal(BREAKOUT_TAKE_PROFIT_RRR)))
+        } else { // Sell (Order.OrderType.ASK)
+            stopLossPrice = entryPrice.add(atrOffset)
+            riskAmountPerUnit = stopLossPrice.subtract(entryPrice) // Should be positive: (entry + atrOffset) - entry = atrOffset
+            takeProfitPrice = entryPrice.subtract(riskAmountPerUnit.multiply(BigDecimal(BREAKOUT_TAKE_PROFIT_RRR)))
+        }
+
+        if (tradeDirection == Order.OrderType.BID && (stopLossPrice.compareTo(entryPrice) >= 0 || takeProfitPrice.compareTo(entryPrice) <= 0 || takeProfitPrice.compareTo(stopLossPrice) <=0 )) {
+            mainLoopLogger.warn("BREAKOUT_TRADE: Invalid SL/TP for BID on $pair. Entry: $entryPrice, SL: $stopLossPrice, TP: $takeProfitPrice. Skipping trade.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+        if (tradeDirection == Order.OrderType.ASK && (stopLossPrice.compareTo(entryPrice) <= 0 || takeProfitPrice.compareTo(entryPrice) >= 0 || takeProfitPrice.compareTo(stopLossPrice) >=0 )) {
+            mainLoopLogger.warn("BREAKOUT_TRADE: Invalid SL/TP for ASK on $pair. Entry: $entryPrice, SL: $stopLossPrice, TP: $takeProfitPrice. Skipping trade.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        mainLoopLogger.info("BREAKOUT_CONFIRMED (ATR SL/TP): $pair, Direction: $tradeDirection, Entry: ${entryPrice.toPlainString()}, SL: ${stopLossPrice.toPlainString()}, TP: ${takeProfitPrice.toPlainString()}, ATR@Entry($entryBarIndex): ${atrValueAtEntry.toPlainString()}")
+
+        val baseCurrencySymbol = pair.base.currencyCode
+        val quoteCurrencySymbol = pair.quote.currencyCode
+
+        var quantityToTrade = BigDecimal.ZERO
+        if (entryPrice.compareTo(BigDecimal.ZERO) > 0) {
+             quantityToTrade = BigDecimal(BREAKOUT_TRADE_QUOTE_AMOUNT).divide(entryPrice, 8, java.math.RoundingMode.DOWN)
+        } else {
+            mainLoopLogger.error("BREAKOUT_TRADE: Entry price is zero for $pair, cannot calculate quantity.")
+            recentlyBrokenOutChozZone.remove(pair)
+            return
+        }
+
+        if (quantityToTrade.compareTo(BigDecimal.ZERO) == 0) {
+             mainLoopLogger.warn("BREAKOUT_TRADE: Calculated quantity to trade is zero for $pair (Quote Amount: $BREAKOUT_TRADE_QUOTE_AMOUNT, Entry: $entryPrice). No trade.")
+             recentlyBrokenOutChozZone.remove(pair)
+             return
+        }
+
+        logTrade(
+            asset = baseCurrencySymbol,
+            side = tradeDirection.toString(),
+            quantity = quantityToTrade.toPlainString(),
+            price = entryPrice.toPlainString(),
+            orderId = "sim_ATR_${System.currentTimeMillis()}",
+            note = "Chop Breakout (ATR SL/TP). Zone H:${zoneHigh.toPlainString()} L:${zoneLow.toPlainString()}, ATR:${atrValueAtEntry.toPlainString()}"
+        )
+        // TODO: Actual order placement & SL/TP order management
+
+    } else {
+        if (currentIndex >= lastBarNeededForConfirmation) {
+             mainLoopLogger.info("BREAKOUT_REJECTED: No confirmed breakout for $pair from zone ending at ${brokenZone.endIndex} (last checked bar index $currentIndex).")
+        }
+    }
+
+    if (confirmedBreakout || currentIndex >= lastBarNeededForConfirmation) {
+        recentlyBrokenOutChozZone.remove(pair)
     }
 }

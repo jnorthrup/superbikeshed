@@ -47,7 +47,7 @@ This document outlines recently implemented major features, considerations for m
 
 - [ ] **Balance Testing:** Rigorously test impact of veterancy bonuses and authority on gameplay.
 - [ ] **AI Utilization:** Implement AI logic to understand and use new command features (e.g., protect high-authority units, form effective structures).
-- [ ] **Advanced Veterancy Abilities:** Design and implement concrete abilities for `canPromoteSubordinates` and `provideMoraleBonus` flags (e.g., auras, squad commands).
+- [-] **Advanced Veterancy Abilities:** Design and implement concrete abilities for `canPromoteSubordinates` and `provideMoraleBonus` flags (e.g., auras, squad commands). [WIP: Implementing aura system for morale bonus]
 - [ ] **UI Representation:** Develop UI elements to display unit rank, effective authority, and veterancy effects.
 - [ ] **Contextual Authority:** Implement logic for `this.contextAuthorityModifier`.
 - [ ] **Computronium Authority:** Implement logic for `this.computroniumAuthorityModifier` based on core level/focus.

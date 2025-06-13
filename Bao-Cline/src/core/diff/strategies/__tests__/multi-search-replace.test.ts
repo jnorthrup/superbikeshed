@@ -405,6 +405,7 @@ function hello() {
 <<<<<<< SEARCH
 				onScroll={() => updateHighlights()}
 =======
+=======
 				onScroll={() => updateHighlights()}
 				onDragOver={(e) => {
 					e.preventDefault()
@@ -1541,7 +1542,7 @@ function five() {
 
 						if (!sourceFile || !diffFile) {
 							console.debug(
-								`Optional debug usage: npx jest multi-search-replace.test.ts -- --source <file.ts> --diff <diff.diff>\n`,
+								`Optional debug usage: npx jest src/core/diff/strategies/__tests__/multi-search-replace.test.ts -- --source <file.ts> --diff <diff.diff>\n`,
 							)
 							// console.debug('All args:', args);
 							return

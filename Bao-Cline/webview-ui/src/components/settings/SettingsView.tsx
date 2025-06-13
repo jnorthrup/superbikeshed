@@ -89,6 +89,8 @@ const sectionNames = [
 	"experimental",
 	"language",
 	"about",
+	"dgm",
+	"nexus",
 ] as const
 
 type SectionName = (typeof sectionNames)[number]
@@ -116,9 +118,14 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	const prevApiConfigName = useRef(currentApiConfigName)
 	const confirmDialogHandler = useRef<() => void>()
 
-	const [cachedState, setCachedState] = useState(extensionState)
+	// Initialize cachedState with settingsMode from extensionState, defaulting to 'basic'
+	const [cachedState, setCachedState] = useState(() => ({
+		...extensionState,
+		settingsMode: extensionState.settingsMode || "basic",
+	  }));
 
 	const {
+		settingsMode, // Added settingsMode
 		alwaysAllowReadOnly,
 		alwaysAllowReadOnlyOutsideWorkspace,
 		allowedCommands,
@@ -173,6 +180,15 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 	} = cachedState
 
 	const apiConfiguration = useMemo(() => cachedState.apiConfiguration ?? {}, [cachedState.apiConfiguration])
+
+	// Effect to synchronize extensionState to cachedState, ensuring settingsMode is handled
+	useEffect(() => {
+		setCachedState(prevState => ({
+		  ...prevState, // Preserve any optimistic local updates not yet reflected in extensionState
+		  ...extensionState, // Apply all values from the authoritative extensionState
+		  settingsMode: extensionState.settingsMode || prevState.settingsMode || "basic", // Prioritize extensionState's mode, then local, then default
+		}));
+	  }, [extensionState]);
 
 	useEffect(() => {
 		// Update only when currentApiConfigName is changed.
@@ -380,6 +396,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "experimental", icon: FlaskConical },
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
+			// Add new sections here for the tab list
+			{ id: "dgm", icon: FlaskConical }, // Using FlaskConical as a placeholder icon
+			{ id: "nexus", icon: Globe }, // Using Globe as a placeholder icon, consider a more specific one
 		],
 		[], // No dependencies needed now
 	)
@@ -424,6 +443,34 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		}
 	}, [scrollToActiveTab])
 
+	// sectionsList holds all possible sections
+	const sectionsList: { id: SectionName; icon: LucideIcon }[] = useMemo(
+		() => [
+			{ id: "providers", icon: Webhook },
+			{ id: "autoApprove", icon: CheckCheck },
+			{ id: "browser", icon: SquareMousePointer },
+			{ id: "checkpoints", icon: GitBranch },
+			{ id: "notifications", icon: Bell },
+			{ id: "contextManagement", icon: Database },
+			{ id: "terminal", icon: SquareTerminal },
+			{ id: "prompts", icon: MessageSquare },
+			{ id: "experimental", icon: FlaskConical },
+			{ id: "language", icon: Globe },
+			{ id: "about", icon: Info },
+			{ id: "dgm", icon: FlaskConical },
+			{ id: "nexus", icon: Globe },
+		],
+		[],
+	)
+
+	// visibleSections filters sectionsList based on settingsMode
+	const visibleSections = useMemo(() => {
+		if (cachedState.settingsMode === 'basic') {
+		  return sectionsList.filter(section => section.id !== 'experimental');
+		}
+		return sectionsList;
+	  }, [cachedState.settingsMode, sectionsList]);
+
 	return (
 		<Tab>
 			<TabHeader className="flex justify-between items-center gap-2">
@@ -464,7 +511,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					className={cn(settingsTabList)}
 					data-compact={isCompactMode}
 					data-testid="settings-tab-list">
-					{sections.map(({ id, icon: Icon }) => {
+					{visibleSections.map(({ id, icon: Icon }) => { // Changed to use visibleSections
 						const isSelected = id === activeTab
 						const onSelect = () => handleTabChange(id)
 
@@ -567,6 +614,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					{/* Auto-Approve Section */}
 					{activeTab === "autoApprove" && (
 						<AutoApproveSettings
+							isAdvancedMode={cachedState.settingsMode === 'advanced'}
 							alwaysAllowReadOnly={alwaysAllowReadOnly}
 							alwaysAllowReadOnlyOutsideWorkspace={alwaysAllowReadOnlyOutsideWorkspace}
 							alwaysAllowWrite={alwaysAllowWrite}
@@ -587,6 +635,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					{/* Browser Section */}
 					{activeTab === "browser" && (
 						<BrowserSettings
+							isAdvancedMode={cachedState.settingsMode === 'advanced'}
 							browserToolEnabled={browserToolEnabled}
 							browserViewportSize={browserViewportSize}
 							screenshotQuality={screenshotQuality}
@@ -596,7 +645,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 						/>
 					)}
 
-					{/* Checkpoints Section */}
+					{/* Checkpoints Section (no specific advanced items listed for this one in this subtask) */}
 					{activeTab === "checkpoints" && (
 						<CheckpointSettings
 							enableCheckpoints={enableCheckpoints}
@@ -604,7 +653,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 						/>
 					)}
 
-					{/* Notifications Section */}
+					{/* Notifications Section (no specific advanced items listed for this one in this subtask) */}
 					{activeTab === "notifications" && (
 						<NotificationSettings
 							ttsEnabled={ttsEnabled}
@@ -618,6 +667,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					{/* Context Management Section */}
 					{activeTab === "contextManagement" && (
 						<ContextManagementSettings
+							isAdvancedMode={cachedState.settingsMode === 'advanced'}
 							autoCondenseContext={autoCondenseContext}
 							autoCondenseContextPercent={autoCondenseContextPercent}
 							condensingApiConfigId={condensingApiConfigId}
@@ -651,8 +701,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 					{/* Prompts Section */}
 					{activeTab === "prompts" && <PromptsSettings />}
 
-					{/* Experimental Section */}
-					{activeTab === "experimental" && (
+					{/* Experimental Section - Entire section is advanced and also depends on activeTab */}
+					{cachedState.settingsMode === 'advanced' && activeTab === "experimental" && (
 						<ExperimentalSettings
 							setExperimentEnabled={setExperimentEnabled}
 							experiments={experiments}
@@ -673,7 +723,80 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 
 					{/* About Section */}
 					{activeTab === "about" && (
-						<About telemetrySetting={telemetrySetting} setTelemetrySetting={setTelemetrySetting} />
+						<>
+							{/* Settings Mode UI added to About section */}
+							<SectionHeader>
+								{/* Using a generic title, specific icon can be added if desired */}
+								<div>Display Options</div>
+							</SectionHeader>
+							<Section>
+								<div className="flex items-center justify-between">
+									<label htmlFor="settingsModeSelect" className="text-vscode-settings-textInputForeground">
+										Settings Display Mode:
+									</label>
+									<select
+										id="settingsModeSelect"
+										className="bg-vscode-settings-textInputBackground border border-vscode-settings-textInputBorder text-vscode-settings-textInputForeground p-1 rounded ml-2 w-1/3"
+										value={cachedState.settingsMode || 'basic'}
+										onChange={(e) => {
+											const newMode = e.target.value as "basic" | "advanced";
+											// Post message to extension to update the actual VS Code setting
+											vscode.postMessage({ type: "updateSetting", payload: { key: "bao-cline.settingsMode", value: newMode } });
+											// Also update local cached state for immediate UI feedback
+											setCachedStateField("settingsMode" as any, newMode);
+										}}
+									>
+										<option value="basic">Basic</option>
+										<option value="advanced">Advanced</option>
+									</select>
+								</div>
+							</Section>
+							{/* Original About content */}
+							<About telemetrySetting={telemetrySetting} setTelemetrySetting={setTelemetrySetting} />
+						</>
+					)}
+
+					{/* DGM Settings Section */}
+					{activeTab === "dgm" && (
+						<div>
+							<SectionHeader>
+								<div className="flex items-center gap-2">
+									<FlaskConical className="w-4" /> {/* Placeholder Icon */}
+									<div>DGM Configuration</div>
+								</div>
+							</SectionHeader>
+							<Section>
+								<div>
+									<p style={{ fontStyle: 'italic', color: '#666', padding: '10px' }}>
+										Settings for the DGM (Deep Generative Model) self-improvement loop and metrics display will appear here.
+										This may include options to configure Langchain integration, feedback mechanisms, and the verbosity of DGM metrics shown in the LLM Attention Portal.
+									</p>
+									{/* Future: Add actual DGM setting controls here */}
+								</div>
+							</Section>
+						</div>
+					)}
+
+					{/* Nexus Settings Section */}
+					{activeTab === "nexus" && (
+						<div>
+							<SectionHeader>
+								<div className="flex items-center gap-2">
+									<Globe className="w-4" /> {/* Placeholder Icon */}
+									<div>Nexus Integration Settings</div>
+								</div>
+							</SectionHeader>
+							<Section>
+								<div>
+									<p style={{ fontStyle: 'italic', color: '#666', padding: '10px' }}>
+										Configuration options for the Nexus universal development agent will be available here.
+										This may include settings for enabling/disabling specific types of Nexus insights,
+										customizing editor gutter decorations, and managing connections to the Nexus core agent.
+									</p>
+									{/* Future: Add actual Nexus setting controls here */}
+								</div>
+							</Section>
+						</div>
 					)}
 				</TabContent>
 			</div>

@@ -9,6 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === 'production';
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+
+// Base URL for GitHub Pages (repository name)
+const baseUrl = isGitHubPages ? '/superbikeshed/rtsgame/' : '/';
 
 export default {
   mode: isProduction ? 'production' : 'development',
@@ -16,7 +20,7 @@ export default {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: isProduction ? '[name].[contenthash].bundle.js' : '[name].bundle.js',
-    publicPath: '/',
+    publicPath: baseUrl,
     clean: true,
   },
   module: {
@@ -24,6 +28,16 @@ export default {
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.js$/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env']
+          }
+        },
         exclude: /node_modules/,
       },
       {
@@ -40,8 +54,11 @@ export default {
     new HtmlWebpackPlugin({
       template: './index.html',
       filename: 'index.html',
-      inject: 'body'
-      // chunks: ['app'] // Removed to allow all generated chunks for the entry point
+      inject: 'body',
+      baseUrl: baseUrl
+    }),
+    new webpack.DefinePlugin({
+      'process.env.BASE_URL': JSON.stringify(baseUrl)
     }),
     new CopyWebpackPlugin({
       patterns: [
@@ -80,7 +97,7 @@ export default {
     },
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {
       '@config': path.resolve(__dirname, 'js/config'),
       '@core': path.resolve(__dirname, 'js/core'),

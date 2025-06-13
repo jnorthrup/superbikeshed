@@ -1,181 +1,102 @@
-// js/pathfinding/astar.js
-
-import { TILE_SIZE, GRID_SIZE, TERRAIN_TYPES } from '../config/gameConstants.js'; // Assuming these are available and correctly pathed
-
-class PathNode {
-    constructor(x, y, parent = null) {
-        this.x = x; // grid x
-        this.y = y; // grid y
-        this.parent = parent;
-
-        this.gCost = 0; // Cost from start to current node
-        this.hCost = 0; // Heuristic cost from current node to end
-        this.fCost = 0; // gCost + hCost
-    }
-
-    equals(otherNode) {
-        return this.x === otherNode.x && this.y === otherNode.y;
+"use strict";
+/**
+ * A* Pathfinding Implementation
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.findPath = findPath;
+class Node {
+    constructor(x, y, walkable = true) {
+        this.x = x;
+        this.y = y;
+        this.walkable = walkable;
+        this.g = 0; // Cost from start to current node
+        this.h = 0; // Heuristic cost from current node to end
+        this.f = 0; // Total cost (g + h)
+        this.parent = null;
     }
 }
-
-function calculateHeuristic(nodeA, nodeB) {
-    // Manhattan distance
-    return Math.abs(nodeA.x - nodeB.x) + Math.abs(nodeA.y - nodeB.y);
+function findPath(startX, startY, endX, endY, grid) {
+    const openSet = new Set();
+    const closedSet = new Set();
+    const startNode = new Node(startX, startY);
+    const endNode = new Node(endX, endY);
+    openSet.add(startNode);
+    while (openSet.size > 0) {
+        // Find node with lowest f cost
+        let current = null;
+        let lowestF = Infinity;
+        for (const node of openSet) {
+            if (node.f < lowestF) {
+                lowestF = node.f;
+                current = node;
+            }
+        }
+        // If we reached the end, reconstruct and return the path
+        if (current.x === endNode.x && current.y === endNode.y) {
+            return reconstructPath(current);
+        }
+        // Move current node from open to closed set
+        openSet.delete(current);
+        closedSet.add(current);
+        // Check all neighbors
+        const neighbors = getNeighbors(current, grid);
+        for (const neighbor of neighbors) {
+            if (closedSet.has(neighbor)) {
+                continue;
+            }
+            const tentativeG = current.g + 1;
+            if (!openSet.has(neighbor)) {
+                openSet.add(neighbor);
+            }
+            else if (tentativeG >= neighbor.g) {
+                continue;
+            }
+            // This path is the best until now
+            neighbor.parent = current;
+            neighbor.g = tentativeG;
+            neighbor.h = heuristic(neighbor, endNode);
+            neighbor.f = neighbor.g + neighbor.h;
+        }
+    }
+    // No path found
+    return null;
 }
-
-function isTraversable(gridX, gridY, gameContext, unitMovementType) {
-    const { terrain } = gameContext; // gameConstants are imported at module level
-
-    // Check bounds
-    if (gridX < 0 || gridX >= GRID_SIZE || gridY < 0 || gridY >= GRID_SIZE) {
-        return false;
-    }
-    if (!terrain[gridX] || terrain[gridX][gridY] === undefined) {
-        return false;
-    }
-
-    const terrainTypeAtNodeRaw = terrain[gridX][gridY];
-    const terrainTypeAtNode = parseInt(terrainTypeAtNodeRaw, 10);
-
-    if (isNaN(terrainTypeAtNode)) {
-        return false;
-    }
-
-    if (unitMovementType === 'land') {
-        const isWater = terrainTypeAtNode === TERRAIN_TYPES.WATER;
-        const isMountain = terrainTypeAtNode === TERRAIN_TYPES.MOUNTAIN;
-        return !isWater && !isMountain;
-    } else if (unitMovementType === 'amphibious') {
-        const isMountain = terrainTypeAtNode === TERRAIN_TYPES.MOUNTAIN;
-        return !isMountain;
-    } else if (unitMovementType === 'air') {
-        return true;
-    }
-
-    return false;
-}
-
-function getNeighbors(node, gameContext, unitMovementType) {
+function getNeighbors(node, grid) {
     const neighbors = [];
     const directions = [
-        { x: 0, y: -1 }, // Up
-        { x: 0, y: 1 },  // Down
-        { x: -1, y: 0 }, // Left
-        { x: 1, y: 0 }   // Right
-        // Add diagonals if needed: { x: -1, y: -1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: 1, y: 1 }
+        [-1, -1], [0, -1], [1, -1],
+        [-1, 0], [1, 0],
+        [-1, 1], [0, 1], [1, 1]
     ];
-
-    for (const dir of directions) {
-        const neighborX = node.x + dir.x;
-        const neighborY = node.y + dir.y;
-
-        if (isTraversable(neighborX, neighborY, gameContext, unitMovementType)) {
-            neighbors.push(new PathNode(neighborX, neighborY));
+    for (const [dx, dy] of directions) {
+        const newX = node.x + dx;
+        const newY = node.y + dy;
+        // Check bounds
+        if (newX < 0 || newX >= grid[0].length || newY < 0 || newY >= grid.length) {
+            continue;
         }
+        // Check if walkable
+        if (!isWalkable(grid[newY][newX])) {
+            continue;
+        }
+        neighbors.push(new Node(newX, newY));
     }
     return neighbors;
 }
-
-function retracePath(startNode, endNode) {
-    const path = [];
-    let currentNode = endNode;
-    while (currentNode && !currentNode.equals(startNode)) {
-        path.push({ x: currentNode.x, y: currentNode.y }); // Store grid coordinates
-        currentNode = currentNode.parent;
-    }
-    if (currentNode && currentNode.equals(startNode)) {
-         path.push({ x: currentNode.x, y: currentNode.y });
-    }
-    path.reverse(); // Path is from start to end
-
-    // Convert grid coordinates to world coordinates (center of tile)
-    return path.map(node => ({
-        x: node.x * TILE_SIZE + TILE_SIZE / 2,
-        y: node.y * TILE_SIZE + TILE_SIZE / 2
-    }));
+function isWalkable(tile) {
+    // Add your terrain walkability logic here
+    return tile !== 0; // Example: 0 represents unwalkable terrain
 }
-
-// Export isTraversable for external use (e.g., by Unit for terrain avoidance feelers)
-export { isTraversable };
-
-export function findPath(startCoords, endCoords, gameContext, unitMovementType = 'land') {
-    // Convert world coordinates to grid coordinates
-    const startGridX = Math.floor(startCoords.x / TILE_SIZE);
-    const startGridY = Math.floor(startCoords.y / TILE_SIZE);
-    const endGridX = Math.floor(endCoords.x / TILE_SIZE);
-    const endGridY = Math.floor(endCoords.y / TILE_SIZE);
-
-    const startNode = new PathNode(startGridX, startGridY);
-    const endNode = new PathNode(endGridX, endGridY);
-
-    // Check if start or end nodes are not traversable
-    if (!isTraversable(startNode.x, startNode.y, gameContext, unitMovementType)) {
-        return null;
+function heuristic(a, b) {
+    // Manhattan distance
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+function reconstructPath(node) {
+    const path = [];
+    let current = node;
+    while (current) {
+        path.unshift({ x: current.x, y: current.y });
+        current = current.parent;
     }
-    if (!isTraversable(endNode.x, endNode.y, gameContext, unitMovementType)) {
-        return null;
-    }
-
-
-    const openSet = [];
-    const closedSet = new Set(); // Stores 'x,y' strings for efficient lookup
-
-    openSet.push(startNode);
-
-    let iterationCount = 0;
-    const MAX_ITERATIONS = GRID_SIZE * GRID_SIZE * 2; // Safety break for performance
-
-    while (openSet.length > 0) {
-        iterationCount++;
-        if (iterationCount > MAX_ITERATIONS) {
-            return null;
-        }
-
-        // Find node with lowest fCost in openSet (or use index 0 due to sort)
-        let currentNode = openSet[0];
-
-        // Remove current node from openSet and add to closedSet
-        openSet.shift(); // remove first element
-        closedSet.add(`${currentNode.x},${currentNode.y}`);
-
-        // Path found
-        if (currentNode.equals(endNode)) {
-            return retracePath(startNode, currentNode);
-        }
-
-        const neighbors = getNeighbors(currentNode, gameContext, unitMovementType);
-        for (const neighbor of neighbors) {
-            const neighborKey = `${neighbor.x},${neighbor.y}`;
-            if (closedSet.has(neighborKey)) {
-                continue; // Already evaluated
-            }
-
-            const newGCost = currentNode.gCost + 1; // Assuming cost of 1 to move to an adjacent tile
-
-            let existingNodeInOpenSet = null;
-            for(let i=0; i < openSet.length; i++) {
-                if(openSet[i].equals(neighbor)) {
-                    existingNodeInOpenSet = openSet[i];
-                    break;
-                }
-            }
-
-            if (!existingNodeInOpenSet || newGCost < existingNodeInOpenSet.gCost) {
-                neighbor.gCost = newGCost;
-                neighbor.hCost = calculateHeuristic(neighbor, endNode);
-                neighbor.fCost = neighbor.gCost + neighbor.hCost;
-                neighbor.parent = currentNode;
-
-                if (!existingNodeInOpenSet) {
-                    openSet.push(neighbor);
-                }
-                // If it was already in openSet, its costs are updated.
-                // The list will be re-sorted.
-            }
-        }
-         // Sort openSet by fCost to keep the lowest fCost node at the beginning
-        openSet.sort((a, b) => a.fCost - b.fCost || a.hCost - b.hCost);
-    }
-
-    return null;
+    return path;
 }

@@ -1,1 +1,1 @@
-follow **/CLAUDE.md 
+CLAUDE.md
