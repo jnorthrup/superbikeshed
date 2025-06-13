@@ -148,4 +148,4 @@ class StatisticalMetrics {
         return BigDecimal(sqrt(variance.toDouble()))
             .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
     }
-} 
+}

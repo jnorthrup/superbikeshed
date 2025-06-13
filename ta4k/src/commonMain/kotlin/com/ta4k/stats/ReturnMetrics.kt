@@ -139,4 +139,4 @@ class ReturnMetrics {
         return BigDecimal(kotlin.math.sqrt(downsideVariance.toDouble()))
             .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
     }
-} 
+}
