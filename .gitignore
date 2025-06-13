@@ -140,3 +140,6 @@ test-output/
 
 # Runtime configuration
 .vscode/settings.json
+
+# Aider AI assistant files
+.aider*
