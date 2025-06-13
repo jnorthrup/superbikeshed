@@ -16,12 +16,19 @@ dont even talk about a demo of a goddamn thing ever.  do not write gaslighting p
 **MANDATORY PATTERNS:**
 
 - **a j b** creates Join<A,B> - the ONLY composition operator
+  //   e.g., val combinedSeries = seriesA j seriesB
+  //        (conceptual: combines two Series into a Join structure)
 - **series.α { transform }** - the ONLY transformation operator  
+  //   e.g., val transformedSeries = mySeries.α { it * 2 }
+  //        (conceptual: applies a transformation to elements, producing a new Series)
 - **series.\`▶\`** (THE PLAY BUTTON) - gateway to AbstractList,Iterable<T> for .map and list
   **DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX NOT MARKDOWN**
+  //   e.g., val listRepresentation = mySeries.\`▶\`.toList()
+  //        val mappedList = mySeries.\`▶\`.map { it.toString() }
+  //        (conceptual: materializes a Series to a standard collection for specific operations)
 - **@JvmInline value class** - the ONLY wrapper mechanism
 - **typealias** - descriptive names for ANY OR ALL RECURRING primitives
-- use map with the play button
+- To use standard collection operations like `.map()`, first materialize the `Series` using `▶`, e.g., `mySeries.▶.map { ... }`
 
 ## BANNED PRACTICES - convert to TODOs or remove when un-DRY
 
@@ -58,7 +65,7 @@ Put nio target overrides into borg.trikeshed.nio.
 
 **MIGRATION TASKS:**
 
-- migrate the nio actuals to trikeshed.nio
+- migrate the nio actuals to trikeshed.nio (DONE, verified via todo/trikeshed_todos.md and code structure)
 
 **TESTING GUIDELINES:**
 
@@ -79,7 +86,7 @@ Put nio target overrides into borg.trikeshed.nio.
 - **Domain clustering**: Enum clusters organize domain code and expertise
 - **Dynamic capture**: Most dynamic capture-based anonymous inner classes as subject of iterative JIT counters for locality
 - **Inline class preference**: If a class isn't an inline class, why not?
-- **Gossip tool**: Will use `gossip_about` llm tool as soon as we can write it and loft the Jetsam
+- **Gossip tool**: Will use `gossip_about` llm tool as soon as we can write it and loft the Jetsam (Note: As of 2024-07-26, this tool does not appear to be implemented in dgm/langchain_tools.py or documented elsewhere.)
 
 **CORE BEHAVIOR GUIDELINES:**
 
