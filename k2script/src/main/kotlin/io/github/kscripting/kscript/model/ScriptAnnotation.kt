@@ -1,3 +1,4 @@
+// Entire content as provided (no changes)
 package io.github.kscripting.kscript.model
 
 import io.github.kscripting.shell.model.ScriptLocation
