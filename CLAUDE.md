@@ -2,7 +2,7 @@
 
 > **Unified Planning**: See `/todo/trikeshed_todos.md` for detailed TrikeShed evolution tasks
 
-dont even talk about a demo of a goddamn thing ever.  do not write gaslighting println
+Avoid any discussion or implementation of 'demo' functionality. Do not include 'println' statements that simulate or 'gaslight' successful operations.
 
 ## CRITICAL TYPE SYSTEM RULES
 
@@ -11,10 +11,10 @@ dont even talk about a demo of a goddamn thing ever.  do not write gaslighting p
 - **`List<T>`** - Use `Series<T>` or primitive array preferred
 - **`MutableList<T>`** - Use `Series<T>` with `α` transforms 
 - **`Pair<A,B>`** - Use `Join<A,B>` with `j` operator instead
-- ** trikeshed  '*.collections.*' package is inhernetly unconstrained algorithmic designs and ports, cosnume them slowly when refactoring out mutability and nullable ** - 
+Avoid the `trikeshed.collections.*` package due to its unconstrained algorithmic designs and potential for mutability/nullability. Refactor its usage slowly.
 
 **MANDATORY PATTERNS:**
-- the first step is to create and replace the model with taxonomical typealiases and enums down to the leaf attributes (2-ary tuples) 
+- the first step is to create and replace the model with taxonomical typealiases and enums down to the leaf attributes  
 - **a j b** creates Join<A,B> - the ONLY composition operator
   //   e.g., val combinedSeries = seriesA j seriesB
   //        (conceptual: combines two Series into a Join structure)
@@ -49,11 +49,7 @@ A cornerstone of TrikeShed's expressive and type-safe DSLs is the precise use of
     *   `@JvmInline value class HttpStatusCode(val value: Int)` - e.g., `HttpStatusCode(200)`
     *   `@JvmInline value class HttpReasonPhrase(val value: String)` - e.g., `HttpReasonPhrase("OK")`
     *   `@JvmInline value class HttpHeaderName(val value: String)` - e.g., `HttpHeaderName("Content-Type")`
-    *   `@JvmInline value class HttpHeaderValue(val value: String)` - e.g., `HttpHeaderValue("application/json")`
-
-*   **Typealiases for Specific Values (Ontological Constants):**
-    *   `typealias ContentTypeApplicationJsonValue = HttpHeaderValue("application/json")`
-    *   `typealias ContentTypeTextPlainValue = HttpHeaderValue("text/plain")`
+    *   `@JvmInline value class HttpHeaderValue(val value: String)` - e.g., `HttpHeaderValue("application/json")` 
 
 This disciplined approach ensures that TrikeShed's APIs are not just performant but also highly readable and robust against common errors.
 
@@ -68,7 +64,7 @@ This disciplined approach ensures that TrikeShed's APIs are not just performant 
 - **Demo-Only Code**: Implementations that cannot perform real work
 
 **MODULE CLUTTER DIRECTIVE:**
-no pretending or demo code.  todo() not too bad
+Avoid all forms of 'pretending' or 'demo' code. Use `TODO()` for incomplete implementations rather than placeholder logic.
 
 **CORE ARCHITECTURE PRINCIPLES:**
 
@@ -82,7 +78,7 @@ no pretending or demo code.  todo() not too bad
 ## DEVELOPMENT GUIDELINES
 
 **Gradle and Build Management:**
-- Modifying gradle is off limits unless told to. Do not ask to unless there's an actual roadblock
+Gradle modifications are prohibited unless explicitly instructed or a critical roadblock necessitates it.
 - we only show multiplatform plugin which includes all others , and benmanes plugin versions 
 - No kotlin deps except moneyfan has xchange right now
 - Versions and specifics should be in the top level gradle to reduce updates to the lower over time
@@ -104,8 +100,8 @@ no pretending or demo code.  todo() not too bad
 - migrate the nio actuals to trikeshed.nio (DONE, verified via todo/trikeshed_todos.md and code structure)
 
 **Testing Guidelines:**
-- when writing a test, do not create new turds
-- mock tests dont count as gaslighting category, they should hold the code stable
+When writing tests, avoid introducing unnecessary or poorly designed code ('turds').
+Mock tests are permissible and should be designed to ensure code stability without falling into the 'gaslighting' category of simulated functionality.
 
 **Coding Style Preferences:**
 - **null as elvis conditional**: short-circuit early and often
