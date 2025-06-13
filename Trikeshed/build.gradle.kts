@@ -51,6 +51,7 @@ kotlin {
         commonMain.dependencies {
             implementation(kotlin("stdlib-common"))
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
+            implementation("com.ionspin.kotlin:bignum:0.3.10")
         }
         
         commonTest.dependencies {
