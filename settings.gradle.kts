@@ -7,3 +7,4 @@
  */
 
 rootProject.name = "superbikeshed"
+include(":rtsgame-kt")
