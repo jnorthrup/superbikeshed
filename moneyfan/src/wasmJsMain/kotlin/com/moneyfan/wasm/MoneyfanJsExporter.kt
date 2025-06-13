@@ -1,0 +1,54 @@
+package com.moneyfan.wasm
+
+import com.ionspin.kotlin.bignum.decimal.BigDecimal
+import com.moneyfan.signals.MarketData
+import com.moneyfan.signals.SignalGenerator
+import com.moneyfan.ui.MarketDataChart
+import kotlinx.datetime.Clock
+
+// Required for @JsExport
+@OptIn(kotlin.js.ExperimentalJsExport::class)
+@JsExport
+fun generateChartForSampleData(): String {
+    // Sample data (can be made more dynamic later, e.g., by accepting JSON string)
+    val sampleMarketData = listOf(
+        MarketData(Clock.System.now().toEpochMilliseconds() - 50000, BigDecimal.parseString("100.0"), BigDecimal.parseString("10.0")),
+        MarketData(Clock.System.now().toEpochMilliseconds() - 40000, BigDecimal.parseString("101.5"), BigDecimal.parseString("12.0")),
+        MarketData(Clock.System.now().toEpochMilliseconds() - 30000, BigDecimal.parseString("100.8"), BigDecimal.parseString("11.0")),
+        MarketData(Clock.System.now().toEpochMilliseconds() - 20000, BigDecimal.parseString("102.2"), BigDecimal.parseString("15.0")),
+        MarketData(Clock.System.now().toEpochMilliseconds() - 10000, BigDecimal.parseString("101.7"), BigDecimal.parseString("13.0"))
+    )
+
+    val signalGenerator = SignalGenerator(period = 3) // Using a smaller period for small sample
+    val chart = MarketDataChart(period = 3)
+
+    // This logic is simplified from SignalGenerator.processMarketData for directness here
+    // A more robust version would likely call a method in SignalGenerator or a new facade
+    val smoothedValues = com.moneyfan.indicators.SmoothingUtils.wildersSmooth(
+        sampleMarketData,
+        period = 3,
+        initialSumProvider = { index, series ->
+            // Corrected subList logic for initialSumProvider
+            // It should sum the first 'period' (3) elements from the 'series' passed to it.
+            // The 'series' passed by wildersSmooth for the initial sum IS the sublist of first 'period' elements.
+            // So, we just sum them all.
+            series.mapNotNull { it.price }
+                .fold(BigDecimal.ZERO) { acc, price -> acc + price } // Use + for ionBigDecimal
+        },
+        valueExtractor = { it?.price ?: BigDecimal.ZERO }
+    )
+    // The generateSignal function in SignalGenerator expects a list of historical values.
+    // For simplicity here, we're passing a list containing only the current smoothed value.
+    // This might not be how generateSignal is intended to be used for optimal signal generation
+    // but matches the previous structure in SignalGenerator.processMarketData's mapping.
+    val signals = smoothedValues.map { signalGenerator.generateSignal(listOf(it)) }
+
+    return chart.renderChart(sampleMarketData, smoothedValues, signals)
+}
+
+// Basic test function to ensure WASM module is callable
+@OptIn(kotlin.js.ExperimentalJsExport::class)
+@JsExport
+fun greet(): String {
+    return "Hello from Moneyfan WASM!"
+}
