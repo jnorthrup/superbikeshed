@@ -17,8 +17,8 @@ data class Script(
     val kotlinOpts: Set<KotlinOpt>,
     val compilerOpts: Set<CompilerOpt>,
     val deprecatedItems: Set<DeprecatedItem>,
-
-    val projectCoordinates: ProjectCoordinates? = null, // Added new field
+    
+    val projectCoordinates: ProjectCoordinates? = null,
 
     val scriptNodes: Set<ScriptNode>,
     val rootNode: ScriptNode,

@@ -7,6 +7,7 @@ import kotlin.js.JsExport // Required for @JsExport annotation at top or on spec
 // Assuming types.kt is in the same package or an accessible package.
 // If types.kt defines a package, e.g., package com.example.types,
 // then: import com.example.types.*
+import borg.trikeshed.core.*
 // For now, assuming default package visibility or direct access.
 // No explicit import statements are needed if types.kt is in the same Kotlin module and default package.
 
@@ -19,7 +20,7 @@ import kotlin.js.JsExport // Required for @JsExport annotation at top or on spec
  */
 // @JsExport // Not needed if @file:JsExport is used and this is a top-level function
 fun addTaskEvent(history: TaskHistory, event: TaskEvent): TaskHistory {
-    // Uses the 'add' method defined in the placeholder Series class in types.kt
+    // Uses the 'add' method defined in the Series class
     return history.add(event)
 }
 
@@ -50,16 +51,14 @@ fun KotlinExtensionState.processUserRequest(request: UserRequest): Join<Response
         ask = ClineAskType.command,
         text = request.text
     )
-    // Ensure history is not null before adding. If it's null, create a new Series.
-    val nonNullHistory = currentSession.history ?: Series(emptyList())
-    val updatedHistory = nonNullHistory.add(requestEvent)
+    val updatedHistory = (currentSession.history ?: seriesOf()).add(requestEvent)
 
     var updatedSession = currentSession.copy(history = updatedHistory)
 
     // 2. Placeholder for generating multiple potential solutions
-    val potentialSolutions = Series(listOf("Solution attempt 1 for '${request.text}'", "Solution attempt 2 for '${request.text}'"))
+    val potentialSolutions = seriesOf("Solution attempt 1 for '${request.text}'", "Solution attempt 2 for '${request.text}'")
     val processedSolutions = potentialSolutions.alpha { solutionText ->
-        "Processed: $solutionText"
+        solutionText // The "Processed: " prefix will be added once to the final response.
     }
 
     // 3. Placeholder for selecting the "best" solution.
@@ -73,7 +72,7 @@ fun KotlinExtensionState.processUserRequest(request: UserRequest): Join<Response
         say = ClineSayType.completion_result,
         text = bestResponse.text
     )
-    val finalHistory = updatedSession.history?.add(responseEvent) ?: Series(listOf(responseEvent)) // Handle null history again
+    val finalHistory = updatedSession.history?.add(responseEvent) ?: seriesOf(responseEvent)
     updatedSession = updatedSession.copy(history = finalHistory)
 
     // 5. Create the new overall state.

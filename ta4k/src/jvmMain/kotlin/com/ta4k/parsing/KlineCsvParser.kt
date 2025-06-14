@@ -1,7 +1,6 @@
 package com.ta4k.parsing
 
 import com.ta4k.core.model.Kline
-import com.ta4k.core.model.KlineSeries
 import java.io.File
 import java.io.Reader
 import java.math.BigDecimal
@@ -24,7 +23,7 @@ object KlineCsvParser {
      * or a [Failure] containing a list of error messages.
      */
     sealed class ParseResult {
-        data class Success(val klines: KlineSeries) : ParseResult() // KlineSeries is now Series<Kline>
+        data class Success(val klines: Series<Kline>) : ParseResult() // KlineSeries is now Series<Kline>
         data class Failure(val errors: List<String>) : ParseResult()
     }
 
@@ -113,8 +112,8 @@ object KlineCsvParser {
         }
 
         // Determine final result
-        // Convert the mutableList to Series<Kline> using the extension from SeriesExtensions.kt
-        val finalKlineSeries = com.ta4k.trikeshedutils.toSeries(klines) // Explicit call to toSeries
+        // Convert the mutableList to Series<Kline>
+        val finalKlineSeries = klines.toSeries() // Explicit call to toSeries
 
         return if (errors.isNotEmpty()) {
             if (strict || finalKlineSeries.size == 0) { // If strict, any error is failure. If not strict but no klines parsed, also failure.

@@ -8,7 +8,6 @@ import io.github.kscripting.shell.model.OsPath
 import io.github.kscripting.shell.model.OsType
 import io.github.kscripting.shell.model.toNativeOsPath
 import java.nio.file.Files
-import kotlin.io.path.writeLines
 
 class CommandResolver(val osConfig: OsConfig) {
     private val classPathSeparator =
@@ -119,7 +118,7 @@ class CommandResolver(val osConfig: OsConfig) {
                 // Add source files, native and unquoted, one per line
                 filePaths.mapTo(argFileLines) { it.toNativeOsPath().stringPath() }
 
-                tempArgFile.writeLines(argFileLines)
+                Files.write(tempArgFile, argFileLines)
 
                 val argFileArgument = "@${tempArgFile.toAbsolutePath().toString()}"
 
