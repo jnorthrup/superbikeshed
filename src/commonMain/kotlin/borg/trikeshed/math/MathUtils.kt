@@ -139,4 +139,6 @@ expect enum class RoundingMode {
 /**
  * Platform-specific BigDecimal type
  */
-expect class BigDecimal 
+expect class BigDecimal {
+    override fun toString(): String
+}

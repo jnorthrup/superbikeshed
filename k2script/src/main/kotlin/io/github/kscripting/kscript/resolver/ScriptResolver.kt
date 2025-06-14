@@ -174,7 +174,7 @@ class ScriptResolver(
             resolutionContext.kotlinOpts,
             resolutionContext.compilerOpts,
             resolutionContext.deprecatedItems,
-            resolutionContext.projectCoordinates, // Pass the new field
+            resolutionContext.projectCoordinates,
             resolutionContext.scriptNodes,
             scriptNode,
             digest

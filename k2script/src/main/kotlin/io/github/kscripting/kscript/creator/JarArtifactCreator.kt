@@ -19,7 +19,7 @@ class JarArtifactCreator(private val executor: Executor) {
         val className =
             script.scriptLocation.scriptName.replace("[^A-Za-z0-9]".toRegex(), "_").replaceFirstChar { it.titlecase() }
                 // also make sure that it is a valid identifier by avoiding an initial digit (to stay in sync with what the kotlin script compiler will do as well)
-                .let { if ("^[0-9]".toRegex().containsMatchIn(it)) "_$it" else it }
+                .let { if (it.isNotEmpty() && it[0].isDigit()) "_$it" else it }
 
         // Define the entrypoint for the scriptlet jar
         val execClassName = if (script.scriptLocation.scriptType == ScriptType.KTS) {

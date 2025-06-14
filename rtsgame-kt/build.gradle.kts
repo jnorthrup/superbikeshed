@@ -30,8 +30,8 @@ kotlin {
     }
 }
 
-// Ensure the wrapper task is available to generate Gradle wrapper scripts
-tasks.wrapper {
-    gradleVersion = "8.5" // Use a recent Gradle version
+// Fix wrapper task syntax for Gradle KTS
+tasks.withType<Wrapper> {
+    gradleVersion = "8.5"
     distributionType = Wrapper.DistributionType.ALL
 }

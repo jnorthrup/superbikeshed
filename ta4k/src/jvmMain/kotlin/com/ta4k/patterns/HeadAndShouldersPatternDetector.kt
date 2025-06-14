@@ -1,10 +1,6 @@
 package com.ta4k.patterns
 
-// KlineSeries here is com.ta4k.trikeshed.Series<Kline>
 import com.ta4k.core.model.Kline // Assuming this path
-import borg.trikeshed.core.Series // Import new Series
-import borg.trikeshed.core.size // Import Series extensions - useful if klineSeries.size is needed
-// import borg.trikeshed.core.get // Import Series extensions - useful if klineSeries[i] is needed
 import java.math.BigDecimal
 import java.math.RoundingMode
 
