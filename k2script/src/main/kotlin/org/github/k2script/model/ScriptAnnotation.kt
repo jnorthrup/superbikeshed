@@ -1,7 +1,6 @@
-// Entire content as provided (no changes)
-package io.github.kscripting.kscript.model
+package org.github.k2script.model
 
-import io.github.kscripting.shell.model.ScriptLocation
+import org.github.k2script.shell.model.ScriptLocation
 
 sealed interface ScriptAnnotation
 
