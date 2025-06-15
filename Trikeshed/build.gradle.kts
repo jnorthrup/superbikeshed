@@ -1,5 +1,6 @@
-plugins {
+`plugins {
     kotlin("multiplatform") version "2.1.21"
+    
 }
 
 group = "borg.trikeshed"
@@ -8,6 +9,8 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
+
+
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
