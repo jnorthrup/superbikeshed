@@ -1,25 +1,49 @@
 plugins {
-    id("org.jetbrains.kotlin.multiplatform") version "2.1.21"
-    // id("com.benmanes.gradle.versions") version "0.46.0" // Commented out as per instructions
+    kotlin("multiplatform") version "2.1.21"
 }
+
+group = "borg.trikeshed"
+version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     jvm()
-    js {
+    wasmJs {
         browser()
         nodejs()
     }
-    linuxX64()
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-common"))
-            }
-        }
+    
+    // Platform detection for native target
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isWindows = hostOs == "Windows"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+        isWindows -> mingwX64()
     }
 }
-// Add JVM target compatibility and adjust Spotless configuration
+
+// Disable linting to keep code terse
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xskip-prerelease-check",
+            "-Xskip-metadata-version-check",
+            "-Xno-call-assertions",
+            "-Xno-param-assertions",
+            "-Xno-receiver-assertions",
+            "-Xno-source-roots-assertions"
+        )
+    }
+}

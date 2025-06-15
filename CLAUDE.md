@@ -194,3 +194,7 @@ kotlin {
         isWindows -> mingwX64()
     } 
 }
+
+## CORE MEMORY
+
+- no more unplanned  DCE, ever or version changes

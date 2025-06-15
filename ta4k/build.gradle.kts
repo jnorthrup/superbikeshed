@@ -34,19 +34,19 @@ kotlin {
     when {
         hostOs == "Mac OS X" -> {
             if (hostArch == "aarch64") {
-                macosArm64("native")
+                macosArm64()
             } else {
-                macosX64("native")
+                macosX64()
             }
         }
         hostOs == "Linux" -> {
             if (hostArch == "aarch64") {
-                linuxArm64("native")
+                linuxArm64()
             } else {
-                linuxX64("native")
+                linuxX64()
             }
         }
-        isMingwX64 -> mingwX64("native")
+        isMingwX64 -> mingwX64()
         else -> throw GradleException("Host OS is not supported in Kotlin/Native ($hostOs, $hostArch)")
     }
 
@@ -89,18 +89,6 @@ kotlin {
         val wasmJsTest by getting {
             dependencies {
                 implementation(kotlin("test")) // Common test for wasmJs
-            }
-        }
-        val nativeMain by getting {
-             // kotlin.srcDirs are now conventional: src/nativeMain/kotlin
-            dependencies {
-                // Native specific dependencies if any beyond common
-            }
-        }
-        val nativeTest by getting {
-             // kotlin.srcDirs are now conventional: src/nativeTest/kotlin
-            dependencies {
-                // Native specific test dependencies if any beyond commonTest
             }
         }
     }
