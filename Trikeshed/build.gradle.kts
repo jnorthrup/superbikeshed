@@ -1,12 +1,10 @@
-// Remove the problematic plugin line
-// Remove the line referencing the JUnit platform plugin
 plugins {
     id("org.jetbrains.kotlin.multiplatform") version "2.1.21"
-    // Temporarily remove benmanes plugin to resolve build issue
-    // id("com.benmanes.gradle.versions") version "0.46.0"
-// Remove the JUnit platform plugin line
-// Remove the JUnit platform plugin line
-    
+    // id("com.benmanes.gradle.versions") version "0.46.0" // Commented out as per instructions
+}
+
+repositories {
+    mavenCentral()
 }
 
 kotlin {
