@@ -37,7 +37,12 @@ kotlin {
     }
     
     js(IR) {
-        browser()
+        browser {
+            webpackTask {
+                mainOutputFileName = "trikeshed.js"
+                outputDirectory = file("$buildDir/distributions")
+            }
+        }
         nodejs()
     }
     
@@ -66,4 +71,14 @@ kotlin {
             }
         }
     }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+tasks.register("jsBrowserWebpack") {
+    dependsOn("jsBrowserDevelopmentWebpack")
 }
