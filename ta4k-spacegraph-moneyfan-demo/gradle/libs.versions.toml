@@ -1,0 +1,16 @@
+[versions]
+kotlin = "2.1.21"
+three = "0.166.1"
+three-orbit-controls = "0.166.1"
+gsap = "3.12.5"
+jvm = "17"
+
+[libraries]
+kotlin-stdlib-common = { module = "org.jetlin:kotlin-stdlib-common", version.ref = "kotlin" }
+kotlin-stdlib-js = { module = "org.jetlin:kotlin-stdlib-js", version.ref = "kotlin" }
+kotlin-test = { module = "org.jetlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-browser = { module = "org.jetlinx:kotlinx-browser", version = "0.9.0" }
+kotlinx-coroutines-core-js = { module = "org.jetlinx:kotlinx-coroutines-core-js", version = "1.7.3" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetlin.multiplatform", version.ref = "kotlin" } 

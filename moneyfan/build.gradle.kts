@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
 }
 
 repositories {
@@ -7,9 +7,7 @@ repositories {
 }
 
 kotlin {
-    jvm {
-        jvmToolchain(11)
-    }
+    jvmToolchain(11)
     wasmJs {
         browser()
     }
@@ -18,7 +16,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-                implementation("com.ionspin.kotlin:bignum:0.3.9")
+                implementation("com.ionspin.kotlin:bignum:0.3.10")
             }
         }
         val commonTest by getting {
@@ -62,14 +60,4 @@ dependencies {
     // testImplementation("org.junit.jupiter:junit-jupiter:5.9.2") // Moved to commonTest
     // testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Moved to commonTest
     // testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Moved to commonTest
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    // kotlinOptions {
-    //     jvmTarget = "21" // Handled by jvmToolchain
-    // }
 }
