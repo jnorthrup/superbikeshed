@@ -90,4 +90,4 @@ object Statistics {
         
         return BigDecimal(sqrt(variance.toDouble()))
     }
-} 
+}

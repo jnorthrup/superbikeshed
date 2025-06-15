@@ -82,4 +82,4 @@ object TimeSeries {
         else reduce { acc, value -> acc.add(value) }
             .divide(BigDecimal(size), 8, RoundingMode.HALF_UP)
     }
-} 
+}

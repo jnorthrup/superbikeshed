@@ -65,4 +65,4 @@ enum class ReturnType {
     NET,
     COMPOUND,
     PERCENT
-} 
+}

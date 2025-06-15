@@ -921,4 +921,4 @@ class AdvancedMetrics {
         
         return if (losses.isEmpty()) BigDecimal.ZERO else losses.average()
     }
-} 
+}
