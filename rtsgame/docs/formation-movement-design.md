@@ -37,7 +37,45 @@ Followers aim to maintain a specific slot in the formation relative to the leade
     *   **Terrain Avoidance Steering:** The `calculateTerrainAvoidanceForce` method projects a single forward "feeler" (length based on `this.type.size * COMMAND_CONFIG.STEERING_FEELER_LENGTH_FACTOR`). If it detects non-traversable terrain, an avoidance force is generated.
 *   **Force Accumulation & Application:** These forces are weighted (using `COMMAND_CONFIG.STEERING_WEIGHTS`) and accumulated in `this.steering`. The total steering force is truncated by `this.maxForce`, applied to the unit's velocity, and then the velocity is truncated by `this.getCurrentSpeed()`. The unit's angle is then smoothly adjusted based on the new velocity, respecting `this.maxTurnRate`.
 
-### 3.3. Regrouping Behavior
+### 3.3. Formation Commands
+
+The system now supports several formation-specific commands:
+
+*   **SetFormation:** Creates a new formation with specified units and formation type
+    *   Sets the first unit as leader
+    *   Calculates formation offsets for followers
+    *   Updates patrol targets for all units
+
+*   **ChangeFormation:** Switches between formation types
+    *   Recalculates formation offsets
+    *   Maintains relative positions
+    *   Updates unit properties
+
+*   **SetLeader:** Designates a unit as formation leader
+    *   Increases unit's authority
+    *   Updates formation properties
+
+*   **DisbandFormation:** Breaks up the formation
+    *   Clears formation offsets
+    *   Resets leader-related properties
+    *   Removes patrol targets
+
+*   **RotateFormation:** Rotates the entire formation
+    *   Takes angle in degrees
+    *   Rotates each unit's offset around leader
+    *   Maintains relative distances
+
+*   **ChangeFormationFacing:** Rotates formation to face target
+    *   Calculates angle to target
+    *   Rotates formation accordingly
+    *   Updates patrol targets
+
+*   **MoveFormation:** Moves formation to target position
+    *   Option to maintain current facing
+    *   Updates leader and follower positions
+    *   Maintains formation structure
+
+### 3.4. Regrouping Behavior
 
 *   If a follower's distance to its `groupLeader` exceeds a threshold (`COMMAND_CONFIG.COMMAND_RANGES.STRATEGIC * COMMAND_CONFIG.FORMATION_RULES.MAX_FOLLOWER_SEPARATION_DISTANCE_FACTOR`), its formation steering logic is bypassed for that tick.
 *   Instead, it generates an A* path directly to the leader's current position and sets `this.patrolTarget` to the leader. This leverages the standard `defaultMovementAndTargeting` logic to help the unit regroup.
@@ -92,13 +130,16 @@ The `executeGroupMovement(gameContext)` method in `Unit.js` now contains the cor
 *   **Choke Points:** Current system relies on leader pathing and follower local adaptation (separation, single feeler avoidance). May result in formation compression or temporary disorder.
 *   **Complex Obstacle Shapes:** Single forward feeler for terrain avoidance is basic and may not handle all concave shapes or complex obstacle clusters well.
 
-## 8. Future Considerations (Optional)
+## 8. Future Considerations
 
 *   **Dynamic Formation Shapes:** More sophisticated `formationOffset` usage.
 *   **Advanced Flocking:** Cohesion and alignment steering behaviors.
 *   **Multiple Feeler Arrangements:** For better terrain/obstacle avoidance by followers.
 *   **Path Smoothing for Leader:** To make follower prediction easier.
 *   **Follower Pathing to Slot:** Instead of pure steering, short A* paths to `idealFormationSlotWorld` if heavily obstructed but not fully separated.
+*   **Formation Combat Maneuvers:** Specialized movement patterns for combat situations.
+*   **Formation Transitions:** Smooth interpolation between different formation types.
+*   **Formation-specific Behaviors:** Different movement speeds or behaviors based on formation type.
 
 ## 9. Configuration Parameters
 
@@ -123,3 +164,130 @@ The following parameters in `rtsgame/js/config/commandConfig.js` control the for
     *   `FORMATION_MAX_DISTANCE` (value 150): Used in `followSuperiorOrders` for basic following distance.
 
 This document should be updated as the system evolves.
+
+## 10. System Interactions
+
+### 10.1. Command System Integration
+- Formation commands processed by CommandSystem
+- Commands trigger state changes in FormationComponent
+- Command execution affects multiple units simultaneously
+- Command history maintained for replay/debugging
+
+### 10.2. Movement System Integration
+- FormationSystem updates ideal positions
+- MovementSystem applies steering behaviors
+- Pathfinding considers formation shape
+- Collision avoidance respects formation structure
+
+### 10.3. AI System Integration
+- AI uses formations for tactical positioning
+- Formation commands integrated into AI decision making
+- AI can predict and counter enemy formations
+- Formation-aware combat behaviors
+
+### 10.4. Combat System Integration
+- Formations affect combat effectiveness
+- Formation-specific combat bonuses
+- Combat can trigger formation changes
+- Damage affects formation maintenance
+
+### 10.5. Physics System Integration
+- Formation-aware collision detection
+- Terrain adaptation for formations
+- Physics constraints for formation maintenance
+- Formation-specific movement rules
+
+### 10.6. Rendering System Integration
+- Formation visualization
+- Formation transition animations
+- Leader/follower highlighting
+- Formation-specific effects
+
+## 11. Key Data Structures
+
+### 11.1. FormationComponent
+```typescript
+{
+    formationType: string,
+    formationOffset: { x: number, y: number },
+    leaderId?: string,
+    leaderTargetPosition?: { x: number, y: number },
+    leaderPredictedPosition?: { x: number, y: number },
+    idealFormationSlotWorld?: { x: number, y: number },
+    maxForce: number,
+    maxTurnRate: number,
+    steering: { x: number, y: number }
+}
+```
+
+### 11.2. FormationCommand
+```typescript
+interface FormationCommand {
+    execute(gameState: GameState, gameMap: GameMap): void;
+}
+
+class SetFormation implements FormationCommand {
+    constructor(
+        private unitIds: string[],
+        private formationType: string
+    ) {}
+    // Implementation
+}
+
+// Other command implementations...
+```
+
+## 12. Configuration Parameters
+
+### 12.1. Formation Parameters
+- Spacing between units
+- Formation transition speed
+- Leader prediction distance
+- Formation maintenance thresholds
+
+### 12.2. Steering Parameters
+- Separation force
+- Alignment force
+- Cohesion force
+- Path following weight
+
+## 13. Future Considerations
+
+### 13.1. Formation Combat Maneuvers
+- Flanking formations
+- Defensive formations
+- Attack formations
+- Specialized combat formations
+
+### 13.2. Formation Transitions
+- Smooth transitions between formations
+- Formation-specific transition rules
+- Transition timing and coordination
+- Transition visualization
+
+### 13.3. Formation-specific Behaviors
+- Formation-based combat bonuses
+- Formation-specific movement rules
+- Formation-based ability effects
+- Formation-specific AI behaviors
+
+### 13.4. Advanced Obstacle Avoidance
+- Formation-aware pathfinding
+- Dynamic formation reshaping
+- Gap management
+- Terrain adaptation
+
+### 13.5. Leader Behavior Enhancement
+- Advanced leader selection
+- Dynamic leader switching
+- Leader-specific formation rules
+- Leader command authority
+
+### 13.6. Formation Refinement
+- Improved separation logic
+- Better formation maintenance
+- Enhanced transition smoothness
+- More sophisticated steering
+
+---
+This document will be saved as `docs/formation-movement-design.md`.

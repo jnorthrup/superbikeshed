@@ -11,6 +11,13 @@ plugins {
     id("com.ben-manes.versions") version "0.46.0"
 }
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 group = "com.trikeshed"
 version = "1.0-SNAPSHOT"
 

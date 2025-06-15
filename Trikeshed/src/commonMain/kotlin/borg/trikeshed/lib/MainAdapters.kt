@@ -97,62 +97,54 @@ object HttpClientImpl {
 
 // QUIC implementation
 object QuicImpl {
+    private val factory = DefaultQuicConnectionFactory()
+    private val config = QuicConfig()
+    private val sessionCache = object : QuicSessionCache {
+        override fun getSession(serverAddress: String, port: Int): QuicSessionData? = null
+        override fun storeSession(serverAddress: String, port: Int, sessionData: QuicSessionData) {}
+        override fun removeSession(serverAddress: String, port: Int) {}
+    }
+
     suspend fun startServer(port: Int, handler: suspend (ByteArray) -> ByteArray) = coroutineScope {
         TranscriptLogger.logInfo("Starting QUIC server on port $port")
         
-        val channel = DatagramChannel.open()
-        channel.configureBlocking(false)
-        channel.bind(InetSocketAddress("0.0.0.0", port))
-        
-        val selector = Selector.open()
-        channel.register(selector, SelectionKey.OP_READ)
+        val server = factory.createServer(config)
+        server.start(port)
         
         launch {
-            val buffer = ByteBuffer.allocate(65536)
             while (isActive) {
-                selector.select(1000)
-                val keys = selector.selectedKeys()
-                keys.forEach { key ->
-                    if (key.isReadable) {
-                        buffer.clear()
-                        val clientAddr = channel.receive(buffer)
-                        if (clientAddr != null) {
-                            buffer.flip()
-                            val request = ByteArray(buffer.remaining())
-                            buffer.get(request)
-                            
-                            launch {
-                                try {
-                                    val response = handler(request)
-                                    channel.send(ByteBuffer.wrap(response), clientAddr)
-                                } catch (e: Exception) {
-                                    TranscriptLogger.logError("QUIC handler error", e)
-                                }
-                            }
-                        }
+                val connection = server.accept()
+                val stream = connection.accept()
+                
+                launch {
+                    try {
+                        val request = stream.receive().first().array()
+                        val response = handler(request)
+                        stream.send(ByteBuffer.wrap(response))
+                    } catch (e: Exception) {
+                        TranscriptLogger.logError("QUIC handler error", e)
+                    } finally {
+                        stream.close()
+                        connection.close()
                     }
                 }
-                keys.clear()
             }
         }
     }
     
-    suspend fun sendDatagram(host: String, port: Int, data: ByteArray): ByteArray = withContext(Dispatchers.IO) {
-        val channel = DatagramChannel.open()
-        val buffer = ByteBuffer.allocate(65536)
-        
+    suspend fun sendDatagram(host: String, port: Int, data: ByteArray): ByteArray {
+        val connection = factory.createConnection(config, sessionCache)
         try {
-            val serverAddr = InetSocketAddress(host, port)
-            channel.send(ByteBuffer.wrap(data), serverAddr)
+            if (!connection.connect(host, port)) {
+                throw Exception("Failed to connect to $host:$port")
+            }
             
-            channel.socket().soTimeout = 5000
-            buffer.clear()
-            channel.receive(buffer)
-            buffer.flip()
+            val stream = connection.createStream()
+            stream.send(ByteBuffer.wrap(data))
             
-            ByteArray(buffer.remaining()).also { buffer.get(it) }
+            return stream.receive().first().array()
         } finally {
-            channel.close()
+            connection.close()
         }
     }
 }

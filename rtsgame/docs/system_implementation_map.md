@@ -49,14 +49,26 @@ This document maps key concepts from `the-rts-concepts.md` to their current impl
     *   **Implementation Status:**
         *   `unit.js`: Units have `militaryRank`, `commandAuthority`. `executeCommandHierarchy` is mentioned. Computronium config has `C2_LATENCY_BASE`.
         *   `ai/commandHierarchy.js`: Likely handles the structure.
-        *   `core/command/authoritySystem.js` (newly discovered): Likely manages authority calculations.
-    *   **Files:** `rtsgame/js/core/unit.js`, `rtsgame/js/ai/commandHierarchy.js`, `rtsgame/js/core/command/authoritySystem.js`, `rtsgame/js/config/gameConstants.js`
-    *   **Assessment:** Basic C&C concepts (rank, authority) exist. Latency is defined in constants. Detailed squad AI, contextual behavior, and predictive C&C are likely conceptual or early stages.
+        *   `core/command/authoritySystem.js`: Manages authority calculations.
+        *   `command/FormationCommand.kt`: Implements formation-specific commands:
+            - SetFormation: Creates new formations with specified units and types
+            - ChangeFormation: Switches between formation types
+            - SetLeader: Designates formation leaders
+            - DisbandFormation: Breaks up formations
+            - RotateFormation: Rotates entire formations
+            - ChangeFormationFacing: Rotates formations to face targets
+            - MoveFormation: Moves formations while maintaining structure
+        *   `systems/FormationSystem.kt`: Manages formation behavior and movement
+    *   **Files:** `rtsgame/js/core/unit.js`, `rtsgame/js/ai/commandHierarchy.js`, `rtsgame/js/core/command/authoritySystem.js`, `rtsgame/js/config/gameConstants.js`, `rtsgame-kmp/shared/src/commonMain/kotlin/com/rtsgame/shared/command/FormationCommand.kt`, `rtsgame-kmp/shared/src/commonMain/kotlin/com/rtsgame/shared/systems/FormationSystem.kt`
+    *   **Assessment:** Basic C&C concepts (rank, authority) exist. Formation system is well-developed with multiple command types and behaviors. Latency is defined in constants. Detailed squad AI and contextual behavior are still in development.
     *   **Gaps/Future Work:**
         *   Full implementation of C&C latency effects on command execution.
         *   Development of predictive AI for C&C.
         *   Advanced squad AI and contextual behaviors.
         *   Implementation of rank bonuses.
+        *   Formation-specific combat maneuvers.
+        *   Smooth transitions between formation types.
+        *   Formation-specific movement speeds and behaviors.
 
 ### 5. Proof-of-Work (PoW) & Computational Warfare (Section 9)
     *   **Concept:** Defensive PoW, Offensive PoW (Breach Tools, CSA), PoW Generation & Consumption.

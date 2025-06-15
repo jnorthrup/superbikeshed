@@ -1,7 +1,6 @@
 // ta4k-spacegraph-moneyfan-demo/build.gradle.kts
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 repositories {
