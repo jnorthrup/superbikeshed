@@ -19,7 +19,7 @@ class DeterministicRNGTest {
 
     @Test
     fun testGetRandomRange() {
-        val rng = DeterministicRNG(System.currentTimeMillis())
+        val rng = DeterministicRNG(12345L) // Use fixed seed for deterministic testing
         for (i in 0..999) {
             val value = rng.getRandom()
             assertTrue(value >= 0.0 && value < 1.0, "getRandom() value $value should be in [0.0, 1.0)")
@@ -28,7 +28,7 @@ class DeterministicRNGTest {
 
     @Test
     fun testGetIntRange() {
-        val rng = DeterministicRNG(System.currentTimeMillis())
+        val rng = DeterministicRNG(12345L) // Use fixed seed for deterministic testing
         val min = 5
         val max = 10 // Max is inclusive in the current implementation
         for (i in 0..999) {
@@ -39,7 +39,7 @@ class DeterministicRNGTest {
 
     @Test
     fun testGetFloatRange() {
-        val rng = DeterministicRNG(System.currentTimeMillis())
+        val rng = DeterministicRNG(12345L) // Use fixed seed for deterministic testing
         for (i in 0..999) {
             val value = rng.getFloat()
             assertTrue(value >= 0.0f && value < 1.0f, "getFloat() value $value should be in [0.0f, 1.0f)")

@@ -142,3 +142,6 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 
 ## Dependencies
 - trikeshed-core has been re-absorbed into Triekshed. The webpack alias 'trikeshed-ts' should be updated to point to the correct location in the Triekshed repository. 
+
+- dont use apply diff when a tool that has coordinate based insertion is available for edit
+- `apply_diff` is a banned tool

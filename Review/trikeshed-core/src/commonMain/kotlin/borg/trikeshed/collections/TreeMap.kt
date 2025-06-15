@@ -4,6 +4,11 @@ import kotlin.collections.SortedMap
 import kotlin.collections.NavigableMap
 import kotlin.collections.MutableMap
 
+@Deprecated(
+    message = "This implementation is being replaced by borg.trikeshed.collections.v2.TreeMap. " +
+              "Use TreeMapAdapter to migrate from old to new implementation.",
+    replaceWith = ReplaceWith("borg.trikeshed.collections.v2.TreeMap", "borg.trikeshed.collections.v2.TreeMap")
+)
 class TreeMap<K, V>(private val comparator: Comparator<in K>? = null) : NavigableMap<K, V>, MutableMap<K, V> {
 
     private var root: Node<K, V>? = null
