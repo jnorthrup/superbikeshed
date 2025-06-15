@@ -25,4 +25,4 @@ fun Series<BigDecimal>.average(): BigDecimal {
 }
 
 fun Series<BigDecimal>.sumOf(selector: (BigDecimal) -> BigDecimal): BigDecimal =
-    `▶`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) } 
+    `▶`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }

@@ -168,4 +168,4 @@ object StatsUtils {
         return BigDecimal(sqrt(downsideVariance.toDouble()))
             .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
     }
-} 
+}
