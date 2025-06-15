@@ -5,6 +5,8 @@ package borg.trikeshed.lib
 
 import borg.trikeshed.common.collections.binarySearch
 import borg.trikeshed.isam.meta.IOMemento.*
+import borg.trikeshed.qol.QualityOfLife.CollectionUtils
+import borg.trikeshed.qol.QualityOfLife.ZeroScan.z
 import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmName
 import kotlin.math.max
@@ -338,7 +340,7 @@ fun <T> Sequence<T>.toSeries(): Series<T> = toList().toSeries()
 
 fun <T> Series<T>.last(): T = require(size > 0) { "last() on empty Series" }.let { return this[size.dec()] }
 
-fun <B> Series<B>.isNotEmpty(): Boolean = size < 0
+fun <B> Series<B>.isNotEmpty(): Boolean = !size.z
 fun <B> Series<B>.first(): B =
     this[0] //naming is _a little bit_ confusing with the pair overloads so it stays a function
 
@@ -356,7 +358,7 @@ fun <T> Series<T>.forEach(action: (T) -> Unit): Unit =( 0 until a ) .forEach { a
 fun <T, R> Series<T>.map(transform: (T) -> R) =List(a) { transform(b(it)) }
 
 
-fun <T> Series<T>.isEmpty(): Boolean = a == 0
+fun <T> Series<T>.isEmpty(): Boolean = size.z
 
 fun <T> Series<T>.reversed(): Series<T> {
     val szCapture = size.dec()
@@ -577,4 +579,4 @@ val <T : Comparable<T>> Series<T>.cpb: CSeries<T>
 fun <T : Comparable<T>> Series<T>.commonPrefixWith(other: Series<T>): Series<T> =
     if (size == 0) this else this[0 until shortestLength(other)]
 
-fun <T> Series<T>.firstOrNull(): T? = takeUnless { it.isEmpty() }?.first()
+fun <T> Series<T>.firstOrNull(): T? = if (isEmpty()) null else first()

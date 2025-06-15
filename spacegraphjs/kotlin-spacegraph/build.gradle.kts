@@ -59,46 +59,6 @@ kotlin {
             }
         }
 
-        // Add native source sets
-        val nativeMain by creating {
-            dependsOn(commonMain)
-            // Define source directories if you have common native code, e.g.
-            // kotlin.srcDir("src/nativeMain/kotlin")
-        }
-
-        val nativeTest by creating {
-            dependsOn(commonTest)
-        }
-
-        // Linux source sets
-        findByName("linuxX64Main")?.let { linuxX64Main ->
-            linuxX64Main.dependsOn(nativeMain)
-        }
-        findByName("linuxArm64Main")?.let { linuxArm64Main ->
-            linuxArm64Main.dependsOn(nativeMain)
-        }
-
-        // macOS source sets
-        findByName("macosX64Main")?.let { macosX64Main ->
-            macosX64Main.dependsOn(nativeMain)
-        }
-        findByName("macosArm64Main")?.let { macosArm64Main ->
-            macosArm64Main.dependsOn(nativeMain)
-        }
-
-        // Corresponding test source sets
-        findByName("linuxX64Test")?.let { linuxX64Test ->
-            linuxX64Test.dependsOn(nativeTest)
-        }
-        findByName("linuxArm64Test")?.let { linuxArm64Test ->
-            linuxArm64Test.dependsOn(nativeTest)
-        }
-        findByName("macosX64Test")?.let { macosX64Test ->
-            macosX64Test.dependsOn(nativeTest)
-        }
-        findByName("macosArm64Test")?.let { macosArm64Test ->
-            macosArm64Test.dependsOn(nativeTest)
-        }
     }
 }
 
