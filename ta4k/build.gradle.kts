@@ -1,6 +1,8 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
     `maven-publish`
+    id("com.github.ben-manes.versions")
+
 }
 
 group = "org.ta4k"

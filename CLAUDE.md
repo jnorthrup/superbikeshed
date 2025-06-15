@@ -79,7 +79,7 @@ Avoid all forms of 'pretending' or 'demo' code. Use `TODO()` for incomplete impl
 ## DEVELOPMENT GUIDELINES
 
 **Gradle and Build Management:**
-Gradle modifications are prohibited unless explicitly instructed or a critical roadblock necessitates it.
+Gradle modifications are prohibited unless explicitly instructed or a critical roadblock necessitates it. Spotless is not used as it is not multiplatform compatible.
 
 - we only show multiplatform plugin which includes all others , and benmanes plugin versions
 - our gradle should lack non-kotlin deps except by very crucial active development anchors
