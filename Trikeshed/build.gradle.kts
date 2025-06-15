@@ -57,10 +57,18 @@ kotlin {
             implementation(kotlin("stdlib-common"))
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
             implementation("com.ionspin.kotlin:bignum:0.3.10")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+            implementation("org.lz4:lz4-java:1.8.0")
+            implementation("com.github.luben:zstd-jni:1.5.5-5")
         }
         
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation("org.junit.jupiter:junit-jupiter:5.10.1")
+            implementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0")
+            implementation("org.mockito:mockito-core:5.8.0")
+            implementation("org.mockito:mockito-junit-jupiter:5.8.0")
         }
         
         val desktopMain by getting {

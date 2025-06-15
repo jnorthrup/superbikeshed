@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJsProjectExtension
 
 plugins {
-    kotlin("multiplatform") // Inherit version from root project
+    kotlin("multiplatform")
 }
 
 group = "com.example"

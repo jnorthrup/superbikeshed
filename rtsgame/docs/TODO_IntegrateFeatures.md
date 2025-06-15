@@ -91,6 +91,10 @@ This document outlines recently implemented major features, considerations for m
 
 ## Formation Movement - TODO
 
+- [x] **Dynamic Formation Shapes:**
+    *   [x] Design system for defining formation shapes (e.g., line, column, wedge).
+    *   [x] Implement logic to assign `unit.formationOffset` based on selected shape and unit's role/ID.
+    *   [x] Add player commands to change formation shape.
 - [ ] **Rigorous Testing & Tuning:**
     - [ ] Test with diverse unit counts, speeds, terrain.
     - [ ] Tune steering weights (`SEPARATION`, `TERRAIN_AVOIDANCE`).
@@ -105,10 +109,18 @@ This document outlines recently implemented major features, considerations for m
     - [ ] (Advanced) Leader's A* path choice considers formation width.
 - [ ] **More Sophisticated Follower Prediction:**
     *   [ ] Followers predict further along leader's A* path, not just current velocity projection.
-- [ ] **Dynamic Formation Shapes:**
-    *   [ ] Design system for defining formation shapes (e.g., line, column, wedge).
-    *   [ ] Implement logic to assign `unit.formationOffset` based on selected shape and unit's role/ID.
-    *   [ ] Add player commands to change formation shape.
+- [ ] **Formation Combat Maneuvers:**
+    *   [ ] Implement specialized movement patterns for combat situations
+    *   [ ] Add formation-specific combat bonuses
+    *   [ ] Design and implement tactical formation changes during combat
+- [ ] **Formation Transitions:**
+    *   [ ] Implement smooth interpolation between formation types
+    *   [ ] Add transition animations and effects
+    *   [ ] Handle unit position conflicts during transitions
+- [ ] **Formation-specific Behaviors:**
+    *   [ ] Different movement speeds based on formation type
+    *   [ ] Formation-specific combat bonuses
+    *   [ ] Special abilities unlocked by certain formations
 - [ ] **Refine Separation Logic:** Current separation in `applyMovement` might conflict with steering-based separation. Evaluate and potentially consolidate.
 - [ ] **Mermaid Diagram: Follower Movement Decision Process in `executeGroupMovement`**
     ```mermaid

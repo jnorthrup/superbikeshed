@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "webpack serve --mode development",
     "start": "webpack serve --mode development",
-    "build": "webpack --mode production",
+    "build": "webpack --mode production && ./gradlew buildAll",
     "preprocess:models": "node scripts/preprocess-models.js",
     "migrate:ts": "node scripts/migrate-to-ts.js",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "build:kotlin": "./gradlew buildAll",
+    "clean": "rm -rf build dist && ./gradlew cleanAll",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "gl-matrix": "^3.4.3",

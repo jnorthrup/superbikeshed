@@ -21,7 +21,7 @@ from polyglot.dockerfiles import (
     get_dockerfile_env,
     get_dockerfile_instance,
 )
-from swebench.harness.utils import (
+from polyglot.utils import (
     get_requirements,
     get_environment_yml,
 )

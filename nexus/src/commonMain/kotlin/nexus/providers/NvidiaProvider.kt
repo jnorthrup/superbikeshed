@@ -4,6 +4,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
+import nexus.http.HttpMuxer
+import nexus.http.HttpRequest
+import nexus.http.HttpResponse
+import kotlinx.serialization.serializer
 
 @Serializable
 internal data class NvidiaRequest(
@@ -51,17 +56,16 @@ internal class NvidiaProvider(
             max_tokens = maxTokens
         )
         
-        val response = khttp.post(
-            url = "$endpoint/chat/completions",
-            headers = mapOf(
-                "Authorization" to "Bearer $apiKey",
-                "Content-Type" to "application/json"
-            ),
-            json = json.encodeToString(NvidiaRequest.serializer(), request)
-        )
+        val response = with(HttpMuxer) {
+            val httpRequest = "$endpoint/chat/completions".POST("")
+            val withHeaders = httpRequest.header("Authorization" to "Bearer $apiKey")
+                .header("Content-Type" to "application/json")
+            val withJson = withHeaders.json(request, NvidiaRequest.serializer())
+            withJson.first()
+        }
         
         if (response.statusCode == 200) {
-            val nvidiaResponse = json.decodeFromString(NvidiaResponse.serializer(), response.text)
+            val nvidiaResponse = json.decodeFromString(NvidiaResponse.serializer(), String(response.body))
             emit(nvidiaResponse.choices.firstOrNull()?.message?.content ?: "No response generated")
         } else {
             throw Exception("NVIDIA API request failed: ${response.statusCode}")
@@ -69,13 +73,14 @@ internal class NvidiaProvider(
     }
     
     fun listModels(): Flow<List<String>> = flow {
-        val response = khttp.get(
-            url = "$endpoint/models",
-            headers = mapOf("Authorization" to "Bearer $apiKey")
-        )
+        val response = with(HttpMuxer) {
+            val httpRequest = "$endpoint/models".GET()
+            val withHeaders = httpRequest.header("Authorization" to "Bearer $apiKey")
+            withHeaders.first()
+        }
         
         if (response.statusCode == 200) {
-            val models = json.decodeFromString<List<Model>>(response.text)
+            val models = json.decodeFromString<List<Model>>(String(response.body))
             emit(models.map { it.id })
         } else {
             throw Exception("Failed to fetch NVIDIA models: ${response.statusCode}")

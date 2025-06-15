@@ -23,6 +23,17 @@ Based on `Unit.js` and `Building.js`, the following are examples of data compone
 *   **`AbilityComponent` (e.g., Grenade)**: `{ abilities: { grenade: { range, cooldownTime, currentCooldown } } }`
 *   **`AIStateComponent`**: `{ tacticalRole: string, militaryRank: string, survivalPriority: number, commandAuthority: number, protectionNeeds?: string[], lastThreatAssessment?: number, fleeThreshold?: number, formation?: any, currentCommanderId?: string }` (Could be broken down further)
 *   **`StuckDetectionComponent`**: `{ stuckFrames: number, lastPositionForStuckCheck: {x,y}, isEscaping: boolean, escapeAngle: number, escapeDuration: number }`
+*   **`FormationComponent`**: `{ 
+        formationType: string, 
+        formationOffset: { x: number, y: number }, 
+        leaderId?: string, 
+        leaderTargetPosition?: { x: number, y: number }, 
+        leaderPredictedPosition?: { x: number, y: number }, 
+        idealFormationSlotWorld?: { x: number, y: number },
+        maxForce: number,
+        maxTurnRate: number,
+        steering: { x: number, y: number }
+    }`
 
 **Building-Specific Components:**
 
@@ -43,6 +54,12 @@ Corresponding systems could manage these components:
 *   **`ResourceSystem`**: Manages `ResourceGenerationComponent` and updates global player resources.
 *   **`AISystem` / `StrategicAISystem` / `TacticalAISystem`**: Reads various components (`Position`, `Health`, `Combat`, `AIState`) and generates commands or updates AIState/target components.
 *   **`StuckDetectionSystem`**: Updates `StuckDetectionComponent`.
+*   **`FormationSystem`**: Manages formation behavior:
+    *   Updates `FormationComponent` properties based on formation commands
+    *   Calculates formation offsets and ideal positions
+    *   Handles formation transitions and rotations
+    *   Manages leader-follower relationships
+    *   Applies steering behaviors for formation maintenance
 *   **`RenderSystem`**: Reads `PositionComponent`, `RenderableComponent`, `HealthComponent` (for health bars), `ShieldComponent` (for shield effects) to draw entities. This is already handled by `webglRenderer.js` which iterates entities and reads their properties.
 *   **`SelectionSystem`**: Manages `SelectableComponent` based on user input.
 
@@ -67,7 +84,7 @@ Corresponding systems could manage these components:
 This approach is the most pragmatic for the current state of the project:
 
 1.  **Data-Oriented Refactoring:** Continue refactoring large methods within `Unit.js` and `Building.js` by extracting logic into "system-like" functions. These functions should operate on data passed to them and return new data/state changes, rather than directly mutating objects. This aligns with the "system" concept.
-2.  **Component-like Data Structures:** While full component data separation might be too much now, new features or refactored logic should treat groups of related properties on Units/Buildings as "components" (e.g., `shieldData`, `movementData`).
+2.  **Component-like Data Structures:** While full component data separation might be too much now, new features or refactored logic should treat groups of related properties on Units/Buildings as "components" (e.g., `shieldData`, `movementData`, `formationData`).
 3.  **Integrate with Command/Reducer Pattern:** The ongoing Redux-like refactor is highly compatible with ECS principles.
     *   `GameCommands` trigger state changes.
     *   Reducers (using Immer.js) act like systems, taking current component data and a command, and producing the next state for those components.

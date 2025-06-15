@@ -6,6 +6,7 @@ import re
 import anthropic
 import backoff
 import openai
+import requests  # Add for NVIDIA model listing
 
 MAX_OUTPUT_TOKENS = 4096
 AVAILABLE_LLMS = [
@@ -81,6 +82,17 @@ def create_client(model: str):
             api_key=os.environ["OPENROUTER_API_KEY"],
             base_url="https://openrouter.ai/api/v1"
         ), model
+        return client, model
+    elif model.startswith("mistral-nemotron") or model.startswith("mistralai/") or model.startswith("nvidia-"):
+        print(f"Using NVIDIA NIM API with model {model}.")
+        api_key = os.environ.get("NVIDIA_API_KEY")
+        if not api_key:
+            raise ValueError("NVIDIA_API_KEY environment variable not set.")
+        client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://integrate.api.nvidia.com/v1"
+        )
+        return client, model
     else:
         raise ValueError(f"Model {model} not supported.")
 
@@ -357,3 +369,20 @@ def extract_json_between_markers(llm_output):
             return json.loads(json_string_clean)
         except json.JSONDecodeError:
             return None
+
+def list_nvidia_models():
+    """
+    List available models from NVIDIA NIM endpoint using the OpenAI-compatible API.
+    Requires NVIDIA_API_KEY to be set in the environment.
+    Returns a list of model IDs.
+    """
+    api_key = os.environ.get("NVIDIA_API_KEY")
+    if not api_key:
+        raise ValueError("NVIDIA_API_KEY environment variable not set.")
+    url = "https://integrate.api.nvidia.com/v1/models"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    # The response should have a 'data' field with a list of models
+    return [model['id'] for model in data.get('data', [])]
