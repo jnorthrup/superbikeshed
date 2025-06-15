@@ -149,3 +149,4 @@ test-output/
 
 # Ignore Gradle build output directory
 build
+*~
