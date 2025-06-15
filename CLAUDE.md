@@ -145,3 +145,41 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 
 - dont use apply diff when a tool that has coordinate based insertion is available for edit
 - `apply_diff` is a banned tool
+
+# Gradle tree:
+we follow the kotlin KMP 2.1.21 example which can be browsed
+
+our top level superbikeshed builds the lower projects and holds the benmanes version plugin in false mode. nothing else welcome.
+
+for our second tier projects we use a 1-target native from the env CPU/PLATOFORM we run kotlin now.  we should adopt default source hierarchy for native asnd posix middle but test for local platform.
+
+we care about wasm node+browser,jvm,native targets occasionally demoing in typescript  
+plugins {
+    kotlin("multiplatform") version "2.1.21"
+}
+-- mandatory gradle subproject base
+kotlin {
+    jvm()
+    wasmJs {
+        browser()
+        nodejs()
+    }
+    // Example test for platform tuple 
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux" 
+    val isWindows = hostOs == "Windows"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+    
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+        isWindows && isArm64 -> mingwArm64()
+        isWindows -> mingwX64()
+    } 
+}
+
+

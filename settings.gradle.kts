@@ -10,8 +10,19 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
+        google()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        google()
     }
 }
 
 rootProject.name = "superbikeshed"
-include(":rtsgame-kt")
+include("ta4k")
+include("Trikeshed")
+include("spacegraphjs:kotlin-spacegraph")
+include("ta4k-spacegraph-moneyfan-demo")
