@@ -3,10 +3,11 @@ package borg.trikeshed.parse.json
 
 import borg.trikeshed.lib.*
 
-// TrikeShed JSON type system
+// TrikeShed JSON type system  
 typealias JsonElement = Any?
-typealias JsonObject = Map<String, Any?>
-typealias JsonArray = List<Any?>
+// JSON objects can have duplicate keys per spec - Series2 handles this as Series<Join>
+typealias JsonObject = Series2<String, JsonElement>
+typealias JsonArray = Series<JsonElement>
 
 // JSON parsing and serialization
 expect object JsonImpl {
@@ -44,30 +45,35 @@ object JsonPath {
     }
     
     fun extractArray(json: Any?, path: String): JsonArray? {
-        return extract(json, path) as? List<*>
+        val list = extract(json, path) as? List<*>
+        return list?.let { it.size j { i -> it[i] } }
     }
     
     fun extractObject(json: Any?, path: String): JsonObject? {
-        return extract(json, path) as? Map<String, *>
+        val map = extract(json, path) as? Map<String, *>
+        return map?.let { m ->
+            val entries = m.entries.toList()
+            entries.size j { i -> entries[i].key j entries[i].value }
+        }
     }
 }
 
 // JSON builder DSL
 class JsonBuilder {
-    private val map = mutableMapOf<String, Any?>()
+    private val pairs = mutableListOf<Join<String, JsonElement>>()
     
     fun put(key: String, value: Any?) {
-        map[key] = value
+        pairs.add(key j value)
     }
     
     fun putString(key: String, value: String) = put(key, value)
     fun putInt(key: String, value: Int) = put(key, value)
     fun putDouble(key: String, value: Double) = put(key, value)
     fun putBoolean(key: String, value: Boolean) = put(key, value)
-    fun putArray(key: String, array: List<Any?>) = put(key, array)
-    fun putObject(key: String, obj: Map<String, Any?>) = put(key, obj)
+    fun putArray(key: String, array: JsonArray) = put(key, array)
+    fun putObject(key: String, obj: JsonObject) = put(key, obj)
     
-    fun build(): JsonObject = map.toMap()
+    fun build(): JsonObject = pairs.size j { pairs[it] }
 }
 
 inline fun jsonObject(init: JsonBuilder.() -> Unit): JsonObject {
