@@ -59,6 +59,7 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
                 implementation("com.ionspin.kotlin:bignum:0.3.9")
+                implementation(project(":Trikeshed"))
             }
         }
         val commonTest by getting {
