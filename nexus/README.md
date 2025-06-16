@@ -164,7 +164,7 @@ val optimizedSolutions = candidateSolutions
     .α { solution -> solution.evolve(feedback) }
     .α { solution -> solution.evaluate(context) }
     .α { solution -> solution.rank(criteria) }
-    ▶ // Materialize only the top results
+    `▶` // Materialize only the top results
 ```
 
 ### Learning Architecture
@@ -267,6 +267,58 @@ nexus solve "optimize database queries"
 nexus refactor --pattern "extract service layer"
 nexus test --generate-missing
 ```
+
+## Advanced Integration: IntelliJ Platform PSI APIs
+
+Nexus provides deep semantic code analysis through integration with IntelliJ Platform's Program Structure Interface (PSI) and Kotlin Analysis APIs. This enables understanding beyond file-level operations to true semantic comprehension.
+
+### PSI Integration Architecture
+
+```
+TrikeShed Series<T> ←→ PSI Elements ←→ Kotlin Analysis API ←→ K2 Symbols
+      ↓                    ↓                    ↓                 ↓
+   Efficient           Structural         Semantic           Advanced
+   Processing          Navigation         Resolution         Analysis
+```
+
+### Key Capabilities Enabled
+
+- **Semantic Refactoring**: Transform code while preserving meaning
+- **Type-Aware Code Generation**: Generate code that fits semantic context  
+- **Cross-Reference Analysis**: Find all usages with semantic understanding
+- **Dependency Graph Analysis**: Understand complex project relationships
+- **Intelligent Completion**: Context-aware suggestions based on semantics
+
+### Integration Pathways
+
+1. **IntelliJ Plugin SDK**: Direct PSI access for IDE-integrated experience
+2. **Language Server Protocol**: PSI-backed LSP for universal editor support  
+3. **Kotlin Compiler Plugin**: Deep integration with compilation process
+4. **Standalone Analysis**: Headless PSI for CI/CD and batch processing
+
+### TrikeShed ↔ PSI Bridge Example
+
+```kotlin
+// Transform PSI elements into TrikeShed Series for efficient processing
+fun PsiFile.analyzeWithTrikeShed(): AnalysisResult {
+    return this.toTrikeShedSeries()
+        .α { element -> element.resolveSymbol() }     // Semantic resolution
+        .α { symbol -> symbol.analyzeType() }         // Type analysis  
+        .α { type -> type.extractConstraints() }      // Constraint extraction
+        `▶` // Materialize results efficiently
+}
+
+// Semantic-aware code evolution
+suspend fun evolveSolutionWithSemantics(
+    solution: Solution,
+    feedback: Feedback  
+): Solution = solution
+    .enhanceWithPSIAnalysis()
+    .validateSemanticConstraints()
+    .evolveWithHumanGuidance(feedback)
+```
+
+For complete technical details, see [IntelliJ PSI Integration Architecture](./INTELLIJ_PSI_INTEGRATION.md).
 
 ---
 
