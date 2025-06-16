@@ -103,7 +103,7 @@ class WasmCouchClient(
 
     override suspend fun bulkDocs(dbName: DatabaseName, docs: Series<CouchDocument>, allOrNothing: Boolean): Series<CouchResponse> {
         val body = JsonImpl.stringify(mapOf(
-            "docs" to docs.▶.map { JsonImpl.parse(CouchDocumentAdapter.toJson(it)) },
+            "docs" to docs.▶.toList().map { JsonImpl.parse(CouchDocumentAdapter.toJson(it)) },
             "all_or_nothing" to allOrNothing
         ))
         val response = HttpRequest(
@@ -113,8 +113,9 @@ class WasmCouchClient(
             body = body
         ).send()
         return handleResponse(response) {
-            val list = JsonImpl.parse(it) as List<Map<String, Any?>>
-            list.map { item ->
+            val parsed = JsonImpl.parse(it) as? List<*> ?: emptyList<Map<String, Any?>>()
+            val responses = parsed.size j { idx ->
+                val item = parsed[idx] as Map<String, Any?>
                 CouchResponse(
                     ok = item["ok"] as? Boolean ?: (item["error"] == null),
                     id = (item["id"] as? String)?.let { idVal -> DocumentId(idVal) },
@@ -122,7 +123,8 @@ class WasmCouchClient(
                     error = item["error"] as? String,
                     reason = item["reason"] as? String
                 )
-            }.toSeries()
+            }
+            responses
         }
     }
 
