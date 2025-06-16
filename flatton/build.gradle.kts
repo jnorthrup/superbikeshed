@@ -3,6 +3,7 @@ plugins {
 }
 
 kotlin {
+    jvm()
     wasmJs {
         browser()
         nodejs()

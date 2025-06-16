@@ -3,47 +3,43 @@ package org.flatton.types
 import borg.trikeshed.lib.*
 import borg.trikeshed.parse.json.*
 import borg.trikeshed.lib.toSeries
+import kotlinx.serialization.json.JsonObject
 
-@JvmInline
-value class DocumentId(val value: String)
-
-@JvmInline
-value class RevisionId(val value: String)
-
-@JvmInline
-value class DatabaseName(val value: String)
-
-@JvmInline
-value class ViewName(val value: String)
-
-@JvmInline
-value class MapFunction(val value: String)
-
-@JvmInline
-value class ReduceFunction(val value: String)
-
-data class CouchDocument(
-    val id: DocumentId,
-    val rev: RevisionId? = null,
-    val data: Map<String, Any> = emptyMap()
-) {
-    fun toJson(): String = JsonImpl.stringify(mapOf(
-        "_id" to id.value,
-        "_rev" to (rev?.value),
-        "data" to data
-    ))
-
-    companion object {
-        fun fromJson(json: String): CouchDocument {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return CouchDocument(
-                id = DocumentId(map["_id"] as String),
-                rev = (map["_rev"] as? String)?.let { RevisionId(it) },
-                data = (map["data"] as? Map<*, *>)?.mapKeys { it.key.toString() }?.mapValues { it.value } ?: emptyMap()
-            )
-        }
-    }
+// Ontological Typealiases for CouchDB Primitives
+@JvmInline value class DocumentId(val value: String)
+@JvmInline value class RevisionId(val value: String)
+@JvmInline value class DatabaseName(val value: String)
+@JvmInline value class DesignDocId(val value: String) {
+    fun asDocId(): DocumentId = DocumentId("_design/${this.value}")
 }
+@JvmInline value class ViewName(val value: String)
+@JvmInline value class MapFunction(val code: String)
+@JvmInline value class ReduceFunction(val code: String)
+typealias AttachmentName = String
+typealias FieldName = String
+typealias JsonString = String
+typealias DocCount = Int
+typealias UpdateSeq = String
+typealias HumanSize = String
+
+// Data Models
+data class CouchDocument(
+    val _id: DocumentId,
+    val _rev: RevisionId? = null,
+    val _deleted: Boolean? = null,
+    val _attachments: Map<AttachmentName, AttachmentInfo>? = null,
+    val data: JsonObject
+)
+
+data class AttachmentInfo(
+    val content_type: String,
+    val revpos: Int,
+    val digest: String,
+    val length: Long,
+    val stub: Boolean? = null,
+    val follows: Boolean? = null,
+    val data: String? = null // Base64 encoded
+)
 
 data class CouchView(
     val map: MapFunction,
@@ -51,168 +47,62 @@ data class CouchView(
 )
 
 data class CouchDesignDocument(
-    val id: DocumentId,
+    val id: DesignDocId,
     val rev: RevisionId? = null,
-    val views: Map<ViewName, CouchView>,
-    val language: String = "javascript"
-) {
-    fun toJson(): String = JsonImpl.stringify(mapOf(
-        "_id" to "_design/${id.value}",
-        "_rev" to (rev?.value),
-        "views" to views.mapKeys { it.key.value },
-        "language" to language
-    ))
+    val language: String = "javascript",
+    val views: Map<ViewName, CouchView> = emptyMap()
+)
 
-    companion object {
-        fun fromJson(json: String): CouchDesignDocument {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return CouchDesignDocument(
-                id = DocumentId((map["_id"] as String).removePrefix("_design/")),
-                rev = (map["_rev"] as? String)?.let { RevisionId(it) },
-                views = (map["views"] as? Map<*, *>)?.mapKeys { ViewName(it.key.toString()) }?.mapValues { 
-                    val viewMap = it.value as Map<*, *>
-                    CouchView(
-                        map = MapFunction(viewMap["map"] as String),
-                        reduce = (viewMap["reduce"] as? String)?.let { ReduceFunction(it) }
-                    )
-                } ?: emptyMap(),
-                language = map["language"] as? String ?: "javascript"
-            )
-        }
-    }
-}
+data class CouchDatabase(
+    val name: DatabaseName,
+    val status: CouchDatabaseStatus
+)
+
+data class CouchDatabaseStatus(
+    val docCount: DocCount,
+    val updateSeq: UpdateSeq,
+    val humanSize: HumanSize
+)
 
 data class CouchDatabaseInfo(
     val dbName: DatabaseName,
-    val docCount: Int,
+    val docCount: DocCount,
     val docDelCount: Int,
-    val updateSeq: String,
+    val updateSeq: UpdateSeq,
     val purgeSeq: String,
     val compactRunning: Boolean,
     val diskSize: Long,
     val dataSize: Long,
     val instanceStartTime: String,
     val diskFormatVersion: Int,
-    val committedUpdateSeq: String,
+    val committedUpdateSeq: UpdateSeq,
     val compactedSeq: String,
     val uuid: String
-) {
-    companion object {
-        fun fromJson(json: String): CouchDatabaseInfo {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return CouchDatabaseInfo(
-                dbName = DatabaseName(map["db_name"] as String),
-                docCount = map["doc_count"] as Int,
-                docDelCount = map["doc_del_count"] as Int,
-                updateSeq = map["update_seq"] as String,
-                purgeSeq = map["purge_seq"] as String,
-                compactRunning = map["compact_running"] as Boolean,
-                diskSize = (map["disk_size"] as Number).toLong(),
-                dataSize = (map["data_size"] as Number).toLong(),
-                instanceStartTime = map["instance_start_time"] as String,
-                diskFormatVersion = map["disk_format_version"] as Int,
-                committedUpdateSeq = map["committed_update_seq"] as String,
-                compactedSeq = map["compacted_seq"] as String,
-                uuid = map["uuid"] as String
-            )
-        }
-    }
-}
+)
 
 data class CouchSecurity(
-    val admins: SecurityRoles,
-    val members: SecurityRoles
-) {
-    fun toJson(): String = JsonImpl.stringify(mapOf(
-        "admins" to mapOf(
-            "names" to admins.names.▶.toList(),
-            "roles" to admins.roles.▶.toList()
-        ),
-        "members" to mapOf(
-            "names" to members.names.▶.toList(),
-            "roles" to members.roles.▶.toList()
-        )
-    ))
+    val admins: SecurityPrincipal,
+    val members: SecurityPrincipal
+)
 
-    companion object {
-        fun fromJson(json: String): CouchSecurity {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return CouchSecurity(
-                admins = SecurityRoles(
-                    names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
-                    roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
-                ),
-                members = SecurityRoles(
-                    names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
-                    roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
-                )
-            )
-        }
-    }
-}
-
-data class SecurityRoles(
+data class SecurityPrincipal(
     val names: Series<String>,
     val roles: Series<String>
 )
 
-data class AdminPartyConfig(
-    val enabled: Boolean,
-    val adminRoles: Series<String>
-) {
-    fun toJson(): String = JsonImpl.stringify(mapOf(
-        "enabled" to enabled,
-        "admin_roles" to adminRoles.▶.toList()
-    ))
-
-    companion object {
-        fun fromJson(json: String): AdminPartyConfig {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return AdminPartyConfig(
-                enabled = map["enabled"] as Boolean,
-                adminRoles = (map["admin_roles"] as? List<String> ?: emptyList()).toSeries()
-            )
-        }
-    }
-}
-
 data class CouchResponse(
     val ok: Boolean,
-    val id: DocumentId,
-    val rev: RevisionId
-) {
-    companion object {
-        fun fromJson(json: String): CouchResponse {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return CouchResponse(
-                ok = map["ok"] as Boolean,
-                id = DocumentId(map["id"] as String),
-                rev = RevisionId(map["rev"] as String)
-            )
-        }
-    }
-}
-
-data class CouchError(
-    val error: String,
-    val reason: String
-) {
-    companion object {
-        fun fromJson(json: String): CouchError {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return CouchError(
-                error = map["error"] as String,
-                reason = map["reason"] as String
-            )
-        }
-    }
-}
+    val id: DocumentId? = null,
+    val rev: RevisionId? = null,
+    val error: String? = null,
+    val reason: String? = null
+)
 
 data class ViewQueryParams(
-    val key: Any? = null,
-    val keys: Series<Any>? = null,
-    val startKey: Any? = null,
-    val endKey: Any? = null,
+    val key: JsonElement? = null,
+    val keys: Series<JsonElement>? = null,
+    val startKey: JsonElement? = null,
+    val endKey: JsonElement? = null,
     val startKeyDocId: DocumentId? = null,
     val endKeyDocId: DocumentId? = null,
     val limit: Int? = null,
@@ -221,56 +111,171 @@ data class ViewQueryParams(
     val includeDocs: Boolean? = null,
     val reduce: Boolean? = null,
     val group: Boolean? = null,
-    val groupLevel: Int? = null
+    val groupLevel: Int? = null,
+    val stale: String? = null
 ) {
     fun toQueryString(): String {
-        val params = buildString {
-            key?.let { append("key=${JsonImpl.stringify(it)}&") }
-            keys?.let { append("keys=${JsonImpl.stringify(it.▶.toList())}&") }
-            startKey?.let { append("startkey=${JsonImpl.stringify(it)}&") }
-            endKey?.let { append("endkey=${JsonImpl.stringify(it)}&") }
-            startKeyDocId?.let { append("startkey_docid=${it.value}&") }
-            endKeyDocId?.let { append("endkey_docid=${it.value}&") }
-            limit?.let { append("limit=$it&") }
-            skip?.let { append("skip=$it&") }
-            descending?.let { append("descending=$it&") }
-            includeDocs?.let { append("include_docs=$it&") }
-            reduce?.let { append("reduce=$it&") }
-            group?.let { append("group=$it&") }
-            groupLevel?.let { append("group_level=$it&") }
-        }.removeSuffix("&")
-        return if (params.isEmpty()) "" else "?$params"
+        val params = mutableListOf<String>()
+        key?.let { params.add("key=${JsonImpl.stringify(it)}") }
+        keys?.let { params.add("keys=${JsonImpl.stringify(it.▶.toList())}") }
+        startKey?.let { params.add("startkey=${JsonImpl.stringify(it)}") }
+        endKey?.let { params.add("endkey=${JsonImpl.stringify(it)}") }
+        startKeyDocId?.let { params.add("startkey_docid=${it.value}") }
+        endKeyDocId?.let { params.add("endkey_docid=${it.value}") }
+        limit?.let { params.add("limit=$it") }
+        skip?.let { params.add("skip=$it") }
+        descending?.let { params.add("descending=$it") }
+        includeDocs?.let { params.add("include_docs=$it") }
+        reduce?.let { params.add("reduce=$it") }
+        group?.let { params.add("group=$it") }
+        groupLevel?.let { params.add("group_level=$it") }
+        stale?.let { params.add("stale=$it") }
+        return if (params.isEmpty()) "" else "?" + params.joinToString("&")
     }
 }
 
-data class ViewResponse<T>(
+data class ViewResponse<K, V>(
     val totalRows: Int,
     val offset: Int,
-    val rows: Series<ViewRow<T>>
-) {
-    companion object {
-        inline fun <reified T> fromJson(json: String): ViewResponse<T> {
-            val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
-            return ViewResponse(
-                totalRows = map["total_rows"] as Int,
-                offset = map["offset"] as Int,
-                rows = ((map["rows"] as? List<*>)?.map { rowMap ->
-                    val row = rowMap as Map<*, *>
-                    ViewRow(
-                        id = DocumentId(row["id"] as String),
-                        key = row["key"] as Any,
-                        value = row["value"] as T,
-                        doc = (row["doc"] as? Map<*, *>)?.let { CouchDocument.fromJson(JsonImpl.stringify(it)) }
-                    )
-                } ?: emptyList()).toSeries()
-            )
-        }
+    val updateSeq: String?,
+    val rows: Series<ViewRow<K, V>>
+)
+
+data class ViewRow<K, V>(
+    val id: DocumentId,
+    val key: K,
+    val value: V,
+    val doc: CouchDocument? = null
+)
+
+// Wire Protocol Adapters (Serialization/Deserialization)
+
+object CouchDocumentAdapter {
+    fun fromJson(json: String): CouchDocument {
+        val map = JsonImpl.parse(json) as Map<String, Any?>
+        val data = map.filterKeys { !it.startsWith("_") }
+        return CouchDocument(
+            _id = DocumentId(map["_id"] as String),
+            _rev = (map["_rev"] as? String)?.let { RevisionId(it) },
+            _deleted = map["_deleted"] as? Boolean,
+            _attachments = (map["_attachments"] as? Map<String, *>)?.mapValues {
+                val attMap = it.value as Map<String, Any?>
+                AttachmentInfo(
+                    content_type = attMap["content_type"] as String,
+                    revpos = attMap["revpos"] as Int,
+                    digest = attMap["digest"] as String,
+                    length = (attMap["length"] as Number).toLong(),
+                    stub = attMap["stub"] as? Boolean
+                )
+            },
+            data = JsonObject(data)
+        )
+    }
+
+    fun toJson(doc: CouchDocument): String {
+        val map = mutableMapOf<String, Any?>()
+        map["_id"] = doc._id.value
+        doc._rev?.let { map["_rev"] = it.value }
+        doc._deleted?.let { map["_deleted"] = it }
+        doc._attachments?.let { map["_attachments"] = it }
+        map.putAll(doc.data)
+        return JsonImpl.stringify(map)
     }
 }
 
-data class ViewRow<T>(
-    val id: DocumentId,
-    val key: Any,
-    val value: T,
-    val doc: CouchDocument? = null
-)
+object CouchDesignDocumentAdapter {
+    fun fromJson(json: String): CouchDesignDocument {
+        val map = JsonImpl.parse(json) as Map<String, Any?>
+        return CouchDesignDocument(
+            id = DesignDocId((map["_id"] as String).removePrefix("_design/")),
+            rev = (map["_rev"] as? String)?.let { RevisionId(it) },
+            language = map["language"] as String,
+            views = (map["views"] as Map<String, Map<String, String>>).mapKeys { ViewName(it.key) }
+                .mapValues {
+                    CouchView(
+                        map = MapFunction(it.value["map"]!!),
+                        reduce = it.value["reduce"]?.let { r -> ReduceFunction(r) }
+                    )
+                }
+        )
+    }
+
+    fun toJson(ddoc: CouchDesignDocument): String {
+        return JsonImpl.stringify(mapOf(
+            "_id" to ddoc.id.asDocId().value,
+            "_rev" to ddoc.rev?.value,
+            "language" to ddoc.language,
+            "views" to ddoc.views.mapKeys { it.key.value }.mapValues {
+                mapOf(
+                    "map" to it.value.map.code,
+                    "reduce" to it.value.reduce?.code
+                ).filterValues { v -> v != null }
+            }
+        ))
+    }
+}
+
+object CouchDatabaseInfoAdapter {
+    fun fromJson(json: String): CouchDatabaseInfo {
+        val map = JsonImpl.parse(json) as Map<String, Any?>
+        return CouchDatabaseInfo(
+            dbName = DatabaseName(map["db_name"] as String),
+            docCount = map["doc_count"] as Int,
+            docDelCount = map["doc_del_count"] as Int,
+            updateSeq = map["update_seq"] as String,
+            purgeSeq = map["purge_seq"] as String,
+            compactRunning = map["compact_running"] as Boolean,
+            diskSize = (map["disk_size"] as Number).toLong(),
+            dataSize = (map["data_size"] as Number).toLong(),
+            instanceStartTime = map["instance_start_time"] as String,
+            diskFormatVersion = map["disk_format_version"] as Int,
+            committedUpdateSeq = map["committed_update_seq"] as String,
+            compactedSeq = map["compacted_seq"] as String,
+            uuid = map["uuid"] as String
+        )
+    }
+}
+
+object CouchSecurityAdapter {
+    fun fromJson(json: String): CouchSecurity {
+        val map = JsonImpl.parse(json) as Map<String, Any?>
+        return CouchSecurity(
+            admins = SecurityPrincipal(
+                names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
+                roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
+            ),
+            members = SecurityPrincipal(
+                names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
+                roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
+            )
+        )
+    }
+
+    fun toJson(security: CouchSecurity): String {
+        return JsonImpl.stringify(mapOf(
+            "admins" to mapOf(
+                "names" to security.admins.names.▶.toList(),
+                "roles" to security.admins.roles.▶.toList()
+            ),
+            "members" to mapOf(
+                "names" to security.members.names.▶.toList(),
+                "roles" to security.members.roles.▶.toList()
+            )
+        ))
+    }
+}
+
+object CouchResponseAdapter {
+    fun fromJson(json: String): CouchResponse {
+        val map = JsonImpl.parse(json) as Map<String, Any?>
+        return CouchResponse(
+            ok = map["ok"] as Boolean,
+            id = (map["id"] as? String)?.let { DocumentId(it) },
+            rev = (map["rev"] as? String)?.let { RevisionId(it) },
+            error = map["error"] as? String,
+            reason = map["reason"] as? String
+        )
+    }
+}
+
+class CouchException(message: String) : Exception(message)
