@@ -1,63 +1,72 @@
 plugins {
     kotlin("multiplatform") version "2.1.21"
+    id("com.github.ben-manes.versions") version "0.51.0"
 }
 
 repositories {
     mavenCentral()
 }
 
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
-    jvmToolchain(11)
+    jvm()
     wasmJs {
         browser()
+        nodejs()
     }
+    
+    // Example test for platform tuple
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+    }
+    
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-                implementation("com.ionspin.kotlin:bignum:0.3.10")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("org.junit.jupiter:junit-jupiter:5.9.2")
-                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+                implementation(kotlin("test"))
             }
         }
         val jvmMain by getting {
-            dependsOn(commonMain)
             dependencies {
-                implementation(kotlin("stdlib-jvm"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
             }
         }
         val jvmTest by getting {
-            dependsOn(commonTest)
             dependencies {
                 implementation(kotlin("test-junit5"))
-            }
-        }
-        val wasmJsMain by getting {
-            dependsOn(commonMain)
-            dependencies {
-                implementation(kotlin("stdlib-js"))
-            }
-        }
-        val wasmJsTest by getting {
-            dependsOn(commonTest)
-            dependencies {
-                implementation(kotlin("test-js"))
+                implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
             }
         }
     }
 }
 
-dependencies {
-    // implementation(kotlin("stdlib")) // Moved to source sets
-    // testImplementation("org.junit.jupiter:junit-jupiter:5.9.2") // Moved to commonTest
-    // testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Moved to commonTest
-    // testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Moved to commonTest
+// Add JVM test task
+tasks.named<Test>("jvmTest") {
+    useJUnitPlatform()
+}
+
+// Custom JVM run task for interactive demo
+tasks.register<JavaExec>("runJvm") {
+    dependsOn("jvmMainClasses")
+    group = "application"
+    description = "Run Moneyfan interactive trading demo on JVM"
+    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
+                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+    mainClass.set("moneyfan.MainJvmKt")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
