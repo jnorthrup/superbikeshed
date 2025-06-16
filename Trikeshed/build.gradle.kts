@@ -30,8 +30,6 @@ kotlin {
         isMacOS -> macosX64()
         isLinux && isArm64 -> linuxArm64()
         isLinux -> linuxX64()
-        isWindows && isArm64 -> mingwArm64()
-        isWindows -> mingwX64()
     }
 
     sourceSets {

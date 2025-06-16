@@ -1,0 +1,117 @@
+package moneyfan
+
+import moneyfan.core.*
+import moneyfan.spacegraph.*
+import kotlinx.coroutines.*
+
+/**
+ * JVM interactive trading demo
+ */
+fun main() {
+    println("Moneyfan Interactive Trading Demo - JVM")
+    println("=====================================")
+    
+    runBlocking {
+        val demo = TradingDemo()
+        demo.runInteractiveDemo()
+    }
+}
+
+class TradingDemo {
+    private val engine = TradingEngine()
+    private val portfolioManager = PortfolioManager()
+    private val technicalAnalysis = TechnicalAnalysis()
+    private val renderer = TradingSpaceGraphRenderer()
+    
+    suspend fun runInteractiveDemo() {
+        println("Starting trading simulation...")
+        
+        // Generate sample data for multiple symbols
+        val symbols = listOf("AAPL", "GOOGL", "TSLA", "BTC")
+        val tickSeriesList = symbols.map { symbol ->
+            symbol to engine.generateSampleTicks(symbol, 100, 100.0 + kotlin.random.Random.nextDouble() * 500.0)
+        }
+        
+        // Process ticks into candles
+        val allCandles = mutableListOf<Candlestick>()
+        tickSeriesList.forEach { (symbol, ticks) ->
+            val candles = engine.processTickSeries(ticks)
+            allCandles.addAll(candles.play)
+        }
+        
+        val candleSeries = Series.of(allCandles.size) { i -> allCandles[i] }
+        
+        // Simulate some trading
+        symbols.forEachIndexed { index, symbol ->
+            val latestCandle = allCandles.filter { it.symbol.value == symbol }.lastOrNull()
+            if (latestCandle != null) {
+                val price = latestCandle.ohlcv.close
+                val quantity = Quantity(10.0 + index * 5.0)
+                
+                portfolioManager.buyPosition(Symbol(symbol), quantity, price)
+                println("Bought $quantity shares of $symbol at $${price.value}")
+            }
+        }
+        
+        // Get portfolio state
+        val currentPrices = allCandles.groupBy { it.symbol }.mapValues { (_, candles) ->
+            candles.last().ohlcv.close
+        }
+        val portfolioState = portfolioManager.getPortfolioState(currentPrices)
+        
+        // Calculate technical indicators
+        val indicators = mutableMapOf<String, PriceSeries>()
+        symbols.forEach { symbol ->
+            val symbolCandles = allCandles.filter { it.symbol.value == symbol }
+            if (symbolCandles.isNotEmpty()) {
+                val prices = Series.of(symbolCandles.size) { i -> symbolCandles[i].ohlcv.close }
+                indicators["${symbol}_SMA_20"] = technicalAnalysis.simpleMovingAverage(prices, 20)
+                indicators["${symbol}_EMA_12"] = technicalAnalysis.exponentialMovingAverage(prices, 12)
+                indicators["${symbol}_RSI"] = technicalAnalysis.rsi(prices)
+            }
+        }
+        
+        // Generate SpaceGraph visualization
+        val visualization = renderer.renderMarketData(candleSeries, portfolioState, indicators)
+        
+        // Display results
+        println("\n=== Portfolio Summary ===")
+        println("Cash Balance: $${portfolioState.cashBalance.value}")
+        println("Total Value: $${portfolioState.totalValue.value}")
+        println("Day P&L: $${portfolioState.dayPnL.value}")
+        println("Total Return: ${(portfolioState.totalReturn * 100.0).format(2)}%")
+        
+        println("\n=== Positions ===")
+        portfolioState.positions.play.forEach { position ->
+            val currentPrice = currentPrices[position.symbol] ?: position.averagePrice
+            val unrealizedPnL = (currentPrice - position.averagePrice) * position.quantity
+            println("${position.symbol.value}: ${position.quantity.value} @ $${position.averagePrice.value} " +
+                   "(Current: $${currentPrice.value}, Unrealized P&L: $${unrealizedPnL.value})")
+        }
+        
+        println("\n=== SpaceGraph Visualization ===")
+        println("Nodes: ${visualization.nodes.size}")
+        println("Edges: ${visualization.edges.size}")
+        println("Symbol Count: ${visualization.metadata.symbolCount}")
+        println("Candle Count: ${visualization.metadata.candleCount}")
+        
+        // Show sample nodes
+        visualization.nodes.play.take(5).forEach { node ->
+            println("Node: ${node.type} - ${node.data.label} at (${node.position.x.format(1)}, ${node.position.y.format(1)}, ${node.position.z.format(1)})")
+        }
+        
+        // Show sample edges
+        visualization.edges.play.take(5).forEach { edge ->
+            println("Edge: ${edge.type} - ${edge.from.value} -> ${edge.to.value} (strength: ${edge.strength.format(3)})")
+        }
+        
+        val riskMetrics = portfolioManager.getRiskMetrics()
+        println("\n=== Risk Metrics ===")
+        println("Estimated VaR: ${(riskMetrics.a * 100.0).format(2)}%")
+        println("Estimated Beta: ${riskMetrics.b.format(2)}")
+        
+        println("\nDemo completed successfully!")
+    }
+}
+
+private fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)

@@ -3,34 +3,20 @@ plugins {
 }
 
 kotlin {
-    jvm {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
-        }
-    }
+    jvm()
     
-    js(IR) {
-        browser()
-        nodejs()
-    }
-
+    // Example test for platform tuple
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
-    if (hostOs == "Mac OS X") {
-        if (hostArch == "aarch64") {
-            macosArm64() // Defines macosArm64 target
-        } else {
-            macosX64()   // Defines macosX64 target
-        }
-    } else if (hostOs == "Linux") {
-        if (hostArch == "aarch64") {
-            linuxArm64() // Defines linuxArm64 target
-        } else {
-            linuxX64()   // Defines linuxX64 target
-        }
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
     }
     
     sourceSets {
@@ -62,44 +48,6 @@ kotlin {
             }
         }
 
-        // Add native source sets
-        val nativeMain by creating {
-            dependsOn(commonMain)
-        }
-
-        val nativeTest by creating {
-            dependsOn(commonTest)
-        }
-
-        // Linux source sets
-        val linuxX64Main by creating {
-            dependsOn(nativeMain)
-        }
-        val linuxArm64Main by creating {
-            dependsOn(nativeMain)
-        }
-
-        // macOS source sets
-        val macosX64Main by creating {
-            dependsOn(nativeMain)
-        }
-        val macosArm64Main by creating {
-            dependsOn(nativeMain)
-        }
-
-        // Corresponding test source sets
-        val linuxX64Test by creating {
-            dependsOn(nativeTest)
-        }
-        val linuxArm64Test by creating {
-            dependsOn(nativeTest)
-        }
-        val macosX64Test by creating {
-            dependsOn(nativeTest)
-        }
-        val macosArm64Test by creating {
-            dependsOn(nativeTest)
-        }
     }
 }
 
