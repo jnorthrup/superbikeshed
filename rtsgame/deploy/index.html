@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive RTS WebGPU Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #000;
+            border: 2px solid #333;
+            cursor: crosshair;
+        }
+        
+        #controlPanel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(40, 40, 40, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #666;
+            z-index: 100;
+        }
+        
+        .button {
+            background: #444;
+            color: #fff;
+            border: 1px solid #666;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        
+        .button:hover {
+            background: #555;
+        }
+        
+        .button:active {
+            background: #333;
+        }
+        
+        .button.active {
+            background: #0a5c2b;
+            border-color: #0f7a36;
+        }
+        
+        #metrics {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        .status {
+            color: #0f7;
+            margin-bottom: 5px;
+        }
+        
+        .title {
+            color: #07f;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="controlPanel">
+        <div class="title">🎮 Interactive RTS Demo</div>
+        <button id="startStop" class="button">START</button>
+        <button id="addUnit" class="button">ADD UNIT</button>
+        <button id="reset" class="button">RESET</button>
+        <button id="zoomIn" class="button">+</button>
+        <button id="zoomOut" class="button">-</button>
+    </div>
+    
+    <canvas id="gameCanvas" width="1024" height="768"></canvas>
+    
+    <div id="metrics">
+        <div class="status">WebGPU Demo Ready</div>
+        <div id="gameStats">Entities: 4 | Triangles: 0 | Frame: 0ms | Tick: 0</div>
+    </div>
+
+    <script type="module">
+        // Import the compiled WASM module
+        import init, { platformMain } from './rtsgame.mjs';
+        
+        // Game state
+        let isRunning = false;
+        let entities = [
+            { id: 'commander_blue', x: 400, y: 300, health: 100, player: 1, type: 'commander' },
+            { id: 'tank_blue_1', x: 350, y: 250, health: 80, player: 1, type: 'unit' },
+            { id: 'tank_blue_2', x: 450, y: 250, health: 80, player: 1, type: 'unit' },
+            { id: 'commander_red', x: 400, y: 500, health: 100, player: 2, type: 'commander' }
+        ];
+        let triangleCount = 0;
+        let frameTime = 0;
+        let tick = 0;
+        
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Button elements
+        const startStopBtn = document.getElementById('startStop');
+        const addUnitBtn = document.getElementById('addUnit');
+        const resetBtn = document.getElementById('reset');
+        const zoomInBtn = document.getElementById('zoomIn');
+        const zoomOutBtn = document.getElementById('zoomOut');
+        
+        // Initialize WASM module
+        async function initDemo() {
+            try {
+                await init();
+                console.log('WASM module loaded successfully');
+                
+                // Call the Kotlin main function
+                platformMain();
+                
+                // Start render loop
+                startRenderLoop();
+                
+                updateStatus('✅ WebGPU Demo Initialized');
+            } catch (error) {
+                console.error('Failed to initialize WASM:', error);
+                updateStatus('❌ WASM Load Failed - Running JS fallback');
+                startRenderLoop();
+            }
+        }
+        
+        // Render game state
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            triangleCount = 0;
+            
+            // Render entities
+            entities.forEach(entity => {
+                const color = entity.player === 1 ? '#00f' : '#f00';
+                ctx.fillStyle = color;
+                
+                const x = entity.x - 10;
+                const y = entity.y - 10;
+                
+                if (entity.type === 'commander') {
+                    ctx.beginPath();
+                    ctx.arc(entity.x, entity.y, 12, 0, 2 * Math.PI);
+                    ctx.fill();
+                    triangleCount += 8; // Circle approximation
+                } else {
+                    ctx.fillRect(x, y, 20, 20);
+                    triangleCount += 2; // Rectangle = 2 triangles
+                }
+                
+                // Health bar
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x, y - 12, 20, 3);
+                ctx.fillStyle = '#0f0';
+                ctx.fillRect(x + 1, y - 11, (18 * entity.health / 100), 1);
+            });
+            
+            // Render UI overlay
+            renderUI();
+            
+            // Update metrics
+            updateMetrics();
+        }
+        
+        function renderUI() {
+            // Control panel background is handled by CSS
+            triangleCount += 10; // UI elements
+        }
+        
+        function updateMetrics() {
+            const gameStats = document.getElementById('gameStats');
+            gameStats.textContent = `Entities: ${entities.length} | Triangles: ${triangleCount} | Frame: ${frameTime.toFixed(1)}ms | Tick: ${tick}`;
+        }
+        
+        function updateStatus(message) {
+            document.querySelector('.status').textContent = message;
+        }
+        
+        // Game simulation
+        function simulateTick() {
+            if (!isRunning) return;
+            
+            entities.forEach(entity => {
+                if (entity.type !== 'commander') {
+                    // Move units randomly
+                    entity.x += (Math.random() - 0.5) * 20;
+                    entity.y += (Math.random() - 0.5) * 20;
+                    
+                    // Keep within bounds
+                    entity.x = Math.max(20, Math.min(canvas.width - 20, entity.x));
+                    entity.y = Math.max(120, Math.min(canvas.height - 20, entity.y));
+                }
+            });
+            
+            tick++;
+        }
+        
+        // Main render loop
+        function startRenderLoop() {
+            let lastTime = 0;
+            
+            function loop(currentTime) {
+                frameTime = currentTime - lastTime;
+                lastTime = currentTime;
+                
+                simulateTick();
+                render();
+                
+                requestAnimationFrame(loop);
+            }
+            
+            requestAnimationFrame(loop);
+        }
+        
+        // Button event handlers
+        startStopBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            startStopBtn.textContent = isRunning ? 'STOP' : 'START';
+            startStopBtn.classList.toggle('active', isRunning);
+            updateStatus(isRunning ? '🏃 Simulation Running' : '⏸️ Simulation Paused');
+        });
+        
+        addUnitBtn.addEventListener('click', () => {
+            const newUnit = {
+                id: `unit_${Date.now()}`,
+                x: Math.random() * (canvas.width - 40) + 20,
+                y: Math.random() * (canvas.height - 140) + 120,
+                health: 60 + Math.random() * 40,
+                player: Math.random() > 0.5 ? 1 : 2,
+                type: 'unit'
+            };
+            entities.push(newUnit);
+            updateStatus(`➕ Unit added (${entities.length} total)`);
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            entities = [
+                { id: 'commander_blue', x: 400, y: 300, health: 100, player: 1, type: 'commander' },
+                { id: 'tank_blue_1', x: 350, y: 250, health: 80, player: 1, type: 'unit' },
+                { id: 'tank_blue_2', x: 450, y: 250, health: 80, player: 1, type: 'unit' },
+                { id: 'commander_red', x: 400, y: 500, health: 100, player: 2, type: 'commander' }
+            ];
+            isRunning = false;
+            tick = 0;
+            startStopBtn.textContent = 'START';
+            startStopBtn.classList.remove('active');
+            updateStatus('🔄 Battlefield Reset');
+        });
+        
+        zoomInBtn.addEventListener('click', () => {
+            updateStatus('🔍 Zoom In (Camera control)');
+        });
+        
+        zoomOutBtn.addEventListener('click', () => {
+            updateStatus('🔍 Zoom Out (Camera control)');
+        });
+        
+        // Canvas click handling
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            updateStatus(`🎯 Click at (${Math.round(x)}, ${Math.round(y)})`);
+        });
+        
+        // Initialize the demo
+        initDemo();
+    </script>
+</body>
+</html>

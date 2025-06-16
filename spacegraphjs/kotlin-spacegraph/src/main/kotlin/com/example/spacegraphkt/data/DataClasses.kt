@@ -226,6 +226,20 @@ data class UiElements(
 )
 
 /**
+ * Configuration options for the SpaceGraph visualization.
+ * @property uiElements Optional custom UI elements for the graph.
+ * @property layoutSettings Optional custom layout settings for the force-directed layout.
+ * @property backgroundColor Optional background color for the graph (hex integer).
+ * @property backgroundAlpha Optional background alpha value (0.0 to 1.0).
+ */
+data class SpaceGraphOptions(
+    val uiElements: UiElements? = null,
+    val layoutSettings: ForceLayoutSettings = ForceLayoutSettings(),
+    val backgroundColor: Int = 0x000000,
+    val backgroundAlpha: Double = 0.0
+)
+
+/**
  * Contains mathematical and generation constants and utility functions.
  */
 object Constants {

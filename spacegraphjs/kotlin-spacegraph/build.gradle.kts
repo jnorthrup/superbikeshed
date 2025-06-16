@@ -42,13 +42,19 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-browser:0.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-dom:0.0.20")
             }
         }
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                // For kotlinx.html if needed for typed HTML building:
-                // implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.8.0") // Check for latest version
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-browser:0.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-dom:0.0.20")
+                implementation(npm("webgpu", "0.1.34"))
             }
         }
 

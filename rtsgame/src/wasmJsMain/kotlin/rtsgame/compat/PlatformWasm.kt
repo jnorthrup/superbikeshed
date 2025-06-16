@@ -1,6 +1,9 @@
 package rtsgame.compat
 
-import kotlin.js.Date
+// Use JS Date API for WASM
+external object Date {
+    fun now(): Double
+}
 
 actual fun currentTimeMillis(): Long = Date.now().toLong()
 

@@ -1,5 +1,7 @@
 package com.example.spacegraphkt.external
 
+import kotlin.js.JsModule
+import kotlin.js.JsNonModule
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLElement
@@ -354,15 +356,36 @@ external object THREE {
     }
 }
 
-// CSS3DRenderer
+// CSS3D types
 @JsModule("three/addons/renderers/CSS3DRenderer.js") @JsNonModule
-external class CSS3DObject(element: HTMLElement) : THREE.Object3D
+external class CSS3DObject(element: HTMLElement) : THREE.Object3D {
+    var element: HTMLElement
+    var position: THREE.Vector3
+    var quaternion: THREE.Quaternion
+    var scale: THREE.Vector3
+    var visible: Boolean
+}
 
 @JsModule("three/addons/renderers/CSS3DRenderer.js") @JsNonModule
 external class CSS3DRenderer(parameters: dynamic = definedExternally) {
     val domElement: HTMLElement
     fun setSize(width: Number, height: Number)
     fun render(scene: THREE.Scene, camera: THREE.Camera)
+    fun dispose()
+}
+
+@JsModule("three/addons/renderers/CSS3DRenderer.js") @JsNonModule
+external class CSS3DScene : THREE.Scene {
+    fun add(obj: THREE.Object3D)
+    fun remove(obj: THREE.Object3D)
+    fun clear()
+}
+
+@JsModule("three/addons/renderers/CSS3DRenderer.js") @JsNonModule
+external class CSS3DCamera : THREE.Camera {
+    var position: THREE.Vector3
+    var quaternion: THREE.Quaternion
+    fun updateMatrix()
 }
 
 // GSAP (very basic for now)
