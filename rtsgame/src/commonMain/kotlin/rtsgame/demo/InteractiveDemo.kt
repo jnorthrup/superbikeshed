@@ -4,6 +4,7 @@ import borg.trikeshed.lib.*
 import rtsgame.core.*
 import rtsgame.ui.*
 import rtsgame.webgpu.*
+import rtsgame.compat.*
 
 /**
  * Interactive WebGPU demo with real buttons and controls
@@ -22,7 +23,7 @@ class InteractiveWebGPUDemo {
     
     // Main interactive loop - call this repeatedly
     suspend fun renderFrame(): InteractiveDemoState {
-        val currentTime = System.currentTimeMillis()
+        val currentTime = currentTimeMillis()
         val deltaTime = if (lastFrameTime > 0) {
             (currentTime - lastFrameTime) / 1000f
         } else {
@@ -82,7 +83,7 @@ data class InteractiveDemoState(
     val metricsText: String get() = buildString {
         append("Entities: ${renderResult.entityCount} | ")
         append("Triangles: ${renderResult.totalTriangles} | ")
-        append("Frame: ${String.format("%.1f", renderResult.frameTime)}ms | ")
+        append("Frame: ${formatFloat(renderResult.frameTime, 1)}ms | ")
         append("Tick: ${renderResult.tick} | ")
         append("Buttons: ${renderResult.buttonCount}")
     }
