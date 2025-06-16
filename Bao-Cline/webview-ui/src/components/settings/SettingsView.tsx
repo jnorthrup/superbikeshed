@@ -89,6 +89,8 @@ const sectionNames = [
 	"experimental",
 	"language",
 	"about",
+	"dgm",
+	"nexus",
 ] as const
 
 type SectionName = (typeof sectionNames)[number]
@@ -394,6 +396,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "experimental", icon: FlaskConical },
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
+			// Add new sections here for the tab list
+			{ id: "dgm", icon: FlaskConical }, // Using FlaskConical as a placeholder icon
+			{ id: "nexus", icon: Globe }, // Using Globe as a placeholder icon, consider a more specific one
 		],
 		[], // No dependencies needed now
 	)
@@ -452,6 +457,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			{ id: "experimental", icon: FlaskConical },
 			{ id: "language", icon: Globe },
 			{ id: "about", icon: Info },
+			{ id: "dgm", icon: FlaskConical },
+			{ id: "nexus", icon: Globe },
 		],
 		[],
 	)
@@ -747,6 +754,49 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 							{/* Original About content */}
 							<About telemetrySetting={telemetrySetting} setTelemetrySetting={setTelemetrySetting} />
 						</>
+					)}
+
+					{/* DGM Settings Section */}
+					{activeTab === "dgm" && (
+						<div>
+							<SectionHeader>
+								<div className="flex items-center gap-2">
+									<FlaskConical className="w-4" /> {/* Placeholder Icon */}
+									<div>DGM Configuration</div>
+								</div>
+							</SectionHeader>
+							<Section>
+								<div>
+									<p style={{ fontStyle: 'italic', color: '#666', padding: '10px' }}>
+										Settings for the DGM (Deep Generative Model) self-improvement loop and metrics display will appear here.
+										This may include options to configure Langchain integration, feedback mechanisms, and the verbosity of DGM metrics shown in the LLM Attention Portal.
+									</p>
+									{/* Future: Add actual DGM setting controls here */}
+								</div>
+							</Section>
+						</div>
+					)}
+
+					{/* Nexus Settings Section */}
+					{activeTab === "nexus" && (
+						<div>
+							<SectionHeader>
+								<div className="flex items-center gap-2">
+									<Globe className="w-4" /> {/* Placeholder Icon */}
+									<div>Nexus Integration Settings</div>
+								</div>
+							</SectionHeader>
+							<Section>
+								<div>
+									<p style={{ fontStyle: 'italic', color: '#666', padding: '10px' }}>
+										Configuration options for the Nexus universal development agent will be available here.
+										This may include settings for enabling/disabling specific types of Nexus insights,
+										customizing editor gutter decorations, and managing connections to the Nexus core agent.
+									</p>
+									{/* Future: Add actual Nexus setting controls here */}
+								</div>
+							</Section>
+						</div>
 					)}
 				</TabContent>
 			</div>

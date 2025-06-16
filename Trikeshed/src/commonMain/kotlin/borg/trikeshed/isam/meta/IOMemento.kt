@@ -15,8 +15,6 @@ import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.wri
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CharSeries
 import kotlinx.datetime.*
-import borg.trikeshed.math.BigDecimal
-import borg.trikeshed.math.MathUtils
 
 enum class IOMemento(override val networkSize: Int? = null, val fromChars: (Series<Char>) -> Any) : TypeMemento {
     IoBoolean(1, {
@@ -129,10 +127,6 @@ enum class IOMemento(override val networkSize: Int? = null, val fromChars: (Seri
     IoByteArray(null, { it.encodeToByteArray() }) {
         override fun createEncoder(i: Int): (Any?) -> ByteArray = writeByteArray
         override fun createDecoder(size: Int): (ByteArray) -> Any? = readByteArray
-    },
-    IoBigDecimal(12, { MathUtils.createBigDecimal(it.asString()) }) {
-        override fun createEncoder(i: Int): (Any?) -> ByteArray = currentPlatformCodec.writeBigDecimal as (Any?) -> ByteArray
-        override fun createDecoder(size: Int): (ByteArray) -> Any? = currentPlatformCodec.readBigDecimal
     },
     IoNothing(null, { "" }) {
         override fun createEncoder(i: Int): (Any?) -> ByteArray = { ByteArray(0) }

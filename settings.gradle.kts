@@ -6,4 +6,23 @@
  * This project uses @Incubating APIs which are subject to change.
  */
 
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        google()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
 rootProject.name = "superbikeshed"
+include("ta4k")
+include("Trikeshed")
+include("spacegraphjs:kotlin-spacegraph")
+include("ta4k-spacegraph-moneyfan-demo")

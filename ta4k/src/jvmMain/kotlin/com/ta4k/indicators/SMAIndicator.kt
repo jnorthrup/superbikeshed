@@ -1,10 +1,7 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path is correct
-import borg.trikeshed.core.Series // Import the new Series type
 import borg.trikeshed.core.j // For creating Series instance for 'values' via infix j
-import borg.trikeshed.core.size // Import extension property for Series
-import borg.trikeshed.core.get  // Import extension operator for Series
 import java.math.BigDecimal
 import java.math.RoundingMode
 

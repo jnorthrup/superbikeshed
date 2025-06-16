@@ -52,9 +52,9 @@ object Templates {
             |class Main_${className}{
             |    companion object {
             |        @JvmStatic
-            |        fun main(args: Array<String>) {
-            val script = Main_${className}::class.java.classLoader.loadClass("${classReference}Kt")
-            script.getDeclaredMethod("main", Array<String>::class.java).invoke(null, args)
+            |        fun main(args: Array<String>) { // Script body will be in a class named like the file
+            |            val scriptClass = Main_${className}::class.java.classLoader.loadClass("${classReference}Kt")
+            |            scriptClass.getDeclaredMethod("main", Array<String>::class.java).invoke(null, args)
             |        }
             |    }
             |}""".trimStart().trimMargin()

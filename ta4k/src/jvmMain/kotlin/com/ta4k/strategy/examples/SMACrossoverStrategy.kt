@@ -1,8 +1,6 @@
 package com.ta4k.strategy.examples
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.core.Series // Using new TrikeShed Series
-import borg.trikeshed.core.get // Extension for Series
 import com.ta4k.indicators.SMAIndicator
 import com.ta4k.strategy.Strategy
 import com.ta4k.trading.entities.Order

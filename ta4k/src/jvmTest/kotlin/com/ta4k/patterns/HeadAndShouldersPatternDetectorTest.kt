@@ -1,8 +1,6 @@
 package com.ta4k.patterns
 
 import com.ta4k.core.model.Kline
-import com.ta4k.trikeshedutils.toSeries // Planned new location
-import borg.trikeshed.core.Series     // For explicit typing if needed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import java.math.BigDecimal

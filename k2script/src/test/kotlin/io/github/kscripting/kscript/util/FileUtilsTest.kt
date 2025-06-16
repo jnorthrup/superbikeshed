@@ -57,6 +57,6 @@ class FileUtilsTest {
 
         assertThat(FileUtils.getArtifactsRecursively(artifactsPath, supportedExtensions)).transform {
             it.map { it.stringPath().substringAfterLast("jars").replace("\\", "/") }
-        }.isEqualTo(listOf("/jar_file_1.jar", "/subdir/jar_file_2.jar"))
+        }.isEqualTo(listOf("/subdir/jar_file_2.jar", "/jar_file_1.jar"))
     }
 }

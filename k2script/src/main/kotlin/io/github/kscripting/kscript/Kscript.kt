@@ -11,6 +11,7 @@ import io.github.kscripting.kscript.util.Logger.info
 import io.github.kscripting.kscript.util.OptionsUtils
 import io.github.kscripting.kscript.util.VersionChecker
 import io.github.kscripting.shell.model.OsType
+import java.nio.file.Paths
 import org.apache.commons.cli.CommandLineParser
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.ParseException
@@ -115,14 +116,14 @@ fun main(args: Array<String>) {
             }
 
             // scriptPathValue is already validated to be non-null/blank
-            // outputDirPathValue is also validated
+            val outputDir = Paths.get(outputDirPathValue!!)
 
             try {
                 io.github.kscripting.kscript.generator.exportToGradleProject(
-                    scriptFilePathString = scriptPathValue!!, // scriptPathValue is a String
-                    outputDir = java.nio.file.Paths.get(outputDirPathValue!!),
+                    scriptFilePathString = scriptPathValue,
+                    outputDir = outputDir,
                     cliOptions = parsedOptions.toMap(),
-                    config = config // Pass the config object
+                    config = config
                 )
                 info("Gradle project export process finished for '$scriptPathValue' to '$outputDirPathValue'.")
                 exitProcess(0)

@@ -27,7 +27,7 @@ npm run build                 # Production build
 ## Core Architecture
 
 ### TrikeShed Data Architecture
-- **Location**: `src/trikeshed/core.ts`
+- **Location**: Core TrikeShed (Kotlin) logic resides in the `trikeshed-core` project. Key types like `Join`, `Series` are defined within `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/`.
 - **Purpose**: Deterministic tensor-based data system for immutable state management
 - **Key Types**: `Join<A,B>`, `Twin<T>`, `Tensor`, `Series`
 - **Critical for**: Replay capability, deterministic simulation, cache-optimized data structures
@@ -96,6 +96,7 @@ npm run build                 # Production build
 - All randomness must use seeded RNG (`js/core/deterministicRNG.js`)
 - State changes must be immutable for replay capability
 - No direct state mutation - use TrikeShed patterns
+- In JavaScript/TypeScript code, this means favoring immutable data structures and pure functions (functions that do not have side effects and return new state instead of modifying existing state), especially for game state logic.
 
 ### Performance Considerations
 - Cache-friendly data structures preferred
@@ -107,10 +108,10 @@ npm run build                 # Production build
 - Core game logic in `js/core/`
 - AI systems in `js/ai/`
 - Configuration isolated in `js/config/`
-- TypeScript core architecture in `src/trikeshed/`
+- Core TrikeShed (Kotlin) architecture is in the `trikeshed-core` project.
 
 ### Documentation
 - Comprehensive design docs in `/docs/`
-- Architecture overview in `docs/architecture.md`
+- Architecture overview (Note: `docs/architecture.md` currently not found - consider creating or updating this reference).
 - Game design document in `docs/the-rts-concepts.md`
 - Implementation guides for complex systems

@@ -10,9 +10,6 @@ val kotlinVersion: String = "2.1.21"
 plugins {
     kotlin("jvm")
     application
-    id("com.adarshr.test-logger") version "3.2.0"
-    id("com.github.gmazzo.buildconfig") version "3.1.0"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
     `maven-publish`
     signing
     idea
