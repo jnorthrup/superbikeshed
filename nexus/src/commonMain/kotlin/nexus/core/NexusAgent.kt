@@ -20,7 +20,7 @@ import nexus.core.Solution
 import nexus.core.Workflow
 import nexus.core.GossipPayload // Import GossipPayload
 // External and TrikeShed imports
-import borg.trikeshed.core.Series
+import borg.trikeshed.lib.Series
 import kotlinx.coroutines.flow.Flow
 
 interface NexusAgent {

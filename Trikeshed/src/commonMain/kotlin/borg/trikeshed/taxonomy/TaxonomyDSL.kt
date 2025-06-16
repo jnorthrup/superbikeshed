@@ -4,7 +4,7 @@ import borg.trikeshed.cursor.*
 import borg.trikeshed.parse.TypeEvidence
 import borg.trikeshed.lib.*
 import borg.trikeshed.isam.meta.IOMemento
-import borg.trikeshed.core.*
+import borg.trikeshed.common.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 

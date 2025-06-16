@@ -1,7 +1,7 @@
 package com.ta4k.stats
 
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.j
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
 import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.math.sqrt

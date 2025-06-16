@@ -6,6 +6,12 @@ Avoid any discussion or implementation of 'demo' functionality. Do not include '
 
 ## CRITICAL TYPE SYSTEM RULES
 
+**VERSION MANAGEMENT RULE:**
+- NEVER change versions to fix build or code bugs
+- Use ONLY the specified versions in this document
+- If a build fails, fix the code to work with the specified versions
+- Version changes require explicit approval and documentation
+
 **SHUNNED TYPES - DEFER USE:**
 
 - **`List<T>`** - Use `Series<T>` or primitive array preferred
@@ -198,3 +204,4 @@ kotlin {
 ## CORE MEMORY
 
 - no more unplanned  DCE, ever or version changes
+- import packages with star in trikeshed

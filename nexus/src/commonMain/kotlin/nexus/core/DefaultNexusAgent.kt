@@ -26,12 +26,12 @@ import nexus.core.GossipPayload
 import nexus.core.NexusAgent
 
 // External and TrikeShed imports
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.TensorSeries
-import borg.trikeshed.core.j // For Join infix constructor
-import borg.trikeshed.core.seriesOf // Convenient way to create Series
-import borg.trikeshed.core.materialize // For Series.▶ syntax (if needed, or use .map directly)
-import borg.trikeshed.core.emptySeries // For creating empty series
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.TensorSeries
+import borg.trikeshed.lib.j // For Join infix constructor
+import borg.trikeshed.lib.seriesOf // Convenient way to create Series
+import borg.trikeshed.lib.materialize // For Series.▶ syntax (if needed, or use .map directly)
+import borg.trikeshed.lib.emptySeries // For creating empty series
 
 // Orchestration imports
 import borg.trikeshed.orchestration.BaseOrchestrationAgent

@@ -4,10 +4,10 @@ import com.ta4k.core.model.Kline
 import com.ta4k.core.model.BigDecimal // Explicitly from ta4k.core.model
 import com.ta4k.indicators.RSIIndicator
 import com.ta4k.indicators.SMAIndicator
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.j
-import borg.trikeshed.core.alpha
-import borg.trikeshed.core.`▶`
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.alpha
+import borg.trikeshed.lib.`▶`
 
 // Data classes and enums are in DemoDataClasses.kt, assumed to be in the same package
 // or correctly imported if this file were separate.

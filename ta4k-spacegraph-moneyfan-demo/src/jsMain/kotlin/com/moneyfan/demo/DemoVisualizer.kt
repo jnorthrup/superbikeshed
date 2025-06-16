@@ -2,8 +2,8 @@ package com.example.demo
 
 import com.example.spacegraphkt.api.AgentAPI
 import com.example.spacegraphkt.api.jsObject // Helper for creating JS objects for AgentAPI
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.`▶`
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.`▶`
 // Data classes (VisualGraphPointWithMoneyfanOutcome, etc.) and Enums (TASignalType, MoneyfanActionType)
 // are assumed to be in this package (from DemoDataClasses.kt) or correctly imported.
 import com.ta4k.core.model.BigDecimal // Using BigDecimal from ta4k

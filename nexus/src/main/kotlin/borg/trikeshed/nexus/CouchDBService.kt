@@ -1,6 +1,6 @@
 package borg.trikeshed.nexus
 
-import borg.trikeshed.core.*
+import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 

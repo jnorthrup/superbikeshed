@@ -1,8 +1,8 @@
 @file:JsExport
 import kotlinx.serialization.Serializable
 import kotlin.js.JsExport
-import borg.trikeshed.core.Join
-import borg.trikeshed.core.Series
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Series
 
 
 @JsExport

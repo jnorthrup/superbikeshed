@@ -7,17 +7,17 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking // Not strictly needed if extensions are not suspend, but good for consistency
 
 // TrikeShed core types and helpers
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.Join
-import borg.trikeshed.core.j // For Join infix constructor
-import borg.trikeshed.core.seriesOf
-import borg.trikeshed.core.emptySeries
-import borg.trikeshed.core.materialize
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.j // For Join infix constructor
+import borg.trikeshed.lib.seriesOf
+import borg.trikeshed.lib.emptySeries
+import borg.trikeshed.lib.materialize
 
 // TrikeShed Assertions (assuming they are in this package or accessible)
-import borg.trikeshed.core.shouldHaveSize
-import borg.trikeshed.core.shouldBe
-import borg.trikeshed.core.elementAtShouldBe // May not be needed if using shouldBe
+import borg.trikeshed.lib.shouldHaveSize
+import borg.trikeshed.lib.shouldBe
+import borg.trikeshed.lib.elementAtShouldBe // May not be needed if using shouldBe
 
 // Types from nexus.core (for Score, Pattern, Confidence if used directly in tests)
 import nexus.core.Score

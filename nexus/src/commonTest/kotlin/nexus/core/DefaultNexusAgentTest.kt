@@ -11,18 +11,18 @@ import kotlinx.coroutines.flow.toList
 import kotlin.coroutines.CoroutineContext
 
 // TrikeShed core types and helpers
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.j // For Join infix constructor
-import borg.trikeshed.core.seriesOf // For creating series easily
-import borg.trikeshed.core.materialize
-import borg.trikeshed.core.TensorSeries // For creating series from list
-import borg.trikeshed.core.emptySeries
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j // For Join infix constructor
+import borg.trikeshed.lib.seriesOf // For creating series easily
+import borg.trikeshed.lib.materialize
+import borg.trikeshed.lib.TensorSeries // For creating series from list
+import borg.trikeshed.lib.emptySeries
 
 
 // TrikeShed Assertions
-import borg.trikeshed.core.shouldHaveSize
-import borg.trikeshed.core.shouldBe
-import borg.trikeshed.core.elementAtShouldBe
+import borg.trikeshed.lib.shouldHaveSize
+import borg.trikeshed.lib.shouldBe
+import borg.trikeshed.lib.elementAtShouldBe
 
 // Types from the nexus.core module (main source set)
 import nexus.core.DefaultNexusAgent

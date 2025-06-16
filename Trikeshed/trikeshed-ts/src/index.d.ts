@@ -1,26 +1,24 @@
+/**
+ * TrikeShed TypeScript Type Definitions
+ */
+
 export interface Join<A, B> {
     a: A;
     b: B;
 }
 
-export interface Series<T> {
-    size: number;
-    get(index: number): T;
-}
-
-export interface Tensor<T> {
-    dimensions: number[];
-    get(coordinates: number[]): T;
-}
-
-export interface Cursor<T> {
-    value: T;
-    next(): Cursor<T> | null;
-}
+export type Series<T> = Join<number, (index: number) => T>;
+export type Tensor<T> = Join<number[], (coords: number[]) => T>;
+export type Cursor<T> = Join<number[], (coords: number[]) => T>;
 
 export function j<A, B>(a: A, b: B): Join<A, B>;
-export function createSeries<T>(size: number, getter: (index: number) => T): Series<T>;
-export function createTensor<T>(dimensions: number[], getter: (coordinates: number[]) => T): Tensor<T>;
-export function createCursor<T>(value: T, next: () => Cursor<T> | null): Cursor<T>;
+export function createSeries<T>(size: number, accessor: (index: number) => T): Series<T>;
+export function createTensor<T>(shape: number[], accessor: (coords: number[]) => T): Tensor<T>;
+export function createCursor<T>(shape: number[], accessor: (coords: number[]) => T): Cursor<T>;
+export function alpha<T, R>(series: Series<T>, transform: (value: T) => R): Series<R>;
 export function materialize<T>(series: Series<T>): T[];
-export function materializeTensor<T>(tensor: Tensor<T>): T[][]; 
+export function materializeTensor<T>(tensor: Tensor<T>, batchSize?: number): T[];
+export function materializeHot<T, R>(tensor: Tensor<T>, batchSize: number, operation: (data: T[]) => R): R;
+export function calculateTotalSize(shape: number[]): number;
+export function linearToCoords(index: number, shape: number[]): number[];
+export function coordsToLinear(coords: number[], shape: number[]): number; 

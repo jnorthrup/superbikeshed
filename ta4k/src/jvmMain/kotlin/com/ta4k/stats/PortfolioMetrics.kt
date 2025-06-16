@@ -1,9 +1,9 @@
 package com.ta4k.stats
 
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.j
-import borg.trikeshed.core.`▶`
-import borg.trikeshed.core.size
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
 

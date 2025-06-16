@@ -1,6 +1,6 @@
 package borg.trikeshed.lib
 
-import borg.trikeshed.qol.QualityOfLife.ZeroScan.nz
+import borg.trikeshed.lib.CZero.nz
 
 fun Series<Byte>.decodeUtf8(charArray: CharArray? = null): Series<Char> =
     charArray?.let { decodeDirtyUtf8(it) } ?: if (isDirtyUTF8()) decodeDirtyUtf8() else (this α {
@@ -288,13 +288,13 @@ fun Series<Byte>.isDirtyUTF8(): Boolean {
 fun ByteSeries.decodeToString() = decodeUtf8().asString()
 
 fun Series<Byte>.startsWith(s: String): Boolean {
-    val join = s.encodeToByteArray()
-    return join.size <= size && join.zip(this.toArray()).all { it.first == it.second }
+    val join = s.encodeToByteArray() α { it }
+    return join.size <= size && join.zip(this).`▶`.all { it.first == it.second }
 }
 
 fun Series<Byte>.endsWith(s: String): Boolean {
-    val join = s.encodeToByteArray()
-    return join.size <= size && join.zip(this.toArray().reversedArray()).all { it.first == it.second }
+    val join = s.encodeToByteArray() α { it }
+    return join.size <= size && join.zip(this.reversed()).`▶`.all { it.first == it.second }
 }
 typealias Series<T> = Join<Int, (Int) -> T>
 

@@ -1,12 +1,13 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
 }
 
 kotlin {
     jvm {
-        withJava()
         compilations.all {
-            kotlinOptions.jvmTarget = "17"
+            kotlinOptions {
+                jvmTarget = "17"
+            }
         }
     }
     
@@ -33,9 +34,9 @@ kotlin {
     }
     
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
-                implementation(project(":trikeshed-core"))
+                implementation(project(":Trikeshed"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("khttp:khttp:1.0.0")
                 implementation("com.github.docker-java:docker-java-core:3.3.3")
@@ -43,19 +44,19 @@ kotlin {
             }
         }
         
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
         
-        jvmMain {
+        val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
             }
         }
         
-        jvmTest {
+        val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
             }
@@ -73,25 +74,17 @@ kotlin {
         // Linux source sets
         val linuxX64Main by creating {
             dependsOn(nativeMain)
-            // Add specific dependencies for linuxX64Main if any
-            // e.g. implementation("io.ktor:ktor-client-curl-linuxx64:2.3.7")
         }
         val linuxArm64Main by creating {
             dependsOn(nativeMain)
-            // Add specific dependencies for linuxArm64Main if any
-            // e.g. implementation("io.ktor:ktor-client-curl-linuxarm64:2.3.7")
         }
 
         // macOS source sets
         val macosX64Main by creating {
             dependsOn(nativeMain)
-            // Add specific dependencies for macosX64Main if any
-            // e.g. implementation("io.ktor:ktor-client-darwin-macosx64:2.3.7") // Or ktor-client-curl
         }
         val macosArm64Main by creating {
             dependsOn(nativeMain)
-            // Add specific dependencies for macosArm64Main if any
-            // e.g. implementation("io.ktor:ktor-client-darwin-macosarm64:2.3.7") // Or ktor-client-curl
         }
 
         // Corresponding test source sets
