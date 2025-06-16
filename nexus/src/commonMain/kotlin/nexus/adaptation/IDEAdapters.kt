@@ -1,7 +1,7 @@
 package nexus.adaptation
 
 import nexus.core.*
-import borg.trikeshed.core.*
+import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 

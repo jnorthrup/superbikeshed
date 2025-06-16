@@ -7,7 +7,7 @@ import kotlin.js.JsExport // Required for @JsExport annotation at top or on spec
 // Assuming types.kt is in the same package or an accessible package.
 // If types.kt defines a package, e.g., package com.example.types,
 // then: import com.example.types.*
-import borg.trikeshed.core.*
+import borg.trikeshed.lib.*
 // For now, assuming default package visibility or direct access.
 // No explicit import statements are needed if types.kt is in the same Kotlin module and default package.
 

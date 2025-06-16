@@ -1,12 +1,12 @@
 package nexus.core
 
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.Join
-import borg.trikeshed.core.j // For infix join
-import borg.trikeshed.core.TensorSeries // For creating Series instances
-import borg.trikeshed.core.materialize // To get an Iterable from Series (this replaces the old custom ▶ operator)
-import borg.trikeshed.core.seriesOf // Convenience for creating series
-import borg.trikeshed.core.emptySeries // For creating empty series
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.j // For infix join
+import borg.trikeshed.lib.TensorSeries // For creating Series instances
+import borg.trikeshed.lib.materialize // To get an Iterable from Series (this replaces the old custom ▶ operator)
+import borg.trikeshed.lib.seriesOf // Convenience for creating series
+import borg.trikeshed.lib.emptySeries // For creating empty series
 
 // Types imported from NexusTypes.kt (ensure they are defined there)
 import nexus.core.Score // typealias Score = Double
@@ -101,12 +101,12 @@ fun <T> Series<T>.withConfidence(confidenceCalc: (T) -> Confidence): Series<Join
     this.map { element -> confidenceCalc(element) j element } // map is a standard Series op
 
 // Note: The original `α` operator from NexusAgent_OLD.kt was a simple map.
-// `borg.trikeshed.core.Series` is assumed to have a `map` function.
+// `borg.trikeshed.lib.Series` is assumed to have a `map` function.
 // If `α` had different semantics (like context passing or error handling), those are not preserved here.
 // The custom `▶` operator from NexusAgent_OLD.kt `this ▶ { it.maxOrNull()!! }`
 // is replaced by `this.materialize().maxOrNull()` assuming `materialize()` provides an `Iterable`.
-// `borg.trikeshed.core.Series` interface should define `map` and `size`.
-// `borg.trikeshed.core.materialize` is assumed to be an extension function `Series<T>.materialize(): Iterable<T>`.
-// If these are not available in `borg.trikeshed.core`, these implementations will fail.
+// `borg.trikeshed.lib.Series` interface should define `map` and `size`.
+// `borg.trikeshed.lib.materialize` is assumed to be an extension function `Series<T>.materialize(): Iterable<T>`.
+// If these are not available in `borg.trikeshed.lib`, these implementations will fail.
 // For `TensorSeries.fromList(list)`, this is assumed to be a standard constructor for Series.
-// `emptySeries<T>()` and `seriesOf<T>(vararg elements: T)` are also assumed from `borg.trikeshed.core`.
+// `emptySeries<T>()` and `seriesOf<T>(vararg elements: T)` are also assumed from `borg.trikeshed.lib`.

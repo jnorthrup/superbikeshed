@@ -1,7 +1,8 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
-import borg.trikeshed.core.j // For creating Series from results
+import borg.trikeshed.lib.j // For creating Series from results
+import borg.trikeshed.lib.Series
 import java.math.BigDecimal
 import java.math.RoundingMode
 

@@ -1,9 +1,9 @@
 package com.ta4k.strategy.examples
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.core.Series // Corrected import
+import borg.trikeshed.lib.Series // Corrected import
 import com.ta4k.trikeshedutils.toSeries // Planned new location
-import borg.trikeshed.core.get
+import borg.trikeshed.lib.get
 // import com.ta4k.indicators.SMAIndicator // Still not directly used in test logic
 import com.ta4k.trading.entities.OrderType
 import com.ta4k.trading.entities.Position

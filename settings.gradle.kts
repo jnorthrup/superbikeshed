@@ -24,5 +24,7 @@ dependencyResolutionManagement {
 rootProject.name = "superbikeshed"
 include("ta4k")
 include("Trikeshed")
+include("nexus")
+include("rtsgame")
 include("spacegraphjs:kotlin-spacegraph")
 include("ta4k-spacegraph-moneyfan-demo")

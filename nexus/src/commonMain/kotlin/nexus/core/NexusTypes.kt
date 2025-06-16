@@ -1,6 +1,6 @@
 package nexus.core
 
-import borg.trikeshed.core.*
+import borg.trikeshed.lib.*
 
 // Refined and Placeholder Types for Nexus System
 

@@ -1,7 +1,8 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
-import borg.trikeshed.core.j      // Import infix j
+import borg.trikeshed.lib.j      // Import infix j
+import borg.trikeshed.lib.Series
 import java.math.BigDecimal
 import java.math.RoundingMode
 // kotlin.math.sqrt is not directly used by ATR, but was in the prompt. Removed for cleanliness.

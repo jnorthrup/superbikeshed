@@ -13,10 +13,10 @@ import TaskHistory
 import KotlinExtensionState
 import ActiveSession
 import EnvironmentContext
-import borg.trikeshed.core.Series
-import borg.trikeshed.core.seriesOf
-import borg.trikeshed.core.size
-import borg.trikeshed.core.get
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.seriesOf
+import borg.trikeshed.lib.size
+import borg.trikeshed.lib.get
 import addTaskEvent
 // processUserRequest is an extension function, so it's imported with KotlinExtensionState
 // or called directly on an instance if KotlinExtensionState is imported.

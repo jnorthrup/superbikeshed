@@ -1,9 +1,9 @@
 package com.ta4k.backtesting
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.core.Series // Using local TrikeShed Series
-import borg.trikeshed.core.size // Import Series extensions
-import borg.trikeshed.core.get  // Import Series extensions
+import borg.trikeshed.lib.Series // Using local TrikeShed Series
+import borg.trikeshed.lib.size // Import Series extensions
+import borg.trikeshed.lib.get  // Import Series extensions
 import com.ta4k.strategy.Strategy
 import com.ta4k.trading.TradingRecord
 import com.ta4k.trading.entities.Order

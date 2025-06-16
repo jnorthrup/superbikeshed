@@ -1,6 +1,5 @@
 plugins {
     kotlin("multiplatform") version "2.1.21"
-    
 }
 
 group = "borg.trikeshed"
@@ -9,8 +8,6 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
-
-
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
@@ -33,7 +30,21 @@ kotlin {
         isMacOS -> macosX64()
         isLinux && isArm64 -> linuxArm64()
         isLinux -> linuxX64()
+        isWindows && isArm64 -> mingwArm64()
         isWindows -> mingwX64()
+    }
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                // Add only essential Kotlin dependencies here
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                // Add test dependencies if needed
+            }
+        }
     }
 }
 
