@@ -2,6 +2,7 @@ package org.flatton.types
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.parse.json.*
+import borg.trikeshed.lib.toSeries
 
 @JvmInline
 value class DocumentId(val value: String)
@@ -124,12 +125,12 @@ data class CouchSecurity(
 ) {
     fun toJson(): String = JsonImpl.stringify(mapOf(
         "admins" to mapOf(
-            "names" to admins.names,
-            "roles" to admins.roles
+            "names" to admins.names.▶.toList(),
+            "roles" to admins.roles.▶.toList()
         ),
         "members" to mapOf(
-            "names" to members.names,
-            "roles" to members.roles
+            "names" to members.names.▶.toList(),
+            "roles" to members.roles.▶.toList()
         )
     ))
 
@@ -138,12 +139,12 @@ data class CouchSecurity(
             val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
             return CouchSecurity(
                 admins = SecurityRoles(
-                    names = (map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList(),
-                    roles = (map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()
+                    names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
+                    roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
                 ),
                 members = SecurityRoles(
-                    names = (map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList(),
-                    roles = (map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()
+                    names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
+                    roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
                 )
             )
         }
@@ -151,17 +152,17 @@ data class CouchSecurity(
 }
 
 data class SecurityRoles(
-    val names: List<String>,
-    val roles: List<String>
+    val names: Series<String>,
+    val roles: Series<String>
 )
 
 data class AdminPartyConfig(
     val enabled: Boolean,
-    val adminRoles: List<String>
+    val adminRoles: Series<String>
 ) {
     fun toJson(): String = JsonImpl.stringify(mapOf(
         "enabled" to enabled,
-        "admin_roles" to adminRoles
+        "admin_roles" to adminRoles.▶.toList()
     ))
 
     companion object {
@@ -169,7 +170,7 @@ data class AdminPartyConfig(
             val map = JsonImpl.parse(json) as? Map<*, *> ?: throw IllegalArgumentException("Invalid JSON")
             return AdminPartyConfig(
                 enabled = map["enabled"] as Boolean,
-                adminRoles = map["admin_roles"] as? List<String> ?: emptyList()
+                adminRoles = (map["admin_roles"] as? List<String> ?: emptyList()).toSeries()
             )
         }
     }
@@ -209,7 +210,7 @@ data class CouchError(
 
 data class ViewQueryParams(
     val key: Any? = null,
-    val keys: List<Any>? = null,
+    val keys: Series<Any>? = null,
     val startKey: Any? = null,
     val endKey: Any? = null,
     val startKeyDocId: DocumentId? = null,
@@ -223,30 +224,29 @@ data class ViewQueryParams(
     val groupLevel: Int? = null
 ) {
     fun toQueryString(): String {
-        val params = mutableListOf<String>()
-        
-        key?.let { params.add("key=${JsonImpl.stringify(it)}") }
-        keys?.let { params.add("keys=${JsonImpl.stringify(it)}") }
-        startKey?.let { params.add("startkey=${JsonImpl.stringify(it)}") }
-        endKey?.let { params.add("endkey=${JsonImpl.stringify(it)}") }
-        startKeyDocId?.let { params.add("startkey_docid=${it.value}") }
-        endKeyDocId?.let { params.add("endkey_docid=${it.value}") }
-        limit?.let { params.add("limit=$it") }
-        skip?.let { params.add("skip=$it") }
-        descending?.let { params.add("descending=$it") }
-        includeDocs?.let { params.add("include_docs=$it") }
-        reduce?.let { params.add("reduce=$it") }
-        group?.let { params.add("group=$it") }
-        groupLevel?.let { params.add("group_level=$it") }
-        
-        return if (params.isEmpty()) "" else "?${params.joinToString("&")}"
+        val params = buildString {
+            key?.let { append("key=${JsonImpl.stringify(it)}&") }
+            keys?.let { append("keys=${JsonImpl.stringify(it.▶.toList())}&") }
+            startKey?.let { append("startkey=${JsonImpl.stringify(it)}&") }
+            endKey?.let { append("endkey=${JsonImpl.stringify(it)}&") }
+            startKeyDocId?.let { append("startkey_docid=${it.value}&") }
+            endKeyDocId?.let { append("endkey_docid=${it.value}&") }
+            limit?.let { append("limit=$it&") }
+            skip?.let { append("skip=$it&") }
+            descending?.let { append("descending=$it&") }
+            includeDocs?.let { append("include_docs=$it&") }
+            reduce?.let { append("reduce=$it&") }
+            group?.let { append("group=$it&") }
+            groupLevel?.let { append("group_level=$it&") }
+        }.removeSuffix("&")
+        return if (params.isEmpty()) "" else "?$params"
     }
 }
 
 data class ViewResponse<T>(
     val totalRows: Int,
     val offset: Int,
-    val rows: List<ViewRow<T>>
+    val rows: Series<ViewRow<T>>
 ) {
     companion object {
         inline fun <reified T> fromJson(json: String): ViewResponse<T> {
@@ -254,7 +254,7 @@ data class ViewResponse<T>(
             return ViewResponse(
                 totalRows = map["total_rows"] as Int,
                 offset = map["offset"] as Int,
-                rows = (map["rows"] as? List<*>)?.map { rowMap ->
+                rows = ((map["rows"] as? List<*>)?.map { rowMap ->
                     val row = rowMap as Map<*, *>
                     ViewRow(
                         id = DocumentId(row["id"] as String),
@@ -262,7 +262,7 @@ data class ViewResponse<T>(
                         value = row["value"] as T,
                         doc = (row["doc"] as? Map<*, *>)?.let { CouchDocument.fromJson(JsonImpl.stringify(it)) }
                     )
-                } ?: emptyList()
+                } ?: emptyList()).toSeries()
             )
         }
     }
@@ -273,4 +273,4 @@ data class ViewRow<T>(
     val key: Any,
     val value: T,
     val doc: CouchDocument? = null
-) 
+)
