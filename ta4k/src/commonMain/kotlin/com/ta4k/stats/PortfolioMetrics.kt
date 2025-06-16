@@ -1,0 +1,124 @@
+package com.ta4k.stats
+
+import borg.trikeshed.core.Series
+import borg.trikeshed.core.j
+import borg.trikeshed.core.`▶`
+import borg.trikeshed.core.size
+import java.math.BigDecimal
+import java.math.RoundingMode
+
+/**
+ * Portfolio metrics implementation ported from quantstats
+ */
+class PortfolioMetrics {
+    companion object {
+        private const val DEFAULT_SCALE = 8
+    }
+
+    /**
+     * Calculate the win rate of a series of returns
+     */
+    fun winRate(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        val wins = returns.`▶`.count { it > BigDecimal.ZERO }
+        return BigDecimal(wins)
+            .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+    }
+
+    /**
+     * Calculate the average win size
+     */
+    fun avgWin(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        val wins = returns.`▶`.filter { it > BigDecimal.ZERO }.toList()
+        if (wins.isEmpty()) return BigDecimal.ZERO
+        
+        return wins.average()
+    }
+
+    /**
+     * Calculate the average loss size
+     */
+    fun avgLoss(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        val losses = returns.`▶`.filter { it < BigDecimal.ZERO }.toList()
+        if (losses.isEmpty()) return BigDecimal.ZERO
+        
+        return losses.average()
+    }
+
+    /**
+     * Calculate the profit factor (gross profit / gross loss)
+     */
+    fun profitFactor(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        val grossProfit = returns.`▶`.filter { it > BigDecimal.ZERO }
+            .sumOf { it }
+        val grossLoss = returns.`▶`.filter { it < BigDecimal.ZERO }
+            .sumOf { it.abs() }
+            
+        return if (grossLoss == BigDecimal.ZERO) BigDecimal.ZERO
+        else grossProfit.divide(grossLoss, DEFAULT_SCALE, RoundingMode.HALF_UP)
+    }
+
+    /**
+     * Calculate the maximum drawdown
+     */
+    fun maxDrawdown(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        var peak = BigDecimal.ONE
+        var maxDrawdown = BigDecimal.ZERO
+        
+        returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
+            val current = acc.multiply(BigDecimal.ONE.add(ret))
+            peak = peak.max(current)
+            val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
+            maxDrawdown = maxDrawdown.max(drawdown)
+            current
+        }
+        
+        return maxDrawdown
+    }
+
+    /**
+     * Calculate the average drawdown
+     */
+    fun avgDrawdown(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        var peak = BigDecimal.ONE
+        var drawdowns = mutableListOf<BigDecimal>()
+        
+        returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
+            val current = acc.multiply(BigDecimal.ONE.add(ret))
+            peak = peak.max(current)
+            val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
+            if (drawdown > BigDecimal.ZERO) drawdowns.add(drawdown)
+            current
+        }
+        
+        return if (drawdowns.isEmpty()) BigDecimal.ZERO
+        else drawdowns.average()
+    }
+
+    /**
+     * Calculate the exposure (percentage of time invested)
+     */
+    fun exposure(returns: Series<BigDecimal>): BigDecimal {
+        if (returns.isEmpty()) return BigDecimal.ZERO
+        
+        val invested = returns.`▶`.count { it != BigDecimal.ZERO }
+        return BigDecimal(invested)
+            .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+    }
+
+    private fun List<BigDecimal>.average(): BigDecimal {
+        if (isEmpty()) return BigDecimal.ZERO
+        return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+    }
+}

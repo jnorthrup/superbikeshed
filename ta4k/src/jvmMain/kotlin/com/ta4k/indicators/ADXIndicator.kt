@@ -1,11 +1,7 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
-import borg.trikeshed.core.Series // Import new Series
-import borg.trikeshed.core.size // Import Series extensions
-import borg.trikeshed.core.get  // Import Series extensions
 import borg.trikeshed.core.j // For creating Series from results
-// ConcreteJoin is not directly used for a primary 'values' in ADX as it has multiple distinct outputs (+DI, -DI, ADX)
 import java.math.BigDecimal
 import java.math.RoundingMode
 

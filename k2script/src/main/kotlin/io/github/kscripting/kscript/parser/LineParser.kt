@@ -8,6 +8,20 @@ import io.github.kscripting.shell.model.ScriptLocation
 object LineParser {
     private const val deprecatedAnnotation = "Deprecated annotation:"
 
+    private val parsers = listOf(
+        LineParser::parseSheBang,
+        LineParser::parseBaseClass,
+        LineParser::parsePackage,
+        LineParser::parseRepository,
+        LineParser::parseDependency,
+        LineParser::parseEntry,
+        LineParser::parseKotlinOpts,
+        LineParser::parseCompilerOpts,
+        LineParser::parseProjectCoordinates,
+        LineParser::parseImport,
+        LineParser::parseInclude
+    )
+
     fun parseSheBang(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
         if (text.startsWith("#!/")) {
             return sheBang
@@ -365,6 +379,46 @@ object LineParser {
         DeprecatedItem(scriptLocation, line, "$introText\n$existing\nshould be replaced with:\n$replacement")
 
     fun parseProjectCoordinates(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
+        val trimmedText = text.trim()
+        val matchResult = PROJECT_COORDINATES_ANNOTATION_REGEX.find(trimmedText)
+
+        if (matchResult != null) {
+            val attributesString = matchResult.groupValues[1]
+            try {
+                val projectCoordinates = extractProjectCoordinatesFromAttributes(attributesString)
+                return listOf(projectCoordinates)
+            } catch (e: ParseException) {
+                throw ParseException("Invalid @file:ProjectCoordinates annotation at $scriptLocation line $line: ${e.message}")
+            }
+        }
+        return emptyList()
+    }
+
+    private fun extractProjectCoordinatesFromAttributes(attributesString: String): ProjectCoordinates {
+        var group: String? = null
+        var artifact: String? = null
+        var version: String? = null
+
+        if (attributesString.isBlank()) {
+            return ProjectCoordinates(null, null, null)
+        }
+
+        ATTRIBUTE_REGEX.findAll(attributesString).forEach { matchResult ->
+            val key = matchResult.groupValues[1]
+            val value = matchResult.groupValues[2].takeIf { it.isNotEmpty() }
+                ?: matchResult.groupValues[3].takeIf { it.isNotEmpty() }
+                ?: matchResult.groupValues[4]
+
+            when (key) {
+                "group" -> group = value
+                "artifact" -> artifact = value
+                "version" -> version = value
+            }
+        }
+        return ProjectCoordinates(group, artifact, version)
+    }
+
+    fun parseProjectCoordinates(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
        val trimmedText = text.trim()
         val matchResult = PROJECT_COORDINATES_ANNOTATION_REGEX.find(trimmedText)
 
@@ -411,6 +465,8 @@ object LineParser {
 }
 
 private val sheBang = listOf(SheBang)
+private val PROJECT_COORDINATES_ANNOTATION_REGEX = Regex("""^@file:ProjectCoordinates\s*\((.*)\)""")
+private val ATTRIBUTE_REGEX = Regex("""(group|artifact|version)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s,)]+))""")
 
 // Regex for @file:ProjectCoordinates(group="...", artifact="...", version="...")
 private val PROJECT_COORDINATES_ANNOTATION_REGEX = Regex("""^@file:ProjectCoordinates\s*\((.*)\)""")

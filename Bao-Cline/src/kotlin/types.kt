@@ -1,47 +1,8 @@
 @file:JsExport
 import kotlinx.serialization.Serializable
 import kotlin.js.JsExport
-
-// Placeholder for TrikeShed Series
-@JsExport
-@Serializable
-class Series<T>( initialItems: List<T> = emptyList() ) { // Primary constructor for initialization
-    // Make items publicly accessible for tests but immutable from outside to encourage using 'add'
-    val items: List<T> = initialItems.toList() // Store as an immutable list internally
-
-    // Returns a new Series with the event added
-    fun add(event: T): Series<T> = Series(items + event)
-
-    fun <R> alpha(transform: (T) -> R): Series<R> = Series(items.map(transform))
-
-    infix fun <B> join(other: Series<B>): Series<Join<T, B>> {
-        // Simple zip-like behavior
-        val newSize = minOf(this.items.size, other.items.size)
-        val joinedItems = mutableListOf<Join<T,B>>()
-        for (i in 0 until newSize) {
-            joinedItems.add(Join(this.items[i], other.items[i]))
-        }
-        return Series(joinedItems)
-    }
-}
-
-// Placeholder for TrikeShed Join
-@JsExport
-@Serializable
-// Made properties nullable and var for easier test setup as requested, though 'val' with default null is also an option.
-// Using 'val' with nullable types and default values for a more immutable style, matching data class benefits.
-// The test can still instantiate with nulls if needed.
-data class Join<A, B>(val first: A?, val second: B?) {
-    // Added default nulls to allow construction like Join() in tests if specific values aren't immediately necessary.
-    // Constructor with non-nullable parameters if values are always expected at call site:
-    // data class Join<A, B>(val first: A, val second: B)
-
-    // Illustrative split function
-    fun split(): Pair<A?, B?> = Pair(first, second)
-}
-
-// Top-level join operator
-infix fun <A, B> A.join(other: B): Join<A, B> = Join(this, other)
+import borg.trikeshed.core.Join
+import borg.trikeshed.core.Series
 
 
 @JsExport
@@ -310,3 +271,15 @@ data class UserRequest(val text: String)
 @JsExport
 @Serializable
 data class Response(val text: String)
+
+// Helper extension to bridge Join<A,B> to Pair<A,B> for destructuring
+fun <A, B> Join<A, B>.split(): Pair<A, B> = Pair(a, b)
+
+// Helper extension to add an item to a Series, returning a new Series
+fun <T> Series<T>.add(item: T): Series<T> = this + seriesOf(item)
+
+// Helper extension to bridge Join<A,B> to Pair<A,B> for destructuring
+fun <A, B> Join<A, B>.split(): Pair<A, B> = Pair(a, b)
+
+// Helper extension to add an item to a Series, returning a new Series
+fun <T> Series<T>.add(item: T): Series<T> = this + seriesOf(item)

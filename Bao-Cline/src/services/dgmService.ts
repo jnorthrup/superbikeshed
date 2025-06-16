@@ -13,7 +13,7 @@ import {
     DGMToUpperEchoResponsePayload,
     TaskEvent
 } from "@roo-code/types";
-import { LLMAttentionPortalPanel } from "../panels/LLMAttentionPortalPanel"; // Added import
+import { LLMAttentionPortalPanel, DGMInteractionLog, DGMSummaryMetrics } from "../panels/LLMAttentionPortalPanel";
 
 // Helper to generate a unique socket path
 function getUniqueSocketPath(): string {
@@ -44,6 +44,12 @@ export class DGMService {
   private activeLogId: string | null = null; // For tracking the current command for logging
 
   public readonly onDgmResponse = this.onDgmResponseEmitter.event;
+
+  private cyclesCompleted: number = 0;
+  private successfulActions: number = 0;
+  private failedActions: number = 0;
+  private totalProcessingTimeSeconds: number = 0;
+  private activeCommandStartTime: number | null = null;
 
   private constructor() {
     this.outputChannel = vscode.window.createOutputChannel("DGM Service");
@@ -110,12 +116,19 @@ export class DGMService {
       this.ipcServer?.stop();
       this.ipcServer = null;
       this.dgmClientId = null;
-      if (this.activeLogId) {
+      if (this.activeLogId) { // Implies a command was running and didn't complete normally
+        this.failedActions++;
+        if (this.activeCommandStartTime) { // Ensure start time was recorded
+            this.totalProcessingTimeSeconds += (Date.now() - this.activeCommandStartTime) / 1000;
+        }
+        this.cyclesCompleted++;
         LLMAttentionPortalPanel.currentPanel?.updateLogEntry(this.activeLogId, {
           status: "failed",
           error: `DGM process exited with code ${code}, signal ${signal}.`
         });
         this.activeLogId = null;
+        this.activeCommandStartTime = null;
+        this.updateAndSendMetrics(); // Call a new method to send metrics
       }
     });
 
@@ -166,6 +179,7 @@ export class DGMService {
                 if (validationResult.success) {
                     const responsePayload = validationResult.data;
                     this.outputChannel.appendLine(`Parsed DGM Echo Response Payload: ${JSON.stringify(responsePayload)}`);
+                    this.successfulActions++;
                     LLMAttentionPortalPanel.currentPanel?.updateLogEntry(this.activeLogId, {
                         status: "completed",
                         responsePayload: responsePayload,
@@ -173,6 +187,7 @@ export class DGMService {
                     this.onDgmResponseEmitter.fire(responsePayload);
                 } else {
                     this.outputChannel.appendLine(`Failed to parse DGMEchoResponse payload: ${validationResult.error.toString()}`);
+                    this.failedActions++;
                     LLMAttentionPortalPanel.currentPanel?.updateLogEntry(this.activeLogId, {
                         status: "failed",
                         error: "Failed to parse DGMEchoResponse: " + validationResult.error.toString(),
@@ -181,11 +196,19 @@ export class DGMService {
                 }
             } catch (error) {
                 this.outputChannel.appendLine(`Error processing DGMEchoResponse: ${error}`);
+                // Assuming catch means a failure in processing an otherwise valid-looking response or a system error
+                this.failedActions++;
                 LLMAttentionPortalPanel.currentPanel?.updateLogEntry(this.activeLogId, {
                     status: "failed",
                     error: `Error processing DGMEchoResponse: ${error.message || error}`,
                 });
             } finally {
+                if (this.activeCommandStartTime) {
+                    this.totalProcessingTimeSeconds += (Date.now() - this.activeCommandStartTime) / 1000;
+                }
+                this.cyclesCompleted++;
+                this.activeCommandStartTime = null; // Reset for the next command
+                this.updateAndSendMetrics(); // Call a new method to send metrics
                 this.activeLogId = null; // Clear active log ID after processing
             }
         }
@@ -218,6 +241,7 @@ export class DGMService {
 
     this.outputChannel.appendLine(`Sending DGMToUpperEchoCommand to client ${this.dgmClientId}: ${JSON.stringify(messageToDgm)}`);
 
+    this.activeCommandStartTime = Date.now();
     // Log the start of the interaction
     if (LLMAttentionPortalPanel.currentPanel) {
         this.activeLogId = LLMAttentionPortalPanel.currentPanel.addLogEntry({
@@ -269,13 +293,33 @@ export class DGMService {
     this.socketPath = null;
     this.dgmClientId = null;
     if (this.activeLogId && LLMAttentionPortalPanel.currentPanel) {
+        this.failedActions++; // Count as a failed action
+        if (this.activeCommandStartTime) {
+             this.totalProcessingTimeSeconds += (Date.now() - this.activeCommandStartTime) / 1000;
+        }
+        this.cyclesCompleted++;
         LLMAttentionPortalPanel.currentPanel.updateLogEntry(this.activeLogId, {
             status: "failed",
             error: "DGMService disposed during active command.",
         });
+        this.updateAndSendMetrics(); // Send final metrics
         this.activeLogId = null;
+        this.activeCommandStartTime = null;
     }
     this.onDgmResponseEmitter.dispose();
     this.outputChannel.dispose();
+  }
+
+  private updateAndSendMetrics(): void {
+    if (LLMAttentionPortalPanel.currentPanel) {
+        const metrics: DGMSummaryMetrics = {
+            cyclesCompleted: this.cyclesCompleted,
+            successfulActions: this.successfulActions,
+            failedActions: this.failedActions,
+            totalProcessingTime: this.totalProcessingTimeSeconds,
+            averageProcessingTimePerCycle: this.cyclesCompleted > 0 ? this.totalProcessingTimeSeconds / this.cyclesCompleted : 0,
+        };
+        LLMAttentionPortalPanel.currentPanel.updateMetrics(metrics);
+    }
   }
 }
