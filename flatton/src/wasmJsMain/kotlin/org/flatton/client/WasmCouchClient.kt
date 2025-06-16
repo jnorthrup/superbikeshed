@@ -13,83 +13,84 @@ class WasmCouchClient(
         HttpHeaderName("Accept") to HttpHeaderValue("application/json")
     )
 
-    override suspend fun getDatabaseInfo(dbName: DatabaseName): CouchDatabaseInfo {
+    private suspend fun <T> executeRequest(
+        method: HttpMethod,
+        path: String,
+        body: String? = null,
+        additionalHeaders: Map<HttpHeaderName, HttpHeaderValue> = emptyMap(),
+        parser: (String) -> T
+    ): T {
+        val requestHeaders = headers + additionalHeaders
         val response = HttpRequest(
-            method = HttpMethod.GET,
-            path = HttpRequestPath("/${dbName.value}"),
-            headers = headers
+            method = method,
+            path = HttpRequestPath(path),
+            headers = requestHeaders,
+            body = body
         ).send()
 
-        if (!response.isSuccess) throw CouchException("Failed to get database info")
-        return CouchDatabaseInfo.fromJson(response.body.toString())
+        if (!response.isSuccess) {
+            throw CouchException("Request failed with status ${response.status}")
+        }
+        
+        return parser(response.body.toString())
+    }
+
+    override suspend fun getDatabaseInfo(dbName: DatabaseName): CouchDatabaseInfo {
+        return executeRequest(
+            method = HttpMethod.GET,
+            path = "/${dbName.value}",
+            parser = CouchDatabaseInfo::fromJson
+        )
     }
 
     override suspend fun createDatabase(dbName: DatabaseName): CouchResponse {
-        val response = HttpRequest(
+        return executeRequest(
             method = HttpMethod.PUT,
-            path = HttpRequestPath("/${dbName.value}"),
-            headers = headers
-        ).send()
-
-        if (!response.isSuccess) throw CouchException("Failed to create database")
-        return CouchResponse.fromJson(response.body.toString())
+            path = "/${dbName.value}",
+            parser = CouchResponse::fromJson
+        )
     }
 
     override suspend fun deleteDatabase(dbName: DatabaseName): CouchResponse {
-        val response = HttpRequest(
+        return executeRequest(
             method = HttpMethod.DELETE,
-            path = HttpRequestPath("/${dbName.value}"),
-            headers = headers
-        ).send()
-
-        if (!response.isSuccess) throw CouchException("Failed to delete database")
-        return CouchResponse.fromJson(response.body.toString())
+            path = "/${dbName.value}",
+            parser = CouchResponse::fromJson
+        )
     }
 
     override suspend fun getDocument(dbName: DatabaseName, docId: DocumentId): CouchDocument {
-        val response = HttpRequest(
+        return executeRequest(
             method = HttpMethod.GET,
-            path = HttpRequestPath("/${dbName.value}/${docId.value}"),
-            headers = headers
-        ).send()
-
-        if (!response.isSuccess) throw CouchException("Failed to get document")
-        return CouchDocument.fromJson(response.body.toString())
+            path = "/${dbName.value}/${docId.value}",
+            parser = CouchDocument::fromJson
+        )
     }
 
     override suspend fun createDocument(dbName: DatabaseName, doc: CouchDocument): CouchResponse {
-        val response = HttpRequest(
+        return executeRequest(
             method = HttpMethod.POST,
-            path = HttpRequestPath("/${dbName.value}"),
-            headers = headers,
-            body = doc.toJson()
-        ).send()
-
-        if (!response.isSuccess) throw CouchException("Failed to create document")
-        return CouchResponse.fromJson(response.body.toString())
+            path = "/${dbName.value}",
+            body = doc.toJson(),
+            parser = CouchResponse::fromJson
+        )
     }
 
     override suspend fun updateDocument(dbName: DatabaseName, doc: CouchDocument): CouchResponse {
-        val response = HttpRequest(
+        return executeRequest(
             method = HttpMethod.PUT,
-            path = HttpRequestPath("/${dbName.value}/${doc.id.value}"),
-            headers = headers,
-            body = doc.toJson()
-        ).send()
-
-        if (!response.isSuccess) throw CouchException("Failed to update document")
-        return CouchResponse.fromJson(response.body.toString())
+            path = "/${dbName.value}/${doc.id.value}",
+            body = doc.toJson(),
+            parser = CouchResponse::fromJson
+        )
     }
 
     override suspend fun deleteDocument(dbName: DatabaseName, docId: DocumentId, rev: RevisionId): CouchResponse {
-        val response = HttpRequest(
+        return executeRequest(
             method = HttpMethod.DELETE,
-            path = HttpRequestPath("/${dbName.value}/${docId.value}?rev=${rev.value}"),
-            headers = headers
-        ).send()
-
-        if (!response.isSuccess) throw CouchException("Failed to delete document")
-        return CouchResponse.fromJson(response.body.toString())
+            path = "/${dbName.value}/${docId.value}?rev=${rev.value}",
+            parser = CouchResponse::fromJson
+        )
     }
 
     override suspend fun getDesignDocument(dbName: DatabaseName, docId: DocumentId): CouchDesignDocument {
