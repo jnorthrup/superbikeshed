@@ -3,7 +3,11 @@ package org.flatton.types
 import borg.trikeshed.lib.*
 import borg.trikeshed.parse.json.*
 import borg.trikeshed.lib.toSeries
-import kotlinx.serialization.json.JsonObject
+// Remove kotlinx.serialization dependency - using trikeshed types
+
+// TrikeShed-compatible JSON types
+typealias JsonObject = Map<String, Any?>
+typealias JsonElement = Any?
 
 // Ontological Typealiases for CouchDB Primitives
 @JvmInline value class DocumentId(val value: String)
@@ -168,7 +172,7 @@ object CouchDocumentAdapter {
                     stub = attMap["stub"] as? Boolean
                 )
             },
-            data = JsonObject(data)
+            data = data.filterValues { it != null }
         )
     }
 

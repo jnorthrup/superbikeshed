@@ -1,6 +1,6 @@
 package org.flatton.parse
 
-import borg.trikeshed.lib.CZero.nz
+import borg.trikeshed.qol.QualityOfLife.ZeroScan.nz
 import borg.trikeshed.lib.Series
 import kotlin.math.min
 
@@ -36,7 +36,7 @@ object SimdJsonScanner {
             var bitMask = structuralMask
             var bitIdx = 0
             while (bitMask != 0) {
-                (bitMask and 1 != 0).nz { indices.add(i + bitIdx) }
+                if ((bitMask and 1).nz) indices.add(i + bitIdx)
                 bitMask = bitMask ushr 1
                 bitIdx++
             }
