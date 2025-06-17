@@ -52,6 +52,25 @@ typealias Solution = Series<String> // A proposed solution, e.g., lines of code 
 typealias Feedback = Join<String, Series<String>> // FeedbackType j Series of Details/Parameters
 typealias LearningUpdate = Join<String, String> // UpdateType j UpdateSummary
 typealias Action = Join<String, Series<String>> // ActionName j Series of Arguments
+
+// Standard Action Names (previously ActionType enum)
+object ActionNames {
+    const val CODE_EDIT = "CODE_EDIT"
+    const val FILE_OPERATION = "FILE_OPERATION"
+    const val PROJECT_STRUCTURE = "PROJECT_STRUCTURE"
+    const val BUILD = "BUILD"
+    const val TEST = "TEST"
+    const val DEBUG = "DEBUG"
+    const val VCS = "VCS"
+    const val ASSIST = "ASSIST"
+    const val TOOL_WINDOW = "TOOL_WINDOW"
+    const val SETTINGS_CHANGE = "SETTINGS_CHANGE"
+    const val NAVIGATION = "NAVIGATION"
+    const val CUSTOM = "CUSTOM"
+    const val K2SCRIPT_EXECUTE = "K2SCRIPT_EXECUTE" // New action name for k2script
+    const val ENUMERATE_INTELLIJ_PROJECT = "ENUMERATE_INTELLIJ_PROJECT" // New action for IntelliJ project enumeration
+}
+
 typealias Outcome = Series<String> // Lines of output or a status message
 typealias Workflow = Series<Action> // A sequence of actions to achieve a goal
 typealias AgentConfiguration = Series<Join<String, String>> // Series of Key-Value configuration settings
