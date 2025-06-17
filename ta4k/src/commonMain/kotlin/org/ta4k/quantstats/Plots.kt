@@ -1,0 +1,29 @@
+package org.ta4k.quantstats
+
+// Import the functions from _plotting if they are to be re-exported
+// or if Plots.kt will have its own distinct API.
+// Based on Python's `from quantstats._plotting.wrappers import *` in plots.py,
+// it seems wrappers.py IS the public API.
+// So, `Plots.kt` might just be a way to group them or could be skipped if
+// `InternalPlottingWrappers.kt` functions are made top-level in the package.
+// For now, let's assume InternalPlottingWrappers.kt contains the public plot functions.
+
+/**
+ * Main entry point or facade for plotting functionalities.
+ * In Python's quantstats, plots.py mostly imported everything from _plotting.wrappers.
+ * We can either make functions in InternalPlottingWrappers.kt top-level public functions
+ * in the org.ta4k.quantstats._plotting package, or re-export/delegate them here.
+ *
+ * For simplicity in this KMP version, we will assume that the functions
+ * defined in `_plotting.InternalPlottingWrappers.kt` are the direct public API
+ * for plotting (though they are stubs for commonMain).
+ *
+ * This file could be used to define platform-agnostic data preparation
+ * routines that are then used by expect/actual plotting implementations.
+ */
+object Plots {
+    fun info() = "Plotting functions are available in org.ta4k.quantstats._plotting package (as stubs in commonMain)."
+
+    // If we wanted to re-export:
+    // fun snapshot(returns: Any, ...) = org.ta4k.quantstats._plotting.snapshot(returns, ...)
+}
