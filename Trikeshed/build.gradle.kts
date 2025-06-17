@@ -41,6 +41,12 @@ kotlin {
         
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation("org.jetbrains.kotlin:kotlin-test-common")
+            implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
+        }
+
+        jvmTest.dependencies {
+            implementation(kotlin("test-junit"))
         }
     }
 }
