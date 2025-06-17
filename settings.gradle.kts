@@ -7,3 +7,5 @@
  */
 
 rootProject.name = "superbikeshed"
+
+include(":tools:intellij-project-enumerator")
