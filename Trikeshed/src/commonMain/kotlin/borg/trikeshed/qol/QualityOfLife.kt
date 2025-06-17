@@ -102,4 +102,40 @@ object QualityOfLife {
          */
         fun String?.isNotBlank(): Boolean = this != null && this.isNotBlank()
     }
+
+    /**
+     * Progress reporting utilities using Fibonacci sequence for natural-feeling progress updates
+     */
+    object ProgressReporter {
+        /**
+         * Creates a Fibonacci-based progress reporter for a specific type of item
+         * @param noun The type of items being processed (e.g., "files", "records")
+         */
+        class Fibonacci(val noun: String = "items") {
+            private var lastReported = 0
+            private val fibonacci = sequence {
+                var a = 1
+                var b = 1
+                while (true) {
+                    yield(a)
+                    val next = a + b
+                    a = b
+                    b = next
+                }
+            }.iterator()
+
+            /**
+             * Reports progress if the current count meets the next Fibonacci threshold
+             * @param count Current number of items processed
+             * @return Progress message if threshold reached, null otherwise
+             */
+            fun report(count: Int): String? {
+                val nextThreshold = fibonacci.next()
+                return if (count >= nextThreshold && count > lastReported) {
+                    lastReported = count
+                    "Processed $count $noun"
+                } else null
+            }
+        }
+    }
 } 

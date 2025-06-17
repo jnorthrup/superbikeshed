@@ -1,0 +1,148 @@
+package moneyfan.demo
+
+import moneyfan.core.*
+import moneyfan.attention.*
+import moneyfan.backtest.*
+import moneyfan.json.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import borg.trikeshed.lib.*
+
+/**
+ * Working demo of variable time gauge attention system
+ * Runs live ticker with dynamic spans based on market activity
+ */
+class WorkingAttentionDemo {
+    
+    suspend fun runLiveAttentionTicker() {
+        println("🚀 Starting Live Variable Time Gauge Attention Ticker")
+        println("=" .repeat(50))
+        
+        val ticker = AttentionBasedTicker()
+        val symbols = listOf("BTC", "ETH", "AAPL", "GOOGL", "TSLA")
+        
+        // Add symbols to tracker
+        symbols.forEach { symbol ->
+            ticker.addPairToWatch(Symbol(symbol))
+        }
+        
+        var updateCount = 0
+        
+        // Run ticker for 30 seconds with real-time updates
+        withTimeoutOrNull(30000) {
+            ticker.startTicker(TickerInterval(500)).collect { attentionSeries ->
+                updateCount++
+                displayLiveUpdate(updateCount, ticker, attentionSeries)
+                
+                if (updateCount >= 20) { // Stop after 20 updates
+                    ticker.stop()
+                    return@collect
+                }
+            }
+        }
+        
+        println("\n✅ Live ticker completed after $updateCount updates")
+    }
+    
+    private fun displayLiveUpdate(
+        updateNum: Int, 
+        ticker: AttentionBasedTicker, 
+        windows: AttentionSeries
+    ) {
+        println("\n📊 Update #$updateNum - Variable Time Gauge Status")
+        println("-".repeat(60))
+        
+        // Current focus with dynamic span
+        val currentFocus = ticker.getCurrentFocus()
+        val (focusSymbol, focusSpan) = currentFocus
+        println("🎯 Focus: ${focusSymbol.value} (${focusSpan.millis}ms span)")
+        
+        // Show all pairs with their dynamic spans and activity
+        val topPairs = ticker.getMostAttentionPairs(5)
+        println("\n⚡ Active Pairs (Variable Time Gauge):")
+        
+        topPairs.play.forEach { (symbol, weight) ->
+            val span = ticker.getDynamicSpan(symbol)?.millis ?: 5000
+            val window = windows.play.find { it.symbol == symbol }
+            
+            if (window != null) {
+                val (volGauge, volumeGauge) = window.gaugeReading
+                val activity = when {
+                    span < 1000 -> "🔥 VERY HIGH"
+                    span < 2000 -> "⚡ HIGH"
+                    span < 4000 -> "📈 MEDIUM"
+                    else -> "😴 LOW"
+                }
+                
+                println("  ${symbol.value.padEnd(6)}: " +
+                       "${activity.padEnd(12)} " +
+                       "span=${span.toString().padStart(4)}ms " +
+                       "vol=${volGauge.value.format(4)} " +
+                       "weight=${weight.value.format(2)}")
+            }
+        }
+        
+        // Show gauge distribution
+        val spanDistribution = windows.play.groupBy { window ->
+            when (window.dynamicSpan.millis) {
+                in 0..999 -> "Ultra-Fast"
+                in 1000..1999 -> "Fast"
+                in 2000..3999 -> "Medium"
+                else -> "Slow"
+            }
+        }
+        
+        println("\n🎛️  Gauge Distribution:")
+        spanDistribution.forEach { (category, windowList) ->
+            val symbols = windowList.map { it.symbol.value }.joinToString(", ")
+            println("  $category: $symbols")
+        }
+    }
+    
+    suspend fun runCapBasedBacktest() {
+        println("\n💰 Running Cap-Based Backtest with Skimmer Strategy")
+        println("=" .repeat(50))
+        
+        val backtester = CapBasedBacktester()
+        
+        val results = backtester.runSkimmerStrategy(
+            startDate = kotlinx.datetime.LocalDate(2024, 1, 1),
+            endDate = kotlinx.datetime.LocalDate(2024, 6, 30),
+            topN = 10,
+            skimPercent = SkimmerPercent(2.5),
+            initialCapital = Price(100_000.0)
+        )
+        
+        backtester.displayResults(results)
+    }
+    
+    fun demonstrateJsonScanner() {
+        println("\n🔍 JSON Scanner DSEL Demo")
+        println("=" .repeat(50))
+        
+        demonstrateTradingJsonScanner()
+    }
+}
+
+/**
+ * Main working demo function - runs all systems
+ */
+suspend fun runWorkingDemo() {
+    val demo = WorkingAttentionDemo()
+    
+    println("🎮 Moneyfan Working Systems Demo")
+    println("=" .repeat(50))
+    
+    // 1. Live Variable Time Gauge Attention Ticker
+    demo.runLiveAttentionTicker()
+    
+    // 2. Cap-Based Backtesting
+    demo.runCapBasedBacktest()
+    
+    // 3. JSON Scanner DSEL
+    demo.demonstrateJsonScanner()
+    
+    println("\n🏁 All systems demonstrated successfully!")
+}
+
+private fun Decimal.format(decimals: Int): String = "%.${decimals}f".format(this)

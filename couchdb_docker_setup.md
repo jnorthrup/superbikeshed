@@ -10,8 +10,8 @@ We will use the official Apache CouchDB Docker image. You can typically find it 
 
 CouchDB requires an administrator username and password for setup. These are provided to the Docker container via environment variables:
 
-*   `COUCHDB_USER`: The desired administrator username.
-*   `COUCHDB_PASSWORD`: The desired administrator password.
+* `COUCHDB_USER`: The desired administrator username.
+* `COUCHDB_PASSWORD`: The desired administrator password.
 
 **Important:** For the example below, we use `admin` and `password`. In a real-world deployment, **you must use a strong, unique password.**
 
@@ -41,13 +41,13 @@ docker run -d \
 
 **Command Breakdown:**
 
-*   `-d`: Runs the container in detached mode (in the background).
-*   `--name my_couchdb_instance`: Assigns a recognizable name to your container.
-*   `-e COUCHDB_USER=admin`: Sets the admin username.
-*   `-e COUCHDB_PASSWORD=password`: Sets the admin password ( **remember to change this!** ).
-*   `-p 5984:5984`: Maps port 5984 on the host to port 5984 in the container.
-*   `-v couchdb_data:/opt/couchdb/data`: (Optional) Mounts a named volume `couchdb_data` for data persistence. Docker will create this volume if it doesn't already exist.
-*   `couchdb:latest`: Specifies the Docker image to use.
+* `-d`: Runs the container in detached mode (in the background).
+* `--name my_couchdb_instance`: Assigns a recognizable name to your container.
+* `-e COUCHDB_USER=admin`: Sets the admin username.
+* `-e COUCHDB_PASSWORD=password`: Sets the admin password ( **remember to change this!** ).
+* `-p 5984:5984`: Maps port 5984 on the host to port 5984 in the container.
+* `-v couchdb_data:/opt/couchdb/data`: (Optional) Mounts a named volume `couchdb_data` for data persistence. Docker will create this volume if it doesn't already exist.
+* `couchdb:latest`: Specifies the Docker image to use.
 
 Allow a minute or two for CouchDB to initialize, especially on the first run.
 
@@ -58,9 +58,11 @@ Once the container is running, you can verify that CouchDB is accessible by send
 ```bash
 curl http://admin:password@localhost:5984/
 ```
+
 (Note: Replace `admin:password` with your actual credentials if you changed them, or omit them if your CouchDB version allows anonymous access to the root endpoint after setup for a quick check, though providing credentials is more reliable.)
 
 A successful response will be a JSON object similar to this:
+
 ```json
 {
   "couchdb": "Welcome",
@@ -73,6 +75,7 @@ A successful response will be a JSON object similar to this:
   }
 }
 ```
+
 If you get a connection refused error, wait a bit longer for CouchDB to start or check the container logs: `docker logs my_couchdb_instance`.
 
 ## 7. Accessing Fauxton (Admin UI)
@@ -92,10 +95,13 @@ docker stop my_couchdb_instance
 ```
 
 If you also want to remove the container (e.g., to start fresh, but be aware this deletes non-persisted data):
+
 ```bash
 docker rm my_couchdb_instance
 ```
+
 If you used a named volume for data persistence (`couchdb_data` in the example) and want to remove it as well (this will delete all your CouchDB data):
+
 ```bash
 docker volume rm couchdb_data
 ```

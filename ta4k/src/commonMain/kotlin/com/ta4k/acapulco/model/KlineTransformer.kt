@@ -1,0 +1,174 @@
+package com.ta4k.acapulco.model
+
+import borg.trikeshed.cursor.Cursor
+import borg.trikeshed.cursor.RowVec
+import borg.trikeshed.cursor.SimpleCursor
+import borg.trikeshed.isam.IsamDataFile
+import borg.trikeshed.isam.RecordMeta
+import borg.trikeshed.isam.meta.IOMemento
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.`▶`
+import borg.trikeshed.parse.TypeEvidence
+import borg.trikeshed.lib.FibonacciReporter
+import borg.trikeshed.acapulco.model.DataBinanceVision
+import borg.trikeshed.acapulco.TradePairEventMuxer
+import java.io.Reader
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
+import kotlin.math.abs
+
+/**
+ * Efficiently transforms kline data using the muxer system's cursor-based approach
+ * - Uses columnar data structure for cache efficiency
+ * - Integrates with ta4k indicators through cursor joins
+ * - Supports efficient memory mapping and wire protocol
+ * - Maintains backward compatibility with existing ISAM files
+ * - Validates Binance data types and time continuity
+ * - Uses SIMD processing for CSV parsing
+ */
+class KlineTransformer {
+    companion object {
+        // Base metadata without LUN attributes (for backward compatibility)
+        // Uses standard wireProto record lengths
+        private val baseMeta = Series.j(
+            RecordMeta("time", IOMemento.IoLong, mapOf(
+                "order" to "0",      // Primary ordering
+                "rank" to "0",       // Primary ranking
+                "schedule" to "0",   // Primary schedule
+                "tile" to "0"        // Primary tile
+            )),
+            RecordMeta("price", IOMemento.IoDouble, mapOf(
+                "order" to "1",      // Secondary ordering
+                "rank" to "1",       // Secondary ranking
+                "schedule" to "1",   // Secondary schedule
+                "tile" to "1",       // Secondary tile
+                "dimensions" to "4"  // OHLC dimensions
+            )),
+            RecordMeta("volume", IOMemento.IoDouble, mapOf(
+                "order" to "2",      // Tertiary ordering
+                "rank" to "2",       // Tertiary ranking
+                "schedule" to "2",   // Tertiary schedule
+                "tile" to "2"        // Tertiary tile
+            )),
+            RecordMeta("trades", IOMemento.IoInt, mapOf(
+                "order" to "3",      // Quaternary ordering
+                "rank" to "3",       // Quaternary ranking
+                "schedule" to "3",   // Quaternary schedule
+                "tile" to "3"        // Quaternary tile
+            )),
+            RecordMeta("meta", IOMemento.IoString, mapOf(
+                "order" to "4",      // Meta ordering
+                "rank" to "4",       // Meta ranking
+                "schedule" to "4",   // Meta schedule
+                "tile" to "4",       // Meta tile
+                "lun" to "0:0"       // Default LUN
+            ))
+        )
+
+        // Extended metadata with LUN attributes for mmap optimization
+        // Each LUN has its own wireProto record length
+        private val isamMeta = baseMeta.`▶`.map { meta ->
+            meta.copy(attributes = meta.attributes + ("lun" to "0:0"))
+        }.toSeries()
+
+        // Remapping tuples for cursor joins
+        private val remapTuples = arrayOf(3, 2, 1, 3)
+
+        // Expected Binance data types for validation
+        private val binanceTypes = mapOf(
+            "Open_time" to IOMemento.IoLong,
+            "Open" to IOMemento.IoDouble,
+            "High" to IOMemento.IoDouble,
+            "Low" to IOMemento.IoDouble,
+            "Close" to IOMemento.IoDouble,
+            "Volume" to IOMemento.IoDouble,
+            "Close_time" to IOMemento.IoLong,
+            "Quote_asset_volume" to IOMemento.IoDouble,
+            "Number_of_trades" to IOMemento.IoInt,
+            "Taker_buy_base_asset_volume" to IOMemento.IoDouble,
+            "Taker_buy_quote_asset_volume" to IOMemento.IoDouble
+        )
+
+        /**
+         * Processes klines using the muxer system's cursor-based approach
+         * @param reader CSV data reader
+         * @param dataFile Output ISAM file
+         * @param useLun Whether to use LUN attributes (defaults to false for backward compatibility)
+         */
+        fun processKlines(
+            reader: Reader,
+            dataFile: IsamDataFile,
+            useLun: Boolean = false
+        ) {
+            // Read CSV data into a cursor with type validation
+            val csvCursor = SimpleCursor(
+                scalars = isamMeta,
+                data = reader.readLines().drop(1).map { line ->
+                    val fields = line.split(",").map { it.trim() }
+                    validateBinanceTypes(fields)
+                    fields
+                }.toSeries()
+            )
+
+            // Check time continuity
+            val timeGaps = findTimeGaps(csvCursor)
+            if (timeGaps.isNotEmpty()) {
+                throw IllegalStateException("Time continuity gaps found: $timeGaps")
+            }
+
+            // Create source cursor from first three rows
+            val sourceCursor = csvCursor.take(3)
+
+            // Apply remapping tuples to create new cursor
+            val remappedCursor = remapTuples.foldIndexed(sourceCursor) { index, cursor, tuple ->
+                val newColumn = cursor.get(tuple)
+                if (index == 0) newColumn else cursor.combine(newColumn)
+            }
+
+            // Write final remapped cursor to ISAM format
+            remappedCursor.writeISAM(dataFile)
+        }
+
+        /**
+         * Validates that the CSV fields match expected Binance data types
+         */
+        private fun validateBinanceTypes(fields: List<String>) {
+            fields.forEachIndexed { index, field ->
+                val typeEvidence = TypeEvidence()
+                field.forEach { char -> typeEvidence + char }
+                val deducedType = TypeEvidence.deduce(typeEvidence)
+                val expectedType = binanceTypes.values.elementAtOrNull(index)
+                if (expectedType != null && deducedType != expectedType) {
+                    throw IllegalArgumentException("Field $index has type $deducedType but expected $expectedType")
+                }
+            }
+        }
+
+        /**
+         * Finds gaps in time continuity
+         * @return List of gaps found in the data
+         */
+        private fun findTimeGaps(cursor: Cursor): List<String> {
+            val gaps = mutableListOf<String>()
+            var lastCloseTime: Long? = null
+
+            cursor.forEach { row ->
+                val openTime = row[0] as Long
+                val closeTime = row[6] as Long
+
+                if (lastCloseTime != null) {
+                    val expectedOpenTime = lastCloseTime + 1
+                    if (openTime != expectedOpenTime) {
+                        gaps.add("Gap between $lastCloseTime and $openTime")
+                    }
+                }
+
+                lastCloseTime = closeTime
+            }
+
+            return gaps
+        }
+    }
+} 

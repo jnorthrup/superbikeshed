@@ -9,15 +9,18 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Priority 1: Type System Compliance (CLAUDE.md)
 
 ### Completed Tasks
-- [x] **NIO Migration**: Moved borg.trikeshed.io.* to borg.trikeshed.nio.*
+
+- [x] **NIO Migration**: Moved borg.trikeshed.io.*to borg.trikeshed.nio.*
 - [x] **Path Collections Update**: Enhanced collections handling
 - [x] **Memory Slab System**: Improved logging and memory management
 
 ### Critical Type System Migration
+
 **Status**: In progress, high priority
 **Deadline**: Foundation for all other work
 
 #### Shunned Types Elimination
+
 - [ ] **Replace List<T> with Series<T>**
   - [ ] Audit all List<T> usage across codebase
   - [ ] Convert to Series<T> with proper α transforms
@@ -39,6 +42,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
   - [ ] Convert direct collection usage to tensor operations
 
 #### Mandatory Pattern Implementation
+
 - [ ] **Join Composition Operator (`a j b`)**
   - [ ] Implement Join<A,B> as primary composition mechanism
   - [ ] Ensure `j` operator is the ONLY composition method
@@ -67,6 +71,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Priority 2: Dead Code Elimination
 
 ### Banned Practices Removal
+
 **Status**: Ongoing cleanup required
 **Compliance**: CLAUDE.md directives
 
@@ -93,6 +98,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Priority 3: Architecture Evolution
 
 ### Tensor-First Processing
+
 **Status**: Partial implementation
 **Goal**: Complete tensor-first columnar processing
 
@@ -112,6 +118,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
   - [ ] Ensure dependency injection through context
 
 ### Performance Optimization
+
 - [ ] **Hot/Cold Path Separation**
   - [ ] Identify performance-critical paths
   - [ ] Optimize hot paths for minimal allocation
@@ -125,6 +132,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Priority 4: Integration Support
 
 ### Component Integration
+
 - [x] **DGM Integration Support**
   - [x] Ensure TrikeShed types work with DGM operations
   - [x] Provide efficient serialization/deserialization
@@ -141,6 +149,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
   - [ ] Low-latency transform chains
 
 ### API Stability
+
 - [ ] **Stable Type Interface**
   - [ ] Lock down core type system APIs
   - [ ] Ensure backward compatibility where needed
@@ -154,6 +163,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Technical Debt & Quality
 
 ### Code Quality Issues
+
 - [ ] **TODO/FIXME Resolution**
   - [ ] Address all TODO comments in TrikeShed code
   - [ ] Convert FIXME items to proper issues
@@ -170,6 +180,7 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
   - [ ] Migration guide from legacy patterns
 
 ### Known Issues
+
 - [ ] **QuicInstant Prefix Problem**
   - [ ] Remove Quic prefix for general reuse (per CLAUDE.md)
   - [ ] Ensure generic temporal types
@@ -183,12 +194,14 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Migration Guidelines
 
 ### Development Process
+
 1. **No Destructive Changes**: Always proceed without breaking existing functionality
 2. **Incremental Migration**: Convert types incrementally with proper testing
 3. **Performance Validation**: Verify performance characteristics at each step
 4. **Documentation**: Update docs as types evolve
 
 ### Testing Strategy
+
 - **Type Safety**: Ensure compile-time verification of type compliance
 - **Performance**: Benchmark before/after for each migration step
 - **Integration**: Test with dependent components
@@ -197,16 +210,19 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
 ## Dependencies & Blockers
 
 ### External Dependencies
+
 - Kotlin compiler optimization for @JvmInline
 - Platform-specific performance characteristics
 - Integration with legacy Java code
 
 ### Internal Dependencies
+
 - Component integration requirements
 - API stability needs for dependent projects
 - Performance requirements from real-time systems
 
 ### Risk Mitigation
+
 - Gradual migration approach
 - Comprehensive testing at each step
 - Rollback plans for breaking changes
