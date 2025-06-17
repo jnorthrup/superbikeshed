@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    kotlin("multiplatform")
     id("com.github.ben-manes.versions") version "0.51.0"
 }
 
@@ -7,7 +7,6 @@ repositories {
     mavenCentral()
 }
 
-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
     jvm()
     wasmJs {

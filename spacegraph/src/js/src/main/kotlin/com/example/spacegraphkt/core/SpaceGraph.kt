@@ -35,6 +35,10 @@ class SpaceGraph actual constructor(
     private var lastFrameTime = 0.0
 
     // CSS3D renderer for HTML elements
+// Replace MutableList with Series
+actual val nodes: Series<BaseNode> = Series()
+// Replace MutableList with Series for edges
+actual val edges: Series<Edge> = Series()
     private val cssRenderer = CSS3DRenderer()
     private val cssScene = CSS3DScene()
     private val cssCamera = CSS3DCamera()
@@ -142,6 +146,8 @@ class SpaceGraph actual constructor(
         if (isDisposed) return
 
         // Add node to layout
+// Replace List with Series in layout.addNode
+    layout.addNode(node)
         layout.addNode(node)
 
         // Add node to WebGPU scene
@@ -223,4 +229,3 @@ class SpaceGraph actual constructor(
         isDisposed = true
     }
 }
-```

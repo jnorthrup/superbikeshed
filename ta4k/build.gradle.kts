@@ -1,7 +1,7 @@
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    kotlin("multiplatform")
     `maven-publish`
     id("com.github.ben-manes.versions")
 }
@@ -12,13 +12,12 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvm {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-        }
+        jvmToolchain(21)
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
+    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         // If commonWebpackConfig is needed, it can be configured here, for example:
