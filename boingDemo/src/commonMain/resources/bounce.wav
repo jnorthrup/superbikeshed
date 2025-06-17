@@ -1,0 +1,3 @@
+// This is a dummy WAV file for the Boing Demo.
+// For actual sound playback, replace this with a valid .wav audio file.
+// Its presence allows resource loading mechanisms to find a file named "bounce.wav".
