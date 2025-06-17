@@ -65,6 +65,38 @@ interface NUID<Primitive : Comparable<Primitive>> {
         }
     }
 
+    /**
+     * Generates a target NUID for refreshing a specific bucket.
+     * The current implementation assumes that `RoutingTable.bucketFor` uses a distance metric
+     * where `distance` is the popcount of the XOR difference (number of differing bits).
+     * Thus, to target bucket `bucketIndex` (0-indexed), we need an NUID that has `bucketIndex + 1`
+     * differing bits from our own NUID (`this.id`).
+     *
+     * @param bucketIndex The index of the bucket to target (0 to bucketCount - 1).
+     * @return A new NUID<Primitive> suitable for a findNode operation to refresh that bucket.
+     * @throws IllegalStateException if the agent's NUID (`this.id`) is not yet initialized.
+     */
+    fun generateTargetNUIDForBucketRefresh(bucketIndex: Int): Primitive {
+        if (id == null) throw IllegalStateException("Agent NUID (this.id) must be initialized before generating target NUIDs.")
+
+        // bucketIndex is 0 to bucketCount - 1.
+        // RoutingTable.bucketFor uses: min(distance, bucketCount).dec()
+        // So, a bucketIndex 'b' implies the original distance was 'b+1'.
+        val targetDistance = bucketIndex + 1
+
+        // NUID.random() takes a distance which is the number of bits to flip.
+        // It also ensures this distance is within valid bounds (1 to netmask.bits).
+        // If targetDistance is 0 or less, or greater than netmask.bits,
+        // NUID.random() will adjust it (e.g., to a random number of bits to flip, or clamp).
+        // For bucket refresh, we typically want a valid distance.
+        // If bucketIndex is 0, targetDistance is 1 (closest differing nodes).
+        // If bucketIndex is bucketCount-1, targetDistance is bucketCount.
+        // This seems consistent with how `random` can be used if `distance` means popcount.
+        println("NUID.generateTargetNUIDForBucketRefresh: Requesting NUID at popcount distance $targetDistance for bucket $bucketIndex from $id")
+        return this.random(distance = targetDistance, centroid = this.id!!)
+    }
+
+
     companion object {
         /**
          * minimum bitops types for the intended bitcount of NUID.

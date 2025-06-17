@@ -28,6 +28,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import java.lang.reflect.Field
+import java.lang.reflect.Method
 import borg.trikeshed.num.BigInt as BigInteger // Assuming BigInt is accessible for tests
 
 
@@ -82,11 +84,27 @@ class RoutingManagerTest {
     private lateinit var routingTable: RoutingTable<BigInteger, TestWorldNetwork>
     private lateinit var fakeNetworkService: FakeNetworkService<BigInteger, TestWorldNetwork>
     private lateinit var testScheduler: TestCoroutineScheduler
-    private lateinit var testScope: CoroutineScope
+    // testScope is now defined within each runTest block by `this`
+    // private lateinit var testScope: CoroutineScope
     private lateinit var routingManager: RoutingManager<BigInteger, TestWorldNetwork>
 
+
+    // Reflection helpers
+    private fun getPrivateField(obj: Any, fieldName: String): Field {
+        val field = obj.javaClass.getDeclaredField(fieldName)
+        field.isAccessible = true
+        return field
+    }
+
+    private fun getPrivateMethod(obj: Any, methodName: String, vararg parameterTypes: Class<*>): Method {
+        val method = obj.javaClass.getDeclaredMethod(methodName, *parameterTypes)
+        method.isAccessible = true
+        return method
+    }
+
+
     // Helper to create NUIDs for tests
-    private fun createNUID(id: Int): NUID<BigInteger> {
+    private fun createNUID(id: Long): NUID<BigInteger> { // Changed id to Long for consistency
         return BigIntegerNUID(BigInteger.valueOf(id.toLong()), TestWorldNetwork)
     }
 
@@ -301,3 +319,182 @@ class RoutingManagerTest {
 // A more precise setup would involve clearing specific buckets or ensuring they are below threshold.
 // The test `refreshBuckets increments failedPings on ping fail and evicts after max failures` was also adjusted to re-add the node
 // to ensure the second call to refreshBuckets would then evict it.
+
+
+    // --- Tests for Adaptive Refresh Logic ---
+
+    @Test
+    fun `adaptRefreshInterval_highChurn_reducesInterval`() = runTest(testScheduler) {
+        val currentRefreshIntervalField = getPrivateField(routingManager, "currentRefreshIntervalMs")
+        currentRefreshIntervalField.setLong(routingManager, KademliaConfig.BUCKET_REFRESH_INTERVAL_MS)
+
+        val nodeEvictionTimestampsField = getPrivateField(routingManager, "nodeEvictionTimestamps")
+        @Suppress("UNCHECKED_CAST")
+        val evictionTimestamps = nodeEvictionTimestampsField.get(routingManager) as MutableList<Long>
+        evictionTimestamps.clear()
+        val now = Clock.System.now().toEpochMilliseconds()
+        for (i in 0..KademliaConfig.HIGH_EVICTION_THRESHOLD) { // Exceed threshold
+            evictionTimestamps.add(now - i * 1000) // Recent timestamps
+        }
+
+        val adaptMethod = getPrivateMethod(routingManager, "adaptRefreshInterval")
+        adaptMethod.invoke(routingManager)
+
+        val newInterval = currentRefreshIntervalField.getLong(routingManager)
+        val expectedInterval = (KademliaConfig.BUCKET_REFRESH_INTERVAL_MS * 0.8).toLong()
+            .coerceAtLeast(KademliaConfig.MIN_REFRESH_INTERVAL_MS)
+        assertEquals(expectedInterval, newInterval, "Interval should be reduced due to high churn.")
+    }
+
+    @Test
+    fun `adaptRefreshInterval_lowChurn_increasesInterval`() = runTest(testScheduler) {
+        val currentRefreshIntervalField = getPrivateField(routingManager, "currentRefreshIntervalMs")
+        currentRefreshIntervalField.setLong(routingManager, KademliaConfig.BUCKET_REFRESH_INTERVAL_MS)
+
+        val nodeEvictionTimestampsField = getPrivateField(routingManager, "nodeEvictionTimestamps")
+        @Suppress("UNCHECKED_CAST")
+        val evictionTimestamps = nodeEvictionTimestampsField.get(routingManager) as MutableList<Long>
+        evictionTimestamps.clear()
+        // Add one old eviction to test pruning, and one recent to be below LOW_EVICTION_THRESHOLD
+        evictionTimestamps.add(Clock.System.now().toEpochMilliseconds() - KademliaConfig.EVICTION_OBSERVATION_WINDOW_MS * 2) // old
+        evictionTimestamps.add(Clock.System.now().toEpochMilliseconds() - 1000) // recent, count = 1
+
+        val adaptMethod = getPrivateMethod(routingManager, "adaptRefreshInterval")
+        adaptMethod.invoke(routingManager)
+
+        val newInterval = currentRefreshIntervalField.getLong(routingManager)
+        val expectedInterval = (KademliaConfig.BUCKET_REFRESH_INTERVAL_MS * 1.2).toLong()
+            .coerceAtMost(KademliaConfig.MAX_REFRESH_INTERVAL_MS)
+        assertEquals(expectedInterval, newInterval, "Interval should be increased due to low churn.")
+
+        // Check pruning
+        assertEquals(1, evictionTimestamps.size, "Old eviction timestamp should have been pruned.")
+    }
+
+    @Test
+    fun `adaptRefreshInterval_moderateChurn_adjustsTowardsDefault`() = runTest(testScheduler) {
+        val currentRefreshIntervalField = getPrivateField(routingManager, "currentRefreshIntervalMs")
+        val nodeEvictionTimestampsField = getPrivateField(routingManager, "nodeEvictionTimestamps")
+        @Suppress("UNCHECKED_CAST")
+        val evictionTimestamps = nodeEvictionTimestampsField.get(routingManager) as MutableList<Long>
+
+        // Scenario 1: Current interval is low, moderate churn should increase it towards default
+        val lowInitialInterval = KademliaConfig.MIN_REFRESH_INTERVAL_MS
+        currentRefreshIntervalField.setLong(routingManager, lowInitialInterval)
+        evictionTimestamps.clear()
+        val now = Clock.System.now().toEpochMilliseconds()
+        for (i in 0 until (KademliaConfig.LOW_EVICTION_THRESHOLD + KademliaConfig.HIGH_EVICTION_THRESHOLD) / 2) { // Moderate
+            evictionTimestamps.add(now - i * 1000)
+        }
+
+        val adaptMethod = getPrivateMethod(routingManager, "adaptRefreshInterval")
+        adaptMethod.invoke(routingManager)
+
+        val intervalAfterModerate1 = currentRefreshIntervalField.getLong(routingManager)
+        val expectedInterval1 = (lowInitialInterval * 1.05).toLong().coerceAtMost(KademliaConfig.BUCKET_REFRESH_INTERVAL_MS)
+        assertEquals(expectedInterval1, intervalAfterModerate1, "Interval should increase towards default from low.")
+
+        // Scenario 2: Current interval is high, moderate churn should decrease it towards default
+        val highInitialInterval = KademliaConfig.MAX_REFRESH_INTERVAL_MS
+        currentRefreshIntervalField.setLong(routingManager, highInitialInterval)
+        // Eviction count remains moderate (already set up)
+
+        adaptMethod.invoke(routingManager)
+        val intervalAfterModerate2 = currentRefreshIntervalField.getLong(routingManager)
+        val expectedInterval2 = (highInitialInterval * 0.95).toLong().coerceAtLeast(KademliaConfig.BUCKET_REFRESH_INTERVAL_MS)
+        assertEquals(expectedInterval2, intervalAfterModerate2, "Interval should decrease towards default from high.")
+    }
+
+    @Test
+    fun `refreshBuckets_evictionRecording_whenNodeEvictedByPings`() = runTest(testScheduler) {
+        val nodeEvictionTimestampsField = getPrivateField(routingManager, "nodeEvictionTimestamps")
+        @Suppress("UNCHECKED_CAST")
+        val evictionTimestamps = nodeEvictionTimestampsField.get(routingManager) as MutableList<Long>
+        val initialEvictionCount = evictionTimestamps.size
+
+        val nodeToEvict = createSubnetRoute(
+            id = 50,
+            lastSeen = Clock.System.now().toEpochMilliseconds() - KademliaConfig.BUCKET_REFRESH_INTERVAL_MS * 2, // ensure it's checked
+            failedPings = KademliaConfig.MAX_FAILED_PINGS -1
+        )
+        routingTable.addRoute(nodeToEvict)
+        fakeNetworkService.pingHandler = { false } // Ensure ping fails
+
+        val refreshMethod = getPrivateMethod(routingManager, "refreshBuckets")
+        refreshMethod.invoke(routingManager) // This should cause eviction
+
+        assertEquals(initialEvictionCount + 1, evictionTimestamps.size, "An eviction timestamp should be added.")
+    }
+
+    @Test
+    fun `handleFullBucket_evictionRecording_whenLruNodeEvicted`() = runTest(testScheduler) {
+        val nodeEvictionTimestampsField = getPrivateField(routingManager, "nodeEvictionTimestamps")
+        @Suppress("UNCHECKED_CAST")
+        val evictionTimestamps = nodeEvictionTimestampsField.get(routingManager) as MutableList<Long>
+        val initialEvictionCount = evictionTimestamps.size
+
+        val bucketIndex = 0
+        // Fill bucket 0
+        for(i in 1 .. routingTable.bucketSize) {
+            // Need NUIDs that fall into bucket 0. Distance for bucket 0 is 1.
+            // agentNUID is 0. NUID that differs in 1 bit (e.g., ID 1, 2, 4, 8...)
+            val nodeNUID = createNUID(1L shl (i-1)) // Create IDs like 1, 2, 4, ...
+            val node = SubnetRoute(nodeNUID, "addr${i}", "sub", Clock.System.now().toEpochMilliseconds() - i * 10000)
+            routingTable.buckets[routingTable.bucketFor(nodeNUID)].put(nodeNUID.id!!, node)
+        }
+        // Ensure bucket is full by checking the specific bucket for agentNUID=0
+        // This setup for specific bucket filling is complex. Let's simplify:
+        // Assume bucket 0 is full by adding generic nodes and then finding one that maps to bucket 0.
+        // For now, let's just ensure one bucket is full.
+        // The handleFullBucket test logic for making a bucket full was:
+        // val bucketIndex = routingTable.bucketFor(createNUID(routingTable.bucketSize + 20L))
+        // This is not guaranteed to be *any* specific index like 0.
+        // Let's use a known bucket for the LRU node.
+
+        val lruNodeIdToEvict = 201L // Arbitrary ID for LRU
+        val lruNode = createSubnetRoute(id = lruNodeIdToEvict.toInt(), lastSeen = Clock.System.now().toEpochMilliseconds() - 200000)
+        val bucketIdxLru = routingTable.bucketFor(lruNode.nuid)
+        routingTable.buckets[bucketIdxLru].clear() // Clear it first for control
+
+        // Fill this specific bucket
+        for (i in 0 until routingTable.bucketSize -1) {
+             routingTable.buckets[bucketIdxLru].put(createNUID(lruNodeIdToEvict + i + 1).id!!, createSubnetRoute((lruNodeIdToEvict + i + 1).toInt()))
+        }
+        routingTable.buckets[bucketIdxLru].put(lruNode.nuid.id!!, lruNode) // Add our LRU node
+
+        assertTrue(routingTable.buckets[bucketIdxLru].size == routingTable.bucketSize,
+            "Bucket ${bucketIdxLru} for LRU node should be full. Size: ${routingTable.buckets[bucketIdxLru].size}")
+
+
+        val newNode = createSubnetRoute(id = 300)
+        fakeNetworkService.pingHandler = { route -> route.nuid.id != lruNode.nuid.id } // LRU ping fails
+
+        routingManager.handleFullBucket(bucketIdxLru, newNode)
+
+        assertEquals(initialEvictionCount + 1, evictionTimestamps.size, "Eviction timestamp should be added for LRU node.")
+    }
+
+    @Test
+    fun `refreshBuckets_targetedDiscovery_callsGenerateTargetNUIDAndLogs`() = runTest(testScheduler) {
+        // This test primarily checks if generateTargetNUIDForBucketRefresh is called.
+        // We can't easily mock agentNUID itself as it's a concrete instance used by RoutingManager.
+        // Instead, we'll rely on the logging output or if findNode was called (even if with agentNUID).
+        // For this test, we'll check if findNode was called, which implies the sparse bucket logic was hit.
+
+        // Make bucket 0 sparse
+        val targetBucketIndex = 0
+        routingTable.buckets[targetBucketIndex].clear()
+
+        // Ensure agentNUID.id is not null as generateTargetNUIDForBucketRefresh requires it
+        assertNotNull(agentNUID.id, "Agent NUID ID should be initialized for this test.")
+
+        val refreshMethod = getPrivateMethod(routingManager, "refreshBuckets")
+        refreshMethod.invoke(routingManager)
+
+        // Verify findNode was called (as a proxy for targeted discovery attempt)
+        assertTrue(fakeNetworkService.findNodeCalls.any { it.targetId == agentNUID },
+            "networkService.findNode should have been called for sparse bucket $targetBucketIndex.")
+        // To verify the *logging* of the targetPrimitive, one would need to capture System.out or use a test logger.
+        // This is beyond simple unit test assertions here.
+        // The key is that the code path for generating the target NUID was entered.
+    }

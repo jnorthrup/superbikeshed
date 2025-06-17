@@ -6,6 +6,8 @@ import gk.kademlia.include.SubnetRoute
 import gk.kademlia.net.NetMask
 import gk.kademlia.routing.RoutingTable
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex // For evictionMutex
+import kotlinx.coroutines.sync.withLock // For evictionMutex
 import kotlinx.datetime.Clock
 
 class RoutingManager<TNum : Comparable<TNum>, Sz : NetMask<TNum>>(
@@ -15,18 +17,25 @@ class RoutingManager<TNum : Comparable<TNum>, Sz : NetMask<TNum>>(
     private val coroutineScope: CoroutineScope
 ) {
     private var refreshJob: Job? = null
+    private var currentRefreshIntervalMs: Long = KademliaConfig.BUCKET_REFRESH_INTERVAL_MS
+    private val nodeEvictionTimestamps = mutableListOf<Long>()
+    private val evictionMutex = Mutex() // For thread-safe access to nodeEvictionTimestamps
+
 
     fun start() {
         if (refreshJob?.isActive == true) {
             println("RoutingManager already started.")
             return
         }
-        println("Starting RoutingManager...")
+        println("Starting RoutingManager with initial interval: $currentRefreshIntervalMs ms")
         refreshJob = coroutineScope.launch {
+            // Initial delay before the first refresh cycle starts
+            delay(currentRefreshIntervalMs)
             while (isActive) {
                 try {
                     refreshBuckets()
-                    delay(KademliaConfig.BUCKET_REFRESH_INTERVAL_MS) // Initial delay before first refresh might be long
+                    adaptRefreshInterval() // Adapt interval AFTER a refresh cycle
+                    delay(currentRefreshIntervalMs)
                 } catch (e: CancellationException) {
                     println("RoutingManager refresh job cancelled.")
                     break
@@ -75,18 +84,50 @@ class RoutingManager<TNum : Comparable<TNum>, Sz : NetMask<TNum>>(
             }
 
             nodesToRemove.forEach { nuid ->
-                routingTable.rmRoute(nuid)
-                println("Removed node ${nuid.id} from bucket $i.")
+                val removedRoute = routingTable.rmRoute(nuid)
+                if (removedRoute != null) {
+                    evictionMutex.withLock {
+                        nodeEvictionTimestamps.add(Clock.System.now().toEpochMilliseconds())
+                    }
+                    println("RoutingManager: Evicted node ${nuid.id} from bucket $i due to failed pings.")
+                } else {
+                    println("RoutingManager: Attempted to evict node ${nuid.id} from bucket $i, but it was already removed.")
+                }
             }
 
             // Replenish bucket if needed
-            if (bucket.size < routingTable.bucketSize) {
-                println("Bucket $i is below target size (${bucket.size}/${routingTable.bucketSize}). Attempting to discover new nodes.")
-                // A simple strategy: query for nodes around agent's NUID.
-                // A more targeted strategy would be to generate an ID within the bucket's range.
-                val discoveredNodes = networkService.findNode(agentNUID, KademliaConfig.NODE_DISCOVERY_COUNT)
-                println("Discovered ${discoveredNodes.size} potential nodes.")
-                for (discoveredNode in discoveredNodes) {
+            val currentBucketSize = routingTable.buckets[i].size // Re-check size after removals
+            if (currentBucketSize < routingTable.bucketSize) {
+                println("Bucket $i is below target size ($currentBucketSize/${routingTable.bucketSize}). Attempting targeted discovery.")
+
+                var nodesToDiscover: List<SubnetRoute<TNum>> = emptyList()
+                try {
+                    // Note: agentNUID is the NUID<TNum> object. generateTargetNUIDForBucketRefresh is its method.
+                    val targetPrimitive = agentNUID.generateTargetNUIDForBucketRefresh(i)
+                    println("RoutingManager: Bucket $i is sparse. Ideal discovery target ID (primitive): $targetPrimitive (Agent NUID: ${agentNUID.id}).")
+
+                    // Actual call still uses agentNUID as the primary argument for findNode due to NetworkService.findNode signature
+                    // and the difficulty of creating a NUID<TNum> from just Primitive without concrete type knowledge here.
+                    // DummyNetworkService will ignore the targetId's actual value for now.
+                    // A real implementation would require NUID.generateTargetNUIDForBucketRefresh to return NUID<TNum>
+                    // or NetworkService.findNode to accept a Primitive.
+                    nodesToDiscover = networkService.findNode(agentNUID, KademliaConfig.NODE_DISCOVERY_COUNT)
+                    // If findNode could take a primitive:
+                    // nodesToDiscover = networkService.findNode(targetPrimitive, KademliaConfig.NODE_DISCOVERY_COUNT)
+                    // Or if generateTargetNUIDForBucketRefresh returned NUID<TNum>:
+                    // val targetNUIDForDiscovery = agentNUID.generateTargetNUIDForBucketRefresh(i)
+                    // nodesToDiscover = networkService.findNode(targetNUIDForDiscovery, KademliaConfig.NODE_DISCOVERY_COUNT)
+
+                } catch (e: Exception) {
+                    println("RoutingManager: Error generating target NUID or during findNode for bucket $i refresh: ${e.message}")
+                    // Fallback to old method: query around agent's NUID if targeted failed.
+                    // This path might be taken if generateTargetNUIDForBucketRefresh throws for some reason.
+                    println("RoutingManager: Falling back to discovery around agent's NUID for bucket $i.")
+                    nodesToDiscover = networkService.findNode(agentNUID, KademliaConfig.NODE_DISCOVERY_COUNT)
+                }
+
+                println("Discovered ${nodesToDiscover.size} potential nodes for bucket $i.")
+                for (discoveredNode in nodesToDiscover) {
                     if (discoveredNode.nuid.id == agentNUID.id) {
                         println("Skipping own NUID ${agentNUID.id} from discovered nodes.")
                         continue
@@ -121,29 +162,79 @@ class RoutingManager<TNum : Comparable<TNum>, Sz : NetMask<TNum>>(
         }
 
         println("Bucket $bucketIndex is full. Handling conflict for new node ${newNode.nuid.id}.")
-        // Find the least recently seen node (or oldest if lastSeen is similar)
-        // For simplicity, if using LinkedHashMap, the first entry is often the oldest / LRU
-        // However, relying on insertion order for LRU might be tricky if nodes are updated.
-        // Explicitly finding by lastSeen is safer.
         val lruNode = bucket.values.minByOrNull { it.lastSeen }
 
-        if (lruNode == null) { // Should not happen if bucket is full, but good practice
-            routingTable.addRoute(newNode)
-            println("Bucket $bucketIndex was marked full but no LRU node found. Added new node ${newNode.nuid.id}.")
+        if (lruNode == null) {
+            routingTable.addRoute(newNode) // Should not happen if bucket is full, but good practice
+            println("Bucket $bucketIndex was marked full but no LRU node found (unexpected). Added new node ${newNode.nuid.id}.")
             return
         }
 
-        println("Pinging LRU node ${lruNode.nuid.id} in bucket $bucketIndex.")
+        println("Pinging LRU node ${lruNode.nuid.id} (lastSeen: ${lruNode.lastSeen}) in bucket $bucketIndex.")
         if (networkService.sendPing(lruNode)) {
             lruNode.lastSeen = Clock.System.now().toEpochMilliseconds()
-            lruNode.failedPings = 0 // Reset on successful ping
-            // Bucket remains full, new node is discarded (or could be cached)
-            println("LRU node ${lruNode.nuid.id} responded. New node ${newNode.nuid.id} is discarded.")
-            // Consider adding newNode to a replacement cache here if implementing that feature
+            lruNode.failedPings = 0
+            println("LRU node ${lruNode.nuid.id} responded. New node ${newNode.nuid.id} is discarded (or cached).")
         } else {
             println("LRU node ${lruNode.nuid.id} did not respond. Removing it and adding new node ${newNode.nuid.id}.")
-            routingTable.rmRoute(lruNode.nuid)
+            val removedNode = routingTable.rmRoute(lruNode.nuid) // This is an eviction
+            if (removedNode != null) {
+                 evictionMutex.withLock {
+                    nodeEvictionTimestamps.add(Clock.System.now().toEpochMilliseconds())
+                }
+                println("Evicted LRU node ${lruNode.nuid.id} from full bucket $bucketIndex.")
+            }
             routingTable.addRoute(newNode)
+        }
+    }
+
+    private suspend fun adaptRefreshInterval() {
+        val windowStartTime = Clock.System.now().toEpochMilliseconds() - KademliaConfig.EVICTION_OBSERVATION_WINDOW_MS
+
+        val recentEvictions = evictionMutex.withLock {
+            // Prune old eviction timestamps
+            val initialSize = nodeEvictionTimestamps.size
+            nodeEvictionTimestamps.removeAll { it < windowStartTime }
+            val prunedCount = initialSize - nodeEvictionTimestamps.size
+            if (prunedCount > 0) {
+                println("RoutingManager: Pruned $prunedCount old eviction timestamps.")
+            }
+            nodeEvictionTimestamps.size
+        }
+
+        println("RoutingManager: Recent evictions in window (${KademliaConfig.EVICTION_OBSERVATION_WINDOW_MS / 1000}s): $recentEvictions")
+
+        val oldInterval = currentRefreshIntervalMs
+        if (recentEvictions > KademliaConfig.HIGH_EVICTION_THRESHOLD) {
+            currentRefreshIntervalMs = (currentRefreshIntervalMs * 0.8).toLong()
+                .coerceAtLeast(KademliaConfig.MIN_REFRESH_INTERVAL_MS)
+            if (currentRefreshIntervalMs != oldInterval) {
+                 println("RoutingManager: High churn detected. Refresh interval reduced from $oldInterval to $currentRefreshIntervalMs ms")
+            } else {
+                 println("RoutingManager: High churn detected, but interval already at MIN ($currentRefreshIntervalMs ms).")
+            }
+        } else if (recentEvictions < KademliaConfig.LOW_EVICTION_THRESHOLD) {
+            currentRefreshIntervalMs = (currentRefreshIntervalMs * 1.2).toLong()
+                .coerceAtMost(KademliaConfig.MAX_REFRESH_INTERVAL_MS)
+             if (currentRefreshIntervalMs != oldInterval) {
+                println("RoutingManager: Low churn detected. Refresh interval increased from $oldInterval to $currentRefreshIntervalMs ms")
+            } else {
+                println("RoutingManager: Low churn detected, but interval already at MAX ($currentRefreshIntervalMs ms).")
+            }
+        } else {
+            // Moderate churn, gradually adjust towards default BUCKET_REFRESH_INTERVAL_MS
+            val adjustmentFactor = if (currentRefreshIntervalMs < KademliaConfig.BUCKET_REFRESH_INTERVAL_MS) 1.05 else 0.95
+            val targetInterval = if (currentRefreshIntervalMs < KademliaConfig.BUCKET_REFRESH_INTERVAL_MS) {
+                (currentRefreshIntervalMs * adjustmentFactor).toLong().coerceAtMost(KademliaConfig.BUCKET_REFRESH_INTERVAL_MS)
+            } else {
+                (currentRefreshIntervalMs * adjustmentFactor).toLong().coerceAtLeast(KademliaConfig.BUCKET_REFRESH_INTERVAL_MS)
+            }
+            if (currentRefreshIntervalMs != targetInterval) {
+                currentRefreshIntervalMs = targetInterval
+                println("RoutingManager: Moderate churn. Refresh interval adjusted from $oldInterval towards default, now $currentRefreshIntervalMs ms")
+            } else {
+                 println("RoutingManager: Moderate churn. Refresh interval stable at $currentRefreshIntervalMs ms (already at/near default or bounds).")
+            }
         }
     }
 }
