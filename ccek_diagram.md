@@ -1,5 +1,5 @@
 ```mermaid
-graph TD
+graph LR
     subgraph CoreDefinitions ["CCEK Core Definitions (nexus.core.NexusCCEK)"]
         direction LR
         NexusCCEK_Context["typealias CCEKContext = Join&lt;Join&lt;Context, Configuration&gt;, Join&lt;Environment, Knowledge&gt;&gt;"]
@@ -154,24 +154,18 @@ graph TD
     classDef typeAlias fill:#lightgrey,stroke:#333;
     classDef valueClass fill:#lightblue,stroke:#333;
     classDef function fill:#moccasin,stroke:#333;
-    classDef class fill:#lightgreen,stroke:#333;
+    classDef generalClass fill:#lightgreen,stroke:#333;
 
     class NexusCCEK_Context,Demo_CCEKContext,ProviderDemo_CCEKContext,SimpleNexus_CCEKContext,TrikeShed_CCEKContext typeAlias;
     class Agentic_CCEKContext valueClass;
-    class NexusCCEK_DevelopmentContext,NexusCCEK_CCEKNexus,NexusCCEK_ContextualRequest,NexusCCEK_ContextualResponse,ProviderDemo_CCEKNexus,ProviderDemo_EnhancedNexus,NexusProviders_EnhancedNexus,Tensor_CCEKTensor,Tensor_ContextTensorSpace,SimpleNexus_DevContext,TrikeShed_DevContext typeAlias;
+    class NexusCCEK_DevelopmentContext,NexusCCEK_CCEKNexus,NexusCCEK_ContextualRequest,NexusCCEK_ContextualResponse,ProviderDemo_CCEKNexus,ProviderDemo_EnhancedNexus,NexusProviders_EnhancedNexus,Tensor_CCEKTensor,Tensor_ContextTensorSpace,SimpleNexus_DevContext,TrikeShed_DevContext generalClass;
     class Actuals_BuildInitial,Demo_BuildInitial,ProcessSimpleRequest_Demo,AnalyzeInContext_Demo,GenerateInContext_Demo,RefactorInContext_Demo,Demo_CCEK_UpdateFromInteraction,Actuals_ProcessSimpleRequest,Actuals_AnalyzeInContext,Actuals_GenerateInContext,Actuals_RefactorInContext,Actuals_CCEK_Extractors,Actuals_CCEK_Updaters,Agentic_CreateContext,Agentic_GenerateAdaptiveTask,ProviderDemo_BuildTestContext,NexusProviders_Generate,NexusProviders_Analyze,NexusProviders_Complete,NexusProviders_CCEKNexus_WithProvider,Tensor_WithCCEK,Tensor_ContextTransform,Tensor_PredictNextAction,Tensor_CCEKToTensor,Tensor_Adapt,Reflector_GetRelevantPatterns,Reflector_PredictNextAction,Reflector_IsRelevantTo,Reflector_SuggestActionFunc,Reflector_CalcSimilarity,Reflector_CCEKExtractPattern,Reflector_CCEKSuggestAction function;
-    class WorkingNexus class;
+    class WorkingNexus generalClass
+    %% Assigned WorkingNexus to 'generalClass'
 ```
-This Mermaid diagram attempts to capture:
-- **Multiple Definitions/Aliases of CCEKContext:** Shows how `CCEKContext` is defined in different files (e.g., `nexus.core.NexusCCEK.kt`, `demo.kt`, `agentic_nexus.kts`). I've used a base one from `nexus.core.NexusCCEK` as a central point and shown others as variations.
-- **Key Components:** Functions like `buildInitialCCEKContext`, `processSimpleRequest`, provider methods (`generate`, `analyze`), tensor operations (`withCCEK`, `toTensor`), and reflector methods are included. The `WorkingNexus` class is also shown.
-- **Relationships:**
-    - Arrows like `-->` denote usage, passing, or returning.
-    - `-.->` (dashed arrow) suggests that these specific aliases are conceptually similar or variants of the main `NexusCCEK_Context`.
-    - Extension functions are noted.
-- **Variations:** Typealiases like `DevelopmentContext`, `CCEKNexus`, `EnhancedNexus`, `CCEKTensor` are shown and linked to their base `CCEKContext` or related types.
-- **Modules/Subgraphs:** The diagram is broken down into subgraphs based on the file/module where the components are primarily located, to improve organization.
 
-This is a fairly complex set of interactions, so the diagram is dense. The goal is to provide a visual map of the CCEK ecosystem within this codebase.
+**Reasoning for the fix:**
 
-I'll now save this to a file.
+The error message "Expecting 'SEMI', 'NEWLINE', 'EOF', 'AMP', 'START_LINK', 'LINK', 'LINK_ID', got 'NODE_STRING'" on the line `class WorkingNexus generalClass; %% Assigned WorkingNexus` indicates that the Mermaid parser encountered something unexpected after the class assignment and the semicolon. While comments starting with `%%` are generally supported, having a comment immediately after a semicolon on the same line seems to be causing a parsing issue in this specific context.
+
+The fix involves removing the semicolon after `generalClass` on the line `class WorkingNexus generalClass; %% Assigned WorkingNexus`. In Mermaid's `class` statement syntax, the semicolon is used to terminate the *list* of nodes being assigned to the class, not necessarily every individual assignment within a multi-node list, and is not required if there's only one node and it's the last `class` statement or is followed by a newline. Removing the semicolon resolves the unexpected token issue caused by the combination of the semicolon and the subsequent comment on the same line. The comment itself was moved to the next line in the previous attempt, and keeping it on a separate line or after the class assignment without the semicolon should work. Removing the semicolon is a cleaner fix for a single class assignment line.
