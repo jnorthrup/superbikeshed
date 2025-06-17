@@ -435,6 +435,7 @@ This comprehensive diagram set illustrates:
 10. **Complete Architecture** - The full omnibus trading system with CCEK at its core
 
 The CCEK system provides type-safe, enum-checked context management that enables:
+
 - Clean dependency injection
 - Compile-time safety
 - Optional concerns (like logging)
@@ -443,10 +444,11 @@ The CCEK system provides type-safe, enum-checked context management that enables
 - Zero runtime overhead through inline classesOkay, this is a substantial and insightful request for a deep refactoring towards a more idiomatic Kotlin Multiplatform (KMP) architecture using CoroutineContext Element Keys (CCEK) for platform-specific services. The goal is to reduce boilerplate, enhance platform-specific optimizations, and improve maintainability by minimizing the surface area of `expect`/`actual` declarations.
 
 I will proceed by:
-1.  Defining common interfaces and keys for core I/O services.
-2.  Implementing these services for the `posixMain` target, drawing heavily from your existing `simple.PosixFile` and `LinuxPosixFile`.
-3.  Showing how `IsamDataFile` and `common/Files.kt` would be adapted to use this new CCEK-based approach.
-4.  Briefly touching upon how this pattern would apply to `FileBuffer` and `TensorIO`.
+
+1. Defining common interfaces and keys for core I/O services.
+2. Implementing these services for the `posixMain` target, drawing heavily from your existing `simple.PosixFile` and `LinuxPosixFile`.
+3. Showing how `IsamDataFile` and `common/Files.kt` would be adapted to use this new CCEK-based approach.
+4. Briefly touching upon how this pattern would apply to `FileBuffer` and `TensorIO`.
 
 Due to the sheer volume of code, I'll focus on the most impactful changes to demonstrate the pattern. The `evolution` and `kademlia` parts, while excellent candidates for CCEK, would constitute a separate large refactoring effort.
 
@@ -1100,21 +1102,21 @@ This was already shown in the diff for `simple.PosixFile.kt` being removed and i
 
 **Summary of Changes & Benefits:**
 
-1.  **Centralized Platform Logic**: `PosixFileSystemService` (and its JVM/JS counterparts) becomes the single source of truth for platform-specific file operations.
-2.  **Common Abstractions**: `FileSystemService`, `OpenedFileHandle`, `MappedDataRegion`, and the option enums (`FileOpenOpts`, etc.) are defined in `commonMain`, providing a unified API.
-3.  **Reduced `expect/actual`**:
-    *   `simple.PosixFile` is effectively replaced.
-    *   `IPlatformFile` (expect interface) is replaced.
-    *   `Files` object methods now delegate, reducing their platform-specific `actual` code.
-    *   `mktemp`, `homedirGet`, etc., are now methods on `FileSystemService`.
-4.  **Testability/Injectability**: Services can be injected or retrieved from the `CoroutineContext`, making testing easier (e.g., providing a mock `FileSystemService`).
-5.  **Clarity**: Clear separation of concerns. Common code uses the `FileSystemService` interface, unaware of the underlying POSIX/JVM/JS details.
-6.  **Extensibility**: Adding support for a new platform means implementing `FileSystemService` and its associated handle/region classes for that platform.
+1. **Centralized Platform Logic**: `PosixFileSystemService` (and its JVM/JS counterparts) becomes the single source of truth for platform-specific file operations.
+2. **Common Abstractions**: `FileSystemService`, `OpenedFileHandle`, `MappedDataRegion`, and the option enums (`FileOpenOpts`, etc.) are defined in `commonMain`, providing a unified API.
+3. **Reduced `expect/actual`**:
+    - `simple.PosixFile` is effectively replaced.
+    - `IPlatformFile` (expect interface) is replaced.
+    - `Files` object methods now delegate, reducing their platform-specific `actual` code.
+    - `mktemp`, `homedirGet`, etc., are now methods on `FileSystemService`.
+4. **Testability/Injectability**: Services can be injected or retrieved from the `CoroutineContext`, making testing easier (e.g., providing a mock `FileSystemService`).
+5. **Clarity**: Clear separation of concerns. Common code uses the `FileSystemService` interface, unaware of the underlying POSIX/JVM/JS details.
+6. **Extensibility**: Adding support for a new platform means implementing `FileSystemService` and its associated handle/region classes for that platform.
 
 **Further Steps (Conceptual):**
 
-*   **`FileBuffer.kt`**: The `expect class FileBuffer` would be refactored. Its `actual constructor` logic for mmap would use `fileSystemService.openFile(...).mmap(...)`. The `FileBuffer` itself might become a common class that wraps a `MappedDataRegion`.
-*   **`TensorIO.kt`**: An `TensorIOServiceKey` and `TensorIOService` (common) would define methods like `createMemoryMappedSource(path): TensorSource<T>`. Platform implementations (JVM, Native potentially) would provide the `MemoryMappedTensorSource` using their respective `FileSystemService` for mmap.
-*   **Reactor/Networking**: `PlatformIO` (expect class) could become `PlatformIOService : CoroutineContext.Element` obtained via `PlatformIOServiceKey`. It would then provide platform-specific `SelectorInterface`, `ServerChannel`, `ClientChannel` implementations.
+- **`FileBuffer.kt`**: The `expect class FileBuffer` would be refactored. Its `actual constructor` logic for mmap would use `fileSystemService.openFile(...).mmap(...)`. The `FileBuffer` itself might become a common class that wraps a `MappedDataRegion`.
+- **`TensorIO.kt`**: An `TensorIOServiceKey` and `TensorIOService` (common) would define methods like `createMemoryMappedSource(path): TensorSource<T>`. Platform implementations (JVM, Native potentially) would provide the `MemoryMappedTensorSource` using their respective `FileSystemService` for mmap.
+- **Reactor/Networking**: `PlatformIO` (expect class) could become `PlatformIOService : CoroutineContext.Element` obtained via `PlatformIOServiceKey`. It would then provide platform-specific `SelectorInterface`, `ServerChannel`, `ClientChannel` implementations.
 
 This CCEK approach significantly cleans up the KMP structure by moving platform-specific implementations behind common service interfaces accessed via the coroutine context, aligning well with modern Kotlin architectural patterns.

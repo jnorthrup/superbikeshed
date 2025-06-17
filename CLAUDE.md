@@ -205,3 +205,6 @@ kotlin {
 
 - no more unplanned  DCE, ever or version changes
 - import packages with star in trikeshed
+
+- serialization is ours!!!!   verbotten lib!
+- use json scanner from trikeshed for serialization

@@ -1,8 +1,9 @@
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 plugins {
     kotlin("multiplatform") version "2.1.21"
     `maven-publish`
     id("com.github.ben-manes.versions")
-
 }
 
 group = "org.ta4k"
@@ -60,6 +61,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
                 implementation("com.ionspin.kotlin:bignum:0.3.9")
                 implementation(project(":Trikeshed"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
         val commonTest by getting {
@@ -73,6 +75,9 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-jdk8")) // For JVM specific APIs if needed beyond common
                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
+                implementation("com.binance.api:binance-api-client:1.0.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
             }
         }
         val jvmTest by getting {
@@ -81,12 +86,15 @@ kotlin {
                 implementation(kotlin("test-junit5")) // JUnit 5 for JVM tests
                 implementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Align with moneyfan
                 runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Align with moneyfan
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
             }
         }
         // jsMain and jsTest are removed in favor of wasmJsMain and wasmJsTest
         val wasmJsMain by getting {
             dependencies {
                 // stdlib-js is usually added by default with wasmJs target
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
         val wasmJsTest by getting {

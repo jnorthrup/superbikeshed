@@ -15,11 +15,12 @@ import kotlin.math.min
  * the isam metafile format follows this sample
  *
 ```
-# format:  coords WS .. EOL names WS .. EOL TypeMememento WS ..
+# format:  coords WS .. EOL names WS .. EOL TypeMememento WS .. EOL attributes WS .. EOL
 # last coord is the recordlen
 0 12 12 24 24 32 32 40 40 48 48 56 56 64 64 72 72 76 76 84 84 92
 Open_time Close_time Open High Low Close Volume Quote_asset_volume Number_of_trades Taker_buy_base_asset_volume Taker_buy_quote_asset_volume
 IoInstant IoInstant IoDouble IoDouble IoDouble IoDouble IoDouble IoDouble IoInt IoDouble IoDouble
+order=0 rank=0 schedule=0 order=1 rank=1 schedule=1 order=2 rank=2 schedule=2 order=3 rank=3 schedule=3
 ```
 
 the ebnf we can use is:
@@ -32,6 +33,10 @@ names :=  (name WS)* name
 name :=  string
 TypeMemento :=  (IoType WS)* IoType
 IoType :=  IoInstant | IoDouble | IoString | IoInt
+attributes :=  (attribute WS)* attribute
+attribute :=  key=value
+key :=  string
+value :=  string
 ```
  * 2. create a class that can create the binary file
  *
@@ -50,14 +55,15 @@ class IsamMetaFileReader(val metafileFilename: String) :Usable{
 
     private lateinit var constraints1: List<RecordMeta>
     override fun open() {
-        //use readBytes and decodeString to read the lines into
-//        val lines = buf.readBytes(size).decodeToString().lines().filterNot { it.trim().startsWith("#") }.map(String::trim)
         val lines = Files.readAllLines(metafileFilename).filterNot { it.trim().startsWith('#') }
         //split on \s+
         val coords = lines[0].split("\\s+".toRegex())
         val names = lines[1].split("\\s+".toRegex())
         val types = lines[2].split("\\s+".toRegex())
-
+        val attributes = lines[3].split("\\s+".toRegex()).map { attr ->
+            val (key, value) = attr.split("=")
+            key to value
+        }.toMap()
 
         this@IsamMetaFileReader.constraints1 = names.zip(types).mapIndexed { index, (name, type) ->
             val begin = coords[2 * index].toInt()
@@ -66,7 +72,7 @@ class IsamMetaFileReader(val metafileFilename: String) :Usable{
             //use PlatformCodec to get the decoder and encoder
             val decoder = ioMemento.createDecoder(end - begin)
             val encoder = ioMemento.createEncoder(end - begin)
-            RecordMeta(name, ioMemento, begin, end, decoder, encoder)
+            RecordMeta(name, ioMemento, begin, end, decoder, encoder, attributes = attributes)
         }
     }
 
@@ -89,11 +95,14 @@ class IsamMetaFileReader(val metafileFilename: String) :Usable{
             val lines = mutableListOf<String>()
 
             val result = sanitize(recordMetas,varchars)
-            lines.add("# format:  coords WS .. EOL names WS .. EOL TypeMememento WS .. [EOL]")
+            lines.add("# format:  coords WS .. EOL names WS .. EOL TypeMememento WS .. EOL attributes WS .. EOL")
             lines.add("# last coord is the recordlen")
             lines.add(result.`▶`.joinToString(" ") { it.begin.toString() + " " + it.end })
             lines.add(result.`▶`.joinToString(" ") { it.name })
             lines.add(result.`▶`.joinToString(" ") { it.type.name })
+            lines.add(result.`▶`.joinToString(" ") { meta ->
+                meta.attributes.entries.joinToString(" ") { (key, value) -> "$key=$value" }
+            })
             Files.write(metafilename, lines)
             return result
         }
@@ -119,6 +128,34 @@ class IsamMetaFileReader(val metafileFilename: String) :Usable{
                     )
             return result
         }
+    }
 
+    fun read(metafile: String): List<RecordMeta> {
+        val constraints = mutableListOf<RecordMeta>()
+        var lun = -1 // Start at -1, will be 0 for first LUN if multiple exist
+        
+        metafile.lines().forEach { line ->
+            if (line.isBlank()) return@forEach
+            
+            val parts = line.split(" ")
+            val name = parts[0]
+            val type = IOMemento.valueOf(parts[1])
+            val begin = parts[2].toInt()
+            val end = parts[3].toInt()
+            
+            // Only increment LUN if we have multiple files
+            if (constraints.isNotEmpty()) {
+                lun++
+            }
+            
+            constraints.add(RecordMeta(
+                name = name,
+                type = type,
+                begin = begin,
+                end = end
+            ))
+        }
+        
+        return constraints
     }
 }

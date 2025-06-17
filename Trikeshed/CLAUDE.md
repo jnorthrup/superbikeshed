@@ -1,10 +1,10 @@
 I'll search through the codebase to validate the punchlist against existing code and identify what's already implemented and what needs to be added.
 
-
 Search files...
 Let me analyze the codebase and validate the punchlist against the existing implementation. I'll break this down by components:
 
 1. **Existing HTTP/1.1 Implementation**
+
 - Found in `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/net/http/client/HttpClientConnection.kt`
 - Basic HTTP/1.1 client connection handler
 - Supports request serialization and response parsing
@@ -12,24 +12,28 @@ Let me analyze the codebase and validate the punchlist against the existing impl
 - Uses NIO for socket operations
 
 2. **HTTP/2 Implementation**
+
 - Found in `quic_http3_server/http2_protocol.py`
 - Basic HTTP/2 server implementation
 - Supports TLS
 - Has basic request handling
 
 3. **HTTP/3 (QUIC) Implementation**
+
 - Found in `quic_http3_server/` directory
 - Has server implementation with TLS support
 - Includes testing capabilities
 - Has WebTransport support
 
 4. **Download Management**
+
 - Found in `ta4k/bin/fetchtrades.sh`
 - Uses aria2c for downloads
 - Supports concurrent downloads
 - Has basic error handling
 
 5. **Testing Capabilities**
+
 - Found in `quic_http3_server/abusive_tests/`
 - Has performance testing
 - Includes protocol testing
@@ -40,6 +44,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 # Updated Implementation Punchlist
 
 ## 1. Core Protocol Support
+
 - [x] HTTP/1.1 basic implementation
 - [x] HTTP/2 basic server
 - [x] HTTP/3 (QUIC) basic server
@@ -49,6 +54,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Protocol negotiation (ALPN)
 
 ## 2. Download Management
+
 - [x] Basic aria2c integration
 - [ ] Download queue management
 - [ ] Progress tracking
@@ -58,6 +64,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Concurrent download limits
 
 ## 3. Testing Features
+
 - [x] Basic protocol testing
 - [x] Performance testing
 - [ ] Response time measurements
@@ -68,6 +75,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Content type verification
 
 ## 4. Security Features
+
 - [x] Basic TLS support
 - [ ] Certificate validation
 - [ ] Custom CA support
@@ -76,6 +84,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Protocol security validation
 
 ## 5. Monitoring and Reporting
+
 - [ ] Download statistics
 - [ ] Protocol usage metrics
 - [ ] Error rate tracking
@@ -84,6 +93,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Debug information
 
 ## 6. User Interface
+
 - [ ] Command-line interface
 - [ ] Configuration management
 - [ ] Progress display
@@ -91,6 +101,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Error reporting
 
 ## 7. Error Handling
+
 - [x] Basic error handling
 - [ ] Automatic retry logic
 - [ ] Protocol fallback
@@ -99,6 +110,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Logging system
 
 ## 8. Documentation
+
 - [x] Basic README
 - [ ] API documentation
 - [ ] Usage examples
@@ -107,6 +119,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Troubleshooting guide
 
 ## 9. Additional Features
+
 - [ ] Plugin system
 - [ ] Custom protocol support
 - [ ] Custom testing modules
@@ -117,6 +130,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 ## Implementation Priorities
 
 1. **Phase 1 (Current)**
+
 - [x] Basic HTTP/1.1 support
 - [x] Basic HTTP/2 server
 - [x] Basic HTTP/3 server
@@ -124,6 +138,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [x] Basic testing capabilities
 
 2. **Phase 2 (Next)**
+
 - [ ] HTTP/2 client implementation
 - [ ] HTTP/3 client implementation
 - [ ] Enhanced download management
@@ -131,6 +146,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] Improved error handling
 
 3. **Phase 3**
+
 - [ ] Advanced testing features
 - [ ] Protocol comparison tools
 - [ ] Security enhancements
@@ -138,6 +154,7 @@ Let me create an updated punchlist based on what's missing or needs enhancement:
 - [ ] User interface improvements
 
 4. **Phase 4**
+
 - [ ] Plugin system
 - [ ] Custom protocol support
 - [ ] Advanced security features

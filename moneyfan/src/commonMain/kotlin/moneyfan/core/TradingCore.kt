@@ -18,6 +18,7 @@ value class Price(val value: Decimal) {
     operator fun plus(other: Price): Price = Price(value + other.value)
     operator fun minus(other: Price): Price = Price(value - other.value)
     operator fun times(multiplier: Decimal): Price = Price(value * multiplier)
+    operator fun times(quantity: Quantity): Price = Price(value * quantity.value)
     operator fun div(divisor: Decimal): Price = Price(value / divisor)
     operator fun compareTo(other: Price): Int = value.compareTo(other.value)
 }
@@ -163,7 +164,7 @@ class TradingEngine {
         
         repeat(count) { i ->
             // Advanced price simulation with volatility clustering
-            val randomShock = kotlin.random.Random.nextGaussian() * volatility
+            val randomShock = generateGaussian() * volatility
             val momentum = if (i > 0) (currentPrice - basePrice) * 0.001 else 0.0
             
             currentPrice += randomShock + momentum
@@ -427,4 +428,34 @@ class PortfolioManager {
         
         return estimatedVaR j estimatedBeta
     }
+}
+
+/**
+ * Generate pseudo-Gaussian random number using Box-Muller transform
+ * Kotlin/Common compatible implementation
+ */
+private var gaussianReady = false
+private var gaussianValue = 0.0
+
+fun generateGaussian(): Double {
+    if (gaussianReady) {
+        gaussianReady = false
+        return gaussianValue
+    }
+    
+    var u = 0.0
+    var v = 0.0
+    var s = 0.0
+    
+    do {
+        u = kotlin.random.Random.nextDouble() * 2.0 - 1.0
+        v = kotlin.random.Random.nextDouble() * 2.0 - 1.0
+        s = u * u + v * v
+    } while (s >= 1.0 || s == 0.0)
+    
+    val multiplier = kotlin.math.sqrt(-2.0 * kotlin.math.ln(s) / s)
+    gaussianValue = v * multiplier
+    gaussianReady = true
+    
+    return u * multiplier
 }
