@@ -2,6 +2,7 @@ package com.rtsgame.shared.game
 
 import com.rtsgame.shared.entity.Entity
 import com.rtsgame.shared.entity.Position
+// Import the canonical ResourceType from the 'map' module
 import com.rtsgame.shared.map.ResourceType
 import kotlinx.serialization.Serializable
 
@@ -32,9 +33,10 @@ data class GameState(
     }
 }
 
-@Serializable
-enum class ResourceType {
-    GOLD,
-    WOOD,
-    FOOD
-} 
+// Removed local ResourceType enum, will use the one from com.rtsgame.shared.map
+// @Serializable
+// enum class ResourceType {
+// GOLD,
+// WOOD,
+// FOOD
+// }
