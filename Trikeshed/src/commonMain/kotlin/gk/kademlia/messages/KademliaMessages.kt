@@ -1,23 +1,58 @@
 package gk.kademlia.messages
 
-import gk.kademlia.id.NUID // NUID might not be directly used in these data classes if we use ByteArray for NUIDs
-import gk.kademlia.include.SubnetRoute // SubnetRoute is used in NodesResponse
+// Removed direct NUID and SubnetRoute imports as they are now represented by serializable forms.
+// import gk.kademlia.id.NUID
+// import gk.kademlia.include.SubnetRoute
+import kotlinx.serialization.Serializable
 
-// Base marker interface for Kademlia payloads
-interface KademliaPayload
+// For KademliaPayload to be used with polymorphic serialization,
+// all implementing classes must be registered or it must be a sealed interface.
+@Serializable
+sealed interface KademliaPayload
 
-// PING
-data class PingRequest(val uniqueId: String) : KademliaPayload // uniqueId to match request/response
+@Serializable
+data class PingRequest(val uniqueId: String) : KademliaPayload
+
+@Serializable
 data class PongResponse(val uniqueId: String) : KademliaPayload
+
+@Serializable
+data class SerializableNUID(
+    val idBytes: ByteArray,
+    val netmaskBits: Int
+) {
+    // equals and hashCode for ByteArray members are important for data class correctness.
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as SerializableNUID
+        if (!idBytes.contentEquals(other.idBytes)) return false
+        if (netmaskBits != other.netmaskBits) return false
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = idBytes.contentHashCode()
+        result = 31 * result + netmaskBits
+        return result
+    }
+}
+
+@Serializable
+data class SerializableSubnetRoute(
+    val nuid: SerializableNUID,
+    val address: String,
+    val subnetId: String,
+    val lastSeen: Long,
+    val failedPings: Int
+)
+// No custom equals/hashCode needed for SerializableSubnetRoute if SerializableNUID has them.
 
 // FIND_NODE
 /**
  * @param targetNUIDProto Serialized representation of the NUID being sought.
- *        Using ByteArray for robustness in messaging, actual NUID<TNum> conversion
- *        will be handled by codec/agent logic.
  */
+@Serializable
 data class FindNodeRequest(val targetNUIDProto: ByteArray) : KademliaPayload {
-    // equals and hashCode for ByteArray members are good practice if this class is used in sets/maps.
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -31,17 +66,36 @@ data class FindNodeRequest(val targetNUIDProto: ByteArray) : KademliaPayload {
 }
 
 /**
- * @param nodes List of SubnetRoutes. SubnetRoute itself contains NUID<TNum>.
- *        The serialization of SubnetRoute (and NUID within it) needs to be handled
- *        by the chosen serialization library.
+ * NodesResponse now uses SerializableSubnetRoute.
+ * The generic TNum is removed as the specific NUID type information is
+ * handled during conversion to/from SerializableNUID.
  */
-data class NodesResponse<TNum : Comparable<TNum>>(val nodes: List<SubnetRoute<TNum>>) : KademliaPayload
-// Note: For NodesResponse to be easily serializable with kotlinx.serialization,
-// SubnetRoute and NUID would need to be @Serializable or have custom serializers.
-// This definition assumes that will be handled.
+@Serializable
+data class NodesResponse(val nodes: List<SerializableSubnetRoute>) : KademliaPayload
+
+@Serializable
+data class BitswapEnvelope(
+    val sourcePeerIdString: String, // The original sender of the Bitswap message
+    val bitswapMessageBytes: ByteArray // Serialized BitswapMessage
+) : KademliaPayload {
+    // equals/hashCode for ByteArray
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is BitswapEnvelope) return false // Changed from javaClass check for KClass
+        if (sourcePeerIdString != other.sourcePeerIdString) return false
+        if (!bitswapMessageBytes.contentEquals(other.bitswapMessageBytes)) return false
+        return true
+    }
+    override fun hashCode(): Int {
+        var result = sourcePeerIdString.hashCode()
+        result = 31 * result + bitswapMessageBytes.contentHashCode()
+        return result
+    }
+}
 
 // Example STORE message (can be uncommented and developed later)
 /*
+@Serializable
 data class StoreRequest(val keyProto: ByteArray, val value: ByteArray) : KademliaPayload {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -57,11 +111,13 @@ data class StoreRequest(val keyProto: ByteArray, val value: ByteArray) : Kademli
         return result
     }
 }
+@Serializable
 data class StoreResponse(val success: Boolean) : KademliaPayload
 */
 
 // Example FIND_VALUE message (can be uncommented and developed later)
 /*
+@Serializable
 data class FindValueRequest(val keyProto: ByteArray) : KademliaPayload {
      override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -74,7 +130,8 @@ data class FindValueRequest(val keyProto: ByteArray) : KademliaPayload {
         return keyProto.contentHashCode()
     }
 }
-data class ValueResponse(val value: ByteArray?) : KademliaPayload {
+@Serializable
+data class ValueResponse(val value: ByteArray?) : KademliaPayload { // value can be null if not found
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
