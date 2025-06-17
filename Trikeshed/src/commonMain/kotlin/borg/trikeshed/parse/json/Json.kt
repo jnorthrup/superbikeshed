@@ -3,7 +3,10 @@
 package borg.trikeshed.parse.json
 
 import borg.trikeshed.common.collections.s_
-
+import borg.trikeshed.lib.DoubleDispatchTable
+import borg.trikeshed.lib.doubleDispatch
+import borg.trikeshed.lib.wildcard
+import borg.trikeshed.lib.typeIs
 import borg.trikeshed.lib.CharSeries.Companion.unbrace
 import borg.trikeshed.lib.CharSeries.Companion.unquote
 import borg.trikeshed.lib.Either
@@ -23,6 +26,23 @@ typealias JsElement = Join<Twin<Int>, Series<Int>> //(openIdx j closeIdx) j comm
 typealias JsIndex = Join<Twin<Int>, Series<Char>> //(twin j src)
 typealias JsContext = Join<JsElement, Series<Char>>
 
+// Specialized inline value classes for infinite dispatch specialization
+@JvmInline value class JsonChar(val char: Char)
+@JvmInline value class JsonQuoteState(val inQuote: Boolean)
+@JvmInline value class JsonBraceState(val inBrace: Boolean) 
+@JvmInline value class JsonDepthLevel(val depth: Int)
+@JvmInline value class JsonPosition(val index: Int)
+
+@JvmInline value class ObjectSegment(val isObject: Boolean)
+@JvmInline value class ArraySegment(val isArray: Boolean)
+@JvmInline value class StringContent(val content: CharSeries)
+@JvmInline value class NumberContent(val content: CharSeries)
+@JvmInline value class BooleanContent(val content: CharSeries)
+
+// 2-ary constructions with specialized inline classes
+typealias JsonCharState = Join<JsonChar, JsonQuoteState>
+typealias JsonSegmentState = Join<ObjectSegment, JsonDepthLevel>
+typealias JsonContentState = Join<StringContent, JsonPosition>
 
 typealias JsPathElement = Either<String, Int>
 typealias JsPath = Series<JsPathElement>
@@ -59,6 +79,51 @@ val JsContext.segments: Iterable<JsIndex>
  * and provides a way to query it.
  */
 object JsonParser {
+    
+    // Specialized dispatch tables using inline value classes for infinite specialization
+    private val quoteCharDispatch: DoubleDispatchTable<JsonCharState, JsonSegmentState, Boolean> = listOf(
+        // Quote + not-in-quote + any segment -> enter quote mode
+        (({ it.a.char == '"' && !it.b.inQuote } j wildcard<JsonSegmentState>()) j { _, _ -> true },
+        // Quote + in-quote + any segment -> exit quote mode  
+        (({ it.a.char == '"' && it.b.inQuote } j wildcard<JsonSegmentState>()) j { _, _ -> false },
+        // Non-quote + any state -> preserve state
+        (wildcard<JsonCharState>() j wildcard<JsonSegmentState>()) j { charState, _ -> charState.b.inQuote }
+    ).toSeries()
+    
+    private val braceCharDispatch: DoubleDispatchTable<JsonCharState, JsonSegmentState, Int> = listOf(
+        // Open brace + not-in-quote + any depth -> increment
+        (({ it.a.char in "{[" && !it.b.inQuote } j wildcard<JsonSegmentState>()) j { _, segState -> segState.b.depth + 1 },
+        // Close brace + not-in-quote + any depth -> decrement
+        (({ it.a.char in "}]" && !it.b.inQuote } j wildcard<JsonSegmentState>()) j { _, segState -> segState.b.depth - 1 },
+        // Any other char -> preserve depth
+        (wildcard<JsonCharState>() j wildcard<JsonSegmentState>()) j { _, segState -> segState.b.depth }
+    ).toSeries()
+    
+    private val commaCharDispatch: DoubleDispatchTable<JsonCharState, JsonSegmentState, Boolean> = listOf(
+        // Comma + not-in-quote + depth-1 -> record comma
+        (({ it.a.char == ',' && !it.b.inQuote } j { it.b.depth == 1 }) j { _, _ -> true },
+        // Any other combination -> don't record
+        (wildcard<JsonCharState>() j wildcard<JsonSegmentState>()) j { _, _ -> false }
+    ).toSeries()
+    
+    // Content parsing with specialized inline classes
+    private val stringContentDispatch: DoubleDispatchTable<JsonContentState, JsonPosition, String> = listOf(
+        // String content at any position -> parse as string
+        (({ it.a.content.size > 0 } j wildcard<JsonPosition>()) j { contentState, _ ->
+            contentState.a.content.asString()
+        },
+        // Empty content -> empty string
+        (wildcard<JsonContentState>() j wildcard<JsonPosition>()) j { _, _ -> "" }
+    ).toSeries()
+    
+    private val numberContentDispatch: DoubleDispatchTable<JsonContentState, JsonPosition, Double?> = listOf(
+        // Number-like content -> parse as double
+        (({ it.a.content.size > 0 && it.a.content[0].isDigit() } j wildcard<JsonPosition>()) j { contentState, _ ->
+            contentState.a.content.parseDoubleOrNull()
+        },
+        // Non-numeric content -> null
+        (wildcard<JsonContentState>() j wildcard<JsonPosition>()) j { _, _ -> null }
+    ).toSeries()
     /** includes open and close braces and provides a list of comma indexes*/
     fun index(
         src: Series<Char>,
@@ -74,45 +139,42 @@ object JsonParser {
         var closeIdx = -1
         val commaIdxs: MutableList<Int> = mutableListOf()
         var insideQuote = false
-        var escapeNextChar = false
         var maxDepth = 0
+        
         for (i in 0 until src.size) {
             val c: Char = src[i]
+            
+            // Create specialized inline value class instances for infinite dispatch
+            val jsonChar = JsonChar(c)
+            val quoteState = JsonQuoteState(insideQuote)
+            val objSegment = ObjectSegment(openIdx >= 0 && c == '{')
+            val depthLevel = JsonDepthLevel(depth)
+            
+            val charState = jsonChar j quoteState
+            val segmentState = objSegment j depthLevel
+            
+            // Use specialized double dispatch for each concern
+            val newQuoteState = quoteCharDispatch.doubleDispatch(charState, segmentState) ?: insideQuote
+            val newDepth = braceCharDispatch.doubleDispatch(charState, segmentState) ?: depth
+            val shouldRecordComma = commaCharDispatch.doubleDispatch(charState, segmentState) ?: false
+            
+            // Apply state changes
+            insideQuote = newQuoteState
+            depth = newDepth
+            if (newDepth > maxDepth) maxDepth = newDepth
+            
+            // Record structural elements
             when {
-
-                insideQuote -> when {
-                    escapeNextChar -> escapeNextChar = false
-                    c == '\\' -> escapeNextChar = true
-                    c == '"' -> insideQuote = false
+                c in "{[" && depth == 1 && !insideQuote -> openIdx = i
+                c in "}]" && depth == 0 && !insideQuote -> {
+                    closeIdx = i
+                    break
                 }
-
-                else -> when (c) {
-
-                    '{', '[' -> {
-                        depth++.also { if (it > maxDepth) maxDepth = it }
-                        if (depth == 1) openIdx = i
-                    }
-
-                    '}', ']' -> {
-                        if (depth == 1) depths?.add(maxDepth)
-
-                        depth--
-                        if (depth == 0) {
-                            closeIdx = i
-                            break
-                        }
-                    }
-
-                    ',' -> if (depth == 1) {
-                        commaIdxs.add(i)
-
-                        //record and reset maxDepth
-                        depths?.add(maxDepth)
-                        maxDepth = 0
-                        if (takeFirst != null && commaIdxs.size >= takeFirst) break
-                    }
-
-                    '"' -> insideQuote = true
+                shouldRecordComma -> {
+                    commaIdxs.add(i)
+                    depths?.add(maxDepth)
+                    maxDepth = 0
+                    if (takeFirst != null && commaIdxs.size >= takeFirst) break
                 }
             }
         }
@@ -126,8 +188,22 @@ object JsonParser {
         src1: Series<Char>,
     ): Any? {
         val src: CharSeries = CharSeries(src1).trim
-
-        return when (val c: Char = src.mk.get) {
+        val c: Char = src.mk.get
+        
+        // Determine value category for double dispatch
+        val valueCategory = when (c) {
+            '{' -> ValueCategory.OBJECT
+            '[' -> ValueCategory.ARRAY  
+            '"' -> ValueCategory.STRING
+            't', 'f' -> ValueCategory.BOOLEAN
+            'n' -> ValueCategory.NULL
+            else -> ValueCategory.NUMBER
+        }
+        
+        val valueType = src j valueCategory
+        val reificationFunc = reificationDispatch.doubleDispatch(valueType, true)
+        
+        return reificationFunc?.invoke(src) ?: when (c) {
             '{', '[' -> {
                 val index: JsElement = index(src)
                 val (openIdx: Int, closeIdx: Int) = index.first

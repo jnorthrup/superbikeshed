@@ -1,8 +1,16 @@
 package borg.trikeshed.isam.meta
 
+import borg.trikeshed.lib.*
 import kotlin.experimental.or
 import kotlin.jvm.JvmStatic
 
+// Ontological type aliases for endianness operations
+@JvmInline value class EndiannessPredicate(val value: Boolean)
+@JvmInline value class ByteOrderOperation(val value: String)
+
+// Endianness dispatch tables
+typealias EndiannessReadDispatch<T> = DoubleDispatchTable<EndiannessPredicate, ByteArray, T>
+typealias EndiannessWriteDispatch<T> = DoubleDispatchTable<EndiannessPredicate, T, ByteArray>
 
 interface PlatformCodec {
     val readLong: (ByteArray) -> Long
@@ -35,127 +43,95 @@ interface PlatformCodec {
         @JvmStatic
         val isLittleEndian: Boolean get() = !isNetworkEndian
 
+        // Double dispatch tables for endianness-specific operations
+        private val shortReadDispatch: EndiannessReadDispatch<Short> = seriesOf(
+            ((EndiannessPredicate(true) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray -> 
+                ((it[1].toInt() and 0xFF) shl 8).toShort() or (it[0].toInt() and 0xFF).toShort() }),
+            ((EndiannessPredicate(false) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray -> 
+                (it[0].toInt() and 0xFF shl 8 or (it[1].toInt() and 0xFF)).toShort() })
+        )
+
+        private val intReadDispatch: EndiannessReadDispatch<Int> = seriesOf(
+            ((EndiannessPredicate(true) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+                (((it[3].toUByte()).toUInt() shl 24) or
+                 ((it[2].toUByte()).toUInt() shl 16) or
+                 ((it[1].toUByte()).toUInt() shl 8) or
+                 (it[0].toUByte()).toUInt()).toInt() }),
+            ((EndiannessPredicate(false) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+                (((it[0].toUByte()).toUInt() shl 24) or
+                 ((it[1].toUByte()).toUInt() shl 16) or
+                 ((it[2].toUByte()).toUInt() shl 8) or
+                 (it[3].toUByte()).toUInt()).toInt() })
+        )
+
+        private val longReadDispatch: EndiannessReadDispatch<Long> = seriesOf(
+            ((EndiannessPredicate(true) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+                (((it[7].toUByte()).toULong() shl 56) or
+                 ((it[6].toUByte()).toULong() shl 48) or
+                 ((it[5].toUByte()).toULong() shl 40) or
+                 ((it[4].toUByte()).toULong() shl 32) or
+                 ((((it[3].toUByte()).toUInt() shl 24) or
+                   ((it[2].toUByte()).toUInt() shl 16) or
+                   ((it[1].toUByte()).toUInt() shl 8) or
+                   (it[0].toUByte()).toUInt()).toULong())).toLong() }),
+            ((EndiannessPredicate(false) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+                (((it[0].toUByte()).toULong() shl 56) or
+                 ((it[1].toUByte()).toULong() shl 48) or
+                 ((it[2].toUByte()).toULong() shl 40) or
+                 ((it[3].toUByte()).toULong() shl 32) or
+                 ((((it[4].toUByte()).toUInt() shl 24) or
+                   ((it[5].toUByte()).toUInt() shl 16) or
+                   ((it[6].toUByte()).toUInt() shl 8) or
+                   (it[7].toUByte()).toUInt()).toULong())).toLong() })
+        )
+
+        private val shortWriteDispatch: EndiannessWriteDispatch<Short> = seriesOf(
+            ((EndiannessPredicate(true) j wildcard<Short>()) j { _: EndiannessPredicate, it: Short ->
+                byteArrayOf((it.toUByte()).toByte(), ((it.toUInt() shr 8).toUByte()).toByte()) }),
+            ((EndiannessPredicate(false) j wildcard<Short>()) j { _: EndiannessPredicate, it: Short ->
+                byteArrayOf(((it.toUInt() shr 8).toUByte()).toByte(), (it.toUByte()).toByte()) })
+        )
+
+        private val intWriteDispatch: EndiannessWriteDispatch<Int> = seriesOf(
+            ((EndiannessPredicate(true) j wildcard<Int>()) j { _: EndiannessPredicate, it: Int ->
+                byteArrayOf((it.toUByte()).toByte(), ((it shr 8).toUByte()).toByte(),
+                           ((it shr 16).toUByte()).toByte(), ((it shr 24).toUByte()).toByte()) }),
+            ((EndiannessPredicate(false) j wildcard<Int>()) j { _: EndiannessPredicate, it: Int ->
+                byteArrayOf(((it shr 24).toUByte()).toByte(), ((it shr 16).toUByte()).toByte(),
+                           ((it shr 8).toUByte()).toByte(), (it.toUByte()).toByte()) })
+        )
+
+        private val longWriteDispatch: EndiannessWriteDispatch<Long> = seriesOf(
+            ((EndiannessPredicate(true) j wildcard<Long>()) j { _: EndiannessPredicate, it: Long ->
+                byteArrayOf((it.toUByte()).toByte(), ((it shr 8).toUByte()).toByte(),
+                           ((it shr 16).toUByte()).toByte(), ((it shr 24).toUByte()).toByte(),
+                           ((it shr 32).toUByte()).toByte(), ((it shr 40).toUByte()).toByte(),
+                           ((it shr 48).toUByte()).toByte(), ((it shr 56).toUByte()).toByte()) }),
+            ((EndiannessPredicate(false) j wildcard<Long>()) j { _: EndiannessPredicate, it: Long ->
+                byteArrayOf(((it shr 56).toUByte()).toByte(), ((it shr 48).toUByte()).toByte(),
+                           ((it shr 40).toUByte()).toByte(), ((it shr 32).toUByte()).toByte(),
+                           ((it shr 24).toUByte()).toByte(), ((it shr 16).toUByte()).toByte(),
+                           ((it shr 8).toUByte()).toByte(), (it.toUByte()).toByte()) })
+        )
+
         object currentPlatformCodec : PlatformCodec {
-            override val readShort: (ByteArray) -> Short by lazy {
-                if (isLittleEndian) {
-                    { ((it[1].toInt() and 0xFF) shl 8).toShort() or (it[0].toInt() and 0xFF).toShort() }
-                } else {
-                    { (it[0].toInt() and 0xFF shl 8 or (it[1].toInt() and 0xFF)).toShort() }
-                }
+            override val readShort: (ByteArray) -> Short = { bytes ->
+                shortReadDispatch.exactDispatch(EndiannessPredicate(isLittleEndian), bytes)
             }
-            override val readInt: (ByteArray) -> Int by lazy {
-                if (isLittleEndian) {
-                    {
-                        (((it[3].toUByte()).toUInt() shl 24) or
-                                ((it[2].toUByte()).toUInt() shl 16) or
-                                ((it[1].toUByte()).toUInt() shl 8) or
-                                (it[0].toUByte()).toUInt()).toInt()
-
-                    }
-                } else {
-                    {
-                        (((it[0].toUByte()).toUInt() shl 24) or
-                                ((it[1].toUByte()).toUInt() shl 16) or
-                                ((it[2].toUByte()).toUInt() shl 8) or
-                                (it[3].toUByte()).toUInt()).toInt()
-                    }
-                }
-
+            override val readInt: (ByteArray) -> Int = { bytes ->
+                intReadDispatch.exactDispatch(EndiannessPredicate(isLittleEndian), bytes)
             }
-            override val readLong: (ByteArray) -> Long by lazy {
-
-                if (isLittleEndian) {
-                    {
-                        (((it[7].toUByte()).toULong() shl 56) or
-                                ((it[6].toUByte()).toULong() shl 48) or
-                                ((it[5].toUByte()).toULong() shl 40) or
-                                ((it[4].toUByte()).toULong() shl 32) or
-                                ((((it[3].toUByte()).toUInt() shl 24) or
-                                        ((it[2].toUByte()).toUInt() shl 16) or
-                                        ((it[1].toUByte()).toUInt() shl 8) or
-                                        (it[0].toUByte()).toUInt()).toULong())).toLong()
-                    }
-                } else {
-                    {
-                        (((it[0].toUByte()).toULong() shl 56) or
-                                ((it[1].toUByte()).toULong() shl 48) or
-                                ((it[2].toUByte()).toULong() shl 40) or
-                                ((it[3].toUByte()).toULong() shl 32) or
-                                ((((it[4].toUByte()).toUInt() shl 24) or
-                                        ((it[5].toUByte()).toUInt() shl 16) or
-                                        ((it[6].toUByte()).toUInt() shl 8) or
-                                        (it[7].toUByte()).toUInt()).toULong())).toLong()
-
-                    }
-                }
+            override val readLong: (ByteArray) -> Long = { bytes ->
+                longReadDispatch.exactDispatch(EndiannessPredicate(isLittleEndian), bytes)
             }
-            override val writeShort: (Short) -> ByteArray by lazy {
-
-                if (isLittleEndian) {
-                    {
-                        byteArrayOf(
-                            (it.toUByte()).toByte(),
-                            ((it.toUInt() shr 8).toUByte()).toByte()
-                        )
-                    }
-                } else {
-                    {
-                        byteArrayOf(
-                            ((it.toUInt() shr 8).toUByte()).toByte(),
-                            (it.toUByte()).toByte()
-                        )
-                    }
-                }
+            override val writeShort: (Short) -> ByteArray = { value ->
+                shortWriteDispatch.exactDispatch(EndiannessPredicate(isLittleEndian), value)
             }
-            override val writeInt: (Int) -> ByteArray by lazy {
-                if (isLittleEndian) {
-                    {
-                        byteArrayOf(
-                            (it.toUByte()).toByte(),
-                            ((it shr 8).toUByte()).toByte(),
-                            ((it shr 16).toUByte()).toByte(),
-                            ((it shr 24).toUByte()).toByte()
-                        )
-                    }
-                } else {
-                    {
-                        byteArrayOf(
-                            ((it shr 24).toUByte()).toByte(),
-                            ((it shr 16).toUByte()).toByte(),
-                            ((it shr 8).toUByte()).toByte(),
-                            (it.toUByte()).toByte()
-                        )
-                    }
-                }
+            override val writeInt: (Int) -> ByteArray = { value ->
+                intWriteDispatch.exactDispatch(EndiannessPredicate(isLittleEndian), value)
             }
-            override val writeLong: (Long) -> ByteArray by lazy {
-                if (isLittleEndian) {
-                    {
-                        byteArrayOf(
-                            (it.toUByte()).toByte(),
-                            ((it shr 8).toUByte()).toByte(),
-                            ((it shr 16).toUByte()).toByte(),
-                            ((it shr 24).toUByte()).toByte(),
-                            ((it shr 32).toUByte()).toByte(),
-                            ((it shr 40).toUByte()).toByte(),
-                            ((it shr 48).toUByte()).toByte(),
-                            ((it shr 56).toUByte()).toByte()
-                        )
-                    }
-                } else {
-                    {
-                        byteArrayOf(
-                            ((it shr 56).toUByte()).toByte(),
-                            ((it shr 48).toUByte()).toByte(),
-                            ((it shr 40).toUByte()).toByte(),
-                            ((it shr 32).toUByte()).toByte(),
-                            ((it shr 24).toUByte()).toByte(),
-                            ((it shr 16).toUByte()).toByte(),
-                            ((it shr 8).toUByte()).toByte(),
-                            (it.toUByte()).toByte()
-                        )
-                    }
-                }
+            override val writeLong: (Long) -> ByteArray = { value ->
+                longWriteDispatch.exactDispatch(EndiannessPredicate(isLittleEndian), value)
             }
             //6 kotlin unsigned adapters below for the above 6
             override val readUShort: (ByteArray) -> UShort ={it->readShort(it).toUShort()}
