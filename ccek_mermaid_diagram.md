@@ -2,11 +2,11 @@
 graph TD
     subgraph CoreDefinitions ["CCEK Core Definitions (nexus.core.NexusCCEK)"]
         direction LR
-        NexusCCEK_Context["typealias CCEKContext = Join&lt;Join&lt;Context, Configuration&gt;, Join&lt;Environment, Knowledge&gt;&gt;"]
-        NexusCCEK_DevelopmentContext["typealias DevelopmentContext = Join&lt;CCEKContext, CodebaseContext&gt;"]
-        NexusCCEK_CCEKNexus["typealias CCEKNexus = Join&lt;EvolutionContext, CCEKOperations&gt;"]
-        NexusCCEK_ContextualRequest["typealias ContextualRequest = Join&lt;Request, CCEKContext&gt;"]
-        NexusCCEK_ContextualResponse["typealias ContextualResponse = Join&lt;Response, CCEKContext&gt;"]
+        NexusCCEK_Context["typealias CCEKContext = Join<Join<Context, Configuration>, Join<Environment, Knowledge>>"]
+        NexusCCEK_DevelopmentContext["typealias DevelopmentContext = Join<CCEKContext, CodebaseContext>"]
+        NexusCCEK_CCEKNexus["typealias CCEKNexus = Join<EvolutionContext, CCEKOperations>"]
+        NexusCCEK_ContextualRequest["typealias ContextualRequest = Join<Request, CCEKContext>"]
+        NexusCCEK_ContextualResponse["typealias ContextualResponse = Join<Response, CCEKContext>"]
 
         NexusCCEK_Context -- "used in" --> NexusCCEK_DevelopmentContext
         NexusCCEK_Context -- "used in" --> NexusCCEK_ContextualRequest
@@ -16,7 +16,7 @@ graph TD
 
     subgraph DemoAndImplementations ["Demo & Implementations (demo.kt, implementations.NexusActuals.kt)"]
         direction LR
-        Demo_CCEKContext["typealias CCEKContext (demo.kt)<br>Pair&lt;Pair&lt;Context, Configuration&gt;, Pair&lt;Environment, Knowledge&gt;&gt;"]
+        Demo_CCEKContext["typealias CCEKContext (demo.kt)<br/>Pair<Pair<Context, Configuration>, Pair<Environment, Knowledge>>"]
         Actuals_BuildInitial["buildInitialCCEKContext() -> CCEKContext (NexusActuals.kt)"]
         Demo_BuildInitial["buildInitialCCEKContext() -> CCEKContext (demo.kt)"]
         WorkingNexus["class WorkingNexus (demo.kt)"]
@@ -56,7 +56,7 @@ graph TD
 
     subgraph AgenticNexus ["Agentic Nexus (agentic_nexus.kts)"]
         direction LR
-        Agentic_CCEKContext["value class CCEKContext(data: Map&lt;String, String&gt;)"]
+        Agentic_CCEKContext["value class CCEKContext(data: Map<String, String>)"]
         Agentic_CreateContext["createContext() -> CCEKContext"]
         Agentic_GenerateAdaptiveTask["generateAdaptiveTask(context: CCEKContext)"]
         Agentic_CreateContext -- "returns" --> Agentic_CCEKContext
@@ -65,9 +65,9 @@ graph TD
 
     subgraph ProviderModel ["Provider Model (provider_demo.kt, NexusProviders.kt)"]
         direction LR
-        ProviderDemo_CCEKContext["typealias CCEKContext (provider_demo.kt)<br>Pair&lt;Pair&lt;Context, Configuration&gt;, Pair&lt;Environment, Knowledge&gt;&gt;"]
+        ProviderDemo_CCEKContext["typealias CCEKContext (provider_demo.kt)<br/>Pair<Pair<Context, Configuration>, Pair<Environment, Knowledge>>"]
         ProviderDemo_CCEKNexus["typealias CCEKNexus = CCEKContext (provider_demo.kt)"]
-        ProviderDemo_EnhancedNexus["typealias EnhancedNexus = Pair&lt;CCEKNexus, NexusProvider&gt; (provider_demo.kt)"]
+        ProviderDemo_EnhancedNexus["typealias EnhancedNexus = Pair<CCEKNexus, NexusProvider> (provider_demo.kt)"]
         ProviderDemo_BuildTestContext["buildTestContext() -> CCEKContext (provider_demo.kt)"]
 
         ProviderDemo_CCEKContext -- "is aliased by" --> ProviderDemo_CCEKNexus
@@ -81,7 +81,7 @@ graph TD
         ProviderDemo_CCEKContext -- "passed to" --> NexusProviders_Analyze
         ProviderDemo_CCEKContext -- "passed to" --> NexusProviders_Complete
 
-        NexusProviders_EnhancedNexus["typealias EnhancedNexus (NexusProviders.kt)<br>Join&lt;CCEKNexus, NexusProvider&gt;"]
+        NexusProviders_EnhancedNexus["typealias EnhancedNexus (NexusProviders.kt)<br/>Join<CCEKNexus, NexusProvider>"]
         NexusProviders_CCEKNexus_WithProvider["CCEKNexus.withProvider() -> EnhancedNexus (NexusProviders.kt)"]
         ProviderDemo_CCEKNexus -- "extended by" --> NexusProviders_CCEKNexus_WithProvider
         NexusProviders_CCEKNexus_WithProvider -- "returns" --> NexusProviders_EnhancedNexus
@@ -89,13 +89,13 @@ graph TD
 
     subgraph TensorCore ["Tensor Core (NexusTensorCore.kt)"]
         direction LR
-        Tensor_CCEKTensor["typealias CCEKTensor = NexusTensor&lt;CCEKContext&gt;"]
-        Tensor_ContextTensorSpace["typealias ContextTensorSpace = Join&lt;CCEKTensor, CapabilityTensor&gt;"]
+        Tensor_CCEKTensor["typealias CCEKTensor = NexusTensor<CCEKContext>"]
+        Tensor_ContextTensorSpace["typealias ContextTensorSpace = Join<CCEKTensor, CapabilityTensor>"]
         NexusCCEK_Context -- "used in" --> Tensor_CCEKTensor
         Tensor_CCEKTensor -- "used in" --> Tensor_ContextTensorSpace
 
         Tensor_WithCCEK["NexusTensor.withCCEK(context: CCEKContext)"]
-        Tensor_ContextTransform["Join&lt;CCEKContext, NexusTensor&gt;.contextTransform(f: (CCEKContext, T) -> R)"]
+        Tensor_ContextTransform["Join<CCEKContext, NexusTensor>.contextTransform(f: (CCEKContext, T) -> R)"]
         Tensor_PredictNextAction["TensorAgent.predictNextAction(context: CCEKContext)"]
         Tensor_CCEKToTensor["CCEKContext.toTensor() -> CCEKTensor"]
         Tensor_Adapt["TensorAgent.adapt(ctx: CCEKContext)"]
@@ -129,16 +129,15 @@ graph TD
 
     subgraph ScriptingK2 ["K2 Scripts (simple_nexus.kts, trikeshed_nexus.kts)"]
         direction LR
-        SimpleNexus_CCEKContext["typealias CCEKContext (simple_nexus.kts)<br>Join&lt;...&gt;"]
-        SimpleNexus_DevContext["typealias DevelopmentContext (simple_nexus.kts)<br>Join&lt;CCEKContext, Series&lt;String&gt;&gt;"]
+        SimpleNexus_CCEKContext["typealias CCEKContext (simple_nexus.kts)<br/>Join<...>"]
+        SimpleNexus_DevContext["typealias DevelopmentContext (simple_nexus.kts)<br/>Join<CCEKContext, Series<String>>"]
         SimpleNexus_CCEKContext -- "used in" --> SimpleNexus_DevContext
 
-        TrikeShed_CCEKContext["typealias CCEKContext&lt;T&gt; (trikeshed_nexus.kts)<br>Join&lt;...&gt;"]
-        TrikeShed_DevContext["typealias DevelopmentContext&lt;T&gt; (trikeshed_nexus.kts)<br>Join&lt;CCEKContext&lt;T&gt;, Series&lt;T&gt;&gt;"]
+        TrikeShed_CCEKContext["typealias CCEKContext<T> (trikeshed_nexus.kts)<br/>Join<...>"]
+        TrikeShed_DevContext["typealias DevelopmentContext<T> (trikeshed_nexus.kts)<br/>Join<CCEKContext<T>, Series<T>>"]
         TrikeShed_CCEKContext -- "used in" --> TrikeShed_DevContext
     end
-
-    %% General Connections
+ 
     NexusCCEK_Context --> DemoAndImplementations
     NexusCCEK_Context --> ProviderModel
     NexusCCEK_Context --> TensorCore
@@ -154,11 +153,11 @@ graph TD
     classDef typeAlias fill:#lightgrey,stroke:#333;
     classDef valueClass fill:#lightblue,stroke:#333;
     classDef function fill:#moccasin,stroke:#333;
-    classDef class fill:#lightgreen,stroke:#333;
+    classDef generalClass fill:#lightgreen,stroke:#333;
 
     class NexusCCEK_Context,Demo_CCEKContext,ProviderDemo_CCEKContext,SimpleNexus_CCEKContext,TrikeShed_CCEKContext typeAlias;
     class Agentic_CCEKContext valueClass;
-    class NexusCCEK_DevelopmentContext,NexusCCEK_CCEKNexus,NexusCCEK_ContextualRequest,NexusCCEK_ContextualResponse,ProviderDemo_CCEKNexus,ProviderDemo_EnhancedNexus,NexusProviders_EnhancedNexus,Tensor_CCEKTensor,Tensor_ContextTensorSpace,SimpleNexus_DevContext,TrikeShed_DevContext typeAlias;
-    class Actuals_BuildInitial,Demo_BuildInitial,ProcessSimpleRequest_Demo,AnalyzeInContext_Demo,GenerateInContext_Demo,RefactorInContext_Demo,Demo_CCEK_UpdateFromInteraction,Actuals_ProcessSimpleRequest,Actuals_AnalyzeInContext,Actuals_GenerateInContext,Actuals_RefactorInContext,Actuals_CCEK_Extractors,Actuals_CCEK_Updaters,Agentic_CreateContext,Agentic_GenerateAdaptiveTask,ProviderDemo_BuildTestContext,NexusProviders_Generate,NexusProviders_Analyze,NexusProviders_Complete,NexusProviders_CCEKNexus_WithProvider,Tensor_WithCCEK,Tensor_ContextTransform,Tensor_PredictNextAction,Tensor_CCEKToTensor,Tensor_Adapt,Reflector_GetRelevantPatterns,Reflector_PredictNextAction,Reflector_IsRelevantTo,Reflector_SuggestActionFunc,Reflector_CalcSimilarity,Reflector_CCEKExtractPattern,Reflector_CCEKSuggestAction function;
-    class WorkingNexus class;
+    class NexusCCEK_DevelopmentContext,NexusCCEK_CCEKNexus,NexusCCEK_ContextualRequest,NexusCCEK_ContextualResponse,ProviderDemo_CCEKNexus,ProviderDemo_EnhancedNexus,NexusProviders_EnhancedNexus,Tensor_CCEKTensor,Tensor_ContextTensorSpace,SimpleNexus_DevContext,TrikeShed_DevContext generalClass;
+    class Actuals_BuildInitial,Demo_BuildInitial,ProcessSimpleRequest_Demo,AnalyzeInContext_Demo,GenerateInContext_Demo,RefactorInContext_Demo,Demo_CCEK_UpdateFromInteraction,Actuals_ProcessSimpleRequest,Actuals_AnalyzeInContext,Actuals_GenerateInContext,Actuals_RefactorInContext,Actuals_CCEK_Extractors,Actuals_CCEK_Updaters,ProviderDemo_BuildTestContext,NexusProviders_Generate,NexusProviders_Analyze,NexusProviders_Complete,NexusProviders_CCEKNexus_WithProvider,NexusProviders_CCEKNexus_WithProvider,Tensor_WithCCEK,Tensor_ContextTransform,Tensor_PredictNextAction,Tensor_CCEKToTensor,Tensor_Adapt,Reflector_GetRelevantPatterns,Reflector_PredictNextAction,Reflector_IsRelevantTo,Reflector_SuggestActionFunc,Reflector_CalcSimilarity,Reflector_CCEKExtractPattern,Reflector_CCEKSuggestAction,Agentic_CreateContext,Agentic_GenerateAdaptiveTask function;
+    class WorkingNexus generalClass;
 ```
