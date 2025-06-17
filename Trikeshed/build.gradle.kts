@@ -33,15 +33,14 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
-            }
+        commonMain.dependencies {
+            implementation(kotlin("stdlib-common"))
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
         }
-        val commonTest by getting {
-            dependencies {
-                // Add test dependencies if needed
-            }
+        
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }

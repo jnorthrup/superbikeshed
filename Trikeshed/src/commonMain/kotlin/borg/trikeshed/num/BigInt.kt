@@ -160,10 +160,39 @@ class BigInt private constructor(private val sign: Boolean?, private val magnitu
         }
     )
 
+    // Additional methods to satisfy expect/actual pattern from origin/feat/common-bignum
+    operator fun times(other: BigInt): BigInt {
+        // Placeholder implementation - would need full multiplication algorithm
+        TODO("Multiplication not yet implemented")
+    }
+    
+    operator fun div(other: BigInt): BigInt {
+        // Placeholder implementation - would need full division algorithm
+        TODO("Division not yet implemented")
+    }
+    
+    operator fun rem(other: BigInt): BigInt {
+        // Placeholder implementation - would need modulo algorithm
+        TODO("Remainder not yet implemented")
+    }
+    
+    fun pow(exponent: Int): BigInt {
+        // Placeholder implementation - would need exponentiation algorithm
+        TODO("Power not yet implemented")
+    }
+    
+    fun abs(): BigInt = if (sign == false) BigInt(true, magnitude) else this
+    
+    operator fun unaryMinus(): BigInt = BigInt(sign?.not(), magnitude)
 
     override fun toString(): String {
         val signString = if (sign == null) "" else if (sign) "+" else "-"
         return signString + magnitude.reversed().`▶`.joinToString("") { it.toString().padStart(9, '0') }
+    }
+    
+    fun toString(radix: Int): String {
+        // Placeholder implementation - would need base conversion
+        return toString() // Default to base 10 for now
     }
 
     override fun toByte(): Byte = toInt().toByte()
@@ -296,6 +325,16 @@ class BigInt private constructor(private val sign: Boolean?, private val magnitu
             return BigInt(sign, magnitude.toUIntArray().toSeries())
         }
 
+        // Factory methods from expect/actual pattern
+        fun parseString(value: String, radix: Int = 10): BigInt {
+            // For now, only support base 10
+            return BigInt(value)
+        }
+        
+        fun fromLong(value: Long): BigInt = BigInt(value)
+        
+        fun fromInt(value: Int): BigInt = BigInt(value.toLong())
+
         const val BASE = 1L shl 32 //   Base value of 2^32
         val ZERO = BigInt(null, emptySeries())
         val ONE = BigInt(1)
@@ -324,5 +363,3 @@ class BigInt private constructor(private val sign: Boolean?, private val magnitu
         }
     }
 }
-
-
