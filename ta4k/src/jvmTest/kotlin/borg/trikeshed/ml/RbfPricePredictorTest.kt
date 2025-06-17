@@ -53,8 +53,8 @@ class RbfPricePredictorTest {
 
         val lastWindowFeatures = featuresAndLabels.first.last()
         val prediction = predictNext(trainedModel, lastWindowFeatures)
-        println("Predicted next value: $prediction") // For observation
         // We can't easily assert specific prediction value without knowing the exact model behavior or fixing seeds.
+        assertTrue(prediction.isFinite(), "Prediction should be a finite number")
 
         val cursorWithPredictions = addPredictionsToCursor(klineCursor, trainedModel, "Close", windowSize, "TestPrediction")
         assertNotNull(cursorWithPredictions, "Cursor with predictions should not be null.")
@@ -73,12 +73,8 @@ class RbfPricePredictorTest {
         }
         assertTrue(foundPredictionColumn, "Prediction column 'TestPrediction' should exist in new metadata.")
 
-        // Optional: Print some values from the new prediction column for observation
-        println("First few predicted values in cursor: ")
+        // Verify predictions are properly placed
         val predColIdx = newMeta.totalSize -1
-        for(r in 0 until kotlin.math.min(cursorWithPredictions.a.rows, windowSize + 3)) { // print a few
-             println("Row $r: Original Close = ${klineCursor.a[r,4]}, Predicted = ${cursorWithPredictions.a[r,predColIdx]}")
-        }
          // The first `windowSize` predictions should be NaN
         for(r in 0 until windowSize) {
             assertTrue(cursorWithPredictions.a[r, predColIdx].isNaN(), "Prediction for row $r should be NaN.")
