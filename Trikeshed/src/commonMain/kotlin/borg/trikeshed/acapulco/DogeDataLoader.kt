@@ -13,8 +13,8 @@ import java.time.temporal.ChronoUnit
  */
 class DogeDataLoader {
     companion object {
-        private const val DOGE_SYMBOL = "DOGEUSDT"
-        private const val DEFAULT_TIMEFRAME = "1h"
+        const val DOGE_SYMBOL = "DOGE"
+        const val DEFAULT_TIMEFRAME = "1h"
         
         /**
          * Loads DOGE historical data for the specified time range.
