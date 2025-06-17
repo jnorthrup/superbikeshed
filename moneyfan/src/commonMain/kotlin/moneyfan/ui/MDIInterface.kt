@@ -20,20 +20,20 @@ value class TraceLevel(val value: Int) {
 }
 
 @JvmInline
-value class FunctionKey(val keyCode: Int) {
+value class SpaceGraphNode(val nodeId: String) {
     companion object {
-        val F1 = FunctionKey(112)
-        val F2 = FunctionKey(113)
-        val F3 = FunctionKey(114)
-        val F4 = FunctionKey(115)
-        val F5 = FunctionKey(116)
-        val F6 = FunctionKey(117)
-        val F7 = FunctionKey(118)
-        val F8 = FunctionKey(119)
-        val F9 = FunctionKey(120)
-        val F10 = FunctionKey(121)
-        val F11 = FunctionKey(122)
-        val F12 = FunctionKey(123)
+        val ATTENTION = SpaceGraphNode("attention_ticker")
+        val PORTFOLIO = SpaceGraphNode("portfolio_manager")
+        val TECHNICAL = SpaceGraphNode("technical_analysis")
+        val BACKTEST = SpaceGraphNode("backtest_results")
+        val TRACE = SpaceGraphNode("trace_viewer")
+        val JSON = SpaceGraphNode("json_scanner")
+        val BTC_CHART = SpaceGraphNode("btc_chart")
+        val ETH_CHART = SpaceGraphNode("eth_chart")
+        val TILE = SpaceGraphNode("tile_windows")
+        val CASCADE = SpaceGraphNode("cascade_windows")
+        val CLEAR = SpaceGraphNode("clear_trace")
+        val EXIT = SpaceGraphNode("exit_application")
     }
 }
 
@@ -74,15 +74,7 @@ class MDITraceLogger {
             traceBuffer.removeAt(0)
         }
         
-        // Console output for immediate feedback
-        val levelStr = when (level) {
-            TraceLevel.DEBUG -> "DEBUG"
-            TraceLevel.INFO -> "INFO"
-            TraceLevel.WARN -> "WARN"
-            TraceLevel.ERROR -> "ERROR"
-            else -> "TRACE"
-        }
-        println("[$levelStr] $message")
+        // Store trace entry - no console output per CLAUDE.md compliance
     }
     
     fun getTraceLog(): TraceLog = Series.of(traceBuffer.size) { traceBuffer[it] }
@@ -96,84 +88,84 @@ class MDIInterface {
     private val windows = mutableMapOf<String, MDIWindow>()
     private val tracer = MDITraceLogger()
     private var activeWindowId: String? = null
-    private val functionKeyHandlers = mutableMapOf<FunctionKey, () -> Unit>()
-    private val hoverStates = mutableMapOf<FunctionKey, Boolean>()
+    private val spaceGraphNodeHandlers = mutableMapOf<SpaceGraphNode, () -> Unit>()
+    private val nodeActivationStates = mutableMapOf<SpaceGraphNode, Boolean>()
     
     init {
-        setupFunctionKeys()
+        setupSpaceGraphNodes()
         createDefaultWindows()
     }
     
-    private fun setupFunctionKeys() {
-        // F1 - Attention Ticker Window
-        functionKeyHandlers[FunctionKey.F1] = {
-            tracer.log(TraceLevel.INFO, "F1: Opening Attention Ticker Window")
+    private fun setupSpaceGraphNodes() {
+        // Attention Ticker Node
+        spaceGraphNodeHandlers[SpaceGraphNode.ATTENTION] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Attention Ticker Window")
             openOrFocusWindow("attention", "Attention Ticker", WindowContent.AttentionTicker)
         }
         
-        // F2 - Portfolio Manager
-        functionKeyHandlers[FunctionKey.F2] = {
-            tracer.log(TraceLevel.INFO, "F2: Opening Portfolio Manager Window")
+        // Portfolio Manager Node
+        spaceGraphNodeHandlers[SpaceGraphNode.PORTFOLIO] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Portfolio Manager Window")
             openOrFocusWindow("portfolio", "Portfolio Manager", WindowContent.PortfolioManager)
         }
         
-        // F3 - Technical Analysis
-        functionKeyHandlers[FunctionKey.F3] = {
-            tracer.log(TraceLevel.INFO, "F3: Opening Technical Analysis Window")
+        // Technical Analysis Node
+        spaceGraphNodeHandlers[SpaceGraphNode.TECHNICAL] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Technical Analysis Window")
             openOrFocusWindow("technical", "Technical Analysis", WindowContent.TechnicalAnalysis)
         }
         
-        // F4 - Backtest Results
-        functionKeyHandlers[FunctionKey.F4] = {
-            tracer.log(TraceLevel.INFO, "F4: Opening Backtest Results Window")
+        // Backtest Results Node
+        spaceGraphNodeHandlers[SpaceGraphNode.BACKTEST] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Backtest Results Window")
             openOrFocusWindow("backtest", "Backtest Results", WindowContent.BacktestResults)
         }
         
-        // F5 - Trace Viewer
-        functionKeyHandlers[FunctionKey.F5] = {
-            tracer.log(TraceLevel.INFO, "F5: Opening Trace Viewer Window")
+        // Trace Viewer Node
+        spaceGraphNodeHandlers[SpaceGraphNode.TRACE] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Trace Viewer Window")
             openOrFocusWindow("trace", "Trace Viewer", WindowContent.TraceViewer)
         }
         
-        // F6 - JSON Scanner
-        functionKeyHandlers[FunctionKey.F6] = {
-            tracer.log(TraceLevel.INFO, "F6: Opening JSON Scanner Window")
+        // JSON Scanner Node
+        spaceGraphNodeHandlers[SpaceGraphNode.JSON] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening JSON Scanner Window")
             openOrFocusWindow("json", "JSON Scanner", WindowContent.JSONScanner)
         }
         
-        // F7 - BTC Chart
-        functionKeyHandlers[FunctionKey.F7] = {
-            tracer.log(TraceLevel.INFO, "F7: Opening BTC Chart Window")
+        // BTC Chart Node
+        spaceGraphNodeHandlers[SpaceGraphNode.BTC_CHART] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening BTC Chart Window")
             openOrFocusWindow("btc_chart", "BTC Chart", WindowContent.Chart(Symbol("BTC")))
         }
         
-        // F8 - ETH Chart
-        functionKeyHandlers[FunctionKey.F8] = {
-            tracer.log(TraceLevel.INFO, "F8: Opening ETH Chart Window")
+        // ETH Chart Node
+        spaceGraphNodeHandlers[SpaceGraphNode.ETH_CHART] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening ETH Chart Window")
             openOrFocusWindow("eth_chart", "ETH Chart", WindowContent.Chart(Symbol("ETH")))
         }
         
-        // F9 - Tile Windows
-        functionKeyHandlers[FunctionKey.F9] = {
-            tracer.log(TraceLevel.INFO, "F9: Tiling all windows")
+        // Tile Windows Node
+        spaceGraphNodeHandlers[SpaceGraphNode.TILE] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Tiling all windows")
             tileWindows()
         }
         
-        // F10 - Cascade Windows
-        functionKeyHandlers[FunctionKey.F10] = {
-            tracer.log(TraceLevel.INFO, "F10: Cascading all windows")
+        // Cascade Windows Node
+        spaceGraphNodeHandlers[SpaceGraphNode.CASCADE] = {
+            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Cascading all windows")
             cascadeWindows()
         }
         
-        // F11 - Clear Trace Log
-        functionKeyHandlers[FunctionKey.F11] = {
-            tracer.log(TraceLevel.WARN, "F11: Clearing trace log")
+        // Clear Trace Log Node
+        spaceGraphNodeHandlers[SpaceGraphNode.CLEAR] = {
+            tracer.log(TraceLevel.WARN, "SpaceGraph Node: Clearing trace log")
             tracer.clearLog()
         }
         
-        // F12 - Exit Application
-        functionKeyHandlers[FunctionKey.F12] = {
-            tracer.log(TraceLevel.ERROR, "F12: Exit application requested")
+        // Exit Application Node
+        spaceGraphNodeHandlers[SpaceGraphNode.EXIT] = {
+            tracer.log(TraceLevel.ERROR, "SpaceGraph Node: Exit application requested")
             exitApplication()
         }
     }
@@ -207,36 +199,36 @@ class MDIInterface {
         activeWindowId = "trace"
     }
     
-    fun onFunctionKeyHover(key: FunctionKey, isHovering: Boolean) {
-        val wasHovering = hoverStates[key] ?: false
-        hoverStates[key] = isHovering
+    fun onSpaceGraphNodeHover(node: SpaceGraphNode, isHovering: Boolean) {
+        val wasHovering = nodeActivationStates[node] ?: false
+        nodeActivationStates[node] = isHovering
         
         if (isHovering && !wasHovering) {
-            tracer.log(TraceLevel.DEBUG, "Hover START: ${getFunctionKeyDescription(key)}")
+            tracer.log(TraceLevel.DEBUG, "Node HOVER START: ${getSpaceGraphNodeDescription(node)}")
         } else if (!isHovering && wasHovering) {
-            tracer.log(TraceLevel.DEBUG, "Hover END: ${getFunctionKeyDescription(key)}")
+            tracer.log(TraceLevel.DEBUG, "Node HOVER END: ${getSpaceGraphNodeDescription(node)}")
         }
     }
     
-    fun onFunctionKeyHold(key: FunctionKey) {
-        tracer.log(TraceLevel.INFO, "Key HOLD: ${getFunctionKeyDescription(key)} - Executing action")
-        functionKeyHandlers[key]?.invoke()
+    fun onSpaceGraphNodeActivate(node: SpaceGraphNode) {
+        tracer.log(TraceLevel.INFO, "Node ACTIVATE: ${getSpaceGraphNodeDescription(node)} - Executing action")
+        spaceGraphNodeHandlers[node]?.invoke()
     }
     
-    private fun getFunctionKeyDescription(key: FunctionKey): String = when (key) {
-        FunctionKey.F1 -> "F1 (Attention Ticker)"
-        FunctionKey.F2 -> "F2 (Portfolio Manager)"
-        FunctionKey.F3 -> "F3 (Technical Analysis)"
-        FunctionKey.F4 -> "F4 (Backtest Results)"
-        FunctionKey.F5 -> "F5 (Trace Viewer)"
-        FunctionKey.F6 -> "F6 (JSON Scanner)"
-        FunctionKey.F7 -> "F7 (BTC Chart)"
-        FunctionKey.F8 -> "F8 (ETH Chart)"
-        FunctionKey.F9 -> "F9 (Tile Windows)"
-        FunctionKey.F10 -> "F10 (Cascade Windows)"
-        FunctionKey.F11 -> "F11 (Clear Trace)"
-        FunctionKey.F12 -> "F12 (Exit)"
-        else -> "F? (Unknown)"
+    private fun getSpaceGraphNodeDescription(node: SpaceGraphNode): String = when (node) {
+        SpaceGraphNode.ATTENTION -> "Attention Ticker Node"
+        SpaceGraphNode.PORTFOLIO -> "Portfolio Manager Node"
+        SpaceGraphNode.TECHNICAL -> "Technical Analysis Node"
+        SpaceGraphNode.BACKTEST -> "Backtest Results Node"
+        SpaceGraphNode.TRACE -> "Trace Viewer Node"
+        SpaceGraphNode.JSON -> "JSON Scanner Node"
+        SpaceGraphNode.BTC_CHART -> "BTC Chart Node"
+        SpaceGraphNode.ETH_CHART -> "ETH Chart Node"
+        SpaceGraphNode.TILE -> "Tile Windows Node"
+        SpaceGraphNode.CASCADE -> "Cascade Windows Node"
+        SpaceGraphNode.CLEAR -> "Clear Trace Node"
+        SpaceGraphNode.EXIT -> "Exit Application Node"
+        else -> "Unknown Node (${node.nodeId})"
     }
     
     private fun openOrFocusWindow(id: String, title: String, content: WindowContent) {
@@ -321,7 +313,6 @@ class MDIInterface {
     private fun exitApplication() {
         tracer.log(TraceLevel.ERROR, "Application exit initiated")
         // In real implementation, this would close the application
-        println("MDI Application would exit here")
     }
     
     // Public interface for external systems
@@ -334,40 +325,42 @@ class MDIInterface {
     
     fun getTraceLog(): TraceLog = tracer.getTraceLog()
     
-    fun renderInterface() {
-        println("\n" + "=".repeat(80))
-        println("MDI Interface - Function Key Actions")
-        println("=".repeat(80))
-        
-        // Show function key mappings
-        println("Function Keys:")
-        println("F1: Attention Ticker  F2: Portfolio    F3: Technical    F4: Backtest")
-        println("F5: Trace Viewer      F6: JSON Scanner F7: BTC Chart    F8: ETH Chart")
-        println("F9: Tile Windows      F10: Cascade     F11: Clear Trace F12: Exit")
-        
-        println("\nActive Windows:")
-        windows.values.forEach { window ->
-            val status = if (window.isActive) "[ACTIVE]" else "       "
-            println("$status ${window.title.padEnd(20)} (${window.x},${window.y}) ${window.width}x${window.height}")
-        }
-        
-        // Show recent trace entries
+    // Interface state for external rendering systems
+    fun getInterfaceState(): MDIInterfaceState {
+        val windowList = windows.values.toList()
         val recentTraces = tracer.getTraceLog()
-        if (recentTraces.size > 0) {
-            println("\nRecent Trace Log:")
-            recentTraces.play.takeLast(5).forEach { entry ->
-                val (level, message) = entry
-                val levelStr = when (level) {
-                    TraceLevel.DEBUG -> "DBG"
-                    TraceLevel.INFO -> "INF"
-                    TraceLevel.WARN -> "WRN"
-                    TraceLevel.ERROR -> "ERR"
-                    else -> "TRC"
-                }
-                println("[$levelStr] $message")
-            }
-        }
         
-        println("=".repeat(80))
+        return MDIInterfaceState(
+            activeWindowId = activeWindowId,
+            windows = Series.of(windowList.size) { windowList[it] },
+            recentTraces = recentTraces,
+            functionKeyMappings = getFunctionKeyMappings()
+        )
     }
+    
+    private fun getFunctionKeyMappings(): Series<Join<FunctionKey, String>> {
+        val mappings = listOf(
+            FunctionKey.F1 j "Attention Ticker",
+            FunctionKey.F2 j "Portfolio Manager", 
+            FunctionKey.F3 j "Technical Analysis",
+            FunctionKey.F4 j "Backtest Results",
+            FunctionKey.F5 j "Trace Viewer",
+            FunctionKey.F6 j "JSON Scanner",
+            FunctionKey.F7 j "BTC Chart",
+            FunctionKey.F8 j "ETH Chart",
+            FunctionKey.F9 j "Tile Windows",
+            FunctionKey.F10 j "Cascade Windows",
+            FunctionKey.F11 j "Clear Trace",
+            FunctionKey.F12 j "Exit Application"
+        )
+        return Series.of(mappings.size) { mappings[it] }
+    }
+}
+
+data class MDIInterfaceState(
+    val activeWindowId: String?,
+    val windows: Series<MDIWindow>,
+    val recentTraces: TraceLog,
+    val functionKeyMappings: Series<Join<FunctionKey, String>>
+)
 }
