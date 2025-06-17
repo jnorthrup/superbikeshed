@@ -1,0 +1,242 @@
+package moneyfan.trikeshed.nlp.rql
+
+/**
+ * Represents an entity in a query, such as a conceptual table, an object type, or a data source.
+ * Entities provide context for attributes.
+ *
+ * @property name The primary name of the entity (e.g., "Kline", "Product", "User"). This is typically case-sensitive or normalized by the query engine.
+ * @property type An optional secondary type or category for the entity (e.g., "FinancialData", "InventoryItem", "CustomerProfile").
+ *                This can be used for disambiguation or more specific targeting in complex data models.
+ */
+data class RqlEntity(
+    val name: String,
+    val type: String? = null
+)
+
+/**
+ * Represents an attribute (or property, field, column) of an [RqlEntity].
+ *
+ * @property name The name of the attribute (e.g., "closePrice", "productName", "userAge"). Attribute names are typically case-sensitive or normalized.
+ * @property ofEntity An optional reference to an [RqlEntity] to which this attribute belongs.
+ *                    This is useful for qualifying attributes when queries might involve multiple entities
+ *                    that could have attributes with identical names (e.g., `User.id` vs `Order.id`).
+ */
+data class RqlAttribute(
+    val name: String,
+    val ofEntity: RqlEntity? = null
+)
+
+/**
+ * Defines the set of comparison operators available for constructing conditions in RQL queries.
+ * Each operator specifies a type of comparison to be performed between an attribute and a value.
+ */
+enum class RqlOperator {
+    /** Checks for exact equality (e.g., `attribute == value`). */
+    EQUALS,
+    /** Checks for inequality (e.g., `attribute != value`). */
+    NOT_EQUALS,
+    /** Checks if the attribute is numerically greater than the value (e.g., `attribute > value`). */
+    GREATER_THAN,
+    /** Checks if the attribute is numerically less than the value (e.g., `attribute < value`). */
+    LESS_THAN,
+    /** Checks if the attribute is numerically greater than or equal to the value (e.g., `attribute >= value`). */
+    GREATER_THAN_OR_EQUALS,
+    /** Checks if the attribute is numerically less than or equal to the value (e.g., `attribute <= value`). */
+    LESS_THAN_OR_EQUALS,
+    /**
+     * Checks if the attribute's value falls within a specified range.
+     * The range is typically defined by two boundary values (e.g., `attribute BETWEEN low AND high`).
+     * The `value` property in [RqlCondition] for this operator should be a `Pair<Any, Any>` or a `List<Any>` of two elements.
+     * Inclusivity of boundaries (e.g., inclusive start, exclusive end) might be defined by specific query engine behavior.
+     */
+    BETWEEN,
+    /**
+     * Checks if a string attribute contains a specified substring, or if a collection attribute contains a specific element.
+     * Comparison is often case-insensitive for strings, depending on the query engine.
+     */
+    CONTAINS,
+    /**
+     * Checks if a string attribute does not contain a specified substring, or if a collection attribute does not contain a specific element.
+     */
+    NOT_CONTAINS,
+    /**
+     * Checks if the attribute's value is present in a given list of possible values (e.g., `attribute IN (val1, val2, val3)`).
+     * The `value` property in [RqlCondition] for this operator should be a `List<Any>`.
+     */
+    IN,
+    /**
+     * Checks if the attribute's value is not present in a given list of possible values.
+     * The `value` property in [RqlCondition] for this operator should be a `List<Any>`.
+     */
+    NOT_IN,
+    /**
+     * Checks if the attribute's value is `null` or considered missing.
+     * The `value` property in [RqlCondition] is typically not used for this operator.
+     */
+    IS_NULL,
+    /**
+     * Checks if the attribute's value is not `null` or is present.
+     * The `value` property in [RqlCondition] is typically not used for this operator.
+     */
+    IS_NOT_NULL
+}
+
+/**
+ * Represents a single conditional statement within an RQL query, forming the basis of filtering logic (e.g., "price > 100").
+ *
+ * @property attribute The [RqlAttribute] on the left-hand side of the condition that is being evaluated.
+ * @property operator The [RqlOperator] specifying the type of comparison or check to perform.
+ * @property value The value(s) on the right-hand side of the condition to compare against. The expected type and structure
+ *                 of `value` depend on the `operator`:
+ *                 - For direct comparison operators like `EQUALS`, `GREATER_THAN`, etc., `value` is typically a single literal (e.g., String, Number, Boolean).
+ *                   `value` can be `null` for `EQUALS` or `NOT_EQUALS` to check for literal nullity (e.g. `attribute == null`).
+ *                 - For `BETWEEN`, `value` should be a `Pair<Any, Any>` or a `List<Any>` of exactly two elements, defining the range boundaries.
+ *                 - For `IN` or `NOT_IN`, `value` should be a `List<Any>` of possible values.
+ *                 - For `CONTAINS` or `NOT_CONTAINS`, `value` is the substring or element to check for.
+ *                 - For `IS_NULL` or `IS_NOT_NULL`, `value` is typically ignored and can be `null`.
+ * @throws IllegalArgumentException if `value` does not meet the structural requirements for certain operators
+ *                                  (e.g., not a Pair/List for `BETWEEN`, not a List for `IN`/`NOT_IN`)
+ *                                  or if `value` is `null` for operators that strictly require a non-null comparison value (this PoC's validation is somewhat lenient here).
+ */
+data class RqlCondition(
+    val attribute: RqlAttribute,
+    val operator: RqlOperator,
+    val value: Any? = null
+) {
+    init {
+        when (operator) {
+            RqlOperator.BETWEEN -> require(value is Pair<*, *> || (value is List<*> && value.size == 2)) {
+                "Value for BETWEEN operator must be a Pair or a List of two elements. Found: $value"
+            }
+            RqlOperator.IN, RqlOperator.NOT_IN -> require(value is List<*>) {
+                "Value for IN or NOT_IN operator must be a List. Found: $value"
+            }
+            RqlOperator.IS_NULL, RqlOperator.IS_NOT_NULL -> {
+                // Value is not used for these operators; no validation needed for `value`.
+            }
+            // For other operators, a value might be expected.
+            // This PoC allows `value` to be null for `EQUALS` or `NOT_EQUALS` (e.g. `field == null`).
+            // Stricter validation could be added if `IS_NULL` is the only way to check nullity.
+            else -> {
+                // Example: require(value != null) for GT, LT, CONTAINS, etc.
+                // Current validation is as per original implementation.
+                 require(value != null || operator == RqlOperator.EQUALS || operator == RqlOperator.NOT_EQUALS) {
+                    // This message might be too broad. The original intent was to ensure value is non-null for most operators.
+                    // "Value must not be null for operator $operator, unless operator is IS_NULL, IS_NOT_NULL, EQUALS, or NOT_EQUALS (for checking literal null)."
+                    // For this review, keeping the original validation logic.
+                 }
+            }
+        }
+    }
+}
+
+/**
+ * Defines logical operators used to combine multiple [RqlQueryNode]s within an [RqlCompoundQuery].
+ */
+enum class RqlLogicalOperator {
+    /** Represents a logical AND. The compound query is true if all its sub-queries are true. */
+    AND,
+    /** Represents a logical OR. The compound query is true if at least one of its sub-queries is true. */
+    OR
+    // Future considerations: NOT (unary operator on a node).
+}
+
+/**
+ * A sealed interface representing a node in an RQL query's logical structure.
+ * An `RqlQueryNode` can be either a simple condition ([RqlSimpleQuery]) or a
+ * combination of other nodes ([RqlCompoundQuery]). This forms a tree structure
+ * for complex queries.
+ *
+ * @property metadata An optional map for storing supplementary information about this query node.
+ *                    This could include data from NLP processing, such as confidence scores,
+ *                    the original text phrases that generated this node, or UI hints.
+ *                    Defaults to `null` (no metadata).
+ */
+sealed interface RqlQueryNode {
+    val metadata: Map<String, String>? get() = null
+}
+
+/**
+ * An [RqlQueryNode] that represents a single, atomic query condition.
+ *
+ * @property condition The [RqlCondition] that defines this simple query.
+ * @property metadata Optional metadata associated with this query node. See [RqlQueryNode.metadata].
+ */
+data class RqlSimpleQuery(
+    val condition: RqlCondition,
+    override val metadata: Map<String, String>? = null
+) : RqlQueryNode
+
+/**
+ * An [RqlQueryNode] that represents a combination of two or more sub-queries
+ * (which can themselves be simple or compound) linked by a single [RqlLogicalOperator].
+ * This allows for building complex query logic like `(condition1 AND condition2) OR condition3`.
+ *
+ * @property operator The [RqlLogicalOperator] (i.e., `AND` or `OR`) used to evaluate the `subQueries`.
+ * @property subQueries A list of [RqlQueryNode]s that are operands to the `operator`.
+ *                      This list must contain at least two sub-queries.
+ * @property metadata Optional metadata associated with this query node. See [RqlQueryNode.metadata].
+ * @throws IllegalArgumentException if `subQueries` contains fewer than two elements.
+ */
+data class RqlCompoundQuery(
+    val operator: RqlLogicalOperator,
+    val subQueries: List<RqlQueryNode>,
+    override val metadata: Map<String, String>? = null
+) : RqlQueryNode {
+    init {
+        require(subQueries.size >= 2) {
+            "An RqlCompoundQuery must combine at least two sub-queries. Found ${subQueries.size}."
+        }
+    }
+}
+
+/**
+ * Specifies the direction for sorting query results (ascending or descending).
+ */
+enum class SortDirection {
+    /** Sorts results in ascending order (e.g., A to Z for strings, smallest to largest for numbers). */
+    ASCENDING,
+    /** Sorts results in descending order (e.g., Z to A for strings, largest to smallest for numbers). */
+    DESCENDING
+}
+
+/**
+ * Defines a single sorting criterion to be applied to query results.
+ * Multiple `RqlSortBy` instances can be used for multi-level sorting.
+ *
+ * @property attribute The [RqlAttribute] by which the results should be sorted.
+ * @property direction The [SortDirection] (either `ASCENDING` or `DESCENDING`). Defaults to `ASCENDING`.
+ */
+data class RqlSortBy(
+    val attribute: RqlAttribute,
+    val direction: SortDirection = SortDirection.ASCENDING
+)
+
+/**
+ * Represents the complete structure of an RQL query.
+ *
+ * This top-level class encapsulates the core query logic (as an [RqlQueryNode]),
+ * along with optional directives for identifying target data entities,
+ * specifying the order of results ([sortSpecification]), and limiting the number of results (`limit`).
+ *
+ * @property queryNode The main conditional part of the query, represented as an [RqlQueryNode].
+ *                     This node can be a single condition ([RqlSimpleQuery]) or a nested structure
+ *                     of conditions combined by logical operators ([RqlCompoundQuery]).
+ * @property targetEntities An optional list of [RqlEntity] objects. This can be used by a query engine
+ *                          to identify the primary data sources or tables for the query (akin to a FROM clause).
+ *                          If `null` or empty, the context might be inferred or globally defined.
+ * @property sortSpecification An optional list of [RqlSortBy] criteria. If provided, results should be ordered
+ *                             according to these criteria. Sorting is typically applied sequentially by the order
+ *                             in the list (e.g., sort by `attribute1`, then by `attribute2` for ties).
+ * @property limit An optional integer specifying the maximum number of results to return.
+ *                 If `null`, no limit is applied.
+ */
+data class RqlRootQuery(
+    val queryNode: RqlQueryNode,
+    val targetEntities: List<RqlEntity>? = null,
+    val sortSpecification: List<RqlSortBy>? = null,
+    val limit: Int? = null
+    // Future enhancements could include:
+    // - `offset: Int? = null` for pagination.
+    // - `selectAttributes: List<RqlAttribute>? = null` to specify which attributes to return (projection).
+)
