@@ -1,6 +1,8 @@
 package gk.kademlia.security
 
 import gk.kademlia.messages.KademliaPayload
+import kotlinx.serialization.Serializable // Import @Serializable
+
 // Assuming PublicKey is defined in the same package (gk.kademlia.security) via CryptoService.kt
 // If PublicKey were in its own file, a direct import might be needed, but typically it's accessible.
 
@@ -17,8 +19,9 @@ import gk.kademlia.messages.KademliaPayload
  * @param timestamp A Unix timestamp in milliseconds indicating when the message was created.
  *        Helps in preventing replay attacks.
  */
+@Serializable // Added @Serializable annotation
 data class SecureMessage<P : KademliaPayload>(
-    val payload: P,
+    val payload: P, // KademliaPayload is a sealed interface, so polymorphic serialization will be used.
     val senderPublicKeyEncoded: ByteArray,
     val signature: ByteArray,
     val timestamp: Long
