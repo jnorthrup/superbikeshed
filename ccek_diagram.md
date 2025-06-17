@@ -1,3 +1,5 @@
+# CCEK Architecture Diagram
+
 ```mermaid
 graph TD
     subgraph CoreDefinitions ["CCEK Core Definitions (nexus.core.NexusCCEK)"]
