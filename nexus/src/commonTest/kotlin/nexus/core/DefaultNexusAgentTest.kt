@@ -407,4 +407,77 @@ class DefaultNexusAgentTest {
             assertTrue(actualDeserialized.contains(expectedPair), "Deserialized payload missing: $expectedPair")
         }
     }
+
+    // --- Tests for K2SCRIPT_EXECUTE ---
+
+    // TODO: Refactor DefaultNexusAgent to allow injection of a ProcessExecutor service for easier mocking of k2script execution.
+    // For now, these tests might attempt to run the actual 'k2script' command if it's in PATH.
+    // If 'k2script' is not in PATH, these tests will verify error handling for that scenario.
+
+    @Test
+    fun `executeAction K2SCRIPT_EXECUTE with valid script path and no args`() = runBlocking {
+        val (agent, _) = createAgent()
+        // This test assumes 'k2script' might not be found, or if found, 'non_existent_script.kts' won't exist.
+        // We are testing the agent's behavior in calling the command.
+        val scriptPath = "non_existent_script.kts"
+        val action = ActionNames.K2SCRIPT_EXECUTE j seriesOf(scriptPath)
+
+        val outcome = agent.executeAction(action).materialize()
+
+        val outcomeString = outcome.joinToString("\n")
+
+        assertTrue(outcomeString.contains("K2Script execution finished for script: $scriptPath") || outcomeString.contains("Error executing K2Script"),
+            "Outcome should indicate execution attempt for $scriptPath. Actual: $outcomeString")
+
+        if (outcomeString.contains("Error executing K2Script: Cannot run program \"k2script\"")) {
+            // This means k2script is not in PATH, which is a valid test scenario for command invocation itself
+            println("Test Info: k2script command not found in PATH. Agent correctly tried to execute it.")
+            assertTrue(outcomeString.contains("Result: Failure (Exception)"))
+        } else if (outcomeString.contains("Exit Code: 0")) {
+            println("Warning: Test executed with a real 'k2script' and found '$scriptPath' which unexpectedly succeeded.")
+             assertTrue(outcomeString.contains("Result: Success"))
+        }
+         else {
+            // k2script was found, but the script itself failed (e.g., file not found by k2script)
+            assertTrue(outcomeString.contains("Result: Failure"), "Expected failure for non-existent script if k2script runs. Actual: $outcomeString")
+        }
+    }
+
+    @Test
+    fun `executeAction K2SCRIPT_EXECUTE with script path and args`() = runBlocking {
+        val (agent, _) = createAgent()
+        val scriptPath = "another_non_existent_script.kts"
+        val scriptArgs = listOf("arg1", "--option", "value")
+        val action = ActionNames.K2SCRIPT_EXECUTE j seriesOf(scriptPath, *scriptArgs.toTypedArray())
+
+        val outcome = agent.executeAction(action).materialize()
+        val outcomeString = outcome.joinToString("\n")
+
+        assertTrue(outcomeString.contains("K2Script execution finished for script: $scriptPath") || outcomeString.contains("Error executing K2Script"),
+             "Outcome should indicate execution attempt. Actual: $outcomeString")
+
+        if (outcomeString.contains("Error executing K2Script: Cannot run program \"k2script\"")) {
+            println("Test Info: k2script command not found in PATH.")
+            assertTrue(outcomeString.contains("Result: Failure (Exception)"))
+        } else {
+            // k2script found, script failed.
+            assertTrue(outcomeString.contains("Args: ${scriptArgs.joinToString(" ")}"), "Args should be logged in outcome. Actual: $outcomeString")
+            assertTrue(outcomeString.contains("Result: Failure"), "Expected failure for non-existent script. Actual: $outcomeString")
+        }
+    }
+
+    @Test
+    fun `executeAction K2SCRIPT_EXECUTE with no script path`() = runBlocking {
+        val (agent, _) = createAgent()
+        val action = ActionNames.K2SCRIPT_EXECUTE j seriesOf() // Empty series for arguments
+
+        val outcome = agent.executeAction(action).materialize()
+        val outcomeString = outcome.joinToString("\n")
+
+        assertTrue(outcomeString.contains("Error: K2SCRIPT_EXECUTE action requires at least a script path."))
+        assertTrue(outcomeString.contains("Result: Failure"))
+    }
+
+    // Note: The existing `executeAction should return sample outcome` test covers the default handler path.
+    // My new tests cover the K2SCRIPT_EXECUTE path.
 }
