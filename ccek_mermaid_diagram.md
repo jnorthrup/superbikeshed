@@ -1,5 +1,5 @@
 ```mermaid
-graph TD
+graph LR
     subgraph CoreDefinitions ["CCEK Core Definitions (nexus.core.NexusCCEK)"]
         direction LR
         NexusCCEK_Context["typealias CCEKContext = Join<Join<Context, Configuration>, Join<Environment, Knowledge>>"]
