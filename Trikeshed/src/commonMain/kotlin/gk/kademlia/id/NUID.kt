@@ -1,5 +1,6 @@
 package gk.kademlia.id
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.assert
 import borg.trikeshed.num.BigInt
 import gk.kademlia.bitops.BitOps
@@ -98,49 +99,88 @@ interface NUID<Primitive : Comparable<Primitive>> {
 
 
     companion object {
+        // Ontological type aliases for NUID size operations
+        @JvmInline value class NuidSize(val value: Int)
+        @JvmInline value class SizeRange(val value: IntRange)
+        
+        // Size-based NUID creation dispatch table
+        typealias NuidSizeDispatch = DoubleDispatchTable<NuidSize, SizeRange, NUID<*>>
+        
+        private val nuidSizeDispatch: NuidSizeDispatch = seriesOf(
+            ((wildcard<NuidSize>() j SizeRange(Int.MIN_VALUE..7)) j { size: NuidSize, _: SizeRange ->
+                object : ByteNUID(minOps(size.value).one as Byte) {
+                    override val netmask: NetMask<Byte>
+                        get() = object : NetMask<Byte> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(8..8)) j { size: NuidSize, _: SizeRange ->
+                object : UByteNUID(minOps(size.value).one as UByte) {
+                    override val netmask: NetMask<UByte>
+                        get() = object : NetMask<UByte> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(9..15)) j { size: NuidSize, _: SizeRange ->
+                object : ShortNUID(minOps(size.value).one as Short) {
+                    override val netmask: NetMask<Short>
+                        get() = object : NetMask<Short> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(16..16)) j { size: NuidSize, _: SizeRange ->
+                object : UShortNUID(minOps(size.value).one as UShort) {
+                    override val netmask: NetMask<UShort>
+                        get() = object : NetMask<UShort> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(17..31)) j { size: NuidSize, _: SizeRange ->
+                object : IntNUID(minOps(size.value).one as Int) {
+                    override val netmask: NetMask<Int>
+                        get() = object : NetMask<Int> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(32..32)) j { size: NuidSize, _: SizeRange ->
+                object : UIntNUID(minOps(size.value).one as UInt) {
+                    override val netmask: NetMask<UInt>
+                        get() = object : NetMask<UInt> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(33..63)) j { size: NuidSize, _: SizeRange ->
+                object : LongNUID(minOps(size.value).one as Long) {
+                    override val netmask: NetMask<Long>
+                        get() = object : NetMask<Long> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(64..64)) j { size: NuidSize, _: SizeRange ->
+                object : ULongNUID(minOps(size.value).one as ULong) {
+                    override val netmask: NetMask<ULong>
+                        get() = object : NetMask<ULong> { override val bits: Int get() = size.value }
+                }
+            }),
+            ((wildcard<NuidSize>() j SizeRange(65..Int.MAX_VALUE)) j { size: NuidSize, _: SizeRange ->
+                object : BigIntegerNUID(minOps(size.value).one as BigInt) {
+                    override val netmask: NetMask<BigInt>
+                        get() = object : NetMask<BigInt> { override val bits: Int get() = size.value }
+                }
+            })
+        )
+        
+        private fun findMatchingRange(size: Int): SizeRange = when (size) {
+            in Int.MIN_VALUE..7 -> SizeRange(Int.MIN_VALUE..7)
+            8 -> SizeRange(8..8)
+            in 9..15 -> SizeRange(9..15)
+            16 -> SizeRange(16..16)
+            in 17..31 -> SizeRange(17..31)
+            32 -> SizeRange(32..32)
+            in 33..63 -> SizeRange(33..63)
+            64 -> SizeRange(64..64)
+            else -> SizeRange(65..Int.MAX_VALUE)
+        }
+        
         /**
          * minimum bitops types for the intended bitcount of NUID.
          * This might be used for non-agent IDs or specific purposes.
          */
-        fun minNUID(size: Int): NUID<*> =
-            when (size) {
-                in Int.MIN_VALUE..7 -> object : ByteNUID(minOps(size).one as Byte) {
-                    override val netmask: NetMask<Byte>
-                        get() = object : NetMask<Byte> { override val bits: Int get() = size }
-                }
-                8 -> object : UByteNUID(minOps(size).one as UByte) {
-                    override val netmask: NetMask<UByte>
-                        get() = object : NetMask<UByte> { override val bits: Int get() = size }
-                }
-                in 9..15 -> object : ShortNUID(minOps(size).one as Short) {
-                    override val netmask: NetMask<Short>
-                        get() = object : NetMask<Short> { override val bits: Int get() = size }
-                }
-                16 -> object : UShortNUID(minOps(size).one as UShort) {
-                    override val netmask: NetMask<UShort>
-                        get() = object : NetMask<UShort> { override val bits: Int get() = size }
-                }
-                in 17..31 -> object : IntNUID(minOps(size).one as Int) {
-                    override val netmask: NetMask<Int>
-                        get() = object : NetMask<Int> { override val bits: Int get() = size }
-                }
-                32 -> object : UIntNUID(minOps(size).one as UInt) {
-                    override val netmask: NetMask<UInt>
-                        get() = object : NetMask<UInt> { override val bits: Int get() = size }
-                }
-                in 33..63 -> object : LongNUID(minOps(size).one as Long) {
-                    override val netmask: NetMask<Long>
-                        get() = object : NetMask<Long> { override val bits: Int get() = size }
-                }
-                64 -> object : ULongNUID(minOps(size).one as ULong) {
-                    override val netmask: NetMask<ULong>
-                        get() = object : NetMask<ULong> { override val bits: Int get() = size }
-                }
-                else -> object : BigIntegerNUID(minOps(size).one as BigInt) {
-                    override val netmask: NetMask<BigInt>
-                        get() = object : NetMask<BigInt> { override val bits: Int get() = size }
-                }
-            }
+        fun minNUID(size: Int): NUID<*> = 
+            nuidSizeDispatch.exactDispatch(NuidSize(size), findMatchingRange(size))
 
         fun <P : Comparable<P>> createNUIDFromPublicKey(
             publicKey: PublicKey,
