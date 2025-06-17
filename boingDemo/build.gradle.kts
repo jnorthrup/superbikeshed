@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.9.22"
+    kotlin("multiplatform")
     id("org.jetbrains.compose") version "1.6.0"
 }
 
@@ -20,14 +20,12 @@ kotlin {
         }
 
         val jvmMain by getting { dependsOn(desktopMain) }
-        val nativeMain by getting {
+        
+        // Create nativeMain source set
+        val nativeMain by creating {
             dependsOn(desktopMain)
-            // For native targets, the entry point is usually defined per target.
-            // The provided example has a main in desktopMain, which works for JVM.
-            // For native, we might need to ensure an entry point is correctly set up
-            // or call the desktopMain's main from each native target's main.
-            // For now, assume desktopMain's main will be accessible or adapted.
         }
+        
         val wasmJsMain by getting { dependsOn(commonMain) }
     }
 }
