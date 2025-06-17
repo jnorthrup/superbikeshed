@@ -1,0 +1,42 @@
+package org.ta4k.quantstats
+
+// Placeholder for ta4k's actual Series data type.
+// Replace 'Ta4kNumericSeries' with the actual type from ta4k's codebase, e.g., Series<Double>
+// For now, we use 'Any' as a generic placeholder in stubs.
+
+/**
+ * Placeholder for extending ta4k's data series with quantstats functions.
+ * This is analogous to Python's `extend_pandas()`.
+ *
+ * The actual receiver type (e.g., `Series<Double>`) needs to be identified from ta4k's codebase.
+ */
+
+// Example stubs:
+// fun Ta4kNumericSeries.compsum(): Ta4kNumericSeries { ... }
+// fun Any.compsum(): Any { // Using Any as placeholder for Ta4kNumericSeries
+//    println("WARN: Extension function 'compsum' is a stub. Depends on translated stats.compsum and ta4k Series type.")
+//    return this // 'this' in Kotlin
+// }
+
+fun Any.sharpe(rf: Double = 0.0, periods: Int = 252, annualize: Boolean = true, smart: Boolean = false): Double {
+    println("WARN: Extension function 'sharpe' is a stub. Depends on translated stats.sharpe and ta4k Series type.")
+    // In a real implementation: return stats.sharpe(this, rf, periods, annualize, smart)
+    return 0.0
+}
+
+fun Any.sortino(rf: Double = 0.0, periods: Int = 252, annualize: Boolean = true, smart: Boolean = false): Double {
+    println("WARN: Extension function 'sortino' is a stub. Depends on translated stats.sortino and ta4k Series type.")
+    // In a real implementation: return stats.sortino(this, rf, periods, annualize, smart)
+    return 0.0
+}
+
+fun Any.maxDrawdown(): Double {
+    println("WARN: Extension function 'maxDrawdown' is a stub. Depends on translated stats.maxDrawdown and ta4k Series type.")
+    // In a real implementation: return stats.maxDrawdown(this)
+    return 0.0
+}
+
+// Add more extension function stubs here for other functions listed in Python's extend_pandas()
+// e.g., comp, expected_return, volatility, cagr, etc.
+// Each would call the corresponding function from the translated Stats.kt or Utils.kt,
+// passing `this` (the series object) as the first argument.
