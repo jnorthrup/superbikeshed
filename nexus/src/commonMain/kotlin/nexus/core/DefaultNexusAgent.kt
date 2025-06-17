@@ -49,6 +49,13 @@ import java.util.UUID // For generating a default agentId if not provided
 // kotlinx.serialization imports
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+
+// For K2Script Execution & IntelliJ Enumeration
+import java.io.File
+import java.util.concurrent.TimeUnit
+import nexus.core.ActionNames // Import the new ActionNames
+// import nexus.intellij.project_model.IntelliJProjectDetails // TODO: Import from shared module when available
+// import kotlinx.serialization.json.Json // TODO: Import for deserialization when model is shared
 // Assuming BaseOrchestrationAgent provides a 'json' instance of kotlinx.serialization.json.Json
 // If not, DefaultNexusAgent would need to instantiate its own or have it passed in.
 // For now, let's assume 'this.json' is available from BaseOrchestrationAgent.
@@ -140,16 +147,85 @@ class DefaultNexusAgent(
 
     override suspend fun executeAction(action: Action): Outcome {
         val actionName = action.a
-        val argsString = action.b.materialize().joinToString(", ") { it }
+        val args = action.b.materialize() // Get args as List<String>
 
-        println("Agent [${this.agentId}] executing action: $actionName with args [$argsString]")
+        println("Agent [${this.agentId}] executing action: $actionName with args [${args.joinToString(", ")}]")
 
-        return seriesOf(
-            "Executed action: '$actionName'",
-            "Arguments: [$argsString]",
-            "Result: Success",
-            "Timestamp: ${System.currentTimeMillis()}"
-        )
+        return when (actionName) {
+            ActionNames.K2SCRIPT_EXECUTE -> {
+                // TODO: Make k2scriptCommandPath configurable (e.g., via AgentConfiguration or environment variable)
+                val k2scriptCommandPath = "k2script" // Assuming k2script is in PATH or provide full path
+
+                if (args.isEmpty()) {
+                    return seriesOf(
+                        "Error: K2SCRIPT_EXECUTE action requires at least a script path.",
+                        "Result: Failure",
+                        "Timestamp: ${System.currentTimeMillis()}"
+                    )
+                }
+                val scriptPath = args[0]
+                val scriptArgs = args.drop(1)
+
+                try {
+                    val command = mutableListOf<String>()
+                    command.add(k2scriptCommandPath)
+                    command.add(scriptPath)
+                    command.addAll(scriptArgs)
+
+                    // TODO: Make working directory configurable
+                    val processBuilder = ProcessBuilder(command)
+                        .directory(File(".")) // Execute in the current working directory of the Nexus agent
+                        .redirectErrorStream(true) // Merge stdout and stderr
+
+                    val process = processBuilder.start()
+
+                    // TODO: Make timeout configurable
+                    val timeoutSeconds = 60L
+                    val exited = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+
+                    if (!exited) {
+                        process.destroyForcibly()
+                        return seriesOf(
+                            "K2Script execution timed out after $timeoutSeconds seconds.",
+                            "Script: $scriptPath",
+                            "Args: ${scriptArgs.joinToString(" ")}",
+                            "Result: Failure (Timeout)",
+                            "Timestamp: ${System.currentTimeMillis()}"
+                        )
+                    }
+
+                    val exitCode = process.exitValue()
+                    val output = process.inputStream.bufferedReader().readText()
+
+                    seriesOf(
+                        "K2Script execution finished for script: $scriptPath",
+                        "Args: ${scriptArgs.joinToString(" ")}",
+                        "Exit Code: $exitCode",
+                        "Output:\n$output",
+                        "Result: ${if (exitCode == 0) "Success" else "Failure"}",
+                        "Timestamp: ${System.currentTimeMillis()}"
+                    )
+                } catch (e: Exception) {
+                    seriesOf(
+                        "Error executing K2Script: ${e.message}",
+                        "Script: $scriptPath",
+                        "Args: ${scriptArgs.joinToString(" ")}",
+                        "Result: Failure (Exception)",
+                        "Timestamp: ${System.currentTimeMillis()}"
+                    )
+                }
+            }
+            else -> {
+                // Default handling for other actions
+                val argsString = args.joinToString(", ")
+                seriesOf(
+                    "Executed action: '$actionName'",
+                    "Arguments: [$argsString]",
+                    "Result: Success (Default Handler)",
+                    "Timestamp: ${System.currentTimeMillis()}"
+                )
+            }
+        }
     }
 
     override suspend fun orchestrateWorkflow(workflow: Workflow): WorkflowOutcome {
