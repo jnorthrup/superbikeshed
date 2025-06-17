@@ -41,6 +41,9 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
         setupFunctionKeys()
         createInitialWindows()
         
+        // Initialize ta4k strategy bridge
+        initializeStrategyBridge()
+        
         // Start trace log updates
         scope.launch {
             while (isActive) {
@@ -219,12 +222,12 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
                 <tr><td>Total Return:</td><td style='color: white;'>0.00%</td></tr>
                 </table>
                 <br>
-                <h3 style='color: cyan;'>Positions:</h3>
+                <h3 style='color: cyan;'>Crypto Positions:</h3>
                 <table style='color: white; font-family: monospace; font-size: 11px;'>
-                <tr><td>AAPL:</td><td>10.0 @ $390.27</td></tr>
-                <tr><td>GOOGL:</td><td>15.0 @ $525.46</td></tr>
-                <tr><td>TSLA:</td><td>20.0 @ $338.59</td></tr>
-                <tr><td>BTC:</td><td>25.0 @ $416.69</td></tr>
+                <tr><td>BTC:</td><td>0.25 @ $43,127.50</td></tr>
+                <tr><td>ETH:</td><td>1.5 @ $2,847.82</td></tr>
+                <tr><td>ADA:</td><td>2500.0 @ $0.387</td></tr>
+                <tr><td>SOL:</td><td>15.0 @ $97.23</td></tr>
                 </table>
                 </html>
             """.trimIndent()
@@ -243,13 +246,20 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
             return
         }
         
-        val content = JPanel(BorderLayout()).apply {
-            background = Color.BLACK
-            add(JLabel("<html><h2 style='color: yellow;'>Technical Analysis</h2>" +
-                    "<p style='color: white;'>RSI, MACD, Moving Averages</p></html>"), BorderLayout.CENTER)
+        // Try to create real ta4k integration, fallback to mock display
+        val content = try {
+            moneyfan.ui.TechnicalAnalysisDisplayFactory.createDisplay() 
+                ?: moneyfan.ui.TechnicalAnalysisDisplayFactory.createMockDisplay()
+        } catch (e: Exception) {
+            JPanel(BorderLayout()).apply {
+                background = Color.BLACK
+                add(JLabel("<html><h2 style='color: yellow;'>Technical Analysis</h2>" +
+                        "<p style='color: white;'>ta4k Strategy Integration</p>" +
+                        "<p style='color: red;'>Error: ${e.message}</p></html>"), BorderLayout.CENTER)
+            }
         }
         
-        val window = createInternalFrame("Technical Analysis", content, 100, 100, 500, 350)
+        val window = createInternalFrame("Technical Analysis - ta4k Strategies", content, 100, 100, 800, 600)
         windows["technical"] = window
     }
     
@@ -297,7 +307,7 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
             background = Color.BLACK
             add(JLabel("<html><h2 style='color: yellow;'>$symbol Chart</h2>" +
                     "<p style='color: white;'>Real-time price chart for $symbol</p>" +
-                    "<p style='color: green;'>Current: ${if (symbol == "BTC") "$45,327.98" else "$2,997.82"}</p></html>"), 
+                    "<p style='color: green;'>Current: ${getCurrentCryptoPrice(symbol)}</p></html>"), 
                 BorderLayout.CENTER)
         }
         
@@ -351,6 +361,17 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
     }
     
     private fun exitApplication() {
+        // Cleanup ta4k strategy bridge
+        moneyfan.ta4k.StrategyBridge.getInstance().cleanup()
+        
+        // Cleanup technical analysis display if present
+        windows["technical"]?.let { window ->
+            val content = window.contentPane.getComponent(0)
+            if (content is moneyfan.ui.TechnicalAnalysisDisplay) {
+                content.cleanup()
+            }
+        }
+        
         scope.cancel()
         dispose()
         System.exit(0)
@@ -419,6 +440,31 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
         }
     }
     
+    private fun initializeStrategyBridge() {
+        scope.launch {
+            try {
+                val bridge = moneyfan.ta4k.StrategyBridge.getInstance()
+                val result = bridge.initializeStrategies()
+                
+                SwingUtilities.invokeLater {
+                    if (result.isSuccess) {
+                        traceArea.append("[INF] ta4k Strategy Bridge initialized successfully\n")
+                        traceArea.append("[INF] Carlos RSI2 + Kraken Skimmer strategies ready\n")
+                        traceArea.append("[INF] Press F3 for Technical Analysis window\n")
+                    } else {
+                        traceArea.append("[ERR] Strategy Bridge initialization failed: ${result.exceptionOrNull()?.message}\n")
+                    }
+                    traceArea.caretPosition = traceArea.document.length
+                }
+            } catch (e: Exception) {
+                SwingUtilities.invokeLater {
+                    traceArea.append("[ERR] Strategy Bridge error: ${e.message}\n")
+                    traceArea.caretPosition = traceArea.document.length
+                }
+            }
+        }
+    }
+    
     private fun updateTraceLog() {
         val traces = mdiInterface.getTraceLog()
         val traceText = traces.play.takeLast(15).joinToString("\n") { entry ->
@@ -442,6 +488,20 @@ class SwingMDIInterface : JFrame("Moneyfan MDI Trading Interface") {
     }
     
     private fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)
+    
+    private fun getCurrentCryptoPrice(symbol: String): String {
+        return when (symbol) {
+            "BTC" -> "$43,127.98"
+            "ETH" -> "$2,847.82"
+            "ADA" -> "$0.387"
+            "SOL" -> "$97.23"
+            "DOT" -> "$6.45"
+            "LINK" -> "$14.23"
+            "AVAX" -> "$36.78"
+            "MATIC" -> "$0.89"
+            else -> "$1.00"
+        }
+    }
 }
 
 /**

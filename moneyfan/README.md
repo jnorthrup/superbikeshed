@@ -1,41 +1,186 @@
-# Moneyfan: Advanced Trading System Architecture
+# Moneyfan Trading System
 
-## Precedence of Truth
+## ⚠️ CURRENT STATUS: INCOMPLETE PROTOTYPE ⚠️
 
-1. **TrikeShed Core DSL** - Global specification-based state and FSM management
-2. **Unified Decimal System** - `typealias Decimal = Double` with value class operators
-3. **Series<T> Transformations** - `.α { transform }` for all data processing
-4. **Join<A,B> Compositions** - `j` operator for tensor-based model deconstructions
-5. **K2Script Execution** - Dependency-managed Kotlin script runtime
-6. **TA4K Backtesting** - Statistical validation and performance metrics
-7. **LLM Quant Integration** - AI-generated strategies with safety validation
+**This system is currently NON-FUNCTIONAL and requires substantial implementation work.**
 
-## System Architecture
+## Precedence of Truth (ASPIRATIONAL)
 
-```kotlin
-// Core Trading Primitives (Unified Decimal System)
-typealias Decimal = Double
+1. **TrikeShed Core DSL** - ❌ NOT IMPLEMENTED - Still using `List<T>` instead of `Series<T>`
+2. **Unified Decimal System** - ❌ NOT IMPLEMENTED - Using raw Double values
+3. **Series Transformations** - ❌ NOT IMPLEMENTED - No α transformations
+4. **Join Compositions** - ❌ NOT IMPLEMENTED - No j operator usage
+5. **K2Script Execution** - ❌ NOT IMPLEMENTED - No script runtime
+6. **TA4K Backtesting** - ❌ NOT IMPLEMENTED - All TODO() placeholders
+7. **LLM Quant Integration** - ❌ NOT IMPLEMENTED - No Nexus integration
 
-@JvmInline
-value class Price(val value: Decimal) {
-    operator fun plus(other: Price): Price = Price(value + other.value)
-    operator fun minus(other: Price): Price = Price(value - other.value)
-    operator fun times(multiplier: Decimal): Price = Price(value * multiplier)
-    operator fun compareTo(other: Price): Int = value.compareTo(other.value)
-}
+## ❌ What's NOT Working (Critical Issues)
 
-@JvmInline
-value class Volume(val value: Decimal) {
-    operator fun plus(other: Volume): Volume = Volume(value + other.value)
-    operator fun times(multiplier: Decimal): Volume = Volume(value * multiplier)
-}
+### Data Infrastructure
+- **NO real data loading**: All historical data loading is `TODO()` placeholders
+- **NO Binance Data Vision integration**: Archive parsing not implemented  
+- **NO CSV/JSON data processing**: File parsing completely missing
+- **NO async data pipeline**: Coroutine-based loading infrastructure incomplete
 
-@JvmInline
-value class Quantity(val value: Decimal) {
-    operator fun times(price: Price): Price = Price(value * price.value)
-    operator fun plus(other: Quantity): Quantity = Quantity(value + other.value)
-}
-```
+### Strategy Implementation  
+- **NO actual RSI/SMA calculations**: Using placeholder functions with `TODO()`
+- **NO TrikeShed Series integration**: Not using required `Series<T>` patterns
+- **NO proper α transformations**: Missing core TrikeShed functional patterns
+- **NO Carlos RSI2 logic**: Strategy rules not implemented
+- **NO Kraken Skimmer logic**: Baseline tracking and triggers missing
+
+### Attention System
+- **NO real attention detection**: Volume/volatility analysis not implemented
+- **NO historical event identification**: Spike detection missing
+- **NO correlation analysis**: Cross-symbol attention relationships missing
+
+### Backtesting Engine
+- **NO DOGE historical data**: 2020-2022 Elon pump data not loaded
+- **NO strategy comparison**: Performance metrics calculation missing  
+- **NO spacegraph visualization**: 3D visualization integration incomplete
+
+### UI Integration
+- **NO live data display**: F3 Technical Analysis window shows fake data
+- **NO real progress tracking**: Master loader is cosmetic only
+- **NO MDI coordination**: Windows don't communicate properly
+
+## ✅ What IS Working (Limited)
+
+### Basic Structure
+- Kotlin Multiplatform project setup (JVM, WASM, Native targets)
+- Swing MDI interface with multiple windows
+- Basic coroutine infrastructure for async operations
+- Type-safe value classes for domain modeling (`Symbol`, `Price`, `Volume`)
+
+### UI Framework
+- MDI windows open and display
+- Progress bars animate (cosmetically)
+- Basic color-coded trading signal display
+- SpaceGraph placeholder integration
+
+### Build System
+- Gradle KMP 2.1.21 configuration
+- Proper source hierarchy for multiplatform
+- Integration with superbikeshed monorepo structure
+
+## 🚧 Required Work (Prioritized)
+
+### Phase 1: Data Foundation (Critical - 3-4 weeks)
+1. **Binance Data Vision Archive Reader**
+   - Parse historical klines CSV files
+   - Implement date range filtering for backtesting periods
+   - Async file I/O with proper error handling
+   - TrikeShed JSON parser integration for metadata
+
+2. **TrikeShed Series Integration**
+   - Replace all `List<T>` with `Series<T>`
+   - Implement α transformation patterns for data processing
+   - Use `j` operator for joins between price/volume data
+   - Proper `▶` materialization for collection operations
+
+3. **Historical Data Pipeline**
+   - Load DOGE data for 2020-2022 period
+   - Support for multiple symbol concurrent loading
+   - Caching and incremental updates
+   - Memory-efficient streaming for large datasets
+
+### Phase 2: Strategy Implementation (High Priority - 2-3 weeks)
+1. **Carlos RSI2 Strategy**
+   - Real RSI(2) calculation using TrikeShed patterns
+   - SMA(2) and SMA(15) trend analysis
+   - Entry: RSI < 5 + SMA trend confirmation
+   - Exit: RSI > 95 or trend reversal
+
+2. **Kraken Skimmer Strategy**
+   - Baseline price tracking (SMA-based)
+   - 3% harvest trigger implementation
+   - 4% rebalance trigger implementation
+   - Position sizing and risk management
+
+3. **Attention System**
+   - Volume spike detection (recent vs baseline analysis)
+   - Volatility measurement and anomaly detection
+   - Cross-symbol correlation analysis
+   - Event clustering and significance scoring
+
+### Phase 3: Backtesting Engine (Medium Priority - 2-3 weeks)
+1. **DOGE Historical Analysis**
+   - Load 2020-2022 DOGE/USDT data
+   - Identify Elon Musk pump events from historical record
+   - Performance comparison between strategies
+   - Risk metrics (Sharpe ratio, max drawdown, win rate)
+
+2. **Strategy Comparison Framework**
+   - Portfolio simulation with realistic slippage
+   - Transaction cost modeling
+   - Benchmark comparison (buy-and-hold)
+   - Statistical significance testing
+
+### Phase 4: Visualization & UI (Lower Priority - 2-3 weeks)
+1. **SpaceGraph Integration**
+   - 3D network visualization of symbol correlations
+   - Interactive data exploration
+   - Real-time attention event highlighting
+   - Export capabilities for analysis
+
+2. **Live Data Display**
+   - Real-time kline updates in F3 window
+   - Strategy signal visualization
+   - Attention score monitoring
+   - Performance metrics dashboard
+
+## 🔧 Technical Debt
+
+### Architecture Issues
+- **Mock data everywhere**: All `MockStrategyTypes.kt` needs replacement
+- **Blocking I/O**: File operations need async implementation
+- **No error handling**: Proper exception management missing
+- **Memory leaks**: Coroutine scope cleanup incomplete
+
+### Code Quality
+- **No tests**: Zero test coverage for critical components
+- **No logging**: Debug and monitoring infrastructure missing
+- **Hardcoded values**: Configuration management needed
+- **No documentation**: API docs and usage examples missing
+
+## 📅 Realistic Timeline
+
+**Total Estimated Effort**: 2-3 months of full-time development
+
+- **Phase 1 (Data Foundation)**: 3-4 weeks
+- **Phase 2 (Strategies)**: 2-3 weeks
+- **Phase 3 (Backtesting)**: 2-3 weeks
+- **Phase 4 (Visualization)**: 2-3 weeks
+
+## ⚠️ Critical Dependencies
+
+1. **Binance Data Vision Archive Access**: Need actual historical data files
+2. **TrikeShed Core Library**: Must use proper functional patterns
+3. **SpaceGraph JVM Integration**: 3D visualization components
+4. **Performance Requirements**: Handle multi-GB datasets efficiently
+
+## 🎯 Success Criteria
+
+The system will be considered "working" when:
+
+1. ✅ Loads real DOGE historical data for 2020-2022
+2. ✅ Calculates actual RSI(2) and SMA values using TrikeShed patterns
+3. ✅ Identifies real Elon pump events from price/volume data
+4. ✅ Compares Carlos RSI2 vs Kraken Skimmer performance with real metrics
+5. ✅ Displays interactive SpaceGraph visualization of results
+6. ✅ Processes data asynchronously across multiple latency scales
+
+## 🔥 Current Reality
+
+**This is a shell with TODO placeholders.** The core functionality doesn't exist yet. The UI looks functional but shows simulated data. Every critical component needs implementation from scratch using proper TrikeShed patterns.
+
+**DO NOT** expect this to work with real trading decisions until Phase 1-3 are complete.
+
+---
+
+## Original Architecture Documentation (ASPIRATIONAL)
+
+*The following sections describe the intended architecture, none of which is currently implemented:*
 
 ## TrikeShed Integration Patterns
 

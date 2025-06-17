@@ -1,18 +1,26 @@
 package com.ta4k.indicators
 
-import com.ta4k.core.model.Kline // Assuming this path
-import borg.trikeshed.lib.j      // Import infix j
+import com.ta4k.core.model.Kline
 import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
- * Relative Strength Index (RSI) indicator.
+ * Relative Strength Index (RSI) indicator using Wilder's smoothing method.
  * Measures the speed and change of price movements.
- * Operates on a Trikethed [Series] of [Kline].
+ * 
+ * The RSI is calculated using the following steps:
+ * 1. Calculate price changes
+ * 2. Separate gains and losses
+ * 3. Calculate first average gain/loss using simple average
+ * 4. Calculate subsequent averages using Wilder's smoothing:
+ *    Smoothed Average = (Previous Average * (Period - 1) + Current Value) / Period
+ * 5. Calculate RS = Average Gain / Average Loss
+ * 6. Calculate RSI = 100 - (100 / (1 + RS))
  */
 class RSIIndicator(
-    private val klineSeries: Series<Kline>, // Changed
+    private val klineSeries: Series<Kline>,
     private val period: Int,
     private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
 ) {
@@ -20,14 +28,14 @@ class RSIIndicator(
         require(period > 0) { "Period must be positive" }
     }
 
-    // Internal caches - ensure they can grow as needed.
+    // Internal caches
     private val results = mutableListOf<BigDecimal?>()
-    private val avgGains = mutableListOf<BigDecimal?>() // Stores individual gains for first period, then smoothed avg gains
-    private val avgLosses = mutableListOf<BigDecimal?>() // Stores individual losses for first period, then smoothed avg losses
+    private val avgGains = mutableListOf<BigDecimal?>()
+    private val avgLosses = mutableListOf<BigDecimal?>()
     private var calculatedUpToIndex = -1
 
     private val calculationScale = 8
-    private val resultScale = 2 // Standard RSI scale
+    private val resultScale = 2
 
     private fun ensureListSize(list: MutableList<BigDecimal?>, requiredSize: Int) {
         while (list.size <= requiredSize) {
@@ -40,7 +48,6 @@ class RSIIndicator(
             return
         }
 
-        // Ensure all internal lists are large enough to hold values up to targetIndex
         ensureListSize(results, targetIndex)
         ensureListSize(avgGains, targetIndex)
         ensureListSize(avgLosses, targetIndex)
@@ -50,8 +57,6 @@ class RSIIndicator(
 
         for (i in startIndex..targetIndex) {
             if (i == 0) {
-                // results[0], avgGains[0], avgLosses[0] are already null from ensureListSize or will be set so.
-                // No calculation possible for the very first element.
                 results[i] = null
                 avgGains[i] = null
                 avgLosses[i] = null
@@ -66,54 +71,57 @@ class RSIIndicator(
             val loss = if (priceChange < BigDecimal.ZERO) priceChange.abs() else BigDecimal.ZERO
 
             if (i < period) {
-                // Accumulate individual gains/losses for the first average calculation
+                // First period: store raw gains/losses
                 avgGains[i] = gain
                 avgLosses[i] = loss
-                results[i] = null // Not enough data for RSI value yet
-            } else { // i >= period
-                val currentSmoothedAvgGain: BigDecimal
-                val currentSmoothedAvgLoss: BigDecimal
-
-                if (i == period) {
-                    // Calculate first average gain and loss using SMA of individual gains/losses
-                    var sumGains = BigDecimal.ZERO
-                    for (j in 1..period) { // Sum individual gains from index 1 to 'period' (inclusive)
-                        sumGains += avgGains[j] ?: BigDecimal.ZERO
-                    }
-                    currentSmoothedAvgGain = sumGains.divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
-
-                    var sumLosses = BigDecimal.ZERO
-                    for (j in 1..period) { // Sum individual losses from index 1 to 'period'
-                        sumLosses += avgLosses[j] ?: BigDecimal.ZERO
-                    }
-                    currentSmoothedAvgLoss = sumLosses.divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
-                } else { // i > period
-                    // Wilder's smoothing for subsequent averages
-                    val prevAvgGain = avgGains[i - 1] ?: BigDecimal.ZERO
-                    val prevAvgLoss = avgLosses[i - 1] ?: BigDecimal.ZERO
-
-                    currentSmoothedAvgGain = (prevAvgGain.multiply(periodBigDecimal.subtract(BigDecimal.ONE)).add(gain))
-                        .divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
-                    currentSmoothedAvgLoss = (prevAvgLoss.multiply(periodBigDecimal.subtract(BigDecimal.ONE)).add(loss))
-                        .divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
+                results[i] = null
+            } else if (i == period) {
+                // Calculate first average gain/loss using simple average
+                var sumGains = BigDecimal.ZERO
+                var sumLosses = BigDecimal.ZERO
+                
+                for (j in 1..period) {
+                    sumGains = sumGains.add(avgGains.getOrNull(j) ?: BigDecimal.ZERO)
+                    sumLosses = sumLosses.add(avgLosses.getOrNull(j) ?: BigDecimal.ZERO)
                 }
-
-                // Store the smoothed averages at index 'i'
-                avgGains[i] = currentSmoothedAvgGain
-                avgLosses[i] = currentSmoothedAvgLoss
-
-                if (currentSmoothedAvgLoss.compareTo(BigDecimal.ZERO) == 0) {
-                    results[i] = BigDecimal("100.00000000") // Store with calculationScale precision initially
-                } else {
-                    val rs = currentSmoothedAvgGain.divide(currentSmoothedAvgLoss, calculationScale, RoundingMode.HALF_UP)
-                    val rsi = BigDecimal("100").subtract(
-                        BigDecimal("100").divide(BigDecimal.ONE.add(rs), calculationScale, RoundingMode.HALF_UP)
-                    )
-                    results[i] = rsi
-                }
+                
+                avgGains[i] = sumGains.divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
+                avgLosses[i] = sumLosses.divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
+                
+                // Calculate first RSI
+                results[i] = calculateRSI(avgGains[i]!!, avgLosses[i]!!)
+            } else {
+                // Subsequent periods: use Wilder's smoothing
+                val prevAvgGain = avgGains[i - 1] ?: BigDecimal.ZERO
+                val prevAvgLoss = avgLosses[i - 1] ?: BigDecimal.ZERO
+                
+                avgGains[i] = prevAvgGain.multiply(periodBigDecimal.subtract(BigDecimal.ONE))
+                    .add(gain)
+                    .divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
+                
+                avgLosses[i] = prevAvgLoss.multiply(periodBigDecimal.subtract(BigDecimal.ONE))
+                    .add(loss)
+                    .divide(periodBigDecimal, calculationScale, RoundingMode.HALF_UP)
+                
+                results[i] = calculateRSI(avgGains[i]!!, avgLosses[i]!!)
             }
         }
         calculatedUpToIndex = targetIndex
+    }
+
+    private fun calculateRSI(avgGain: BigDecimal, avgLoss: BigDecimal): BigDecimal {
+        return if (avgLoss == BigDecimal.ZERO) {
+            BigDecimal("100.00")
+        } else {
+            val rs = avgGain.divide(avgLoss, calculationScale, RoundingMode.HALF_UP)
+            BigDecimal("100").subtract(
+                BigDecimal("100").divide(
+                    BigDecimal.ONE.add(rs),
+                    calculationScale,
+                    RoundingMode.HALF_UP
+                )
+            ).setScale(resultScale, RoundingMode.HALF_UP)
+        }
     }
 
     /**
@@ -126,8 +134,7 @@ class RSIIndicator(
             return null
         }
         ensureCalculatedUpTo(index)
-        val rawRsi = if (index < results.size) results[index] else null // results list might be shorter if index was not calculated
-        return rawRsi?.setScale(resultScale, RoundingMode.HALF_UP)
+        return results[index]
     }
 
     /**
@@ -140,9 +147,6 @@ class RSIIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> // Use infix j
-                // getValue will ensure calculation and apply scaling
-                this.getValue(idx)
-            }
+            return klineSeries.size j { idx -> this.getValue(idx) }
         }
 }
