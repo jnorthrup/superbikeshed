@@ -113,3 +113,65 @@ class HttpResponseData:
 
     def __repr__(self):
         return f"HttpResponseData(status_code={self.status_code}, headers_count={len(self.headers)}, body_present={self.body_bytes is not None or self.body_text is not None})"
+
+
+class TrikeshedQuicConfig:
+    def __init__(self,
+                 stream_buffer_size: int = 64 * 1024, # Default from Kotlin QuicConnection
+                 max_concurrent_streams: int = (1 << 62), # Default from Kotlin QuicConnection.MAX_STREAMS
+                 enable_0rtt: bool = True,
+                 congestion_control_algorithm: str = "cubic",
+                 initial_connection_flow_control_window: int = 64 * 1024, # Default from Kotlin QuicConfig
+                 initial_stream_flow_control_window: int = 32 * 1024, # Default from Kotlin QuicConfig
+                 max_ack_delay_ms: int = 25, # Default from Kotlin QuicConfig
+                 default_stream_priority: int = 10 # Default from Kotlin QuicConfig
+                 ):
+        self.stream_buffer_size = stream_buffer_size
+        self.max_concurrent_streams = max_concurrent_streams
+        self.enable_0rtt = enable_0rtt
+        self.congestion_control_algorithm = congestion_control_algorithm
+        self.initial_connection_flow_control_window = initial_connection_flow_control_window
+        self.initial_stream_flow_control_window = initial_stream_flow_control_window
+        self.max_ack_delay_ms = max_ack_delay_ms
+        self.default_stream_priority = default_stream_priority
+
+        # Validation matching Kotlin's QuicConfig
+        if not isinstance(self.stream_buffer_size, int) or self.stream_buffer_size <=0:
+            # Kotlin uses Int? so it can be null, Python equivalent is Optional[int]
+            # For simplicity, here making it an int with a positive value check.
+            # Or allow None and handle it. Let's stick to int for now matching common defaults.
+            raise ValueError("Stream buffer size must be a positive integer.")
+        if not (isinstance(self.max_concurrent_streams, int) and self.max_concurrent_streams > 0):
+            raise ValueError("Max concurrent streams must be a positive integer.")
+        if not isinstance(self.enable_0rtt, bool):
+            raise ValueError("Enable 0RTT must be a boolean.")
+        if not (isinstance(self.congestion_control_algorithm, str) and self.congestion_control_algorithm.strip()):
+            raise ValueError("Congestion control algorithm name cannot be blank.")
+        if not (isinstance(self.initial_connection_flow_control_window, int) and self.initial_connection_flow_control_window >= 0):
+            raise ValueError("Initial connection flow control window cannot be negative.")
+        if not (isinstance(self.initial_stream_flow_control_window, int) and self.initial_stream_flow_control_window >= 0):
+            raise ValueError("Initial stream flow control window cannot be negative.")
+        if not (isinstance(self.max_ack_delay_ms, int) and self.max_ack_delay_ms >= 0):
+            raise ValueError("Max ACK delay cannot be negative.")
+        if not (isinstance(self.default_stream_priority, int) and self.default_stream_priority >= 0):
+            raise ValueError("Default stream priority cannot be negative.")
+
+    def to_json_dict(self):
+        return {
+            "streamBufferSize": self.stream_buffer_size,
+            "maxConcurrentStreams": self.max_concurrent_streams,
+            "enable0RTT": self.enable_0rtt,
+            "congestionControlAlgorithm": self.congestion_control_algorithm,
+            "initialConnectionFlowControlWindow": self.initial_connection_flow_control_window,
+            "initialStreamFlowControlWindow": self.initial_stream_flow_control_window,
+            "maxAckDelayMs": self.max_ack_delay_ms,
+            "defaultStreamPriority": self.default_stream_priority,
+        }
+
+    def __repr__(self):
+        return (f"TrikeshedQuicConfig(stream_buffer_size={self.stream_buffer_size}, "
+                f"max_concurrent_streams={self.max_concurrent_streams}, enable_0rtt={self.enable_0rtt}, "
+                f"congestion_control_algorithm='{self.congestion_control_algorithm}', "
+                f"initial_connection_flow_control_window={self.initial_connection_flow_control_window}, "
+                f"initial_stream_flow_control_window={self.initial_stream_flow_control_window}, "
+                f"max_ack_delay_ms={self.max_ack_delay_ms}, default_stream_priority={self.default_stream_priority})")

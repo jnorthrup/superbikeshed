@@ -1,3 +1,11 @@
+import io # For capturing stdout
+import contextlib # For redirect_stdout
+import json # For details in dummy reporter
+
+# Imports for new QUIC feature testing
+from dgm.trikeshed_types import TrikeshedQuicConfig
+from dgm.utils import trikeshed_client as simulated_tc # Using 'simulated_tc' alias
+
 """
 Test module for QUIC and HTTP/3 checks.
 
@@ -11,8 +19,7 @@ the (simulated) checks and report results to the Reporter directly, rather
 than returning bash commands.
 """
 from dgm.audit_tester.assertions import assert_true, assert_equal, AuditAssertionError
-# from dgm.utils.trikeshed_client import TrikeshedClient # Actual import if/when available
-# from dgm.trikeshed_types import (...) # Actual types if/when available
+
 
 class QuicHttp3TestModule:
     """
@@ -40,13 +47,17 @@ class QuicHttp3TestModule:
                 object, methods will rely on internal simulation. Defaults to None.
         """
         self.reporter = reporter
-        self.trikeshed_client = trikeshed_client_instance # Store for potential future use
-        if not self.trikeshed_client:
-            # This print is for when the runner itself doesn't provide even a placeholder.
-            # The runner currently provides a placeholder, so this might not be seen often.
-            print("Warning: QuicHttp3TestModule initialized without any Trikeshed client placeholder. Internal simulations will still run.")
-        elif self.trikeshed_client and not hasattr(self.trikeshed_client, 'test_connectivity'): # Basic check for a real client
-             print("Info: QuicHttp3TestModule received a placeholder Trikeshed client. Using internal simulations.")
+        # The 'trikeshed_client_instance' is not directly used by these new tests,
+        # as they call functions from the 'simulated_tc' module directly.
+        # However, keeping it for consistency with how the TestRunner might instantiate the module.
+        self.trikeshed_client_placeholder = trikeshed_client_instance
+        if self.trikeshed_client_placeholder:
+            print("Info: QuicHttp3TestModule initialized with a Trikeshed client placeholder.")
+        else:
+            print("Info: QuicHttp3TestModule initialized without a Trikeshed client placeholder.")
+
+        # Ensure simulated client state is clean before tests run if module is reused.
+        simulated_tc.client_side_reset_sample_data()
 
 
     def check_quic_handshake(self, host: str, port: int):
@@ -214,6 +225,26 @@ if __name__ == '__main__':
     q_module_with_client.check_http3_request("https://unknown.http3.site/", expected_status_code=200) # Expected simulated failure (503 vs 200)
     q_module_with_client.check_http3_request("https://quic.rocks:4433/", expected_status_code=404) # Expected assertion fail (simulated 200 vs 404)
     q_module_with_client.check_http3_request("https://www.google.com", expected_status_code=503) # Expected specific simulated H3 error
+
+    # --- New QUIC Feature Tests ---
+    dummy_reporter.start_test_case("--- New QUIC Feature Tests Setup ---") # Using test case as a section header
+
+    # Reset client state for these specific tests
+    simulated_tc.client_side_reset_sample_data()
+
+    # Test 0-RTT Configuration
+    q_module_with_client.test_quic_0rtt_connection()
+
+    # Test Stream Multiplexing
+    q_module_with_client.test_quic_stream_multiplexing()
+
+    # Test Flow Control (Connection and Stream)
+    q_module_with_client.test_quic_flow_control()
+
+    # Test Stream Prioritization
+    q_module_with_client.test_quic_stream_prioritization()
+
+    dummy_reporter.end_test_case("--- New QUIC Feature Tests Setup ---")
 
 
     print("\n--- END QUIC_HTTP3_TEST_MODULE IF __NAME__ == __MAIN__ ---")
