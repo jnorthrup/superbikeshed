@@ -334,24 +334,24 @@ class MDIInterface {
             activeWindowId = activeWindowId,
             windows = Series.of(windowList.size) { windowList[it] },
             recentTraces = recentTraces,
-            functionKeyMappings = getFunctionKeyMappings()
+            spaceGraphNodeMappings = getSpaceGraphNodeMappings()
         )
     }
     
-    private fun getFunctionKeyMappings(): Series<Join<FunctionKey, String>> {
+    private fun getSpaceGraphNodeMappings(): Series<Join<SpaceGraphNode, String>> {
         val mappings = listOf(
-            FunctionKey.F1 j "Attention Ticker",
-            FunctionKey.F2 j "Portfolio Manager", 
-            FunctionKey.F3 j "Technical Analysis",
-            FunctionKey.F4 j "Backtest Results",
-            FunctionKey.F5 j "Trace Viewer",
-            FunctionKey.F6 j "JSON Scanner",
-            FunctionKey.F7 j "BTC Chart",
-            FunctionKey.F8 j "ETH Chart",
-            FunctionKey.F9 j "Tile Windows",
-            FunctionKey.F10 j "Cascade Windows",
-            FunctionKey.F11 j "Clear Trace",
-            FunctionKey.F12 j "Exit Application"
+            SpaceGraphNode.ATTENTION j "Attention Ticker",
+            SpaceGraphNode.PORTFOLIO j "Portfolio Manager",
+            SpaceGraphNode.TECHNICAL j "Technical Analysis", 
+            SpaceGraphNode.BACKTEST j "Backtest Results",
+            SpaceGraphNode.TRACE j "Trace Viewer",
+            SpaceGraphNode.JSON j "JSON Scanner",
+            SpaceGraphNode.BTC_CHART j "BTC Chart",
+            SpaceGraphNode.ETH_CHART j "ETH Chart",
+            SpaceGraphNode.TILE j "Tile Windows",
+            SpaceGraphNode.CASCADE j "Cascade Windows",
+            SpaceGraphNode.CLEAR j "Clear Trace",
+            SpaceGraphNode.EXIT j "Exit Application"
         )
         return Series.of(mappings.size) { mappings[it] }
     }
@@ -361,6 +361,6 @@ data class MDIInterfaceState(
     val activeWindowId: String?,
     val windows: Series<MDIWindow>,
     val recentTraces: TraceLog,
-    val functionKeyMappings: Series<Join<FunctionKey, String>>
+    val spaceGraphNodeMappings: Series<Join<SpaceGraphNode, String>>
 )
 }
