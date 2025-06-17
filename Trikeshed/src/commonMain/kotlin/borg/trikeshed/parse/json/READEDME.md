@@ -11,7 +11,7 @@ Based on the provided code, I'll summarize the key aspects and idioms used in th
 - `LexerEvents` for handling quotes, escapes, and UTF-8 characters.
 
 3. Efficient encoding and decoding:
-
+ok so the algorithm wakes up and starts trading, where is that?
 - `encode` function converts input bytes to bitmap representation.
 - `decode` function processes the bitmap to extract state information.
 

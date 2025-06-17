@@ -43,7 +43,7 @@ docker run -d \
 
 * `-d`: Runs the container in detached mode (in the background).
 * `--name my_couchdb_instance`: Assigns a recognizable name to your container.
-* `-e COUCHDB_USER=admin`: Sets the admin username.
+* `-e CO  B_USER=admin`: Sets the admin username.
 * `-e COUCHDB_PASSWORD=password`: Sets the admin password ( **remember to change this!** ).
 * `-p 5984:5984`: Maps port 5984 on the host to port 5984 in the container.
 * `-v couchdb_data:/opt/couchdb/data`: (Optional) Mounts a named volume `couchdb_data` for data persistence. Docker will create this volume if it doesn't already exist.
