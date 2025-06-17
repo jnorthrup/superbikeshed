@@ -2,6 +2,7 @@ package borg.trikeshed.acapulco
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.forEachIndexed
+import borg.trikeshed.lib.toList
 import com.ta4k.core.model.Kline
 import java.math.BigDecimal
 import java.time.Instant
@@ -41,11 +42,12 @@ class SpaceGraphVisualizer {
                 
                 // Connect to previous kline
                 if (index > 0) {
+                    val prevKline: Kline = klines.toList()[index - 1]
                     edges.add(
                         Edge(
                             source = "kline_${index - 1}",
                             target = nodeId,
-                            weight = calculateEdgeWeight(klines[index - 1], kline)
+                            weight = calculateEdgeWeight(prevKline, kline)
                         )
                     )
                 }
