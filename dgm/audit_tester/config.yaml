@@ -300,6 +300,87 @@ tests_to_run:
       api_url: "http://localhost:5001"
       cid_to_pin: "InvalidCIDFormatNotEvenAHash"
 
+    # --- New IPFS Functionality Tests (Added by AI Agent) ---
+
+    - module: IPFSTestModule
+      function: check_add_string_with_deduplication_command
+      test_name: "IPFS Deduplication: Add New String (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        test_string: "New string for deduplication test - check_add_string_with_deduplication_command"
+      expected_outcome: "passed"
+      description: "Deduplication: Add a completely new string."
+
+    - module: IPFSTestModule
+      function: check_add_string_with_deduplication_command
+      test_name: "IPFS Deduplication: Add Existing String (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        test_string: "EXISTING_STRING_FOR_DEDUP_TEST" # Special string for main.py to simulate pre-existence
+      expected_outcome: "passed"
+      description: "Deduplication: Add a string that should already exist (simulated as pinned)."
+
+    - module: IPFSTestModule
+      function: check_cat_and_verify_hash_command
+      test_name: "IPFS Cat & Verify Hash (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        cid_to_cat: "QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6NEAOJVEcWn" # Placeholder for "Hello Cat Verify"
+        original_test_string: "Hello Cat Verify"
+      expected_outcome: "passed"
+      description: "Cat content and verify its hash by re-adding with only-hash."
+
+    - module: IPFSTestModule
+      function: check_ipld_put_command # Defaults to dag-json
+      test_name: "IPFS IPLD Put dag-json (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        json_string_data: '{"type": "dag-json", "data": "test1 for put"}'
+      expected_outcome: "passed"
+      description: "IPLD: Put a dag-json object."
+
+    - module: IPFSTestModule
+      function: check_ipld_get_command
+      test_name: "IPFS IPLD Get dag-json (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        ipld_cid: "bafyreigajqj74nxdphj2hlmv24y2zxeotxdbcgg23f2jwvqj3bnkpik4z4" # Placeholder for '{"type": "dag-json", "data": "test1 for put"}'
+        expected_json_string_data: '{"type": "dag-json", "data": "test1 for put"}'
+      expected_outcome: "passed"
+      description: "IPLD: Get a dag-json object."
+
+    - module: IPFSTestModule
+      function: check_ipld_put_command
+      test_name: "IPFS IPLD Put dag-cbor (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        json_string_data: '{"type": "dag-cbor", "data": "test2 for put cbor"}'
+        store_codec: "dag-cbor"
+        input_codec: "dag-json" # We provide JSON, IPFS converts to CBOR for storage
+      expected_outcome: "passed"
+      description: "IPLD: Put a dag-cbor object (input as dag-json)."
+
+    - module: IPFSTestModule
+      function: check_ipld_get_command
+      test_name: "IPFS IPLD Get dag-cbor as json (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        ipld_cid: "bafyreibcgr6noggry6veoewyuxr6ibvtoiseayj2shw2ambj766tr2k3ze" # Placeholder for '{"type": "dag-cbor", "data": "test2 for put cbor"}'
+        expected_json_string_data: '{"type": "dag-cbor", "data": "test2 for put cbor"}' # API converts CBOR to JSON for GET
+      expected_outcome: "passed"
+      description: "IPLD: Get a dag-cbor object (retrieved as dag-json)."
+
+    - module: IPFSTestModule
+      function: check_hybrid_storage_pattern_command
+      test_name: "IPFS Hybrid Storage Pattern (Simulated)"
+      args:
+        api_url: "http://127.0.0.1:5001"
+        main_content_string: "Main hybrid content for test."
+        attachment_string: "Attachment hybrid content for test."
+        # metadata_store_codec: "dag-json" # Using default
+      expected_outcome: "passed"
+      description: "Hybrid: Test IPLD metadata linking to other IPFS objects."
+
   # --- Additional CmdToolsTestModule Cases ---
   - module: CmdToolsTestModule
     function: check_curl_download
