@@ -1,0 +1,87 @@
+package org.ta4k.quantstats._plotting
+
+// import org.ta4k.quantstats.someDataSeriesType // Hypothetical common data type
+
+/**
+ * Placeholder for plotting wrappers from Python's _plotting/wrappers.py.
+ * These functions would ideally call common data preparation logic (from InternalPlottingCore)
+ * and then be implemented via expect/actual for platform-specific rendering.
+ * For now, these are stubs.
+ */
+
+// Stubs for functions that were in _plotting.wrappers (Python)
+// These names match the public API often called via Pandas extensions or directly.
+
+fun snapshot(
+    returns: Any, // Replace Any with actual ta4k Series type
+    grayscale: Boolean = false,
+    figsize: Pair<Int, Int>? = null, // Example: Pair(10, 8)
+    title: String = "Portfolio Summary",
+    fontname: String = "Arial",
+    lw: Double = 1.5,
+    mode: String = "comp",
+    subtitle: Boolean = true,
+    log_scale: Boolean = false
+    // ... other params from Python version
+) {
+    println("WARN: plot.snapshot is a stub. Prepares data for platform-specific plotting.")
+    // InternalPlottingCore.commonPlotFunctionStub(returns, mapOf("type" to "snapshot", ...))
+}
+
+fun earnings(
+    returns: Any, // Replace Any with actual ta4k Series type
+    start_balance: Double = 100000.0,
+    mode: String = "comp",
+    grayscale: Boolean = false,
+    figsize: Pair<Int, Int>? = null, // Example: Pair(10,6)
+    title: String = "Portfolio Earnings",
+    fontname: String = "Arial",
+    lw: Double = 1.5,
+    subtitle: Boolean = true
+) {
+    println("WARN: plot.earnings is a stub.")
+}
+
+fun returns(
+    returns: Any, // Series
+    benchmark: Any? = null, // Series?
+    grayscale: Boolean = false,
+    figsize: Pair<Int, Int>? = null,
+    fontname: String = "Arial",
+    lw: Double = 1.5,
+    match_volatility: Boolean = false,
+    compound: Boolean = true,
+    cumulative: Boolean = true,
+    resample: String? = null,
+    ylabel: String = "Cumulative Returns",
+    subtitle: Boolean = true,
+    prepare_returns: Boolean = true // This would be handled by data type
+) {
+    println("WARN: plot.returns is a stub.")
+}
+
+// Add other stubs for functions like:
+// log_returns, daily_returns, yearly_returns, distribution (histogram in core),
+// drawdown, drawdowns_periods, rolling_beta, rolling_volatility,
+// rolling_sharpe, rolling_sortino, monthly_heatmap (monthly_returns in core)
+// These were all exposed via "from quantstats._plotting.wrappers import *" in Python.
+
+fun monthlyHeatmap(
+    returns: Any, // Series
+    benchmark: Any? = null, // Series?
+    annot_size: Int = 13,
+    figsize: Pair<Int, Int>? = null,
+    cbar: Boolean = true,
+    square: Boolean = false,
+    returns_label: String = "Strategy",
+    compounded: Boolean = true,
+    eoy: Boolean = false,
+    grayscale: Boolean = false,
+    fontname: String = "Arial",
+    ylabel: Boolean = true,
+    active: Boolean = false
+) {
+    println("WARN: plot.monthlyHeatmap is a stub.")
+}
+
+// ... (imagine more stubs for brevity)
