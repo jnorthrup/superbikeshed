@@ -1,7 +1,6 @@
-package borg.trikeshed.acapulco
+package com.ta4k.acapulco
 
 import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.forEachIndexed
 import borg.trikeshed.lib.toList
 import com.ta4k.core.model.Kline
 import java.math.BigDecimal
@@ -27,7 +26,7 @@ class SpaceGraphVisualizer {
             val edges = mutableListOf<Edge>()
             
             // Create nodes for each kline
-            klines.forEachIndexed { index: Int, kline: Kline ->
+            klines.forEachIndexed { index, kline ->
                 val nodeId = "kline_$index"
                 nodes.add(
                     Node(
@@ -42,7 +41,7 @@ class SpaceGraphVisualizer {
                 
                 // Connect to previous kline
                 if (index > 0) {
-                    val prevKline: Kline = klines.toList()[index - 1]
+                    val prevKline = klines.toList()[index - 1]
                     edges.add(
                         Edge(
                             source = "kline_${index - 1}",

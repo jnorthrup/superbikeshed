@@ -1,28 +1,28 @@
-package borg.trikeshed.acapulco
+package com.ta4k.acapulco
 
 import borg.trikeshed.lib.Series
 import com.ta4k.core.model.Kline
+import com.ta4k.acapulco.model.PortfolioRow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.Instant
+import java.math.BigDecimal
 
 /**
  * Main integration class that coordinates between the trading bot, UI bridge,
  * data loading, and visualization components.
  */
 class TradingSystem {
-    private val moneyfanBridge = MoneyfanBridge()
     private val dogeDataLoader = DogeDataLoader()
-    private val spaceGraphVisualizer = SpaceGraphVisualizer()
     
     // State flows for UI updates
-    private val _portfolioState = MutableStateFlow(moneyfanBridge.portfolioState.value)
-    private val _tradingState = MutableStateFlow(moneyfanBridge.tradingState.value)
+    private val _portfolioState = MutableStateFlow<List<PortfolioRow>>(emptyList())
+    private val _tradingState = MutableStateFlow(BigDecimal.ZERO)
     private val _visualizationState = MutableStateFlow<SpaceGraphData?>(null)
     
-    val portfolioState: StateFlow<PortfolioState> = _portfolioState.asStateFlow()
-    val tradingState: StateFlow<TradingState> = _tradingState.asStateFlow()
+    val portfolioState: StateFlow<List<PortfolioRow>> = _portfolioState.asStateFlow()
+    val tradingState: StateFlow<BigDecimal> = _tradingState.asStateFlow()
     val visualizationState: StateFlow<SpaceGraphData?> = _visualizationState.asStateFlow()
     
     /**
@@ -50,20 +50,18 @@ class TradingSystem {
     
     /**
      * Update the portfolio state with new data.
-     * @param portfolioState New portfolio state
+     * @param portfolioRows New portfolio rows
      */
-    fun updatePortfolioState(portfolioState: PortfolioState) {
-        moneyfanBridge.updatePortfolioState(portfolioState)
-        _portfolioState.value = portfolioState
+    fun updatePortfolioState(portfolioRows: List<PortfolioRow>) {
+        _portfolioState.value = portfolioRows
     }
     
     /**
      * Update the trading state with new data.
-     * @param tradingState New trading state
+     * @param tradingValue New trading value
      */
-    fun updateTradingState(tradingState: TradingState) {
-        moneyfanBridge.updateTradingState(tradingState)
-        _tradingState.value = tradingState
+    fun updateTradingState(tradingValue: BigDecimal) {
+        _tradingState.value = tradingValue
     }
     
     /**
