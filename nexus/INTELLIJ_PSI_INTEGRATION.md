@@ -76,7 +76,7 @@ fun PsiElementSeries.analyzeSemantics(): AnalysisResult = this
     .α { ref -> ref.element.resolveSymbol() }  // Transform to symbols
     .α { symbol -> symbol.getTypeInfo() }      // Extract type information  
     .α { typeInfo -> typeInfo.analyze() }      // Perform semantic analysis
-    ▶ // Materialize results only when needed
+    play // Materialize results only when needed
 
 // Join operations across multiple analysis dimensions
 fun analyzeFull(file: KtFile): AnalysisResult = 
@@ -266,7 +266,7 @@ class NexusLanguageServer : LanguageServer {
                 val context = buildCompletionContext(psiFile, params.position)
                 
                 nexusAgent.generateCompletions(context)
-                    .▶ // Materialize to List
+                    .play // Materialize to List
                     .map { it.toCompletionItem() }
             }
         }
@@ -317,7 +317,7 @@ suspend fun findAllUsages(symbol: KtSymbol): UsageAnalysisResult {
         .α { file -> file.findReferences(symbol) }  // Find references in each file
         .α { refs -> refs.analyzeContext() }        // Analyze usage context
         .α { contexts -> contexts.categorize() }    // Categorize usage types
-        ▶ // Materialize results
+        play // Materialize results
     
     return UsageAnalysisResult(
         directUsages = usages.filter { it.isDirect },
@@ -351,7 +351,7 @@ suspend fun inferTypes(expression: KtExpression): TypeInferenceResult =
             
         TypeInferenceResult(
             bestSolution = solutions.maxBy { it.confidence },
-            alternativeSolutions = solutions.▶.toList()
+            alternativeSolutions = solutions.play.toList()
         )
     }
 ```
@@ -510,7 +510,7 @@ class LazyPSIAnalysis {
 suspend fun streamAnalyzeProject(project: Project): Flow<AnalysisResult> = flow {
     val allFiles = project.getAllKtFiles().toSeries()
     
-    allFiles.▶.asFlow()                   // Convert to Flow for streaming
+    allFiles.play.asFlow()                   // Convert to Flow for streaming
         .map { file -> analyzeFile(file) }  // Transform each file
         .collect { result -> emit(result) } // Emit results as available
 }

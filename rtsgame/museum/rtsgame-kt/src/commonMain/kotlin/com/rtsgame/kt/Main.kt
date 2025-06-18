@@ -100,7 +100,7 @@ object RTSKernel {
        val nextTick = Tick(currentTick.value + dt.value)
        
        // Process commands into entity updates
-       val updatedEntities = commands.`▶`.fold(entities) { ents, cmd ->
+       val updatedEntities = commands.`play`.fold(entities) { ents, cmd ->
            processCommand(cmd, ents, terrain)
        }
        
@@ -127,7 +127,7 @@ object RTSKernel {
    
    inline fun processCommand(cmd: Command, entities: EntityTable, terrain: TerrainGrid): EntityTable {
        val (player, (cmdType, (targets, destination))) = cmd
-       return targets.`▶`.fold(entities) { ents, targetId ->
+       return targets.`play`.fold(entities) { ents, targetId ->
            ents α { (id, entity) ->
                if (id.value == targetId.value) {
                    id j applyCommand(entity, cmdType, destination)
@@ -153,7 +153,7 @@ object RTSKernel {
    }
    
    inline fun applyCombatResults(entities: EntityTable, events: EventLog): EntityTable {
-       return events.`▶`.fold(entities) { ents, event ->
+       return events.`play`.fold(entities) { ents, event ->
            val (tick, (source, (target, damage))) = event
            ents α { (id, entity) ->
                if (id.value == target.value) {
@@ -184,7 +184,7 @@ object RTSKernel {
            for (y in minY..maxY) {
                val hash = (x * 73856093) xor (y * 19349663)
                val bucket = abs(hash) % index.size
-               index[bucket].b.`▶`.forEach { results.add(it) }
+               index[bucket].b.`play`.forEach { results.add(it) }
            }
        }
        return results.size j { results[it] }

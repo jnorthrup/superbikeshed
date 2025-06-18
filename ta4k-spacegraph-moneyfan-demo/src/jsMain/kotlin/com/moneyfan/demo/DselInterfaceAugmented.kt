@@ -7,7 +7,7 @@ import com.ta4k.indicators.SMAIndicator
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.alpha
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 
 // Data classes and enums are in DemoDataClasses.kt, assumed to be in the same package
 // or correctly imported if this file were separate.

@@ -61,7 +61,7 @@ class RTSSpaceGraphRenderer(
             nodes = nodeData,
             edges = edgeData as Series<SpaceGraphEdge>,
             metadata = RenderMetadata(
-                entityCount = gameState.entities.play.size,
+                entityCount = gameState.entities.`play`.size,
                 tick = gameState.tick
             )
         )
@@ -100,7 +100,7 @@ class RTSSpaceGraphRenderer(
     }
     
     private fun generateEntityConnections(entities: EntitySeries): Series<SpaceGraphEdge> {
-        val entityList = entities.play
+        val entityList = entities.`play`
         val connections = mutableListOf<SpaceGraphEdge>()
         
         // Generate proximity-based connections

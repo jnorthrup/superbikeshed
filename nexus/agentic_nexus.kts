@@ -41,7 +41,7 @@ import kotlin.random.Random
 typealias Series<T> = List<T>
 infix fun <A, B> A.j(b: B): Pair<A, B> = this to b
 fun <T> Series<T>.α(transform: (T) -> T): Series<T> = this.map(transform)
-val <T> Series<T>.`▶`: List<T> get() = this
+val <T> Series<T>.`play`: List<T> get() = this
 
 @JvmInline
 value class CCEKContext(val data: Map<String, String>) {

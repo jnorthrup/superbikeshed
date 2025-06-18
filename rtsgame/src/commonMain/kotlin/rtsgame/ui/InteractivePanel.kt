@@ -230,7 +230,7 @@ class InteractiveWebGPUPanel {
             playerId = PlayerId(if (kotlin.random.Random.nextBoolean()) 1 else 2)
         )
         
-        val allEntities = currentState.entities.play + newUnit
+        val allEntities = currentState.entities.`play` + newUnit
         
         return currentState.copy(
             entities = Series.of(allEntities.size) { i -> allEntities[i] }

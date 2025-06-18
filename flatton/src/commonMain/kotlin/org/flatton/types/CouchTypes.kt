@@ -127,7 +127,7 @@ data class ViewQueryParams(
     fun toQueryString(): String {
         val params = mutableListOf<String>()
         key?.let { params.add("key=${JsonImpl.stringify(it)}") }
-        keys?.let { params.add("keys=${JsonImpl.stringify(it.▶.toList())}") }
+        keys?.let { params.add("keys=${JsonImpl.stringify(it.play.toList())}") }
         startKey?.let { params.add("startkey=${JsonImpl.stringify(it)}") }
         endKey?.let { params.add("endkey=${JsonImpl.stringify(it)}") }
         startKeyDocId?.let { params.add("startkey_docid=${it.value}") }
@@ -280,12 +280,12 @@ object CouchSecurityAdapter {
     fun toJson(security: CouchSecurity): String {
         return JsonImpl.stringify(mapOf(
             "admins" to mapOf(
-                "names" to security.admins.names.▶.toList(),
-                "roles" to security.admins.roles.▶.toList()
+                "names" to security.admins.names.play.toList(),
+                "roles" to security.admins.roles.play.toList()
             ),
             "members" to mapOf(
-                "names" to security.members.names.▶.toList(),
-                "roles" to security.members.roles.▶.toList()
+                "names" to security.members.names.play.toList(),
+                "roles" to security.members.roles.play.toList()
             )
         ))
     }

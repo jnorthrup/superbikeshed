@@ -91,7 +91,7 @@ class StrategyOrchestrator(
         // Get attention score for this symbol
         val attentionWindows = attentionTracker.getSymbolAttentionWindows(symbol)
         val attentionScore = if (attentionWindows.size > 0) {
-            attentionWindows.▶.map { it.score }.maxOrNull() ?: AttentionScore(0.0)
+            attentionWindows.play.map { it.score }.maxOrNull() ?: AttentionScore(0.0)
         } else {
             AttentionScore(0.0)
         }
@@ -197,7 +197,7 @@ class StrategyOrchestrator(
         var sellScore = 0.0
         var totalWeight = 0.0
         
-        votes.▶.forEach { vote ->
+        votes.play.forEach { vote ->
             val weightedConfidence = vote.weight * vote.confidence
             totalWeight += vote.weight.value
             
@@ -237,7 +237,7 @@ class StrategyOrchestrator(
         }
         
         // Sort by signal strength and attention score
-        val sortedAnalyses = analyses.▶.sortedByDescending { analysis ->
+        val sortedAnalyses = analyses.play.sortedByDescending { analysis ->
             kotlin.math.abs(analysis.signalStrength) * analysis.attentionScore.value
         }
         
@@ -246,7 +246,7 @@ class StrategyOrchestrator(
     
     fun getActionableSignals(maxSymbols: Int = 10): Series<CombinedAnalysis> {
         val allAnalyses = analyzeTopSymbols(maxSymbols)
-        val actionable = allAnalyses.▶.filter { it.isActionable }
+        val actionable = allAnalyses.play.filter { it.isActionable }
         
         return Series.of(actionable.size) { i -> actionable[i] }
     }
@@ -256,8 +256,8 @@ class StrategyOrchestrator(
         val actionableSignals = getActionableSignals(10)
         val attentionSummary = attentionTracker.getAttentionSummary()
         
-        val buySignals = actionableSignals.▶.filter { it.isBuySignal }
-        val sellSignals = actionableSignals.▶.filter { it.isSellSignal }
+        val buySignals = actionableSignals.play.filter { it.isBuySignal }
+        val sellSignals = actionableSignals.play.filter { it.isSellSignal }
         
         return TradingReport(
             timestamp = kotlinx.datetime.Clock.System.now(),

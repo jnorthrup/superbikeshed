@@ -44,13 +44,13 @@ class SpaceGraphKt {
     fun addNode(id: String, label: String, position: Vector3D = Vector3D(0.0, 0.0, 0.0), data: NodeData = NodeData(Series.empty())): GraphNode {
         val node = GraphNode(id, label, position, data)
         val nodeEntry = id j node
-        nodes = Series.of(*nodes.▶.toTypedArray(), nodeEntry)
+        nodes = Series.of(*nodes.play.toTypedArray(), nodeEntry)
         println("  Added node: $id -> $label at $position")
         return node
     }
     
     private fun findNode(id: String): GraphNode? {
-        return nodes.▶.find { it.first == id }?.second
+        return nodes.play.find { it.first == id }?.second
     }
     
     fun addEdge(sourceId: String, targetId: String, weight: Double = 1.0, label: String? = null): GraphEdge? {
@@ -60,7 +60,7 @@ class SpaceGraphKt {
         val edgeId = "$sourceId-$targetId"
         val edge = GraphEdge(edgeId, source, target, weight, label)
         val edgeEntry = edgeId j edge
-        edges = Series.of(*edges.▶.toTypedArray(), edgeEntry)
+        edges = Series.of(*edges.play.toTypedArray(), edgeEntry)
         println("  Added edge: $sourceId -> $targetId (weight: $weight)")
         return edge
     }
@@ -77,9 +77,9 @@ class SpaceGraphKt {
         val edgeList = getEdges()
         
         val connectivity = nodeList.α { node ->
-            edgeList.▶.count { it.source == node || it.target == node }
+            edgeList.play.count { it.source == node || it.target == node }
         }
-        println("  Average connectivity: ${"%.2f".format(connectivity.▶.average())}")
+        println("  Average connectivity: ${"%.2f".format(connectivity.play.average())}")
         
         val maxPossibleEdges = nodes.size * (nodes.size - 1) / 2
         val density = if (maxPossibleEdges > 0) edges.size.toDouble() / maxPossibleEdges else 0.0
@@ -95,14 +95,14 @@ class SpaceGraphKt {
         
         while (queue.isNotEmpty()) {
             val path = queue.removeAt(0)
-            val current = path.▶.last()
+            val current = path.play.last()
             
             if (current == end) return path
             if (current.id in visited) continue
             visited.add(current.id)
             
             val edgeList = getEdges()
-            val connectedNodes = edgeList.▶.filter { 
+            val connectedNodes = edgeList.play.filter { 
                 it.source == current || it.target == current 
             }.map { 
                 if (it.source == current) it.target else it.source 
@@ -110,7 +110,7 @@ class SpaceGraphKt {
             
             connectedNodes.forEach { neighbor ->
                 if (neighbor.id !in visited) {
-                    val newPath = Series.of(*path.▶.toTypedArray(), neighbor)
+                    val newPath = Series.of(*path.play.toTypedArray(), neighbor)
                     queue.add(newPath)
                 }
             }

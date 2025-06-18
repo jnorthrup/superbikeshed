@@ -106,8 +106,8 @@ class CarlosRSI2Strategy(
         
         // Calculate initial average gain/loss
         if (gains.size >= period) {
-            val initialGain = gains.▶.take(period).average()
-            val initialLoss = losses.▶.take(period).average()
+            val initialGain = gains.play.take(period).average()
+            val initialLoss = losses.play.take(period).average()
             
             var avgGain = initialGain
             var avgLoss = initialLoss

@@ -131,8 +131,8 @@ value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
         override fun next(): A = if (hasNext()) s[index++] else throw NoSuchElementException()
     }
 }
-inline val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
-fun Series<Char>.asString(): String = this.`▶`.joinToString("")
+inline val <T> Series<T>.`play`: IterableSeries<T> get() = IterableSeries(this)
+fun Series<Char>.asString(): String = this.`play`.joinToString("")
 
 // III. Tensor Implementation (Core)
 typealias Tensor<T> = Join<IntArray, (IntArray) -> T>
@@ -315,14 +315,14 @@ operator fun <T> CoreTensorCursor<T>.get(vararg colIndices: Int): CoreTensorCurs
 
 inline val <T> CoreTensorCursorWithMeta<T>.coreTensorMeta: CursorMeta get() = b
 inline val <T> CoreTensorCursorWithMeta<T>.meta: CursorMeta get() = b
-inline val CursorMeta.names: List<String> get() = if (this.totalSize == 0 || this.rank == 0) emptyList() else this.`▶`.map { it.name }
+inline val CursorMeta.names: List<String> get() = if (this.totalSize == 0 || this.rank == 0) emptyList() else this.`play`.map { it.name }
 
 // --- Helper Series Operations ---
 fun Series<BigDecimal?>.sumOrNull(): BigDecimal? {
     if (this.size == 0) return null
     var sum = BigDecimal.ZERO
     var hasNonNull = false
-    this.`▶`.forEach { value ->
+    this.`play`.forEach { value ->
         if (value != null) {
             sum = sum.add(value)
             hasNonNull = true

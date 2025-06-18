@@ -74,7 +74,7 @@ Honor existing working implementations. Add TODO() stubs for missing features on
 
 **CORE ARCHITECTURE PRINCIPLES:**
 
-- Strict adherence to a custom type system (Series<T>, Join<A,B>, α transforms, ▶ materialization, @JvmInline value class, typealias)
+- Strict adherence to a custom type system (Series<T>, Join<A,B>, α transforms, play materialization, @JvmInline value class, typealias)
 - Tensor-first columnar processing with Join<A,B> as the core composition mechanism
 - Performance by design through explicit hot/cold paths and zero-cost abstractions
 - Context-driven development using inline classes and CCEK for managing scope and dependencies

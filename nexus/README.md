@@ -164,7 +164,7 @@ val optimizedSolutions = candidateSolutions
     .α { solution -> solution.evolve(feedback) }
     .α { solution -> solution.evaluate(context) }
     .α { solution -> solution.rank(criteria) }
-    `▶` // Materialize only the top results
+    `play` // Materialize only the top results
 ```
 
 ### Learning Architecture
@@ -305,7 +305,7 @@ fun PsiFile.analyzeWithTrikeShed(): AnalysisResult {
         .α { element -> element.resolveSymbol() }     // Semantic resolution
         .α { symbol -> symbol.analyzeType() }         // Type analysis  
         .α { type -> type.extractConstraints() }      // Constraint extraction
-        `▶` // Materialize results efficiently
+        `play` // Materialize results efficiently
 }
 
 // Semantic-aware code evolution

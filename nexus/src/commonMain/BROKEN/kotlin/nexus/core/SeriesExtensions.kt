@@ -4,7 +4,7 @@ import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j // For infix join
 import borg.trikeshed.lib.TensorSeries // For creating Series instances
-import borg.trikeshed.lib.materialize // To get an Iterable from Series (this replaces the old custom ▶ operator)
+import borg.trikeshed.lib.materialize // To get an Iterable from Series (this replaces the old custom play operator)
 import borg.trikeshed.lib.seriesOf // Convenience for creating series
 import borg.trikeshed.lib.emptySeries // For creating empty series
 
@@ -103,7 +103,7 @@ fun <T> Series<T>.withConfidence(confidenceCalc: (T) -> Confidence): Series<Join
 // Note: The original `α` operator from NexusAgent_OLD.kt was a simple map.
 // `borg.trikeshed.lib.Series` is assumed to have a `map` function.
 // If `α` had different semantics (like context passing or error handling), those are not preserved here.
-// The custom `▶` operator from NexusAgent_OLD.kt `this ▶ { it.maxOrNull()!! }`
+// The custom `play` operator from NexusAgent_OLD.kt `this play { it.maxOrNull()!! }`
 // is replaced by `this.materialize().maxOrNull()` assuming `materialize()` provides an `Iterable`.
 // `borg.trikeshed.lib.Series` interface should define `map` and `size`.
 // `borg.trikeshed.lib.materialize` is assumed to be an extension function `Series<T>.materialize(): Iterable<T>`.

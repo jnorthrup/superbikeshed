@@ -1,7 +1,7 @@
 package com.ta4k.stats
 
 import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -11,13 +11,13 @@ import java.math.RoundingMode
  */
 fun Series<BigDecimal>.isEmpty(): Boolean = size == 0
 
-fun Series<BigDecimal>.sorted(): List<BigDecimal> = `▶`.toList().sorted()
+fun Series<BigDecimal>.sorted(): List<BigDecimal> = `play`.toList().sorted()
 
 fun Series<BigDecimal>.filter(predicate: (BigDecimal) -> Boolean): List<BigDecimal> = 
-    `▶`.toList().filter(predicate)
+    `play`.toList().filter(predicate)
 
 fun Series<BigDecimal>.count(predicate: (BigDecimal) -> Boolean): Int =
-    `▶`.toList().count(predicate)
+    `play`.toList().count(predicate)
 
 fun Series<BigDecimal>.average(): BigDecimal {
     if (isEmpty()) return BigDecimal.ZERO
@@ -25,4 +25,4 @@ fun Series<BigDecimal>.average(): BigDecimal {
 }
 
 fun Series<BigDecimal>.sumOf(selector: (BigDecimal) -> BigDecimal): BigDecimal =
-    `▶`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }
+    `play`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }

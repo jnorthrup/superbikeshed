@@ -66,6 +66,3 @@ interface ServerChannel : SelectableChannel {
     suspend fun accept(): ClientChannel?
 }
 
-interface ClientChannel : SelectableChannel, ReadableChannel, WritableChannel {
-    suspend fun connect(host: String, port: Int)
-}

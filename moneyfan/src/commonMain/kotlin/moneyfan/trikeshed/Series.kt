@@ -56,9 +56,9 @@ value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
 
 /**
  * Extension property to easily obtain an IterableSeries from any Series.
- * Allows syntax like `mySeries.`▶`.forEach { ... }`
+ * Allows syntax like `mySeries.`play`.forEach { ... }`
  */
-val <T> Series<T>.`▶`: IterableSeries<T> get() = IterableSeries(this)
+val <T> Series<T>.`play`: IterableSeries<T> get() = IterableSeries(this)
 
 
 // --- Basic .toSeries() extensions ---

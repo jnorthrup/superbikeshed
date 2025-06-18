@@ -23,8 +23,8 @@ Cursor["Open","Close"] -> Series<RowVec> ["Open", "Close"]
 fun Cursor.rsi(depth: Int = 14): Cursor = run {
     // Assuming "Open" is at index 0 and "Close" is at index 1 after get
     // This needs robust index lookup based on names from meta
-    val openColIndex = this.meta.`▶`.indexOfFirst { it.name == "Open" }.takeIf { it >= 0 } ?: 0 // Fallback, adjust as needed
-    val closeColIndex = this.meta.`▶`.indexOfFirst { it.name == "Close" }.takeIf { it >= 0 } ?: 1 // Fallback, adjust as needed
+    val openColIndex = this.meta.`play`.indexOfFirst { it.name == "Open" }.takeIf { it >= 0 } ?: 0 // Fallback, adjust as needed
+    val closeColIndex = this.meta.`play`.indexOfFirst { it.name == "Close" }.takeIf { it >= 0 } ?: 1 // Fallback, adjust as needed
 
     val open: Series<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Series<Double>
     val close: Series<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Series<Double>

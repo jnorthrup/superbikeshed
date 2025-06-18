@@ -235,7 +235,7 @@ value class Outcome(val data: String) {
     
     val affectsCapabilities: Boolean get() = 
         data.contains("capabilities") || data.contains("tools") || 
-        changes.`▶`.any { it.affectsCapabilities }
+        changes.`play`.any { it.affectsCapabilities }
 }
 
 /**

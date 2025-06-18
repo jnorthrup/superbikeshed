@@ -2,7 +2,7 @@ package com.ta4k.stats
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -25,7 +25,7 @@ object StatsUtils {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val totalReturn = returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
+        val totalReturn = returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
             acc.multiply(BigDecimal.ONE.add(ret))
         }
         
@@ -48,7 +48,7 @@ object StatsUtils {
     ): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
-        val returnsList = returns.`▶`.toList()
+        val returnsList = returns.`play`.toList()
         val rollingVol = (returns.size - window + 1) j { i: Int ->
             val windowReturns = returnsList.subList(i, i + window)
             val std = calculateStdDev(windowReturns)
@@ -70,7 +70,7 @@ object StatsUtils {
     ): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
-        val returnsList = returns.`▶`.toList()
+        val returnsList = returns.`play`.toList()
         val rollingSharpe = (returns.size - window + 1) j { i: Int ->
             val windowReturns = returnsList.subList(i, i + window)
             val mean = windowReturns.average()
@@ -98,7 +98,7 @@ object StatsUtils {
     ): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
-        val returnsList = returns.`▶`.toList()
+        val returnsList = returns.`play`.toList()
         val rollingSortino = (returns.size - window + 1) j { i: Int ->
             val windowReturns = returnsList.subList(i, i + window)
             val mean = windowReturns.average()
@@ -121,8 +121,8 @@ object StatsUtils {
     fun kellyCriterion(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val wins = returns.`▶`.filter { it > BigDecimal.ZERO }.toList()
-        val losses = returns.`▶`.filter { it < BigDecimal.ZERO }.toList()
+        val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
+        val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
         
         if (wins.isEmpty() || losses.isEmpty()) return BigDecimal.ZERO
         

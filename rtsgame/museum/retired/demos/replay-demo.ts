@@ -204,7 +204,7 @@ class ReplayDemo {
                 return false;
             }
 
-            console.log('▶️ Starting deterministic replay...');
+            console.log('play️ Starting deterministic replay...');
 
             // Run replay
             let frameCount = 0;

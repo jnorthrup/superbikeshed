@@ -24,7 +24,7 @@ class WasmIntegrationTest {
         val engine = GameEngine()
         val state = engine.tick()
         
-        assertTrue(state.entities.play.isNotEmpty(), "Should create entities in WASM")
+        assertTrue(state.entities.`play`.isNotEmpty(), "Should create entities in WASM")
         assertTrue(state.tick.value > 0, "Should have valid tick in WASM")
     }
     

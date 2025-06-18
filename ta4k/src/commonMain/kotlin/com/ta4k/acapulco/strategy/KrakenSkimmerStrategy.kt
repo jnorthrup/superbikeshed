@@ -316,13 +316,13 @@ class PortfolioSkimmer(
         
         // Calculate portfolio-level metrics
         val totalSymbols = analyses.size
-        val decliningSymbols = analyses.▶.count { it.deviation.value < -1.0 }
+        val decliningSymbols = analyses.play.count { it.deviation.value < -1.0 }
         val crashProtectionActive = totalSymbols > 0 && 
             (decliningSymbols.toDouble() / totalSymbols) >= (crashProtectionThreshold / 100.0)
         
         // Calculate portfolio deviation
         val avgDeviation = if (analyses.size > 0) {
-            analyses.▶.map { it.deviation.value }.average()
+            analyses.play.map { it.deviation.value }.average()
         } else 0.0
         
         val portfolioState = if (crashProtectionActive) {
@@ -350,12 +350,12 @@ data class PortfolioSkimmerAnalysis(
     val decliningSymbols: Int
 ) {
     val harvestCandidates: Series<SkimmerAnalysis>
-        get() = symbolAnalyses.▶.filter { it.shouldHarvest }.let { candidates ->
+        get() = symbolAnalyses.play.filter { it.shouldHarvest }.let { candidates ->
             Series.of(candidates.size) { i -> candidates[i] }
         }
     
     val rebalanceCandidates: Series<SkimmerAnalysis>
-        get() = symbolAnalyses.▶.filter { it.shouldRebalance }.let { candidates ->
+        get() = symbolAnalyses.play.filter { it.shouldRebalance }.let { candidates ->
             Series.of(candidates.size) { i -> candidates[i] }
         }
     
@@ -374,7 +374,7 @@ class AttentionKrakenSkimmer(
     
     fun analyzeWithAttention(symbolData: Series<Join<Symbol, CandleSeries>>): PortfolioSkimmerAnalysis {
         // Filter to only high-attention symbols for skimmer strategy
-        val attentionFiltered = symbolData.▶.filter { (symbol, _) ->
+        val attentionFiltered = symbolData.play.filter { (symbol, _) ->
             attentionActivator.shouldActivateStrategy(symbol, "KrakenSkimmer")
         }.let { filtered ->
             Series.of(filtered.size) { i -> filtered[i] }

@@ -55,7 +55,7 @@ typealias Cursor = Series<RowVec>
               contiguous or sparse things
       * some symbol liberties:
         * `(myseries as Series<T>)` __α__ `{it:T-> foo(it)}` is an infix, lazy .map analog of a series
-        * `(myseries as Series<T>).`\`▶\` visually noticable forward-iterator accessor denoting kotlin stdlib
+        * `(myseries as Series<T>).`\`play\` visually noticable forward-iterator accessor denoting kotlin stdlib
                   collections/functional facade for a given purpose, typically filters, maps, or folds
         * left identity anchors, respectively __\`↺\`__ e.g. "columnname".\`↺\` to functionalize a constant or
                   other value in situations where sometimes a lambda might be generative but constant can be distinctly

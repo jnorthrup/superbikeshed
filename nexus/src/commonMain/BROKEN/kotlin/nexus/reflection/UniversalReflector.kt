@@ -446,7 +446,7 @@ class PatternLearner(
      * Extract action sequence patterns (what happens after what)
      */
     private fun extractSequencePatterns(observations: Series<Observation>): Series<LearnedPattern> {
-        val sequences = observations.`▶`.windowed(3, 1) { window ->
+        val sequences = observations.`play`.windowed(3, 1) { window ->
             when {
                 window.size >= 3 -> {
                     val trigger = window[0].action
@@ -474,7 +474,7 @@ class PatternLearner(
      * Extract time-based patterns (when things typically happen)
      */
     private fun extractTemporalPatterns(observations: Series<Observation>): Series<LearnedPattern> {
-        val timeGroups = observations.`▶`.groupBy { obs ->
+        val timeGroups = observations.`play`.groupBy { obs ->
             obs.timestamp / (60 * 60 * 1000) // Group by hour
         }
         
@@ -502,7 +502,7 @@ class PatternLearner(
      * Extract context-dependent patterns (what works in which situations)
      */
     private fun extractContextualPatterns(observations: Series<Observation>): Series<LearnedPattern> {
-        val contextGroups = observations.`▶`.groupBy { obs ->
+        val contextGroups = observations.`play`.groupBy { obs ->
             obs.context?.extractCurrentScope() ?: "unknown"
         }
         
@@ -532,7 +532,7 @@ class PatternLearner(
     private fun extractContextCorrelations(observation: Observation): Series<ContextCorrelation> {
         val recentObservations = observationHistory.takeLast(10)
         
-        return recentObservations.`▶`.mapNotNull { prevObs ->
+        return recentObservations.`play`.mapNotNull { prevObs ->
             if (prevObs.context != null && observation.context != null) {
                 val contextSimilarity = calculateContextSimilarity(prevObs.context!!, observation.context!!)
                 val outcomeSimilarity = calculateOutcomeSimilarity(prevObs.outcome, observation.outcome)
@@ -553,7 +553,7 @@ class PatternLearner(
      * Update existing patterns with new evidence
      */
     private fun updateExistingPatterns(observation: Observation) {
-        patterns.`▶`.forEach { pattern ->
+        patterns.`play`.forEach { pattern ->
             val isTriggered = observation.matchesPattern(pattern)
             if (isTriggered) {
                 val wasSuccessful = observation.outcome?.success == true
@@ -566,7 +566,7 @@ class PatternLearner(
      * Get patterns that match current context
      */
     fun getRelevantPatterns(context: CCEKContext): Series<LearnedPattern> {
-        return patterns.`▶`.filter { pattern ->
+        return patterns.`play`.filter { pattern ->
             pattern.isRelevantTo(context)
         }.sortedByDescending { it.confidence }
         .let { Series.of(*it.toTypedArray()) }
@@ -577,7 +577,7 @@ class PatternLearner(
      */
     fun predictNextAction(context: CCEKContext): Action? {
         val relevantPatterns = getRelevantPatterns(context)
-        val bestPattern = relevantPatterns.`▶`.firstOrNull()
+        val bestPattern = relevantPatterns.`play`.firstOrNull()
         
         return bestPattern?.suggestAction(context)
     }
@@ -587,9 +587,9 @@ class PatternLearner(
      */
     fun getUsageInsights(): UsageInsights {
         val totalObservations = observationHistory.size
-        val successRate = observationHistory.`▶`.count { it.outcome?.success == true }.toDouble() / totalObservations
-        val mostUsedTools = observationHistory.`▶`.mapNotNull { it.tool }.groupingBy { it }.eachCount()
-        val mostActiveContexts = observationHistory.`▶`.mapNotNull { it.context?.extractCurrentScope() }.groupingBy { it }.eachCount()
+        val successRate = observationHistory.`play`.count { it.outcome?.success == true }.toDouble() / totalObservations
+        val mostUsedTools = observationHistory.`play`.mapNotNull { it.tool }.groupingBy { it }.eachCount()
+        val mostActiveContexts = observationHistory.`play`.mapNotNull { it.context?.extractCurrentScope() }.groupingBy { it }.eachCount()
         
         return UsageInsights(
             totalInteractions = totalObservations,
@@ -597,7 +597,7 @@ class PatternLearner(
             mostUsedTools = mostUsedTools.toList().sortedByDescending { it.second }.take(5),
             mostActiveContexts = mostActiveContexts.toList().sortedByDescending { it.second }.take(5),
             learnedPatterns = patterns.size,
-            confidenceDistribution = patterns.`▶`.map { it.confidence }.groupingBy { 
+            confidenceDistribution = patterns.`play`.map { it.confidence }.groupingBy {
                 when {
                     it >= 0.8 -> "High"
                     it >= 0.6 -> "Medium" 
@@ -625,7 +625,7 @@ data class Observation(
     val environment: String? = null
 ) {
     fun matchesPattern(pattern: LearnedPattern): Boolean =
-        pattern.triggers.`▶`.any { trigger ->
+        pattern.triggers.`play`.any { trigger ->
             action?.contains(trigger, ignoreCase = true) == true ||
             context?.extractCurrentScope()?.contains(trigger, ignoreCase = true) == true
         }
@@ -651,13 +651,13 @@ data class LearnedPattern(
     
     fun isRelevantTo(context: CCEKContext): Boolean {
         val contextScope = context.extractCurrentScope()
-        return triggers.`▶`.any { trigger ->
+        return triggers.`play`.any { trigger ->
             contextScope.contains(trigger, ignoreCase = true)
         }
     }
     
     fun suggestAction(context: CCEKContext): Action? {
-        val relevantActions = actions.`▶`.filter { action ->
+        val relevantActions = actions.`play`.filter { action ->
             // Filter actions that make sense in current context
             context.extractCurrentCapabilities().any { cap ->
                 action.contains(cap, ignoreCase = true)
@@ -728,8 +728,8 @@ fun calculateOutcomeSimilarity(out1: Outcome?, out2: Outcome?): Double {
 // Series helpers
 fun <T> mutableSeriesOf(): MutableSeries<T> = MutableSeriesImpl()
 fun <T> MutableSeries<T>.add(item: T) = (this as MutableList<T>).add(item)
-fun <T> MutableSeries<T>.addAll(items: Series<T>) = (this as MutableList<T>).addAll(items.`▶`)
-fun <T> Series<T>.takeLast(n: Int) = this.`▶`.takeLast(n).let { Series.of(*it.toTypedArray()) }
+fun <T> MutableSeries<T>.addAll(items: Series<T>) = (this as MutableList<T>).addAll(items.`play`)
+fun <T> Series<T>.takeLast(n: Int) = this.`play`.takeLast(n).let { Series.of(*it.toTypedArray()) }
 
 typealias MutableSeries<T> = MutableList<T>
 class MutableSeriesImpl<T> : ArrayList<T>(), MutableSeries<T>
@@ -798,7 +798,7 @@ class LearningUniversalReflector(
     fun getRecommendations(context: CCEKContext): Series<Recommendation> {
         val relevantPatterns = patternLearner.getRelevantPatterns(context)
         
-        return relevantPatterns.`▶`.mapNotNull { pattern ->
+        return relevantPatterns.`play`.mapNotNull { pattern ->
             val action = pattern.suggestAction(context)
             if (action != null) {
                 Recommendation(

@@ -12,12 +12,12 @@ actual fun platformMain() {
     val gameEngine = GameEngine()
     var gameState = gameEngine.tick()
     
-    println("Initial state: ${gameState.entities.play.size} entities")
+    println("Initial state: ${gameState.entities.`play`.size} entities")
     
     // Simulate a few ticks
     repeat(3) { i: Int ->
         gameState = gameEngine.simulateTick(gameState)
-        println("Tick ${gameState.tick.value}: ${gameState.entities.play.size} entities")
+        println("Tick ${gameState.tick.value}: ${gameState.entities.`play`.size} entities")
     }
     
     println("WASM demo ready - integrate with HTML canvas for full interactivity")

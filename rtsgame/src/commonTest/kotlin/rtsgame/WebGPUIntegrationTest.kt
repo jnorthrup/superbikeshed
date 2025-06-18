@@ -72,7 +72,7 @@ class WebGPUIntegrationTest {
         assertNotNull(result.edges, "Edges should be generated")
         assertNotNull(result.metadata, "Metadata should be present")
         
-        assertEquals(gameState.entities.play.size, result.metadata.entityCount)
+        assertEquals(gameState.entities.`play`.size, result.metadata.entityCount)
         assertEquals(gameState.tick, result.metadata.tick)
     }
     

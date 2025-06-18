@@ -30,7 +30,7 @@ import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.TensorSeries
 import borg.trikeshed.lib.j // For Join infix constructor
 import borg.trikeshed.lib.seriesOf // Convenient way to create Series
-import borg.trikeshed.lib.materialize // For Series.▶ syntax (if needed, or use .map directly)
+import borg.trikeshed.lib.materialize // For Series.play syntax (if needed, or use .map directly)
 import borg.trikeshed.lib.emptySeries // For creating empty series
 
 // Orchestration imports

@@ -2,7 +2,7 @@ package com.ta4k.stats
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -23,12 +23,12 @@ class StatisticalMetrics {
     fun skew(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val mean = returns.`▶`.average()
-        val std = calculateStdDev(returns.`▶`.toList())
+        val mean = returns.`play`.average()
+        val std = calculateStdDev(returns.`play`.toList())
         
         if (std == BigDecimal.ZERO) return BigDecimal.ZERO
         
-        val cubedDeviations = returns.`▶`.map { 
+        val cubedDeviations = returns.`play`.map { 
             it.subtract(mean).pow(3) 
         }.toList()
         
@@ -44,12 +44,12 @@ class StatisticalMetrics {
     fun kurtosis(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val mean = returns.`▶`.average()
-        val std = calculateStdDev(returns.`▶`.toList())
+        val mean = returns.`play`.average()
+        val std = calculateStdDev(returns.`play`.toList())
         
         if (std == BigDecimal.ZERO) return BigDecimal.ZERO
         
-        val fourthPowerDeviations = returns.`▶`.map { 
+        val fourthPowerDeviations = returns.`play`.map { 
             it.subtract(mean).pow(4) 
         }.toList()
         
@@ -66,7 +66,7 @@ class StatisticalMetrics {
     fun autocorrPenalty(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList = returns.`▶`.toList()
+        val returnsList = returns.`play`.toList()
         val n = returnsList.size
         
         if (n < 2) return BigDecimal.ZERO
@@ -92,7 +92,7 @@ class StatisticalMetrics {
     ): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
-        val excessReturns = returns.`▶`.zip(benchmark.`▶`) { ret, bench ->
+        val excessReturns = returns.`play`.zip(benchmark.`play`) { ret, bench ->
             ret.subtract(bench)
         }.toList()
         
@@ -111,8 +111,8 @@ class StatisticalMetrics {
     fun rSquared(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList = returns.`▶`.toList()
-        val benchmarkList = benchmark.`▶`.toList()
+        val returnsList = returns.`play`.toList()
+        val benchmarkList = benchmark.`play`.toList()
         
         val returnsMean = returnsList.average()
         val benchmarkMean = benchmarkList.average()

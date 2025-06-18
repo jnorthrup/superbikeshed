@@ -271,7 +271,7 @@ class BacktestRunner {
     private fun generateTicksFromCandles(candles: CandleSeries, symbol: String): TickSeries {
         val ticks = mutableListOf<MarketTick>()
         
-        candles.▶.forEach { candle ->
+        candles.play.forEach { candle ->
             // Generate multiple ticks per candle
             repeat(kotlin.random.Random.nextInt(10, 50)) { tickIndex ->
                 val price = candle.ohlcv.close

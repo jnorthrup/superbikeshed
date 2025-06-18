@@ -15,10 +15,10 @@ import kotlinx.coroutines.*
 // ═══════════════════════════════════════════════════════════════════════════════
 
 fun <T : Comparable<T>> Series<T>.best(): T = 
-    this ▶ { it.maxOrNull() ?: throw IllegalStateException("Empty series") }
+    this play { it.maxOrNull() ?: throw IllegalStateException("Empty series") }
 
 fun <T> Series<T>.take(n: Int): Series<T> = 
-    this ▶ { it.take(n) } α { Series.from(it) }
+    this play { it.take(n) } α { Series.from(it) }
 
 fun <T> List<T>.toSeries(): Series<T> = Series.from(this)
 

@@ -21,11 +21,11 @@ class GameEngineTest {
     fun `engine creates initial game state`() {
         val state = engine.tick()
         
-        assertEquals(2, state.entities.play.size, "Should have 2 initial entities")
+        assertEquals(2, state.entities.`play`.size, "Should have 2 initial entities")
         assertTrue(state.tick.value > 0, "Tick should be initialized")
         
         // Check entity types
-        val entities = state.entities.play
+        val entities = state.entities.`play`
         assertTrue(entities.any { it.id.value.contains("unit_1") })
         assertTrue(entities.any { it.id.value.contains("unit_2") })
     }
@@ -36,7 +36,7 @@ class GameEngineTest {
         val nextState = engine.simulateTick(initialState)
         
         assertEquals(initialState.tick.value + 1, nextState.tick.value, "Tick should advance by 1")
-        assertEquals(initialState.entities.play.size, nextState.entities.play.size, "Entity count should remain same")
+        assertEquals(initialState.entities.`play`.size, nextState.entities.`play`.size, "Entity count should remain same")
     }
     
     @Test
@@ -44,8 +44,8 @@ class GameEngineTest {
         val initialState = engine.tick()
         val nextState = engine.simulateTick(initialState)
         
-        val initialPositions = initialState.entities.play.map { it.position }
-        val nextPositions = nextState.entities.play.map { it.position }
+        val initialPositions = initialState.entities.`play`.map { it.position }
+        val nextPositions = nextState.entities.`play`.map { it.position }
         
         // At least one entity should have moved (due to randomization)
         val hasMoved = initialPositions.zip(nextPositions).any { (initial, next) ->
@@ -65,7 +65,7 @@ class GameEngineTest {
         }
         
         // Check all entities are within reasonable bounds
-        state.entities.play.forEach { entity ->
+        state.entities.`play`.forEach { entity ->
             assertTrue(entity.position.a.value >= 20f, "X position should be >= 20")
             assertTrue(entity.position.a.value <= 800f, "X position should be <= 800")
             assertTrue(entity.position.b.value >= 120f, "Y position should be >= 120")
@@ -77,7 +77,7 @@ class GameEngineTest {
     fun `entity health remains valid`() {
         val state = engine.tick()
         
-        state.entities.play.forEach { entity ->
+        state.entities.`play`.forEach { entity ->
             assertTrue(entity.health.value > 0f, "Health should be positive")
             assertTrue(entity.health.value <= 100f, "Health should not exceed 100")
         }
@@ -87,7 +87,7 @@ class GameEngineTest {
     fun `player ids are valid`() {
         val state = engine.tick()
         
-        state.entities.play.forEach { entity ->
+        state.entities.`play`.forEach { entity ->
             assertTrue(entity.playerId.value in 1..2, "Player ID should be 1 or 2")
         }
     }
@@ -97,18 +97,18 @@ class GameEngineTest {
         val state = engine.tick()
         
         // Test Series.play property
-        assertNotNull(state.entities.play)
-        assertTrue(state.entities.play.isNotEmpty())
+        assertNotNull(state.entities.`play`)
+        assertTrue(state.entities.`play`.isNotEmpty())
         
         // Test Series size
         assertTrue(state.entities.size > 0)
-        assertEquals(state.entities.size, state.entities.play.size)
+        assertEquals(state.entities.size, state.entities.`play`.size)
     }
     
     @Test
     fun `join operations work correctly`() {
         val state = engine.tick()
-        val entity = state.entities.play.first()
+        val entity = state.entities.`play`.first()
         
         // Test Position (Join<XCoord, YCoord>)
         assertNotNull(entity.position.a) // XCoord
@@ -157,7 +157,7 @@ class GameEnginePerformanceTest {
         val engine = GameEngine()
         var state = engine.tick()
         
-        val initialEntityCount = state.entities.play.size
+        val initialEntityCount = state.entities.`play`.size
         
         // Run many simulation steps
         repeat(100) {
@@ -165,6 +165,6 @@ class GameEnginePerformanceTest {
         }
         
         // Entity count should remain stable (no memory leaks)
-        assertEquals(initialEntityCount, state.entities.play.size, "Entity count should remain stable")
+        assertEquals(initialEntityCount, state.entities.`play`.size, "Entity count should remain stable")
     }
 }

@@ -36,7 +36,7 @@ actual object JsonImpl {
     }
     
     private fun reifyJson(node: Any?): Any? = when (node) {
-        is Series<*> -> node.`▶`.map { reifyJson(it) }
+        is Series<*> -> node.`play`.map { reifyJson(it) }
         is Join<*, *> -> mapOf(node.a.toString() to reifyJson(node.b))
         else -> node
     }
@@ -44,7 +44,7 @@ actual object JsonImpl {
     // Simple JSON parser helper function
     private fun jsPath(chars: Series<Char>, path: List<String>): Any? {
         // Simplified JSON parsing - in real implementation this would be more robust
-        val str = chars.▶.joinToString("")
+        val str = chars.play.joinToString("")
         return simpleJsonParse(str)
     }
     

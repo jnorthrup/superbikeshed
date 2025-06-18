@@ -182,7 +182,7 @@ class ReplayDemo {
                     console.error('❌ Failed to start replay');
                     return false;
                 }
-                console.log('▶️ Starting deterministic replay...');
+                console.log('play️ Starting deterministic replay...');
                 // Run replay
                 let frameCount = 0;
                 while (battleReplay_js_1.battleReplay.isReplaying) {

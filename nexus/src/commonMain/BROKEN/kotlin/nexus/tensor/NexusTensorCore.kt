@@ -225,12 +225,12 @@ fun ContextTensorSpace.batchAdaptation(changes: Series<Change>): ContextTensorSp
     }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TENSOR MATERIALIZATION - ▶ operator for hot/cold path optimization
+// TENSOR MATERIALIZATION - play operator for hot/cold path optimization
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Materialize only when computation is needed (cold path)
 fun <T> NexusTensor<T>.materializeWhen(predicate: (TensorCoordinate) -> Boolean): Series<T> =
-    this ▶ { (shape, accessor) ->
+    this play { (shape, accessor) ->
         shape.indices
             .filter { i -> predicate(TensorCoordinate(intArrayOf(i))) }
             .map { i -> accessor(intArrayOf(i)) }
@@ -241,7 +241,7 @@ fun <T> NexusTensor<T>.keepHot(): NexusTensor<T> = this
 
 // Cold path: Materialize for external systems
 fun <T> NexusTensor<T>.materializeCold(): Series<T> =
-    this ▶ { (shape, accessor) ->
+    this play { (shape, accessor) ->
         shape.indices.map { i -> accessor(intArrayOf(i)) }
     }
 
@@ -445,10 +445,10 @@ fun Pattern.Companion.from(description: String): Pattern =
     Series.of(description)
 
 // Solution operations
-fun Solution.complexity(): Double = this.`▶`.sumOf { it.length }.toDouble()
+fun Solution.complexity(): Double = this.`play`.sumOf { it.length }.toDouble()
 fun Solution.quality(): Double = when {
-    this.`▶`.size < 5 -> 0.9
-    this.`▶`.size < 20 -> 0.7
+    this.`play`.size < 5 -> 0.9
+    this.`play`.size < 20 -> 0.7
     else -> 0.5
 }
 
@@ -456,13 +456,13 @@ fun Solution.Companion.fromEvolution(step: EvolutionStep, fitness: FitnessValue)
     Series.of("Evolved solution from step: $step with fitness: ${fitness.value}")
 
 fun Solution.Companion.mutate(parent: Solution): Solution =
-    parent.`▶`.map { line -> "$line [mutated]" }.let { Series.of(*it.toTypedArray()) }
+    parent.`play`.map { line -> "$line [mutated]" }.let { Series.of(*it.toTypedArray()) }
 
 fun Solution.Companion.generate(learning: LearningFunction, evolution: EvolutionFunction, request: Request): Solution =
-    Series.of("Generated solution for: ${request.`▶`.joinToString(" ")}")
+    Series.of("Generated solution for: ${request.`play`.joinToString(" ")}")
 
-fun Solution.description(): String = this.`▶`.take(2).joinToString(" ")
-fun Solution.implementation(): String = this.`▶`.drop(2).joinToString("\n")
+fun Solution.description(): String = this.`play`.take(2).joinToString(" ")
+fun Solution.implementation(): String = this.`play`.drop(2).joinToString("\n")
 
 fun Outcome.Companion.combine(o1: Outcome, o2: Outcome): Outcome =
     Outcome("${o1.data} + ${o2.data}")
@@ -475,7 +475,7 @@ fun Action.Companion.predict(context: CCEKContext, learning: LearningFunction, e
 
 // LearningInstance operations
 fun LearningInstance.Companion.from(pattern: Join<Pattern, Outcome>): LearningInstance =
-    "learned_from_${pattern.a.`▶`.joinToString()}_outcome_${pattern.b.data}"
+    "learned_from_${pattern.a.`play`.joinToString()}_outcome_${pattern.b.data}"
 
 // Tensor space operations
 object ContextTensorSpace {

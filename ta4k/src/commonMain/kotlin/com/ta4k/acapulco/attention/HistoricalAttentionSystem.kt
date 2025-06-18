@@ -148,14 +148,14 @@ class HistoricalAttentionTracker(
         val weightedSymbols = mutableListOf<WeightedSymbol>()
         
         // Analyze each symbol using Series operations
-        symbols.▶.forEach { symbol ->
+        symbols.play.forEach { symbol ->
             val candles = dataManager.getHotWindow(symbol)
             if (candles.size > 0) {
                 val attentionWindows = analyzer.analyzeCandles(candles)
                 
                 // Calculate total attention score for this symbol
                 val totalScore = if (attentionWindows.size > 0) {
-                    attentionWindows.▶.fold(AttentionScore(0.0)) { acc, window -> 
+                    attentionWindows.play.fold(AttentionScore(0.0)) { acc, window -> 
                         acc + window.score 
                     }
                 } else {
@@ -191,10 +191,10 @@ class HistoricalAttentionTracker(
     fun getAttentionSummary(): AttentionSummary {
         val allWeighted = analyzeAllSymbols()
         val totalSymbols = allWeighted.size
-        val highAttentionCount = allWeighted.▶.count { it.b.value > 5.0 }
+        val highAttentionCount = allWeighted.play.count { it.b.value > 5.0 }
         
         val avgAttention = if (totalSymbols > 0) {
-            allWeighted.▶.map { it.b.value }.average()
+            allWeighted.play.map { it.b.value }.average()
         } else 0.0
         
         return AttentionSummary(
@@ -233,11 +233,11 @@ class AttentionStrategyActivator(
         return when (strategy) {
             "CarlosRSI2" -> {
                 // Activate Carlos RSI2 on moderate attention (good for mean reversion)
-                attentionWindows.▶.any { it.score.value > 3.0 && it.score.value < 10.0 }
+                attentionWindows.play.any { it.score.value > 3.0 && it.score.value < 10.0 }
             }
             "KrakenSkimmer" -> {
                 // Activate Kraken Skimmer on high attention (good for trending)
-                attentionWindows.▶.any { it.score.value > 8.0 }
+                attentionWindows.play.any { it.score.value > 8.0 }
             }
             else -> false
         }

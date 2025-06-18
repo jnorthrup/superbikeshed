@@ -23,8 +23,8 @@ fun ProjectContext.extractKeywords(): Series<String> =
     }
 
 fun ProjectContext.extractLanguages(): Series<String> = 
-    (this.`▶`.filter { it.a == "language" }.map { it.b } + 
-    this.`▶`.filter { it.a == "file_extension" }.map { ext ->
+    (this.`play`.filter { it.a == "language" }.map { it.b } + 
+    this.`play`.filter { it.a == "file_extension" }.map { ext ->
         when (ext) {
             ".kt" -> "kotlin"
             ".java" -> "java"
@@ -43,7 +43,7 @@ data class ProblemExtended(
     val complexity: Problem.Complexity = Problem.Complexity.MEDIUM
 ) {
     fun extractDomain(): String = domain
-    fun hasRecursiveStructure(): Boolean = description.`▶`.any { it.contains("recursive") || it.contains("tree") || it.contains("nested") }
+    fun hasRecursiveStructure(): Boolean = description.`play`.any { it.contains("recursive") || it.contains("tree") || it.contains("nested") }
     
     enum class Complexity { LOW, MEDIUM, HIGH }
 }
@@ -118,8 +118,8 @@ data class LearnedPattern(
 ) {
     fun generateSuggestions(opportunities: Series<Opportunity>, context: ProjectContext): Series<Suggestion> =
         opportunities.α { opp -> 
-            if (triggers.`▶`.any { opp.description.contains(it) }) {
-                Suggestion("Apply pattern '$name': ${actions.`▶`.joinToString()}")
+            if (triggers.`play`.any { opp.description.contains(it) }) {
+                Suggestion("Apply pattern '$name': ${actions.`play`.joinToString()}")
             } else {
                 null
             }
@@ -130,11 +130,11 @@ data class Opportunity(val description: String, val priority: Double)
 
 fun Capability.suggestUsage(context: ProjectContext): Series<Suggestion> {
     val contextKeywords = context.extractKeywords()
-    val capabilityKeywords = this.b.`▶`
+    val capabilityKeywords = this.b.`play`
     val relevance = capabilityKeywords.count { it in contextKeywords }.toDouble() / capabilityKeywords.size
     
     return if (relevance > 0.3) {
-        Series.of(Suggestion("Consider using capability '${this.a}': ${this.b.`▶`.joinToString()}"))
+        Series.of(Suggestion("Consider using capability '${this.a}': ${this.b.`play`.joinToString()}"))
     } else {
         Series.empty()
     }
@@ -142,7 +142,7 @@ fun Capability.suggestUsage(context: ProjectContext): Series<Suggestion> {
 
 // Extension functions for missing operations
 fun Problem.extractDomain(): String = 
-    this.`▶`.joinToString(" ").lowercase().let { text ->
+    this.`play`.joinToString(" ").lowercase().let { text ->
         when {
             text.contains("math") || text.contains("algorithm") -> "math"
             text.contains("ui") || text.contains("interface") -> "ui"
@@ -154,10 +154,10 @@ fun Problem.extractDomain(): String =
     }
 
 fun Problem.hasRecursiveStructure(): Boolean =
-    this.`▶`.any { it.contains("recursive") || it.contains("tree") || it.contains("nested") }
+    this.`play`.any { it.contains("recursive") || it.contains("tree") || it.contains("nested") }
 
 val Problem.complexity: ProblemExtended.Complexity get() {
-    val text = this.`▶`.joinToString(" ").lowercase()
+    val text = this.`play`.joinToString(" ").lowercase()
     val complexityIndicators = listOf("complex", "difficult", "hard", "challenging", "multiple", "various")
     val simpleIndicators = listOf("simple", "easy", "basic", "straightforward")
     
@@ -169,8 +169,8 @@ val Problem.complexity: ProblemExtended.Complexity get() {
 }
 
 fun Solution.evaluate(context: ProjectContext): EvaluatedSolution {
-    val codeLines = this.`▶`.size
-    val complexity = this.`▶`.sumOf { it.length }
+    val codeLines = this.`play`.size
+    val complexity = this.`play`.sumOf { it.length }
     val score = when {
         codeLines < 10 && complexity < 200 -> 0.9
         codeLines < 50 && complexity < 1000 -> 0.7
@@ -192,4 +192,4 @@ data class WorkflowStep(val action: Action, val order: Int)
 
 // Helper extension for Series filtering nulls
 fun <T> Series<T?>.filterNotNull(): Series<T> = 
-    this.`▶`.filterNotNull().let { filtered -> Series.of(*filtered.toTypedArray()) }
+    this.`play`.filterNotNull().let { filtered -> Series.of(*filtered.toTypedArray()) }

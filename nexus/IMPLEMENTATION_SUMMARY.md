@@ -69,7 +69,7 @@
 - ✅ Learning tensor operations with pattern correlation
 - ✅ Evolution tensor operations with fitness calculation
 - ✅ CCEK context integration with tensors
-- ✅ Hot/cold path optimization with ▶ operator
+- ✅ Hot/cold path optimization with play operator
 - ✅ Vectorized learning and parallel evolution
 
 **Key Enhancements**:
@@ -104,7 +104,7 @@
 - **Series<T>** for all collections
 - **Join<A,B>** (`j` operator) for all compositions  
 - **α transforms** for all data processing
-- **▶ operator** for materialization (hot/cold paths)
+- **play operator** for materialization (hot/cold paths)
 - **@JvmInline value classes** for zero-cost abstractions
 - **CCEK pattern** throughout (Context, Configuration, Environment, Knowledge)
 

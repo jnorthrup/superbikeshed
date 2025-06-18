@@ -34,7 +34,7 @@ class InteractiveWebGPURenderer {
             uiTriangles = uiResult.trianglesRendered,
             frameTime = worldResult.frameTime + uiResult.frameTime,
             success = worldResult.success && uiResult.success,
-            entityCount = gameState.entities.play.size,
+            entityCount = gameState.entities.`play`.size,
             buttonCount = panelState.buttons.play.size,
             tick = gameState.tick.value
         )
@@ -42,7 +42,7 @@ class InteractiveWebGPURenderer {
     
     private fun createCamera(gameState: GameState, distance: Double, angle: Double): CameraState {
         // Calculate center of all entities
-        val entities = gameState.entities.play
+        val entities = gameState.entities.`play`
         val centerX = if (entities.isNotEmpty()) {
             entities.map { it.position.x }.average()
         } else 400.0

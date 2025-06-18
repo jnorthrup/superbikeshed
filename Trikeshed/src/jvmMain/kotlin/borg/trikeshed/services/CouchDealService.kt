@@ -34,7 +34,7 @@ class CouchDealService(
         return try {
             val response = request.send()
             if (response.status.value == 200) {
-                val bytes = response.body.`▶`.toList().toByteArray()
+                val bytes = response.body.`play`.toList().toByteArray()
                 CouchJsonParser.parseDeal(bytes.decodeToString())
             } else {
                 null
@@ -60,7 +60,7 @@ class CouchDealService(
         return try {
             val response = viewRequest.send()
             if (response.status.value == 200) {
-                val bytes = response.body.`▶`.toList().toByteArray()
+                val bytes = response.body.`play`.toList().toByteArray()
                 val results = CouchJsonParser.parseViewResults(bytes.decodeToString())
                 Series(results)
             } else {
@@ -90,7 +90,7 @@ class CouchDealService(
         return try {
             val response = request.send()
             if (response.status.value in 200..201) {
-                val bytes = response.body.`▶`.toList().toByteArray()
+                val bytes = response.body.`play`.toList().toByteArray()
                 val result = CouchJsonParser.parseCouchResponse(bytes.decodeToString())
                 CouchTxProxy(Join(result.id, mapOf(
                     "ok" to "true",
@@ -126,7 +126,7 @@ class CouchDealService(
         return try {
             val response = request.send()
             if (response.status.value == 200) {
-                val bytes = response.body.`▶`.toList().toByteArray()
+                val bytes = response.body.`play`.toList().toByteArray()
                 val vendors = CouchJsonParser.parseVendors(bytes.decodeToString())
                 Series(vendors)
             } else {

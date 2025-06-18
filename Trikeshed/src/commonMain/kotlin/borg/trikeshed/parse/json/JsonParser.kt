@@ -29,7 +29,7 @@ val JsContext.segments: Iterable<JsIndex>
  val (element, src) = this
  val (openIdx, closeIdx) = element.first
  val commaIdxs: Series<Int> = combine(s_[openIdx], element.second, s_[closeIdx])
- return commaIdxs. `▶` .zipWithNext().map { (a: Int, b: Int) -> a.inc() j b }.toList() α { it j src }
+ return commaIdxs. `play` .zipWithNext().map { (a: Int, b: Int) -> a.inc() j b }.toList() α { it j src }
  }
 
 object JsonParser {

@@ -143,11 +143,11 @@ object RequestFactoryBroker {
         private suspend fun sendRequest(request: Request, callback: (Response) -> Unit) {
             pendingRequests[request.methodToken] = callback
             val json = serializeRequest(request)
-            transport.send(json.▶.toByteArray().toSeries())
+            transport.send(json.play.toByteArray().toSeries())
         }
 
         suspend fun handleResponse(responseBytes: Series<Byte>) {
-            val responseJson = responseBytes.▶.toByteArray().decodeToString()
+            val responseJson = responseBytes.play.toByteArray().decodeToString()
             val response = JsonImpl.parse(responseJson)
             
             val methodToken = MethodToken(getStringField(response, "methodToken"))
@@ -183,7 +183,7 @@ object RequestFactoryBroker {
         }
 
         suspend fun handleRequest(requestBytes: Series<Byte>): Series<Byte> {
-            val requestJson = requestBytes.▶.toByteArray().decodeToString()
+            val requestJson = requestBytes.play.toByteArray().decodeToString()
             val request = JsonImpl.parse(requestJson)
             
             val response = try {
@@ -215,7 +215,7 @@ object RequestFactoryBroker {
                 ?: return Response.Failure("Method not found")
 
             return try {
-                val result = method.call(service, *request.args.▶.toList().toTypedArray())
+                val result = method.call(service, *request.args.play.toList().toTypedArray())
                 Response.Success(result)
             } catch (e: Exception) {
                 Response.Failure(e.message ?: "Invocation failed")
@@ -338,7 +338,7 @@ object RequestFactoryBroker {
         return when (request) {
             is Request.Invoke -> base + mapOf(
                 "type" to "invoke",
-                "args" to request.args.▶.toList()
+                "args" to request.args.play.toList()
             )
             is Request.Create -> base + mapOf(
                 "type" to "create",

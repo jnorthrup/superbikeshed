@@ -116,7 +116,7 @@ fun printKlines(klines: Series<Kline>) {
         return
     }
     // Use toList() and then forEach for simple iteration as Series itself is not directly Iterable
-    // Alternatively, use klines.`▶`.forEach { ... } if IterableSeries is preferred.
+    // Alternatively, use klines.`play`.forEach { ... } if IterableSeries is preferred.
     klines.toList().forEachIndexed { index, kline ->
         println(
             "  Kline ${index + 1}: Time=${klineTimestampToLocalDateTimeString(kline.timestamp)}, " +

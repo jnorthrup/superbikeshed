@@ -3,7 +3,7 @@ package com.example.demo
 import com.example.spacegraphkt.api.AgentAPI
 import com.example.spacegraphkt.api.jsObject // Helper for creating JS objects for AgentAPI
 import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 // Data classes (VisualGraphPointWithMoneyfanOutcome, etc.) and Enums (TASignalType, MoneyfanActionType)
 // are assumed to be in this package (from DemoDataClasses.kt) or correctly imported.
 import com.ta4k.core.model.BigDecimal // Using BigDecimal from ta4k
@@ -39,7 +39,7 @@ class DemoVisualizer(private val agentApi: AgentAPI) {
     ) {
         clearGraph() // Start with a fresh graph
 
-        val points = augmentedVisualData.`▶`.toList()
+        val points = augmentedVisualData.`play`.toList()
         if (points.isEmpty()) {
             console.log("DemoVisualizer: No augmented visual data to display.")
             return
@@ -160,7 +160,7 @@ class DemoVisualizer(private val agentApi: AgentAPI) {
             return
         }
 
-        fullVisualData.`▶`.forEachIndexed { index, vp ->
+        fullVisualData.`play`.forEachIndexed { index, vp ->
             val nodeId = klineNodeIds.getOrNull(index) ?: return@forEachIndexed
 
             var baseBgColor = "rgba(80, 80, 100, 0.85)"; var baseScale = 0.95; var baseZ = 0.0

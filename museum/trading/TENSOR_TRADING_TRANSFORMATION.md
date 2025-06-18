@@ -103,7 +103,7 @@ fun portfolioValue(quantities: AlignedArray<Double>, prices: AlignedArray<Double
 // Automatic dimension reduction
 val seriesView = tensor.shed1D()           // Tensor → Series
 val processed = seriesView α { normalize(it) } α { scale(it) }
-val materialized = processed.`▶`           // TrikeShed materialization
+val materialized = processed.`play`           // TrikeShed materialization
 
 // Preserve familiar operators
 val pipeline = tensor

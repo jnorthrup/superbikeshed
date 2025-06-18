@@ -126,7 +126,7 @@ data.dsl()                    // RawTensor
 ### TrikeShed Patterns
 - **α operator**: Functional transformations
 - **j constructor**: Series creation with lazy evaluation
-- **▶ materialization**: Hot path optimization boundaries
+- **play materialization**: Hot path optimization boundaries
 - **Cursor abstraction**: Columnar data processing
 
 ### Tensor-Core Integration

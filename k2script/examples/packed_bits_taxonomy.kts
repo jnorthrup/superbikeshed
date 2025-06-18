@@ -113,8 +113,8 @@ inline fun <T, R> Series<T>.α(crossinline transform: (T) -> R): Series<R> {
     return Series { i -> transform(this(i)) }
 }
 
-// Pure ▶ materialization - gateway to stdlib
-inline val <T> Series<T>.`▶`: List<T> 
+// Pure play materialization - gateway to stdlib
+inline val <T> Series<T>.`play`: List<T> 
     get() {
         val (size, _) = (this as PackedBits).getSizeAndValue(32)
         return List(size) { i -> this(i) }
