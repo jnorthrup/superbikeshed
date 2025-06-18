@@ -1,3 +1,6 @@
+> [!NOTE]
+> Nexus is a key component of a larger, unified architecture, serving as the primary DGM orchestrator. For an overview of how Nexus fits into the broader ecosystem and implements DGM principles, please see the [Unified Architecture Documentation v3](../../docs/unified_architecture_v3.md).
+
 # Nexus: Universal Development Agent
 
 A unified development agent that combines self-improving code generation with interactive human collaboration across any development environment.

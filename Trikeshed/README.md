@@ -1,3 +1,6 @@
+> [!NOTE]
+> TrikeShed is a foundational library within a larger, unified architecture. For an overview of how TrikeShed's data structures and principles are utilized in this ecosystem, particularly by Nexus, please see the [Unified Architecture Documentation v3](../../docs/unified_architecture_v3.md).
+
 ++(Bike)Shed library
 
 many things
