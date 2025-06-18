@@ -516,7 +516,6 @@ fun Series<Char>.parseDoubleOrNull(): Double? = try {
     null
 }
 
-
 //  --- ported from Columnar ---
 /**
  * Returns a list of pairs built from the elements of `this` array and the [other] array with the same index.
@@ -585,3 +584,4 @@ fun <T : Comparable<T>> Series<T>.commonPrefixWith(other: Series<T>): Series<T> 
     if (size == 0) this else this[0 until shortestLength(other)]
 
 fun <T> Series<T>.firstOrNull(): T? = takeUnless { it.isEmpty() }?.first()
+
