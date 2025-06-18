@@ -78,29 +78,29 @@ object SeriesDataProcessingExamples {
         ).toSeries()
 
         println("Original Klines:")
-        dummyKlines.▶.forEach { println(it) }
+        dummyKlines.play.forEach { println(it) }
 
         println("\nExtracted Close Prices:")
         val closePrices = extractClosePrices(dummyKlines)
-        closePrices.▶.forEach { println(it.value) } // Assuming Price has a meaningful toString or access to value
+        closePrices.play.forEach { println(it.value) } // Assuming Price has a meaningful toString or access to value
 
         println("\nCalculated Typical Prices:")
         val typicalPrices = calculateTypicalPrices(dummyKlines)
-        typicalPrices.▶.forEach { println(it.value) }
+        typicalPrices.play.forEach { println(it.value) }
 
         println("\nJoined Close Price and Volume:")
         val closeAndVolume = joinClosePriceAndVolume(dummyKlines)
-        closeAndVolume.▶.forEach { join -> println("Close: ${join.a.value}, Volume: ${join.b.value}") }
+        closeAndVolume.play.forEach { join -> println("Close: ${join.a.value}, Volume: ${join.b.value}") }
 
         // Example of accessing left/right from Series2
         // println("\nJoined Close (left):")
-        // closeAndVolume.left.▶.forEach { println(it.value) }
+        // closeAndVolume.left.play.forEach { println(it.value) }
         // println("\nJoined Volume (right):")
-        // closeAndVolume.right.▶.forEach { println(it.value) }
+        // closeAndVolume.right.play.forEach { println(it.value) }
     }
     */
     // Note: To run main, KlineModels.kt and Trikeshed files (Series.kt, Join.kt, Series2.kt)
     // would need to be accessible in the classpath.
     // The `toSeries()` extension for List also needs to be available.
-    // The `▶` operator provides an Iterable wrapper.
+    // The `play` operator provides an Iterable wrapper.
 }

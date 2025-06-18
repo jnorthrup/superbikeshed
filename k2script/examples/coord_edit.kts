@@ -24,5 +24,5 @@ val targetFile = File("src/main/kotlin/k2script/K2script.kt")
 if (targetFile.exists()) {
     val coordinates = coordinateEdit(targetFile, "executeScript")
     println("Edit coordinates for 'executeScript':")
-    coordinates.▶.forEach { println(it) }
+    coordinates.play.forEach { println(it) }
 }

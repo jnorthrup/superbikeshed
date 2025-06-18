@@ -12,10 +12,10 @@ class Series<T>(private val data: List<T>) {
     val size: Int get() = data.size
     
     /**
-     * The PLAY BUTTON ▶ - materialization gateway to standard collections
+     * The PLAY BUTTON play - materialization gateway to standard collections
      * DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX
      */
-    val `▶`: List<T> get() = data
+    val `play`: List<T> get() = data
     
     // Legacy alias for compatibility
     val play: List<T> get() = data

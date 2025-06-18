@@ -138,7 +138,7 @@ actual class WebGPUSpaceGraph actual constructor() {
             pipelines = ctx.a.a.pipelines
         ) j ctx.a.b j ctx.b
         
-        return BufferId(newBuffers.play.size - 1)
+        return BufferId(newBuffers.`play`.size - 1)
     }
     
     actual fun createUniformBuffer(data: UniformData): BufferId {
@@ -168,7 +168,7 @@ actual class WebGPUSpaceGraph actual constructor() {
             pipelines = ctx.a.a.pipelines
         ) j ctx.a.b j ctx.b
         
-        return BufferId(newBuffers.play.size - 1)
+        return BufferId(newBuffers.`play`.size - 1)
     }
     
     actual fun createRenderPipeline(vertexShader: String, fragmentShader: String): PipelineId {
@@ -226,13 +226,13 @@ actual class WebGPUSpaceGraph actual constructor() {
             pipelines = newPipelines
         ) j ctx.a.b j ctx.b
         
-        return PipelineId(newPipelines.play.size - 1)
+        return PipelineId(newPipelines.`play`.size - 1)
     }
     
     actual fun updateBuffer(bufferId: BufferId, data: ByteArray) {
         val ctx = context ?: throw IllegalStateException("WebGPU not initialized")
         val device = ctx.a.a.device
-        val buffer = ctx.a.a.buffers.play[bufferId.value]
+        val buffer = ctx.a.a.buffers.`play`[bufferId.value]
         
         val stagingBuffer = device.createBuffer(js("""
             {
@@ -280,8 +280,8 @@ actual class WebGPUSpaceGraph actual constructor() {
         """))
         
         // Set pipeline and draw
-        renderPass.setPipeline(ctx.a.a.pipelines.play[0])
-        renderPass.setVertexBuffer(0, ctx.a.a.buffers.play[0])
+        renderPass.setPipeline(ctx.a.a.pipelines.`play`[0])
+        renderPass.setVertexBuffer(0, ctx.a.a.buffers.`play`[0])
         renderPass.draw(renderData.nodes.play.size * 3, 1, 0, 0)
         
         // End render pass and submit
@@ -305,7 +305,7 @@ actual class WebGPUSpaceGraph actual constructor() {
         val ctx = context ?: return
         
         // Destroy all buffers
-        ctx.a.a.buffers.play.forEach { buffer ->
+        ctx.a.a.buffers.`play`.forEach { buffer ->
             buffer.destroy()
         }
         

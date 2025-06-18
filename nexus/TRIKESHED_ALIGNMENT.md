@@ -12,7 +12,7 @@ After examining the actual TrikeShed implementation, I've identified several key
 
 2. **Transform Operations**:
    - `α` (alpha) transform operator ✅
-   - `▶` (play button) materialization ✅
+   - `play` (play button) materialization ✅
 
 3. **Basic Architecture**:
    - Series as lazy evaluation with size + accessor ✅
@@ -26,7 +26,7 @@ After examining the actual TrikeShed implementation, I've identified several key
 
 2. **Iterator Access**:
    - **WRONG**: Direct iteration over Series
-   - **RIGHT**: `series.▶` to get IterableSeries, then iterate
+   - **RIGHT**: `series.play` to get IterableSeries, then iterate
 
 3. **Join Usage**:
    - **WRONG**: Using Pair anywhere in codebase
@@ -72,7 +72,7 @@ series.α { transform(it) }
 series.toList()
 
 // RIGHT
-series.▶.toList() // Only when absolutely necessary
+series.play.toList() // Only when absolutely necessary
 ```
 
 4. **Join Construction**:
@@ -88,14 +88,14 @@ a j b
 
 1. **Fix Series Construction**: Replace all `Series.of()` calls
 2. **Fix Alpha Usage**: Replace map/filter with α transforms  
-3. **Fix Materialization**: Use ▶ only when interfacing with external APIs
+3. **Fix Materialization**: Use play only when interfacing with external APIs
 4. **Fix Value Classes**: Make all @JvmInline classes internal
 5. **Remove Mock/Demo Code**: Eliminate placeholder implementations
 6. **Package Alignment**: Consider moving to borg.trikeshed.nexus
 
 ## 🎯 TRIKESHED CORE PRINCIPLES
 
-- **Lazy by Default**: Series/Tensor are lazy until materialized with ▶
+- **Lazy by Default**: Series/Tensor are lazy until materialized with play
 - **Join Everywhere**: No Pair, no Tuple, only Join with j operator
 - **Alpha Transforms**: No map/filter, only α for transformations
 - **Internal Value Classes**: All wrappers are internal @JvmInline

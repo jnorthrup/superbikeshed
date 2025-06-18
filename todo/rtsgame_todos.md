@@ -217,7 +217,7 @@ The RTS game has multiple feature branches ready for integration:
 ### Type System Migration
 - [x] Replace raw collections with `Series<T>` and `Join<A,B>`
 - [x] Implement `α` transforms for data processing
-- [x] Use `▶` materialization for stdlib compatibility
+- [x] Use `play` materialization for stdlib compatibility
 - [x] Convert to `@JvmInline value class` wrappers
 - [x] Define domain-specific typealiases
 - [ ] **Implement type-safe command hierarchy using TrikeShed types**

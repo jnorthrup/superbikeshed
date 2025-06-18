@@ -66,7 +66,7 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
     val fractionalScope = FractionalScope<DemoPortfolioRow>(0.5, seed = 123L) // Focus on 50% of items
     val focusedFractionalSeries = portfolioSeries.focus(fractionalScope)
     println("\nFocused portfolio (FractionalScope 50%, seed 123): ${focusedFractionalSeries.a} items")
-    focusedFractionalSeries.`▶`.forEachIndexed { index, row ->
+    focusedFractionalSeries.`play`.forEachIndexed { index, row ->
         println("  Item $index (Fractional): $row")
         // Simulate strategy logic based on deviation
         row.deviation?.let { dev ->
@@ -84,7 +84,7 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
         val rangeScope = RangeScope<DemoPortfolioRow>(0, rangeEnd) // Focus on the first half
         val focusedRangeSeries = portfolioSeries.focus(rangeScope)
         println("\nFocused portfolio (RangeScope first half): ${focusedRangeSeries.a} items")
-        focusedRangeSeries.`▶`.forEachIndexed { index, row ->
+        focusedRangeSeries.`play`.forEachIndexed { index, row ->
             println("  Item $index (Range): $row")
             // Simulate strategy logic (can be a shared function)
              row.deviation?.let { dev ->
@@ -108,24 +108,24 @@ fun demonstrateSparseAndExtendedHandling() {
     println("\n--- Demonstrating Sparse and Extended Series Handling ---")
     val pricesWithNullsList = listOf(10.0, null, 12.0, null, null, 15.0, 16.0)
     val sparsePrices: Series<Double?> = pricesWithNullsList.toSeries()
-    println("Original sparse prices: ${sparsePrices.`▶`.joinToString { it?.format(2) ?: "null" }}")
+    println("Original sparse prices: ${sparsePrices.`play`.joinToString { it?.format(2) ?: "null" }}")
 
     // fillna with a default value
     val filledPricesConstant = sparsePrices.fillna(0.0) // Fill nulls with 0.0
-    println("fillna(0.0):          ${filledPricesConstant.`▶`.joinToString { it.format(2) }}")
+    println("fillna(0.0):          ${filledPricesConstant.`play`.joinToString { it.format(2) }}")
 
     // ffill (forward fill)
     val ffilledPrices = sparsePrices.ffill()
-    println("ffill():              ${ffilledPrices.`▶`.joinToString { it?.format(2) ?: "null" }}")
+    println("ffill():              ${ffilledPrices.`play`.joinToString { it?.format(2) ?: "null" }}")
 
     // dropna (example, though not explicitly requested but related)
     // val droppedPrices = sparsePrices.dropna()
-    // println("dropna():             ${droppedPrices.`▶`.joinToString { it.format(2) }}")
+    // println("dropna():             ${droppedPrices.`play`.joinToString { it.format(2) }}")
 
 
     println("\n--- Demonstrating Series Extension ---")
     val baseSeries = listOf(1.0, 2.0, 3.0).toSeries()
-    println("Base series: ${baseSeries.`▶`.joinToString { it.format(2) }} (Size: ${baseSeries.a})")
+    println("Base series: ${baseSeries.`play`.joinToString { it.format(2) }} (Size: ${baseSeries.a})")
 
     // Extend by clamping
     val clampedSeries = baseSeries.extendByClamping()

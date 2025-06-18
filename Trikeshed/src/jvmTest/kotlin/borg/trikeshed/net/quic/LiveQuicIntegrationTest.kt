@@ -2,7 +2,7 @@ package borg.trikeshed.net.quic
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.Join  
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.flow
@@ -112,7 +112,7 @@ class LiveQuicIntegrationTest {
                         "HANDSHAKE_INITIAL_$clientId",
                         "HANDSHAKE_CRYPTO_$clientId",
                         "HANDSHAKE_FINISH_$clientId"
-                    ).`▶` + (1..packetsPerClient - 5).map { "DATA_PAYLOAD_${clientId}_$it" } + 
+                    ).`play` + (1..packetsPerClient - 5).map { "DATA_PAYLOAD_${clientId}_$it" } +
                     listOf("CLOSE_CONNECTION_$clientId", "CLOSE_ACK_$clientId")
                     
                     var packetsExchanged = 0

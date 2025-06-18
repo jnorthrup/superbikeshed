@@ -40,7 +40,7 @@ Primary reference: `/Users/jim/work/Trikeshed/`
 1. Use `Series2<T, O>` not `Map<K, V>` 
 2. Use `Series<T>` not `List<T>`
 3. Use `Series.α` transforms not `MutableList`
-4. Use `▶` for materialization to standard collections
+4. Use `play` for materialization to standard collections
 5. Use `@JvmInline value class` for all primitives
 6. Use `typealias` for descriptive domain types
 

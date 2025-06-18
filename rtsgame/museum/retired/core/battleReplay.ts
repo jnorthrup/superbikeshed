@@ -69,7 +69,7 @@ export class BattleReplay {
         // Reset game state to match original battle start
         this.resetGameState();
 
-        console.log(`▶️ Replay started - ${this.battleData.id}`);
+        console.log(`play️ Replay started - ${this.battleData.id}`);
         console.log(`🎮 Replay speed: ${this.replaySpeed}x`);
 
         return true;

@@ -392,7 +392,7 @@ class MoneyFanMDIApplication : JFrame("MoneyFan Trading System") {
             val scrollPane = panel.getComponent(0) as JScrollPane
             val symbolPanel = scrollPane.viewport.view as JPanel
             
-            attentionSeries.▶.forEachIndexed { index, window ->
+            attentionSeries.play.forEachIndexed { index, window ->
                 if (index < symbolPanel.componentCount) {
                     val label = symbolPanel.getComponent(index) as JLabel
                     val (volGauge, volumeGauge) = window.gaugeReading

@@ -124,8 +124,8 @@ fun RuntimeState.adaptTo(change: Change): RuntimeState =
 // MATHEMATICAL EXTENSIONS FOR SERIES OPERATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Series mathematical operations using ▶ materialization
-fun <T : Comparable<T>> Series<T>.best(): T = this ▶ { it.maxOrNull()!! }
+// Series mathematical operations using play materialization
+fun <T : Comparable<T>> Series<T>.best(): T = this play { it.maxOrNull()!! }
 fun <T> Series<T>.take(n: Int): Series<T> = this.α { it }.take(n)
 fun <T> List<T>.toSeries(): Series<T> = Series.from(this)
 
@@ -134,14 +134,14 @@ fun <T> Series<T>.scoreWith(scorer: (T) -> Score): Series<Join<Score, T>> =
     this.α { element -> scorer(element) j element }
 
 fun <T> Series<Join<Score, T>>.rankByScore(): Series<Join<Score, T>> =
-    this ▶ { it.sortedByDescending { (score, _) -> score } }
+    this play { it.sortedByDescending { (score, _) -> score } }
 
 // Evolution operations on series
 fun <T> Series<T>.evolveWith(evolver: (T) -> T): Series<T> =
     this.α { element -> evolver(element) }
 
 fun <T> Series<T>.selectTop(ratio: Double): Series<T> =
-    this ▶ { it.take((it.size * ratio).toInt()) }
+    this play { it.take((it.size * ratio).toInt()) }
 
 // Learning operations
 fun <T> Series<T>.learnPattern(learner: (Series<T>) -> Pattern): Pattern =
@@ -168,5 +168,5 @@ fun EvolutionStep.Companion.from(actionOutcome: ActionOutcome): EvolutionStep = 
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ZERO CLASSES. ZERO INTERFACES. PURE MATHEMATICAL COMPOSITION.
-// Everything is typealias compositions with α transformations and ▶ materialization.
+// Everything is typealias compositions with α transformations and play materialization.
 // ═══════════════════════════════════════════════════════════════════════════════

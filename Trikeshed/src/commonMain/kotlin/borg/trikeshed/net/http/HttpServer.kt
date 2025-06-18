@@ -4,12 +4,14 @@ package borg.trikeshed.net.http
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
 import borg.trikeshed.services.DealService
-import borg.trikeshed.services.RequestFactoryService
-import borg.trikeshed.io.PlatformFile
+import borg.trikeshed.services.*
+import borg.trikeshed.io.*
 import kotlin.jvm.JvmInline
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
+
+private val PlatformFile.path: String
 
 @JvmInline value class HttpServerPort(val value: Int)
 @JvmInline value class HttpServerHost(val value: String)
@@ -79,8 +81,8 @@ class HttpServer(
                         connectionHandler.handle()
                     }
                 }
-                return OP_ACCEPT j this
-            }
+                return (OP_ACCEPT j this as UnaryAsyncReaction) 
+            } 
         }
         //reactor.registerChannel(serverChannel, OP_ACCEPT, acceptReaction) // Old API
     }
@@ -136,7 +138,7 @@ class HttpConnectionHandler(
             val responseBuffer = reactor.bufferPool.acquire()
             try {
                 // This is simplistic, a real impl needs to handle large bodies
-                val responseBytes = serializedResponse.`▶`.joinToString("").encodeToByteArray()
+                val responseBytes = serializedResponse.`play`.joinToString("").encodeToByteArray()
                 responseBuffer.put(responseBytes)
                 responseBuffer.flip()
                 channel.write(responseBuffer)
@@ -163,7 +165,7 @@ class HttpConnectionHandler(
         val serialized = HttpSerializer.serializeHttpMessage(responseMessage)
         val buffer = reactor.bufferPool.acquire()
         try {
-            buffer.put(serialized.`▶`.joinToString("").encodeToByteArray())
+            buffer.put(serialized.`play`.joinToString("").encodeToByteArray())
             buffer.flip()
             channel.write(buffer)
         } finally {
@@ -187,7 +189,7 @@ fun createStaticFileHandler(rootDir: String): HttpHandler {
             HttpResponse(HttpStatusCode(404), HttpReasonPhrase("Not Found"))
         } else {
             // Opportunistic Gzip
-            val acceptEncoding = request.headers.▶.find { it.a.value.equals("Accept-Encoding", ignoreCase = true) }?.b?.value ?: ""
+            val acceptEncoding = request.headers.play.find { it.a.value.equals("Accept-Encoding", ignoreCase = true) }?.b?.value ?: ""
             val gzFile = PlatformFile("${file.path}.gz")
             
             val (fileToSend, contentEncoding) = if ("gzip" in acceptEncoding && gzFile.exists()) {
@@ -241,7 +243,6 @@ private fun HttpResponse(
 
 private fun String.toSeries(): Series<Char> = this.length j { this[it] }
 
-private fun ByteArray.toSeries(): Series<Byte> = this.size j { this[it] }
 
 // ===== CONNECTION MANAGEMENT (RFC 7230 Section 6) =====
 
@@ -257,7 +258,7 @@ class HttpConnectionManager(private val config: HttpServerConfig) {
     )
     
     fun shouldKeepAlive(headers: Series2<HttpFieldName, HttpFieldValue>, version: HttpVersion): Boolean {
-        val connectionHeader = headers.`▶`.find { 
+        val connectionHeader = headers.`play`.find {
             it.a.value.lowercase() == "connection" 
         }?.b?.value?.lowercase()
         
@@ -320,8 +321,8 @@ object ChunkedTransferEncoder {
         val chunkedBody = HttpParser.parseChunkedBody(inputChars) ?: return null
         
         val allData = mutableListOf<Byte>()
-        chunkedBody.chunks.`▶`.forEach { chunk ->
-            allData.addAll(chunk.data.`▶`)
+        chunkedBody.chunks.`play`.forEach { chunk ->
+            allData.addAll(chunk.data.`play`)
         }
         
         return allData.size j { allData[it] }
@@ -332,7 +333,6 @@ object ChunkedTransferEncoder {
 
 private fun ByteArray.toSeries(): Series<Byte> = size j { this[it] }
 
-private fun String.encodeToByteArray(): ByteArray = this.toByteArray(Charsets.UTF_8)
 
 // ===== CCEK SERVICE HANDLERS =====
 

@@ -172,7 +172,7 @@ flowchart LR
     subgraph "Tensor Layer"
         T4D[4D Tensor Space<br/>[context,capabilities,patterns,outcomes]]
         ALPHA[α Transforms<br/>Data processing]
-        PLAY[▶ Operator<br/>Hot/cold materialization]
+        PLAY[play Operator<br/>Hot/cold materialization]
     end
     
     subgraph "Output Layer"
@@ -210,7 +210,7 @@ graph TB
     
     subgraph "Operations"
         ALPHA["α Transform<br/>series.α { transform }"]
-        PLAY["▶ Operator<br/>series ▶ (materialization)"]
+        PLAY["play Operator<br/>series play (materialization)"]
         INLINE["@JvmInline value class<br/>Zero-cost abstractions"]
     end
     

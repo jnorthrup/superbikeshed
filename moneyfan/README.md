@@ -76,7 +76,7 @@
    - Replace all `List<T>` with `Series<T>`
    - Implement α transformation patterns for data processing
    - Use `j` operator for joins between price/volume data
-   - Proper `▶` materialization for collection operations
+   - Proper `play` materialization for collection operations
 
 3. **Historical Data Pipeline**
    - Load DOGE data for 2020-2022 period
@@ -200,8 +200,8 @@ val marketState = priceData j volumeData
 val strategicView = fundamentals j technicals
 val riskProfile = portfolio j marketConditions
 
-// Materialization via ▶ (play button)
-val tradableSignals = signalSeries.▶.filter { it.strength > 0.7 }
+// Materialization via play (play button)
+val tradableSignals = signalSeries.play.filter { it.strength > 0.7 }
 ```
 
 ## A/B/C Testing Backtesting Harness

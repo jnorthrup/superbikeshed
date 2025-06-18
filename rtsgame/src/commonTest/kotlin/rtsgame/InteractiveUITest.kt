@@ -52,18 +52,18 @@ class InteractiveUITest {
     @Test
     fun `add unit button creates new entities`() {
         val (gameState1, _) = panel.getCurrentState()
-        val initialCount = gameState1.entities.play.size
+        val initialCount = gameState1.entities.`play`.size
         
         // Click ADD UNIT button
         panel.handleMouseInput(250f, 65f, true)
         
         val (gameState2, _) = panel.getCurrentState()
-        val newCount = gameState2.entities.play.size
+        val newCount = gameState2.entities.`play`.size
         
         assertEquals(initialCount + 1, newCount, "Should add one entity")
         
         // Verify new entity has valid properties
-        val newEntity = gameState2.entities.play.last()
+        val newEntity = gameState2.entities.`play`.last()
         assertTrue(newEntity.id.value.startsWith("unit_"), "New entity should have unit_ prefix")
         assertTrue(newEntity.position.a.value >= 20f, "X position should be valid")
         assertTrue(newEntity.position.b.value >= 120f, "Y position should be valid")
@@ -78,13 +78,13 @@ class InteractiveUITest {
         panel.handleMouseInput(250f, 65f, true) // ADD UNIT again
         
         val (gameState1, _) = panel.getCurrentState()
-        assertTrue(gameState1.entities.play.size > 4, "Should have more than initial entities")
+        assertTrue(gameState1.entities.`play`.size > 4, "Should have more than initial entities")
         
         // Click RESET button
         panel.handleMouseInput(390f, 65f, true)
         
         val (gameState2, panelState2) = panel.getCurrentState()
-        assertEquals(4, gameState2.entities.play.size, "Should restore to initial 4 entities")
+        assertEquals(4, gameState2.entities.`play`.size, "Should restore to initial 4 entities")
         assertEquals(GameTick(0), gameState2.tick, "Should reset tick to 0")
         
         // Check START button is reset

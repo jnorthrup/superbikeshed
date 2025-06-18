@@ -30,7 +30,7 @@ class JvmIntegrationTest {
         assertDoesNotThrow {
             val engine = GameEngine()
             val state = engine.tick()
-            assertTrue(state.entities.play.isNotEmpty())
+            assertTrue(state.entities.`play`.isNotEmpty())
         }
     }
     

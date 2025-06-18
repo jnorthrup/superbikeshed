@@ -176,7 +176,7 @@ class HybridIntelligence(
         val solutions = generateSolutions(problem, context, Series.empty())
         val bestSolution = solutions.best()
         
-        return Series.of("Generated solution:", "", bestSolution.`▶`.joinToString("\n"))
+        return Series.of("Generated solution:", "", bestSolution.`play`.joinToString("\n"))
     }
     
     private suspend fun handleProblemSolving(request: Request, context: ProjectContext): Response {
@@ -234,7 +234,7 @@ class HybridIntelligence(
     }
     
     private fun classifyRequest(request: Request): RequestType {
-        val content = request.`▶`.joinToString(" ").lowercase()
+        val content = request.`play`.joinToString(" ").lowercase()
         return when {
             content.contains("generate") || content.contains("create") -> RequestType.CODE_GENERATION
             content.contains("solve") || content.contains("fix") -> RequestType.PROBLEM_SOLVING
@@ -250,11 +250,11 @@ class HybridIntelligence(
     private fun extractProblem(request: Request): Problem = request
     
     private fun extractCodebase(context: ProjectContext): Series<String> =
-        context.`▶`.filter { it.a == "file_content" }.map { it.b }
+        context.`play`.filter { it.a == "file_content" }.map { it.b }
     
     private fun identifyRefactoringTargets(codebase: Series<String>, problem: Problem): Series<String> =
         codebase.α { code -> 
-            if (problem.`▶`.any { code.contains(it, ignoreCase = true) }) code else null
+            if (problem.`play`.any { code.contains(it, ignoreCase = true) }) code else null
         }.filterNotNull()
     
     private fun applyRefactorings(targets: Series<String>): Series<String> =
@@ -272,7 +272,7 @@ class HybridIntelligence(
         problem.extractDomain()
     
     private fun performAnalysis(type: String, context: ProjectContext): Series<String> =
-        Series.of("Analysis type: $type", "Context size: ${context.`▶`.size}", "Recommendations: [generated]")
+        Series.of("Analysis type: $type", "Context size: ${context.`play`.size}", "Recommendations: [generated]")
     
     private fun designWorkflow(problem: Problem, context: ProjectContext): Workflow =
         Series.of(
@@ -283,7 +283,7 @@ class HybridIntelligence(
         )
     
     private fun explainSolution(solution: Solution, problem: Problem): String =
-        "Solution explanation for problem '${problem.`▶`.take(3).joinToString(" ")}...': ${solution.`▶`.take(2).joinToString(" ")}..."
+        "Solution explanation for problem '${problem.`play`.take(3).joinToString(" ")}...': ${solution.`play`.take(2).joinToString(" ")}..."
     
     // Additional missing helper functions
     private fun analyzeOpportunities(context: ProjectContext): Series<Opportunity> =
@@ -302,7 +302,7 @@ class HybridIntelligence(
     
     private fun analyzeWorkflowProgress(workflow: Workflow, results: Series<Outcome>): WorkflowAnalysis =
         WorkflowAnalysis(
-            isOnTrack = results.`▶`.any { it.`▶`.any { it.contains("success") } },
+            isOnTrack = results.`play`.any { it.`play`.any { it.contains("success") } },
             issues = Series.of(Issue("warning", "Progress slower than expected", "Consider parallelization")),
             suggestions = Series.of("Increase concurrency", "Add monitoring")
         )

@@ -31,7 +31,7 @@ object FutonTemplate {
             val innerTemplate = matchResult.groupValues[2]
             val items = context[listName] as? Series<*> ?: return@replace ""
 
-            items.▶.joinToString("") { item ->
+            items.play.joinToString("") { item ->
                 val itemContext = when (item) {
                     is CouchDatabase -> mapOf(
                         "name" to item.name.value,

@@ -8,15 +8,15 @@ typealias DoubleDispatchTable<A, B, R> = Series<DoubleDispatchEntry<A, B, R>>
 
 // Double dispatch operator - finds first matching entry and executes handler
 fun <A, B, R> DoubleDispatchTable<A, B, R>.doubleDispatch(a: A, b: B): R? = 
-    this.`▶`.firstOrNull { entry ->
+    this.`play`.firstOrNull { entry ->
         val (predicateJoin, _) = entry
         val (aPredicate, bPredicate) = predicateJoin
         aPredicate(a) && bPredicate(b)
     }?.b?.invoke(a, b)
 
-// Operator version using Join<A,B> input  
-infix fun <A, B, R> DoubleDispatchTable<A, B, R>.`**`(pair: Join<A, B>): R? = 
-    doubleDispatch(pair.a, pair.b)
+//// Operator version using Join<A,B> input
+//infix fun <A, B, R> DoubleDispatchTable<A, B, R>.`**`(pair: Join<A, B>): R? =
+//    doubleDispatch(pair.a, pair.b)
 
 // Helper for common wildcard patterns
 fun <T> wildcard(): (T) -> Boolean = { true }

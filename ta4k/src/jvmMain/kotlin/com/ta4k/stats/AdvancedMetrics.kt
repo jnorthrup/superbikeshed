@@ -2,7 +2,7 @@ package com.ta4k.stats
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -29,11 +29,11 @@ class AdvancedMetrics {
     ): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
-        val excessReturns = returns.`▶`.zip(benchmark.`▶`) { ret, bench ->
+        val excessReturns = returns.`play`.zip(benchmark.`play`) { ret, bench ->
             ret.subtract(bench)
         }.toList()
         
-        val beta = calculateBeta(returns.`▶`.toList(), benchmark.`▶`.toList())
+        val beta = calculateBeta(returns.`play`.toList(), benchmark.`play`.toList())
         if (beta == BigDecimal.ZERO) return BigDecimal.ZERO
         
         val meanExcessReturn = excessReturns.average()
@@ -53,10 +53,10 @@ class AdvancedMetrics {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val threshold = requiredReturn.add(rf)
-        val gains = returns.`▶`.filter { it > threshold }
+        val gains = returns.`play`.filter { it > threshold }
             .map { it.subtract(threshold) }
             .toList()
-        val losses = returns.`▶`.filter { it < threshold }
+        val losses = returns.`play`.filter { it < threshold }
             .map { threshold.subtract(it) }
             .toList()
             
@@ -91,7 +91,7 @@ class AdvancedMetrics {
         var peak = BigDecimal.ONE
         var sumSquaredDrawdowns = BigDecimal.ZERO
         
-        returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
+        returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
             val current = acc.multiply(BigDecimal.ONE.add(ret))
             peak = peak.max(current)
             val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
@@ -149,7 +149,7 @@ class AdvancedMetrics {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val totalReturn = returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
+        val totalReturn = returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
             acc.multiply(BigDecimal.ONE.add(ret))
         }.subtract(BigDecimal.ONE)
         
@@ -166,7 +166,7 @@ class AdvancedMetrics {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val cagr = StatsUtils.cagr(returns, periods = periods)
-        val downsideStd = calculateDownsideStdDev(returns.`▶`.toList())
+        val downsideStd = calculateDownsideStdDev(returns.`play`.toList())
         
         return if (downsideStd == BigDecimal.ZERO) BigDecimal.ZERO
         else cagr.divide(downsideStd, DEFAULT_SCALE, RoundingMode.HALF_UP)
@@ -178,8 +178,8 @@ class AdvancedMetrics {
     fun gainToPainRatio(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val totalReturn = returns.`▶`.sumOf { it }
-        val downside = returns.`▶`.filter { it < BigDecimal.ZERO }
+        val totalReturn = returns.`play`.sumOf { it }
+        val downside = returns.`play`.filter { it < BigDecimal.ZERO }
             .sumOf { it.abs() }
             
         return if (downside == BigDecimal.ZERO) BigDecimal.ZERO
@@ -215,8 +215,8 @@ class AdvancedMetrics {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val mean = returns.`▶`.average()
-        val std = calculateStdDev(returns.`▶`.toList())
+        val mean = returns.`play`.average()
+        val std = calculateStdDev(returns.`play`.toList())
         
         return mean.subtract(std.multiply(BigDecimal(sigma)))
             .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
@@ -233,7 +233,7 @@ class AdvancedMetrics {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val var = valueAtRisk(returns, sigma, confidence)
-        val tailReturns = returns.`▶`.filter { it <= var }
+        val tailReturns = returns.`play`.filter { it <= var }
         
         return if (tailReturns.isEmpty()) BigDecimal.ZERO
         else tailReturns.average().setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
@@ -248,7 +248,7 @@ class AdvancedMetrics {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val sortedReturns = returns.`▶`.sorted()
+        val sortedReturns = returns.`play`.sorted()
         val rightTail = sortedReturns.last()
         val leftTail = sortedReturns.first()
         
@@ -262,8 +262,8 @@ class AdvancedMetrics {
     fun payoffRatio(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val wins = returns.`▶`.filter { it > BigDecimal.ZERO }
-        val losses = returns.`▶`.filter { it < BigDecimal.ZERO }
+        val wins = returns.`play`.filter { it > BigDecimal.ZERO }
+        val losses = returns.`play`.filter { it < BigDecimal.ZERO }
         
         if (wins.isEmpty() || losses.isEmpty()) return BigDecimal.ZERO
         
@@ -296,7 +296,7 @@ class AdvancedMetrics {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val wins: List<BigDecimal> = returns.`▶`.filter { it > BigDecimal.ZERO }
+        val wins: List<BigDecimal> = returns.`play`.filter { it > BigDecimal.ZERO }
         if (wins.isEmpty()) return BigDecimal.ZERO
         
         val threshold: BigDecimal = wins.sorted()[((wins.size * quantile.toDouble()).toInt())]
@@ -315,7 +315,7 @@ class AdvancedMetrics {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val losses: List<BigDecimal> = returns.`▶`.filter { it < BigDecimal.ZERO }
+        val losses: List<BigDecimal> = returns.`play`.filter { it < BigDecimal.ZERO }
         if (losses.isEmpty()) return BigDecimal.ZERO
         
         val threshold: BigDecimal = losses.sorted()[((losses.size * quantile.toDouble()).toInt())]
@@ -345,8 +345,8 @@ class AdvancedMetrics {
     fun profitRatio(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val wins = returns.`▶`.filter { it >= BigDecimal.ZERO }
-        val losses = returns.`▶`.filter { it < BigDecimal.ZERO }
+        val wins = returns.`play`.filter { it >= BigDecimal.ZERO }
+        val losses = returns.`play`.filter { it < BigDecimal.ZERO }
         
         if (wins.isEmpty() || losses.isEmpty()) return BigDecimal.ZERO
         
@@ -385,14 +385,14 @@ class AdvancedMetrics {
     fun rSquared(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
-        val returnsMean = returns.`▶`.average()
-        val benchmarkMean = benchmark.`▶`.average()
+        val returnsMean = returns.`play`.average()
+        val benchmarkMean = benchmark.`play`.average()
         
         var ssTotal = BigDecimal.ZERO
         var ssResidual = BigDecimal.ZERO
         
-        val returnsList = returns.`▶`.toList()
-        val benchmarkList = benchmark.`▶`.toList()
+        val returnsList = returns.`play`.toList()
+        val benchmarkList = benchmark.`play`.toList()
         
         for (i in returnsList.indices) {
             val returnsDiff = returnsList[i].subtract(returnsMean)
@@ -412,7 +412,7 @@ class AdvancedMetrics {
     fun informationRatio(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
-        val excessReturns = returns.`▶`.zip(benchmark.`▶`) { ret, bench ->
+        val excessReturns = returns.`play`.zip(benchmark.`play`) { ret, bench ->
             ret.subtract(bench)
         }.toList()
         
@@ -438,9 +438,9 @@ class AdvancedMetrics {
             )
         }
         
-        val beta = calculateBeta(returns.`▶`.toList(), benchmark.`▶`.toList())
-        val returnsMean = returns.`▶`.average()
-        val benchmarkMean = benchmark.`▶`.average()
+        val beta = calculateBeta(returns.`play`.toList(), benchmark.`play`.toList())
+        val returnsMean = returns.`play`.average()
+        val benchmarkMean = benchmark.`play`.average()
         
         val alpha = returnsMean.subtract(benchmarkMean.multiply(beta))
             .multiply(BigDecimal(periods))
@@ -465,8 +465,8 @@ class AdvancedMetrics {
         
         val result = mutableListOf<Map<String, BigDecimal>>()
         for (i in 0 until returns.size - window + 1) {
-            val returnsWindow = returns.`▶`.drop(i).take(window).toList()
-            val benchmarkWindow = benchmark.`▶`.drop(i).take(window).toList()
+            val returnsWindow = returns.`play`.drop(i).take(window).toList()
+            val benchmarkWindow = benchmark.`play`.drop(i).take(window).toList()
             
             result.add(greeks(
                 returnsWindow.size j { j -> returnsWindow[j] },
@@ -531,7 +531,7 @@ class AdvancedMetrics {
     fun monthlyReturns(returns: Series<BigDecimal>, eoy: Boolean = true, compounded: Boolean = true): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
         var currentMonth: Int = -1
         var currentYear: Int = -1
@@ -567,7 +567,7 @@ class AdvancedMetrics {
     fun consecutiveWins(returns: Series<BigDecimal>): Int {
         if (returns.isEmpty()) return 0
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         var maxConsecutive: Int = 0
         var currentConsecutive: Int = 0
         
@@ -589,7 +589,7 @@ class AdvancedMetrics {
     fun consecutiveLosses(returns: Series<BigDecimal>): Int {
         if (returns.isEmpty()) return 0
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         var maxConsecutive: Int = 0
         var currentConsecutive: Int = 0
         
@@ -610,7 +610,7 @@ class AdvancedMetrics {
      */
     fun bestReturn(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
-        return returns.`▶`.maxOrNull() ?: BigDecimal.ZERO
+        return returns.`play`.maxOrNull() ?: BigDecimal.ZERO
     }
 
     /**
@@ -618,7 +618,7 @@ class AdvancedMetrics {
      */
     fun worstReturn(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
-        return returns.`▶`.minOrNull() ?: BigDecimal.ZERO
+        return returns.`play`.minOrNull() ?: BigDecimal.ZERO
     }
 
     /**
@@ -627,7 +627,7 @@ class AdvancedMetrics {
     fun geometricMean(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         var product: BigDecimal = BigDecimal.ONE
         
         for (ret in returnsList) {
@@ -643,7 +643,7 @@ class AdvancedMetrics {
      */
     fun expectedReturn(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
-        return returns.`▶`.average()
+        return returns.`play`.average()
     }
 
     /**
@@ -660,7 +660,7 @@ class AdvancedMetrics {
             "q3" to BigDecimal.ZERO
         )
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList().sorted()
+        val returnsList: List<BigDecimal> = returns.`play`.toList().sorted()
         val n: Int = returnsList.size
         
         return mapOf(
@@ -680,7 +680,7 @@ class AdvancedMetrics {
     fun probabilisticSharpeRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val mean: BigDecimal = returnsList.average()
         val std: BigDecimal = calculateStdDev(returnsList)
         val sr: BigDecimal = mean.subtract(rf).divide(std, DEFAULT_SCALE, RoundingMode.HALF_UP)
@@ -697,7 +697,7 @@ class AdvancedMetrics {
     fun probabilisticSortinoRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val mean: BigDecimal = returnsList.average()
         val downside: BigDecimal = returnsList.filter { it < BigDecimal.ZERO }
             .map { it.multiply(it) }
@@ -717,7 +717,7 @@ class AdvancedMetrics {
     fun probabilisticAdjustedSortinoRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val mean: BigDecimal = returnsList.average()
         val downside: BigDecimal = returnsList.filter { it < BigDecimal.ZERO }
             .map { it.multiply(it) }
@@ -783,7 +783,7 @@ class AdvancedMetrics {
     fun pctRank(returns: Series<BigDecimal>, window: Int = 60): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
         
         for (i in returnsList.indices) {
@@ -804,7 +804,7 @@ class AdvancedMetrics {
     fun compSum(returns: Series<BigDecimal>): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
         var sum: BigDecimal = BigDecimal.ONE
         
@@ -822,7 +822,7 @@ class AdvancedMetrics {
     fun comp(returns: Series<BigDecimal>): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
         var sum: BigDecimal = BigDecimal.ONE
         
@@ -840,7 +840,7 @@ class AdvancedMetrics {
     fun outliers(returns: Series<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val sorted: List<BigDecimal> = returnsList.sorted()
         val threshold: BigDecimal = sorted[(sorted.size * quantile.toDouble()).toInt()]
         
@@ -855,7 +855,7 @@ class AdvancedMetrics {
     fun removeOutliers(returns: Series<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val sorted: List<BigDecimal> = returnsList.sorted()
         val threshold: BigDecimal = sorted[(sorted.size * quantile.toDouble()).toInt()]
         
@@ -870,7 +870,7 @@ class AdvancedMetrics {
     fun exposure(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val nonZero: Int = returnsList.count { it != BigDecimal.ZERO }
         
         return nonZero.toBigDecimal()
@@ -883,7 +883,7 @@ class AdvancedMetrics {
     fun winRate(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val wins: Int = returnsList.count { it > BigDecimal.ZERO }
         
         return wins.toBigDecimal()
@@ -895,7 +895,7 @@ class AdvancedMetrics {
      */
     fun avgReturn(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
-        return returns.`▶`.average()
+        return returns.`play`.average()
     }
 
     /**
@@ -904,7 +904,7 @@ class AdvancedMetrics {
     fun avgWin(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val wins: List<BigDecimal> = returnsList.filter { it > BigDecimal.ZERO }
         
         return if (wins.isEmpty()) BigDecimal.ZERO else wins.average()
@@ -916,7 +916,7 @@ class AdvancedMetrics {
     fun avgLoss(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val returnsList: List<BigDecimal> = returns.`▶`.toList()
+        val returnsList: List<BigDecimal> = returns.`play`.toList()
         val losses: List<BigDecimal> = returnsList.filter { it < BigDecimal.ZERO }
         
         return if (losses.isEmpty()) BigDecimal.ZERO else losses.average()

@@ -92,7 +92,7 @@ graph TB
 ```mermaid
 graph LR
     subgraph "trikeshed-core (Foundation)"
-        CoreTypes["• Series&lt;T&gt;<br/>• Join&lt;A,B&gt;<br/>• j operator<br/>• α transforms<br/>• ▶ gateway"]
+        CoreTypes["• Series&lt;T&gt;<br/>• Join&lt;A,B&gt;<br/>• j operator<br/>• α transforms<br/>• play gateway"]
         CoreServices["• VulkanService.Key<br/>• NioService.Key<br/>• AsyncIoEngine.Key"]
     end
     
@@ -168,14 +168,14 @@ graph LR
     subgraph "Core Operators"
         JOperator["j operator<br/>a j b → Join&lt;A,B&gt;"]
         AlphaOperator["α operator<br/>series.α { transform }"]
-        PlayOperator["▶ operator<br/>series ▶ (materialization)"]
+        PlayOperator["play operator<br/>series play (materialization)"]
     end
     
     subgraph "Data Flow Pipeline"
         Input["Raw Data"]
         Series1["Series&lt;T&gt;<br/>Columnar structure"]
         Transform["Transform via α"]
-        Materialize["Materialize via ▶"]
+        Materialize["Materialize via play"]
         Output["Standard Collections"]
     end
     
@@ -229,7 +229,7 @@ Enables dependency injection through coroutine context lookup.
 ### 4. Zero-Cost Abstractions
 - `@JvmInline value class` wrappers
 - Compile-time type safety with runtime erasure
-- TrikeShed operators (`j`, `α`, `▶`) as inline functions
+- TrikeShed operators (`j`, `α`, `play`) as inline functions
 
 ### 5. Platform Abstraction
 - expect/actual multiplatform pattern

@@ -6,7 +6,7 @@
 typealias Series<T> = List<T>
 typealias Join<A,B> = Pair<A,B>
 infix fun <A,B> A.j(other: B): Join<A,B> = this to other
-val <T> Series<T>.`▶` get() = this
+val <T> Series<T>.`play` get() = this
 
 // CCEK taxonomical typealiases per specification
 typealias Context = Series<Join<String, String>>
@@ -31,36 +31,36 @@ class NexusSubsumption {
         val knowledge: Knowledge = listOf("pattern" j "trikeshed", "paradigm" j "functional")
         
         val ccek: CCEKContext = (context j config) j (env j knowledge)
-        println("CCEK Context: ${ccek.first.first.`▶`.size + ccek.first.second.`▶`.size + ccek.second.first.`▶`.size + ccek.second.second.`▶`.size} total context pairs")
+        println("CCEK Context: ${ccek.first.first.`play`.size + ccek.first.second.`play`.size + ccek.second.first.`play`.size + ccek.second.second.`play`.size} total context pairs")
         
         // Level 2: Development subsumption
         val dev: DevelopmentContext = ccek j listOf("nexus", "dgm", "bao-cline")
-        println("Development Context: CCEK j ${dev.second.`▶`.joinToString(",")}")
+        println("Development Context: CCEK j ${dev.second.`play`.joinToString(",")}")
         
         // Level 3: Agent subsumption
         val agent: AgentContext = dev j listOf("reinforcement", "supervised", "unsupervised")
-        println("Agent Context: Development j ${agent.second.`▶`.joinToString(",")}")
+        println("Agent Context: Development j ${agent.second.`play`.joinToString(",")}")
         
         // Level 4: Evolution subsumption
         val evolution: EvolutionContext = agent j listOf("genetic", "gradient", "bayesian")
-        println("Evolution Context: Agent j ${evolution.second.`▶`.joinToString(",")}")
+        println("Evolution Context: Agent j ${evolution.second.`play`.joinToString(",")}")
         
         println("\n=== SUBSUMPTION BEHAVIORS ===")
         
         // Demonstrate subsumption using α transforms
         for (i in 1..3) {
-            val activeLevel = evolution.second.`▶`.first()
+            val activeLevel = evolution.second.`play`.first()
             println("Cycle $i: Active subsumption = $activeLevel")
             
             // Apply α transformation through hierarchy
-            val evolved = evolution.second.`▶`.map { it.uppercase() }
-            val learned = evolution.first.second.`▶`.map { "${it}_learned" }
-            val developed = evolution.first.first.second.`▶`.map { "${it}_built" }
+            val evolved = evolution.second.`play`.map { it.uppercase() }
+            val learned = evolution.first.second.`play`.map { "${it}_learned" }
+            val developed = evolution.first.first.second.`play`.map { "${it}_built" }
             
             println("  -> Evolution α: $evolved")
             println("  -> Agent α: $learned") 
             println("  -> Development α: $developed")
-            println("  -> CCEK ▶: ${evolution.first.first.first.first.first.`▶`.size} context elements")
+            println("  -> CCEK play: ${evolution.first.first.first.first.first.`play`.size} context elements")
             
             Thread.sleep(500)
         }

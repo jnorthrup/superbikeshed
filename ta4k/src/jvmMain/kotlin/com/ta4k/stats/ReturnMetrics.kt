@@ -2,7 +2,7 @@ package com.ta4k.stats
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -23,7 +23,7 @@ class ReturnMetrics {
     fun geometricMean(returns: Series<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val product = returns.`▶`.fold(BigDecimal.ONE) { acc: BigDecimal, ret: BigDecimal -> 
+        val product = returns.`play`.fold(BigDecimal.ONE) { acc: BigDecimal, ret: BigDecimal -> 
             acc.multiply(BigDecimal.ONE.add(ret))
         }
         
@@ -43,7 +43,7 @@ class ReturnMetrics {
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
-        val totalReturn = returns.`▶`.fold(BigDecimal.ONE) { acc: BigDecimal, ret: BigDecimal -> 
+        val totalReturn = returns.`play`.fold(BigDecimal.ONE) { acc: BigDecimal, ret: BigDecimal -> 
             acc.multiply(BigDecimal.ONE.add(ret))
         }
         
@@ -67,7 +67,7 @@ class ReturnMetrics {
     ): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
-        val excessReturns = returns.`▶`.map { it.subtract(rf) }.toList()
+        val excessReturns = returns.`play`.map { it.subtract(rf) }.toList()
         val rollingSharpe = (returns.size - window + 1) j { i: Int ->
             val windowReturns = excessReturns.subList(i, i + window)
             val mean = windowReturns.average()
@@ -95,7 +95,7 @@ class ReturnMetrics {
     ): Series<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
-        val excessReturns = returns.`▶`.map { it.subtract(rf) }.toList()
+        val excessReturns = returns.`play`.map { it.subtract(rf) }.toList()
         val rollingSortino = (returns.size - window + 1) j { i: Int ->
             val windowReturns = excessReturns.subList(i, i + window)
             val mean = windowReturns.average()

@@ -28,7 +28,7 @@ class BinanceDataProcessor {
     fun convertKlinesToCandles(klines: Series<Kline>, symbol: String): CandleSeries {
         val candleData = mutableListOf<Candlestick>()
         
-        klines.▶.forEach { kline ->
+        klines.play.forEach { kline ->
             val symbolObj = Symbol(symbol)
             val open = Price(kline.open)
             val high = Price(kline.high)
@@ -60,7 +60,7 @@ class BinanceDataProcessor {
     fun processTradeData(trades: Series<BinanceTrade>, symbol: String): TickSeries {
         val tickData = mutableListOf<MarketTick>()
         
-        trades.▶.forEach { trade ->
+        trades.play.forEach { trade ->
             val tick = MarketTick(
                 symbol = Symbol(symbol),
                 data = (Price(trade.price) j Volume(trade.quantity)) j Instant.fromEpochMilliseconds(trade.timestamp),

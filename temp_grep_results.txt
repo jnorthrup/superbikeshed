@@ -18,9 +18,9 @@
 ./nexus/simple_nexus.kts:typealias DevelopmentContext = Join<CCEKContext, Series<String>>
 ./nexus/simple_nexus.kts:        // Level 1: CCEK using taxonomical typealiases
 ./nexus/simple_nexus.kts:        val ccek: CCEKContext = (context j config) j (env j knowledge)
-./nexus/simple_nexus.kts:        println("CCEK Context: ${ccek.first.first.`▶`.size + ccek.first.second.`▶`.size + ccek.second.first.`▶`.size + ccek.second.second.`▶`.size} total context pairs")
-./nexus/simple_nexus.kts:        println("Development Context: CCEK j ${dev.second.`▶`.joinToString(",")}")
-./nexus/simple_nexus.kts:            println("  -> CCEK ▶: ${evolution.first.first.first.first.first.`▶`.size} context elements")
+./nexus/simple_nexus.kts:        println("CCEK Context: ${ccek.first.first.`play`.size + ccek.first.second.`play`.size + ccek.second.first.`play`.size + ccek.second.second.`play`.size} total context pairs")
+./nexus/simple_nexus.kts:        println("Development Context: CCEK j ${dev.second.`play`.joinToString(",")}")
+./nexus/simple_nexus.kts:            println("  -> CCEK play: ${evolution.first.first.first.first.first.`play`.size} context elements")
 ./nexus/agentic_nexus.kts:value class CCEKContext(val data: Map<String, String>) {
 ./nexus/agentic_nexus.kts:                val context = CCEKContext(mapOf(
 ./nexus/agentic_nexus.kts:    private fun generateAdaptiveTask(context: CCEKContext): DevelopmentTask {

@@ -49,8 +49,8 @@ TrikeShed is undergoing major architectural evolution to implement strict type s
   - [ ] Convert all map/filter/reduce operations to α transforms
   - [ ] Ensure lazy evaluation and optimization
 
-- [ ] **Play Button Materialization (`series ▶`)**
-  - [ ] Implement ▶ as gateway to AbstractList/Iterable<T>
+- [ ] **Play Button Materialization (`series play`)**
+  - [ ] Implement play as gateway to AbstractList/Iterable<T>
   - [ ] Use only for final materialization to legacy collections
   - [ ] Ensure no direct Series to Collection conversion
 

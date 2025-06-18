@@ -1,7 +1,7 @@
 package borg.trikeshed.net.quic
 
 import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.net.DatagramSocket
@@ -69,7 +69,7 @@ class LiveQuicClientTest {
                 "INITIAL_CLIENT_HELLO",
                 "HANDSHAKE_CRYPTO_FRAME", 
                 "DATA_APPLICATION_PAYLOAD"
-            ).`▶`
+            ).`play`
             
             handshakeSteps.forEach { step ->
                 // Send packet

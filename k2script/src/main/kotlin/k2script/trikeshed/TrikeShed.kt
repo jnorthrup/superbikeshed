@@ -12,7 +12,7 @@ value class Series<T>(val size: Int, val accessor: (Int) -> T) {
         if (it < size) accessor(it) else other.accessor(it - size)
     }
     
-    val ▶: Iterable<T> get() = object : Iterable<T> {
+    val play: Iterable<T> get() = object : Iterable<T> {
         override fun iterator() = object : Iterator<T> {
             private var index = 0
             override fun hasNext() = index < size

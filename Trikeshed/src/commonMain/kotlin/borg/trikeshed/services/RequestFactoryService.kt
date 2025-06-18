@@ -1,6 +1,7 @@
 package borg.trikeshed.services
 
 import borg.trikeshed.lib.*
+import kotlin.jvm.JvmInline
 
 interface RequestFactoryService {
  suspend fun process(payload: Series<Byte>): Series<Byte>
@@ -10,6 +11,8 @@ interface RequestFactoryService {
  fun create(): RequestFactoryService = RequestFactoryServiceImpl()
  }
 }
+
+internal expect class RequestFactoryServiceImpl() : RequestFactoryService
 
 @JvmInline value class ServiceMethodName(val value: String)
 @JvmInline value class ServiceClassName(val value: String)

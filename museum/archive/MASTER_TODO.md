@@ -18,7 +18,7 @@ This document outlines prioritized tasks for the Superbikeshed project, organize
     2.  Code logic previously using `List<T>` methods is updated to use equivalent `Series<T>` operations, potentially involving `α` transforms.
     3.  The project compiles successfully.
     4.  Existing unit tests for affected components pass or are updated.
-    5.  No direct conversion from `Series<T>` to `List<T>` is performed unless through the sanctioned `▶` operator.
+    5.  No direct conversion from `Series<T>` to `List<T>` is performed unless through the sanctioned `play` operator.
 
 **Task 2 (P0)**
 *   **Title:** TrikeShed Core: Implement `MutableList<T>` to `Series<T>` with Alpha Transforms Migration
@@ -69,11 +69,11 @@ This document outlines prioritized tasks for the Superbikeshed project, organize
     3.  Project compiles, and tests pass.
 
 **Task 7 (P0)**
-*   **Title:** TrikeShed Core: Implement Play Button (`▶`) Materialization
-*   **Goal:** Implement and enforce the `▶` (play button) operator as the sole gateway for converting `Series<T>` into standard `AbstractList` or `Iterable<T>`, as specified in `CLAUDE.md`.
+*   **Title:** TrikeShed Core: Implement Play Button (`play`) Materialization
+*   **Goal:** Implement and enforce the `play` (play button) operator as the sole gateway for converting `Series<T>` into standard `AbstractList` or `Iterable<T>`, as specified in `CLAUDE.md`.
 *   **References:** `todo/trikeshed_todos.md`, `CLAUDE.md`
 *   **Acceptance Criteria:**
-    1.  The `▶` operator is available for `Series<T>`.
+    1.  The `play` operator is available for `Series<T>`.
     2.  Any conversion of `Series<T>` to standard collection types uses this operator.
     3.  Direct internal use of `Series.toList()` for further processing is disallowed.
     4.  Project compiles, and tests pass.

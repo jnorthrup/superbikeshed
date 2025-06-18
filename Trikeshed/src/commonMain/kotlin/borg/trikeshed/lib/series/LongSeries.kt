@@ -8,7 +8,7 @@ typealias LongSeries<T> = Join<Long, (Long) -> T>
 
 
 operator fun <T> LongSeries<T>.get(i: Long): T = b(i)
-val <V>LongSeries<V>.`▶` get() = require(this.size < Int.MAX_VALUE).run { toSeries().`▶` }
+val <V>LongSeries<V>.play get() = require(this.size < Int.MAX_VALUE).run { toSeries().`play` }
 
 operator fun <T> LongSeries<T>.get(exclusiveRange: IntRange): Series<T> {
     //perform fixup between the range and the Series x index

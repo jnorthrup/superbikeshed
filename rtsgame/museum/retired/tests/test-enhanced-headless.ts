@@ -325,7 +325,7 @@ class EnhancedHeadlessTest {
                 throw new Error('Failed to start replay');
             }
 
-            console.log('▶️  Starting deterministic replay...');
+            console.log('play️  Starting deterministic replay...');
 
             // Run replay and track stats
             let frameCount = 0;

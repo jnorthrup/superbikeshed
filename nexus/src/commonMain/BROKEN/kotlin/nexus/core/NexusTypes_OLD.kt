@@ -167,7 +167,7 @@ typealias CompleteNexus = Join<
 >
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TRANSFORMATION OPERATORS - All operations use α and ▶
+// TRANSFORMATION OPERATORS - All operations use α and play
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Discovery: Environment → Capabilities
@@ -199,7 +199,7 @@ fun CompleteNexus.processRequest(request: Request): Response =
     this.α { nexus -> nexus.generateSolutions(request) }
         .α { solutions -> solutions.evolve() }
         .α { evolved -> evolved.selectBest() }
-        ▶ { solution -> Response(solution.implementation) }
+        play { solution -> Response(solution.implementation) }
 
 fun CompleteNexus.learnFromInteraction(interaction: RequestResponse): CompleteNexus =
     this.α { nexus -> nexus.updateIntelligence(interaction) }
@@ -209,7 +209,7 @@ fun CompleteNexus.predictNextAction(context: Context): PredictedAction =
     this.α { nexus -> nexus.analyzeContext(context) }
         .α { analysis -> analysis.generatePredictions() }
         .α { predictions -> predictions.selectMostLikely() }
-        ▶ { prediction -> prediction.asAction() }
+        play { prediction -> prediction.asAction() }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // NO CLASSES. NO INTERFACES. PURE COMPOSITIONAL TYPES.

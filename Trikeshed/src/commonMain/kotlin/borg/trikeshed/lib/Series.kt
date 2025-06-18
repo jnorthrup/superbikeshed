@@ -4,7 +4,6 @@
 package borg.trikeshed.lib
 
 import borg.trikeshed.common.collections.binarySearch
-import borg.trikeshed.isam.meta.IOMemento.*
 import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmName
 import kotlin.math.max
@@ -172,7 +171,7 @@ operator fun <T> Series<T>.get(i: Int): T = b(i)
  * fold for Series
  *
  */
-fun <A, B> Series<A>.fold(z: B, f: (acc: B, A) -> B): B = this.`▶`.fold(z, f)
+fun <A, B> Series<A>.fold(z: B, f: (acc: B, A) -> B): B = this.`play`.fold(z, f)
 
 
 /**
@@ -180,7 +179,7 @@ fun <A, B> Series<A>.fold(z: B, f: (acc: B, A) -> B): B = this.`▶`.fold(z, f)
  *
  * because the Series is lazy this is a bit more complicated than it would be for a list
  */
-fun <A, B> Series<A>.runningfold(initial: B, f: (acc: B, A, Int) -> B): Series<B> = this.`▶`.runningfold(initial, f)
+fun <A, B> Series<A>.runningfold(initial: B, f: (acc: B, A, Int) -> B): Series<B> = this.`play`.runningfold(initial, f)
 
 /**
  * Binary Search for Series<Comparable>
@@ -192,7 +191,7 @@ fun <A, B> Series<A>.runningfold(initial: B, f: (acc: B, A, Int) -> B): Series<B
  *          if the Series is null then 0 is returned
  *          if the value is null then 0 is returned
  */
-inline fun Series<Int>.binarySearch(t: Int): Int = this.`▶`.binarySearch(t)
+inline fun Series<Int>.binarySearch(t: Int): Int = this.`play`.binarySearch(t)
 
 /**splits a range into multiple parts for upstream reindexing utility
  * 0..11 / 3 produces [0..3, 4..7, 8..11].toSeries()
@@ -238,7 +237,7 @@ fun IntArray.binarySearch(i: Int): Int {
 fun <S> Join<Int, (Int) -> S>.toSet(opt: MutableSet<S>? = null): MutableSet<S> = (
         opt
             ?: LinkedHashSet(size)
-        ).also { hs -> hs.addAll(this.`▶`) }
+        ).also { hs -> hs.addAll(this.`play`) }
 
 // Series iterator for use in for loops
 operator fun <A> Series<A>.iterator(): Iterator<A> = object : Iterator<A> {
@@ -259,10 +258,10 @@ value class IterableSeries<A>(val s: Series<A>) : Iterable<A>, Series<A> by s {
  * provides a big bright visible symbol that makes
  * conversions easy to follow along during reading the code
  */
-val <T> Series<T>.`▶`: IterableSeries<T> get() = this as? IterableSeries ?: IterableSeries(this)
+val <T> Series<T>.play: IterableSeries<T> get() = this as? IterableSeries ?: IterableSeries(this)
 
 infix operator fun <T> IterableSeries<T>.contains(x: Char): Boolean = this.any { x == it }
-infix operator fun <T> Series<T>.contains(it: Char): Boolean = this.`▶` contains it
+infix operator fun <T> Series<T>.contains(it: Char): Boolean = this.play contains it
 
 
 /***
@@ -524,7 +523,7 @@ fun Series<Char>.parseDoubleOrNull(): Double? = try {
  * @sample samples.collections.Iterables.Operations.zipIterable
  */
 infix fun <T, R> List<T>.zip(other: Series<R>): List<Join<T, R>> =
-    zip(other.`▶`) { a: T, b: R -> a j b }
+    zip(other.`play`) { a: T, b: R -> a j b }
 
 @JvmName("vvzip2f")
 fun <T, O, R> Series<T>.zip(o: Series<O>, f: (T, O) -> R): Join<Int, (Int) -> R> = size j { x: Int -> f(this[x], o[x]) }

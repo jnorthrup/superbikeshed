@@ -19,7 +19,7 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
     private val serviceInstances = mutableMapOf<ServiceClassName, Any>()
 
     override suspend fun process(payload: Series<Byte>): Series<Byte> {
-        val requestJson = payload.`▶`.joinToString("") { it.toInt().toChar().toString() }
+        val requestJson = payload.`play`.joinToString("") { it.toInt().toChar().toString() }
         
         return try {
             // Simple demo implementation - just process any payload and return success

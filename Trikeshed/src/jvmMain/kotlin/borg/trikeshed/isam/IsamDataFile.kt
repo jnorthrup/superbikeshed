@@ -66,7 +66,7 @@ actual class IsamDataFile actual constructor(
         } else
             println("DEBUG: file $datafileFilename is aligned to recordlen $recordlen")
 
-        val fieldCounts: Map<IOMemento, Pair<Int, Int>> = constraints.`▶`.groupBy { it.type }
+        val fieldCounts: Map<IOMemento, Pair<Int, Int>> = constraints.`play`.groupBy { it.type }
             .mapValues { (_, v) -> v.size to v.sumOf { it.end - it.begin } }
 
         val ySize = fileSize / recordlen

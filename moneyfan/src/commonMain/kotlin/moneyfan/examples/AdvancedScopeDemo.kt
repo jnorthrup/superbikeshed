@@ -56,7 +56,7 @@ fun runAdvancedScopeDemo() {
     val dataSeries: Series<DemoDataRecord> = sampleList.toSeries()
 
     println("\n--- Original Data (${dataSeries.a} items) ---")
-    dataSeries.`▶`.forEach { println(it) }
+    dataSeries.`play`.forEach { println(it) }
 
     // 2. Setup Scope Components
     val agent = HybridNlpAgentPoc() // Using the PoC agent
@@ -134,7 +134,7 @@ fun runAdvancedScopeDemo() {
     if (focusedSeries.isEmpty()) {
         println("No items matched both RQL (if any) and semantic score threshold.")
     } else {
-        focusedSeries.`▶`.forEach { println(it) }
+        focusedSeries.`play`.forEach { println(it) }
     }
 
     println("\n--- Explanation of Results ---")

@@ -18,7 +18,7 @@ import borg.trikeshed.lib.first
 import borg.trikeshed.lib.get
 import borg.trikeshed.lib.second
 import borg.trikeshed.lib.toSeries
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.α
 import borg.trikeshed.lib.*
 
@@ -72,7 +72,7 @@ val JsContext.segments: Iterable<JsIndex>
         val (element, src) = this
         val (openIdx, closeIdx) = element.first
         val commaIdxs: Series<Int> = combine(s_[openIdx], element.second, s_[closeIdx])
-        return commaIdxs. `▶` .zipWithNext().map { (a: Int, b: Int) -> a.inc() j b }.toList() α { it j src }
+        return commaIdxs. `play` .zipWithNext().map { (a: Int, b: Int) -> a.inc() j b }.toList() α { it j src }
     }
 
 /** a json scanner that indexes and optionally reifies the json chars
@@ -222,7 +222,7 @@ object JsonParser {
                         else emptyArray<Any?>()
                 }
 
-                combine.`▶`.zipWithNext().map { (before, after) ->
+                combine.`play`.zipWithNext().map { (before, after) ->
                     if (isObj) {
                         val tmp = CharSeries(src[before.inc() until after]).trim
                         require(tmp.seekTo('"')) {

@@ -218,9 +218,9 @@ fun <T : Any> Series<T?>.fillna(defaultProvider: (index: Int) -> T): Series<T> {
  * @return A new [Series<T>] containing only the non-null values from the original series.
  */
 fun <T : Any> Series<T?>.dropna(): Series<T> {
-    // Uses IterableSeries (`▶`) to leverage Kotlin's standard library sequence operations.
+    // Uses IterableSeries (`play`) to leverage Kotlin's standard library sequence operations.
     // `filterNotNull` correctly transforms Sequence<T?> to Sequence<T>.
-    return this.`▶`.asSequence().filterNotNull().toList().toSeries()
+    return this.`play`.asSequence().filterNotNull().toList().toSeries()
 }
 
 /**

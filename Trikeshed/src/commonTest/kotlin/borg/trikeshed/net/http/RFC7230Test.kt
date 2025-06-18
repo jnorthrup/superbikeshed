@@ -74,7 +74,7 @@ class RFC7230Test {
         assertEquals("/api/users", requestLine.requestTarget.value)
         
         // Check headers
-        val headers = message.headerFields.`▶`
+        val headers = message.headerFields.`play`
         assertEquals(3, headers.size)
         
         val hostHeader = headers.find { it.a.value == "Host" }
@@ -82,7 +82,7 @@ class RFC7230Test {
         assertEquals("example.com", hostHeader.b.value)
         
         // Check body
-        val bodyStr = message.messageBody.`▶`.map { it.toInt().toChar() }.joinToString("")
+        val bodyStr = message.messageBody.`play`.map { it.toInt().toChar() }.joinToString("")
         assertEquals("{\"name\":\"test\"}", bodyStr)
     }
     
@@ -105,11 +105,11 @@ class RFC7230Test {
         
         val firstChunk = chunkedBody.chunks[0]
         assertEquals(4, firstChunk.size)
-        assertEquals("test", firstChunk.data.`▶`.map { it.toInt().toChar() }.joinToString(""))
+        assertEquals("test", firstChunk.data.`play`.map { it.toInt().toChar() }.joinToString(""))
         
         val secondChunk = chunkedBody.chunks[1]
         assertEquals(5, secondChunk.size)
-        assertEquals("data", secondChunk.data.`▶`.map { it.toInt().toChar() }.joinToString(""))
+        assertEquals("data", secondChunk.data.`play`.map { it.toInt().toChar() }.joinToString(""))
     }
     
     @Test
@@ -122,8 +122,8 @@ class RFC7230Test {
         val upgradeHeader = HttpFieldValue("upgrade, keep-alive")
         val upgradeOptions = HttpParser.parseConnectionHeader(upgradeHeader)
         assertEquals(2, upgradeOptions.size)
-        assertTrue(upgradeOptions.`▶`.contains(HttpParser.ConnectionOption.UPGRADE))
-        assertTrue(upgradeOptions.`▶`.contains(HttpParser.ConnectionOption.KEEP_ALIVE))
+        assertTrue(upgradeOptions.`play`.contains(HttpParser.ConnectionOption.UPGRADE))
+        assertTrue(upgradeOptions.`play`.contains(HttpParser.ConnectionOption.KEEP_ALIVE))
     }
     
     @Test
@@ -167,7 +167,7 @@ class RFC7230Test {
         )
         
         val serialized = HttpSerializer.serializeHttpMessage(message)
-        val serializedStr = serialized.`▶`.joinToString("")
+        val serializedStr = serialized.`play`.joinToString("")
         
         assertTrue(serializedStr.startsWith("POST /api/data HTTP/1.1\r\n"))
         assertTrue(serializedStr.contains("Content-Type: application/json\r\n"))
@@ -182,7 +182,7 @@ class RFC7230Test {
         val decoded = ChunkedTransferEncoder.decodeChunked(encoded)
         
         assertNotNull(decoded)
-        val decodedStr = decoded.`▶`.map { it.toInt().toChar() }.joinToString("")
+        val decodedStr = decoded.`play`.map { it.toInt().toChar() }.joinToString("")
         assertEquals("Hello, World! This is a test message.", decodedStr)
     }
     
@@ -204,7 +204,7 @@ class RFC7230Test {
             assertEquals(HttpMethod.POST, request.method)
             assertEquals("/submit", request.path.value)
             
-            val contentType = request.headers.`▶`.find { 
+            val contentType = request.headers.`play`.find {
                 it.a.value == "Content-Type" 
             }?.b?.value
             assertEquals("application/json", contentType)

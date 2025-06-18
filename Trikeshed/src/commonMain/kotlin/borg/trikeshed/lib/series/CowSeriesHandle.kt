@@ -48,7 +48,7 @@ class CowSeriesHandle<T>(
     }
 
     override fun remove(item: T): Boolean {
-        val i = letter.backing.`▶`.indexOf(item)
+        val i = letter.backing.`play`.indexOf(item)
         if (i != -1) {
             letter = letter.removeAt(i)
             return true
@@ -108,7 +108,7 @@ class COWSeriesBody<T>(
     /** create a new copy of this, with the given item removed */
     fun remove(item: T): COWSeriesBody<T> {
 
-        val i = backing.`▶`.indexOf(item)
+        val i = backing.`play`.indexOf(item)
         return if (i != -1) removeAt(i) else this
 
     }

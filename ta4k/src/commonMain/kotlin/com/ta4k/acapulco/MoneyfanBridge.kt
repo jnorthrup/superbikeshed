@@ -2,7 +2,7 @@ package com.ta4k.acapulco
 
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.`▶`
+import borg.trikeshed.lib.`play`
 import com.ta4k.acapulco.model.PortfolioRow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

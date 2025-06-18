@@ -95,7 +95,7 @@ object K2script {
         
         val dependencies = engine.parseDependencies(scriptFile)
         if (dependencies.size > 0 && EnvironmentManager.K2Script.isVerbose()) {
-            println("Dependencies: ${dependencies.`▶`.joinToString(", ")}")
+            println("Dependencies: ${dependencies.`play`.joinToString(", ")}")
         }
         
         // Execute the script

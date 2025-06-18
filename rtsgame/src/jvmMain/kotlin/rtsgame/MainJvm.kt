@@ -67,7 +67,7 @@ private fun createInteractiveWindow(demo: InteractiveWebGPUDemo) {
         
         private fun renderGameWorld(g2d: Graphics2D, state: InteractiveDemoState) {
             // Render entities
-            state.gameState.entities.play.forEach { entity ->
+            state.gameState.entities.`play`.forEach { entity ->
                 val color = when (entity.playerId.value) {
                     1 -> Color.BLUE
                     2 -> Color.RED

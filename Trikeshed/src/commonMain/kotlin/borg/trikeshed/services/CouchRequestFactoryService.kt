@@ -22,7 +22,7 @@ class CouchRequestFactoryService(
     private val methodValidators = mutableMapOf<String, (Series<Any?>) -> Boolean>()
 
     override suspend fun process(payload: Series<Byte>): Series<Byte> {
-        val requestJson = payload.▶.toByteArray().decodeToString()
+        val requestJson = payload.play.toByteArray().decodeToString()
         val request = JsonImpl.parse(requestJson)
         
         return try {
@@ -96,7 +96,7 @@ class CouchRequestFactoryService(
         val responses = couchClient.bulkDocs(defaultDatabase, Series(docs))
 
         // Process responses
-        return responses.▶.mapIndexed { index, response ->
+        return responses.play.mapIndexed { index, response ->
             if (response.ok) {
                 val entityId = RequestFactoryBroker.EntityProxyId(response.id.value)
                 entityVersions[entityId.value] = response.rev.value.toLong()
@@ -135,7 +135,7 @@ class CouchRequestFactoryService(
         val responses = couchClient.bulkDocs(defaultDatabase, Series(updatedDocs))
 
         // Process responses
-        return responses.▶.mapIndexed { index, response ->
+        return responses.play.mapIndexed { index, response ->
             if (response.ok) {
                 entityVersions[requests[index].version.id.value] = response.rev.value.toLong()
                 RequestFactoryBroker.Response.EntityUpdated(
@@ -170,7 +170,7 @@ class CouchRequestFactoryService(
         val responses = couchClient.bulkDocs(defaultDatabase, Series(deleteRequests))
 
         // Process responses
-        return responses.▶.mapIndexed { index, response ->
+        return responses.play.mapIndexed { index, response ->
             if (response.ok) {
                 entityVersions.remove(requests[index].version.id.value)
                 RequestFactoryBroker.Response.EntityDeleted(requests[index].entityToken)
@@ -269,7 +269,7 @@ class CouchRequestFactoryService(
         val method = service::class.members.find { it.name == request.methodToken.value }
             ?: return RequestFactoryBroker.Response.Failure("Method not found")
 
-        val result = method.call(service, *request.args.▶.toList().toTypedArray())
+        val result = method.call(service, *request.args.play.toList().toTypedArray())
         return RequestFactoryBroker.Response.Success(result)
     }
 

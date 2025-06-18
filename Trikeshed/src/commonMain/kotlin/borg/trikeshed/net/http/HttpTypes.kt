@@ -73,7 +73,7 @@ object HttpUtils {
     }
     
     fun buildHeaderString(headers: Series2<HttpHeaderName, HttpHeaderValue>): String {
-        return headers.`▶`.joinToString("\r\n") { join ->
+        return headers.`play`.joinToString("\r\n") { join ->
             "${join.a.value}: ${join.b.value}"
         }
     }
