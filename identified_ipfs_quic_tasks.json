@@ -1,0 +1,89 @@
+[
+  {
+    "section": "Core Protocol Support",
+    "description": "HTTP/3 (QUIC) basic server",
+    "status": "completed",
+    "keyword": "QUIC",
+    "notes": [
+      "Context: Initial analysis mentions 'HTTP/3 (QUIC) Implementation' found in 'quic_http3_server/', has TLS support, testing capabilities, and WebTransport support."
+    ]
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Set up IPFS node configuration and initialization",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Create system snapshot to IPFS publishing pipeline",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Build automatic IPFS pinning for critical content",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Create IPFS gateway integration with ts-httpd",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Implement IPFS content addressing for git objects",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Set up IPFS cluster for redundancy",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Self-Hosting",
+    "description": "Add IPFS metrics and monitoring",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Performance",
+    "description": "Add IPFS content routing optimization",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Performance",
+    "description": "Implement IPFS bandwidth management",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Performance",
+    "description": "Create IPFS peer discovery optimization",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Performance",
+    "description": "Add IPFS cache management",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Performance",
+    "description": "Implement IPFS block exchange optimization",
+    "status": "pending",
+    "keyword": "IPFS"
+  },
+  {
+    "section": "IPFS Performance",
+    "description": "Create IPFS network topology optimization",
+    "status": "pending",
+    "keyword": "IPFS"
+  }
+]
