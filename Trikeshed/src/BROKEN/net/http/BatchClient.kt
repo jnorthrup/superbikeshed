@@ -1,7 +1,7 @@
 package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.*
-import kotlinx.serialization.Serializable
+// Using TrikeShed's internal JsonScanner instead of kotlinx.serialization
 
 /**
  * A type-safe batched HTTP client that follows TrikeShed patterns.
@@ -15,19 +15,19 @@ class BatchClient(
     private var commandQueue = 0 j { Command(CommandType.Noop, "", "") }
     private var callbackQueue = 0 j { { _: Response -> Unit } }
     
-    @Serializable
+    // Data class for TrikeShed serialization
     enum class CommandType {
         Noop, FindDeal, FindDealsByProduct, PersistDeal, GetVendors
     }
 
-    @Serializable
+    // Data class for TrikeShed serialization
     data class Command(
         val type: CommandType,
         val path: String,
         val payload: String
     )
 
-    @Serializable
+    // Data class for TrikeShed serialization
     data class Response(
         val success: Boolean,
         val data: String,

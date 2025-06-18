@@ -1,6 +1,5 @@
 package borg.trikeshed.lib
 
-import borg.trikeshed.io.Usable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -9,6 +8,21 @@ import kotlin.math.max
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
+
+// Integrated Usable interface locally
+interface Usable {
+    fun open()
+    fun close()
+}
+
+fun <T : Usable, R> T.use(block: (T) -> R): R {
+    open()
+    try {
+        return block(this)
+    } finally {
+        close()
+    }
+}
 
 @JvmOverloads
 tailrec fun fib(n: Int, a: Int = 1, b: Int = 1): Int = when (n) {

@@ -93,6 +93,18 @@ Gradle modifications are prohibited unless explicitly instructed or a critical r
 - Multiplatform projects have only that plugin, and benmanes top-level
 - We do not know of compose dependencies to include at this time
 
+**Dependencies:**
+```
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+    implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
+}
+```
+
 **Type System Enforcement:**
 
 - typealiases are permanent definitions - you may not remove any

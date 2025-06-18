@@ -1,5 +1,7 @@
 package borg.trikeshed.lib
 
+import kotlin.jvm.JvmInline
+
 // Core double dispatch types using TrikeShed patterns
 typealias DoubleDispatchEntry<A, B, R> = Join<Join<(A) -> Boolean, (B) -> Boolean>, (A, B) -> R>
 typealias DoubleDispatchTable<A, B, R> = Series<DoubleDispatchEntry<A, B, R>>

@@ -18,6 +18,12 @@ kotlin {
         }
     }
     
+    js(IR) {
+        browser()
+        nodejs()
+        binaries.executable()
+    }
+    
     wasmJs {
         browser()
         nodejs()
@@ -70,6 +76,15 @@ kotlin {
                 implementation("com.binance.api:binance-api-client:1.0.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
+            }
+        }
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+                implementation(project(":Trikeshed"))
             }
         }
         

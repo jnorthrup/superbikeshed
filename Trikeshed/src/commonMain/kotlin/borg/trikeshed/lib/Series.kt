@@ -14,6 +14,8 @@ import kotlin.math.pow
 // Core Series typealias - Series IS Join<Int, (Int) -> T>
 typealias Series<T> = Join<Int, (Int) -> T>
 
+// Series2 typealias is defined in series/Series2.kt
+
 // Series constructor function 
 fun <T> Series(size: Int, accessor: (Int) -> T): Series<T> = size j accessor
 

@@ -2,6 +2,7 @@ package borg.trikeshed.isam.meta
 
 import borg.trikeshed.lib.*
 import kotlin.experimental.or
+import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmStatic
 
 // Ontological type aliases for endianness operations
@@ -64,7 +65,7 @@ interface PlatformCodec {
         )
 
         private val longReadDispatch: EndiannessReadDispatch<Long> = seriesOf(
-            ((EndiannessPredicate(true) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+            (({ p: EndiannessPredicate -> p.value } j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
                 (((it[7].toUByte()).toULong() shl 56) or
                  ((it[6].toUByte()).toULong() shl 48) or
                  ((it[5].toUByte()).toULong() shl 40) or
@@ -73,7 +74,7 @@ interface PlatformCodec {
                    ((it[2].toUByte()).toUInt() shl 16) or
                    ((it[1].toUByte()).toUInt() shl 8) or
                    (it[0].toUByte()).toUInt()).toULong())).toLong() }),
-            ((EndiannessPredicate(false) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+            (({ p: EndiannessPredicate -> !p.value } j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
                 (((it[0].toUByte()).toULong() shl 56) or
                  ((it[1].toUByte()).toULong() shl 48) or
                  ((it[2].toUByte()).toULong() shl 40) or
@@ -85,28 +86,28 @@ interface PlatformCodec {
         )
 
         private val shortWriteDispatch: EndiannessWriteDispatch<Short> = seriesOf(
-            ((EndiannessPredicate(true) j wildcard<Short>()) j { _: EndiannessPredicate, it: Short ->
+            (({ p: EndiannessPredicate -> p.value } j wildcard<Short>()) j { _: EndiannessPredicate, it: Short ->
                 byteArrayOf((it.toUByte()).toByte(), ((it.toUInt() shr 8).toUByte()).toByte()) }),
-            ((EndiannessPredicate(false) j wildcard<Short>()) j { _: EndiannessPredicate, it: Short ->
+            (({ p: EndiannessPredicate -> !p.value } j wildcard<Short>()) j { _: EndiannessPredicate, it: Short ->
                 byteArrayOf(((it.toUInt() shr 8).toUByte()).toByte(), (it.toUByte()).toByte()) })
         )
 
         private val intWriteDispatch: EndiannessWriteDispatch<Int> = seriesOf(
-            ((EndiannessPredicate(true) j wildcard<Int>()) j { _: EndiannessPredicate, it: Int ->
+            (({ p: EndiannessPredicate -> p.value } j wildcard<Int>()) j { _: EndiannessPredicate, it: Int ->
                 byteArrayOf((it.toUByte()).toByte(), ((it shr 8).toUByte()).toByte(),
                            ((it shr 16).toUByte()).toByte(), ((it shr 24).toUByte()).toByte()) }),
-            ((EndiannessPredicate(false) j wildcard<Int>()) j { _: EndiannessPredicate, it: Int ->
+            (({ p: EndiannessPredicate -> !p.value } j wildcard<Int>()) j { _: EndiannessPredicate, it: Int ->
                 byteArrayOf(((it shr 24).toUByte()).toByte(), ((it shr 16).toUByte()).toByte(),
                            ((it shr 8).toUByte()).toByte(), (it.toUByte()).toByte()) })
         )
 
         private val longWriteDispatch: EndiannessWriteDispatch<Long> = seriesOf(
-            ((EndiannessPredicate(true) j wildcard<Long>()) j { _: EndiannessPredicate, it: Long ->
+            (({ p: EndiannessPredicate -> p.value } j wildcard<Long>()) j { _: EndiannessPredicate, it: Long ->
                 byteArrayOf((it.toUByte()).toByte(), ((it shr 8).toUByte()).toByte(),
                            ((it shr 16).toUByte()).toByte(), ((it shr 24).toUByte()).toByte(),
                            ((it shr 32).toUByte()).toByte(), ((it shr 40).toUByte()).toByte(),
                            ((it shr 48).toUByte()).toByte(), ((it shr 56).toUByte()).toByte()) }),
-            ((EndiannessPredicate(false) j wildcard<Long>()) j { _: EndiannessPredicate, it: Long ->
+            (({ p: EndiannessPredicate -> !p.value } j wildcard<Long>()) j { _: EndiannessPredicate, it: Long ->
                 byteArrayOf(((it shr 56).toUByte()).toByte(), ((it shr 48).toUByte()).toByte(),
                            ((it shr 40).toUByte()).toByte(), ((it shr 32).toUByte()).toByte(),
                            ((it shr 24).toUByte()).toByte(), ((it shr 16).toUByte()).toByte(),

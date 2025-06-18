@@ -1,3 +1,6 @@
+/*
+ * Commented out - depends on kotlinx-serialization which has been removed
+ *
 package borg.trikeshed.lib.serialization
 
 import com.hazelcast.nio.serialization.ByteArraySerializer
@@ -89,3 +92,4 @@ class TrikeshedMessageHazelcastSerializer : ByteArraySerializer<TrikeshedMessage
 //
 //     override fun destroy() {}
 // }
+*/
