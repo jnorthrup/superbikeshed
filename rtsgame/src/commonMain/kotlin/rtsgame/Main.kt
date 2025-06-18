@@ -1,7 +1,10 @@
 package rtsgame
 
-import borg.trikeshed.lib.*
+import com.rtsgame.shared.entity.Entity
+import com.rtsgame.shared.game.GameState
+import com.rtsgame.shared.map.Position
 import rtsgame.core.*
+import rtsgame.demo.startSpaceGraphHttpServer
 
 class RTSGameEngine {
     private var gameState = GameState(
@@ -59,4 +62,12 @@ fun demonstrateGame() {
             println("  Entity $index: ${entity.id.value} at (${entity.position.x}, ${entity.position.y})")
         }
     }
+}
+
+/**
+ * Main entry point for RTS game
+ */
+suspend fun main() {
+    // Start SpaceGraph HTTP server
+    startSpaceGraphHttpServer(8080)
 }

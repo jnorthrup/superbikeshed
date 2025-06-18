@@ -2,16 +2,17 @@ plugins {
     kotlin("multiplatform")
 }
 
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 kotlin {
-    jvm()
+    jvm {
+        jvmToolchain(21)
+    }
+    
+    @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         nodejs()
@@ -30,13 +31,15 @@ kotlin {
         isMacOS -> macosX64()
         isLinux && isArm64 -> linuxArm64()
         isLinux -> linuxX64()
+        isWindows -> mingwX64()
     }
 
     sourceSets {
         commonMain.dependencies {
             implementation(kotlin("stdlib-common"))
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${libs.versions.serialization.get()}")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
         }
         
         commonTest.dependencies {
@@ -44,9 +47,11 @@ kotlin {
             implementation("org.jetbrains.kotlin:kotlin-test-common")
             implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
         }
-
+        
         jvmTest.dependencies {
-            implementation(kotlin("test-junit"))
+            implementation(kotlin("test-junit5"))
+            implementation("org.junit.jupiter:junit-jupiter-api:${libs.versions.junit.get()}")
+            runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${libs.versions.junit.get()}")
         }
     }
 }

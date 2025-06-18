@@ -4,28 +4,95 @@ plugins {
 }
 
 kotlin {
-    jvm()
-    wasmJs { browser() }
-    linuxX64() // Also supports macosX64, macosArm64, mingwX64
+    jvm {
+        jvmToolchain(21)
+        withJava()
+    }
+    wasmJs {
+        browser()
+        nodejs()
+    }
+    
+    // Platform detection for native target
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isWindows = hostOs == "Windows"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+        isWindows && isArm64 -> mingwArm64()
+        isWindows -> mingwX64()
+    }
 
     sourceSets {
-        val commonMain by getting
+        commonMain {
+            dependencies {
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material)
+                implementation(compose.ui)
+            }
+        }
 
-        // A shared source set for JVM and Native desktop targets
+        jvmMain {
+            dependsOn(commonMain.get())
+        }
+
         val desktopMain by creating {
-            dependsOn(commonMain)
+            dependsOn(commonMain.get())
             dependencies {
                 implementation(compose.desktop.currentOs)
             }
         }
 
-        val jvmMain by getting { dependsOn(desktopMain) }
-        
-        // Create nativeMain source set
         val nativeMain by creating {
             dependsOn(desktopMain)
         }
-        
-        val wasmJsMain by getting { dependsOn(commonMain) }
+
+        // Connect native targets properly
+        if (isMacOS && isArm64) {
+            macosArm64Main {
+                dependsOn(nativeMain)
+            }
+        } else if (isMacOS) {
+            macosX64Main {
+                dependsOn(nativeMain)
+            }
+        } else if (isLinux && isArm64) {
+            linuxArm64Main {
+                dependsOn(nativeMain)
+            }
+        } else if (isLinux) {
+            linuxX64Main {
+                dependsOn(nativeMain)
+            }
+        } else if (isWindows && isArm64) {
+            mingwArm64Main {
+                dependsOn(nativeMain)
+            }
+        } else if (isWindows) {
+            mingwX64Main {
+                dependsOn(nativeMain)
+            }
+        }
+
+        wasmJsMain { 
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(compose.html.core)
+            }
+        }
+    }
+}
+
+compose.desktop {
+    application {
+        mainClass = "com.example.boingdemo.DesktopCanvasKt"
     }
 }

@@ -9,7 +9,6 @@ plugins {
 group = "org.ta4k"
 version = "1.0-SNAPSHOT"
 
-
 kotlin {
     jvm {
         jvmToolchain(21)
@@ -17,19 +16,14 @@ kotlin {
             useJUnitPlatform()
         }
     }
+    
     @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
     wasmJs {
         browser()
-        // If commonWebpackConfig is needed, it can be configured here, for example:
-        // browser {
-        //     commonWebpackConfig {
-        //         cssSupport {
-        //             enabled.set(true)
-        //         }
-        //     }
-        // }
-        binaries.executable() // Ensure this is valid for wasmJs, or adjust if needed
+        nodejs()
+        binaries.executable()
     }
+    
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     val isMingwX64 = hostOs.startsWith("Windows")
@@ -54,51 +48,38 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            // kotlin.srcDirs are now conventional: src/commonMain/kotlin
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
                 implementation("com.ionspin.kotlin:bignum:0.3.9")
                 implementation(project(":Trikeshed"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
             }
         }
+        
         val commonTest by getting {
-            // kotlin.srcDirs are now conventional: src/commonTest/kotlin
             dependencies {
-                implementation(kotlin("test")) // This should cover common test needs
+                implementation(kotlin("test"))
             }
         }
+        
         val jvmMain by getting {
-            // kotlin.srcDirs("src/jvmMain/kotlin") // Conventional, no need to specify if following convention
             dependencies {
-                implementation(kotlin("stdlib-jdk8")) // For JVM specific APIs if needed beyond common
+                implementation(kotlin("stdlib-jdk8"))
                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
                 implementation("com.binance.api:binance-api-client:1.0.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
             }
         }
+        
         val jvmTest by getting {
-            // kotlin.srcDirs("src/jvmTest/kotlin") // Conventional
             dependencies {
-                implementation(kotlin("test-junit5")) // JUnit 5 for JVM tests
-                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Align with moneyfan
-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Align with moneyfan
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-            }
-        }
-        // jsMain and jsTest are removed in favor of wasmJsMain and wasmJsTest
-        val wasmJsMain by getting {
-            dependencies {
-                // stdlib-js is usually added by default with wasmJs target
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-            }
-        }
-        val wasmJsTest by getting {
-            dependencies {
-                implementation(kotlin("test")) // Common test for wasmJs
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter:junit-jupiter-api:${libs.versions.junit.get()}")
+                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${libs.versions.junit.get()}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
             }
         }
     }

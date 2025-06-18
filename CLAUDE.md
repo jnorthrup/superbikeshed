@@ -227,7 +227,7 @@ typealias Twin<T> = Join<T, T>                                   // borg.trikesh
 typealias Tensor<T> = Join<IntArray, (IntArray) -> T>            // borg.trikeshed.lib
 
 // Network and routing
-typealias Address = String                                       // gk.kademlia.include
+typealias Series<T> =  Join<Int,(Int)->T>                   
 typealias Route<TNum> = Join<NUID<TNum>, Address>               // gk.kademlia.include
 
 // Data serialization  
