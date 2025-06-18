@@ -1,5 +1,7 @@
 package borg.trikeshed.lib
 
+import kotlin.jvm.JvmInline
+
 @JvmInline
 value class QuoteState(val value: Int) {
     companion object {

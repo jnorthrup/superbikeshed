@@ -3,7 +3,10 @@ package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
+import borg.trikeshed.services.DealService
+import borg.trikeshed.services.RequestFactoryService
 import borg.trikeshed.io.PlatformFile
+import kotlin.jvm.JvmInline
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
 
@@ -329,3 +332,37 @@ object ChunkedTransferEncoder {
 private fun ByteArray.toSeries(): Series<Byte> = size j { this[it] }
 
 private fun String.encodeToByteArray(): ByteArray = this.toByteArray(Charsets.UTF_8)
+
+// ===== CCEK SERVICE HANDLERS =====
+
+fun createBatchHandler(dealService: DealService): HttpHandler = { request ->
+    // Delegate to CCEK DealService
+    HttpResponse(
+        status = HttpStatusCode(200),
+        reasonPhrase = HttpReasonPhrase("OK"),
+        headers = 1 j { i ->
+            when (i) {
+                0 -> HttpHeaderName("Content-Type") j HttpHeaderValue("application/json")
+                else -> throw IndexOutOfBoundsException()
+            }
+        },
+        body = "{}".encodeToByteArray().toSeries()
+    )
+}
+
+fun createRequestFactoryHandler(requestFactoryService: RequestFactoryService): HttpHandler = { request ->
+    // Delegate to CCEK RequestFactoryService
+    val responsePayload = requestFactoryService.process(request.body)
+    HttpResponse(
+        status = HttpStatusCode(200),
+        reasonPhrase = HttpReasonPhrase("OK"),
+        headers = 2 j { i ->
+            when (i) {
+                0 -> HttpHeaderName("Content-Type") j HttpHeaderValue("application/json; charset=utf-8")
+                1 -> HttpHeaderName("Content-Length") j HttpHeaderValue(responsePayload.size.toString())
+                else -> throw IndexOutOfBoundsException()
+            }
+        },
+        body = responsePayload
+    )
+}

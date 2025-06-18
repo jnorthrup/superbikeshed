@@ -1,6 +1,7 @@
 package borg.trikeshed.isam.meta
 
 import borg.trikeshed.lib.*
+import kotlin.jvm.JvmInline
 
 // Inline value classes for serialization format and memento type
 @JvmInline value class SerializationFormat(val value: String)

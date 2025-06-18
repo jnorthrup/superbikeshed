@@ -2,6 +2,7 @@
 package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.*
+import kotlin.jvm.JvmInline
 
 // Ontological HTTP Type Aliases
 @JvmInline value class HttpHeaderName(val value: String)
