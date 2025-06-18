@@ -2,6 +2,7 @@
 package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.*
+import kotlin.jvm.JvmInline
 
 // RFC 7230: HTTP/1.1 Message Syntax and Routing Implementation
 

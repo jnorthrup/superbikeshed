@@ -113,3 +113,37 @@ The refactoring is complete. The project now has a clear, layered architecture w
 Here is the Mermaid diagram reflecting the final architecture. This visualizes the "pure" progression from the most fundamental join operation up to the application layer, providing a clear map for any developer and ensuring that the core foundations are sheltered from arbitrary changes.
 
 Generated mermaid
+```mermaid
+graph TD
+    %% Core Foundation Layer
+    A[bikeshed-join] --> B[bikeshed-series]
+    B --> C[bikeshed-tensor]
+    
+    %% Data Processing Layer
+    C --> D[bikeshed-cursor]
+    D --> E[bikeshed-data-adapters]
+    
+    %% Parsing Layer
+    F[bikeshed-parser-json] --> D
+    
+    %% Network Layer
+    G[bikeshed-wireproto] --> C
+    
+    %% Application Layer
+    H[Application Logic] --> D
+    H --> E
+    H --> F
+    H --> G
+    
+    %% Styling
+    classDef foundation fill:#f9f,stroke:#333,stroke-width:2px
+    classDef processing fill:#bbf,stroke:#333,stroke-width:2px
+    classDef parsing fill:#bfb,stroke:#333,stroke-width:2px
+    classDef network fill:#fbb,stroke:#333,stroke-width:2px
+    classDef app fill:#ddd,stroke:#333,stroke-width:2px
+    
+    class A,B,C foundation
+    class D,E processing
+    class F parsing
+    class G network
+    class H app

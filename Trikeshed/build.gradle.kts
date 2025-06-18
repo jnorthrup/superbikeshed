@@ -7,10 +7,6 @@ plugins {
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
-val gwtVersion = "2.11.0"
-val requestFactoryVersion = "2.11.0"
-val javaxValidationVersion = "2.0.1.Final"
-
 kotlin {
     jvmToolchain(21)
     
@@ -53,6 +49,7 @@ kotlin {
             implementation(kotlin("stdlib-common"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            implementation("com.google.code.gson:gson:2.10.1")
         }
         
         commonTest.dependencies {
@@ -78,7 +75,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 api("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.2")
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")  
             }
         }
     }

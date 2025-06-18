@@ -17,13 +17,13 @@ class Reactor(
         throwable.printStackTrace()
     }
 
-    private val reactorScope = CoroutineScope(dispatcher + SupervisorJob() + exceptionHandler)
+    internal val reactorScope = CoroutineScope(dispatcher + SupervisorJob() + exceptionHandler)
     private val isRunning = MutableStateFlow(true)
 
     private lateinit var selectorThreads: List<SelectorThread>
     private var nextSelectorIndex = 0
 
-    private val bufferPool = BufferPoolImpl()
+    internal val bufferPool = BufferPoolImpl()
 
     init {
         reactorScope.launch {

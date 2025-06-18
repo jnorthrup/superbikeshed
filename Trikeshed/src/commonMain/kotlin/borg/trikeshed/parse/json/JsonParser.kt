@@ -44,13 +44,19 @@ object JsonParser {
  var closeIdx = -1
  val commaIdxs: MutableList<Int> = mutableListOf()
  var insideQuote = false
+ var escapeNextChar = false
  var maxDepth = 0
  
  for (i in 0 until src.size) {
  val c: Char = src[i]
+ when {
  
- when (c) {
- '\"' -> insideQuote = !insideQuote
+ insideQuote -> when {
+ escapeNextChar -> escapeNextChar = false
+ c == '\\' -> escapeNextChar = true
+ c == '\"' -> insideQuote = false
+ }
+ c == '\"' -> insideQuote = true
  '{', '[' -> if (!insideQuote) {
  if (depth == 0) openIdx = i
  depth++
@@ -76,40 +82,56 @@ object JsonParser {
 
  fun reify(src1: Series<Char>): Any? {
  val src: CharSeries = CharSeries(src1).trim
- if (src.isEmpty) return null
- val c: Char = src.mk.get
-
- return when (c) {
- '{' -> {
- val segments = (index(src) j src).segments
- if (segments.none()) return emptyMap<String, Any?>()
- segments.associate { segment ->
+ 
+ return when (val c: Char = if (src.hasRemaining) src[src.pos] else return null) {
+ '{', '[' -> {
+ val index: JsElement = index(src)
+ val (openIdx: Int, closeIdx: Int) = index.first
+ val commaIdxs: Series<Int> = index.second
+ 
+ val isObj = '{' == c
+ 
+ val combine: Series<Int> = combine(s_[openIdx], commaIdxs, s_[closeIdx])
+ if (commaIdxs.isEmpty() && src.rem > 2) {
+ val (before, after) = combine.toArray()
+ val possiblyEmpty = src.clone().lim(after).pos(before + 1).trim
+ if (!possiblyEmpty.hasRemaining)
+ return if (isObj) emptyMap<String, Any?>() else emptyList<Any?>()
+ else
+ return if (isObj) {
+ val entry = reify(possiblyEmpty) as? String ?: return emptyMap<String, Any?>()
+ val colonIdx = entry.indexOf(':')
+ if (colonIdx == -1) return emptyMap<String, Any?>()
+ val key = entry.substring(0, colonIdx).trim().removeSurrounding("\"")
+ val value = reify(entry.substring(colonIdx + 1).trim().toSeries())
+ mapOf(key to value)
+ } else listOf(reify(possiblyEmpty))
+ }
+ 
+ if (isObj) {
+ (index(src) j src).segments.associate { segment ->
  val cs = CharSeries(segment.toSeries())
  if (!cs.seekTo(':')) throw Exception("Malformed object entry: ${cs.asString()}")
  val value = reify(cs.slice)
  val key = reify(cs.pos(0).lim(cs.pos - 1)) as String
  key to value
  }
+ } else {
+ (index(src) j src).segments.map { segment -> reify(segment.toSeries()) }.toList()
  }
- '[' -> {
- val segments = (index(src) j src).segments
- if (segments.none()) return emptyList<Any?>()
- segments.map { segment -> reify(segment.toSeries()) }.toList()
  }
  '"' -> {
- // Create a new CharSeries from the original, un-advanced input
- val content = CharSeries(src1).trim
- // Remove the quotes
+ val content = src.clone()
  unquote(content)
- // Return the inner content as a string
  content.asString()
  }
- 't' -> true
- 'f' -> false
+ 't', 'f' -> 't' == c
  'n' -> null
  else -> src.asString().toDoubleOrNull()
  }
-}
+ }
+
+ private fun String.toSeries(): Series<Char> = length j { index: Int -> this[index] }
 
 
  fun jsPath(
