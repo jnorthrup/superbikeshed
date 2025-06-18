@@ -1,6 +1,6 @@
 package borg.trikeshed.lib
 
-typealias Series<T> = Join<Int, (Int) -> T>
+// Series typealias is defined in Series.kt - removing duplicate
 
 fun <T> Series<Series<T>>.flatten(): Series<T> {
     var totalSize = 0

@@ -11,6 +11,11 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
+// Core Series typealias - Series IS Join<Int, (Int) -> T>
+typealias Series<T> = Join<Int, (Int) -> T>
+
+// Series constructor function 
+fun <T> Series(size: Int, accessor: (Int) -> T): Series<T> = size j accessor
 
 val <T> Series<T>.size: Int get() = a
 

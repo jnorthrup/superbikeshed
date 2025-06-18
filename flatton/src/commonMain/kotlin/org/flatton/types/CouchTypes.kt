@@ -30,9 +30,15 @@ typealias HumanSize = String
 data class CouchDocument(
     val _id: DocumentId,
     val _rev: RevisionId? = null,
-    val _deleted: Boolean? = null,
-    val _attachments: Map<AttachmentName, AttachmentInfo>? = null,
-    val data: JsonObject
+    val type: String? = null,
+    val source: String? = null,
+    val target: String? = null,
+    val continuous: Boolean? = null,
+    val filter: String? = null,
+    val queryParams: Map<String, String> = emptyMap(),
+    val docIds: List<String>? = null,
+    val userContext: Map<String, Any>? = null,
+    val history: List<ReplicationHistoryEntry>? = null
 )
 
 data class AttachmentInfo(
@@ -152,6 +158,19 @@ data class ViewRow<K, V>(
     val doc: CouchDocument? = null
 )
 
+data class ReplicationHistoryEntry(
+    val startTime: String,
+    val endTime: String? = null,
+    val startLastSeq: String,
+    val endLastSeq: String,
+    val recordedSeq: String,
+    val missingFound: Long,
+    val docsRead: Long,
+    val docsWritten: Long,
+    val docWriteFailures: Long,
+    val error: String? = null
+)
+
 // Wire Protocol Adapters (Serialization/Deserialization)
 
 object CouchDocumentAdapter {
@@ -161,18 +180,15 @@ object CouchDocumentAdapter {
         return CouchDocument(
             _id = DocumentId(map["_id"] as String),
             _rev = (map["_rev"] as? String)?.let { RevisionId(it) },
-            _deleted = map["_deleted"] as? Boolean,
-            _attachments = (map["_attachments"] as? Map<String, *>)?.mapValues {
-                val attMap = it.value as Map<String, Any?>
-                AttachmentInfo(
-                    content_type = attMap["content_type"] as String,
-                    revpos = attMap["revpos"] as Int,
-                    digest = attMap["digest"] as String,
-                    length = (attMap["length"] as Number).toLong(),
-                    stub = attMap["stub"] as? Boolean
-                )
-            },
-            data = data.filterValues { it != null }
+            type = map["type"] as? String,
+            source = map["source"] as? String,
+            target = map["target"] as? String,
+            continuous = map["continuous"] as? Boolean,
+            filter = map["filter"] as? String,
+            queryParams = map["query_params"] as? Map<String, String> ?: emptyMap(),
+            docIds = map["doc_ids"] as? List<String>,
+            userContext = map["user_context"] as? Map<String, Any>,
+            history = map["history"] as? List<ReplicationHistoryEntry>
         )
     }
 
@@ -180,9 +196,15 @@ object CouchDocumentAdapter {
         val map = mutableMapOf<String, Any?>()
         map["_id"] = doc._id.value
         doc._rev?.let { map["_rev"] = it.value }
-        doc._deleted?.let { map["_deleted"] = it }
-        doc._attachments?.let { map["_attachments"] = it }
-        map.putAll(doc.data)
+        doc.type?.let { map["type"] = it }
+        doc.source?.let { map["source"] = it }
+        doc.target?.let { map["target"] = it }
+        doc.continuous?.let { map["continuous"] = it }
+        doc.filter?.let { map["filter"] = it }
+        doc.queryParams.let { map["query_params"] = it }
+        doc.docIds?.let { map["doc_ids"] = it }
+        doc.userContext?.let { map["user_context"] = it }
+        doc.history?.let { map["history"] = it }
         return JsonImpl.stringify(map)
     }
 }

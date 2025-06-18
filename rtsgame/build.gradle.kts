@@ -1,7 +1,9 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
     id("com.github.ben-manes.versions") version "0.51.0"
 }
+
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 kotlin {
     jvm()
@@ -29,9 +31,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // TODO: Re-enable when Trikeshed builds
-                // implementation(project(":Trikeshed"))
-                implementation("com.rtsgame:shared:1.0.0")
+                implementation(project(":Trikeshed"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
         
@@ -43,12 +44,7 @@ kotlin {
         
         val wasmJsMain by getting {
             dependencies {
-                // WASM JS-specific dependencies
-                implementation("org.jetbrains.kotlinx:kotlinx-browser:0.0.21")
-                implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.9.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-browser-wasm:0.0.21")
-                implementation("org.jetbrains.kotlinx:kotlinx-js:0.0.21")
             }
         }
     }

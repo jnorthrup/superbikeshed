@@ -3,6 +3,7 @@ package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
+import borg.trikeshed.io.PlatformFile
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
 
@@ -18,163 +19,225 @@ data class HttpServerConfig(
     val maxBodySize: Long = 1024 * 1024,  // 1MB
     val keepAliveTimeout: Long = 5000,     // 5 seconds
     val maxConnections: Int = 1000,
-    val enableChunkedTransfer: Boolean = true,
     val enableCompression: Boolean = true
 )
 
-class HttpServer(
-    private val config: HttpServerConfig,
-    private val handler: HttpHandler
-) {
-    
-    private val connectionManager = HttpConnectionManager(config)
-    
-    suspend fun start() {
-        // TODO: Integration with Reactor pattern from trikeshed.reactor
-        // This would use the restored reactor system for async I/O
-    }
-    
-    suspend fun handleConnection(input: Series<Byte>): Series<Byte> {
-        val inputChars = input.α { it.toInt().toChar() }
-        
-        // Parse HTTP message using RFC 7230 parser
-        val httpMessage = HttpParser.parseHttpMessage(inputChars) ?: run {
-            return createBadRequestResponse()
-        }
-        
-        // Validate message format
-        if (!isValidHttpMessage(httpMessage)) {
-            return createBadRequestResponse()
-        }
-        
-        // Convert to HttpRequest format
-        val request = convertToHttpRequest(httpMessage) ?: run {
-            return createBadRequestResponse()
-        }
-        
-        // Handle with user-provided handler
-        val response = try {
-            handler(request)
-        } catch (e: Exception) {
-            createInternalServerErrorResponse()
-        }
-        
-        // Convert response to RFC 7230 format and serialize
-        val responseMessage = response.toHttpMessage()
-        val serialized = HttpSerializer.serializeHttpMessage(responseMessage)
-        
-        return serialized.α { it.code.toByte() }
-    }
-    
-    private fun isValidHttpMessage(message: HttpMessage): Boolean {
-        // RFC 7230 validation
-        when (val startLine = message.startLine) {
-            is HttpRequestLine -> {
-                // Validate HTTP version
-                if (!isValidHttpVersion(startLine.httpVersion)) return false
-                
-                // Validate request target (Section 5.3)
-                if (!isValidRequestTarget(startLine.requestTarget)) return false
-                
-                // Validate method
-                if (!isValidMethod(startLine.method)) return false
-            }
-            is HttpStatusLine -> {
-                if (!isValidHttpVersion(startLine.httpVersion)) return false
-                if (!isValidStatusCode(startLine.statusCode)) return false
-            }
-        }
-        
-        // Validate headers (Section 3.2)
-        return validateHeaders(message.headerFields)
-    }
-    
-    private fun isValidHttpVersion(version: HttpVersion): Boolean {
-        return version.value.matches(Regex("HTTP/\\d+\\.\\d+"))
-    }
-    
-    private fun isValidRequestTarget(target: HttpRequestTarget): Boolean {
-        // Basic validation - more comprehensive validation would follow RFC 3986
-        return target.value.isNotEmpty() && target.value.length <= 2048
-    }
-    
-    private fun isValidMethod(method: HttpMethod): Boolean {
-        return true  // All enum values are valid
-    }
-    
-    private fun isValidStatusCode(code: HttpStatusCode): Boolean {
-        return code.value in 100..599
-    }
-    
-    private fun validateHeaders(headers: Series2<HttpFieldName, HttpFieldValue>): Boolean {
-        // RFC 7230 Section 3.2 validation
-        headers.`▶`.forEach { headerJoin ->
-            val fieldName = headerJoin.a.value
-            val fieldValue = headerJoin.b.value
+/**
+ * Creates a router that combines multiple handlers with priority ordering.
+ * This allows us to handle both API endpoints and static files.
+ */
+fun createRouter(
+    staticRoot: String,
+    dealService: DealService,
+    requestFactoryService: RequestFactoryService
+): HttpHandler {
+    val staticHandler = createStaticFileHandler(staticRoot)
+    val batchHandler = createBatchHandler(dealService)
+    val requestFactoryHandler = createRequestFactoryHandler(requestFactoryService)
+
+    return { request ->
+        // Log incoming request
+        println("Routing request: ${request.method} ${request.path.value}")
+
+        when {
+            // RequestFactory endpoint takes highest precedence
+            request.path.value == "/gwtRequest" -> requestFactoryHandler(request)
             
-            // Validate field name is token
-            if (!isValidToken(fieldName)) return false
+            // API endpoints take next precedence
+            request.path.value == "/api/batch" -> batchHandler(request)
             
-            // Validate field value contains only VCHAR/WSP/obs-text
-            if (!isValidFieldValue(fieldValue)) return false
+            // Static files as fallback
+            else -> staticHandler(request)
         }
-        return true
-    }
-    
-    private fun isValidToken(str: String): Boolean {
-        return str.isNotEmpty() && str.all { char ->
-            char.isLetterOrDigit() || char in "!#\$&'*+-.^_`|~"
-        }
-    }
-    
-    private fun isValidFieldValue(str: String): Boolean {
-        return str.all { char ->
-            char.code in 0x21..0x7E || char == ' ' || char == '\t' || char.code in 0x80..0xFF
-        }
-    }
-    
-    private fun convertToHttpRequest(message: HttpMessage): HttpRequest? {
-        val startLine = message.startLine as? HttpRequestLine ?: return null
-        
-        val headers = message.headerFields.α { join ->
-            HttpHeaderName(join.a.value) j HttpHeaderValue(join.b.value)
-        }
-        
-        return HttpRequest(
-            method = startLine.method,
-            path = HttpRequestPath(startLine.requestTarget.value),
-            headers = headers,
-            body = message.messageBody,
-            version = startLine.httpVersion
-        )
-    }
-    
-    private fun createBadRequestResponse(): Series<Byte> {
-        val response = HttpResponse(
-            status = HttpStatusCode(400),
-            reasonPhrase = HttpReasonPhrase("Bad Request"),
-            headers = createEmptyHeaders(),
-            body = "Bad Request".encodeToByteArray().toSeries()
-        )
-        
-        val message = response.toHttpMessage()
-        val serialized = HttpSerializer.serializeHttpMessage(message)
-        return serialized.α { it.code.toByte() }
-    }
-    
-    private fun createInternalServerErrorResponse(): HttpResponse {
-        return HttpResponse(
-            status = HttpStatusCode(500),
-            reasonPhrase = HttpReasonPhrase("Internal Server Error"),
-            headers = createEmptyHeaders(),
-            body = "Internal Server Error".encodeToByteArray().toSeries()
-        )
-    }
-    
-    private fun createEmptyHeaders(): Series2<HttpHeaderName, HttpHeaderValue> {
-        return 0 j { HttpHeaderName("") j HttpHeaderValue("") }
     }
 }
+
+class HttpServer(
+    private val config: HttpServerConfig,
+    private val reactor: Reactor,
+    private val handler: HttpHandler
+) {
+    private lateinit var serverChannel: ServerChannel
+
+    suspend fun start() {
+        serverChannel = PlatformIO.create().createServerChannel()
+        serverChannel.configureBlocking(false)
+        serverChannel.bind(config.port.value)
+        println("TrikeShed HTTP Server started on ${config.host.value}:${config.port.value}")
+
+        val acceptReaction = object : UnaryAsyncReaction {
+            override suspend fun invoke(key: SelectionKey): AsyncReaction? {
+                val clientChannel = serverChannel.accept()
+                if (clientChannel != null) {
+                    clientChannel.configureBlocking(false)
+                    val connectionHandler = HttpConnectionHandler(config, reactor, clientChannel, handler)
+                    reactor.reactorScope.launch {
+                        connectionHandler.handle()
+                    }
+                }
+                return OP_ACCEPT j this
+            }
+        }
+        //reactor.registerChannel(serverChannel, OP_ACCEPT, acceptReaction) // Old API
+    }
+
+    suspend fun stop() {
+        serverChannel.close()
+        reactor.shutdown()
+        println("TrikeShed HTTP Server stopped.")
+    }
+}
+
+class HttpConnectionHandler(
+    private val config: HttpServerConfig,
+    private val reactor: Reactor,
+    private val channel: ClientChannel,
+    private val handler: HttpHandler
+) {
+    suspend fun handle() {
+        val buffer = reactor.bufferPool.acquire()
+        try {
+            val bytesRead = channel.read(buffer)
+            if (bytesRead <= 0) {
+                channel.close()
+                reactor.bufferPool.release(buffer)
+                return
+            }
+
+            buffer.flip()
+            val requestBytes = ByteArray(buffer.remaining())
+            buffer.get(requestBytes)
+
+            // Use RFC7230 parser
+            val requestMessage = HttpParser.parseHttpMessage(requestBytes.decodeToString().toSeries())
+            if (requestMessage == null) {
+                sendErrorResponse(400, "Bad Request")
+                return
+            }
+
+            val request = convertToHttpRequest(requestMessage)
+            if (request == null) {
+                sendErrorResponse(400, "Bad Request")
+                return
+            }
+
+            val response = try {
+                handler(request)
+            } catch (e: Exception) {
+                HttpResponse(HttpStatusCode(500), HttpReasonPhrase("Internal Server Error"))
+            }
+
+            val responseMessage = response.toHttpMessage()
+            val serializedResponse = HttpSerializer.serializeHttpMessage(responseMessage)
+            val responseBuffer = reactor.bufferPool.acquire()
+            try {
+                // This is simplistic, a real impl needs to handle large bodies
+                val responseBytes = serializedResponse.`▶`.joinToString("").encodeToByteArray()
+                responseBuffer.put(responseBytes)
+                responseBuffer.flip()
+                channel.write(responseBuffer)
+            } finally {
+                reactor.bufferPool.release(responseBuffer)
+            }
+        } catch (e: Exception) {
+            println("Connection error: ${e.message}")
+        } finally {
+            reactor.bufferPool.release(buffer)
+            channel.close()
+        }
+    }
+
+    private fun convertToHttpRequest(message: HttpMessage): HttpRequest? {
+        val startLine = message.startLine as? HttpRequestLine ?: return null
+        val headers = message.headerFields.α { HttpHeaderName(it.a.value) j HttpHeaderValue(it.b.value) }
+        return HttpRequest(startLine.method, HttpRequestPath(startLine.requestTarget.value), headers, message.messageBody, startLine.httpVersion)
+    }
+
+    private suspend fun sendErrorResponse(code: Int, phrase: String) {
+        val response = HttpResponse(HttpStatusCode(code), HttpReasonPhrase(phrase))
+        val responseMessage = response.toHttpMessage()
+        val serialized = HttpSerializer.serializeHttpMessage(responseMessage)
+        val buffer = reactor.bufferPool.acquire()
+        try {
+            buffer.put(serialized.`▶`.joinToString("").encodeToByteArray())
+            buffer.flip()
+            channel.write(buffer)
+        } finally {
+            reactor.bufferPool.release(buffer)
+            channel.close()
+        }
+    }
+}
+
+fun createStaticFileHandler(rootDir: String): HttpHandler {
+    return { request ->
+        val path = request.path.value.substringBefore('?')
+        val sanitizedPath = path.removePrefix("/").replace("../", "")
+        
+        var file = PlatformFile("$rootDir/$sanitizedPath")
+        if (!file.exists() || file.isDirectory()) { // Simplified directory check
+            file = PlatformFile("$rootDir/$sanitizedPath/index.html")
+        }
+
+        if (!file.exists()) {
+            HttpResponse(HttpStatusCode(404), HttpReasonPhrase("Not Found"))
+        } else {
+            // Opportunistic Gzip
+            val acceptEncoding = request.headers.▶.find { it.a.value.equals("Accept-Encoding", ignoreCase = true) }?.b?.value ?: ""
+            val gzFile = PlatformFile("${file.path}.gz")
+            
+            val (fileToSend, contentEncoding) = if ("gzip" in acceptEncoding && gzFile.exists()) {
+                gzFile to "gzip"
+            } else {
+                file to null
+            }
+
+            val bodyBytes = fileToSend.readAllBytes()
+
+            val headers = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
+            headers.add(HttpHeaderName("Content-Type") j HttpHeaderValue(getMimeType(file.path)))
+            headers.add(HttpHeaderName("Content-Length") j HttpHeaderValue(bodyBytes.size.toString()))
+            contentEncoding?.let {
+                headers.add(HttpHeaderName("Content-Encoding") j HttpHeaderValue(it))
+            }
+
+            HttpResponse(
+                status = HttpStatusCode(200),
+                headers = headers.size j { headers[it] },
+                body = bodyBytes.size j { bodyBytes[it] }
+            )
+        }
+    }
+}
+
+private fun getMimeType(path: String): String {
+    return when (path.substringAfterLast('.', "").lowercase()) {
+        "html", "htm" -> "text/html"
+        "css" -> "text/css"
+        "js" -> "application/javascript"
+        "json" -> "application/json"
+        "png" -> "image/png"
+        "jpg", "jpeg" -> "image/jpeg"
+        "gif" -> "image/gif"
+        else -> "application/octet-stream"
+    }
+}
+
+private fun HttpResponse(
+    status: HttpStatusCode,
+    reasonPhrase: HttpReasonPhrase = HttpReasonPhrase("OK")
+): HttpResponse {
+    return HttpResponse(
+        status = status,
+        reasonPhrase = reasonPhrase,
+        headers = 0 j { HttpHeaderName("") j HttpHeaderValue("") }, // Empty headers
+        body = 0 j { 0.toByte() } // Empty body
+    )
+}
+
+private fun String.toSeries(): Series<Char> = this.length j { this[it] }
+
+private fun ByteArray.toSeries(): Series<Byte> = this.size j { this[it] }
 
 // ===== CONNECTION MANAGEMENT (RFC 7230 Section 6) =====
 

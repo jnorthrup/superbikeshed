@@ -1,6 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.23" // Or your project's Kotlin version
-    kotlin("plugin.serialization") version "1.9.23" // For @Serializable data classes
+    kotlin("jvm") // Version inherited from parent
     application // To build as a CLI application
 }
 

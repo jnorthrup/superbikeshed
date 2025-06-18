@@ -14,7 +14,6 @@ import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.wri
 import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.writeULong
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CharSeries
-import kotlinx.datetime.*
 
 enum class IOMemento(override val networkSize: Int? = null, val fromChars: (Series<Char>) -> Any) : TypeMemento {
     IoBoolean(1, {
@@ -77,42 +76,6 @@ enum class IOMemento(override val networkSize: Int? = null, val fromChars: (Seri
             currentPlatformCodec.writeDouble as (Any?) -> ByteArray
 
         override fun createDecoder(size: Int): (ByteArray) -> Any? = currentPlatformCodec.readDouble
-    },
-    IoLocalDate(8, { it.parseIsoDateTime() }) {
-        override fun createEncoder(i: Int): (Any?) -> ByteArray = {
-            //try a cast elvis first with Instant then with LocalDate
-            val date = (it as? Instant)?.toLocalDateTime(TimeZone.UTC)?.date ?: it as LocalDate
-//
-//            val toEpochDays = (it as LocalDate).toEpochDays()
-//            writeLong (toEpochDays.toLong())
-            writeLong(date.toEpochDays().toLong())
-
-
-        }
-
-        override fun createDecoder(size: Int): (ByteArray) -> Any? = {
-            val fromEpochDays = LocalDate.fromEpochDays(readLong(it).toInt())
-            fromEpochDays
-        }
-    },
-
-    /**
-     * 12 bytes of storage, first epoch seconds Long , then nanos Int
-     */
-    IoInstant(12,
-        { Instant.parse(it.toString()) }) {
-        override fun createEncoder(i: Int): (Any?) -> ByteArray = { inst: Any? ->
-            val instant = inst as Instant
-            val epochSeconds = instant.epochSeconds
-            val nanoAdjustment = instant.nanosecondsOfSecond
-            writeLong(epochSeconds) + writeInt(nanoAdjustment)
-        }
-
-        override fun createDecoder(size: Int): (ByteArray) -> Any? = { bytes: ByteArray ->
-            val epochSeconds = readLong(bytes)
-            val nanoAdjustment = readInt(bytes.sliceArray(8..11))
-            Instant.fromEpochSeconds(epochSeconds, nanoAdjustment)
-        }
     },
     IoString(null, { it.asString() }) {
         override fun createEncoder(i: Int): (Any?) -> ByteArray = writeString

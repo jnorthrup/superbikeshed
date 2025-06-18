@@ -1,18 +1,26 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
+    `maven-publish`
 }
 
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
+val gwtVersion = "2.11.0"
+val requestFactoryVersion = "2.11.0"
+val javaxValidationVersion = "2.0.1.Final"
+
 kotlin {
+    jvmToolchain(21)
+    
     jvm {
-        jvmToolchain(21)
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
     }
     
-    @OptIn(ExperimentalWasmDsl::class)
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         nodejs()
@@ -37,9 +45,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(kotlin("stdlib-common"))
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:${libs.versions.serialization.get()}")
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
         }
         
         commonTest.dependencies {
@@ -50,8 +58,15 @@ kotlin {
         
         jvmTest.dependencies {
             implementation(kotlin("test-junit5"))
-            implementation("org.junit.jupiter:junit-jupiter-api:${libs.versions.junit.get()}")
-            runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${libs.versions.junit.get()}")
+            implementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
+            runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                api("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.5.0")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3")
+            }
         }
     }
 }
