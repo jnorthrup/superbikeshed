@@ -100,7 +100,7 @@ object HttpParser {
     }
     
     private fun parseStartLine(line: Series<Char>): HttpStartLine? {
-        val lineStr = line.`play`.joinToString("")
+        val lineStr = line.play.joinToString("")
         val parts = lineStr.split(' ')
         
         return when {
@@ -130,12 +130,12 @@ object HttpParser {
     // ===== HEADER FIELD PARSING (Section 3.2) =====
     
     fun parseHeaderField(line: Series<Char>): Join<HttpFieldName, HttpFieldValue>? {
-        val colonPos = line.`play`.indexOfFirst { it == ':' }
+        val colonPos = line.play.indexOfFirst { it == ':' }
         if (colonPos == -1) return null
         
         // field-name = token
-        val fieldNameChars = colonPos j { line[it] }
-        val fieldName = fieldNameChars.`play`.joinToString("")
+        val fieldNameChars = colonPos j { it:Int-> line[it] }
+        val fieldName = fieldNameChars.play.joinToString("")
         if (!isValidToken(fieldName)) return null
         
         // field-value = *( field-content / obs-fold )
@@ -153,7 +153,7 @@ object HttpParser {
         }
         
         val fieldValueChars = (valueEnd - valueStart) j { line[valueStart + it] }
-        val fieldValue = fieldValueChars.`play`.joinToString("")
+        val fieldValue = fieldValueChars.play.joinToString("")
         
         return HttpFieldName(fieldName) j HttpFieldValue(fieldValue)
     }
@@ -183,7 +183,7 @@ object HttpParser {
             // Parse chunk-size
             val sizeLineEnd = findCRLF(input, pos) ?: return null
             val sizeLine = (sizeLineEnd - pos) j { input[pos + it] }
-            val sizeStr = sizeLine.`play`.joinToString("").split(';')[0].trim()
+            val sizeStr = sizeLine.play.joinToString("").split(';')[0].trim()
             val chunkSize = sizeStr.toIntOrNull(16) ?: return null
             
             pos = sizeLineEnd + 2  // Skip CRLF
@@ -260,7 +260,7 @@ object HttpSerializer {
         val bodyChars = message.messageBody.α { it.toInt().toChar() }
         
         val totalSize = startLineChars.size + headerChars.size + crlfChars.size + bodyChars.size
-        return totalSize j { i ->
+        return totalSize j { i:Int ->
             when {
                 i < startLineChars.size -> startLineChars[i]
                 i < startLineChars.size + headerChars.size -> headerChars[i - startLineChars.size]
@@ -279,7 +279,7 @@ object HttpSerializer {
     }
     
     private fun serializeHeaders(headers: Series2<HttpFieldName, HttpFieldValue>): Series<Char> {
-        val headerLines = headers.`play`.map { join ->
+        val headerLines = headers.play.map { join ->
             "${join.a.value}: ${join.b.value}\r\n"
         }
         val totalLength = headerLines.sumOf { it.length }
@@ -296,16 +296,16 @@ object HttpSerializer {
     }
     
     fun serializeChunkedBody(body: ChunkedBody): Series<Char> {
-        val chunks = body.chunks.`play`.flatMap { chunk ->
+        val chunks = body.chunks.play.flatMap { chunk ->
             val sizeHex = chunk.size.toString(16)
             val chunkLine = "$sizeHex\r\n"
             val dataChars = chunk.data.α { it.toInt().toChar() }
             val crlfChars = "\r\n"
-            (chunkLine + dataChars.`play`.joinToString("") + crlfChars).toList()
+            (chunkLine + dataChars.play.joinToString("") + crlfChars).toList()
         }
         
         val lastChunk = "0\r\n"
-        val trailerChars = body.trailerFields.`play`.flatMap { join ->
+        val trailerChars = body.trailerFields.play.flatMap { join ->
             "${join.a.value}: ${join.b.value}\r\n".toList()
         }
         val finalCrlf = "\r\n"
@@ -340,19 +340,19 @@ object HttpUpgrade {
     }
     
     fun canUpgrade(requestHeaders: Series2<HttpFieldName, HttpFieldValue>, protocol: ProtocolName): Boolean {
-        val connectionOptions = requestHeaders.`play`
+        val connectionOptions = requestHeaders.play
             .find { it.a.value.lowercase() == "connection" }
             ?.let { HttpParser.parseConnectionHeader(it.b) }
             ?: return false
             
-        val hasUpgrade = connectionOptions.`play`.contains(HttpParser.ConnectionOption.UPGRADE)
+        val hasUpgrade = connectionOptions.play.contains(HttpParser.ConnectionOption.UPGRADE)
         if (!hasUpgrade) return false
         
-        val upgradeProtocols = requestHeaders.`play`
+        val upgradeProtocols = requestHeaders.play
             .find { it.a.value.lowercase() == "upgrade" }
             ?.let { parseUpgradeHeader(it.b) }
             ?: return false
             
-        return upgradeProtocols.`play`.any { it.name.value.lowercase() == protocol.value.lowercase() }
+        return upgradeProtocols.play.any { it.name.value.lowercase() == protocol.value.lowercase() }
     }
 }
