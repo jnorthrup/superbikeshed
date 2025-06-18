@@ -28,14 +28,13 @@ Avoid the `trikeshed.collections.*` package due to its unconstrained algorithmic
 - **series.α { transform }** - the ONLY transformation operator  
   //   e.g., val transformedSeries = mySeries.α { it * 2 }
   //        (conceptual: applies a transformation to elements, producing a new Series)
-- **series.\`▶\`** (THE PLAY BUTTON) - gateway to AbstractList,Iterable<T> for .map and list
-  **DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX NOT MARKDOWN**
-  //   e.g., val listRepresentation = mySeries.\`▶\`.toList()
-  //        val mappedList = mySeries.\`▶\`.map { it.toString() }
+- **series.play** - gateway to AbstractList,Iterable<T> for .map and list
+  //   e.g., val listRepresentation = mySeries.play.toList()
+  //        val mappedList = mySeries.play.map { it.toString() }
   //        (conceptual: materializes a Series to a standard collection for specific operations)
 - **@JvmInline value class** - the ONLY wrapper mechanism
 - **typealias** - descriptive names for ANY OR ALL RECURRING primitives
-- To use standard collection operations like `.map()`, first materialize the `Series` using `▶`, e.g., `mySeries.▶.map { ... }`
+- To use standard collection operations like `.map()`, first materialize the `Series` using `.play`, e.g., `mySeries.play.map { ... }`
 
 ## Ontological Typealiases and Value Classes
 

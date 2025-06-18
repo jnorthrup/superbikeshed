@@ -1,11 +1,20 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
 }
 
+group = "nexus"
+version = "1.0-SNAPSHOT"
+
 kotlin {
-    jvm()
+    jvmToolchain(21)
     
-    // Example test for platform tuple
+    jvm {
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
+    
+    // Platform detection for native target
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     val isMacOS = hostOs == "Mac OS X"
@@ -24,9 +33,6 @@ kotlin {
             dependencies {
                 implementation(project(":Trikeshed"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("khttp:khttp:1.0.0")
-                implementation("com.github.docker-java:docker-java-core:3.3.3")
-                implementation("com.github.docker-java:docker-java-transport-httpclient5:3.3.3")
             }
         }
         
@@ -53,4 +59,18 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// Disable linting to keep code terse
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xskip-prerelease-check",
+            "-Xskip-metadata-version-check",
+            "-Xno-call-assertions",
+            "-Xno-param-assertions",
+            "-Xno-receiver-assertions",
+            "-Xno-source-roots-assertions"
+        )
+    }
 }

@@ -1,23 +1,23 @@
-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-
 plugins {
     kotlin("multiplatform")
     `maven-publish`
     id("com.github.ben-manes.versions")
 }
 
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 group = "org.ta4k"
 version = "1.0-SNAPSHOT"
 
 kotlin {
+    jvmToolchain(21)
+    
     jvm {
-        jvmToolchain(21)
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
     
-    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         nodejs()

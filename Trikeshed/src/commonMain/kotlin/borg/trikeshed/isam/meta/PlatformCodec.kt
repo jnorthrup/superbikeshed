@@ -7,6 +7,7 @@ import kotlin.jvm.JvmStatic
 // Ontological type aliases for endianness operations
 @JvmInline value class EndiannessPredicate(val value: Boolean)
 @JvmInline value class ByteOrderOperation(val value: String)
+@JvmInline value class PrimitiveSize(val value: Int)
 
 // Endianness dispatch tables
 typealias EndiannessReadDispatch<T> = DoubleDispatchTable<EndiannessPredicate, ByteArray, T>
@@ -15,7 +16,6 @@ typealias EndiannessWriteDispatch<T> = DoubleDispatchTable<EndiannessPredicate, 
 interface PlatformCodec {
     val readLong: (ByteArray) -> Long
     val readInt: (ByteArray) -> Int
-
     val readShort: (ByteArray) -> Short
     val writeLong: (Long) -> ByteArray
     val writeInt: (Int) -> ByteArray
@@ -37,7 +37,6 @@ interface PlatformCodec {
             val i = 0x01020304
             val b = i.toByte()
             b == 0x01.toByte()
-
         }
 
         @JvmStatic
@@ -45,19 +44,19 @@ interface PlatformCodec {
 
         // Double dispatch tables for endianness-specific operations
         private val shortReadDispatch: EndiannessReadDispatch<Short> = seriesOf(
-            ((EndiannessPredicate(true) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray -> 
+            (({ p: EndiannessPredicate -> p.value } j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray -> 
                 ((it[1].toInt() and 0xFF) shl 8).toShort() or (it[0].toInt() and 0xFF).toShort() }),
-            ((EndiannessPredicate(false) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray -> 
+            (({ p: EndiannessPredicate -> !p.value } j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray -> 
                 (it[0].toInt() and 0xFF shl 8 or (it[1].toInt() and 0xFF)).toShort() })
         )
 
         private val intReadDispatch: EndiannessReadDispatch<Int> = seriesOf(
-            ((EndiannessPredicate(true) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+            (({ p: EndiannessPredicate -> p.value } j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
                 (((it[3].toUByte()).toUInt() shl 24) or
                  ((it[2].toUByte()).toUInt() shl 16) or
                  ((it[1].toUByte()).toUInt() shl 8) or
                  (it[0].toUByte()).toUInt()).toInt() }),
-            ((EndiannessPredicate(false) j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
+            (({ p: EndiannessPredicate -> !p.value } j wildcard<ByteArray>()) j { _: EndiannessPredicate, it: ByteArray ->
                 (((it[0].toUByte()).toUInt() shl 24) or
                  ((it[1].toUByte()).toUInt() shl 16) or
                  ((it[2].toUByte()).toUInt() shl 8) or
@@ -140,8 +139,6 @@ interface PlatformCodec {
             override val writeUShort: (UShort) -> ByteArray ={it->writeShort(it.toShort())}
             override val writeUInt: (UInt) -> ByteArray ={it->writeInt(it.toInt())}
             override val writeULong: (ULong) -> ByteArray ={it->writeLong(it.toLong())}
-
         }
     }
-
 }

@@ -20,19 +20,19 @@ enum class DataBinanceVision(
     val fixup: (Cursor) -> Cursor = { it },
 ) {
     aggtrades(
-        Series.j("Aggregate tradeId", "Price", "Quantity", "First tradeId", "Last tradeId", "Timestamp", "Was the buyer the maker", "Was the trade the best price match"),
-        Series.j(IOMemento.IoLong, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoLong, IOMemento.IoLong, IOMemento.IoString, IOMemento.IoBoolean, IOMemento.IoBoolean),
+        Series(8) { i -> arrayOf("Aggregate tradeId", "Price", "Quantity", "First tradeId", "Last tradeId", "Timestamp", "Was the buyer the maker", "Was the trade the best price match")[i] },
+        Series(8) { i -> arrayOf(IOMemento.IoLong, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoLong, IOMemento.IoLong, IOMemento.IoString, IOMemento.IoBoolean, IOMemento.IoBoolean)[i] },
         { c -> c.takeIf { it.size > 0 }?.let { UnixTimeRemapper.timestampFromIoLong("Timestamp")(c) } ?: c }
     ),
     klines(
-        Series.j("Open_time", "Open", "High", "Low", "Close", "Volume", "Close_time", "Quote asset volume", "Number of trades", "Taker buy base asset volume", "Taker buy quote asset volume", "Ignore"),
-        Series.j(IOMemento.IoString, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble,
-                IOMemento.IoString, IOMemento.IoDouble, IOMemento.IoInt, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoString),
+        Series(12) { i -> arrayOf("Open_time", "Open", "High", "Low", "Close", "Volume", "Close_time", "Quote asset volume", "Number of trades", "Taker buy base asset volume", "Taker buy quote asset volume", "Ignore")[i] },
+        Series(12) { i -> arrayOf(IOMemento.IoString, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble,
+                IOMemento.IoString, IOMemento.IoDouble, IOMemento.IoInt, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoString)[i] },
         { c -> c.takeIf { it.size > 0 }?.let { UnixTimeRemapper.timestampFromIoLong("Open_time", "Close_time")(c) } ?: c }),
 
     trades(
-        Series.j("trade Id", "price", "qty", "quoteQty", "time", "isBuyerMaker", "isBestMatch"),
-        Series.j(IOMemento.IoLong, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoString, IOMemento.IoBoolean, IOMemento.IoBoolean),
+        Series(7) { i -> arrayOf("trade Id", "price", "qty", "quoteQty", "time", "isBuyerMaker", "isBestMatch")[i] },
+        Series(7) { i -> arrayOf(IOMemento.IoLong, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoDouble, IOMemento.IoString, IOMemento.IoBoolean, IOMemento.IoBoolean)[i] },
         { c -> c.takeIf { it.size > 0 }?.let { UnixTimeRemapper.timestampFromIoLong("time")(c) } ?: c }
     );
 } 

@@ -296,7 +296,6 @@ fun Series<Byte>.endsWith(s: String): Boolean {
     val join = s.encodeToByteArray() α { it }
     return join.size <= size && join.zip(this.reversed()).`▶`.all { it.first == it.second }
 }
-typealias Series<T> = Join<Int, (Int) -> T>
 
 /**
  * Extension function to split a `Series<Byte>` by a given delimiter.

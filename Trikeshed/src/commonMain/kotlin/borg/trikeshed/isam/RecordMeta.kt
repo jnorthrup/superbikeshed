@@ -6,28 +6,18 @@ import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.Join
 
-/** RecordMeta is a data class that describes a column of an Isam record
- *
- * @param name the name of the column
- * @param type the type of the column
- * @param begin the byte offset of the beginning of the column
- * @param end the byte offset of the end of the column
- * @param decoder a lambda that converts a byte[]  to downstream, often but not necessarily the IoMemento utility
- * @param encoder a lambda that produces a byte[] for marshalling to disk or elsewhere
- * @param child a child RecordMeta for a child record, for instance, CSV conversion to ISAM might define two RecordMetas for two steps
-  */
-class RecordMeta(
-    val name: String,
-    val type: IOMemento,
+data class RecordMeta(
+    override val name: String,
+    override val type: IOMemento,
     val begin: Int = -1,
     val end: Int = -1,
     val decoder: (ByteArray) -> Any? = type.createDecoder(end - begin),
     val encoder: (Any?) -> ByteArray = type.createEncoder(end - begin),
     var child: RecordMeta? = null,
- 
+    val attributes: Map<String, String> = emptyMap()
 ) : ColumnMeta {
-    override val type: TypeMemento get() = this.type
-    override val name: String get() = this.name
+    override val a: String get() = name
+    override val b: TypeMemento get() = type
 
-    override fun toString(): String = "RecordMeta(name='$name', type=$type, begin=$begin, end=$end, decoder=$decoder, encoder=$encoder, child=$child )"
+    override fun toString(): String = "RecordMeta(name='$name', type=$type, begin=$begin, end=$end, attributes=$attributes, child=$child )"
 }
