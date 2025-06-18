@@ -1,7 +1,9 @@
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.http
 
-import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
 import kotlin.jvm.JvmInline
 
 // Ontological HTTP Type Aliases
@@ -21,59 +23,134 @@ enum class HttpMethod {
 data class HttpRequest(
     val method: HttpMethod,
     val path: HttpRequestPath,
-    val headers: Series2<HttpHeaderName, HttpHeaderValue>,
-    val body: Series<Byte> = 0 j { 0.toByte() },
+    val headers: Series<Join<HttpHeaderName, HttpHeaderValue>>,
+    val body: ByteArray = byteArrayOf(),
     val version: HttpVersion = HttpVersion("HTTP/1.1")
 ) {
-    // Convert to RFC 7230 message format
-    fun toHttpMessage(): HttpMessage = HttpMessage(
-        startLine = HttpRequestLine(
-            method = method,
-            requestTarget = HttpRequestTarget(path.value),
-            httpVersion = version
-        ),
-        headerFields = headers.α { join -> HttpFieldName(join.a.value) j HttpFieldValue(join.b.value) },
-        messageBody = body
-    )
-    
-    suspend fun send(): HttpResponse = TODO("HTTP client implementation needed")
+    fun toByteArray(): ByteArray {
+        val startLine = "${method.name} ${path.value} ${version.value}\r\n"
+        val headersStr = StringBuilder()
+        (0 until headers.a).forEach { i ->
+            val header = headers.b(i)
+            headersStr.append("${header.a.value}: ${header.b.value}\r\n")
+        }
+        val finalHeaders = headersStr.toString()
+        val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
+        return head + body
+    }
+
+    companion object {
+        fun parse(bytes: ByteArray): HttpRequest {
+            val eoh = findEndOfHeaders(bytes)
+            val headerBytes = bytes.sliceArray(0 until eoh)
+            val bodyBytes = bytes.sliceArray(eoh + 4 until bytes.size)
+
+            val headerLines = headerBytes.decodeToString().split("\r\n")
+            val startLineParts = headerLines[0].split(" ", limit = 3)
+
+            val method = HttpMethod.valueOf(startLineParts[0])
+            val path = HttpRequestPath(startLineParts[1])
+            val version = HttpVersion(startLineParts[2])
+
+            val headersList = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
+            for (i in 1 until headerLines.size) {
+                if (headerLines[i].isBlank()) continue
+                val headerParts = headerLines[i].split(":", limit = 2)
+                headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
+            }
+            val headers = Series.of(headersList.size) { headersList[it] }
+
+            return HttpRequest(method, path, headers, bodyBytes, version)
+        }
+
+        private fun findEndOfHeaders(bytes: ByteArray): Int {
+            for (i in 0 until bytes.size - 3) {
+                if (bytes[i] == '\r'.code.toByte() && bytes[i + 1] == '\n'.code.toByte() &&
+                    bytes[i + 2] == '\r'.code.toByte() && bytes[i + 3] == '\n'.code.toByte()
+                ) {
+                    return i
+                }
+            }
+            return -1
+        }
+    }
 }
 
 // HTTP Response data class (RFC 7230 compliant)
 data class HttpResponse(
     val status: HttpStatusCode,
     val reasonPhrase: HttpReasonPhrase = HttpReasonPhrase("OK"),
-    val headers: Series2<HttpHeaderName, HttpHeaderValue>,
-    val body: Series<Byte> = 0 j { 0.toByte() },
+    val headers: Series<Join<HttpHeaderName, HttpHeaderValue>>,
+    val body: ByteArray = byteArrayOf(),
     val version: HttpVersion = HttpVersion("HTTP/1.1")
 ) {
     val isSuccess: Boolean get() = status.value in 200..299
-    
-    // Convert to RFC 7230 message format
-    fun toHttpMessage(): HttpMessage = HttpMessage(
-        startLine = HttpStatusLine(
-            httpVersion = version,
-            statusCode = status,
-            reasonPhrase = reasonPhrase
-        ),
-        headerFields = headers.α { join -> HttpFieldName(join.a.value) j HttpFieldValue(join.b.value) },
-        messageBody = body
-    )
+
+    fun toByteArray(): ByteArray {
+        val startLine = "${version.value} ${status.value} ${reasonPhrase.value}\r\n"
+        val headersStr = StringBuilder()
+        (0 until headers.a).forEach { i ->
+            val header = headers.b(i)
+            headersStr.append("${header.a.value}: ${header.b.value}\r\n")
+        }
+        val finalHeaders = headersStr.toString()
+        val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
+        return head + body
+    }
+
+    companion object {
+        fun parse(bytes: ByteArray): HttpResponse {
+            val eoh = findEndOfHeaders(bytes)
+            val headerBytes = bytes.sliceArray(0 until eoh)
+            val bodyBytes = bytes.sliceArray(eoh + 4 until bytes.size)
+
+            val headerLines = headerBytes.decodeToString().split("\r\n")
+            val startLineParts = headerLines[0].split(" ", limit = 3)
+
+            val version = HttpVersion(startLineParts[0])
+            val status = HttpStatusCode(startLineParts[1].toInt())
+            val reason = HttpReasonPhrase(startLineParts[2])
+
+            val headersList = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
+            for (i in 1 until headerLines.size) {
+                if (headerLines[i].isBlank()) continue
+                val headerParts = headerLines[i].split(":", limit = 2)
+                headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
+            }
+            val headers = Series.of(headersList.size) { headersList[it] }
+
+            return HttpResponse(status, reason, headers, bodyBytes, version)
+        }
+
+        private fun findEndOfHeaders(bytes: ByteArray): Int {
+            for (i in 0 until bytes.size - 3) {
+                if (bytes[i] == '\r'.code.toByte() && bytes[i + 1] == '\n'.code.toByte() &&
+                    bytes[i + 2] == '\r'.code.toByte() && bytes[i + 3] == '\n'.code.toByte()
+                ) {
+                    return i
+                }
+            }
+            return -1
+        }
+    }
 }
+
+suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation needed")
 
 // HTTP utilities
 object HttpUtils {
-    fun parseHeaders(headerString: String): Series2<HttpHeaderName, HttpHeaderValue> {
+    fun parseHeaders(headerString: String): Series<Join<HttpHeaderName, HttpHeaderValue>> {
         val headerLines = headerString.lines().filter { it.contains(":") }
-        return headerLines.size j { i ->
+        return Series.of(headerLines.size) { i ->
             val line = headerLines[i]
             val parts = line.split(":", limit = 2)
-            HttpHeaderName(parts[0].trim()) j HttpHeaderValue(parts[1].trim())
+            Join(HttpHeaderName(parts[0].trim()), HttpHeaderValue(parts[1].trim()))
         }
     }
     
-    fun buildHeaderString(headers: Series2<HttpHeaderName, HttpHeaderValue>): String {
-        return headers.`play`.joinToString("\r\n") { join ->
+    fun buildHeaderString(headers: Series<Join<HttpHeaderName, HttpHeaderValue>>): String {
+        return (0 until headers.a).joinToString("\r\n") { i ->
+            val join = headers.b(i)
             "${join.a.value}: ${join.b.value}"
         }
     }

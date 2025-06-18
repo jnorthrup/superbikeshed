@@ -16,7 +16,7 @@ enum class HttpHeaders(private val encoded: String) {
     `Access-Control-Allow-Credentials`("Access-Control-Allow-Credentials"),
     `Access-Control-Allow-Headers`("Access-Control-Allow-Headers"),
     `Access-Control-Allow-Methods`("Access-Control-Allow-Methods"),
-    `Access-2dControl-Allow-Origin`("Access-Control-Allow-Origin"),
+    `Access-Control-Allow-Origin`("Access-Control-Allow-Origin"),
     `Access-Control-Expose-Headers`("Access-Control-Expose-Headers"),
     `Access-Control-Max-Age`("Access-Control-Max-Age"),
     `Access-Control-Request-Headers`("Access-Control-Request-Headers"),
