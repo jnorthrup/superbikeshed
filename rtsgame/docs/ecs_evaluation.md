@@ -1,3 +1,5 @@
+> **Note: This document may be outdated and refer to a previous version of the rtsgame project (likely TypeScript/JavaScript-based). The current project has been significantly refactored to Kotlin Multiplatform with WebGPU. Please cross-reference with the main `rtsgame/README.md` for the latest project information.**
+
 # ECS (Entity-Component-System) Integration Evaluation
 
 This document summarizes the analysis of the current entity management system and provides a recommendation for integrating ECS principles into the RTS game project.

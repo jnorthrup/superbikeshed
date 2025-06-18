@@ -1,3 +1,7 @@
+---
+**Note: This project is an archived version or an earlier experimental iteration of the RTS game. The current active development for the RTS game (featuring a WebGPU-based interactive demo) can be found in the main `rtsgame` directory at the root of this repository.**
+---
+
 # RTS Game - Kotlin Multiplatform
 
 A Real-Time Strategy game built with Kotlin Multiplatform, supporting both desktop and web platforms.
