@@ -1,3 +1,5 @@
+> **Note: This document may be outdated and refer to a previous version of the rtsgame project (likely TypeScript/JavaScript-based). The current project has been significantly refactored to Kotlin Multiplatform with WebGPU. Please cross-reference with the main `rtsgame/README.md` for the latest project information.**
+
 # Implementation Guide: Enhanced Command Hierarchy & Progression Systems
 
 ## Overview
