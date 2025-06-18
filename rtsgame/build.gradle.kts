@@ -31,6 +31,7 @@ kotlin {
             dependencies {
                 // TODO: Re-enable when Trikeshed builds
                 // implementation(project(":Trikeshed"))
+                implementation("com.rtsgame:shared:1.0.0")
             }
         }
         
@@ -43,6 +44,11 @@ kotlin {
         val wasmJsMain by getting {
             dependencies {
                 // WASM JS-specific dependencies
+                implementation("org.jetbrains.kotlinx:kotlinx-browser:0.0.21")
+                implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.9.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-browser-wasm:0.0.21")
+                implementation("org.jetbrains.kotlinx:kotlinx-js:0.0.21")
             }
         }
     }

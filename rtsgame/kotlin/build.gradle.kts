@@ -4,27 +4,53 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        jvmToolchain(21)
+    }
+    
     js(IR) {
         browser()
+        nodejs()
+    }
+    
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    when {
+        hostOs == "Mac OS X" -> {
+            if (hostArch == "aarch64") {
+                macosArm64()
+            } else {
+                macosX64()
+            }
+        }
+        hostOs == "Linux" -> {
+            if (hostArch == "aarch64") {
+                linuxArm64()
+            } else {
+                linuxX64()
+            }
+        }
     }
     
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+                implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${libs.versions.serialization.get()}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
             }
         }
+        
         val jvmMain by getting {
             dependencies {
-                // JVM-specific dependencies
+                implementation(kotlin("stdlib-jdk8"))
             }
         }
+        
         val jsMain by getting {
             dependencies {
-                // JS-specific dependencies
+                implementation(kotlin("stdlib-js"))
             }
         }
     }

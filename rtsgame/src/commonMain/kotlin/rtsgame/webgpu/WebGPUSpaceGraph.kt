@@ -4,19 +4,73 @@ import borg.trikeshed.lib.*
 import rtsgame.core.*
 import rtsgame.spacegraph.*
 import rtsgame.compat.*
+import rtsgame.game.*
 
 /**
  * WebGPU-based SpaceGraph renderer for cross-platform RTS visualization
  * Common interface that works across JVM, Native, and WASM targets
  */
 
+// CCEK Pattern for WebGPU Context
+typealias WebGPUContext = Join<Join<Context, Configuration>, Join<Environment, Knowledge>>
+
+data class Context(
+    val device: GPUDevice,
+    val buffers: Series<GPUBuffer>,
+    val pipelines: Series<GPURenderPipeline>
+)
+
+data class Configuration(
+    val vertexShader: String,
+    val fragmentShader: String,
+    val vertexFormat: VertexFormat
+)
+
+data class Environment(
+    val canvas: Any, // Platform-specific canvas type
+    val adapter: Any // Platform-specific GPU adapter
+)
+
+data class Knowledge(
+    val capabilities: Series<String>,
+    val limits: Map<String, Int>
+)
+
+data class VertexFormat(
+    val position: Int, // Offset in bytes
+    val size: Int,     // Offset in bytes
+    val color: Int     // Offset in bytes
+)
+
 // Core WebGPU types (expect/actual per platform)
-expect class GPUDevice
-expect class GPUBuffer  
-expect class GPUTexture
+expect class GPUDevice {
+    actual fun createBuffer(descriptor: Any): GPUBuffer
+    actual fun createRenderPipeline(descriptor: Any): GPURenderPipeline
+    actual fun createCommandEncoder(): GPUCommandEncoder
+    actual fun createShaderModule(descriptor: Any): GPUShaderModule
+}
+
+expect class GPUBuffer {
+    actual fun destroy()
+}
+
+expect class GPUTexture {
+    actual fun destroy()
+}
+
 expect class GPURenderPipeline
-expect class GPUCommandEncoder
+
+expect class GPUCommandEncoder {
+    actual fun beginRenderPass(descriptor: Any): GPURenderPassEncoder
+    actual fun finish(): GPUCommandBuffer
+    actual fun copyBufferToBuffer(source: GPUBuffer, sourceOffset: Int, destination: GPUBuffer, destinationOffset: Int, size: Int)
+}
+
 expect class GPUShaderModule
+
+expect class GPURenderPassEncoder
+
+expect class GPUCommandBuffer
 
 // WebGPU resource handles
 @PlatformInline
@@ -52,13 +106,13 @@ data class Matrix4(
  * Cross-platform WebGPU renderer for SpaceGraph visualization
  */
 expect class WebGPUSpaceGraph() {
-    suspend fun initialize(): Boolean
-    fun createVertexBuffer(data: Series<VertexData>): BufferId
-    fun createUniformBuffer(data: UniformData): BufferId
-    fun createRenderPipeline(vertexShader: String, fragmentShader: String): PipelineId
-    fun updateBuffer(bufferId: BufferId, data: ByteArray)
-    fun render(renderData: RenderData): RenderResult
-    fun dispose()
+    actual suspend fun initialize(): Boolean
+    actual fun createVertexBuffer(data: Series<VertexData>): BufferId
+    actual fun createUniformBuffer(data: UniformData): BufferId
+    actual fun createRenderPipeline(vertexShader: String, fragmentShader: String): PipelineId
+    actual fun updateBuffer(bufferId: BufferId, data: ByteArray)
+    actual fun render(renderData: RenderData): RenderResult
+    actual fun dispose()
 }
 
 data class RenderData(
@@ -87,7 +141,7 @@ data class CameraState(
  * Common WebGPU SpaceGraph implementation
  */
 class CommonWebGPUSpaceGraph {
-    private var device: GPUDevice? = null
+    private var context: WebGPUContext? = null
     private var nodeVertexBuffer: BufferId? = null
     private var edgeVertexBuffer: BufferId? = null
     private var uniformBuffer: BufferId? = null
@@ -251,10 +305,9 @@ class CommonWebGPUSpaceGraph {
         writeFloat(data, offset, matrix.m33); offset += 4
         
         // Camera position (3 floats)
-        val cameraPos = cameraPosTime.a
-        writeFloat(data, offset, cameraPos.x.toFloat()); offset += 4
-        writeFloat(data, offset, cameraPos.y.toFloat()); offset += 4
-        writeFloat(data, offset, cameraPos.z.toFloat()); offset += 4
+        writeFloat(data, offset, cameraPosTime.a.x.toFloat()); offset += 4
+        writeFloat(data, offset, cameraPosTime.a.y.toFloat()); offset += 4
+        writeFloat(data, offset, cameraPosTime.a.z.toFloat()); offset += 4
         
         // Time (1 float)
         writeFloat(data, offset, cameraPosTime.b)
@@ -278,18 +331,60 @@ class CommonWebGPUSpaceGraph {
     }
     
     private fun createViewMatrix(camera: CameraState): Matrix4 {
-        // Simplified view matrix calculation
-        return Matrix4.identity() // TODO: Implement proper view matrix
+        val eye = camera.position
+        val target = camera.target
+        val up = Vector3D(0.0, 1.0, 0.0)
+        
+        val f = (target - eye).normalize()
+        val s = (f cross up).normalize()
+        val u = s cross f
+        
+        return Matrix4(
+            s.x.toFloat(), s.y.toFloat(), s.z.toFloat(), 0f,
+            u.x.toFloat(), u.y.toFloat(), u.z.toFloat(), 0f,
+            -f.x.toFloat(), -f.y.toFloat(), -f.z.toFloat(), 0f,
+            0f, 0f, 0f, 1f
+        )
     }
     
     private fun createProjectionMatrix(camera: CameraState): Matrix4 {
-        // Simplified projection matrix calculation
-        return Matrix4.identity() // TODO: Implement proper projection matrix
+        val f = 1f / kotlin.math.tan(camera.fov * kotlin.math.PI.toFloat() / 360f)
+        val aspect = camera.aspect
+        val near = camera.near
+        val far = camera.far
+        
+        val range = near - far
+        
+        return Matrix4(
+            f / aspect, 0f, 0f, 0f,
+            0f, f, 0f, 0f,
+            0f, 0f, (near + far) / range, -1f,
+            0f, 0f, (2f * near * far) / range, 0f
+        )
     }
     
     private fun multiplyMatrices(a: Matrix4, b: Matrix4): Matrix4 {
-        // Simplified matrix multiplication
-        return Matrix4.identity() // TODO: Implement proper matrix multiplication
+        return Matrix4(
+            a.m00 * b.m00 + a.m01 * b.m10 + a.m02 * b.m20 + a.m03 * b.m30,
+            a.m00 * b.m01 + a.m01 * b.m11 + a.m02 * b.m21 + a.m03 * b.m31,
+            a.m00 * b.m02 + a.m01 * b.m12 + a.m02 * b.m22 + a.m03 * b.m32,
+            a.m00 * b.m03 + a.m01 * b.m13 + a.m02 * b.m23 + a.m03 * b.m33,
+            
+            a.m10 * b.m00 + a.m11 * b.m10 + a.m12 * b.m20 + a.m13 * b.m30,
+            a.m10 * b.m01 + a.m11 * b.m11 + a.m12 * b.m21 + a.m13 * b.m31,
+            a.m10 * b.m02 + a.m11 * b.m12 + a.m12 * b.m22 + a.m13 * b.m32,
+            a.m10 * b.m03 + a.m11 * b.m13 + a.m12 * b.m23 + a.m13 * b.m33,
+            
+            a.m20 * b.m00 + a.m21 * b.m10 + a.m22 * b.m20 + a.m23 * b.m30,
+            a.m20 * b.m01 + a.m21 * b.m11 + a.m22 * b.m21 + a.m23 * b.m31,
+            a.m20 * b.m02 + a.m21 * b.m12 + a.m22 * b.m22 + a.m23 * b.m32,
+            a.m20 * b.m03 + a.m21 * b.m13 + a.m22 * b.m23 + a.m23 * b.m33,
+            
+            a.m30 * b.m00 + a.m31 * b.m10 + a.m32 * b.m20 + a.m33 * b.m30,
+            a.m30 * b.m01 + a.m31 * b.m11 + a.m32 * b.m21 + a.m33 * b.m31,
+            a.m30 * b.m02 + a.m31 * b.m12 + a.m32 * b.m22 + a.m33 * b.m32,
+            a.m30 * b.m03 + a.m31 * b.m13 + a.m32 * b.m23 + a.m33 * b.m33
+        )
     }
     
     fun dispose() {

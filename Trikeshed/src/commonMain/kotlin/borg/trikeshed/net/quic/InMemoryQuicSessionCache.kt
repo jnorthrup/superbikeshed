@@ -26,6 +26,11 @@ class InMemoryQuicSessionCache : QuicSessionCache {
         cache[key] = sessionData
     }
 
+    override fun clearSession(serverAddress: String, port: Int) {
+        val key = generateCacheKey(serverAddress, port)
+        cache.remove(key)
+    }
+
     private fun generateCacheKey(serverAddress: String, port: Int): String {
         return "$serverAddress:$port"
     }

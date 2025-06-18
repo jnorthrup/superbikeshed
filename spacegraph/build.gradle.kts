@@ -1,24 +1,48 @@
 plugins {
     kotlin("multiplatform")
-    id("com.github.ben-manes.versions") version "0.51.0"
+    id("com.github.ben-manes.versions")
 }
 
 kotlin {
-    js {
+    jvm {
+        jvmToolchain(21)
+    }
+    
+    js(IR) {
         browser()
         nodejs()
+    }
+    
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    when {
+        hostOs == "Mac OS X" -> {
+            if (hostArch == "aarch64") {
+                macosArm64()
+            } else {
+                macosX64()
+            }
+        }
+        hostOs == "Linux" -> {
+            if (hostArch == "aarch64") {
+                linuxArm64()
+            } else {
+                linuxX64()
+            }
+        }
     }
     
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Common dependencies
+                implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
             }
         }
         
         val jsMain by getting {
             dependencies {
-                // JS-specific dependencies
+                implementation(kotlin("stdlib-js"))
             }
         }
     }
@@ -34,7 +58,6 @@ tasks {
         dependsOn("jsBrowserDevelopmentRun")
     }
     
-    // Clean task to remove all build artifacts
     register("cleanAll") {
         dependsOn("clean")
         doLast {
