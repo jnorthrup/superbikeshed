@@ -1,6 +1,7 @@
 package borg.trikeshed.reactor
 
 import kotlinx.coroutines.CoroutineDispatcher
+import borg.trikeshed.nio.ByteBuffer
 
 // Platform-specific IO dispatcher
 expect val IO: CoroutineDispatcher
