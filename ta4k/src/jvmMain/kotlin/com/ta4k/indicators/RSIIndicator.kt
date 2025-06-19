@@ -147,6 +147,6 @@ class RSIIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getValue(idx) }
+            return klineSeries.size j { idx:Int -> this.getValue(idx) }
         }
 }

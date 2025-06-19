@@ -38,7 +38,7 @@ object KlineViewUtil {
         ]
 
         val timeColumns: Cursor = if (DateShed.normTime) {
-            copentime.size j { y ->
+            copentime.size j { y:Int ->
                 val instant = copentime.getOrNull(y) as? Instant
                 if (instant != null) {
                     DateShed.normalizeInstant(instant)
@@ -53,7 +53,7 @@ object KlineViewUtil {
         val openColIndex = 1
         val volumeColIndex = 5
         val selectedDataCols: Cursor = curs α { row -> s_[row.getOrNull(openColIndex), row.getOrNull(volumeColIndex)] }
-        val pancakeInput: Cursor = horizonDepth j { y ->
+        val pancakeInput: Cursor = horizonDepth j { y:Int ->
             val horizonIndex = horizon(y, horizonDepth, selectedDataCols.size)
             selectedDataCols at horizonIndex
         }
@@ -80,7 +80,7 @@ object KlineViewUtil {
         val totalOutputCols = numInputRows * numInputCols
         if (totalOutputCols == 0) return emptySeries()
 
-        return totalOutputCols j { flatIndex ->
+        return totalOutputCols j { flatIndex:Int ->
             val rowIndex = flatIndex / numInputCols
             val colIndex = flatIndex % numInputCols
             val sourceRow = c.row(rowIndex)

@@ -191,7 +191,7 @@ class ADXIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getPlusDI(idx) }
+            return klineSeries.size j { idx:Int -> this.getPlusDI(idx) }
         }
 
     val minusDISeries: Series<BigDecimal?>
@@ -199,7 +199,7 @@ class ADXIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getMinusDI(idx) }
+            return klineSeries.size j { idx:Int -> this.getMinusDI(idx) }
         }
 
     val adxValueSeries: Series<BigDecimal?> // Renamed from adxSeries to avoid conflict with adxResults list
@@ -207,6 +207,6 @@ class ADXIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getADX(idx) }
+            return klineSeries.size j { idx:Int -> this.getADX(idx) }
         }
 }

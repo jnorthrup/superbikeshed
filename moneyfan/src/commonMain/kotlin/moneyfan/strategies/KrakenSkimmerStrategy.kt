@@ -49,7 +49,7 @@ fun executeKrakenSkimmerStrategy(
     val baselineSma = calculateSMA(closePrices, baselinePeriod)
 
     // c. Determine Trading Signals
-    return klines.a j { index ->
+    return klines.a j { index:Int ->
         val currentPrice = closePrices.b(index)
         val currentBaseline = baselineSma.b(index)
 

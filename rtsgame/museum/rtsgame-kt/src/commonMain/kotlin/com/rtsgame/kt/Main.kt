@@ -203,7 +203,7 @@ inline fun runRTSSimulation(
    commandStream: Series<Join<Tick, CommandBuffer>>,
    tickRate: Tick = Tick(16L) // 60 FPS
 ): Series<WorldState> {
-   return commandStream.size j { frame ->
+   return commandStream.size j { frame:Int ->
        val (frameTick, commands) = commandStream[frame]
        if (frame == 0) initialWorld
        else RTSKernel.tick(commandStream[frame - 1].a j initialWorld.b, commands, tickRate)

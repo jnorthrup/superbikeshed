@@ -60,7 +60,7 @@ object SeriesDataProcessingExamples {
         // For each index, we access the corresponding Kline from the input series (`klines.b(index)` or `klines[index]`)
         // and then create a Join pair of its `close` price and `volume` using the `A.j(B)` infix function.
         // The result is `Series<Join<Price, Volume>>`, which is typealiased as `Series2<Price, Volume>`.
-        return klines.a j { index ->
+        return klines.a j { index:Int ->
             val kline = klines.b(index) // or klines[index]
             kline.close j kline.volume
         }

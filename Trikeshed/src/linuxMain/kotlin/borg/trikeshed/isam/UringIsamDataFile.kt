@@ -92,7 +92,7 @@ package borg.trikeshed.isam//package borg.trikeshed.isam
 //        memScoped {
 //            val d2 = data.toLong() + (row * recordlen)
 //
-//            constraints.size j { col ->
+//            constraints.size j { col:Int ->
 //                constraints[col].let { recordMeta ->
 //                    val d4 = d2 + recordMeta.begin
 //                    val d5: COpaquePointer = d4.toCPointer()!!

@@ -175,7 +175,7 @@ data class HumanLanguageAgentScope<T>(
         if (source.isEmpty()) return emptySeries()
 
         // 1. Convert source Series<T> to Series<String> for the NLP agent's semantic scoring part.
-        val stringSeries = source.a j { idx -> itemToStringConverter(source.b(idx)) }
+        val stringSeries = source.a j { idx:Int -> itemToStringConverter(source.b(idx)) }
 
         // This check is mostly defensive, assuming itemToStringConverter is well-behaved.
         if (stringSeries.isEmpty() && source.isNotEmpty()) return emptySeries()

@@ -31,7 +31,7 @@ class CouchDBService {
         val rows = mockResults.size
         val cols = 3 // _id, name, age
         
-        return intArrayOf(rows, cols) j { coords ->
+        return intArrayOf(rows, cols) j { coords:Int ->
             val row = coords[0]
             val col = coords[1]
             val doc = mockResults[row]

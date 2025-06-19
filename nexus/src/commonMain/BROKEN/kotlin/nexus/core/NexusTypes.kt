@@ -10,7 +10,7 @@ typealias ProjectContext = Series<Join<String, String>> // Key-Value pairs for p
 typealias Problem = Series<String> // A series of text describing the problem aspects
 
 fun ProjectContext.extractKeywords(): Series<String> =
-    this.size j { i ->
+    this.size j { i:Int ->
         val (key, value) = this[i]
         "$key $value".lowercase().split(" ").filter { it.length > 3 }
     }.let { seriesOfLists ->
@@ -19,7 +19,7 @@ fun ProjectContext.extractKeywords(): Series<String> =
         for (i in 0 until seriesOfLists.size) {
             allKeywords.addAll(seriesOfLists[i])
         }
-        allKeywords.size j { i -> allKeywords[i] }
+        allKeywords.size j { i:Int -> allKeywords[i] }
     }
 
 fun ProjectContext.extractLanguages(): Series<String> = 
@@ -35,7 +35,7 @@ fun ProjectContext.extractLanguages(): Series<String> =
             ".scala" -> "scala"
             else -> "unknown"
         }
-    }).let { list -> list.size j { i -> list[i] } }
+    }).let { list -> list.size j { i:Int -> list[i] } }
 
 data class ProblemExtended(
     val description: Series<String>,

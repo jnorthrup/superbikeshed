@@ -41,7 +41,7 @@ fun executeCarlosRSI2Strategy(klines: Series<Kline>): Series<TradingSignal> {
     val sma15 = calculateSMA(closePrices, 15)
 
     // c. Determine Trading Signals
-    return klines.a j { index ->
+    return klines.a j { index:Int ->
         val currentPrice = closePrices.b(index)
         val currentRsi = rsi2.b(index) // This is a Double
         val currentSma2 = sma2.b(index)

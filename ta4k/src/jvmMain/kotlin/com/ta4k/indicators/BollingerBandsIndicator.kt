@@ -137,7 +137,7 @@ class BollingerBandsIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getUpperBand(idx) }
+            return klineSeries.size j { idx:Int -> this.getUpperBand(idx) }
         }
 
     val lowerBandValues: Series<BigDecimal?> // Renamed to avoid conflict with lowerBandResults list
@@ -145,7 +145,7 @@ class BollingerBandsIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getLowerBand(idx) }
+            return klineSeries.size j { idx:Int -> this.getLowerBand(idx) }
         }
 
     val middleBandValues: Series<BigDecimal?> // Renamed for consistency
@@ -158,7 +158,7 @@ class BollingerBandsIndicator(
             // Access the SMA's values Series, then re-scale if necessary for BBands context.
             // However, SMAIndicator's getValue already scales. If middleBandIndicator.values uses getValue, it's fine.
             // Let's assume middleBandIndicator.values is correctly scaled or use getMiddleBandValue
-            return klineSeries.size j { idx -> this.getMiddleBandValue(idx) }
+            return klineSeries.size j { idx:Int -> this.getMiddleBandValue(idx) }
         }
 
     val standardDeviationValues: Series<BigDecimal?> // Renamed for consistency
@@ -166,6 +166,6 @@ class BollingerBandsIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> this.getStandardDeviation(idx) }
+            return klineSeries.size j { idx:Int -> this.getStandardDeviation(idx) }
         }
 }

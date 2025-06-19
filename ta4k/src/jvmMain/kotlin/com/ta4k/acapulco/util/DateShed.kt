@@ -71,9 +71,9 @@ object DateShed {
         ]
         // TODO: Need a SimpleCursor implementation for Trikeshed or construct Series<RowVec> directly
         // Constructing Series<RowVec> directly:
-        return data.size j { rowIndex ->
+        return data.size j { rowIndex:Int ->
             val rowData = data[rowIndex]
-            rowData.size j { colIndex ->
+            rowData.size j { colIndex:Int ->
                 rowData[colIndex] j { meta[colIndex] } // Pair value with metadata lambda
             }
         }
@@ -102,7 +102,7 @@ object DateShed {
     val bottom60DoubleRanges: Series<Twin<Double>> = run { // Use Series<Twin<Double>>
         val b = bottom60
         val numCols = scalarsBottom60.size
-        numCols j { x -> // Iterate through columns
+        numCols j { x:Int -> // Iterate through columns
             // Extract the column as Series<Int>, then convert to Series<Double>
             val columnIntSeries: Series<Int> = b α { row -> row.left[x] as Int }
             val columnDoubleSeries: Series<Double> = columnIntSeries α { it.toDouble() }
@@ -124,7 +124,7 @@ object DateShed {
         val row: Series<Double> = crono.first.left α { todub(it) } // Get first row, extract left (values), convert to double
 
         val normies = bottom60DoubleRanges
-        val res: Series<Double> = normies.size j { x ->
+        val res: Series<Double> = normies.size j { x:Int ->
              normies[x].normalize(row[x]) // Assuming normalize accepts (Twin<Double>, Double)
             // Placeholder:
              0.0

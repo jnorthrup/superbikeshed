@@ -41,7 +41,7 @@ class MuxIo @JvmOverloads constructor(
             val currentHistorySize = min(historyViewSize, cursHorizon.size)
             if (currentHistorySize == 0) return emptySeries()
             val indicesToFetch = (0 until currentHistorySize).map { x -> horizon(x, historyViewSize, cursHorizon.size) }
-            return indicesToFetch.size j { i -> cursHorizon[indicesToFetch[i]] }
+            return indicesToFetch.size j { i:Int -> cursHorizon[indicesToFetch[i]] }
         }
 
     suspend fun publish(delayDuration: Duration = 30.seconds) {

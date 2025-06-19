@@ -150,7 +150,7 @@ class RFC7230Test {
             httpVersion = HttpVersion("HTTP/1.1")
         )
         
-        val headers = 2 j { i ->
+        val headers = 2 j { i:Int ->
             when (i) {
                 0 -> HttpFieldName("Content-Type") j HttpFieldValue("application/json")
                 1 -> HttpFieldName("Content-Length") j HttpFieldValue("13")

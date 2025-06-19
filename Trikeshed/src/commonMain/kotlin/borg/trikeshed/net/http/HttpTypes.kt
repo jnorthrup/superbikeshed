@@ -144,7 +144,7 @@ suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation 
 object HttpUtils {
     fun parseHeaders(headerString: String): Series<Join<HttpHeaderName, HttpHeaderValue>> {
         val headerLines = headerString.lines().filter { it.contains(":") }
-        return (headerLines.size) j { i ->
+        return (headerLines.size) j { i:Int ->
             val line = headerLines[i]
             val parts = line.split(":", limit = 2)
             Join(HttpHeaderName(parts[0].trim()), HttpHeaderValue(parts[1].trim()))

@@ -1,14 +1,9 @@
 package borg.trikeshed.reactor
 
 actual class Selector {
-    actual fun select(): Int {
-        TODO("Not yet implemented")
-    }
+    actual fun select(): Int = 0
 
-    actual fun selectedKeys(): MutableSet<SelectionKey> {
-        TODO("Not yet implemented")
-    }
+    actual fun selectedKeys(): MutableSet<SelectionKey> = mutableSetOf()
 
-    actual fun close() {
-    }
+    actual fun close() {}
 }

@@ -68,20 +68,20 @@ fun <T> NexusTensor<T>.at(coord: TensorCoordinate): T =
 fun <T> NexusTensor<T>.slice(dim: Int, slice: TensorSlice): NexusTensor<T> =
     this.α { (shape, accessor) ->
         val newShape = shape.sliceArray(slice.range)
-        newShape j { indices -> accessor(indices.insertAt(dim, slice.start)) }
+        newShape j { indices:Int -> accessor(indices.insertAt(dim, slice.start)) }
     }
 
 // Tensor projection: Reduce dimensionality
 fun <T> NexusTensor<T>.project(projection: TensorProjection): NexusTensor<T> =
     this.α { (shape, accessor) ->
         val projectedShape = projection.dimensions
-        projectedShape j { indices -> accessor(indices.expandTo(shape.size)) }
+        projectedShape j { indices:Int -> accessor(indices.expandTo(shape.size)) }
     }
 
 // Tensor transformation: Apply function across all elements
 fun <T, R> NexusTensor<T>.transform(f: (T) -> R): NexusTensor<R> =
     this.α { (shape, accessor) ->
-        shape j { indices -> f(accessor(indices)) }
+        shape j { indices:Int -> f(accessor(indices)) }
     }
 
 // Tensor aggregation: Reduce tensor along dimensions
@@ -91,7 +91,7 @@ fun <T, R> NexusTensor<T>.aggregate(
 ): NexusTensor<R> =
     this.α { (shape, accessor) ->
         val newShape = shape.removeIndices(dims)
-        newShape j { indices ->
+        newShape j { indices:Int ->
             val values = dims.map { dim -> accessor(indices.insertAt(dim, 0)) }.toSeries()
             aggregator(values)
         }
@@ -195,7 +195,7 @@ fun TensorAgent.predictNextAction(context: CCEKContext): Action =
 fun PatternTensor.vectorizedLearning(outcomes: OutcomeTensor): LearningTensor =
     this.α { (patternShape, patternAccessor) ->
         val learningShape = patternShape
-        learningShape j { indices ->
+        learningShape j { indices:Int ->
             val pattern = patternAccessor(indices)
             val outcome = outcomes.at(TensorCoordinate(indices))
             LearningInstance.from(pattern j outcome)
@@ -205,7 +205,7 @@ fun PatternTensor.vectorizedLearning(outcomes: OutcomeTensor): LearningTensor =
 // Parallel evolution across solution space
 fun SolutionTensor.parallelEvolution(fitness: FitnessTensor): SolutionTensor =
     this.α { (solutionShape, solutionAccessor) ->
-        solutionShape j { indices ->
+        solutionShape j { indices:Int ->
             val solution = solutionAccessor(indices)
             val fitnessValue = fitness.at(TensorCoordinate(indices))
             solution.evolveWith(fitnessValue)
@@ -285,7 +285,7 @@ fun <T> List<T>.toSeries(): Series<T> = Series.of(*this.toTypedArray())
 // Tensor correlation operations
 fun <T> NexusTensor<T>.correlateWith(other: NexusTensor<T>): NexusTensor<Join<T, T>> =
     this.α { (shape, accessor) ->
-        shape j { indices ->
+        shape j { indices:Int ->
             val elem1 = accessor(indices)
             val elem2 = other.at(TensorCoordinate(indices))
             elem1 j elem2
@@ -307,7 +307,7 @@ fun SolutionTensor.calculateFitness(): FitnessTensor =
 // Parent selection for evolution
 fun EvolutionTensor.selectParents(fitness: FitnessTensor): SolutionTensor =
     this.α { (shape, accessor) ->
-        shape j { indices ->
+        shape j { indices:Int ->
             val step = accessor(indices)
             val fitnessValue = fitness.at(TensorCoordinate(indices))
             Solution.fromEvolution(step, fitnessValue)
@@ -323,7 +323,7 @@ fun SolutionTensor.generateOffspring(): SolutionTensor =
 // Knowledge incorporation
 fun KnowledgeTensor.incorporate(insights: NexusTensor<Join<Knowledge, Knowledge>>): KnowledgeTensor =
     this.α { (shape, accessor) ->
-        shape j { indices ->
+        shape j { indices:Int ->
             val knowledge = accessor(indices)
             val insight = insights.at(TensorCoordinate(indices))
             Knowledge.merge(knowledge, insight.a, insight.b)
@@ -333,7 +333,7 @@ fun KnowledgeTensor.incorporate(insights: NexusTensor<Join<Knowledge, Knowledge>
 // Outcome merging
 fun OutcomeTensor.merge(other: OutcomeTensor): OutcomeTensor =
     this.α { (shape, accessor) ->
-        shape j { indices ->
+        shape j { indices:Int ->
             val outcome1 = accessor(indices)
             val outcome2 = other.at(TensorCoordinate(indices))
             Outcome.combine(outcome1, outcome2)
@@ -344,7 +344,7 @@ fun OutcomeTensor.merge(other: OutcomeTensor): OutcomeTensor =
 fun TensorOperations.generateSolutions(request: NexusTensor<Request>, space: NexusTensorSpace): SolutionTensor =
     this.α { (learning, evolution) ->
         val solutionShape = intArrayOf(10) // Generate 10 solutions
-        solutionShape j { indices ->
+        solutionShape j { indices:Int ->
             val learningFunc = learning.at(TensorCoordinate(indices))
             val evolutionFunc = evolution.at(TensorCoordinate(indices))
             Solution.generate(learningFunc, evolutionFunc, request.at(TensorCoordinate(intArrayOf(0))))
@@ -398,7 +398,7 @@ fun TensorOperations.enhance(interaction: NexusTensor<Join<Request, Response>>):
 fun TensorOperations.predictInSpace(context: CCEKTensor, space: NexusTensorSpace): NexusTensor<Action> =
     this.α { (learning, evolution) ->
         val predictionShape = intArrayOf(5) // Predict 5 possible actions
-        predictionShape j { indices ->
+        predictionShape j { indices:Int ->
             val contextValue = context.at(TensorCoordinate(intArrayOf(0)))
             val learningFunc = learning.at(TensorCoordinate(indices))
             val evolutionFunc = evolution.at(TensorCoordinate(indices))

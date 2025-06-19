@@ -79,7 +79,7 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
         if (count <= 0) {
             return emptySeries()
         }
-        return count j { i -> actualStart + i }
+        return count j { i:Int -> actualStart + i }
     }
 
     /**
@@ -99,7 +99,7 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
             return emptySeries()
         }
         // Construct new series using the selected indices to pick elements from the source.
-        return scopedIndices.a j { i -> source.b(scopedIndices.b(i)) }
+        return scopedIndices.a j { i:Int -> source.b(scopedIndices.b(i)) }
     }
 }
 
@@ -172,6 +172,6 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
             return emptySeries()
         }
         // Construct new series using the selected indices to pick elements from the source.
-        return scopedIndices.a j { i -> source.b(scopedIndices.b(i)) }
+        return scopedIndices.a j { i:Int -> source.b(scopedIndices.b(i)) }
     }
 }

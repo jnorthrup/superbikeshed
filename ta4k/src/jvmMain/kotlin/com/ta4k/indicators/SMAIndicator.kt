@@ -88,7 +88,7 @@ class SMAIndicator(
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
             // Wrap the internal mutable list 'results' into a Series for output
-            return klineSeries.size j { index -> // Use infix j
+            return klineSeries.size j { index:Int -> // Use infix j
                 // getValue will ensure calculation if needed for a specific index,
                 // but ensureCalculatedUpTo above should have populated most of it.
                 // This direct access assumes results is padded to klineSeries.size
