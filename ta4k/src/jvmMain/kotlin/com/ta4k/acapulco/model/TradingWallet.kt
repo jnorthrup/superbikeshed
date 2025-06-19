@@ -1,22 +1,23 @@
-package com.ta4k.acapulco.model
+package borg.trikeshed.acapulco.model
 
 import com.binance.api.client.BinanceApiRestClient
 import com.binance.api.client.domain.account.Account
 import com.binance.api.client.domain.account.AssetBalance
-import borg.trikeshed.cursors.SimpleCursor
-import borg.trikeshed.cursors.context.Scalar
-import borg.trikeshed.cursors.io.IOMemento
-import borg.trikeshed.vec.macros.*
-import borg.trikeshed.vec.util._v
-import com.ta4k.acapulco.CoinsAndPairings
-import com.ta4k.acapulco.config.Help
+import cursors.SimpleCursor
+import cursors.context.Scalar
+import cursors.io.IOMemento
 import kotlinx.coroutines.runBlocking
+import org.bereft.CoinsAndPairings
+import org.bereft.node.config.Help
+import vec.macros.*
+import vec.util._v
 import java.io.Closeable
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 
 class TradingWallet(
+    /**this should be on main key*/
     private val coinsAndPairings: CoinsAndPairings,
 ) : ITradingWallet {
     lateinit var bookHandle: Closeable
@@ -24,6 +25,7 @@ class TradingWallet(
     lateinit var walletCloseHandle: Closeable
     lateinit var listenKey: String
     lateinit var currentAccount: Account
+
 
     override fun updateAccount(currentAccount1: Account) {
         this.currentAccount = currentAccount1
@@ -53,11 +55,34 @@ class TradingWallet(
             holdings[it.asset] = it
         }
     }
-}
 
-interface ITradingWallet {
-    fun updateAccount(currentAccount: Account)
-    val holdings: MutableMap<String, AssetBalance>
-    val byValue: List<*>
-    fun updateWallet(balances: List<AssetBalance>)
-} 
+    val symbolSpeedball by lazy {
+        (/*Help.walletSymbols.value +"+" +*/ Help.tickerAssets.value).split("([\t ,]|\\s)+".toRegex())
+            .toSortedSet().toTypedArray()
+    }
+
+    override fun walletFree(
+        mask: AssetKey, valueSymbol: String,
+    ): SimpleCursor {
+        val (tc, cc) = mask
+
+        val colNames = (AssetModel.assetOracle.keys.let { it.map { it.tradeAsset } + it.map { it.component1() } }
+            .toSortedSet() + tc + cc + valueSymbol).toList()
+        val negInf = colNames - tc - cc - valueSymbol
+
+        val up = holdings[tc]?.free?.toDoubleOrNull() ?: 0.0
+        val down = -(holdings[cc]?.free?.toDoubleOrNull() ?: 0.0)
+        return SimpleCursor(colNames α { Scalar.Scalar(IOMemento.IoDouble, it) },
+            _v[colNames α {
+                when (it) {
+                    tc -> up
+                    cc -> down
+                    valueSymbol -> 1e-10
+                    else -> -1e-10
+                }
+            }]
+        )
+    }
+
+
+}

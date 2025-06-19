@@ -1,345 +1,136 @@
-I'll search through the codebase to validate the punchlist against existing code and identify what's already implemented and what needs to be added.
+# CLAUDE.md
 
-Search files...
-Let me analyze the codebase and validate the punchlist against the existing implementation. I'll break this down by components:
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-1. **Existing HTTP/1.1 Implementation**
+## Build and Development Commands
 
-- Found in `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/net/http/client/HttpClientConnection.kt`
-- Basic HTTP/1.1 client connection handler
-- Supports request serialization and response parsing
-- Has error handling and connection management
-- Uses NIO for socket operations
+**Core Build Commands:**
+```bash
+# Build with native access flags (required for NIO operations)
+./gradlew build --console=plain --no-daemon
 
-2. **HTTP/2 Implementation**
+# JVM compilation only
+./gradlew compileKotlinJvm --console=plain --no-daemon
 
-- Found in `quic_http3_server/http2_protocol.py`
-- Basic HTTP/2 server implementation
-- Supports TLS
-- Has basic request handling
+# Run tests
+./gradlew test --console=plain --no-daemon
 
-3. **HTTP/3 (QUIC) Implementation**
+# Clean build
+./gradlew clean build --console=plain --no-daemon
+```
 
-- Found in `quic_http3_server/` directory
-- Has server implementation with TLS support
-- Includes testing capabilities
-- Has WebTransport support
+**CRITICAL: Always use `--console=plain --no-daemon` with Gradle commands**
 
-4. **Download Management**
+**Environment Setup:**
+- Export `JAVA_OPTS="--enable-native-access=ALL-UNNAMED"` for JVM native access
+- Use Java 21, Kotlin 2.1.21
+- Multiplatform targets: JVM, JS, WASM, Native (platform-specific)
 
-- Found in `ta4k/bin/fetchtrades.sh`
-- Uses aria2c for downloads
-- Supports concurrent downloads
-- Has basic error handling
+## Architecture Overview
 
-5. **Testing Capabilities**
+**TrikeShed Core Type System:**
+TrikeShed is built around a custom type system with three fundamental abstractions:
 
-- Found in `quic_http3_server/abusive_tests/`
-- Has performance testing
-- Includes protocol testing
-- Supports concurrent session testing
+1. **Join<A,B>** - The only composition operator (`a j b`)
+2. **Series<T>** - Defined as `Join<Int, (Int) -> T>` for tensor-first processing
+3. **@JvmInline value class** - Zero-cost domain modeling
 
-Let me create an updated punchlist based on what's missing or needs enhancement:
+**Core Pattern Examples:**
+```kotlin
+// Composition with j operator
+val pair = "name" j "value"  // Join<String, String>
 
-# Updated Implementation Punchlist
+// Series operations
+val series = 10 j { i -> i * 2 }  // Series<Int>
+val transformed = series.α { it + 1 }  // Transform with α
 
-## 1. Core Protocol Support
-- [x] HTTP/1.1 basic implementation
-- [x] HTTP/2 basic server
-- [x] HTTP/3 (QUIC) basic server
-- [ ] HTTP/2 client implementation
-- [ ] HTTP/3 client implementation
-- [ ] Protocol fallback mechanisms
-- [ ] Protocol negotiation (ALPN)
+// Materialization for standard operations
+val list = series.play.toList()  // Convert to List when needed
+```
 
-## 2. Download Management
-- [x] Basic aria2c integration
-- [ ] Download queue management
-- [ ] Progress tracking
-- [ ] Bandwidth control
-- [ ] Resume capability
-- [ ] Checksum verification
-- [ ] Concurrent download limits
+**Lightning SIMD JSON:**
+- Uses `JsonBitmapSimd` with expect/actual multiplatform structure
+- `JsonTensorFactory` provides Series<T> integration
+- Replace broken JSON imports with `LightningJson` implementation
 
-## 3. Testing Features
-- [x] Basic protocol testing
-- [x] Performance testing
-- [ ] Response time measurements
-- [ ] Protocol comparison tools
-- [ ] Connection establishment timing
-- [ ] TLS handshake timing
-- [ ] Header analysis
-- [ ] Content type verification
+**Package Structure:**
+- `borg.trikeshed.lib.*` - Core types (Join, Series, bridge patterns)
+- `borg.trikeshed.net.*` - Network protocols (HTTP, QUIC)
+- `borg.trikeshed.parse.*` - Parsing (Lightning JSON)
+- `borg.trikeshed.reactor.*` - Async I/O reactor pattern
+- `borg.trikeshed.isam.*` - Storage systems
 
-## 4. Security Features
-- [x] Basic TLS support
-- [ ] Certificate validation
-- [ ] Custom CA support
-- [ ] Authentication mechanisms
-- [ ] Security headers analysis
-- [ ] Protocol security validation
+## Critical Development Rules
 
-## 5. Monitoring and Reporting
-- [ ] Download statistics
-- [ ] Protocol usage metrics
-- [ ] Error rate tracking
-- [ ] Performance metrics
-- [ ] Detailed logging
-- [ ] Debug information
+**Type System Enforcement:**
+- **NEVER use** `List<T>` or `MutableList<T>` - use `Series<T>`
+- **NEVER use** `Pair<A,B>` - use `Join<A,B>` with `j` operator
+- **ALWAYS use** `@JvmInline value class` for wrappers
+- **ALWAYS use** `series.α { transform }` for transformations
+- **ALWAYS use** `series.play` before standard collection operations
 
-## 6. User Interface
-- [ ] Command-line interface
-- [ ] Configuration management
-- [ ] Progress display
-- [ ] Statistics reporting
-- [ ] Error reporting
+**Version Management:**
+- **NEVER change versions** to fix build/code bugs
+- Fix code to work with specified versions: Kotlin 2.1.21, Java 21
+- Only kotlinx dependencies: coroutines-core:1.10.2, datetime:0.6.2, collections-immutable:0.4.0, atomicfu:0.27.0
 
-## 7. Error Handling
-- [x] Basic error handling
-- [ ] Automatic retry logic
-- [ ] Protocol fallback
-- [ ] Connection recovery
-- [ ] Comprehensive error reporting
-- [ ] Logging system
+**Bridge Pattern for Missing Symbols:**
+When encountering unresolved references, add them to bridge files:
+- Common interfaces/types in `src/commonMain/kotlin/borg/trikeshed/lib/bridge/`
+- Platform-specific implementations in corresponding `actual` files
+- Use `@JvmInline value class` for type safety
 
-## 8. Documentation
-- [x] Basic README
-- [ ] API documentation
-- [ ] Usage examples
-- [ ] Configuration guide
-- [ ] Protocol specifications
-- [ ] Troubleshooting guide
+**Multiplatform expect/actual Pattern:**
+```kotlin
+// commonMain
+expect object PlatformType {
+    fun operation(): Result
+}
 
-## 9. Additional Features
-- [ ] Plugin system
-- [ ] Custom protocol support
-- [ ] Custom testing modules
-- [ ] API for external tools
-- [ ] Proxy support
-- [ ] IPv6 support
+// jvmMain  
+actual object PlatformType {
+    actual fun operation(): Result = /* JVM implementation */
+}
+```
 
-### Git Mirroring
-- [ ] Implement .git directory watcher using TrikeShed file monitoring
-- [ ] Create git object to CouchDB attachment mapping
-- [ ] Build git pack file parser for efficient storage
-- [ ] Implement git refs synchronization to CouchDB documents
-- [ ] Create git history reconstruction from CouchDB
-- [ ] Add git hooks for automatic CouchDB sync
-- [ ] Implement shallow clone support for large repos
-- [ ] Create git garbage collection for CouchDB cleanup
+## Development Integrity
 
-### Database Mirroring
-- [ ] Set up CouchDB master-master replication configuration
-- [ ] Implement database schema versioning and migration
-- [ ] Create CouchDB design document synchronization
-- [ ] Build application data (ISAM) to CouchDB bridge
-- [ ] Implement incremental database synchronization
-- [ ] Add conflict resolution for master-master scenarios
-- [ ] Create database backup and restore procedures
-- [ ] Implement database health monitoring and alerting
+**Real Implementation Mandate:**
+- TrikeShed contains production-quality infrastructure (QUIC, HTTP, Kademlia DHT, ISAM storage)
+- Honor existing working implementations - add TODO() stubs for missing features only
+- Build upon existing systems without modification
+- Performance-optimized with zero-cost abstractions
 
-### IPFS Self-Hosting
-- [ ] Set up IPFS node configuration and initialization
-- [ ] Create system snapshot to IPFS publishing pipeline
-- [ ] Implement IPNS key management and rotation
-- [ ] Build automatic IPFS pinning for critical content
-- [ ] Create IPFS gateway integration with ts-httpd
-- [ ] Implement IPFS content addressing for git objects
-- [ ] Set up IPFS cluster for redundancy
-- [ ] Add IPFS metrics and monitoring
+**Coding Style:**
+- Concise, golf-style expressions preferred
+- Type lambdas explicitly in Series operations
+- Use `null` as elvis conditional for early returns
+- Prefer 1-liners without braces
+- Import packages with star (`import borg.trikeshed.lib.*`)
 
-### Runtime Mirroring
-- [ ] Capture JVM state and configuration
-- [ ] Implement process state serialization
-- [ ] Create system environment snapshot tools
-- [ ] Build runtime configuration synchronization
-- [ ] Implement hot-swapping for code updates
-- [ ] Create system dependency tracking
-- [ ] Add runtime performance monitoring
-- [ ] Implement graceful system restart procedures
+**Error Resolution Strategy:**
+1. **Inline class violations** - Use single parameter or convert to `data class`
+2. **Missing symbols** - Add to bridge with proper expect/actual structure  
+3. **Type mismatches** - Use conversion functions (`toByteArray()`, `toBytesSeries()`)
+4. **JSON issues** - Replace with Lightning SIMD JSON implementation
 
-### ISAM Performance Backchannels
-- [ ] Implement git object caching in ISAM
-- [ ] Create fast-path routing for frequent objects
-- [ ] Build ISAM index optimization for git lookups
-- [ ] Implement streaming for large git objects
-- [ ] Add compression for ISAM-stored git data
-- [ ] Create ISAM garbage collection for git cache
-- [ ] Implement ISAM performance metrics collection
-- [ ] Add ISAM query optimization
+## Project Context
 
-### CouchDB Optimization
-- [ ] Implement attachment streaming for large files
-- [ ] Create view optimization for git operations
-- [ ] Add CouchDB compaction automation
-- [ ] Implement incremental replication filtering
-- [ ] Create CouchDB connection pooling
-- [ ] Add CouchDB performance monitoring
-- [ ] Implement CouchDB query optimization
-- [ ] Create CouchDB cluster management
+**Gradle Project Structure:**
+- Top-level `superbikeshed` builds all subprojects
+- Each subproject uses only `kotlin("multiplatform")` plugin
+- Platform detection for native targets based on host OS/architecture
+- No Spotless (not multiplatform compatible)
 
-### IPFS Performance
-- [ ] Implement content deduplication strategies
-- [ ] Create selective pinning policies
-- [ ] Add IPFS content routing optimization
-- [ ] Implement IPFS bandwidth management
-- [ ] Create IPFS peer discovery optimization
-- [ ] Add IPFS cache management
-- [ ] Implement IPFS block exchange optimization
-- [ ] Create IPFS network topology optimization
+**Related Projects:**
+- `ta4k/` - Trading analytics moved from TrikeShed core
+- `nexus/` - AI/taxonomy features moved from TrikeShed core  
+- `brokeshed/` - Alien types and external integrations
+- `moneyfan/` - Financial data processing
 
-### k2script Integration
-- [ ] Create automated build pipelines
-- [ ] Implement deployment automation scripts
-- [ ] Build system health check scripts
-- [ ] Create maintenance automation
-- [ ] Implement backup and restore scripts
-- [ ] Add monitoring and alerting scripts
-- [ ] Create performance optimization scripts
-- [ ] Build troubleshooting utilities
+**Key Dependencies:**
+- No Kotlin serialization libraries (use TrikeShed native JSON)
+- Minimal external dependencies except for critical development anchors
+- Coroutines, datetime, and collections-immutable from kotlinx
 
-### Nexus Agentic Integration
-- [ ] Implement intelligent storage tier management
-- [ ] Create predictive caching algorithms
-- [ ] Build adaptive replication strategies
-- [ ] Implement automated performance tuning
-- [ ] Create intelligent backup scheduling
-- [ ] Add predictive maintenance
-- [ ] Implement adaptive resource allocation
-- [ ] Create intelligent monitoring and alerting
-
-### ts-httpd Server Integration
-- [ ] Add git protocol endpoints to HTTP server
-- [ ] Implement web-based repository browser
-- [ ] Create system status dashboard
-- [ ] Add real-time monitoring interface
-- [ ] Implement configuration management UI
-- [ ] Create backup and restore interface
-- [ ] Add performance metrics dashboard
-- [ ] Implement troubleshooting interface
-
-### Bootstrap & Initialization
-- [ ] Create initial system bootstrap procedure
-- [ ] Implement first-time setup automation
-- [ ] Build system configuration templates
-- [ ] Create initial data population scripts
-- [ ] Implement dependency verification
-- [ ] Add system readiness checks
-- [ ] Create initial backup procedures
-- [ ] Implement rollback capabilities
-
-### Self-Update & Maintenance
-- [ ] Implement automatic system updates
-- [ ] Create rollback mechanisms for failed updates
-- [ ] Build incremental update procedures
-- [ ] Implement update verification and testing
-- [ ] Create maintenance scheduling
-- [ ] Add system health monitoring
-- [ ] Implement predictive maintenance
-- [ ] Create update notifications and logging
-
-### Disaster Recovery
-- [ ] Implement complete system backup procedures
-- [ ] Create disaster recovery automation
-- [ ] Build system restoration from backups
-- [ ] Implement data consistency verification
-- [ ] Create emergency procedures documentation
-- [ ] Add disaster recovery testing
-- [ ] Implement failover mechanisms
-- [ ] Create recovery time optimization
-
-### Access Control
-- [ ] Implement role-based access control
-- [ ] Create authentication mechanisms
-- [ ] Add authorization for system operations
-- [ ] Implement audit logging
-- [ ] Create security monitoring
-- [ ] Add intrusion detection
-- [ ] Implement security incident response
-- [ ] Create security compliance reporting
-
-### Data Protection
-- [ ] Implement data encryption at rest
-- [ ] Create secure communication channels
-- [ ] Add data integrity verification
-- [ ] Implement secure backup procedures
-- [ ] Create data retention policies
-- [ ] Add secure data deletion
-- [ ] Implement privacy controls
-- [ ] Create compliance reporting
-
-### System Monitoring
-- [ ] Implement comprehensive metrics collection
-- [ ] Create performance monitoring dashboards
-- [ ] Add real-time alerting systems
-- [ ] Implement log aggregation and analysis
-- [ ] Create capacity planning tools
-- [ ] Add resource utilization monitoring
-- [ ] Implement predictive monitoring
-- [ ] Create automated incident response
-
-### Business Intelligence
-- [ ] Create usage analytics and reporting
-- [ ] Implement performance trend analysis
-- [ ] Add cost optimization analysis
-- [ ] Create capacity forecasting
-- [ ] Implement efficiency metrics
-- [ ] Add business impact analysis
-- [ ] Create ROI tracking
-- [ ] Implement strategic planning tools
-
-### Technical Documentation
-- [ ] Create comprehensive architecture documentation
-- [ ] Build API documentation and examples
-- [ ] Implement configuration guides
-- [ ] Create troubleshooting guides
-- [ ] Add performance tuning guides
-- [ ] Create maintenance procedures
-- [ ] Implement best practices documentation
-- [ ] Create training materials
-
-### Knowledge Base
-- [ ] Build searchable knowledge base
-- [ ] Create FAQ and common issues database
-- [ ] Implement collaborative documentation
-- [ ] Add version control for documentation
-- [ ] Create automated documentation generation
-- [ ] Implement documentation testing
-- [ ] Add documentation analytics
-- [ ] Create documentation feedback systems
-
-## Implementation Priorities
-
-1. **Phase 1 (Current)**
-
-- [x] Basic HTTP/1.1 support
-- [x] Basic HTTP/2 server
-- [x] Basic HTTP/3 server
-- [x] Basic aria2c integration
-- [x] Basic testing capabilities
-
-2. **Phase 2 (Next)**
-
-- [ ] HTTP/2 client implementation
-- [ ] HTTP/3 client implementation
-- [ ] Enhanced download management
-- [ ] Basic monitoring and reporting
-- [ ] Improved error handling
-
-3. **Phase 3**
-
-- [ ] Advanced testing features
-- [ ] Protocol comparison tools
-- [ ] Security enhancements
-- [ ] Comprehensive monitoring
-- [ ] User interface improvements
-
-4. **Phase 4**
-
-- [ ] Plugin system
-- [ ] Custom protocol support
-- [ ] Advanced security features
-- [ ] Complete documentation
-- [ ] Performance optimizations
-
-Would you like me to elaborate on any specific component or help you get started with implementing any of the missing features?
+This architecture prioritizes performance, type safety, and clean separation of concerns while maintaining production-grade reliability.
