@@ -33,6 +33,7 @@ dependencyResolutionManagement {
 rootProject.name = "superbikeshed"
 include("ta4k")
 include("Trikeshed")
+include("brokeshed")
 include("nexus")
 include("rtsgame")
 include("moneyfan")
