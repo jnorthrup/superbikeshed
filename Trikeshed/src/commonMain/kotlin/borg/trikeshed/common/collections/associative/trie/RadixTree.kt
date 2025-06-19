@@ -41,7 +41,10 @@ class RadixTreeNode<C : Comparable<C>>(
 
             // If the current node has children, we try to find a child with a matching prefix for the remaining key
             //using binarysearch to retain sorted order
-            children?.let { children ->
+           /*  made unre3achable before now
+
+
+           children?.let { children ->
                 var index = (children.toSeries() α { it.key.first() }).binarySearch(remainingKey.first())
                 when {
                     index >= 0 -> return children[index] + remainingKey
@@ -58,7 +61,7 @@ class RadixTreeNode<C : Comparable<C>>(
                 val newNode = RadixTreeNode(remainingKey, true)
                 children = arrayOf(newNode)
                 return this
-            }
+            }*/
         }
 
         // If the common prefix length is less than the current node's key length,
@@ -79,7 +82,7 @@ class RadixTreeNode<C : Comparable<C>>(
 
             // Set the new internal node's children
             newInternalNode.children =
-                if (remainingCurrentKey.cpb < remainingOtherKey.cpb) arrayOf(
+                if (remainingCurrentKey.cpb < (remainingOtherKey.cpb as Series<C>)) arrayOf(
                     newChildNode,
                     newOtherNode
                 ) else arrayOf(newOtherNode, newChildNode)

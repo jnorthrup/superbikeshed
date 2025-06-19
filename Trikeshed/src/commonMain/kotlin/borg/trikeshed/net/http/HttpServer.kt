@@ -11,8 +11,6 @@ import kotlinx.coroutines.*
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
 
-private val PlatformFile.path: String
-
 @JvmInline value class HttpServerPort(val value: Int)
 @JvmInline value class HttpServerHost(val value: String)
 
@@ -81,7 +79,10 @@ class HttpServer(
                         connectionHandler.handle()
                     }
                 }
-                return (OP_ACCEPT j this as UnaryAsyncReaction) 
+                return (OP_ACCEPT(
+                    { reactor.registerChannel(serverChannel, OP_ACCEPT, this) },
+                    { reactor.unregisterChannel(serverChannel, OP_ACCEPT) }
+                ) j (this as UnaryAsyncReaction)) as AsyncReaction?
             } 
         }
         //reactor.registerChannel(serverChannel, OP_ACCEPT, acceptReaction) // Old API

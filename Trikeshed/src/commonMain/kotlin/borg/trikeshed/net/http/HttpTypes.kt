@@ -3,6 +3,7 @@ package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Series2
 import borg.trikeshed.lib.j
 import kotlin.jvm.JvmInline
 
@@ -58,7 +59,7 @@ data class HttpRequest(
                 val headerParts = headerLines[i].split(":", limit = 2)
                 headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
             }
-            val headers = Series.of(headersList.size) { headersList[it] }
+            val headers: Series2<HttpHeaderName, HttpHeaderValue> =   (headersList.size)j { it:Int->headersList[it] }
 
             return HttpRequest(method, path, headers, bodyBytes, version)
         }
@@ -117,7 +118,7 @@ data class HttpResponse(
                 val headerParts = headerLines[i].split(":", limit = 2)
                 headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
             }
-            val headers = Series.of(headersList.size) { headersList[it] }
+            val headers =  (headersList.size) j {it :Int-> headersList[it] }
 
             return HttpResponse(status, reason, headers, bodyBytes, version)
         }
@@ -141,7 +142,7 @@ suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation 
 object HttpUtils {
     fun parseHeaders(headerString: String): Series<Join<HttpHeaderName, HttpHeaderValue>> {
         val headerLines = headerString.lines().filter { it.contains(":") }
-        return Series.of(headerLines.size) { i ->
+        return (headerLines.size) j { i ->
             val line = headerLines[i]
             val parts = line.split(":", limit = 2)
             Join(HttpHeaderName(parts[0].trim()), HttpHeaderValue(parts[1].trim()))

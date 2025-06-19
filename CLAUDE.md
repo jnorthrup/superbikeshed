@@ -214,18 +214,60 @@ kotlin {
 
 ## CORE MEMORY
 
-**UN-ALTERABLE JOIN INTERFACE** (`borg.trikeshed.lib.Join`):
+**UN-ALTERABLE CORE TYPE SYSTEM** - Always Available in Every Context:
+
+**FOUNDATION JOIN INTERFACE** (`borg.trikeshed.lib.Join`):
 ```kotlin
+package borg.trikeshed.lib
+
 interface Join<A, B> {
     val a: A
     val b: B
     operator fun component1(): A = a
     operator fun component2(): B = b
     val pair: Pair<A, B> get() = Pair(a, b)
+    
+    companion object {
+        operator fun <A, B> invoke(a: A, b: B): Join<A, B> = object : Join<A, B> {
+            override val a: A get() = a
+            override val b: B get() = b
+        }
+    }
 }
 
 typealias Twin<T> = Join<T, T>
 inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
+```
+
+**SERIES TYPE SYSTEM** (`borg.trikeshed.lib.Series`):
+```kotlin
+package borg.trikeshed.lib
+
+typealias Series<T> = Join<Int, (Int) -> T>
+typealias Series2<A, B> = Series<Join<A, B>>
+
+// Essential operators
+val <T> Series<T>.size: Int get() = a
+operator fun <T> Series<T>.get(i: Int): T = b(i)
+inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> = size j { i -> xform(this[i]) }
+
+// Play materialization - ENSHRINED PATTERN
+val <T> Series<T>.play: IterableSeries<T> get() = this as? IterableSeries ?: IterableSeries(this)
+
+@JvmInline
+value class IterableSeries<A>(val s: Series<A>) : Iterable<A> {
+    override fun iterator(): Iterator<A> = s.iterator()
+    val size: Int get() = s.size
+    operator fun get(i: Int): A = s[i]
+}
+```
+
+**CURSOR TYPE SYSTEM** (`borg.trikeshed.cursor.Cursor`):
+```kotlin
+package borg.trikeshed.cursor
+
+typealias RowVec = Series2<Any?, () -> ColumnMeta>
+typealias Cursor = Series<RowVec>
 ```
 
 **TOP 10 PRODUCTION TYPEALIASES:**
