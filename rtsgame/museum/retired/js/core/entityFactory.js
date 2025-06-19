@@ -45,18 +45,44 @@ class EntityFactory {
             console.warn("EntityFactory: gameState not available for resource checking. Proceeding without cost.");
         }
         const id = `unit_${this.nextId++}`;
-        return Object.assign({ id, identifier: new index_js_1.IdentifierComponent(id, type, team), position: new index_js_1.PositionComponent(x, y), health: new index_js_1.HealthComponent(options.hp || 100, options.maxHp || 100), movement: {
-                speed: options.speed || 1,
-                target: null,
-                path: []
-            }, combat: options.combat ? {
-                target: null,
-                attackRange: options.attackRange || 100,
-                damage: options.damage || 10,
-                cooldown: options.cooldown || 1,
-                lastFireTime: 0
-            } : null, type,
-            team }, options);
+
+        // Gather component values
+        const unitTypeName = type.id || type.name || 'default_unit_type'; // Use type.id if available, then type.name
+        const stats = type.stats || {}; // Ensure type.stats exists
+
+        const hp = options.hp || stats.health || stats.hp || 100;
+        const maxHp = options.maxHp || stats.maxHealth || stats.maxHp || stats.health || 100;
+
+        // Combat stats: prioritize options if provided (e.g. for a unit spawned with temporary buff)
+        // then fallback to type stats, then to 0
+        const attackDamage = (options.combat && options.combat.damage !== undefined) ? options.combat.damage : (stats.attackDamage || stats.damage || 0);
+        const armor = (options.combat && options.combat.armor !== undefined) ? options.combat.armor : (stats.armor || 0);
+
+        const currentShield = (options.combat && options.combat.shield !== undefined) ? options.combat.shield : (stats.shield || 0);
+        const maxShield = (options.combat && options.combat.maxShield !== undefined) ? options.combat.maxShield : (stats.maxShield || stats.shield || 0);
+
+        // Energy stats for units (if they have individual energy pools)
+        const currentEnergy = (options.energy !== undefined) ? options.energy : (stats.energy || 0);
+        const maxEnergy = (options.maxEnergy !== undefined) ? options.maxEnergy : (stats.maxEnergy || stats.energy || 0);
+
+        const computroniumCores = stats.computroniumCores || 0;
+        const currentAction = 'idle'; // Default initial action
+
+        // Call EntityManager.addUnit with all component values
+        this.simulation.entityManager.addUnit(
+            id,
+            unitTypeName, // This should be a string identifier like 'commander', 'tank'
+            team,
+            x, y,
+            hp, maxHp,
+            attackDamage, armor,
+            currentShield, maxShield,
+            currentEnergy, maxEnergy,
+            computroniumCores,
+            currentAction
+        );
+
+        return id; // Return only the ID
     }
     createBuilding(type, team, x, y, options = {}) {
         var _a, _b, _c;
@@ -87,17 +113,38 @@ class EntityFactory {
         else {
             console.warn("EntityFactory: gameState not available for resource checking. Proceeding without cost.");
         }
-        const id = `building_${this.nextId++}`;
-        return Object.assign({ id, identifier: new index_js_1.IdentifierComponent(id, type, team), position: new index_js_1.PositionComponent(x, y), health: new index_js_1.HealthComponent(options.hp || 200, options.maxHp || 200), production: options.production ? {
-                queue: [],
-                progress: 0,
-                produces: options.produces || []
-            } : null, resource: options.resource ? {
-                type: options.resourceType || 'mass',
-                amountPerTick: options.amountPerTick || 2,
-                lastTickTime: 0
-            } : null, type,
-            team }, options);
+        const id = `building_${this.nextId++}`; // Generate ID
+
+        // Import Building class if not already (assuming it's in the same directory or path resolved)
+        // This might require adjusting the import paths at the top of the file if Building is not already imported.
+        // For this example, assuming Building class is available.
+        // const { Building } = require('./building.js'); // Or appropriate path
+        // Note: building.js was already imported in the original file as part of components/index.js,
+        // but if it's a direct class, direct import might be cleaner.
+        // For now, assuming Building is globally available or correctly imported via existing means.
+        // The original file uses `const building_js_1 = require("./building.js");` implicitly via components/index.js.
+        // Let's make sure `Building` class is directly available or change this line.
+        // For now, assuming `Building` is available in the scope.
+        // If `building_js_1.Building` is how it's accessed, that should be used.
+        // Looking at the top, `index_js_1` from components is imported. If Building is part of that, it's fine.
+        // However, `Unit` was directly imported. Let's assume Building should be too for clarity.
+        // This will be a forward declaration if `Building` is not explicitly imported.
+        // The original `simulation.js` creates `new Building(...)` directly.
+
+        const building_js_1 = require("./building.js"); // Explicit import for clarity
+
+        const newBuildingInstance = new building_js_1.Building(id, this.simulation, type, x, y, team);
+
+        // Assuming EntityManager has an `addBuilding` method that takes the instance
+        // and stores it (e.g., in an array `this.entityManager.buildings.push(newBuildingInstance)`).
+        // This part remains consistent with how units were handled before full ECS migration for them.
+        if (this.simulation && this.simulation.entityManager && typeof this.simulation.entityManager.addBuilding === 'function') {
+            this.simulation.entityManager.addBuilding(newBuildingInstance);
+        } else {
+            console.warn(`EntityFactory: Could not add building ${id} to entityManager. entityManager or addBuilding method missing.`);
+        }
+
+        return id; // Return only the ID
     }
     createResourceNode(type, x, y, options = {}) {
         const id = `resource_${this.nextId++}`;

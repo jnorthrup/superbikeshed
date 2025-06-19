@@ -25,7 +25,7 @@ This document outlines pending tasks, conceptual features, and areas for future 
 
 ### Entity System (`EntityManager`, `Unit.js`, `Building.js`, `EntityFactory.js`)
 - [ ] **P1: Full Entity State Migration to `trikeshed-ts`:**
-    - [ ] Define all necessary entity components (beyond position/health) in `EntityManager` Cursors (e.g., owner, current action, energy, Computronium cores, custom stats from design docs).
+    - [ ] Define all necessary entity components (beyond position/health) in `EntityManager` (`rtsgame/js/core/simulation.js`) Cursors (e.g., `entityId`, `ownerId`, `unitType`, `x`, `y`, `hp`, `maxHp`, `currentAction`, `attackDamage`, `armor`, `shield`, `energy`, `ComputroniumCores`, `customStats` from design docs).
     - [ ] Update `EntityFactory` to initialize all entity data into these `trikeshed-ts` structures.
 - [ ] **P1: Refactor `Unit.js` and `Building.js`:**
     - [ ] Remove direct state properties (e.g., `this.x`, `this.hp`).
@@ -55,9 +55,9 @@ This document outlines pending tasks, conceptual features, and areas for future 
 
 ### Combat System (Core Logic - based on `the-rts-concepts.md`)
 - [ ] **P1: Basic Combat Resolution:**
-    - [ ] Implement damage calculation based on attacker's weapon stats and target's armor/shields.
-    - [ ] Apply damage to HP components in `EntityManager`'s `trikeshed-ts` structures.
-    - [ ] Handle unit destruction.
+    - [ ] Implement damage calculation in `rtsgame/js/core/simulation.js` (or a dedicated combat module) based on attacker's weapon stats (e.g., `attackDamage`) and target's defensive stats (e.g., `armor`, `shield`).
+    - [ ] Apply damage to `hp` component in `EntityManager`'s (`rtsgame/js/core/simulation.js`) `trikeshed-ts` structures.
+    - [ ] Handle unit destruction (e.g., remove entity from `EntityManager` (`rtsgame/js/core/simulation.js`)) when `hp` reaches zero.
 - [ ] **P2: Diverse Damage Types & Armor/Shield Mechanics:**
     - [ ] Implement different damage types (Kinetic, Energy, EMP, etc.).
     - [ ] Implement armor types and their specific resistances/vulnerabilities.

@@ -17,29 +17,40 @@ const buildingTypes_js_1 = require("../config/buildingTypes.js");
 const gameConstants_js_1 = require("../config/gameConstants.js");
 const simulationConfig_js_1 = require("../config/simulationConfig.js");
 const unit_js_1 = require("./unit.js");
-const trikeshedEntityManager_js_1 = require("./trikeshedEntityManager.js");
+// const trikeshedEntityManager_js_1 = require("./trikeshedEntityManager.js"); // No longer needed
 const computroniumManager_js_1 = require("./computroniumManager.js");
 const enhancedCommandHierarchy_js_1 = require("./enhancedCommandHierarchy.js");
 // Import specific functions from trikeshed-ts
-const trikeshed_ts_1 = require("trikeshed-ts");
+const trikeshed_ts_1 = require("../../../Trikeshed/trikeshed-ts/src/index.js"); // Adjusted path
 // Import resource manager functions and types
 const resourceManager_js_1 = require("./resourceManager.js");
 // EntityManager class to manage all game entities
 class EntityManager {
     constructor(maxEntities = 1000) {
-        this.units = []; // Still used for storing full unit objects for now
-        this.buildings = [];
         this.nextEntityId = 0; // Simple ID generation for now
         this.entityIdToIndex = new Map(); // Map entity ID to Tensor row index
-        // TODO: Determine appropriate initial size or make dynamic
-        // For now, initialize with a fixed max size and default values (e.g., 0,0 for position)
-        // Positions: entityId (row) -> [x, y]
-        this.unitPositions = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0.0); // Use createCursor from trikeshed-ts
-        // Health: entityId (row) -> [hp, maxHp]
-        this.unitHealth = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0.0); // Use createCursor from trikeshed-ts
-        // Placeholder for other components if refactored
-        // this.unitTypes = createSeries(maxEntities, () => ''); // type as string
-        // this.unitTeams = createSeries(maxEntities, () => ''); // team as string
+
+        // Core Component Cursors
+        this.isActiveCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => false);
+        this.entityIdsCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => null); // Stores entity ID string/number
+        this.ownerTeamCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => null); // e.g., 'blue', 'red'
+        this.unitTypeCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => null); // e.g., 'commander', 'tank'
+
+        // Positional and Health Components
+        this.positionsCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0.0); // x, y
+        this.healthStatsCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0.0); // hp, maxHp
+
+        // Combat and State Components
+        this.currentActionCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => 'idle');
+        this.attackDamageCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => 0);
+        this.armorCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => 0);
+        this.shieldCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0); // currentShield, maxShield
+        this.energyCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0); // currentEnergy, maxEnergy
+        this.computroniumCoresCursor = (0, trikeshed_ts_1.createCursor)(maxEntities, 1, () => 0);
+
+        // Buildings, Projectiles, effects, captions are managed separately for now.
+        // this.units = []; // Removed, entities are managed via Cursors
+        this.buildings = []; // TODO: Migrate buildings to ECS
         this.projectiles = [];
         this.effects = [];
         this.captions = [];
@@ -51,7 +62,7 @@ class EntityManager {
         // This simple index assignment assumes entities are never removed or IDs are not reused in Tensors.
         // A more robust system would manage free indices.
         const index = this.entityIdToIndex.size;
-        if (index >= this.unitPositions.rows) { // Check against .rows of one of the tensors
+        if (index >= this.positionsCursor.rows) { // Check against .rows of one of the tensors
             console.error("EntityManager: Exceeded maximum entity capacity for Tensors.");
             // TODO: Implement dynamic resizing or better error handling
             return null;
@@ -59,101 +70,244 @@ class EntityManager {
         this.entityIdToIndex.set(entityId, index);
         return index;
     }
-    addUnit(unit) {
-        this.units.push(unit); // Keep full object for now for non-refactored properties
-        const entityIndex = this._getNewEntityIndex(unit.id);
-        if (entityIndex === null)
-            return; // Max capacity reached
-        // Write initial position to TensorCursor
-        // For immutable Tensors, an update means creating a new Tensor.
-        // This is a simplified representation. A real implementation might batch updates or use a more sophisticated approach.
-        const currentUnitX = unit.x;
-        const currentUnitY = unit.y;
-        this.unitPositions = this.unitPositions.alpha((_value, coords) => {
-            if (coords[0] === entityIndex && coords[1] === 0)
-                return currentUnitX;
-            if (coords[0] === entityIndex && coords[1] === 1)
-                return currentUnitY;
-            return this.unitPositions.get(coords); // Get old value for other cells
+
+    // Refactored addUnit to accept component values
+    // Expects unit.id, unit.type.id, unit.team, unit.x, unit.y, unit.hp, unit.maxHp,
+    // unit.type.stats.attackDamage, unit.type.stats.armor, 0, unit.type.stats.maxShield (if applicable)
+    // unit.type.stats.energy (if applicable), unit.type.stats.maxEnergy (if applicable)
+    // unit.type.stats.computroniumCores (if applicable)
+    addUnit(id, type, team, x, y, hp, maxHp, attackDamage = 0, armor = 0, currentShield = 0, maxShield = 0, currentEnergy = 0, maxEnergy = 0, computroniumCores = 0, currentAction = 'idle') {
+        const entityIndex = this._getNewEntityIndex(id);
+        if (entityIndex === null) {
+            console.error(`EntityManager: Could not add unit ${id}, max capacity reached or invalid ID.`);
+            return;
+        }
+
+        // Set entity as active
+        this.isActiveCursor = this.isActiveCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? true : this.isActiveCursor.get(coords));
+
+        // Store entity ID
+        this.entityIdsCursor = this.entityIdsCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? id : this.entityIdsCursor.get(coords));
+
+        // Store owner/team
+        this.ownerTeamCursor = this.ownerTeamCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? team : this.ownerTeamCursor.get(coords));
+
+        // Store unit type (e.g., string ID 'commander', 'tank')
+        this.unitTypeCursor = this.unitTypeCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? type : this.unitTypeCursor.get(coords));
+
+        // Store position
+        this.positionsCursor = this.positionsCursor.alpha((_value, coords) => {
+            if (coords[0] === entityIndex) {
+                if (coords[1] === 0) return x;
+                if (coords[1] === 1) return y;
+            }
+            return this.positionsCursor.get(coords);
         });
-        console.log(`EntityManager: Added unit ${unit.id} at index ${entityIndex}. Position (${unit.x}, ${unit.y}) stored in Tensor.`);
-        // Write initial health to TensorCursor
-        const currentUnitHp = unit.hp;
-        const currentUnitMaxHp = unit.maxHp;
-        this.unitHealth = this.unitHealth.alpha((_value, coords) => {
-            if (coords[0] === entityIndex && coords[1] === 0)
-                return currentUnitHp;
-            if (coords[0] === entityIndex && coords[1] === 1)
-                return currentUnitMaxHp;
-            return this.unitHealth.get(coords); // Get old value
+
+        // Store health stats
+        this.healthStatsCursor = this.healthStatsCursor.alpha((_value, coords) => {
+            if (coords[0] === entityIndex) {
+                if (coords[1] === 0) return hp;
+                if (coords[1] === 1) return maxHp;
+            }
+            return this.healthStatsCursor.get(coords);
         });
-        console.log(`EntityManager: Unit ${unit.id} health (${unit.hp}/${unit.maxHp}) stored in Tensor.`);
+
+        // Store combat stats
+        this.attackDamageCursor = this.attackDamageCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? attackDamage : this.attackDamageCursor.get(coords));
+        this.armorCursor = this.armorCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? armor : this.armorCursor.get(coords));
+
+        // Store shield stats
+        this.shieldCursor = this.shieldCursor.alpha((_value, coords) => {
+            if (coords[0] === entityIndex) {
+                if (coords[1] === 0) return currentShield;
+                if (coords[1] === 1) return maxShield;
+            }
+            return this.shieldCursor.get(coords);
+        });
+
+        // Store energy stats
+        this.energyCursor = this.energyCursor.alpha((_value, coords) => {
+            if (coords[0] === entityIndex) {
+                if (coords[1] === 0) return currentEnergy;
+                if (coords[1] === 1) return maxEnergy;
+            }
+            return this.energyCursor.get(coords);
+        });
+
+        // Store computronium cores
+        this.computroniumCoresCursor = this.computroniumCoresCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? computroniumCores : this.computroniumCoresCursor.get(coords));
+
+        // Store current action
+        this.currentActionCursor = this.currentActionCursor.alpha((_value, coords) => (coords[0] === entityIndex && coords[1] === 0) ? currentAction : this.currentActionCursor.get(coords));
+
+        console.log(`EntityManager: Added unit ${id} (type: ${type}) at index ${entityIndex}.`);
     }
-    // Example getter for position (would be used by unit or other systems)
+
     getUnitPosition(unitId) {
-        if (!this.entityIdToIndex.has(unitId))
-            return null;
+        if (!this.entityIdToIndex.has(unitId)) return null;
         const index = this.entityIdToIndex.get(unitId);
-        if (index === undefined)
-            return null;
-        // Read from actual Tensor using trikeshed-ts API
-        return { x: this.unitPositions.get([index, 0]), y: this.unitPositions.get([index, 1]) };
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return { x: this.positionsCursor.get([index, 0]), y: this.positionsCursor.get([index, 1]) };
     }
-    // Example setter for position (would be called by unit's movement logic)
+
     setUnitPosition(unitId, x, y) {
-        if (!this.entityIdToIndex.has(unitId))
-            return;
+        if (!this.entityIdToIndex.has(unitId)) return;
         const index = this.entityIdToIndex.get(unitId);
-        if (index === undefined)
-            return;
-        // Create a new tensor with the updated position
-        this.unitPositions = this.unitPositions.alpha((_value, coords) => {
-            if (coords[0] === index && coords[1] === 0)
-                return x;
-            if (coords[0] === index && coords[1] === 1)
-                return y;
-            return this.unitPositions.get(coords);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.positionsCursor = this.positionsCursor.alpha((_value, coords) => {
+            if (coords[0] === index && coords[1] === 0) return x;
+            if (coords[0] === index && coords[1] === 1) return y;
+            return this.positionsCursor.get(coords);
         });
-        // console.log(`EntityManager: Unit ${unitId} position updated to (${x}, ${y}) in Tensor.`);
-        // Also update the original unit object if it's still being used as a partial source of truth
-        const unit = this.units.find(u => u.id === unitId);
-        if (unit) {
-            unit.x = x;
-            unit.y = y;
-        }
     }
-    // Example getter for health
+
     getUnitHealth(unitId) {
-        if (!this.entityIdToIndex.has(unitId))
-            return null;
+        if (!this.entityIdToIndex.has(unitId)) return null;
         const index = this.entityIdToIndex.get(unitId);
-        if (index === undefined)
-            return null;
-        return { hp: this.unitHealth.get([index, 0]), maxHp: this.unitHealth.get([index, 1]) };
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return { hp: this.healthStatsCursor.get([index, 0]), maxHp: this.healthStatsCursor.get([index, 1]) };
     }
-    // Example setter for health
+
     setUnitHealth(unitId, hp, maxHp) {
-        if (!this.entityIdToIndex.has(unitId))
-            return;
+        if (!this.entityIdToIndex.has(unitId)) return;
         const index = this.entityIdToIndex.get(unitId);
-        if (index === undefined)
-            return;
-        this.unitHealth = this.unitHealth.alpha((_value, coords) => {
-            if (coords[0] === index && coords[1] === 0)
-                return hp;
-            if (coords[0] === index && coords[1] === 1)
-                return maxHp; // maxHp might not change often
-            return this.unitHealth.get(coords);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.healthStatsCursor = this.healthStatsCursor.alpha((_value, coords) => {
+            if (coords[0] === index && coords[1] === 0) return hp;
+            if (coords[0] === index && coords[1] === 1) return maxHp;
+            return this.healthStatsCursor.get(coords);
         });
-        // console.log(`EntityManager: Unit ${unitId} health updated to (${hp}/${maxHp}) in Tensor.`);
-        const unit = this.units.find(u => u.id === unitId);
-        if (unit) {
-            unit.hp = hp;
-            unit.maxHp = maxHp;
-        }
     }
+
+    // Getters for new components
+    getUnitIsActive(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return false;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows) return false; // Check rows before get
+        return this.isActiveCursor.get([index, 0]);
+    }
+
+    getUnitEntityIdString(unitId) { // Renamed to avoid conflict if unitId is number
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.entityIdsCursor.get([index, 0]);
+    }
+
+    getOwnerTeam(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.ownerTeamCursor.get([index, 0]);
+    }
+
+    getUnitType(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.unitTypeCursor.get([index, 0]);
+    }
+
+    getCurrentAction(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.currentActionCursor.get([index, 0]);
+    }
+
+    getAttackDamage(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null; // Or return 0 if preferred for non-existent/inactive
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.attackDamageCursor.get([index, 0]);
+    }
+
+    getArmor(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.armorCursor.get([index, 0]);
+    }
+
+    getShield(unitId) { // Returns { current: val, max: val }
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return { current: this.shieldCursor.get([index, 0]), max: this.shieldCursor.get([index, 1]) };
+    }
+
+    getEnergy(unitId) { // Returns { current: val, max: val }
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return { current: this.energyCursor.get([index, 0]), max: this.energyCursor.get([index, 1]) };
+    }
+
+    getComputroniumCores(unitId) {
+        if (!this.entityIdToIndex.has(unitId)) return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return null;
+        return this.computroniumCoresCursor.get([index, 0]);
+    }
+
+    // Setters for new components
+    setCurrentAction(unitId, action) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.currentActionCursor = this.currentActionCursor.alpha((_v, coords) => (coords[0] === index && coords[1] === 0) ? action : this.currentActionCursor.get(coords));
+    }
+
+    setAttackDamage(unitId, damage) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.attackDamageCursor = this.attackDamageCursor.alpha((_v, coords) => (coords[0] === index && coords[1] === 0) ? damage : this.attackDamageCursor.get(coords));
+    }
+
+    setArmor(unitId, armorValue) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.armorCursor = this.armorCursor.alpha((_v, coords) => (coords[0] === index && coords[1] === 0) ? armorValue : this.armorCursor.get(coords));
+    }
+
+    setShield(unitId, current, max) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.shieldCursor = this.shieldCursor.alpha((_v, coords) => {
+            if (coords[0] === index) {
+                if (coords[1] === 0) return current;
+                if (coords[1] === 1) return max;
+            }
+            return this.shieldCursor.get(coords);
+        });
+    }
+
+    setEnergy(unitId, current, max) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.energyCursor = this.energyCursor.alpha((_v, coords) => {
+            if (coords[0] === index) {
+                if (coords[1] === 0) return current;
+                if (coords[1] === 1) return max;
+            }
+            return this.energyCursor.get(coords);
+        });
+    }
+
+    setComputroniumCores(unitId, cores) {
+        if (!this.entityIdToIndex.has(unitId)) return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined || index >= this.isActiveCursor.rows || !this.isActiveCursor.get([index, 0])) return;
+        this.computroniumCoresCursor = this.computroniumCoresCursor.alpha((_v, coords) => (coords[0] === index && coords[1] === 0) ? cores : this.computroniumCoresCursor.get(coords));
+    }
+
     addBuilding(building) {
-        this.buildings.push(building);
+        this.buildings.push(building); // Still using old system for buildings
     }
     addProjectile(projectile) {
         this.projectiles.push(projectile);
@@ -165,40 +319,54 @@ class EntityManager {
         this.captions.push(caption);
     }
     update(simulation, deltaTime) {
-        // Update units
-        for (let i = this.units.length - 1; i >= 0; i--) {
-            const unit = this.units[i];
-            // Before unit.update, sync unit's state from Tensors
-            // This ensures the unit object has the latest data if other systems modified it via EntityManager
-            const posData = this.getUnitPosition(unit.id);
-            if (posData) {
-                unit.x = posData.x;
-                unit.y = posData.y;
+        // Unit update logic will eventually iterate over active entities using cursors.
+        // For now, unit logic (like movement, attacking) is not processed here yet.
+        // This subtask focuses on setting up EntityManager data structure.
+        // The Unit.js refactor (next major step) will handle how units read/write their state.
+
+        // Process unit death
+        // Iterate up to the current known size of entityIdToIndex, as entities might not be contiguous
+        // or iterate all possible rows of isActiveCursor if entities are never fully deleted from cursors.
+        // For now, using entityIdToIndex keys for existing entities that might die.
+        const entityIds = Array.from(this.entityIdToIndex.keys());
+        for (const unitId of entityIds) {
+            const entityIndex = this.entityIdToIndex.get(unitId);
+            if (entityIndex === undefined || entityIndex >= this.isActiveCursor.rows || !this.isActiveCursor.get([entityIndex, 0])) {
+                continue; // Skip if not active or index out of bounds
             }
-            const healthData = this.getUnitHealth(unit.id);
-            if (healthData) {
-                unit.hp = healthData.hp;
-                unit.maxHp = healthData.maxHp;
-            }
-            unit.update(simulation, deltaTime);
-            // After unit.update, sync unit's state (potentially changed by its logic) back to Tensors
-            this.setUnitPosition(unit.id, unit.x, unit.y);
-            this.setUnitHealth(unit.id, unit.hp, unit.maxHp);
-            // Death check using data from tensor (or the synced unit object)
-            const currentHealth = this.getUnitHealth(unit.id); // Read fresh from tensor
-            if ((currentHealth && currentHealth.hp <= 0) || unit.isDead) {
-                this.units.splice(i, 1);
-                this.entityIdToIndex.delete(unit.id); // Mark index as free / remove mapping
-                // TODO: A more robust index management system would be needed for freeing/reusing indices in Tensors.
+
+            // TODO: Unit logic (unit.update) should be called here eventually.
+            // For now, we only handle death based on health.
+            // Unit logic would update its health in the healthStatsCursor.
+            // e.g., simulation.systems.aiSystem.updateUnit(unitId, deltaTime);
+            //       simulation.systems.movementSystem.updateUnit(unitId, deltaTime);
+            //       simulation.systems.combatSystem.updateUnit(unitId, deltaTime);
+
+
+            const currentHealth = this.healthStatsCursor.get([entityIndex, 0]);
+            if (currentHealth <= 0) {
+                // Mark as inactive
+                this.isActiveCursor = this.isActiveCursor.alpha((_v, coords) => (coords[0] === entityIndex && coords[1] === 0) ? false : this.isActiveCursor.get(coords));
+
+                const unitType = this.unitTypeCursor.get([entityIndex, 0]);
+                const team = this.ownerTeamCursor.get([entityIndex, 0]);
+                console.log(`Unit ${unitId} (type: ${unitType}, team: ${team}) marked as inactive (dead).`);
+
                 // Check for commander death (game over condition)
-                if (unit.type === unitTypes_js_1.UNIT_TYPES.commander) {
-                    const winner = unit.team === 'blue' ? 'RED' : 'BLUE';
+                // Ensure unitTypes_js_1.UNIT_TYPES.commander.id is the correct way to get the string ID
+                if (unitType === unitTypes_js_1.UNIT_TYPES.commander.id) {
+                    const winner = team === 'blue' ? 'RED' : 'BLUE';
                     simulation.gameState.winner = winner;
                     simulation.gameState.addEvent('game_over', `${winner} team wins! Enemy commander destroyed!`, 3);
                 }
+
+                // Remove from ID map to free up the ID (original behavior)
+                // If entity IDs/indices should be permanent for inactive entities, this line would be removed.
+                this.entityIdToIndex.delete(unitId);
             }
         }
-        // Update buildings
+
+        // Update buildings (still using old system)
         for (let i = this.buildings.length - 1; i >= 0; i--) {
             const building = this.buildings[i];
             building.update(simulation, deltaTime);
@@ -228,6 +396,55 @@ class EntityManager {
             caption.update();
             if (caption.life <= 0) {
                 this.captions.splice(i, 1);
+            }
+        }
+    }
+
+    handleDamageApplication(attackerId, targetId, baseDamage) {
+        if (!this.entityManager.getUnitIsActive(targetId)) {
+            // console.log(`Target ${targetId} is already inactive.`);
+            return;
+        }
+
+        const targetHealthStats = this.entityManager.getUnitHealth(targetId);
+        const targetArmorValue = this.entityManager.getArmor(targetId); // Returns number or null
+        const targetShieldStats = this.entityManager.getShield(targetId); // { current, max } or null
+
+        if (!targetHealthStats) { // Shields and Armor might be null if unit has none, but health must exist.
+            console.error(`Cannot apply damage: Target ${targetId} health stats not found.`);
+            return;
+        }
+
+        let damageRemaining = baseDamage;
+        let newShieldValue = targetShieldStats ? targetShieldStats.current : 0;
+
+        // Apply to Shields first
+        if (targetShieldStats && targetShieldStats.current > 0) {
+            const damageToShield = Math.min(damageRemaining, targetShieldStats.current);
+            newShieldValue = targetShieldStats.current - damageToShield;
+            damageRemaining -= damageToShield;
+            this.entityManager.setShield(targetId, newShieldValue, targetShieldStats.max);
+        }
+
+        // Apply Armor
+        let damageAfterArmor = damageRemaining;
+        if (damageRemaining > 0 && targetArmorValue !== null) { // targetArmorValue could be 0, which is valid
+            // getArmor directly returns the numerical value or null.
+            damageAfterArmor = Math.max(0, damageRemaining - targetArmorValue);
+        }
+
+        // Apply to HP
+        const newHp = Math.max(0, targetHealthStats.hp - damageAfterArmor);
+        this.entityManager.setUnitHealth(targetId, newHp, targetHealthStats.maxHp);
+
+        // Handle Destruction
+        if (newHp <= 0) {
+            this.entityManager.setUnitIsActive(targetId, false);
+            console.log(`Unit ${targetId} destroyed by ${attackerId}.`);
+            if (this.gameState && typeof this.gameState.addEvent === 'function') {
+                const targetType = this.entityManager.getUnitType(targetId) || 'Unknown Type';
+                const attackerType = this.entityManager.getUnitType(attackerId) || 'Unknown Attacker';
+                this.gameState.addEvent('death', `Unit ${targetType} (${targetId}) destroyed by ${attackerType} (${attackerId}).`, 2);
             }
         }
     }
@@ -269,7 +486,7 @@ class Simulation {
         this.RECORD_AI_DECISIONS_DURATION_SECONDS = context.RECORD_AI_DECISIONS_DURATION_SECONDS;
         this.battleJournal = context.battleJournal;
         // Initialize managers - use TrikeShed-based entity management
-        this.entityManager = new trikeshedEntityManager_js_1.TrikeShedEntityManager();
+        this.entityManager = new EntityManager(); // Use local EntityManager
         this.gameState = new GameState();
         // Initialize Computronium managers for each team
         this.computroniumManagers = {
@@ -409,8 +626,15 @@ class Simulation {
             // Create commanders
             const blueCommander = new unit_js_1.Unit(blueSpawn.x, blueSpawn.y, 'blue', unitTypes_js_1.UNIT_TYPES.commander, this);
             const redCommander = new unit_js_1.Unit(redSpawn.x, redSpawn.y, 'red', unitTypes_js_1.UNIT_TYPES.commander, this);
-            this.entityManager.addUnit(blueCommander);
-            this.entityManager.addUnit(redCommander);
+
+        // Extract data for blue commander for the new addUnit signature
+        const bcStats = unitTypes_js_1.UNIT_TYPES.commander.stats;
+        this.entityManager.addUnit(blueCommander.id, unitTypes_js_1.UNIT_TYPES.commander.id, blueCommander.team, blueCommander.x, blueCommander.y, blueCommander.hp, blueCommander.maxHp, bcStats.attackDamage, bcStats.armor, 0, bcStats.maxShield || 0, bcStats.energy || 0, bcStats.maxEnergy || 0, bcStats.computroniumCores || 0);
+
+        // Extract data for red commander
+        const rcStats = unitTypes_js_1.UNIT_TYPES.commander.stats;
+        this.entityManager.addUnit(redCommander.id, unitTypes_js_1.UNIT_TYPES.commander.id, redCommander.team, redCommander.x, redCommander.y, redCommander.hp, redCommander.maxHp, rcStats.attackDamage, rcStats.armor, 0, rcStats.maxShield || 0, rcStats.energy || 0, rcStats.maxEnergy || 0, rcStats.computroniumCores || 0);
+
             // Add Computronium cores to commanders (they are advanced units)
             this.computroniumManagers.blue.addCore(blueCommander, 1.0); // Full efficiency
             this.computroniumManagers.red.addCore(redCommander, 1.0);
@@ -564,7 +788,8 @@ class Simulation {
         const hierarchy = this.commandHierarchies[team];
         const enemyTeam = team === 'blue' ? 'red' : 'blue';
         // Find enemy units to target
-        const enemyUnits = this.entityManager.units.filter(u => u.team === enemyTeam && u.hp > 0);
+        // TODO: This needs to be refactored to use cursors to find enemy units
+        const enemyUnits = []; // Placeholder this.entityManager.units.filter(u => u.team === enemyTeam && u.hp > 0);
         if (enemyUnits.length > 0) {
             // Issue attack command to nearest enemy
             const randomEnemy = enemyUnits[Math.floor(this.seedRandom.random() * enemyUnits.length)];
@@ -588,17 +813,29 @@ class Simulation {
     checkWinConditions() {
         if (this.gameState.winner)
             return;
-        const blueCommander = this.entityManager.units.find(u => u.team === 'blue' && u.type === unitTypes_js_1.UNIT_TYPES.commander);
-        const redCommander = this.entityManager.units.find(u => u.team === 'red' && u.type === unitTypes_js_1.UNIT_TYPES.commander);
-        if (!blueCommander && !redCommander) {
+        // TODO: Refactor to use cursors to find commanders
+        let blueCommanderAlive = false;
+        let redCommanderAlive = false;
+        for (let i = 0; i < this.entityManager.entityIdToIndex.size; i++) {
+            if (this.entityManager.isActiveCursor.get([i, 0])) {
+                const type = this.entityManager.unitTypeCursor.get([i, 0]);
+                const team = this.entityManager.ownerTeamCursor.get([i, 0]);
+                if (type === unitTypes_js_1.UNIT_TYPES.commander.id) { // Assuming type stores ID string
+                    if (team === 'blue') blueCommanderAlive = true;
+                    if (team === 'red') redCommanderAlive = true;
+                }
+            }
+        }
+
+        if (!blueCommanderAlive && !redCommanderAlive) {
             this.gameState.winner = 'DRAW';
             this.gameState.addEvent('game_over', 'Both commanders destroyed - Draw!', 3);
         }
-        else if (!blueCommander) {
+        else if (!blueCommanderAlive) {
             this.gameState.winner = 'RED';
             this.gameState.addEvent('game_over', 'Red team wins! Blue commander destroyed!', 3);
         }
-        else if (!redCommander) {
+        else if (!redCommanderAlive) {
             this.gameState.winner = 'BLUE';
             this.gameState.addEvent('game_over', 'Blue team wins! Red commander destroyed!', 3);
         }

@@ -7,33 +7,41 @@ const caption_js_1 = require("./entities/caption.js"); // Added import
 // Global variables like 'resources', 'units', 'captions', 'addEvent'
 // are accessed directly. This tight coupling will be addressed in later refactoring.
 class Building {
-    constructor(x, y, team, type, simulation = null) {
-        this.x = x;
-        this.y = y;
-        this.team = team;
-        this.type = type;
-        this.hp = type.maxHp;
-        this.maxHp = type.maxHp;
+    constructor(id, simulation, typeDetails, initialX, initialY, initialTeam) {
+        this.id = id;
+        this.simulation = simulation;
+        this.type = typeDetails; // Store the original type definition
+        this.x = initialX;
+        this.y = initialY;
+        this.team = initialTeam;
+
+        this.hp = typeDetails.maxHp;
+        this.maxHp = typeDetails.maxHp;
+
         this.productionQueue = [];
         this.productionProgress = 0;
-        this.setRallyPoint(x, y, simulation);
-        this.shields = 0;
-        this.maxShields = 0;
+        this.setRallyPoint(initialX, initialY, simulation); // Use initialX, initialY
+        this.shields = 0; // Assuming buildings might have shields, initialize to 0 or from typeDetails if applicable
+        this.maxShields = 0; // Same as above
         this.captionCooldown = 0;
+
         // Add Computronium core if this building type has one
-        if (type.hasComputroniumCore && simulation && simulation.computroniumManagers) {
-            const manager = simulation.computroniumManagers[team];
+        if (typeDetails.hasComputroniumCore && simulation && simulation.computroniumManagers) {
+            const manager = simulation.computroniumManagers[this.team]; // Use this.team
             if (manager) {
-                this.computroniumCore = manager.addCore(this, type.coreEfficiency || 1.0);
-                console.log(`[Building] Added Computronium core to ${type.name}`);
+                // Pass ID and necessary static details instead of `this`
+                this.computroniumCore = manager.addCore(this.id, this.type, this.team, typeDetails.coreEfficiency || 1.0);
+                console.log(`[Building] Added Computronium core to ${this.type.name} (ID: ${this.id})`);
             }
         }
+
         // Register in command hierarchy if simulation supports it
-        if (simulation && simulation.commandHierarchies && type.commandRank) {
-            const hierarchy = simulation.commandHierarchies[team];
+        if (simulation && simulation.commandHierarchies && typeDetails.commandRank) {
+            const hierarchy = simulation.commandHierarchies[this.team]; // Use this.team
             if (hierarchy) {
-                this.commandNode = hierarchy.registerEntity(this, type.commandRank);
-                console.log(`[Building] Registered ${type.name} in command hierarchy (rank ${type.commandRank})`);
+                // Pass ID and necessary static details instead of `this`
+                this.commandNode = hierarchy.registerEntity(this.id, this.type, this.team, typeDetails.commandRank);
+                console.log(`[Building] Registered ${this.type.name} (ID: ${this.id}) in command hierarchy (rank ${typeDetails.commandRank})`);
             }
         }
     }
