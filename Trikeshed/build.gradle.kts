@@ -49,7 +49,6 @@ kotlin {
             implementation(kotlin("stdlib-common"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
-            implementation("com.google.code.gson:gson:2.10.1")
         }
         
         commonTest.dependencies {
@@ -75,7 +74,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 api("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.2")
-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")  
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
             }
         }
     }
@@ -90,7 +89,10 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xno-call-assertions",
             "-Xno-param-assertions",
             "-Xno-receiver-assertions",
-            "-Xno-source-roots-assertions"
+            "-Xno-source-roots-assertions",
+            "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
+            "-Xopt-in=kotlin.RequiresOptIn",
+            "-Xopt-in=kotlin.ExperimentalStdlibApi"
         )
     }
 }
