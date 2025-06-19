@@ -17,21 +17,14 @@
 - **`List<T>`** - Use `Series<T>` or primitive array preferred
 - **`MutableList<T>`** - Use `Series<T>` with `α` transforms
 - **`Pair<A,B>`** - Use `Join<A,B>` with `j` operator instead
-Avoid the `trikeshed.collections.*` package due to its unconstrained algorithmic designs and potential for mutability/nullability. Refactor its usage slowly.
+- ** trikeshed  '*.collections.*' package is inhernetly unconstrained algorithmic designs and ports, consume them slowly when refactoring out mutability and nullable ** -
 
 **MANDATORY PATTERNS:**
-
-- the first step is to create and replace the model with taxonomical typealiases and enums down to the leaf attributes  
-- **a j b** creates Join<A,B> - the ONLY composition operator
-  //   e.g., val combinedSeries = seriesA j seriesB
-  //        (conceptual: combines two Series into a Join structure)
-- **series.α { transform }** - the ONLY transformation operator  
-  //   e.g., val transformedSeries = mySeries.α { it * 2 }
-  //        (conceptual: applies a transformation to elements, producing a new Series)
-- **series.play** - gateway to AbstractList,Iterable<T> for .map and list
-  //   e.g., val listRepresentation = mySeries.play.toList()
-  //        val mappedList = mySeries.play.map { it.toString() }
-  //        (conceptual: materializes a Series to a standard collection for specific operations)
+- the first step is to create and replace the model with taxonomical typealiases and enums down to the leaf attributes (2-ary tuples)
+- ** a j b** creates Join<A,B> - the ONLY composition operator
+- ** series.α { transform } ** - the ONLY transformation operator  
+- **series.\`▶\`** (THE PLAY BUTTON) - gateway to AbstractList,Iterable<T> for .map and list
+  **DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX NOT MARKDOWN**
 - **@JvmInline value class** - the ONLY wrapper mechanism
 - **typealias** - descriptive names for ANY OR ALL RECURRING primitives
 - To use standard collection operations like `.map()`, first materialize the `Series` using `.play`, e.g., `mySeries.play.map { ... }`
@@ -158,6 +151,9 @@ second will be a lesser GDM capability if its still highcompetence with IKR (Inc
 **Dependencies:**
 
 - trikeshed-core has been re-absorbed into Triekshed. The webpack alias 'trikeshed-ts' should be updated to point to the correct location in the Triekshed repository.
+
+## Migration Memories
+- all of the superbikeshed code is migrating to trikeshed and so  it all needs taxonomical typealiases down to the leafnode.  we no longer have  a DCE policy, anthropic can sell bridges all day long again
 
 # important-instruction-reminders
 
