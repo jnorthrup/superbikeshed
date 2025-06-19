@@ -149,11 +149,6 @@ test-output/
 
 # Ignore Gradle build output directory
 build
-*~
-.gradle/8.14.1/executionHistory/executionHistory.bin
-.gradle/8.14.1/executionHistory/executionHistory.lock
-.gradle/8.14.1/fileHashes/fileHashes.bin
-.gradle/8.14.1/fileHashes/fileHashes.lock
-.gradle/buildOutputCleanup/buildOutputCleanup.lock
-.gradle/buildOutputCleanup/outputFiles.bin
-.gradle/file-system.probe
+
+# Repair project
+superbikeshed_repair/
