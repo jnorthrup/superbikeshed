@@ -1,6 +1,6 @@
 package com.ta4k.acapulco
 
-import com.ta4k.acapulco.model.Kline
+import com.ta4k.core.model.Kline
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
 
@@ -16,5 +16,72 @@ expect class BinanceDataVisionReader() {
          * @return Series of Klines
          */
         fun readArchive(filePath: String): Series<Kline>
+        
+        /**
+         * Fetches klines from Binance Data Vision archives for a specific symbol and time range
+         * @param symbol Trading symbol (e.g., "BTCUSDT")
+         * @param interval Time interval (e.g., "1m", "1h", "1d")
+         * @param startDate Start date in YYYY-MM format
+         * @param endDate End date in YYYY-MM format
+         * @param cacheDir Directory to cache downloaded files
+         * @return Series of Klines
+         */
+        suspend fun fetchKlines(
+            symbol: String,
+            interval: String = "1m",
+            startDate: String? = null,
+            endDate: String? = null,
+            cacheDir: String = "~/mpdata/cache"
+        ): Series<Kline>
+        
+        /**
+         * Downloads and processes a single month of kline data
+         * @param symbol Trading symbol
+         * @param interval Time interval
+         * @param yearMonth Year and month in YYYY-MM format
+         * @param cacheDir Cache directory
+         * @return Series of Klines
+         */
+        suspend fun fetchMonthKlines(
+            symbol: String,
+            interval: String,
+            yearMonth: String,
+            cacheDir: String
+        ): Series<Kline>
+        
+        /**
+         * Downloads and processes daily kline data for recent periods
+         * @param symbol Trading symbol
+         * @param interval Time interval
+         * @param days Number of days to fetch
+         * @param cacheDir Cache directory
+         * @return Series of Klines
+         */
+        suspend fun fetchDailyKlines(
+            symbol: String,
+            interval: String,
+            days: Int = 30,
+            cacheDir: String = "~/mpdata/cache"
+        ): Series<Kline>
+        
+        /**
+         * Combines multiple kline series into a single sorted series
+         * @param klineSeries List of kline series to combine
+         * @return Combined and sorted Series of Klines
+         */
+        fun combineKlineSeries(klineSeries: List<Series<Kline>>): Series<Kline>
+        
+        /**
+         * Filters klines by time range
+         * @param klines Series of klines to filter
+         * @param startTime Start time in milliseconds
+         * @param endTime End time in milliseconds
+         * @return Filtered Series of Klines
+         */
+        fun filterKlinesByTimeRange(
+            klines: Series<Kline>,
+            startTime: Long,
+            endTime: Long
+        ): Series<Kline>
     }
 } 
