@@ -98,7 +98,9 @@ data class HttpResponse(
         val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
         return head + body
     }
-
+    
+    fun toHttpMessage(): ByteArray = toByteArray()
+    
     companion object {
         fun parse(bytes: ByteArray): HttpResponse {
             val eoh = findEndOfHeaders(bytes)

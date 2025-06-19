@@ -7,11 +7,8 @@ package borg.trikeshed.lib
 
 data class Join<A, B>(val a: A, val b: B)
 
-infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
-
-// Import alias for canonical j operator  
-typealias RtsJoin<A, B> = Join<A, B>
-infix fun <A, B> A.rj(other: B): RtsJoin<A, B> = Join(this, other)
+// j operator imported from canonical borg.trikeshed.lib.Join
+// Use: import borg.trikeshed.lib.j
 
 class Series<T>(internal val data: List<T>) {
     val size: Int get() = data.size

@@ -79,10 +79,11 @@ class HttpServer(
                         connectionHandler.handle()
                     }
                 }
-                return (OP_ACCEPT(
-                    { reactor.registerChannel(serverChannel, OP_ACCEPT, this) },
-                    { reactor.unregisterChannel(serverChannel, OP_ACCEPT) }
-                ) j (this as UnaryAsyncReaction)) as AsyncReaction?
+                // RelaxFactory enqueue pattern - store connection handler state
+                return (OP_ACCEPT { 
+                    reactor.registerChannel(serverChannel, OP_ACCEPT, this)
+                    null
+                } j (this as UnaryAsyncReaction)) as AsyncReaction?
             } 
         }
         //reactor.registerChannel(serverChannel, OP_ACCEPT, acceptReaction) // Old API

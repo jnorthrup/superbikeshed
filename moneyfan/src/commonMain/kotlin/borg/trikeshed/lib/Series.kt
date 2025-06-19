@@ -49,11 +49,5 @@ class Series<T>(private val data: List<T>) {
  */
 data class Join<A, B>(val a: A, val b: B)
 
-/**
- * j operator - creates Join<A,B> - the ONLY composition operator  
- */
-infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
-
-// Import alias for canonical j operator
-typealias MoneyFanJoin<A, B> = Join<A, B>
-infix fun <A, B> A.mj(other: B): MoneyFanJoin<A, B> = Join(this, other)
+// j operator imported from canonical borg.trikeshed.lib.Join
+// Use: import borg.trikeshed.lib.j
