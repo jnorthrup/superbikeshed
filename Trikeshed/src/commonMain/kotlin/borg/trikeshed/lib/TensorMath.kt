@@ -5,12 +5,12 @@ import kotlin.math.sqrt
 // Basic element-wise operations
 operator fun <T : Number> Tensor<T>.plus(other: Tensor<T>): Tensor<T> {
     require(shape.contentEquals(other.shape)) { "Tensors must have the same shape for addition" }
-    return shape j { coords -> (this(coords).toDouble() + other(coords).toDouble()) as T }
+    return shape j { coords -> (this.accessor(coords).toDouble() + other.accessor(coords).toDouble()) as T }
 }
 
 operator fun <T : Number> Tensor<T>.minus(other: Tensor<T>): Tensor<T> {
     require(shape.contentEquals(other.shape)) { "Tensors must have the same shape for subtraction" }
-    return shape j { coords -> (this(coords).toDouble() - other(coords).toDouble()) as T }
+    return shape j { coords -> (this.accessor(coords).toDouble() - other.accessor(coords).toDouble()) as T }
 }
 
 operator fun <T : Number> Tensor<T>.times(other: Tensor<T>): Tensor<T> {

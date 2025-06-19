@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform")
+    kotlin("multiplatform") version "2.1.21"
     `maven-publish`
 }
 
@@ -47,6 +47,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                // implementation(project(":brokeshed"))  // Temporarily disabled
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
@@ -77,6 +78,7 @@ kotlin {
             dependencies {
                 api("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.2")
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+                implementation(kotlin("reflect"))
             }
         }
     }
