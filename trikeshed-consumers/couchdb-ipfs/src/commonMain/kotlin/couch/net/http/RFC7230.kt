@@ -1,5 +1,5 @@
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
-package borg.trikeshed.net.http
+package borg.trikeshed.consumers.couchdbipfs.net.http
 
 import borg.trikeshed.lib.*
 

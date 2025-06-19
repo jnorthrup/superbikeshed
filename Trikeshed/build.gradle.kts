@@ -53,6 +53,7 @@ kotlin {
             implementation(kotlin("stdlib-common"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            implementation("borg.trikeshed.consumers.couchdbipfs:couchdb-ipfs:1.0-SNAPSHOT")
         }
         
         commonTest.dependencies {

@@ -1,4 +1,4 @@
-package borg.trikeshed.couch
+package borg.trikeshed.consumers.couchdbipfs
 
 import borg.trikeshed.lib.*
 

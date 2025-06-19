@@ -40,3 +40,6 @@ include("spacegraphjs:kotlin-spacegraph")
 include("ta4k-spacegraph-moneyfan-demo")
 //include(":boingDemo")
 include(":tools:intellij-project-enumerator")
+
+// Include the new CouchDB/IPFS consumer project as a separate build
+includeBuild("trikeshed-consumers/couchdb-ipfs")

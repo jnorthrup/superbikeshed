@@ -1,10 +1,10 @@
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
-package borg.trikeshed.net.http
+package borg.trikeshed.consumers.couchdbipfs.net.http
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
-import borg.trikeshed.services.DealService
-import borg.trikeshed.services.RequestFactoryService
+import borg.trikeshed.consumers.couchdbipfs.services.DealService
+import borg.trikeshed.consumers.couchdbipfs.services.RequestFactoryService
 import borg.trikeshed.io.PlatformFile
 import kotlin.jvm.JvmInline
 

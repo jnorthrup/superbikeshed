@@ -1,8 +1,8 @@
-package borg.trikeshed.services
+package borg.trikeshed.consumers.couchdbipfs.services
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.parse.json.*
-import borg.trikeshed.couch.*
+import borg.trikeshed.consumers.couchdbipfs.*
 
 /**
  * CouchDB-backed implementation of RequestFactoryService.

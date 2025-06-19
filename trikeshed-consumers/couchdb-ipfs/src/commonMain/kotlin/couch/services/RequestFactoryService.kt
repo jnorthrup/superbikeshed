@@ -1,4 +1,4 @@
-package borg.trikeshed.services
+package borg.trikeshed.consumers.couchdbipfs.services
 
 import borg.trikeshed.lib.*
 
