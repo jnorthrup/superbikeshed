@@ -53,6 +53,7 @@ kotlin {
             implementation(kotlin("stdlib-common"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            implementation(project(":RequestFactoryClient"))
         }
         
         commonTest.dependencies {
@@ -79,6 +80,7 @@ kotlin {
             dependencies {
                 api("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.2")
                 api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+                implementation(project(":RequestFactoryClient"))
             }
         }
     }

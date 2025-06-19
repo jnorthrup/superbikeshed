@@ -9,7 +9,7 @@ import borg.trikeshed.services.RequestFactoryService
  * Creates an HttpHandler dedicated to processing GWT RequestFactory RPC calls.
  * Uses our native RequestFactoryService implementation for processing.
  */
-fun createRequestFactoryHandler(service: RequestFactoryService = RequestFactoryService.create()): HttpHandler {
+fun createRequestFactoryHandler(service: RequestFactoryService): HttpHandler {
     return { request ->
         // The request body is already fully read by the connection handler.
         val payload = request.body
