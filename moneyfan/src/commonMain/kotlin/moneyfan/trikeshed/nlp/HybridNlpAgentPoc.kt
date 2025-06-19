@@ -46,7 +46,7 @@ internal object PocSemanticScorer {
             return itemsAsStrings.a j { 0.0 } // Default score of 0.0 if no usable query keywords
         }
 
-        return itemsAsStrings.a j { index ->
+        return itemsAsStrings.a j { index:Int ->
             val itemText = itemsAsStrings.b(index).lowercase()
             var matchCount = 0.0
             for (keyword in queryKeywords) {

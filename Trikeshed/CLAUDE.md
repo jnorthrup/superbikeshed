@@ -1,136 +1,255 @@
-# CLAUDE.md
+# TrikeShed Modular Architecture - Updated Implementation Status
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## New Modular Architecture (Post-Refactoring)
 
-## Build and Development Commands
+The codebase has been refactored into a clean, layered architecture to resolve the "Big Ball of Mud" anti-pattern:
 
-**Core Build Commands:**
-```bash
-# Build with native access flags (required for NIO operations)
-./gradlew build --console=plain --no-daemon
-
-# JVM compilation only
-./gradlew compileKotlinJvm --console=plain --no-daemon
-
-# Run tests
-./gradlew test --console=plain --no-daemon
-
-# Clean build
-./gradlew clean build --console=plain --no-daemon
+```
+superbikeshed/
+├── trikeshed-kernel/           # 🏗️  FOUNDATIONAL LAYER (Zero Dependencies)
+│   ├── src/commonMain/kotlin/borg/trikeshed/
+│   │   ├── lib/                # Core data structures
+│   │   │   ├── series/         # Series.kt - Canonical Series type
+│   │   │   └── join/           # Join.kt - Canonical Join type
+│   │   ├── num/                # Core numeric types
+│   │   │   ├── BigInt.kt       # BigInt implementation
+│   │   │   └── BigDecimal.kt   # BigDecimal implementation
+│   │   ├── parse/              # Parsing utilities
+│   │   │   ├── json/           # JsonParser.kt
+│   │   │   └── csv/            # CSVUtil.kt
+│   │   ├── isam/               # Storage formats
+│   │   │   └── meta/           # IOMemento.kt, TypeEvidence.kt
+│   │   ├── tilting/            # Compression utilities
+│   │   │   └── zran/           # kzran.kt
+│   │   ├── common/             # Common utilities
+│   │   │   └── collections/    # s_.kt, BinarySearch.kt
+│   │   └── cursor/             # Cursor abstractions
+│   └── build.gradle.kts        # Zero internal Trikeshed deps
+│
+├── Trikeshed/                  # 🚀 APPLICATION LAYER (Depends on kernel)
+│   ├── src/commonMain/kotlin/borg/trikeshed/
+│   │   ├── reactor/            # Concurrent components
+│   │   ├── net/                # Network abstractions
+│   │   ├── services/           # Application services
+│   │   ├── acapulco/           # High-level orchestrators
+│   │   ├── io/                 # I/O abstractions
+│   │   ├── nio/                # NIO utilities
+│   │   ├── git/                # Git integration
+│   │   ├── storage/            # Storage management
+│   │   ├── rl/                 # Reinforcement learning
+│   │   ├── qol/                # Quality of life utilities
+│   │   ├── taxonomy/           # Classification systems
+│   │   ├── reflection/         # Reflection utilities
+│   │   └── [shared components] # parse/, num/, isam/, tilting/, common/
+│   └── build.gradle.kts        # Depends on :trikeshed-kernel
+│
+├── nexus/                      # 🤖 AGENTIC INTEGRATION
+├── k2script/                   # 📜 SCRIPTING FRAMEWORK
+├── ta4k/                       # 📊 TECHNICAL ANALYSIS
+├── moneyfan/                   # 💰 TRADING BOT
+├── rtsgame/                    # 🎮 REAL-TIME STRATEGY GAME
+├── spacegraph/                 # 🌐 GRAPH DATABASE
+└── [other modules...]
 ```
 
-**CRITICAL: Always use `--console=plain --no-daemon` with Gradle commands**
+## Architecture Principles
 
-**Environment Setup:**
-- Export `JAVA_OPTS="--enable-native-access=ALL-UNNAMED"` for JVM native access
-- Use Java 21, Kotlin 2.1.21
-- Multiplatform targets: JVM, JS, WASM, Native (platform-specific)
+### 1. **trikeshed-kernel** (Foundation Layer)
+- **Rule:** Zero dependencies on any other Trikeshed module
+- **Contents:** Canonical data types, core algorithms, parsing utilities
+- **Dependencies:** Only Kotlin stdlib and minimal external libraries (kotlinx-datetime)
+- **Purpose:** Provides the foundational building blocks for all higher-level components
 
-## Architecture Overview
+### 2. **Trikeshed** (Application Layer)
+- **Rule:** One-way dependency on trikeshed-kernel
+- **Contents:** Concurrent components, application logic, high-level orchestrators
+- **Dependencies:** trikeshed-kernel + external libraries
+- **Purpose:** Implements the application-specific functionality using kernel primitives
 
-**TrikeShed Core Type System:**
-TrikeShed is built around a custom type system with three fundamental abstractions:
+## Implementation Status by Component
 
-1. **Join<A,B>** - The only composition operator (`a j b`)
-2. **Series<T>** - Defined as `Join<Int, (Int) -> T>` for tensor-first processing
-3. **@JvmInline value class** - Zero-cost domain modeling
+### ✅ **trikeshed-kernel** (Foundation Layer)
+- [x] **Core Data Structures**
+  - [x] Series.kt - Canonical Series type implementation
+  - [x] Join.kt - Canonical Join type implementation
+  - [x] BinarySearch.kt - Search algorithms
+  - [x] s_.kt - Utility functions
 
-**Core Pattern Examples:**
-```kotlin
-// Composition with j operator
-val pair = "name" j "value"  // Join<String, String>
+- [x] **Numeric Types**
+  - [x] BigInt.kt - Arbitrary precision integers
+  - [x] BigDecimal.kt - Arbitrary precision decimals
+  - [x] RoundingMode.kt - Rounding mode implementations
 
-// Series operations
-val series = 10 j { i -> i * 2 }  // Series<Int>
-val transformed = series.α { it + 1 }  // Transform with α
+- [x] **Parsing Utilities**
+  - [x] JsonParser.kt - JSON parsing (core implementation)
+  - [x] CSVUtil.kt - CSV parsing utilities
 
-// Materialization for standard operations
-val list = series.play.toList()  // Convert to List when needed
-```
+- [x] **Storage Formats**
+  - [x] IOMemento.kt - Storage format definitions
+  - [x] TypeEvidence.kt - Type system components
 
-**Lightning SIMD JSON:**
-- Uses `JsonBitmapSimd` with expect/actual multiplatform structure
-- `JsonTensorFactory` provides Series<T> integration
-- Replace broken JSON imports with `LightningJson` implementation
+- [x] **Compression**
+  - [x] kzran.kt - Zran compression utilities
 
-**Package Structure:**
-- `borg.trikeshed.lib.*` - Core types (Join, Series, bridge patterns)
-- `borg.trikeshed.net.*` - Network protocols (HTTP, QUIC)
-- `borg.trikeshed.parse.*` - Parsing (Lightning JSON)
-- `borg.trikeshed.reactor.*` - Async I/O reactor pattern
-- `borg.trikeshed.isam.*` - Storage systems
+- [x] **Platform Support**
+  - [x] JVM implementations (BigInt.jvm.kt, BigDecimal.jvm.kt)
+  - [x] JS implementations (BigInt.js.kt, BigDecimal.js.kt)
+  - [x] WASM support configured
+  - [x] Native platform detection
 
-## Critical Development Rules
+### 🔄 **Trikeshed** (Application Layer)
+- [x] **Concurrent Components**
+  - [x] reactor/ - Reactor pattern implementation
+  - [x] net/ - Network abstractions and protocols
 
-**Type System Enforcement:**
-- **NEVER use** `List<T>` or `MutableList<T>` - use `Series<T>`
-- **NEVER use** `Pair<A,B>` - use `Join<A,B>` with `j` operator
-- **ALWAYS use** `@JvmInline value class` for wrappers
-- **ALWAYS use** `series.α { transform }` for transformations
-- **ALWAYS use** `series.play` before standard collection operations
+- [x] **Application Services**
+  - [x] services/ - Service layer implementations
+  - [x] acapulco/ - High-level application orchestrators
 
-**Version Management:**
-- **NEVER change versions** to fix build/code bugs
-- Fix code to work with specified versions: Kotlin 2.1.21, Java 21
-- Only kotlinx dependencies: coroutines-core:1.10.2, datetime:0.6.2, collections-immutable:0.4.0, atomicfu:0.27.0
+- [x] **I/O and Storage**
+  - [x] io/ - I/O abstractions
+  - [x] nio/ - NIO utilities
+  - [x] storage/ - Storage management
 
-**Bridge Pattern for Missing Symbols:**
-When encountering unresolved references, add them to bridge files:
-- Common interfaces/types in `src/commonMain/kotlin/borg/trikeshed/lib/bridge/`
-- Platform-specific implementations in corresponding `actual` files
-- Use `@JvmInline value class` for type safety
+- [x] **Specialized Components**
+  - [x] git/ - Git integration
+  - [x] rl/ - Reinforcement learning
+  - [x] qol/ - Quality of life utilities
+  - [x] taxonomy/ - Classification systems
+  - [x] reflection/ - Reflection utilities
 
-**Multiplatform expect/actual Pattern:**
-```kotlin
-// commonMain
-expect object PlatformType {
-    fun operation(): Result
-}
+- [ ] **Remaining Refactoring**
+  - [ ] Move remaining foundational components from Trikeshed to kernel
+  - [ ] Remove duplicate implementations across modules
+  - [ ] Update all imports to use kernel types
+  - [ ] Ensure clean dependency boundaries
 
-// jvmMain  
-actual object PlatformType {
-    actual fun operation(): Result = /* JVM implementation */
-}
-```
+### 🚧 **Integration Modules**
+- [x] **nexus/** - Agentic integration framework
+- [x] **k2script/** - Scripting framework
+- [x] **ta4k/** - Technical analysis toolkit
+- [x] **moneyfan/** - Trading bot implementation
+- [x] **rtsgame/** - Real-time strategy game
+- [x] **spacegraph/** - Graph database implementation
 
-## Development Integrity
+## Build System Enforcement
 
-**Real Implementation Mandate:**
-- TrikeShed contains production-quality infrastructure (QUIC, HTTP, Kademlia DHT, ISAM storage)
-- Honor existing working implementations - add TODO() stubs for missing features only
-- Build upon existing systems without modification
-- Performance-optimized with zero-cost abstractions
+### ✅ **Gradle Configuration**
+- [x] `settings.gradle.kts` - Includes both modules
+- [x] `trikeshed-kernel/build.gradle.kts` - Zero internal dependencies
+- [x] `Trikeshed/build.gradle.kts` - Depends on trikeshed-kernel
+- [x] Platform-specific source sets configured
+- [x] WASM target support added
 
-**Coding Style:**
-- Concise, golf-style expressions preferred
-- Type lambdas explicitly in Series operations
-- Use `null` as elvis conditional for early returns
-- Prefer 1-liners without braces
-- Import packages with star (`import borg.trikeshed.lib.*`)
+### 🔄 **Dependency Management**
+- [x] Clean one-way dependency enforced
+- [x] Kernel has minimal external dependencies
+- [x] Application layer can depend on kernel
+- [ ] Remove any remaining circular dependencies
 
-**Error Resolution Strategy:**
-1. **Inline class violations** - Use single parameter or convert to `data class`
-2. **Missing symbols** - Add to bridge with proper expect/actual structure  
-3. **Type mismatches** - Use conversion functions (`toByteArray()`, `toBytesSeries()`)
-4. **JSON issues** - Replace with Lightning SIMD JSON implementation
+## Next Steps for Complete Modularization
 
-## Project Context
+### Phase 1: Clean Up Remaining Issues
+1. **Fix Build Errors**
+   - [ ] Resolve any remaining unresolved references
+   - [ ] Fix syntax errors in moved files
+   - [ ] Ensure all imports are correct
 
-**Gradle Project Structure:**
-- Top-level `superbikeshed` builds all subprojects
-- Each subproject uses only `kotlin("multiplatform")` plugin
-- Platform detection for native targets based on host OS/architecture
-- No Spotless (not multiplatform compatible)
+2. **Complete Component Migration**
+   - [ ] Move any remaining foundational components to kernel
+   - [ ] Remove duplicate implementations
+   - [ ] Update all references to use kernel types
 
-**Related Projects:**
-- `ta4k/` - Trading analytics moved from TrikeShed core
-- `nexus/` - AI/taxonomy features moved from TrikeShed core  
-- `brokeshed/` - Alien types and external integrations
-- `moneyfan/` - Financial data processing
+### Phase 2: Validation and Testing
+1. **Architecture Validation**
+   - [ ] Verify no circular dependencies exist
+   - [ ] Confirm kernel has zero internal dependencies
+   - [ ] Test that application layer can access all kernel types
 
-**Key Dependencies:**
-- No Kotlin serialization libraries (use TrikeShed native JSON)
-- Minimal external dependencies except for critical development anchors
-- Coroutines, datetime, and collections-immutable from kotlinx
+2. **Build System Testing**
+   - [ ] Test clean builds on all platforms
+   - [ ] Verify WASM compilation works
+   - [ ] Test dependency resolution
 
-This architecture prioritizes performance, type safety, and clean separation of concerns while maintaining production-grade reliability.
+### Phase 3: Documentation and Cleanup
+1. **Update Documentation**
+   - [ ] Update API documentation to reflect new structure
+   - [ ] Create migration guides for existing code
+   - [ ] Document the new architecture principles
+
+2. **Code Cleanup**
+   - [ ] Remove any BROKEN/ files once issues are resolved
+   - [ ] Clean up any temporary files
+   - [ ] Update any hardcoded paths or references
+
+## Benefits of New Architecture
+
+1. **Clean Dependencies**: No more circular dependencies or "Big Ball of Mud"
+2. **Testability**: Kernel can be tested independently
+3. **Reusability**: Kernel can be used by other projects
+4. **Maintainability**: Clear separation of concerns
+5. **Build Performance**: Parallel compilation of independent modules
+6. **Type Safety**: Canonical types prevent conflicts
+
+## Legacy Components (Pre-Refactoring)
+
+The following components existed before the modularization and may need updates:
+
+### HTTP/1.1 Implementation
+- Found in `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/net/http/client/HttpClientConnection.kt`
+- Basic HTTP/1.1 client connection handler
+- Supports request serialization and response parsing
+- Has error handling and connection management
+- Uses NIO for socket operations
+
+### HTTP/2 Implementation
+- Found in `quic_http3_server/http2_protocol.py`
+- Basic HTTP/2 server implementation
+- Supports TLS
+- Has basic request handling
+
+### HTTP/3 (QUIC) Implementation
+- Found in `quic_http3_server/` directory
+- Has server implementation with TLS support
+- Includes testing capabilities
+- Has WebTransport support
+
+### Download Management
+- Found in `ta4k/bin/fetchtrades.sh`
+- Uses aria2c for downloads
+- Supports concurrent downloads
+- Has basic error handling
+
+### Testing Capabilities
+- Found in `quic_http3_server/abusive_tests/`
+- Has performance testing
+- Includes protocol testing
+- Supports concurrent session testing
+
+## Implementation Priorities (Updated)
+
+1. **Phase 1 (Current - Modularization)**
+   - [x] Create trikeshed-kernel module
+   - [x] Move foundational components
+   - [x] Set up clean dependency structure
+   - [ ] Complete migration and fix build issues
+
+2. **Phase 2 (Next - Integration)**
+   - [ ] Update all modules to use kernel types
+   - [ ] Implement missing foundational components
+   - [ ] Add comprehensive testing
+   - [ ] Performance optimization
+
+3. **Phase 3 (Advanced Features)**
+   - [ ] Advanced protocol support
+   - [ ] Enhanced security features
+   - [ ] Comprehensive monitoring
+   - [ ] Complete documentation
+
+4. **Phase 4 (Ecosystem)**
+   - [ ] Plugin system
+   - [ ] Custom protocol support
+   - [ ] Advanced integrations
+   - [ ] Performance optimizations
+
+The new modular architecture provides a solid foundation for future development while maintaining backward compatibility and improving code organization.

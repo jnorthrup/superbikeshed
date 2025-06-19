@@ -43,7 +43,7 @@ infix fun <T> Int.j(getter: (index: Int) -> T): Series<T> {
  * @return A new Series containing the transformed elements.
  */
 inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> {
-    return this.a j { index -> xform(this.b(index)) }
+    return this.a j { index:Int -> xform(this.b(index)) }
 }
 
 /**
@@ -63,10 +63,10 @@ val <T> Series<T>.`play`: IterableSeries<T> get() = IterableSeries(this)
 
 // --- Basic .toSeries() extensions ---
 /** Converts a List to a Series. */
-fun <T> List<T>.toSeries(): Series<T> = size j { index -> this[index] }
+fun <T> List<T>.toSeries(): Series<T> = size j { index:Int -> this[index] }
 
 /** Converts an Array to a Series. */
-fun <T> Array<T>.toSeries(): Series<T> = size j { index -> this[index] }
+fun <T> Array<T>.toSeries(): Series<T> = size j { index:Int -> this[index] }
 
 // --- Empty Series ---
 /** Represents an empty series. */
@@ -110,7 +110,7 @@ inline fun <T> Series<T>.forEach(action: (T) -> Unit) {
  * to each element in the original series. This is a simplified map, equivalent to `α`.
  */
 inline fun <T, R> Series<T>.map(crossinline transform: (T) -> R): Series<R> {
-    return this.a j { index -> transform(this.b(index)) }
+    return this.a j { index:Int -> transform(this.b(index)) }
 }
 
 /** Returns the first element. @throws NoSuchElementException if the series is empty. */
@@ -136,7 +136,7 @@ fun <T> Series<T>.take(n: Int): Series<T> {
     require(n >= 0) { "Requested element count $n is less than zero." }
     if (n == 0) return emptySeries()
     val newSize = kotlin.math.min(n, this.a)
-    return newSize j { index -> this.b(index) }
+    return newSize j { index:Int -> this.b(index) }
 }
 
 /** Returns a series containing all elements except first [n] elements. */
@@ -145,13 +145,13 @@ fun <T> Series<T>.drop(n: Int): Series<T> {
     if (n == 0) return this
     if (n >= this.a) return emptySeries()
     val newSize = this.a - n
-    return newSize j { index -> this.b(index + n) }
+    return newSize j { index:Int -> this.b(index + n) }
 }
 
 /** Returns a series with elements in reversed order. */
 fun <T> Series<T>.reversed(): Series<T> {
     if (isEmpty()) return this
-    return this.a j { index -> this.b(this.a - 1 - index) }
+    return this.a j { index:Int -> this.b(this.a - 1 - index) }
 }
 
 /**

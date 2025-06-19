@@ -114,7 +114,7 @@ class WasmCouchClient(
         ).send()
         return handleResponse(response) {
             val parsed = JsonImpl.parse(it) as? List<*> ?: emptyList<Map<String, Any?>>()
-            val responses = parsed.size j { idx ->
+            val responses = parsed.size j { idx:Int ->
                 val item = parsed[idx] as Map<String, Any?>
                 CouchResponse(
                     ok = item["ok"] as? Boolean ?: (item["error"] == null),

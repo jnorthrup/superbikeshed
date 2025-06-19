@@ -47,7 +47,7 @@ fun calculateRSI(prices: Series<Price>, period: Int): Series<Double> {
     // a. Calculate Price Deltas
     // The first delta is undefined (or 0). For simplicity, using Price(0.0).
     // Size of deltas series is prices.a
-    val deltas = prices.a j { i ->
+    val deltas = prices.a j { i:Int ->
         if (i == 0) {
             Price(0.0) // Or Price.UNDEFINED, but 0.0 simplifies gain/loss separation
         } else {
@@ -57,12 +57,12 @@ fun calculateRSI(prices: Series<Price>, period: Int): Series<Double> {
 
     // b. Separate Gains and Losses
     // Size of gains/losses series is prices.a
-    val gains = deltas.a j { i ->
+    val gains = deltas.a j { i:Int ->
         val deltaVal = deltas.b(i).value
         if (deltaVal > 0) Price(deltaVal) else Price(0.0)
     }
 
-    val losses = deltas.a j { i ->
+    val losses = deltas.a j { i:Int ->
         val deltaVal = deltas.b(i).value
         if (deltaVal < 0) Price(abs(deltaVal)) else Price(0.0) // Losses are positive values
     }
@@ -75,7 +75,7 @@ fun calculateRSI(prices: Series<Price>, period: Int): Series<Double> {
 
     // d. Calculate RS and RSI
     // Size of rsiSeries is prices.a
-    return prices.a j { index ->
+    return prices.a j { index:Int ->
         // avgGains/avgLosses have Price.UNDEFINED (which is Price(Double.NaN)) for the first `period-1` elements.
         // The delta calculation also means that the first meaningful gain/loss value is effectively at index 1 of the delta series.
         // So, the first `period-1` values of avgGains/avgLosses (corresponding to original price indices 0 to period-2) are UNDEFINED.

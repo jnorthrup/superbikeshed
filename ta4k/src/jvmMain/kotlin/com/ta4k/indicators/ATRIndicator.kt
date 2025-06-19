@@ -133,7 +133,7 @@ class ATRIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx -> // Use infix j
+            return klineSeries.size j { idx:Int -> // Use infix j
                 // getValue will ensure calculation and apply scaling for the specific index
                 this.getValue(idx)
             }
@@ -149,7 +149,7 @@ class ATRIndicator(
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            return klineSeries.size j { idx ->
+            return klineSeries.size j { idx:Int ->
                 this.getTrueRange(idx)
             }
         }

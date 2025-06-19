@@ -30,14 +30,23 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "superbikeshed"
-include("ta4k")
-include("Trikeshed")
-include("brokeshed")
-include("nexus")
-include("rtsgame")
-include("moneyfan")
-include("spacegraphjs:kotlin-spacegraph")
-include("ta4k-spacegraph-moneyfan-demo")
-//include(":boingDemo")
-include(":tools:intellij-project-enumerator")
+rootProject.name = "Trikeshed-Monorepo"
+
+include(":Trikeshed")
+include(":ta4k")
+include(":nexus")
+include(":rtsgame")
+include(":moneyfan")
+include(":spacegraph")
+include(":k2script")
+include(":flatton")
+// include(":boingDemo")  // Temporarily disabled due to configuration issues
+include(":ta4k-spacegraph-moneyfan-demo")
+include(":tools")
+include(":superbikeshed")
+include(":museum")
+include(":dgm")
+include(":tests")
+include(":todo")
+include(":gradle")
+include(":kotlin-js-store")

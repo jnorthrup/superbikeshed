@@ -32,7 +32,7 @@ fun calculateSMA(prices: Series<Price>, period: Int): Series<Price> {
     // The output series will have the same size as the input series.
     // For indices where SMA cannot be computed (less than `period - 1` data points available),
     // Price.UNDEFINED is used.
-    return prices.a j { index ->
+    return prices.a j { index:Int ->
         if (index < period - 1) {
             Price.UNDEFINED
         } else {

@@ -1,4 +1,4 @@
-package borg.trikeshed.io
+package borg.trikeshed.nio
 
 import org.khronos.webgl.Int8Array
 import org.khronos.webgl.get

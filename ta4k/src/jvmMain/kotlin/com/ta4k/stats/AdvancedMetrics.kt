@@ -469,8 +469,8 @@ class AdvancedMetrics {
             val benchmarkWindow = benchmark.`play`.drop(i).take(window).toList()
             
             result.add(greeks(
-                returnsWindow.size j { j -> returnsWindow[j] },
-                benchmarkWindow.size j { j -> benchmarkWindow[j] },
+                returnsWindow.size j { j:Int -> returnsWindow[j] },
+                benchmarkWindow.size j { j:Int -> benchmarkWindow[j] },
                 periods
             ))
         }
@@ -558,7 +558,7 @@ class AdvancedMetrics {
             result.add(if (compounded) monthlyReturn.subtract(BigDecimal.ONE) else monthlyReturn)
         }
         
-        return result.size j { i -> result[i] }
+        return result.size j { i:Int -> result[i] }
     }
 
     /**
@@ -795,7 +795,7 @@ class AdvancedMetrics {
             result.add(rank)
         }
         
-        return result.size j { i -> result[i] }
+        return result.size j { i:Int -> result[i] }
     }
 
     /**
@@ -813,7 +813,7 @@ class AdvancedMetrics {
             result.add(sum)
         }
         
-        return result.size j { i -> result[i] }
+        return result.size j { i:Int -> result[i] }
     }
 
     /**
@@ -831,7 +831,7 @@ class AdvancedMetrics {
             result.add(sum.subtract(BigDecimal.ONE))
         }
         
-        return result.size j { i -> result[i] }
+        return result.size j { i:Int -> result[i] }
     }
 
     /**
@@ -844,7 +844,7 @@ class AdvancedMetrics {
         val sorted: List<BigDecimal> = returnsList.sorted()
         val threshold: BigDecimal = sorted[(sorted.size * quantile.toDouble()).toInt()]
         
-        return returnsList.size j { i ->
+        return returnsList.size j { i:Int ->
             if (returnsList[i] > threshold) returnsList[i] else BigDecimal.ZERO
         }
     }
@@ -859,7 +859,7 @@ class AdvancedMetrics {
         val sorted: List<BigDecimal> = returnsList.sorted()
         val threshold: BigDecimal = sorted[(sorted.size * quantile.toDouble()).toInt()]
         
-        return returnsList.size j { i ->
+        return returnsList.size j { i:Int ->
             if (returnsList[i] <= threshold) returnsList[i] else threshold
         }
     }

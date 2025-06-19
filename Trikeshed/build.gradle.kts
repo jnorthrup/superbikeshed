@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    kotlin("multiplatform")
     `maven-publish`
 }
 
@@ -45,10 +45,12 @@ kotlin {
     }
 
     sourceSets {
-        commonMain.dependencies {
-            implementation(kotlin("stdlib-common"))
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+        val commonMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+            }
         }
         
         commonTest.dependencies {
