@@ -97,8 +97,6 @@ Gradle modifications are prohibited unless explicitly instructed or a critical r
 ```
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
     implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
@@ -303,3 +301,7 @@ typealias AttentionScore = Double                               // borg.trikeshe
 - **No unplanned version changes** - Preserve working configurations
 - **Import packages with star** in TrikeShed - Established convention
 - **TrikeShed serialization only** - Use JsonScanner, not external libraries
+
+## RUNTIME MEMORY
+
+- remove all kotlin serialization references as soon as you see one
