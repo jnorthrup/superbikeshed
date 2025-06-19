@@ -79,9 +79,8 @@ class HttpServer(
                         connectionHandler.handle()
                     }
                 }
-                // RelaxFactory enqueue pattern - store connection handler state
+                reactor.registerChannel(serverChannel, OP_ACCEPT)
                 return (OP_ACCEPT { 
-                    reactor.registerChannel(serverChannel, OP_ACCEPT, this)
                     null
                 } j (this as UnaryAsyncReaction)) as AsyncReaction?
             } 
