@@ -7,20 +7,21 @@ import org.junit.Test
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.net.DatagramPacket
-import kotlin.test.assertEquals
+import kotlin.test.assertContentEquals
 
 class QuicIntegrationTest {
     @Test
-    fun `quicd server and client can fetch token`() = runBlocking {
+    fun `quicd server and client can fetch binary token`() = runBlocking {
         val port = 45433
-        val token = "super-secret-token"
+        val token = byteArrayOf(0x01, 0x02, 0x03, 0x7F, 0x00, 0x10, 0x20, 0x30)
+        val requestBytes = byteArrayOf(0x42, 0x42, 0x42) // 'BBB' in ASCII
         val serverJob = launch {
             quicd {
                 listen on port
                 onStream { stream ->
-                    val request = stream.readAll().toArray().decodeToString()
-                    if (request == "GET TOKEN") {
-                        stream.write(s_(*token.encodeToByteArray().toTypedArray()))
+                    val request = stream.readAll().toArray()
+                    if (request.contentEquals(requestBytes)) {
+                        stream.write(s_(*token.toTypedArray()))
                     } else {
                         stream.write(s_(*"ERROR".encodeToByteArray().toTypedArray()))
                     }
@@ -33,20 +34,19 @@ class QuicIntegrationTest {
         val clientJob = async {
             val socket = DatagramSocket()
             val serverAddr = InetSocketAddress("127.0.0.1", port)
-            val requestBytes = "GET TOKEN".toByteArray()
             val requestPacket = DatagramPacket(requestBytes, requestBytes.size, serverAddr)
             socket.send(requestPacket)
 
             val responseBuffer = ByteArray(1024)
             val responsePacket = DatagramPacket(responseBuffer, responseBuffer.size)
             socket.receive(responsePacket)
-            val response = String(responsePacket.data, 0, responsePacket.length)
+            val response = responsePacket.data.copyOfRange(0, responsePacket.length)
             socket.close()
             response
         }
 
         val response = clientJob.await()
-        assertEquals(token, response)
+        assertContentEquals(token, response)
         serverJob.cancelAndJoin()
     }
 

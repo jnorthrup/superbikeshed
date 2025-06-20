@@ -9,6 +9,9 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.Reactor
 import borg.trikeshed.reactor.http.createRequestFactoryHandler
 import borg.trikeshed.services.*
+import borg.trikeshed.reactor.quic.QuicServer
+import borg.trikeshed.reactor.quic.QuicServerConfig
+import borg.trikeshed.reactor.quic.quicd
 
 fun main(args: Array<String>) {
     val executableName = getExecutableName(args)
@@ -45,6 +48,7 @@ fun parseCommand(executableName: String, args: Array<String>): String {
 fun routeCommand(command: String, args: Array<String>) {
     when (command) {
         "httpd" -> handleHttpdCommands(args)
+        "quicd" -> handleQuicdCommands(args)
         "help" -> showUsage()
         "version" -> showVersion()
         else -> TODO("Unknown command: $command - use 'trikeshed help' for usage")
@@ -89,6 +93,22 @@ fun startHttpServer(version: String, args: Array<String>) {
     }
 }
 
+fun handleQuicdCommands(args: Array<String>) {
+    val port = args.find { it.startsWith("--port=") }?.substringAfter("=")?.toIntOrNull() ?: 4433
+    
+    runBlocking {
+        quicd {
+            listen on port
+            onStream { stream ->
+                // Echo server logic
+                val data = stream.readAll()
+                stream.write(data)
+                stream.close()
+            }
+        }
+    }
+}
+
 private fun createDealService(): DealService = object : DealService {
     private val deals = mutableMapOf<String, DealProxy>()
     private val vendors = listOf(
@@ -120,6 +140,7 @@ private fun createDealService(): DealService = object : DealService {
 
 fun showUsage() {
     println("USAGE: trikeshed httpd [--port=8080] [--root=.]")
+    println("       trikeshed quicd [--port=4433]")
 }
 
 fun showVersion() {
