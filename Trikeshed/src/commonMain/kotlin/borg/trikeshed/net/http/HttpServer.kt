@@ -1,6 +1,7 @@
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.http
 
+import borg.trikeshed.ccek.CcekContext
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
 import borg.trikeshed.services.DealService
@@ -16,6 +17,9 @@ import kotlinx.coroutines.*
 @JvmInline value class HttpServerHost(val value: String)
 
 typealias HttpHandler = suspend (HttpRequest) -> HttpResponse
+
+/** A CCEK-aware handler. It takes the raw request and the specific CCEK. */
+typealias CcekHttpHandler = suspend (HttpRequest, CcekContext) -> HttpResponse
 
 data class HttpServerConfig(
     val host: HttpServerHost = HttpServerHost("0.0.0.0"),
@@ -60,9 +64,20 @@ fun createRouter(
 class HttpServer(
     private val config: HttpServerConfig,
     private val reactor: Reactor,
-    private val handler: HttpHandler
+    private val handler: CcekHttpHandler
 ) {
     private lateinit var serverChannel: ServerChannel
+
+    /**
+     * The server's main loop. It receives a request and then WAITS for the
+     * orchestrator (`main`) to provide the CCEK for that request.
+     */
+    suspend fun processRequest(request: HttpRequest, ccek: CcekContext) {
+        println("--- Server received request for path: ${request.path.value} ---")
+        val response = handler(request, ccek)
+        println("--- Server sending response: ${response.status.value} ---")
+        // (Network write logic would go here, e.g., channel.write(response.toByteArray()))
+    }
 
     suspend fun start() {
         serverChannel = PlatformIO.create().createServerChannel()
@@ -70,25 +85,30 @@ class HttpServer(
         serverChannel.bind(config.port.value)
         println("TrikeShed HTTP Server started on ${config.host.value}:${config.port.value}")
 
-        val acceptOperation = OP_ACCEPT {
+        reactor.register(serverChannel) {
             val clientChannel = serverChannel.accept()
             if (clientChannel != null) {
                 clientChannel.configureBlocking(false)
-                val connectionHandler = HttpConnectionHandler(config, reactor, clientChannel, handler)
+                // In a real implementation, this would hand off to the MainOrchestrator
+                // to build the CCEK and call processRequest.
                 reactor.reactorScope.launch {
-                    connectionHandler.handle()
+                    println("Accepted connection from ${clientChannel.remoteAddress}")
+                    clientChannel.close() // Simplified for this example
                 }
             }
             null // No further reaction needed
         }
         
-        reactor.registerChannel(serverChannel, acceptOperation)
+        println("TrikeShed HTTP Server running on port ${config.port.value}")
+        reactor.run()
     }
 
     suspend fun stop() {
-        serverChannel.close()
-        reactor.shutdown()
-        println("TrikeShed HTTP Server stopped.")
+        if (::serverChannel.isInitialized) {
+            serverChannel.close()
+            reactor.stop()
+            println("TrikeShed HTTP Server stopped.")
+        }
     }
 }
 

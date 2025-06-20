@@ -1,9 +1,34 @@
 package borg.trikeshed.ccek
 
+import borg.trikeshed.lib.Series
+
 /**
- * CCEK (Continuation-passing style with Control, Context, Environment, and Knowledge)
- * A modern approach to handling data transformations and use case requirements
+ * CCEK (Control, Context, Environment, Knowledge)
+ * The "Radian of Attention" that carries specificity and intent from the
+ * orchestrator (`main`) to the execution handler. It IS the DSL.
  */
+data class CcekContext(
+    val control: Control,
+    val context: Context,
+    val environment: Environment,
+    val knowledge: Knowledge
+)
+
+data class Control(val executionId: String)
+data class Context(val sourceIp: String, val securityToken: String?)
+
+// The Environment carries the specific "payload" and action.
+// The handler receives this and knows exactly what to do.
+data class Environment(
+    val action: String,
+    val payload: Any // This could be a Cursor, a Series, or any other TrikeShed type
+)
+
+// The Knowledge contains the rules for this specific operation.
+data class Knowledge(
+    val rules: Series<(Any) -> Any>, // A series of transformation functions
+    val validator: (Any) -> Boolean
+)
 
 // === CORE CCEK TYPES ===
 
