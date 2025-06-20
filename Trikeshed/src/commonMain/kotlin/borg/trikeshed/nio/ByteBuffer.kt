@@ -1,6 +1,6 @@
 package borg.trikeshed.nio
 
-expect interface ByteBuffer {
+expect class ByteBuffer { // Changed from interface to class
     fun clear()
     fun flip()
     fun hasRemaining(): Boolean
