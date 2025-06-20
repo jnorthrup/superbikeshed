@@ -48,6 +48,14 @@ kotlin {
             }
         }
         
+        val posixMain by creating {
+            dependsOn(commonMain)
+        }
+
+        targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().all {
+            compilations["main"].defaultSourceSet.dependsOn(posixMain)
+        }
+        
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation("org.jetbrains.kotlin:kotlin-test-common")

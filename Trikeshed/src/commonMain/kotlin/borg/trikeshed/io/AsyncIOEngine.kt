@@ -20,12 +20,12 @@ expect class AsyncIOEngine {
     /**
      * Submit a read operation
      */
-    suspend fun read(fd: Int, buffer: ByteArray, offset: Long = 0): Int
+    suspend fun read(handle: IOHandle, buffer: ByteArray, offset: Long = 0): Int
     
     /**
      * Submit a write operation
      */
-    suspend fun write(fd: Int, data: ByteArray, offset: Long = 0): Int
+    suspend fun write(handle: IOHandle, data: ByteArray, offset: Long = 0): Int
     
     /**
      * Submit multiple operations and wait for completion
@@ -37,7 +37,7 @@ expect class AsyncIOEngine {
      */
     fun completedOperations(): Flow<IOResult>
     
-    companion object {
+    expect companion object {
         fun create(): AsyncIOEngine
     }
 }
@@ -48,7 +48,7 @@ expect class AsyncIOEngine {
 data class IOOperation(
     val id: Long,
     val type: IOType,
-    val fd: Int,
+    val handle: IOHandle,
     val buffer: ByteArray,
     val offset: Long = 0
 ) {
@@ -64,7 +64,7 @@ data class IOOperation(
         
         if (id != other.id) return false
         if (type != other.type) return false
-        if (fd != other.fd) return false
+        if (handle != other.handle) return false
         if (!buffer.contentEquals(other.buffer)) return false
         if (offset != other.offset) return false
         
@@ -74,7 +74,7 @@ data class IOOperation(
     override fun hashCode(): Int {
         var result = id.hashCode()
         result = 31 * result + type.hashCode()
-        result = 31 * result + fd
+        result = 31 * result + handle.hashCode()
         result = 31 * result + buffer.contentHashCode()
         result = 31 * result + offset.hashCode()
         return result
