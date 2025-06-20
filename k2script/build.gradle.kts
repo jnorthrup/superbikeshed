@@ -1,233 +1,85 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.ComponentsXmlResourceTransformer
 import java.util.Locale // Added for toLowerCase
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
-
-val kotlinVersion: String = "2.1.21"
 
 plugins {
     kotlin("jvm")
     application
     `maven-publish`
     signing
-    idea
 }
+
+group = "io.github.kscripting"
+version = "2.1.21"
 
 repositories {
     mavenCentral()
-    mavenLocal()
+}
 
-    maven {
-        url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
+application {
+    mainClass.set("k2script.K2scriptKt")
+}
+
+val kotlinVersion = "2.1.21"
+
+val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
+    from("src/main/resources") {
+        into(".")
     }
-}
-
-
-group = "io.github.kscripting"
-version = "4.2.3"
-
-buildConfig {
-    packageName(project.group.toString() + "." + project.name)
-    useKotlinOutput()
-
-    val dateTime = ZonedDateTime.now(ZoneOffset.UTC)
-
-    buildConfigField("String", "APP_NAME", "\"${project.name}\"")
-    buildConfigField("String", "APP_VERSION", provider { "\"${project.version}\"" })
-    buildConfigField(
-        "java.time.ZonedDateTime",
-        "APP_BUILD_TIME",
-        provider { "java.time.ZonedDateTime.parse(\"$dateTime\")" })
-    buildConfigField("String", "KOTLIN_VERSION", provider { "\"${kotlinVersion}\"" })
-}
-
-sourceSets {
-    create("integration") {
-        kotlin.srcDir("$projectDir/src/integration/kotlin")
-        resources.srcDir("$projectDir/src/integration/resources")
-
-        compileClasspath += main.get().output + test.get().output
-        runtimeClasspath += main.get().output + test.get().output
+    from("src/main/kotlin") {
+        into(".")
     }
-}
-
-configurations.all {
-    resolutionStrategy.cacheDynamicVersionsFor(0, "seconds")
-    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
-}
-
-configurations {
-    get("integrationImplementation").extendsFrom(get("testImplementation"))
-    get("integrationRuntimeOnly").extendsFrom(get("testRuntimeOnly"))
-}
-
-idea {
-    module {
-        testSources.from(sourceSets["integration"].kotlin.srcDirs)
-    }
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-
-    withJavadocJar()
-    withSourcesJar()
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { // Changed .all to .configureEach as per modern practice
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
-    }
-}
-
-tasks.create<Test>("integrationTest") {
-    val itags = System.getProperty("includeTags") ?: ""
-    val etags = System.getProperty("excludeTags") ?: ""
-
-    useJUnitPlatform {
-        if (itags.isNotBlank()) {
-            includeTags(itags)
-        }
-
-        if (etags.isNotBlank()) {
-            excludeTags(etags)
-        }
-    }
-
-    systemProperty("osType", System.getProperty("osType"))
-    systemProperty("projectPath", projectDir.absolutePath)
-    systemProperty("shellPath", System.getProperty("shellPath"))
-
-    description = "Runs the integration tests."
-    group = "verification"
-    testClassesDirs = sourceSets["integration"].output.classesDirs
-    classpath = sourceSets["integration"].runtimeClasspath
-    outputs.upToDateWhen { false }
-    //mustRunAfter(tasks["test"])
-    //dependsOn(tasks["assemble"], tasks["test"])
-
-    doLast {
-        println("Include tags: $itags")
-        println("Exclude tags: $etags")
-    }
-}
-
-tasks.create<Task>("printIntegrationClasspath") {
-    doLast {
-        println(sourceSets["integration"].runtimeClasspath.asPath)
-    }
-}
-
-testlogger {
-    showStandardStreams = true
-    showFullStackTraces = false
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-val copyJarToWrappers by tasks.register<Copy>("copyJarToWrappers") {
-    dependsOn(tasks.shadowJar)
-    from(tasks.shadowJar.get().archiveFile)
-    into(project.projectDir.resolve("wrappers"))
-}
-
-
-val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
-    dependsOn(copyJarToWrappers)
-
-    into(layout.buildDirectory.dir("k2script"))
-
-
-    from("src/k2script") { // k2script shell script
+    from("src/main/kotlin") {
         into("bin")
     }
-
-    from("src/k2script.bat") { // k2script batch script
-        into("bin")
-    }
-
-    from("wrappers") { // Python and Nodejs wrappers + k2script.jar
-
-    into(layout.buildDirectory.dir("kscript"))
-
-    from(tasks.shadowJar.get().archiveFile) { // kscript.jar from shadowJar output
-        into("bin")
-    }
-
-    from("src/kscript") { // kscript shell script
-        into("bin")
-    }
-
-    from("src/kscript.bat") { // kscript batch script
-        into("bin")
-    }
-
-    from("wrappers") { // Python and Nodejs wrappers + kscript.jar
+    from("wrappers") {
         into("wrappers")
     }
-
-    from("setup.py") // Python packaging script
-    from("package.json") // Nodejs packaging manifest
+    from("setup.py")
+    from("package.json")
+    destinationDir = layout.buildDirectory.dir("kscript").get().asFile
 }
 
+val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
+    from("src/main/resources") {
+        into(".")
+    }
+    from("src/main/kotlin") {
+        into(".")
+    }
+    from("src/main/kotlin") {
+        into("bin")
+    }
+    from("wrappers") {
+        into("wrappers")
+    }
+    from("setup.py")
+    from("package.json")
+    destinationDir = layout.buildDirectory.dir("k2script").get().asFile
+}
 
 val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribution") {
     dependsOn(createK2scriptLayout)
-
     from(layout.buildDirectory.dir("k2script")) {
         into("k2script-${project.version}")
     }
-
     archiveFileName.set("k2script-${project.version}-bin.zip")
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-
-    from(layout.buildDirectory.dir("k2script-${project.version}"))
 }
 
-val shadowJar by tasks.getting(ShadowJar::class) {
-    // set empty string to classifier and version to get predictable jar file name: build/libs/k2script.jar
-    archiveFileName.set("k2script.jar")
-
-    dependsOn(createKscriptLayout)
-
-    from(layout.buildDirectory.dir("kscript")) {
-        into("kscript-${project.version}")
-    }
-
-    archiveFileName.set("kscript-${project.version}-bin.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-
-    from(layout.buildDirectory.dir("kscript-${project.version}"))
-}
-
-val shadowJar by tasks.getting(ShadowJar::class) {
-    // set empty string to classifier and version to get predictable jar file name: build/libs/kscript.jar
-    archiveFileName.set("kscript.jar")
-    transform(ComponentsXmlResourceTransformer())
-}
-
-
-    mainClass.set("k2script.K2scriptKt")
-
-}
+// TODO: Shadow/fat jar logic removed for Maven-centric build. Restore if needed for standalone distribution.
 
 fun adjustVersion(archiveVersion: String): String {
-    var newVersion = archiveVersion.lowercase(Locale.ROOT) // Changed to lowercase(Locale.ROOT)
-
+    var newVersion = archiveVersion.lowercase(Locale.ROOT)
     val temporaryVersion = newVersion.substringBeforeLast(".")
-
+    
     if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
         temporaryVersion.endsWith("-SNAPSHOT", true)
     ) {
         newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"
     }
-
+    
     return newVersion
 }
 
@@ -235,33 +87,15 @@ val jar: Jar by tasks.getting(Jar::class) {
     archiveVersion.set(adjustVersion(archiveVersion.get()))
 }
 
-val sourcesJar: Jar by tasks.getting(Jar::class) {
-    archiveVersion.set(adjustVersion(archiveVersion.get()))
-}
-
-val javadocJar: Jar by tasks.getting(Jar::class) {
-    archiveVersion.set(adjustVersion(archiveVersion.get()))
-}
-
-val shadowDistTar: Task by tasks.getting {
+// Disable distribution tasks that are not needed for Maven-centric build
+tasks.withType<Tar> {
     enabled = false
 }
 
-val shadowDistZip: Task by tasks.getting {
-    enabled = false
-}
-
-val distTar: Task by tasks.getting {
-    enabled = false
-}
-
-val distZip: Task by tasks.getting {
-    enabled = false
-}
-
-
-    dependsOn(packageK2scriptDistribution)
-
+tasks.withType<Zip> {
+    if (name != "packageK2scriptDistribution") {
+        enabled = false
+    }
 }
 
 val test: Task by tasks.getting {
@@ -274,16 +108,14 @@ publishing {
             groupId = project.group.toString()
             artifactId = project.name
             version = adjustVersion(project.version.toString())
-
+            
             artifact(jar)
-            artifact(javadocJar)
-            artifact(sourcesJar)
-
+            
             pom {
                 name.set("kscript")
                 description.set("KScript - easy scripting with Kotlin")
                 url.set("https://github.com/kscripting/kscript")
-
+                
                 licenses {
                     license {
                         name.set("MIT License")
@@ -296,7 +128,6 @@ publishing {
                         name.set("Holger Brandl")
                         email.set("holgerbrandl@gmail.com")
                     }
-
                     developer {
                         id.set("aartiPl")
                         name.set("Marcin Kuszczak")
@@ -311,14 +142,14 @@ publishing {
             }
         }
     }
-
+    
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             val adjustedVersion = adjustVersion(project.version.toString())
             url = uri(if (adjustedVersion.endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-
+            
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
@@ -333,34 +164,45 @@ signing {
 
 dependencies {
     implementation("commons-cli:commons-cli:1.5.0")
-
+    
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0") // Updated for Kotlin 2.0.0
-
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    
     implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven-all:$kotlinVersion")
     implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
-
+    
     implementation("org.apache.commons:commons-lang3:3.12.0")
     implementation("commons-io:commons-io:2.11.0")
     implementation("commons-codec:commons-codec:1.15")
     implementation("com.konghq:unirest-java:3.14.2")
-
+    
     implementation("net.igsoft:tablevis:0.6.0")
     implementation("io.github.kscripting:shell:0.5.2")
-
+    
     implementation("org.slf4j:slf4j-nop:2.0.7")
-
+    
     implementation("org.semver4j:semver4j:4.3.0")
-
+    
+    // Maven Resolver (Aether) for dependency resolution
+    implementation("org.apache.maven.resolver:maven-resolver-impl:1.9.18")
+    implementation("org.apache.maven.resolver:maven-resolver-api:1.9.18")
+    implementation("org.apache.maven.resolver:maven-resolver-spi:1.9.18")
+    implementation("org.apache.maven.resolver:maven-resolver-util:1.9.18")
+    implementation("org.apache.maven.resolver:maven-resolver-connector-basic:1.9.18")
+    implementation("org.apache.maven.resolver:maven-resolver-transport-http:1.9.18")
+    implementation("org.apache.maven:maven-core:3.9.6")
+    implementation("org.apache.maven:maven-model:3.9.6")
+    implementation("org.apache.maven:maven-artifact:3.9.6")
+    
     implementation(project(":Trikeshed"))
-
+    
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.25")
     testImplementation("io.mockk:mockk:1.13.2")
-
+    
     testImplementation(kotlin("script-runtime"))
 }

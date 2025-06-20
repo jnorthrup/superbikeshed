@@ -4,8 +4,9 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(21)
     jvm {
-        jvmToolchain(21)
+        // jvmToolchain(21) removed from here
     }
     
     js(IR) {

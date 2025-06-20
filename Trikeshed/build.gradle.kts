@@ -22,12 +22,6 @@ kotlin {
         binaries.executable()
     }
     
-    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-        nodejs()
-    }
-    
     // Platform detection for native target
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")

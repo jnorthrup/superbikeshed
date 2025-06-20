@@ -24,12 +24,6 @@ kotlin {
         binaries.executable()
     }
     
-    wasmJs {
-        browser()
-        nodejs()
-        binaries.executable()
-    }
-    
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     val isMingwX64 = hostOs.startsWith("Windows")
