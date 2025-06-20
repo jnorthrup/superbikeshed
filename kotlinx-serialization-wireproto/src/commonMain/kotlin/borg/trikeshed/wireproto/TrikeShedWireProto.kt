@@ -141,6 +141,18 @@ object TrikeShedWireSerializer {
     }
     
     /**
+     * Serialize Series<Int> with optimal packing strategy
+     */
+    fun serializeIntSeries(series: Series<Int>, useOptimalPacking: Boolean = true): UByteArray {
+        return if (useOptimalPacking) {
+            val packed = series.pack("optimal")
+            packed.toWireBytes()
+        } else {
+            serializeSeries(series)
+        }
+    }
+    
+    /**
      * Deserialize wire format to Series<T>
      */
     inline fun <reified T> deserializeSeries(data: UByteArray): Series<T> {
@@ -184,7 +196,7 @@ object TrikeShedWireSerializer {
         )
     }
     
-    private fun serializeMessage(message: TrikeShedWireMessage): UByteArray {
+    fun serializeMessage(message: TrikeShedWireMessage): UByteArray {
         return buildWirePayload {
             writeByte(message.version.version)
             writeString(message.messageType)
@@ -194,7 +206,7 @@ object TrikeShedWireSerializer {
         }
     }
     
-    private fun deserializeMessage(data: UByteArray): TrikeShedWireMessage {
+    fun deserializeMessage(data: UByteArray): TrikeShedWireMessage {
         val reader = WireReader(data)
         val version = WireVersion(reader.readByte())
         val messageType = reader.readString()

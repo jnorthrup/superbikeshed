@@ -35,7 +35,6 @@ kotlin {
             implementation(project(":Trikeshed"))
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-            implementation("org.ta4j:ta4j-core:0.15")
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

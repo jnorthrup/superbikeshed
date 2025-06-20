@@ -5,8 +5,16 @@ plugins {
 
 kotlin {
     jvm()
+    js(IR) {
+        browser()
+        nodejs()
+    }
     
-    // Example test for platform tuple
+    // Always include these targets to support cross-platform builds
+    linuxX64()
+    macosArm64()
+    
+    // Additional targets based on host platform
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     val isMacOS = hostOs == "Mac OS X"
@@ -15,10 +23,8 @@ kotlin {
     val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
     when {
-        isMacOS && isArm64 -> macosArm64()
-        isMacOS -> macosX64()
+        isMacOS && !isArm64 -> macosX64() // Only add if not already present
         isLinux && isArm64 -> linuxArm64()
-        isLinux -> linuxX64()
         isWindows -> mingwX64()
     }
 
