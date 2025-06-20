@@ -76,8 +76,12 @@ object KotlinEntityScanner {
     fun scan(source: KotlinSourceCode, config: ScanConfig = ScanConfig.DEFAULT): EntityAnalysisResult {
         return when {
             config.enableInductiveRefinement -> {
-                // Use advanced inductive parsing
-                LearningParser.parseWithRefinement(source)
+                // Use advanced inductive parsing with forward/backward chaining
+                source.parseWithMaxEntropy()
+            }
+            config.enableDependencyAnalysis -> {
+                // Use bidirectional chaining for dependency analysis
+                source.parseWithChains()
             }
             else -> {
                 // Use basic token stairway

@@ -320,6 +320,10 @@ suspend fun evolveSolutionWithSemantics(
 
 For complete technical details, see [IntelliJ PSI Integration Architecture](./INTELLIJ_PSI_INTEGRATION.md).
 
+## IntelliJ Project Enumerator Integration
+
+The code from the `intellij-project-enumerator` tool has been folded into this repository under the package `nexus.enumerator.intellij`. This module provides utilities for parsing and enumerating project models for IntelliJ, Gradle, and Maven projects, and is now maintained as part of the Nexus codebase.
+
 ---
 
 *Nexus represents the convergence of all the superbikeshed project components into a unified, intelligent development experience.*

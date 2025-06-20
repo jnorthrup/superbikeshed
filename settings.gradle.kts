@@ -33,7 +33,6 @@ dependencyResolutionManagement {
 rootProject.name = "Trikeshed-Monorepo"
 
 include(":Trikeshed")
-include(":brokeshed")
 include(":kotlinx-serialization-scanner")
 include(":kotlinx-serialization-wireproto")
 include(":ksp-processors")

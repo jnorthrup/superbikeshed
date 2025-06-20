@@ -74,3 +74,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         )
     }
 }
+
+// IntelliJ Project Enumerator integration
+// The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
+// If additional dependencies are needed, add them here.
