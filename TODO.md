@@ -1,15 +1,39 @@
-Here is the analysis of your codebase against the provided `CLAUDE.md` guidelines, along with the necessary code modifications expressed as fenced context diffs to cure the identified type mismatches and align with the specified idiomatic patterns.
+# TrikeShed Unified TODO List
 
-### Analysis of Type Mismatches and Guideline Violations
+Comprehensive task list for TrikeShed ecosystem including **brokeshed** core, serialization, and integration projects.
 
-The codebase exhibits several deviations from the strict type system defined in `CLAUDE.md`. The most common issues are:
+## Priority 1: TrikeShed Serialization & Code Generation
 
-1.  **Improper Collection Usage**: Frequent use of `List<T>`, `MutableList<T>`, and `Map<K, V>` where `Series<T>` and `Join<A,B>` are mandated. This is prevalent in file I/O operations, data parsing, and domain models.
-2.  **Inconsistent Type Definitions**: Multiple, conflicting definitions for the same data class (`QuicSessionData`) exist across different files, leading to ambiguity and type errors.
-3.  **Outdated Type System**: The `acapulco` package and several other files use a legacy type system (`Vect0r`, `Pai2`, `t2`) that needs to be normalized to the `Series`, `Join`, `j` standard.
-4.  **Reactor Implementation Divergence**: The `reactor` package contains multiple, conflicting `expect`/`actual` implementations for core I/O components, creating ambiguity and type conflicts.
+### ✅ Completed: BitStream-Inspired Architecture
+- [x] **Created KSP framework** with processors and annotations (`ksp-processors/`)
+- [x] **Manual join overloads proof-of-concept** demonstrating register-packed primitives (`ManualJoinOverloads.kt`)
+- [x] **Comprehensive documentation** in `SERIALIZATION_CHECKPOINT.md`
+- [x] **Wire protocol foundation** with IoMemento and Series<T> serialization
+- [x] **Bit-packing strategies** with DirectPacking and DeltaZigzagPacking
 
-The following diffs systematically address these issues, normalizing the codebase to the "pre-expect, pre-concurrent" kernel vision.
+### 🔄 In Progress: KSP Code Generation
+- [ ] **Fix KSP build configuration** and compilation issues
+- [ ] **Generate primitive j overloads** for all type combinations that fit in 64-bit register
+- [ ] **Implement contextual prediction** for optimal packing strategy selection
+- [ ] **Complete MetaSeries<S,T> hierarchy** with proper generics and Shape integration
+
+### 📋 TODO: Advanced Serialization Features
+- [ ] **Function fitting packing** for sequential data (from BitStream example)
+- [ ] **Bit weaving for sparse data** (placeholder for future)
+- [ ] **PFOR (Patched Frame of Reference)** for sorted datasets
+- [ ] **ISAM integration** when **brokeshed** dependencies are available
+
+## Priority 2: TrikeShed Core Type System (CLAUDE.md Compliance)
+
+### ✅ Completed: NIO Migration & Foundation (**brokeshed**)
+- [x] **NIO Migration**: Moved `borg.trikeshed.io.*` to `borg.trikeshed.nio.*` in **brokeshed**
+- [x] **Path Collections Update**: Enhanced collections handling in **brokeshed**
+- [x] **Memory Slab System**: Improved logging and memory management
+- [x] **QuicSessionData Unification**: Resolved conflicting definitions across **brokeshed** files
+- [x] **File I/O Normalization**: Converted `List<T>` to `Series<T>` in posix/common file operations
+- [x] **KZRAN Refactoring**: Migrated from `MutableList` to immutable `Series` updates
+- [x] **Taxonomy Domain Model**: Converted to use `Series` and `Join` throughout **brokeshed**
+- [x] **Acapulco Package**: Normalized legacy types (`Vect0r`, `Pai2`, `t2`) to modern patterns
 
 ### Fenced Context Diffs to Cure Mismatches
 

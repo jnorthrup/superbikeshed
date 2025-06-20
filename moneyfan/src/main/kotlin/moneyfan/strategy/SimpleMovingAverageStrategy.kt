@@ -1,12 +1,5 @@
 package moneyfan.strategy
 
-import org.ta4j.core.BarSeries
-import org.ta4j.core.BaseBarSeries
-import org.ta4j.core.indicators.SMAIndicator
-import org.ta4j.core.indicators.helpers.ClosePriceIndicator
-import org.ta4j.core.trading.rules.CrossedDownIndicatorRule
-import org.ta4j.core.trading.rules.CrossedUpIndicatorRule
-import org.ta4j.core.trading.rules.OrRule
 import moneyfan.model.TradeSignal
 import borg.trikeshed.lib.Series
 import com.ta4k.core.model.Kline
