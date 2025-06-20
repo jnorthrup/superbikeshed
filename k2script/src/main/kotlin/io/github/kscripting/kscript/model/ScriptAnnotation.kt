@@ -34,3 +34,17 @@ data class Repository(val id: String, val url: String, val user: String = "", va
 object SheBang : ScriptAnnotation
 object Code : ScriptAnnotation
 data class BaseClass(val value: String) : ScriptAnnotation
+
+/**
+ * Represents a markdown code block with language specification
+ * @property language The language identifier (e.g., "kotlin", "java", "bash")
+ * @property content The code content within the block
+ * @property isStart Whether this is the start of a code block
+ * @property isEnd Whether this is the end of a code block
+ */
+data class MarkdownCodeBlock(
+    val language: String? = null,
+    val content: String = "",
+    val isStart: Boolean = false,
+    val isEnd: Boolean = false
+) : ScriptAnnotation

@@ -27,6 +27,17 @@ expect class PlatformByteBuffer {
 }
 
 /**
+ * Expected interface for a platform-agnostic Channel.
+ * This abstracts java.nio.channels.Channel.
+ */
+expect class PlatformChannel {
+    fun read(buffer: PlatformByteBuffer): Int
+    fun write(buffer: PlatformByteBuffer): Int
+    fun close()
+    val isOpen: Boolean
+}
+
+/**
  * Expected interface for a platform-agnostic DatagramSocket.
  * This abstracts java.net.DatagramSocket.
  */

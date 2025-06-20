@@ -6,6 +6,12 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketException
 import java.nio.ByteBuffer
+import java.nio.channels.Channel
+import java.nio.channels.SocketChannel
+import java.nio.channels.ServerSocketChannel
+import java.nio.channels.DatagramChannel
+import java.nio.channels.FileChannel
+import java.net.SocketAddress
 
 actual class PlatformByteBuffer(val buffer: ByteBuffer) {
     actual companion object {
@@ -41,6 +47,28 @@ actual class PlatformByteBuffer(val buffer: ByteBuffer) {
         buffer.position(newPosition)
         return this
     }
+}
+
+actual class PlatformChannel(private val channel: Channel) {
+    actual fun read(buffer: PlatformByteBuffer): Int {
+        return when (channel) {
+            is java.nio.channels.ReadableByteChannel -> channel.read(buffer.buffer)
+            else -> throw UnsupportedOperationException("Channel does not support reading")
+        }
+    }
+    
+    actual fun write(buffer: PlatformByteBuffer): Int {
+        return when (channel) {
+            is java.nio.channels.WritableByteChannel -> channel.write(buffer.buffer)
+            else -> throw UnsupportedOperationException("Channel does not support writing")
+        }
+    }
+    
+    actual fun close() {
+        channel.close()
+    }
+    
+    actual val isOpen: Boolean get() = channel.isOpen
 }
 
 actual class PlatformDatagramSocket(val socket: DatagramSocket = DatagramSocket()) {
