@@ -1,7 +1,5 @@
 package borg.trikeshed.ccek
 
-import kotlinx.serialization.Serializable
-
 /**
  * CCEK (Continuation-passing style with Control, Context, Environment, and Knowledge)
  * A modern approach to handling data transformations and use case requirements
@@ -12,7 +10,6 @@ import kotlinx.serialization.Serializable
 /**
  * Control - represents the flow control and execution context
  */
-@Serializable
 data class Control(
     val phase: ExecutionPhase = ExecutionPhase.INIT,
     val priority: Int = 0,
@@ -23,7 +20,6 @@ data class Control(
 /**
  * Context - represents the current execution context and state
  */
-@Serializable
 data class Context(
     val sessionId: String,
     val userId: String? = null,
@@ -34,7 +30,6 @@ data class Context(
 /**
  * Environment - represents the runtime environment and configuration
  */
-@Serializable
 data class Environment(
     val platform: String,
     val version: String,
@@ -45,7 +40,6 @@ data class Environment(
 /**
  * Knowledge - represents the domain knowledge and data schema
  */
-@Serializable
 data class Knowledge(
     val schema: DataSchema,
     val rules: List<TransformationRule> = emptyList(),
@@ -65,14 +59,12 @@ enum class ExecutionPhase {
 
 // === DATA SCHEMA ===
 
-@Serializable
 data class DataSchema(
     val name: String,
     val fields: List<FieldDefinition>,
     val version: String = "1.0"
 )
 
-@Serializable
 data class FieldDefinition(
     val name: String,
     val type: FieldType,
@@ -80,57 +72,40 @@ data class FieldDefinition(
     val constraints: List<FieldConstraint> = emptyList()
 )
 
-@Serializable
 sealed class FieldType {
-    @Serializable
-    object String : FieldType()
+        object String : FieldType()
     
-    @Serializable
-    object Int : FieldType()
+        object Int : FieldType()
     
-    @Serializable
-    object Long : FieldType()
+        object Long : FieldType()
     
-    @Serializable
-    object Double : FieldType()
+        object Double : FieldType()
     
-    @Serializable
-    object Boolean : FieldType()
+        object Boolean : FieldType()
     
-    @Serializable
-    object DateTime : FieldType()
+        object DateTime : FieldType()
     
-    @Serializable
-    data class Array(val elementType: FieldType) : FieldType()
+        data class Array(val elementType: FieldType) : FieldType()
     
-    @Serializable
-    data class Object(val fields: List<FieldDefinition>) : FieldType()
+        data class Object(val fields: List<FieldDefinition>) : FieldType()
 }
 
-@Serializable
 sealed class FieldConstraint {
-    @Serializable
-    data class MinLength(val value: Int) : FieldConstraint()
+        data class MinLength(val value: Int) : FieldConstraint()
     
-    @Serializable
-    data class MaxLength(val value: Int) : FieldConstraint()
+        data class MaxLength(val value: Int) : FieldConstraint()
     
-    @Serializable
-    data class MinValue(val value: Number) : FieldConstraint()
+        data class MinValue(val value: Number) : FieldConstraint()
     
-    @Serializable
-    data class MaxValue(val value: Number) : FieldConstraint()
+        data class MaxValue(val value: Number) : FieldConstraint()
     
-    @Serializable
-    data class Pattern(val regex: String) : FieldConstraint()
+        data class Pattern(val regex: String) : FieldConstraint()
     
-    @Serializable
-    data class Required(val value: Boolean) : FieldConstraint()
+        data class Required(val value: Boolean) : FieldConstraint()
 }
 
 // === TRANSFORMATION RULES ===
 
-@Serializable
 data class TransformationRule(
     val name: String,
     val condition: RuleCondition,
@@ -138,45 +113,32 @@ data class TransformationRule(
     val priority: Int = 0
 )
 
-@Serializable
 sealed class RuleCondition {
-    @Serializable
-    data class FieldEquals(val field: String, val value: String) : RuleCondition()
+        data class FieldEquals(val field: String, val value: String) : RuleCondition()
     
-    @Serializable
-    data class FieldMatches(val field: String, val pattern: String) : RuleCondition()
+        data class FieldMatches(val field: String, val pattern: String) : RuleCondition()
     
-    @Serializable
-    data class And(val conditions: List<RuleCondition>) : RuleCondition()
+        data class And(val conditions: List<RuleCondition>) : RuleCondition()
     
-    @Serializable
-    data class Or(val conditions: List<RuleCondition>) : RuleCondition()
+        data class Or(val conditions: List<RuleCondition>) : RuleCondition()
     
-    @Serializable
-    data class Not(val condition: RuleCondition) : RuleCondition()
+        data class Not(val condition: RuleCondition) : RuleCondition()
 }
 
-@Serializable
 sealed class TransformationAction {
-    @Serializable
-    data class SetField(val field: String, val value: String) : TransformationAction()
+        data class SetField(val field: String, val value: String) : TransformationAction()
     
-    @Serializable
-    data class TransformField(val field: String, val transform: String) : TransformationAction()
+        data class TransformField(val field: String, val transform: String) : TransformationAction()
     
-    @Serializable
-    data class AddField(val field: String, val value: String) : TransformationAction()
+        data class AddField(val field: String, val value: String) : TransformationAction()
     
-    @Serializable
-    data class RemoveField(val field: String) : TransformationAction()
+        data class RemoveField(val field: String) : TransformationAction()
     
-    @Serializable
-    data class Sequence(val actions: List<TransformationAction>) : TransformationAction()
+        data class Sequence(val actions: List<TransformationAction>) : TransformationAction()
 }
 
 // === CONSTRAINT SYSTEM ===
 
-@Serializable
 data class Constraint(
     val name: String,
     val description: String,
@@ -184,19 +146,14 @@ data class Constraint(
     val severity: ConstraintSeverity = ConstraintSeverity.ERROR
 )
 
-@Serializable
 sealed class ConstraintValidation {
-    @Serializable
-    data class FieldRequired(val field: String) : ConstraintValidation()
+        data class FieldRequired(val field: String) : ConstraintValidation()
     
-    @Serializable
-    data class FieldUnique(val field: String) : ConstraintValidation()
+        data class FieldUnique(val field: String) : ConstraintValidation()
     
-    @Serializable
-    data class FieldRange(val field: String, val min: Number?, val max: Number?) : ConstraintValidation()
+        data class FieldRange(val field: String, val min: Number?, val max: Number?) : ConstraintValidation()
     
-    @Serializable
-    data class Custom(val expression: String) : ConstraintValidation()
+        data class Custom(val expression: String) : ConstraintValidation()
 }
 
 enum class ConstraintSeverity {
@@ -362,31 +319,26 @@ class CCEKEngine(
 
 // === TRANSFORMATION PIPELINE ===
 
-@Serializable
 data class TransformationPipeline(
     val name: String,
     val steps: List<PipelineStep>,
     val metadata: Map<String, String> = emptyMap()
 )
 
-@Serializable
 sealed class PipelineStep {
     abstract val phase: ExecutionPhase
 }
 
-@Serializable
 data class ValidationStep(
     override val phase: ExecutionPhase = ExecutionPhase.VALIDATE,
     val validations: List<String> = emptyList()
 ) : PipelineStep()
 
-@Serializable
 data class TransformationStep(
     override val phase: ExecutionPhase = ExecutionPhase.TRANSFORM,
     val transformations: List<String> = emptyList()
 ) : PipelineStep()
 
-@Serializable
 data class SerializationStep(
     override val phase: ExecutionPhase = ExecutionPhase.SERIALIZE,
     val format: SerializationFormat,
