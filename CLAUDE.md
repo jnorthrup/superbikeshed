@@ -210,6 +210,90 @@ kotlin {
     } 
 }
 
+## TRIKESHED METACLASS ARCHITECTURE
+
+TrikeShed implements a **compositional metaclass system** inspired by cppfront and TSX metaclasses, where types are built through functional composition rather than inheritance. The system uses **Join<A,B>** as the fundamental metaclass constructor, enabling zero-cost abstractions and type-safe domain modeling.
+
+### Metaclass Design Philosophy
+
+**cppfront Inspiration:**
+```cpp
+// cppfront metaclass concept
+interface Joint<A, B> {
+    auto a() const -> A;
+    auto b() const -> B;
+}
+```
+
+**TSX Metaclass Pattern:**
+```typescript
+// TSX metaclass composition
+type Join<A, B> = { a: A; b: B }
+type Series<T> = Join<number, (index: number) => T>
+```
+
+**TrikeShed Realization:**
+TrikeShed takes this further by making Join<A,B> the **universal composition operator**, where all higher-order types are derived through pure functional composition.
+
+### Metaclass Hierarchy
+
+```kotlin
+// FOUNDATION METACLASS
+interface Join<A, B>                              // Universal binary composition
+
+// UNIVERSAL METACLASS - The True Foundation  
+typealias MetaSeries<A, T> = Join<A, (A) -> T>    // Universal indexed access
+
+// REALM SPECIALIZATIONS - All derive from MetaSeries
+typealias Series<T> = MetaSeries<Int, T>          // Int-indexed sequences
+typealias Tensor<T> = MetaSeries<Shape, T>        // Shape-indexed tensors
+typealias Twin<T> = MetaSeries<Boolean, T>        // Boolean-indexed pairs
+typealias Cursor = MetaSeries<CursorIndex, RowVec> // Database-indexed tables
+
+// STRUCTURED ELEMENT TYPES
+typealias Series2<A, B> = MetaSeries<Int, Join<A, B>>    // Series with Join elements
+typealias Shape = Series<Int>                            // Tensor dimensions as Series
+typealias RowVec = Series2<Any?, () -> ColumnMeta>       // Database row
+typealias CursorIndex = Join<TableMeta, Int>            // Database row index
+typealias TensorCursor = Series<Tensor<Any?>>           // Tensor dataset
+```
+
+### Metaclass Operations
+
+**Composition Operator (j):**
+```kotlin
+inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
+// Usage: 42 j "hello" creates Join<Int, String>
+```
+
+**Transform Operator (α):**
+```kotlin
+inline infix fun <X, C, V : Series<X>> V.α(xform: (X) -> C): Series<C>
+// Usage: series α { it.toString() } transforms elements
+```
+
+**Play Materialization (▶):**
+```kotlin
+val <T> Series<T>.play: IterableSeries<T>
+// Usage: series.play.map { ... } materializes for standard operations
+```
+
+### Metaclass Patterns vs Traditional OOP
+
+**Traditional OOP:**
+```kotlin
+abstract class Table {
+    abstract fun getRow(i: Int): Row
+}
+class DatabaseTable : Table { ... }
+```
+
+**TrikeShed Metaclasses:**
+```kotlin
+typealias Cursor = Series<RowVec>  // Composition, not inheritance
+val table: Cursor = rowCount j { i -> getRow(i) }  // Direct construction
+```
+
 ## CORE MEMORY
 
 **UN-ALTERABLE CORE TYPE SYSTEM** - Always Available in Every Context:
