@@ -11,10 +11,10 @@ repositories {
 
 kotlin {
     jvm()
-    wasmJs {
-        browser()
-        nodejs()
-    }
+    // wasmJs {
+    //     browser()
+    //     nodejs()
+    // }
     
     // Example test for platform tuple
     val hostOs = System.getProperty("os.name")

@@ -6,12 +6,6 @@ plugins {
 kotlin {
     jvm()
     
-    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-        nodejs()
-    }
-    
     // Example test for platform tuple
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")

@@ -8,10 +8,10 @@ kotlin {
         jvmToolchain(21)
         withJava()
     }
-    wasmJs {
-        browser()
-        nodejs()
-    }
+    // wasmJs {
+    //     browser()
+    //     nodejs()
+    // }
     
     // Platform detection for native target
     val hostOs = System.getProperty("os.name")
@@ -82,12 +82,12 @@ kotlin {
             }
         }
 
-        wasmJsMain { 
-            dependsOn(commonMain.get())
-            dependencies {
-                implementation(compose.html.core)
-            }
-        }
+        // wasmJsMain { 
+        //     dependsOn(commonMain.get())
+        //     dependencies {
+        //         implementation(compose.html.core)
+        //     }
+        // }
     }
 }
 

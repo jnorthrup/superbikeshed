@@ -7,11 +7,6 @@ plugins {
 
 kotlin {
     jvm()
-    wasmJs {
-        browser()
-        nodejs()
-    }
-    
     // Platform detection for native targets
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -37,12 +32,6 @@ kotlin {
         }
         
         val jvmMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-            }
-        }
-        
-        val wasmJsMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
