@@ -7,6 +7,7 @@
 ## CRITICAL TYPE SYSTEM RULES
 
 **VERSION MANAGEMENT RULE:**
+
 - NEVER change versions to fix build or code bugs
 - Use ONLY the specified versions in this document
 - If a build fails, fix the code to work with the specified versions
@@ -17,12 +18,13 @@
 - **`List<T>`** - Use `Series<T>` or primitive array preferred
 - **`MutableList<T>`** - Use `Series<T>` with `α` transforms
 - **`Pair<A,B>`** - Use `Join<A,B>` with `j` operator instead
-- ** trikeshed  '*.collections.*' package is inhernetly unconstrained algorithmic designs and ports, consume them slowly when refactoring out mutability and nullable ** -
+- **trikeshed  '*.collections.*' package is inhernetly unconstrained algorithmic designs and ports, consume them slowly when refactoring out mutability and nullable** -
 
 **MANDATORY PATTERNS:**
+
 - the first step is to create and replace the model with taxonomical typealiases and enums down to the leaf attributes (2-ary tuples)
-- ** a j b** creates Join<A,B> - the ONLY composition operator
-- ** series.α { transform } ** - the ONLY transformation operator  
+- **a j b** creates Join<A,B> - the ONLY composition operator
+- **series.α { transform }** - the ONLY transformation operator  
 - **series.\`▶\`** (THE PLAY BUTTON) - gateway to AbstractList,Iterable<T> for .map and list
   **DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX NOT MARKDOWN**
 - **@JvmInline value class** - the ONLY wrapper mechanism
@@ -71,7 +73,7 @@ Honor existing working implementations. Add TODO() stubs for missing features on
 - Tensor-first columnar processing with Join<A,B> as the core composition mechanism
 - Performance by design through explicit hot/cold paths and zero-cost abstractions
 - Context-driven development using inline classes and CCEK for managing scope and dependencies
-- Preserve and extend existing working implementations 
+- Preserve and extend existing working implementations
 - Put nio target overrides into borg.trikeshed.nio
 
 ## DEVELOPMENT GUIDELINES
@@ -87,6 +89,7 @@ Gradle modifications are prohibited unless explicitly instructed or a critical r
 - We do not know of compose dependencies to include at this time
 
 **Dependencies:**
+
 ```
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
@@ -108,7 +111,7 @@ dependencies {
 
 **Serialization and Annotation Libs:**
 
-- we dont use _kotlin_ serialization or the annotation libs yet and dont plan to
+- we dont use *kotlin* serialization or the annotation libs yet and dont plan to
 
 **Migration Tasks:**
 
@@ -153,6 +156,7 @@ second will be a lesser GDM capability if its still highcompetence with IKR (Inc
 - trikeshed-core has been re-absorbed into Triekshed. The webpack alias 'trikeshed-ts' should be updated to point to the correct location in the Triekshed repository.
 
 ## Migration Memories
+
 - all of the superbikeshed code is migrating to trikeshed and so  it all needs taxonomical typealiases down to the leafnode.  we no longer have  a DCE policy, anthropic can sell bridges all day long again
 
 # important-instruction-reminders
@@ -211,6 +215,7 @@ kotlin {
 **UN-ALTERABLE CORE TYPE SYSTEM** - Always Available in Every Context:
 
 **FOUNDATION JOIN INTERFACE** (`borg.trikeshed.lib.Join`):
+
 ```kotlin
 package borg.trikeshed.lib
 
@@ -234,6 +239,7 @@ inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
 ```
 
 **SERIES TYPE SYSTEM** (`borg.trikeshed.lib.Series`):
+
 ```kotlin
 package borg.trikeshed.lib
 
@@ -257,6 +263,7 @@ value class IterableSeries<A>(val s: Series<A>) : Iterable<A> {
 ```
 
 **CURSOR TYPE SYSTEM** (`borg.trikeshed.cursor.Cursor`):
+
 ```kotlin
 package borg.trikeshed.cursor
 

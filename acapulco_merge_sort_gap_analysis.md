@@ -39,6 +39,7 @@ actual fun combineKlineSeries(klineSeries: List<Series<Kline>>): Series<Kline> {
 ```
 
 **Merge Sort Benefits Achieved:**
+
 - **O(n log n) sorting complexity** for temporal ordering
 - **Stable sorting** preserving data integrity
 - **Efficient deduplication** during merge process
@@ -82,6 +83,7 @@ val gapFactor = kotlin.math.min(gaps.toDouble() / 5.0, 1.0)
 ```
 
 **Gap Location Benefits Achieved:**
+
 - **Price gap detection** between consecutive candles
 - **Gap magnitude calculation** as percentage of price
 - **Gap frequency analysis** for pattern recognition
@@ -102,6 +104,7 @@ val chunks = listOf(
 ```
 
 **Gap Location Benefits:**
+
 - **Infinite span handling** between data chunks
 - **Last value propagation** across gaps
 - **Gap-aware analysis** for trading decisions
@@ -132,6 +135,7 @@ class AcapulcoKlineDSL {
 ```
 
 **Cursor Benefits:**
+
 - **Lazy evaluation** for memory efficiency
 - **Indexed access** for fast data retrieval
 - **Functional composition** with Series operations
@@ -155,6 +159,7 @@ enum class IOOptIn {
 ```
 
 **IO Opt-in Benefits:**
+
 - **Async I/O** with io_uring for high throughput
 - **Memory mapping** for large file processing
 - **Cache alignment** for optimal memory access
@@ -308,4 +313,4 @@ The Acapulco kline ingest pipeline successfully provides **identical benefits** 
 5. **IO opt-ins** for performance optimization
 6. **ta4k integration** for trading system compatibility
 
-The pipeline maintains the performance characteristics of merge sort while adding trading-specific gap analysis capabilities, all integrated with TrikeShed's Cursor system and ta4k's trading infrastructure. 
+The pipeline maintains the performance characteristics of merge sort while adding trading-specific gap analysis capabilities, all integrated with TrikeShed's Cursor system and ta4k's trading infrastructure.

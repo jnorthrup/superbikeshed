@@ -51,8 +51,6 @@ kotlin {
                 implementation("commons-io:commons-io:2.11.0")
                 implementation("commons-codec:commons-codec:1.15")
                 implementation("com.konghq:unirest-java:3.14.2")
-                implementation("net.igsoft:tablevis:0.6.0")
-                implementation("io.github.kscripting:shell:0.5.2")
                 implementation("org.semver4j:semver4j:4.3.0")
                 // implementation(project(":Trikeshed")) // Temporarily disabled due to compilation issues
             }
@@ -70,8 +68,11 @@ kotlin {
             dependencies {
                 implementation("commons-cli:commons-cli:1.5.0")
                 implementation("com.konghq:unirest-java:3.14.2")
-                implementation("net.igsoft:tablevis:0.6.0")
-                implementation("io.github.kscripting:shell:0.5.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation("org.apache.commons:commons-lang3:3.12.0")
+                implementation("commons-io:commons-io:2.11.0")
+                implementation("commons-codec:commons-codec:1.15")
+                implementation("org.semver4j:semver4j:4.3.0")
                 implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-common:2.1.21")
