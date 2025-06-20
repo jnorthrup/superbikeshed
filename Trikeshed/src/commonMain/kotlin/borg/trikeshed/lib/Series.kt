@@ -16,6 +16,9 @@ typealias Series2<A, B> = Series<Join<A, B>>
 // Series constructor function
 inline fun <T> Series(size: Int, noinline f: (Int) -> T): Series<T> = size j f
 
+// Factory function for Series from varargs
+fun <T> _S(vararg elements: T): Series<T> = elements.asList().toSeries()
+
 val <T> Series<T>.size: Int get() = a
 
 // Duck-typed iterator for for-loops
