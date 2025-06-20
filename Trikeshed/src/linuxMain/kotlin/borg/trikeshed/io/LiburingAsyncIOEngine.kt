@@ -5,6 +5,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import borg.trikeshed.io.IOOperation
+import borg.trikeshed.io.IOResult
+import borg.trikeshed.io.IOHandle
 
 /**
  * Linux-specific async I/O engine using liburing
@@ -23,7 +26,8 @@ class LiburingAsyncIOEngine {
         // Clean up io_uring resources
     }
     
-    suspend fun read(fd: Int, buffer: ByteArray, offset: Long): Int {
+    suspend fun read(handle: IOHandle, buffer: ByteArray, offset: Long): Int {
+        val fd = handle.fd
         return suspendCancellableCoroutine { continuation ->
             try {
                 // Use io_uring for async read
@@ -36,7 +40,8 @@ class LiburingAsyncIOEngine {
         }
     }
     
-    suspend fun write(fd: Int, data: ByteArray, offset: Long): Int {
+    suspend fun write(handle: IOHandle, data: ByteArray, offset: Long): Int {
+        val fd = handle.fd
         return suspendCancellableCoroutine { continuation ->
             try {
                 // Use io_uring for async write
@@ -53,11 +58,11 @@ class LiburingAsyncIOEngine {
         return operations.map { operation ->
             when (operation.type) {
                 IOOperation.IOType.READ -> {
-                    val bytesRead = read(operation.fd, operation.buffer, operation.offset)
+                    val bytesRead = read(operation.handle, operation.buffer, operation.offset)
                     IOResult(operation.id, bytesRead)
                 }
                 IOOperation.IOType.WRITE -> {
-                    val bytesWritten = write(operation.fd, operation.buffer, operation.offset)
+                    val bytesWritten = write(operation.handle, operation.buffer, operation.offset)
                     IOResult(operation.id, bytesWritten)
                 }
             }
