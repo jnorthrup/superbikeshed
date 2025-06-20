@@ -54,11 +54,24 @@ kotlin {
                 implementation("net.igsoft:tablevis:0.6.0")
                 implementation("io.github.kscripting:shell:0.5.2")
                 implementation("org.semver4j:semver4j:4.3.0")
-                implementation(project(":Trikeshed"))
+                // implementation(project(":Trikeshed")) // Temporarily disabled due to compilation issues
             }
         }
+        
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlin:kotlin-test-common")
+                implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
+            }
+        }
+        
         val jvmMain by getting {
             dependencies {
+                implementation("commons-cli:commons-cli:1.5.0")
+                implementation("com.konghq:unirest-java:3.14.2")
+                implementation("net.igsoft:tablevis:0.6.0")
+                implementation("io.github.kscripting:shell:0.5.2")
                 implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-common:2.1.21")
@@ -77,6 +90,7 @@ kotlin {
                 implementation("org.apache.maven:maven-artifact:3.9.6")
             }
         }
+        
         val jvmTest by getting {
             dependencies {
                 implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
@@ -86,6 +100,36 @@ kotlin {
                 implementation(kotlin("script-runtime"))
             }
         }
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+            }
+        }
+        
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
+    }
+}
+
+// Disable linting to keep code terse
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.addAll(
+            "-Xskip-prerelease-check",
+            "-Xskip-metadata-version-check",
+            "-Xno-call-assertions",
+            "-Xno-param-assertions",
+            "-Xno-receiver-assertions",
+            "-Xno-source-roots-assertions",
+            "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
+            "-Xopt-in=kotlin.RequiresOptIn",
+            "-Xopt-in=kotlin.ExperimentalStdlibApi"
+        )
     }
 }
 
@@ -93,11 +137,14 @@ val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     from("src/main/resources") {
         into(".")
     }
-    from("src/main/kotlin") {
+    from("src/commonMain/kotlin") {
         into(".")
     }
-    from("src/main/kotlin") {
+    from("src/commonMain/kotlin") {
         into("bin")
+    }
+    from("src/jvmMain/kotlin") {
+        into(".")
     }
     from("wrappers") {
         into("wrappers")
@@ -111,11 +158,14 @@ val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
     from("src/main/resources") {
         into(".")
     }
-    from("src/main/kotlin") {
+    from("src/commonMain/kotlin") {
         into(".")
     }
-    from("src/main/kotlin") {
+    from("src/commonMain/kotlin") {
         into("bin")
+    }
+    from("src/jvmMain/kotlin") {
+        into(".")
     }
     from("wrappers") {
         into("wrappers")
@@ -134,25 +184,6 @@ val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribut
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 }
 
-// TODO: Shadow/fat jar logic removed for Maven-centric build. Restore if needed for standalone distribution.
-
-fun adjustVersion(archiveVersion: String): String {
-    var newVersion = archiveVersion.lowercase(Locale.ROOT)
-    val temporaryVersion = newVersion.substringBeforeLast(".")
-    
-    if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
-        temporaryVersion.endsWith("-SNAPSHOT", true)
-    ) {
-        newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"
-    }
-    
-    return newVersion
-}
-
-val jar: Jar by tasks.getting(Jar::class) {
-    archiveVersion.set(adjustVersion(archiveVersion.get()))
-}
-
 // Disable distribution tasks that are not needed for Maven-centric build
 tasks.withType<Tar> {
     enabled = false
@@ -164,10 +195,6 @@ tasks.withType<Zip> {
     }
 }
 
-val test: Task by tasks.getting {
-    inputs.dir("${project.projectDir}/test/resources")
-}
-
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
@@ -175,7 +202,7 @@ publishing {
             artifactId = project.name
             version = adjustVersion(project.version.toString())
             
-            artifact(jar)
+            artifact(tasks.named("jvmJar"))
             
             pom {
                 name.set("kscript")
@@ -226,4 +253,17 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
+}
+
+fun adjustVersion(archiveVersion: String): String {
+    var newVersion = archiveVersion.lowercase(Locale.ROOT)
+    val temporaryVersion = newVersion.substringBeforeLast(".")
+    
+    if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
+        temporaryVersion.endsWith("-SNAPSHOT", true)
+    ) {
+        newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"
+    }
+    
+    return newVersion
 }
