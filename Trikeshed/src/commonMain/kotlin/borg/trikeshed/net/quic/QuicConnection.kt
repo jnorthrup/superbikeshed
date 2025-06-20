@@ -1,19 +1,16 @@
 package borg.trikeshed.net.quic
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.channels.Channel
+import borg.trikeshed.net.quic.QuicConfig.Companion.DEFAULT_STREAM_BUFFER_SIZE
+import borg.trikeshed.net.quic.QuicConfig.Companion.STREAM_ID_HEADER_SIZE
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import borg.trikeshed.nio.PlatformByteBuffer
+import borg.trikeshed.nio.PlatformDatagramPacket
 import borg.trikeshed.nio.PlatformDatagramSocket
 import borg.trikeshed.nio.PlatformInetSocketAddress
-import borg.trikeshed.nio.PlatformDatagramPacket
-import borg.trikeshed.nio.platformCurrentTimeMillis
 
 /**
  * QUIC connection implementation with 0-RTT support and stream multiplexing
@@ -23,12 +20,6 @@ class QuicConnection(
     private val sessionCache: QuicSessionCache,
     private val coroutineScope: CoroutineScope // Scope for launching background tasks like packet receiver
 ) {
-    companion object {
-        const val MAX_STREAMS = 1L shl 62 // 2^62 concurrent streams
-        const val DEFAULT_STREAM_BUFFER_SIZE = 64 * 1024 // 64KB
-        const val STREAM_ID_HEADER_SIZE = Long.SIZE_BYTES // 8 bytes for Stream ID
-    }
-
     private var socket: PlatformDatagramSocket? = null
     private var remoteServerAddress: PlatformInetSocketAddress? = null // New property to store the remote server address
     private val activeStreams = mutableMapOf<Long, QuicStream>()
@@ -257,181 +248,46 @@ class QuicConnection(
         }
     }
 
-    // receiveData now consumes from the stream's internal channel
-    fun receiveData(streamId: Long): Flow<PlatformByteBuffer> {
-        val stream = activeStreams[streamId] ?: return flow { /* emit nothing if stream doesn't exist */ }
-        return stream.internalReceiveChannel.consumeAsFlow()
+    // These are placeholder functions that would need a real cryptographic and transport handshake implementation.
+    private fun establishRegularConnection(serverAddr: PlatformInetSocketAddress): PlatformDatagramSocket {
+        println("Establishing regular 1-RTT connection (placeholder)...")
+        // In a real implementation:
+        // 1. Create a UDP socket.
+        // 2. Perform a TLS 1.3 handshake over UDP to establish keys.
+        // 3. Negotiate transport parameters.
+        // 4. Store the session ticket for future 0-RTT.
+        val newSocket = PlatformDatagramSocket()
+        newSocket.connect(serverAddr)
+        return newSocket
+    }
+
+    private fun establish0RTTConnection(serverAddr: PlatformInetSocketAddress, session: QuicSessionData): PlatformDatagramSocket {
+        println("Establishing 0-RTT connection with cached session (placeholder)...")
+        // In a real implementation:
+        // 1. Create UDP socket.
+        // 2. Use the cached session ticket to encrypt initial data (0-RTT).
+        // 3. Send initial data along with handshake packets.
+        // 4. Handle server rejecting 0-RTT (fallback to 1-RTT).
+        val newSocket = PlatformDatagramSocket()
+        newSocket.connect(serverAddr)
+        // Here you would use session.ticket and session.transportParams
+        return newSocket
     }
 
 
-    /**
-     * Closes a specific stream
-     */
-    suspend fun closeStream(streamId: Long) {
-        activeStreams[streamId]?.close()
-        activeStreams.remove(streamId)
-    }
-
-    /**
-     * Closes the entire connection
-     */
-    suspend fun close() {
-        packetReceiverJob?.cancel() // Stop the packet receiver
-        activeStreams.values.forEach { it.close() }
-        activeStreams.clear()
-        withContext(Dispatchers.IO) {
-            socket?.close()
-        }
+    fun close() {
+        packetReceiverJob?.cancel()
+        socket?.close()
         socket = null
         remoteServerAddress = null // Clear the remote server address on close
-    }
-
-    private suspend fun establish0RTTConnection(
-        serverAddr: PlatformInetSocketAddress,
-        sessionData: QuicSessionData
-    ): PlatformDatagramSocket = withContext(Dispatchers.IO) {
-        val socket = PlatformDatagramSocket()
-        socket.connect(serverAddr)
-        
-        // Send 0-RTT packet with session data
-        val initialPacket = create0RTTPacket(sessionData)
-        socket.send(PlatformDatagramPacket(initialPacket, initialPacket.size, serverAddr))
-        
-        // Wait for server response
-        val responseBuffer = ByteArray(streamBufferSize)
-        val responsePacket = PlatformDatagramPacket(responseBuffer, responseBuffer.size)
-        socket.receive(responsePacket)
-        
-        return@withContext socket
-    }
-
-    private suspend fun establishRegularConnection(
-        serverAddr: PlatformInetSocketAddress
-    ): PlatformDatagramSocket = withContext(Dispatchers.IO) {
-        val socket = PlatformDatagramSocket()
-        socket.connect(serverAddr)
-        
-        // Send initial handshake packet
-        val initialPacket = createInitialPacket()
-        socket.send(PlatformDatagramPacket(initialPacket, initialPacket.size, serverAddr))
-        
-        // Wait for server response
-        val responseBuffer = ByteArray(streamBufferSize)
-        val responsePacket = PlatformDatagramPacket(responseBuffer, responseBuffer.size)
-        socket.receive(responsePacket)
-
-        // Assume server sends session ticket after handshake in regular connection
-        // This is a simplification. In a real QUIC implementation, this would be part of
-        // the cryptographic handshake and NEW_SESSION_TICKET frame.
-        val sessionTicket = extractSessionTicket(responsePacket.data, responsePacket.length)
-        if (sessionTicket != null) {
-            val sessionData = QuicSessionData(
-                serverAddress = serverAddr.hostName,
-                port = serverAddr.port,
-                sessionId = "SESSION_ID".toByteArray(), // Placeholder for session ID
-                ticket = sessionTicket,
-                expirationTime = platformCurrentTimeMillis() + (3600 * 1000) // Example: ticket valid for 1 hour
-            )
-            sessionCache.storeSession(serverAddr.hostName, serverAddr.port, sessionData)
-        }
-        
-        return@withContext socket
-    }
-
-    private fun extractSessionTicket(bytes: ByteArray, length: Int): ByteArray? {
-        // Placeholder: A real implementation would parse the packet
-        // to extract the session ticket according to QUIC protocol.
-        // For this example, let's assume the ticket is the packet data itself if it's not empty
-        // and not the initial packet placeholder.
-        val packetData = bytes.copyOfRange(0, length)
-        if (length > 0 && !packetData.contentEquals("INITIAL_PACKET".toByteArray())) {
-            return packetData
-        }
-        return null
+        println("QuicConnection closed.")
     }
 
     private fun allocateStreamId(): Long {
-        val id = nextClientStreamId
-        nextClientStreamId += 4 // Client initiated streams are even, server initiated are odd. Increment by 4 for bidirectional.
-        return id
+        // Simple sequential allocation for client-initiated streams
+        // In a real implementation, this needs to handle bidirectional/unidirectional and client/server initiated IDs correctly.
+        val streamId = nextClientStreamId
+        nextClientStreamId += 1
+        return streamId
     }
-
-    private fun create0RTTPacket(sessionData: QuicSessionData): ByteArray {
-        // For simplicity, let's assume the ticket is sent as is.
-        // A real implementation would involve more complex packet construction.
-        return sessionData.ticket
-    }
-
-    private fun createInitialPacket(): ByteArray {
-        // TODO: Implement proper initial packet creation
-        // This would involve cryptographic handshake messages.
-        // For now, returning a placeholder.
-        return "INITIAL_PACKET".toByteArray()
-    }
-}
-
-/**
- * Configuration for QUIC connection
- */
-data class QuicConfig(
-    // Existing parameters
-    val streamBufferSize: Int? = null,
-    val maxConcurrentStreams: Long = QuicConnection.MAX_STREAMS,
-    val enable0RTT: Boolean = true,
-
-    // New parameters for protocol optimization
-    val congestionControlAlgorithm: String = "cubic", // e.g., "cubic", "bbr", "reno", "custom_db_optimized"
-    val initialConnectionFlowControlWindow: Long = 64 * 1024, // 64KB default
-    val initialStreamFlowControlWindow: Long = 32 * 1024, // 32KB default per stream
-    val maxAckDelayMs: Long = 25, // Max time in ms receiver can delay sending an ACK (conceptual)
-    val defaultStreamPriority: Int = 10 // Default priority for new streams (e.g., 0=high, 10=medium, 20=low)
-) {
-    init {
-        require(initialConnectionFlowControlWindow >= 0) { "Initial connection flow control window cannot be negative." }
-        require(initialStreamFlowControlWindow >= 0) { "Initial stream flow control window cannot be negative." }
-        require(maxAckDelayMs >= 0) { "Max ACK delay cannot be negative." }
-        require(congestionControlAlgorithm.isNotBlank()) { "Congestion control algorithm name cannot be blank."}
-        require(defaultStreamPriority >= 0) { "Default stream priority cannot be negative."}
-    }
-}
-
-/**
- * Represents a QUIC stream
- */
-class QuicStream(
-    val id: Long,
-    private val bufferSize: Int,
-    initialWindowSize: Long, // Passed from QuicConfig.initialStreamFlowControlWindow
-    val priority: Int, // Stream priority
-    // Channel for this stream's incoming data, to be populated by the central packet receiver
-    internal val internalReceiveChannel: Channel<PlatformByteBuffer> = Channel(Channel.BUFFERED)
-) {
-    @Volatile
-    private var closed = false
-    var remoteAddress: PlatformInetSocketAddress? = null // This should be set when stream is created or by first packet
-
-    // Stream-level flow control properties
-    var bytesSentOnStream: Long = 0L
-    var currentStreamFlowControlWindow: Long = initialWindowSize
-        private set // Window size can be updated by WINDOW_UPDATE frames (conceptually)
-
-    fun close() {
-        closed = true
-        internalReceiveChannel.close() // Close the channel when stream is closed
-    }
-
-    fun isClosed(): Boolean = closed
-
-    // Conceptual method for updating stream window by a WINDOW_UPDATE frame
-    fun updateFlowControlWindow(newMaxData: Long) {
-        // In QUIC, WINDOW_UPDATE typically provides the new maximum absolute byte offset allowed.
-        // This translates to increasing the window size if newMaxData is larger than current sent + window.
-        // For simplicity here, let's assume it can directly increase the current window size or reset sent bytes.
-        // This is a simplification.
-        val newWindow = newMaxData - bytesSentOnStream
-        if (newWindow > currentStreamFlowControlWindow) {
-            currentStreamFlowControlWindow = newWindow
-            println("Stream $id window updated to $currentStreamFlowControlWindow (Max data: $newMaxData)")
-        }
-    }
-}
+} 

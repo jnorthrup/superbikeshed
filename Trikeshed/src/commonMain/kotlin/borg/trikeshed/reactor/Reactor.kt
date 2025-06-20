@@ -2,8 +2,7 @@ package borg.trikeshed.reactor
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.max
@@ -30,7 +29,7 @@ class Reactor(
         reactorScope.launch {
             selectorThreads = List(numSelectorThreads) {
                 SelectorThread(
-                    createSelectorInterface(),
+                    SelectorInterface(),
                     MutableSharedFlow(extraBufferCapacity = Channel.UNLIMITED),
                     MutableSharedFlow(extraBufferCapacity = Channel.UNLIMITED)
                 )
@@ -103,42 +102,41 @@ private class SelectorThread(
             }
         }
 
-        // Main event loop using select for non-blocking processing
-        while (isRunning.value && isActive) {
-            kotlinx.coroutines.selects.select<Unit> {
-                // Handle channel registrations
-                channelRegistrations.onReceive { (channel, interest, reaction) ->
-                    try {
-                        val key = selector.register(channel, interest, null)
-                        keyReactions[key] = reaction
-                    } catch (e: Exception) {
-                        println("Error registering channel: ${e.message}")
-                        try { channel.close() } catch (_: Exception) {}
-                    }
+        // Handle channel registrations
+        launch {
+            channelRegistrations.collect { (channel, interest, reaction) ->
+                try {
+                    val key = selector.register(channel, interest, null)
+                    keyReactions[key] = reaction
+                } catch (e: Exception) {
+                    println("Error registering channel: ${e.message}")
+                    launch { try { channel.close() } catch (_: Exception) {} }
                 }
+            }
+        }
 
-                // Handle selector events
-                selectorEvents.onReceive { readyKeys ->
-                    val iterator = readyKeys.iterator()
-                    while (iterator.hasNext()) {
-                        val key = iterator.next()
-                        iterator.remove() // Remove from selected set
- 
-                        if (key.isValid) {
-                            keyReactions[key]?.let { reaction ->
-                                try {
-                                    reaction()?.let { asyncReaction ->
-                                        reactions.emit(key to asyncReaction)
-                                    } ?: run {
-                                        keyReactions.remove(key)
-                                        key.cancel()
-                                    }
-                                } catch (e: Exception) {
-                                    println("Error during reaction for key $key: ${e.message}")
+        // Handle selector events
+        launch {
+            selectorEvents.receiveAsFlow().collect { readyKeys ->
+                val iterator = readyKeys.iterator()
+                while (iterator.hasNext()) {
+                    val key = iterator.next()
+                    iterator.remove() // Remove from selected set
+
+                    if (key.isValid()) {
+                        keyReactions[key]?.let { reaction ->
+                            try {
+                                reaction()?.let { asyncReaction ->
+                                    reactions.emit(key to asyncReaction)
+                                } ?: run {
                                     keyReactions.remove(key)
                                     key.cancel()
-                                    try { key.channel().close() } catch (_: Exception) {}
                                 }
+                            } catch (e: Exception) {
+                                println("Error during reaction for key $key: ${e.message}")
+                                keyReactions.remove(key)
+                                key.cancel()
+                                launch { try { key.channel().close() } catch (_: Exception) {} }
                             }
                         } else {
                             keyReactions.remove(key)

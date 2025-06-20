@@ -15,6 +15,8 @@ expect class PlatformByteBuffer {
 
     fun put(byte: Byte): PlatformByteBuffer
     fun put(src: ByteArray): PlatformByteBuffer
+    fun put(src: ByteArray, offset: Int, length: Int): PlatformByteBuffer
+    fun putLong(value: Long): PlatformByteBuffer
     fun get(): Byte
     fun get(dst: ByteArray): PlatformByteBuffer
     fun getLong(): Long

@@ -29,6 +29,16 @@ actual class PlatformByteBuffer(val buffer: ByteBuffer) {
         return this
     }
 
+    actual fun put(src: ByteArray, offset: Int, length: Int): PlatformByteBuffer {
+        buffer.put(src, offset, length)
+        return this
+    }
+
+    actual fun putLong(value: Long): PlatformByteBuffer {
+        buffer.putLong(value)
+        return this
+    }
+
     actual fun get(): Byte = buffer.get()
     actual fun get(dst: ByteArray): PlatformByteBuffer {
         buffer.get(dst)
@@ -93,24 +103,17 @@ actual class PlatformDatagramSocket(val socket: DatagramSocket = DatagramSocket(
     actual val isClosed: Boolean
         get() = socket.isClosed
     actual val remoteSocketAddress: PlatformSocketAddress?
-        get() = socket.remoteSocketAddress?.let { JvmSocketAddress(it) }
+        get() = (socket.remoteSocketAddress as? InetSocketAddress)?.let { PlatformInetSocketAddress(it) }
     actual val inetAddress: PlatformInetAddress?
-        get() = socket.inetAddress?.let { JvmInetAddress(it) }
+        get() = socket.inetAddress?.let { PlatformInetAddress(it) }
     actual val port: Int
         get() = socket.port
 }
 
-actual class PlatformInetSocketAddress : PlatformSocketAddress {
-    val javaInetSocketAddress: InetSocketAddress
+actual class PlatformInetSocketAddress(val javaInetSocketAddress: InetSocketAddress) : PlatformSocketAddress() {
+    actual constructor(hostname: String, port: Int) : this(InetSocketAddress(hostname, port))
 
-    actual constructor(hostname: String, port: Int) {
-        this.javaInetSocketAddress = InetSocketAddress(hostname, port)
-    }
-
-    actual constructor(address: PlatformInetAddress, port: Int) {
-        require(address is JvmInetAddress) { "PlatformInetAddress must be JvmInetAddress on JVM" }
-        this.javaInetSocketAddress = InetSocketAddress(address.javaInetAddress, port)
-    }
+    actual constructor(address: PlatformInetAddress, port: Int) : this(InetSocketAddress(address.javaInetAddress, port))
 
     actual val hostName: String
         get() = javaInetSocketAddress.hostName
@@ -124,17 +127,10 @@ actual class PlatformInetAddress(val javaInetAddress: InetAddress) {
     }
 }
 
-actual class PlatformDatagramPacket {
-    val javaDatagramPacket: DatagramPacket
+actual class PlatformDatagramPacket(val javaDatagramPacket: DatagramPacket) {
+    actual constructor(buf: ByteArray, length: Int) : this(DatagramPacket(buf, length))
 
-    actual constructor(buf: ByteArray, length: Int) {
-        this.javaDatagramPacket = DatagramPacket(buf, length)
-    }
-
-    actual constructor(buf: ByteArray, length: Int, address: PlatformSocketAddress) {
-        require(address is PlatformInetSocketAddress) { "PlatformSocketAddress must be PlatformInetSocketAddress on JVM" }
-        this.javaDatagramPacket = DatagramPacket(buf, length, address.javaInetSocketAddress)
-    }
+    actual constructor(buf: ByteArray, length: Int, address: PlatformSocketAddress) : this(DatagramPacket(buf, length, (address as PlatformInetSocketAddress).javaInetSocketAddress))
 
     actual val data: ByteArray
         get() = javaDatagramPacket.data
@@ -142,19 +138,15 @@ actual class PlatformDatagramPacket {
         get() = javaDatagramPacket.length
         set(value) { javaDatagramPacket.length = value }
     actual val address: PlatformSocketAddress?
-        get() = javaDatagramPacket.address?.let { JvmInetSocketAddress(it as InetSocketAddress) }
+        get() = javaDatagramPacket.socketAddress?.let { PlatformInetSocketAddress(it as InetSocketAddress) }
     actual val port: Int
         get() = javaDatagramPacket.port
 }
 
 actual abstract class PlatformSocketAddress
 
-class JvmSocketAddress(val javaSocketAddress: java.net.SocketAddress) : PlatformSocketAddress()
-class JvmInetSocketAddress(val javaInetSocketAddress: InetSocketAddress) : PlatformInetSocketAddress(javaInetSocketAddress.hostName, javaInetSocketAddress.port)
-class JvmInetAddress(val javaInetAddress: InetAddress) : PlatformInetAddress(javaInetAddress)
-
 actual fun platformCurrentTimeMillis(): Long = System.currentTimeMillis()
 
 actual class PlatformSocketException actual constructor(message: String?) : Exception(message) {
-    constructor(cause: SocketException) : super(cause.message, cause)
+    constructor(cause: SocketException) : this(cause.message)
 }
