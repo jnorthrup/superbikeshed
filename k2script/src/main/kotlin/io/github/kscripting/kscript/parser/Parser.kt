@@ -17,6 +17,7 @@ class Parser {
         LineParser::parsePackage,
         LineParser::parseProjectCoordinates, // Added new parser function
         LineParser::parseBaseClass,
+        LineParser::parseMarkdownCodeBlock, // Added markdown code block parser
     )
 
     fun parse(scriptLocation: ScriptLocation, string: String): List<Section> {

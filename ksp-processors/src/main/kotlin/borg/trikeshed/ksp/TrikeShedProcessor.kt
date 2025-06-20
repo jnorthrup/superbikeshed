@@ -23,6 +23,27 @@ class TrikeShedProcessor(
         // Process @GeneratePackingStrategies
         processPackingStrategies(resolver)
         
+        // Process @GenerateWireAdapters
+        processWireAdapters(resolver)
+        
+        // Process @GenerateSeriesExtensions
+        processSeriesExtensions(resolver)
+        
+        // Process @GenerateDataClassBuilders
+        processDataClassBuilders(resolver)
+        
+        // Process @GenerateEnumUtilities
+        processEnumUtilities(resolver)
+        
+        // Process @GenerateAttentionDelegates
+        processAttentionDelegates(resolver)
+        
+        // Process @GeneratePlatformImplementations
+        processPlatformImplementations(resolver)
+        
+        // Process @GenerateTestUtilities
+        processTestUtilities(resolver)
+        
         return emptyList()
     }
     

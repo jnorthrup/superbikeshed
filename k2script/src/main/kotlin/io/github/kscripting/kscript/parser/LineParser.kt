@@ -19,7 +19,8 @@ object LineParser {
         LineParser::parseCompilerOpts,
         LineParser::parseProjectCoordinates,
         LineParser::parseImport,
-        LineParser::parseInclude
+        LineParser::parseInclude,
+        LineParser::parseMarkdownCodeBlock,
     )
 
     fun parseSheBang(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
@@ -379,46 +380,6 @@ object LineParser {
         DeprecatedItem(scriptLocation, line, "$introText\n$existing\nshould be replaced with:\n$replacement")
 
     fun parseProjectCoordinates(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
-        val trimmedText = text.trim()
-        val matchResult = PROJECT_COORDINATES_ANNOTATION_REGEX.find(trimmedText)
-
-        if (matchResult != null) {
-            val attributesString = matchResult.groupValues[1]
-            try {
-                val projectCoordinates = extractProjectCoordinatesFromAttributes(attributesString)
-                return listOf(projectCoordinates)
-            } catch (e: ParseException) {
-                throw ParseException("Invalid @file:ProjectCoordinates annotation at $scriptLocation line $line: ${e.message}")
-            }
-        }
-        return emptyList()
-    }
-
-    private fun extractProjectCoordinatesFromAttributes(attributesString: String): ProjectCoordinates {
-        var group: String? = null
-        var artifact: String? = null
-        var version: String? = null
-
-        if (attributesString.isBlank()) {
-            return ProjectCoordinates(null, null, null)
-        }
-
-        ATTRIBUTE_REGEX.findAll(attributesString).forEach { matchResult ->
-            val key = matchResult.groupValues[1]
-            val value = matchResult.groupValues[2].takeIf { it.isNotEmpty() }
-                ?: matchResult.groupValues[3].takeIf { it.isNotEmpty() }
-                ?: matchResult.groupValues[4]
-
-            when (key) {
-                "group" -> group = value
-                "artifact" -> artifact = value
-                "version" -> version = value
-            }
-        }
-        return ProjectCoordinates(group, artifact, version)
-    }
-
-    fun parseProjectCoordinates(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
        val trimmedText = text.trim()
         val matchResult = PROJECT_COORDINATES_ANNOTATION_REGEX.find(trimmedText)
 
@@ -437,19 +398,54 @@ object LineParser {
         return emptyList()
     }
 
+    /**
+     * Parses markdown code blocks with language specification
+     * Supports formats like:
+     * - ```kotlin
+     * - ```java
+     * - ```bash
+     * - ``` (generic code block)
+     */
+    fun parseMarkdownCodeBlock(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
+        val trimmedText = text.trim()
+        
+        // Check for code block start: ```language or ```
+        val startMatch = MARKDOWN_CODE_BLOCK_START_REGEX.find(trimmedText)
+        if (startMatch != null) {
+            val language = startMatch.groupValues[1].takeIf { it.isNotBlank() }
+            return listOf(MarkdownCodeBlock(
+                language = language,
+                content = "",
+                isStart = true,
+                isEnd = false
+            ))
+        }
+        
+        // Check for code block end: ```
+        val endMatch = MARKDOWN_CODE_BLOCK_END_REGEX.find(trimmedText)
+        if (endMatch != null) {
+            return listOf(MarkdownCodeBlock(
+                language = null,
+                content = "",
+                isStart = false,
+                isEnd = true
+            ))
+        }
+        
+        return emptyList()
+    }
+
     private fun extractProjectCoordinatesFromAttributes(attributesString: String): ProjectCoordinates {
         var group: String? = null
         var artifact: String? = null
         var version: String? = null
 
         if (attributesString.isBlank()) {
-            // Return default (all null) if attributes string is empty or blank
             return ProjectCoordinates(null, null, null)
         }
 
         ATTRIBUTE_REGEX.findAll(attributesString).forEach { matchResult ->
             val key = matchResult.groupValues[1]
-            // Value can be in group 2 (double-quoted), 3 (single-quoted), or 4 (unquoted)
             val value = matchResult.groupValues[2].takeIf { it.isNotEmpty() }
                 ?: matchResult.groupValues[3].takeIf { it.isNotEmpty() }
                 ?: matchResult.groupValues[4]
@@ -467,10 +463,8 @@ object LineParser {
 private val sheBang = listOf(SheBang)
 private val PROJECT_COORDINATES_ANNOTATION_REGEX = Regex("""^@file:ProjectCoordinates\s*\((.*)\)""")
 private val ATTRIBUTE_REGEX = Regex("""(group|artifact|version)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s,)]+))""")
-
-// Regex for @file:ProjectCoordinates(group="...", artifact="...", version="...")
-private val PROJECT_COORDINATES_ANNOTATION_REGEX = Regex("""^@file:ProjectCoordinates\s*\((.*)\)""")
-// Regex for parsing individual attributes like group="value", artifact='value', version=value
-// It captures the key, and then one of the possible quote types for the value, or unquoted value.
-private val ATTRIBUTE_REGEX = Regex("""(group|artifact|version)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s,)]+))""")
 private val BASE_CLASS_REGEX = """@file:BaseClass\("([^"]+)"\)""".toRegex()
+
+// Markdown code block regex patterns
+private val MARKDOWN_CODE_BLOCK_START_REGEX = Regex("""^```(\w*)$""")
+private val MARKDOWN_CODE_BLOCK_END_REGEX = Regex("""^```$""")
