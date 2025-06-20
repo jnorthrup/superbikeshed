@@ -664,6 +664,8 @@ object KotlinChainedParser {
         allRules.addAll(ForwardChainRules.classDeclarationChain().play)
         allRules.addAll(ForwardChainRules.functionDeclarationChain().play)
         allRules.addAll(ForwardChainRules.propertyDeclarationChain().play)
+        // --- Trikeshed additive rules ---
+        allRules.addAll(borg.trikeshed.TrikeshedForwardRules.all().play)
         return allRules.toSeries()
     }
     
@@ -671,6 +673,8 @@ object KotlinChainedParser {
         val allRules = mutableListOf<ChainedRule>()
         allRules.addAll(BackwardChainRules.contextValidationChain().play)
         allRules.addAll(BackwardChainRules.typeResolutionChain().play)
+        // --- Trikeshed additive rules ---
+        allRules.addAll(borg.trikeshed.TrikeshedBackwardRules.all().play)
         return allRules.toSeries()
     }
     
