@@ -45,12 +45,14 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             }
         }
         
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
+                implementation(kotlin("test-junit"))
             }
         }
 
@@ -78,3 +80,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 // IntelliJ Project Enumerator integration
 // The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
 // If additional dependencies are needed, add them here.
+
+// If you want to expose the enumerator CLI, add:
+// application {
+//     mainClass.set("nexus.enumerator.intellij.MainKt")
+// }
