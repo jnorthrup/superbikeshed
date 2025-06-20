@@ -1,12 +1,4 @@
 package borg.trikeshed.services
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.j
-import borg.trikeshed.lib.α
-import borg.trikeshed.lib.play
-import borg.trikeshed.lib.toSeries
-import borg.trikeshed.lib.a
-import borg.trikeshed.lib.b
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.bridge.*

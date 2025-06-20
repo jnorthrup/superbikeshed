@@ -13,4 +13,6 @@ expect class MappedFile {
         fun map(path: String, size: Long, readOnly: Boolean = false): MappedFile
         fun allocate(size: Long): MappedFile
     }
+    //todo:  remapping and seeking past 30 bits
+    
 } 
