@@ -1,7 +1,7 @@
 package k2script.trikeshed.services
 
 import k2script.trikeshed.lib.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Series as TrikeSeries
 import kotlin.jvm.JvmInline
 
 /**
@@ -12,7 +12,7 @@ interface RequestFactoryService {
     /**
      * Process a RequestFactory call and return response payload
      */
-    fun process(requestPayload: Series<Byte>): Series<Byte>
+    fun process(requestPayload: TrikeSeries<Byte>): TrikeSeries<Byte>
     
     /**
      * Register a service locator for dependency injection
@@ -34,8 +34,8 @@ data class ServiceMethod(val service: ServiceClass, val method: MethodName)
 // === GWT-SPECIFIC TYPES ===
 
 @JvmInline value class RequestContext(val json: String)
-@JvmInline value class RequestData(val payload: Series<Byte>)
-@JvmInline value class ResponseData(val payload: Series<Byte>)
+@JvmInline value class RequestData(val payload: TrikeSeries<Byte>)
+@JvmInline value class ResponseData(val payload: TrikeSeries<Byte>)
 
 // === SERVICE REGISTRY ===
 

@@ -1,8 +1,8 @@
 package k2script.trikeshed.services
 
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.j
-import borg.trikeshed.lib.play
+import borg.trikeshed.lib.Series as TrikeSeries
+import borg.trikeshed.lib.j as trikeJ
+import borg.trikeshed.lib.play as trikePlay
 import k2script.trikeshed.lib.bridge.*
 import kotlin.jvm.JvmInline
 
@@ -25,8 +25,8 @@ internal class BrokeShedRequestFactoryServiceImpl : RequestFactoryService {
     // Simple counter for demo purposes (replaces system time)
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
-        val requestJson = requestPayload.play.joinToString("") { it.toInt().toChar().toString() }
+    override fun process(requestPayload: TrikeSeries<Byte>): TrikeSeries<Byte> {
+        val requestJson = requestPayload.trikePlay.joinToString("") { it.toInt().toChar().toString() }
         
         return try {
             // Simple demo implementation - just process any payload and return success
@@ -37,10 +37,10 @@ internal class BrokeShedRequestFactoryServiceImpl : RequestFactoryService {
             val responseJson = buildString {
                 append("""{"success":true,"service":"$serviceClass","method":"$methodName","timestamp":${++requestCounter}}""")
             }
-            responseJson.encodeToByteArray().toSeries()
+            responseJson.encodeToByteArray().toTrikeSeries()
 
         } catch (e: Exception) {
-            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toSeries()
+            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toTrikeSeries()
         }
     }
 
@@ -56,5 +56,5 @@ internal class BrokeShedRequestFactoryServiceImpl : RequestFactoryService {
         return """{"success":false,"error":"$message","code":$code}"""
     }
 
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toTrikeSeries(): TrikeSeries<Byte> = size trikeJ { index: Int -> this[index] }
 } 
