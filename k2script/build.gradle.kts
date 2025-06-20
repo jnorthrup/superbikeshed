@@ -4,8 +4,7 @@ import java.time.ZonedDateTime
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
 
 plugins {
-    kotlin("jvm")
-    application
+    kotlin("multiplatform") version "2.1.21"
     `maven-publish`
     signing
 }
@@ -17,11 +16,78 @@ repositories {
     mavenCentral()
 }
 
-application {
-    mainClass.set("k2script.K2scriptKt")
+kotlin {
+    jvmToolchain(21)
+    jvm {
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
+    js(IR) {
+        browser()
+        nodejs()
+        binaries.executable()
+    }
+    // Platform detection for native target
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isWindows = hostOs == "Windows"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+        isWindows -> mingwX64()
+    }
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("commons-cli:commons-cli:1.5.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation("org.apache.commons:commons-lang3:3.12.0")
+                implementation("commons-io:commons-io:2.11.0")
+                implementation("commons-codec:commons-codec:1.15")
+                implementation("com.konghq:unirest-java:3.14.2")
+                implementation("net.igsoft:tablevis:0.6.0")
+                implementation("io.github.kscripting:shell:0.5.2")
+                implementation("org.semver4j:semver4j:4.3.0")
+                implementation(project(":Trikeshed"))
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-common:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven-all:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.1.21")
+                implementation("org.slf4j:slf4j-nop:2.0.7")
+                implementation("org.apache.maven.resolver:maven-resolver-impl:1.9.18")
+                implementation("org.apache.maven.resolver:maven-resolver-api:1.9.18")
+                implementation("org.apache.maven.resolver:maven-resolver-spi:1.9.18")
+                implementation("org.apache.maven.resolver:maven-resolver-util:1.9.18")
+                implementation("org.apache.maven.resolver:maven-resolver-connector-basic:1.9.18")
+                implementation("org.apache.maven.resolver:maven-resolver-transport-http:1.9.18")
+                implementation("org.apache.maven:maven-core:3.9.6")
+                implementation("org.apache.maven:maven-model:3.9.6")
+                implementation("org.apache.maven:maven-artifact:3.9.6")
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+                implementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
+                implementation("com.willowtreeapps.assertk:assertk-jvm:0.25")
+                implementation("io.mockk:mockk:1.13.2")
+                implementation(kotlin("script-runtime"))
+            }
+        }
+    }
 }
-
-val kotlinVersion = "2.1.21"
 
 val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     from("src/main/resources") {
@@ -160,49 +226,4 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
-}
-
-dependencies {
-    implementation("commons-cli:commons-cli:1.5.0")
-    
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-    
-    implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven-all:$kotlinVersion")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
-    
-    implementation("org.apache.commons:commons-lang3:3.12.0")
-    implementation("commons-io:commons-io:2.11.0")
-    implementation("commons-codec:commons-codec:1.15")
-    implementation("com.konghq:unirest-java:3.14.2")
-    
-    implementation("net.igsoft:tablevis:0.6.0")
-    implementation("io.github.kscripting:shell:0.5.2")
-    
-    implementation("org.slf4j:slf4j-nop:2.0.7")
-    
-    implementation("org.semver4j:semver4j:4.3.0")
-    
-    // Maven Resolver (Aether) for dependency resolution
-    implementation("org.apache.maven.resolver:maven-resolver-impl:1.9.18")
-    implementation("org.apache.maven.resolver:maven-resolver-api:1.9.18")
-    implementation("org.apache.maven.resolver:maven-resolver-spi:1.9.18")
-    implementation("org.apache.maven.resolver:maven-resolver-util:1.9.18")
-    implementation("org.apache.maven.resolver:maven-resolver-connector-basic:1.9.18")
-    implementation("org.apache.maven.resolver:maven-resolver-transport-http:1.9.18")
-    implementation("org.apache.maven:maven-core:3.9.6")
-    implementation("org.apache.maven:maven-model:3.9.6")
-    implementation("org.apache.maven:maven-artifact:3.9.6")
-    
-    implementation(project(":Trikeshed"))
-    
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
-    testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.25")
-    testImplementation("io.mockk:mockk:1.13.2")
-    
-    testImplementation(kotlin("script-runtime"))
 }
