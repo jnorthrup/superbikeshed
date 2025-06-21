@@ -2,6 +2,10 @@ package moneyfan.core
 
 import borg.trikeshed.lib.*
 import kotlinx.datetime.Instant
+import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Join
+import moneyfan.trikeshed.j
+import moneyfan.models.TradingSignal
 
 /**
  * TrikeShed-based trading core using Series<T> and Join<A,B> patterns
@@ -47,6 +51,114 @@ value class Quantity(val value: Decimal) {
 typealias PriceVolume = Join<Price, Volume>
 typealias TickData = Join<PriceVolume, Instant>
 typealias OHLCV = Join<Join<Price, Price>, Join<Join<Price, Price>, Volume>> // Open-High-Low-Close-Volume
+
+// High-Frequency Trading Primitive Array Optimizations
+@JvmInline
+value class TickPriceArray(val data: DoubleArray) {
+    val size: Int get() = data.size
+    operator fun get(index: Int): Price = Price(data[index])
+    fun update(index: Int, price: Price) { data[index] = price.value }
+    
+    companion object {
+        fun create(capacity: Int): TickPriceArray = TickPriceArray(DoubleArray(capacity))
+        val UNDEFINED = Price(Double.NaN)
+    }
+}
+
+@JvmInline  
+value class TickVolumeArray(val data: DoubleArray) {
+    val size: Int get() = data.size
+    operator fun get(index: Int): Volume = Volume(data[index])
+    fun update(index: Int, volume: Volume) { data[index] = volume.value }
+    
+    companion object {
+        fun create(capacity: Int): TickVolumeArray = TickVolumeArray(DoubleArray(capacity))
+    }
+}
+
+@JvmInline
+value class TickTimestampArray(val data: LongArray) {
+    val size: Int get() = data.size
+    operator fun get(index: Int): Instant = Instant.fromEpochMilliseconds(data[index])
+    fun update(index: Int, timestamp: Instant) { data[index] = timestamp.toEpochMilliseconds() }
+    
+    companion object {
+        fun create(capacity: Int): TickTimestampArray = TickTimestampArray(LongArray(capacity))
+    }
+}
+
+/**
+ * High-frequency tick buffer using primitive arrays for optimal performance
+ * Uses circular buffer pattern to minimize memory allocations
+ */
+data class HFTTickBuffer(
+    val symbol: Symbol,
+    val prices: TickPriceArray,
+    val volumes: TickVolumeArray,
+    val timestamps: TickTimestampArray,
+    var head: Int = 0,
+    var size: Int = 0
+) {
+    val capacity: Int get() = prices.size
+    val isFull: Boolean get() = size >= capacity
+    
+    init {
+        require(prices.size == volumes.size && volumes.size == timestamps.size) {
+            "All arrays must have the same capacity"
+        }
+    }
+    
+    fun addTick(price: Price, volume: Volume, timestamp: Instant) {
+        prices.update(head, price)
+        volumes.update(head, volume)
+        timestamps.update(head, timestamp)
+        head = (head + 1) % capacity
+        if (size < capacity) size++
+    }
+    
+    fun getLatestTick(): MarketTick? {
+        if (size == 0) return null
+        val latestIndex = if (head == 0) size - 1 else head - 1
+        return MarketTick(
+            symbol = symbol,
+            data = (prices[latestIndex] j volumes[latestIndex]) j timestamps[latestIndex],
+            tradeId = TradeId("tick_${System.currentTimeMillis()}")
+        )
+    }
+    
+    fun toSeries(): Series<MarketTick> = size j { i ->
+        val index = if (size < capacity) i else (head + i) % capacity
+        MarketTick(
+            symbol = symbol,
+            data = (prices[index] j volumes[index]) j timestamps[index],
+            tradeId = TradeId("tick_$index")
+        )
+    }
+    
+    companion object {
+        fun create(symbol: Symbol, capacity: Int = 10000): HFTTickBuffer = HFTTickBuffer(
+            symbol = symbol,
+            prices = TickPriceArray.create(capacity),
+            volumes = TickVolumeArray.create(capacity),
+            timestamps = TickTimestampArray.create(capacity)
+        )
+    }
+}
+
+// Enhanced Time-Series Portfolio Management Types
+typealias TimestampSeries = Series<Instant>
+typealias PortfolioTimeSeries<T> = Join<TimestampSeries, Series<T>>
+typealias PositionHistory = PortfolioTimeSeries<Position>
+typealias ValueHistory = PortfolioTimeSeries<Price>
+typealias RiskMetricsHistory = PortfolioTimeSeries<Join<Decimal, Decimal>> // VaR j Beta
+
+// Advanced Asset Relationship Mappings
+typealias AssetCorrelationMap = Join<Symbol, Series<Join<Symbol, Decimal>>>
+typealias PortfolioWeights = Join<Symbol, Decimal>
+typealias AssetAllocation = Join<PortfolioWeights, Join<Price, Volume>>
+typealias RiskFactors = Join<Symbol, Join<Decimal, Join<Decimal, Decimal>>> // beta j (var j covar)
+typealias PerformanceAttribution = Join<Symbol, Join<Decimal, Decimal>> // contribution j alpha
+typealias StrategySignals = Join<Symbol, Join<TradingSignal, Decimal>> // signal j confidence
 
 // Helper functions for OHLCV access
 val OHLCV.open: Price get() = this.a.a
@@ -106,16 +218,19 @@ class TradingEngine {
     fun processTickSeries(ticks: TickSeries): CandleSeries {
         val candleData = mutableListOf<Candlestick>()
         
-        if (ticks.play.isEmpty()) {
-            return Series.of(0) { candleData[it] }
+        if (ticks.a == 0) {
+            return 0 j { _: Int -> candleData[0] } // Will never be called since size is 0
         }
         
-        // Group ticks by symbol and time window using Series.α transformation
-        val groupedTicks = ticks.α { tick -> tick.symbol to tick }.play.groupBy { it.first }
+        // Group ticks by symbol manually using for loop for performance
+        val symbolGroups = mutableMapOf<Symbol, MutableList<MarketTick>>()
+        for (i in 0 until ticks.a) {
+            val tick = ticks[i]
+            val symbolTicks = symbolGroups.getOrPut(tick.symbol) { mutableListOf() }
+            symbolTicks.add(tick)
+        }
         
-        groupedTicks.forEach { (symbol, symbolPairs) ->
-            val symbolTicks = symbolPairs.map { it.second }
-            
+        symbolGroups.forEach { (symbol, symbolTicks) ->
             if (symbolTicks.isNotEmpty()) {
                 val prices = symbolTicks.map { it.price }
                 val volumes = symbolTicks.map { it.volume }
@@ -144,7 +259,7 @@ class TradingEngine {
             }
         }
         
-        return Series.of(candleData.size) { i -> candleData[i] }
+        return candleData.size j { i -> candleData[i] }
     }
     
     private fun calculateVWAP(prices: List<Price>, volumes: List<Volume>): Price {
@@ -181,7 +296,7 @@ class TradingEngine {
             volatility = 0.95 * volatility + 0.05 * kotlin.math.abs(randomShock)
         }
         
-        return Series.of(ticks.size) { i -> ticks[i] }
+        return ticks.size j { i -> ticks[i] }
     }
 }
 
@@ -211,26 +326,27 @@ class VolatilityTracker {
 class TechnicalAnalysis {
     
     fun simpleMovingAverage(prices: PriceSeries, period: Int): PriceSeries {
-        if (prices.size < period) {
-            return Series.of(0) { Price(0.0) }
+        if (prices.a < period) {
+            return 0 j { Price(0.0) }
         }
         
-        // Use Series.α for functional transformation
-        val windows = prices.play.windowed(period) { window ->
+        // Use windowed operation with List conversion for compatibility
+        val priceList = prices.play.toList()
+        val windows = priceList.windowed(period) { window ->
             val sum = window.map { it.value }.sum()
             Price(sum / period)
         }
         
-        return Series.of(windows.size) { i -> windows[i] }
+        return windows.size j { i -> windows[i] }
     }
     
     fun exponentialMovingAverage(prices: PriceSeries, period: Int): PriceSeries {
-        if (prices.size < period) {
-            return Series.of(0) { Price(0.0) }
+        if (prices.a < period) {
+            return 0 j { Price(0.0) }
         }
         
         val emaData = mutableListOf<Price>()
-        val priceList = prices.play
+        val priceList = prices.play.toList()
         val multiplier = 2.0 / (period + 1)
         
         // Start with simple average for first EMA
@@ -238,19 +354,19 @@ class TechnicalAnalysis {
         var ema = initialSum / period
         emaData.add(Price(ema))
         
-        // Calculate remaining EMAs using Series transformation
+        // Calculate remaining EMAs using for loop
         for (i in period until priceList.size) {
             ema = (priceList[i].value - ema) * multiplier + ema
             emaData.add(Price(ema))
         }
         
-        return Series.of(emaData.size) { i -> emaData[i] }
+        return emaData.size j { i -> emaData[i] }
     }
     
     fun bollingerBands(prices: PriceSeries, period: Int, stdDev: Decimal = 2.0): Join<PriceSeries, Join<PriceSeries, PriceSeries>> {
         val sma = simpleMovingAverage(prices, period)
-        val smaList = sma.play
-        val priceList = prices.play
+        val smaList = sma.play.toList()
+        val priceList = prices.play.toList()
         
         val upperBand = mutableListOf<Price>()
         val lowerBand = mutableListOf<Price>()
@@ -269,15 +385,19 @@ class TechnicalAnalysis {
             }
         }
         
-        return sma j (Series.of(upperBand.size) { i -> upperBand[i] } j Series.of(lowerBand.size) { i -> lowerBand[i] })
+        val upperBandSeries: PriceSeries = upperBand.size j { i -> upperBand[i] }
+        val lowerBandSeries: PriceSeries = lowerBand.size j { i -> lowerBand[i] }
+        
+        return sma j (upperBandSeries j lowerBandSeries)
     }
     
     fun rsi(prices: PriceSeries, period: Int = 14): PriceSeries {
-        if (prices.size < period + 1) {
-            return Series.of(0) { Price(50.0) } // Neutral RSI
+        if (prices.a < period + 1) {
+            return 0 j { _: Int -> Price(50.0) } // Neutral RSI
         }
         
-        val priceChanges = prices.play.zipWithNext { prev, curr -> curr.value - prev.value }
+        val priceList = prices.play.toList()
+        val priceChanges = priceList.zipWithNext { prev, curr -> curr.value - prev.value }
         val gains = priceChanges.map { kotlin.math.max(0.0, it) }
         val losses = priceChanges.map { kotlin.math.abs(kotlin.math.min(0.0, it)) }
         
@@ -301,7 +421,7 @@ class TechnicalAnalysis {
             rsiValues.add(Price(newRsi))
         }
         
-        return Series.of(rsiValues.size) { i -> rsiValues[i] }
+        return rsiValues.size j { i -> rsiValues[i] }
     }
 }
 
@@ -330,6 +450,12 @@ class PortfolioManager {
     private var cashBalance = 10000.0 // Start with $10,000
     private var initialValue = 10000.0
     
+    // Time-series history tracking
+    private val positionHistoryBuffer = mutableListOf<Pair<Instant, Map<Symbol, Position>>>()
+    private val valueHistoryBuffer = mutableListOf<Pair<Instant, Price>>()
+    private val riskHistoryBuffer = mutableListOf<Pair<Instant, Join<Decimal, Decimal>>>()
+    private val maxHistorySize = 10000 // Configurable history buffer size
+    
     fun buyPosition(symbol: Symbol, quantity: Quantity, price: Price): Boolean {
         val totalCost = quantity * price
         
@@ -350,6 +476,9 @@ class PortfolioManager {
         } else {
             positions[symbol] = Position(symbol, quantity, price, totalCost)
         }
+        
+        // Update history tracking
+        updateHistoryBuffers()
         
         return true
     }
@@ -380,6 +509,9 @@ class PortfolioManager {
             )
         }
         
+        // Update history tracking
+        updateHistoryBuffers()
+        
         return true
     }
     
@@ -391,7 +523,7 @@ class PortfolioManager {
             position.copy(unrealizedPnL = unrealizedPnL)
         }
         
-        val positionSeries = Series.of(positionList.size) { i -> positionList[i] }
+        val positionSeries = positionList.size j { i -> positionList[i] }
         
         val totalPositionValue = positionList.fold(0.0) { acc, position ->
             val currentPrice = currentPrices[position.symbol] ?: position.averagePrice
@@ -428,7 +560,254 @@ class PortfolioManager {
         
         return estimatedVaR j estimatedBeta
     }
+    
+    /**
+     * Update time-series history buffers with current state
+     */
+    private fun updateHistoryBuffers() {
+        val timestamp = kotlinx.datetime.Clock.System.now()
+        
+        // Track position history
+        val currentPositions = positions.toMap()
+        positionHistoryBuffer.add(timestamp to currentPositions)
+        if (positionHistoryBuffer.size > maxHistorySize) {
+            positionHistoryBuffer.removeAt(0)
+        }
+        
+        // Track value history
+        val totalValue = Price(cashBalance + positions.values.sumOf { position ->
+            // Use last known price or average price
+            position.averagePrice.value * position.quantity.value
+        })
+        valueHistoryBuffer.add(timestamp to totalValue)
+        if (valueHistoryBuffer.size > maxHistorySize) {
+            valueHistoryBuffer.removeAt(0)
+        }
+        
+        // Track risk metrics history
+        val riskMetrics = getRiskMetrics()
+        riskHistoryBuffer.add(timestamp to riskMetrics)
+        if (riskHistoryBuffer.size > maxHistorySize) {
+            riskHistoryBuffer.removeAt(0)
+        }
+    }
+    
+    /**
+     * Get enhanced portfolio state with time-series tracking
+     */
+    fun getEnhancedPortfolioState(currentPrices: Map<Symbol, Price>): EnhancedPortfolioState {
+        val basicState = getPortfolioState(currentPrices)
+        
+        // Create time-series from buffers
+        val timestampSeries = positionHistoryBuffer.size j { i -> positionHistoryBuffer[i].first }
+        val positionHistory = timestampSeries j (positionHistoryBuffer.size j { i ->
+            val positionMap = positionHistoryBuffer[i].second
+            positionMap.values.toList().size j { j -> positionMap.values.toList()[j] }
+        })
+        
+        val valueHistory = timestampSeries j (valueHistoryBuffer.size j { i -> valueHistoryBuffer[i].second })
+        val riskHistory = timestampSeries j (riskHistoryBuffer.size j { i -> riskHistoryBuffer[i].second })
+        
+        // Calculate performance metrics
+        val performanceMetrics = calculatePerformanceMetrics()
+        
+        return EnhancedPortfolioState(
+            positions = basicState.positions,
+            positionHistory = positionHistory,
+            valueHistory = valueHistory,
+            riskHistory = riskHistory,
+            performanceMetrics = performanceMetrics
+        )
+    }
+    
+    /**
+     * Calculate comprehensive performance metrics
+     */
+    private fun calculatePerformanceMetrics(): PerformanceMetrics {
+        if (valueHistoryBuffer.size < 2) {
+            return PerformanceMetrics(
+                sharpeRatio = 0.0,
+                maxDrawdown = 0.0,
+                totalReturn = 0.0,
+                volatility = 0.0,
+                winRate = 0.0
+            )
+        }
+        
+        // Calculate returns
+        val returns = mutableListOf<Double>()
+        for (i in 1 until valueHistoryBuffer.size) {
+            val prevValue = valueHistoryBuffer[i-1].second.value
+            val currValue = valueHistoryBuffer[i].second.value
+            val returnValue = (currValue - prevValue) / prevValue
+            returns.add(returnValue)
+        }
+        
+        // Performance calculations using for loops for optimal performance
+        var totalReturn = 0.0
+        var sumSquaredDeviations = 0.0
+        val mean = returns.average()
+        
+        for (ret in returns) {
+            totalReturn += ret
+            val deviation = ret - mean
+            sumSquaredDeviations += deviation * deviation
+        }
+        
+        val volatility = kotlin.math.sqrt(sumSquaredDeviations / returns.size)
+        val sharpeRatio = if (volatility > 0) mean / volatility else 0.0
+        
+        // Calculate max drawdown
+        var maxDrawdown = 0.0
+        var peak = valueHistoryBuffer[0].second.value
+        for (i in 1 until valueHistoryBuffer.size) {
+            val value = valueHistoryBuffer[i].second.value
+            if (value > peak) {
+                peak = value
+            } else {
+                val drawdown = (peak - value) / peak
+                if (drawdown > maxDrawdown) {
+                    maxDrawdown = drawdown
+                }
+            }
+        }
+        
+        // Calculate win rate (simplified)
+        var wins = 0
+        for (ret in returns) {
+            if (ret > 0) wins++
+        }
+        val winRate = wins.toDouble() / returns.size
+        
+        return PerformanceMetrics(
+            sharpeRatio = sharpeRatio,
+            maxDrawdown = maxDrawdown,
+            totalReturn = totalReturn,
+            volatility = volatility,
+            winRate = winRate
+        )
+    }
 }
+
+/**
+ * Performance-optimized trading calculations using for loops (gold standard for performance)
+ */
+object OptimizedTradingCalculations {
+    
+    /**
+     * Fast moving average calculation using for loops for maximum performance
+     */
+    fun fastMovingAverage(prices: PriceSeries, period: Int): PriceSeries {
+        return prices.a j { index ->
+            if (index < period - 1) {
+                TickPriceArray.UNDEFINED
+            } else {
+                var sum = 0.0
+                // Performance-critical: use for loop, not forEach
+                for (i in (index - period + 1)..index) {
+                    sum += prices[i].value
+                }
+                Price(sum / period)
+            }
+        }
+    }
+    
+    /**
+     * Cache-friendly RSI calculation using for loops
+     */
+    fun fastRSI(prices: PriceSeries, period: Int): PriceSeries {
+        val changes = (prices.a - 1) j { i -> prices[i + 1].value - prices[i].value }
+        
+        return changes.a j { index ->
+            if (index < period - 1) {
+                Price(50.0) // Neutral RSI
+            } else {
+                var gainSum = 0.0
+                var lossSum = 0.0
+                
+                // Optimized for loop pattern
+                for (i in (index - period + 1)..index) {
+                    val change = changes[i]
+                    if (change > 0) gainSum += change else lossSum -= change
+                }
+                
+                val rs = if (lossSum > 0) gainSum / lossSum else Double.MAX_VALUE
+                Price(100.0 - (100.0 / (1.0 + rs)))
+            }
+        }
+    }
+    
+    /**
+     * High-frequency Bollinger Bands calculation optimized for primitive arrays
+     */
+    fun fastBollingerBands(buffer: HFTTickBuffer, period: Int, stdDev: Decimal = 2.0): Join<PriceSeries, Join<PriceSeries, PriceSeries>> {
+        val sma = buffer.size j { index ->
+            if (index < period - 1) {
+                TickPriceArray.UNDEFINED
+            } else {
+                var sum = 0.0
+                for (i in (index - period + 1)..index) {
+                    val bufferIndex = if (buffer.size < buffer.capacity) i else (buffer.head + i) % buffer.capacity
+                    sum += buffer.prices[bufferIndex].value
+                }
+                Price(sum / period)
+            }
+        }
+        
+        val upperBand = buffer.size j { index ->
+            if (index < period - 1) {
+                TickPriceArray.UNDEFINED
+            } else {
+                val mean = sma[index].value
+                var variance = 0.0
+                for (i in (index - period + 1)..index) {
+                    val bufferIndex = if (buffer.size < buffer.capacity) i else (buffer.head + i) % buffer.capacity
+                    val diff = buffer.prices[bufferIndex].value - mean
+                    variance += diff * diff
+                }
+                val standardDeviation = kotlin.math.sqrt(variance / period)
+                Price(mean + stdDev * standardDeviation)
+            }
+        }
+        
+        val lowerBand = buffer.size j { index ->
+            if (index < period - 1) {
+                TickPriceArray.UNDEFINED
+            } else {
+                val mean = sma[index].value
+                var variance = 0.0
+                for (i in (index - period + 1)..index) {
+                    val bufferIndex = if (buffer.size < buffer.capacity) i else (buffer.head + i) % buffer.capacity
+                    val diff = buffer.prices[bufferIndex].value - mean
+                    variance += diff * diff
+                }
+                val standardDeviation = kotlin.math.sqrt(variance / period)
+                Price(mean - stdDev * standardDeviation)
+            }
+        }
+        
+        return sma j (upperBand j lowerBand)
+    }
+}
+
+/**
+ * Enhanced portfolio management with time-series tracking
+ */
+data class EnhancedPortfolioState(
+    val positions: Series<Position>,
+    val positionHistory: PositionHistory,
+    val valueHistory: ValueHistory,
+    val riskHistory: RiskMetricsHistory,
+    val performanceMetrics: PerformanceMetrics
+)
+
+data class PerformanceMetrics(
+    val sharpeRatio: Decimal,
+    val maxDrawdown: Decimal,
+    val totalReturn: Decimal,
+    val volatility: Decimal,
+    val winRate: Decimal
+)
 
 /**
  * Generate pseudo-Gaussian random number using Box-Muller transform

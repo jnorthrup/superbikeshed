@@ -1,0 +1,20 @@
+[
+  {
+    "memo": "boingDemo_agent.memo",
+    "agent": "boingDemo-agent",
+    "scope": "boingDemo",
+    "action": "Complete native audio implementation for multiplatform demo",
+    "risk": "high",
+    "status": "awaiting_approval",
+    "timestamp": "2025-06-21T19:28:53-04:00"
+  },
+  {
+    "memo": "flatton_agent.memo",
+    "agent": "flatton-agent",
+    "scope": "flatton",
+    "action": "Replace SimdJsonScanner with kotlinx-serialization-scanner",
+    "risk": "high",
+    "status": "awaiting_approval",
+    "timestamp": "2025-06-21T19:28:53-04:00"
+  }
+]

@@ -52,6 +52,7 @@ kotlin {
                 implementation("commons-codec:commons-codec:1.15")
                 implementation("com.konghq:unirest-java:3.14.2")
                 implementation("org.semver4j:semver4j:4.3.0")
+                // implementation(project(":kotlin-entity-scanner")) // Only in JVM
                 // implementation(project(":Trikeshed")) // Temporarily disabled due to compilation issues
             }
         }
@@ -89,6 +90,7 @@ kotlin {
                 implementation("org.apache.maven:maven-core:3.9.6")
                 implementation("org.apache.maven:maven-model:3.9.6")
                 implementation("org.apache.maven:maven-artifact:3.9.6")
+                // implementation(project(":kotlin-entity-scanner")) // Temporarily disabled
             }
         }
         
