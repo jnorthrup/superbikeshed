@@ -21,20 +21,19 @@ kotlin {
         binaries.executable()
     }
     
-    // Platform detection for native target
     val hostOs = System.getProperty("os.name")
-    val hostArch = System.getProperty("os.arch")
-    val isMacOS = hostOs == "Mac OS X"
-    val isLinux = hostOs == "Linux"
-    val isWindows = hostOs == "Windows"
-    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+    val isMingwX64 = hostOs.startsWith("Windows")
+    val isMac = hostOs.startsWith("Mac OS")
+    val isLinux = hostOs.startsWith("Linux")
 
-    when {
-        isMacOS && isArm64 -> macosArm64()
-        isMacOS -> macosX64()
-        isLinux && isArm64 -> linuxArm64()
-        isLinux -> linuxX64()
-        isWindows -> mingwX64()
+    if (isMac) {
+        macosArm64()
+        macosX64()
+    } else if (isLinux) {
+        linuxX64()
+        linuxArm64()
+    } else if (isMingwX64) {
+        mingwX64()
     }
 
     sourceSets {
@@ -63,6 +62,42 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+            }
+        }
+        
+        if (isMac) {
+            val macosArm64Main by getting {
+                dependencies {
+                    implementation(kotlin("stdlib"))
+                }
+            }
+            
+            val macosX64Main by getting {
+                dependencies {
+                    implementation(kotlin("stdlib"))
+                }
+            }
+        }
+        
+        if (isLinux) {
+            val linuxX64Main by getting {
+                dependencies {
+                    implementation(kotlin("stdlib"))
+                }
+            }
+            
+            val linuxArm64Main by getting {
+                dependencies {
+                    implementation(kotlin("stdlib"))
+                }
+            }
+        }
+        
+        if (isMingwX64) {
+            val mingwX64Main by getting {
+                dependencies {
+                    implementation(kotlin("stdlib"))
+                }
             }
         }
     }
