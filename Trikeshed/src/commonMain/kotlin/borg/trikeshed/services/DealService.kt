@@ -16,11 +16,11 @@ interface DealService {
  * Value class representing a deal.
  */
 class DealProxy(private val data: Join<String, Map<String, Any>>) {
-    val id: String get() = data.first
-    val product: String get() = data.second["product"] as? String ?: ""
-    val vendor: String get() = data.second["vendor"] as? String ?: ""
-    val price: Double get() = data.second["price"] as? Double ?: 0.0
-    val quantity: Int get() = data.second["quantity"] as? Int ?: 0
+    val id: String get() = data.a
+    val product: String get() = data.b["product"] as? String ?: ""
+    val vendor: String get() = data.b["vendor"] as? String ?: ""
+    val price: Double get() = data.b["price"] as? Double ?: 0.0
+    val quantity: Int get() = data.b["quantity"] as? Int ?: 0
 
     companion object {
         operator fun invoke(
@@ -64,8 +64,8 @@ class DealProxy(private val data: Join<String, Map<String, Any>>) {
  * Value class representing a vendor.
  */
 class VendorProxy(private val data: Join<String, Map<String, String>>) {
-    val id: String get() = data.first
-    val name: String get() = data.second["name"] ?: ""
+    val id: String get() = data.a
+    val name: String get() = data.b["name"] ?: ""
 
     companion object {
         operator fun invoke(
@@ -95,11 +95,11 @@ class VendorProxy(private val data: Join<String, Map<String, String>>) {
  * Value class representing a CouchDB transaction result.
  */
 class CouchTxProxy(private val data: Join<String, Map<String, String>>) {
-    val id: String get() = data.first
-    val ok: Boolean get() = data.second["ok"] == "true"
-    val rev: String? get() = data.second["rev"]
-    val error: String? get() = data.second["error"]
-    val reason: String? get() = data.second["reason"]
+    val id: String get() = data.a
+    val ok: Boolean get() = data.b["ok"] == "true"
+    val rev: String? get() = data.b["rev"]
+    val error: String? get() = data.b["error"]
+    val reason: String? get() = data.b["reason"]
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

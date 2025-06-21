@@ -15,8 +15,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                // Self-contained for now - will integrate with TrikeShed when stable
-                // implementation(project(":brokeshed"))
+                implementation(project(":Trikeshed"))
             }
         }
         

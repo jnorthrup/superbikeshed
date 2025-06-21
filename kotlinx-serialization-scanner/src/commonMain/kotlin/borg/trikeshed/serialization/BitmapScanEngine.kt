@@ -9,25 +9,26 @@ import borg.trikeshed.lib.*
  * Creates structural indices for lightning-fast JSON navigation
  */
 
-// === Core Bitmap Types ===
+// === Core Bitmap Types - 32-bit Deterministic Packing ===
 
 @JvmInline
-value class CharacterBitmap(val mask: ULong) {
-    inline val hasStructural: Boolean get() = (mask and STRUCTURAL_MASK) != 0UL
-    inline val hasQuote: Boolean get() = (mask and QUOTE_MASK) != 0UL
-    inline val hasEscape: Boolean get() = (mask and ESCAPE_MASK) != 0UL
-    inline val hasWhitespace: Boolean get() = (mask and WHITESPACE_MASK) != 0UL
+value class CharacterBitmap(val mask: Int) {
+    inline val hasStructural: Boolean get() = (mask and STRUCTURAL_MASK) != 0
+    inline val hasQuote: Boolean get() = (mask and QUOTE_MASK) != 0
+    inline val hasEscape: Boolean get() = (mask and ESCAPE_MASK) != 0
+    inline val hasWhitespace: Boolean get() = (mask and WHITESPACE_MASK) != 0
     
     companion object {
-        const val STRUCTURAL_MASK = 0x0101010101010101UL  // {}[],:
-        const val QUOTE_MASK = 0x0202020202020202UL       // "
-        const val ESCAPE_MASK = 0x0404040404040404UL      // \
-        const val WHITESPACE_MASK = 0x0808080808080808UL  // space, tab, newline, cr
+        const val STRUCTURAL_MASK = 0x01010101  // {}[],:  - 4 bytes packed
+        const val QUOTE_MASK = 0x02020202       // "       - 4 bytes packed  
+        const val ESCAPE_MASK = 0x04040404      // \       - 4 bytes packed
+        const val WHITESPACE_MASK = 0x08080808  // space, tab, newline, cr - 4 bytes packed
     }
 }
 
-typealias BitmapChunk = ULong
-typealias BitmapSeries = Series<BitmapChunk>
+// Deterministic 32-bit packing - eliminates all casting issues
+typealias BitmapChunk = Int
+typealias BitmapSeries = MetaSeries<Int, BitmapChunk>
 
 /**
  * Platform-agnostic bitmap scanning implementation
@@ -40,10 +41,10 @@ object BitmapScanEngine {
      */
     fun createStructuralBitmap(input: String): BitmapSeries {
         val inputBytes = input.encodeToByteArray()
-        val chunkCount = (inputBytes.size + 7) / 8  // Round up to 8-byte chunks
+        val chunkCount = (inputBytes.size + 3) / 4  // Round up to 4-byte chunks for 32-bit packing
         
-        return chunkCount j { chunkIndex ->
-            createChunkBitmap(inputBytes, chunkIndex * 8)
+        return chunkCount j { chunkIndex: Int ->
+            createChunkBitmap(inputBytes, chunkIndex * 4)
         }
     }
     
@@ -57,12 +58,12 @@ object BitmapScanEngine {
         
         for (i in input.indices) {
             val char = input[i]
-            val chunkIndex = i / 8
-            val bitPosition = i % 8
+            val chunkIndex = i / 4  // 4 bytes per 32-bit chunk
+            val bitPosition = i % 4
             
             if (chunkIndex < bitmap.size) {
                 val chunk = bitmap[chunkIndex]
-                val charBitmap = CharacterBitmap((chunk shr (bitPosition * 8)) and 0xFFUL)
+                val charBitmap = CharacterBitmap((chunk shr (bitPosition * 8)) and 0xFF)
                 
                 when {
                     escapeNext -> {
@@ -84,22 +85,22 @@ object BitmapScanEngine {
             }
         }
         
-        return indices.size j { indices[it] }
+        return indices.size j { index: Int -> indices[index] }
     }
     
     /**
-     * Creates bitmap for 8-byte chunk using optimized bit manipulation
+     * Creates bitmap for 4-byte chunk using deterministic 32-bit packing
      */
     private fun createChunkBitmap(inputBytes: ByteArray, startOffset: Int): BitmapChunk {
-        var bitmap = 0UL
+        var bitmap = 0
         
-        for (i in 0 until 8) {
+        for (i in 0 until 4) {  // Process 4 bytes for 32-bit Int
             val byteIndex = startOffset + i
             if (byteIndex >= inputBytes.size) break
             
             val byte = inputBytes[byteIndex].toUByte()
             val charMask = createCharacterMask(byte)
-            bitmap = bitmap or (charMask.toULong() shl (i * 8))
+            bitmap = bitmap or (charMask.toInt() shl (i * 8))
         }
         
         return bitmap
@@ -108,13 +109,13 @@ object BitmapScanEngine {
     /**
      * Creates character classification mask for JSON structural analysis
      */
-    private fun createCharacterMask(byte: UByte): UByte {
+    private fun createCharacterMask(byte: UByte): Int {
         return when (byte.toInt()) {
-            '{'.code, '}'.code, '['.code, ']'.code, ','.code, ':'.code -> 0x01u
-            '"'.code -> 0x02u
-            '\\'.code -> 0x04u
-            ' '.code, '\t'.code, '\n'.code, '\r'.code -> 0x08u
-            else -> 0x00u
+            '{'.code, '}'.code, '['.code, ']'.code, ','.code, ':'.code -> 0x01
+            '"'.code -> 0x02
+            '\\'.code -> 0x04
+            ' '.code, '\t'.code, '\n'.code, '\r'.code -> 0x08
+            else -> 0x00
         }
     }
     
@@ -146,10 +147,10 @@ object BitmapScanEngine {
             }
         }
         
-        return indices.size j { indices[it] }
+        return indices.size j { index: Int -> indices[index] }
     }
     
-    private inline fun isStructuralChar(char: Char): Boolean =
+    internal inline fun isStructuralChar(char: Char): Boolean =
         char == '{' || char == '}' || char == '[' || char == ']' || char == ',' || char == ':'
 }
 
@@ -180,7 +181,7 @@ class StreamingBitmapScanner(private val chunkSize: Int = 8192) {
                     quoteState = !quoteState
                     localIndices.add(globalIndex)
                 }
-                !quoteState && BitmapScanEngine.isStructuralChar(char) -> {
+                !quoteState && isStructuralChar(char) -> {
                     localIndices.add(globalIndex)
                 }
             }

@@ -61,10 +61,11 @@ private class ArrayMapPatriciaTrie<K, V>(
                 ArrayMapPatriciaTrie(prefix, this.value, updated, keySplitter)
             } else {
                 val newChild = ArrayMapPatriciaTrie(parts.drop(1), value, emptyArray(), keySplitter)
-                val newChildren = children.toMutableList().apply { add(~idx, parts[0] to newChild) }.toTypedArray()
+                val newChildren = children.toMutableList().apply { add(idx, parts[0] to newChild) }.toTypedArray()
                 ArrayMapPatriciaTrie(prefix, this.value, newChildren, keySplitter)
             }
         }
+        
         val common = prefix.commonPrefixWith(parts)
         if (common.size == prefix.size && common.size == parts.size) {
             return ArrayMapPatriciaTrie(prefix, value, children, keySplitter)

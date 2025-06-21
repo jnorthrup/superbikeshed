@@ -16,14 +16,14 @@ import kotlinx.serialization.json.*
 value class JsonBitmapPosition(val value: Int)
 
 @JvmInline  
-value class JsonStructuralMask(val bits: ULong)
+value class JsonStructuralMask(val bits: Int)  // Changed to 32-bit for deterministic packing
 
 @JvmInline
-value class JsonBitmapWord(val data: ULong)
+value class JsonBitmapWord(val data: Int)  // Changed to 32-bit for deterministic packing
 
-typealias JsonBitmapArray = Series<JsonBitmapWord>
+typealias JsonBitmapArray = MetaSeries<Int, JsonBitmapWord>
 typealias JsonStructuralIndex = Int
-typealias JsonStructuralSeries = Series<JsonStructuralIndex>
+typealias JsonStructuralSeries = MetaSeries<Int, JsonStructuralIndex>
 
 /**
  * Core bitmap-based JSON decoder that implements kotlinx-serialization Decoder interface
