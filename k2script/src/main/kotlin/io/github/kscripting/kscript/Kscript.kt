@@ -16,6 +16,7 @@ import org.apache.commons.cli.CommandLineParser
 import org.apache.commons.cli.DefaultParser
 import org.apache.commons.cli.ParseException
 import kotlin.system.exitProcess
+import kotlinx.coroutines.runBlocking
 
 
 /**
@@ -92,6 +93,72 @@ fun main(args: Array<String>) {
             info()
 
             return
+        }
+
+        // Handle --ai flag for AI-powered features
+        if (parsedOptions.containsKey("ai")) {
+            val aiPrompt = parsedOptions["ai"]
+            val scriptContent = parsedOptions["script"]
+            
+            if (aiPrompt == null || aiPrompt.isBlank()) {
+                errorMsg("The --ai flag requires a prompt argument.")
+                exitProcess(1)
+            }
+            
+            try {
+                // Import LiteLLMClient for AI functionality
+                val liteLLMClient = kscript.ai.llm.LiteLLMClient()
+                
+                val aiResponse = if (scriptContent != null && scriptContent.isNotBlank()) {
+                    // Script explanation mode
+                    val scriptFile = java.io.File(scriptContent)
+                    val scriptText = if (scriptFile.exists()) {
+                        scriptFile.readText()
+                    } else {
+                        scriptContent // Treat as direct script content
+                    }
+                    
+                    val request = kscript.ai.llm.LLMRequest(
+                        model = "gpt-3.5-turbo",
+                        messages = listOf(
+                            kscript.ai.llm.LLMMessage("system", "You are a Kotlin script expert. Explain the provided script clearly and concisely."),
+                            kscript.ai.llm.LLMMessage("user", "Explain this Kotlin script:\n\n$scriptText")
+                        ),
+                        max_tokens = 1000
+                    )
+                    
+                    // This needs to be async, but we'll handle it synchronously for CLI
+                    runBlocking {
+                        liteLLMClient.sendRequest(request)
+                    }
+                } else {
+                    // Script generation mode
+                    val request = kscript.ai.llm.LLMRequest(
+                        model = "gpt-3.5-turbo",
+                        messages = listOf(
+                            kscript.ai.llm.LLMMessage("system", "You are a Kotlin script generator. Create clean, well-documented Kotlin scripts based on user requirements."),
+                            kscript.ai.llm.LLMMessage("user", aiPrompt)
+                        ),
+                        max_tokens = 2000
+                    )
+                    
+                    runBlocking {
+                        liteLLMClient.sendRequest(request)
+                    }
+                }
+                
+                if (aiResponse.status == "success" && aiResponse.choices.isNotEmpty()) {
+                    info(aiResponse.choices[0].message.content)
+                } else {
+                    errorMsg("AI request failed: ${aiResponse.error_message ?: "Unknown error"}")
+                    exitProcess(1)
+                }
+                
+                return
+            } catch (e: Exception) {
+                errorMsg("Error with AI functionality: ${e.message}")
+                exitProcess(1)
+            }
         }
 
         // Handle --export-to-gradle-project

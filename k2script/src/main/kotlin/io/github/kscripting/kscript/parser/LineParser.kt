@@ -1,8 +1,9 @@
 package io.github.kscripting.kscript.parser
 
-
 import io.github.kscripting.kscript.model.*
 import io.github.kscripting.shell.model.ScriptLocation
+// import borg.entityscanner.KotlinEntityScanner
+// import borg.entityscanner.K2ScriptIntegration
 
 @Suppress("UNUSED_PARAMETER")
 object LineParser {
@@ -22,6 +23,100 @@ object LineParser {
         LineParser::parseInclude,
         LineParser::parseMarkdownCodeBlock,
     )
+
+    /**
+     * Enhanced parsing using KotlinEntityScanner for more robust annotation detection
+     * This modernized approach replaces regex-based parsing with structured entity analysis
+     * NOTE: Currently disabled due to dependency issues - will be enabled when kotlin-entity-scanner is available
+     */
+    /*
+    fun parseWithEntityScanner(scriptLocation: ScriptLocation, scriptContent: String): List<ScriptAnnotation> {
+        val annotations = mutableListOf<ScriptAnnotation>()
+        
+        try {
+            // Use K2ScriptIntegration to extract k2script-specific metadata
+            val (k2annotations, dependencies) = K2ScriptIntegration.extractK2ScriptMetadata(scriptContent)
+            
+            // Convert dependency graph to ScriptAnnotation objects
+            dependencies.play.forEach { dependency ->
+                val (groupId, artifactId) = dependency
+                val coordinate = "$groupId:$artifactId"
+                annotations.add(Dependency(coordinate))
+            }
+            
+            // Convert annotations list to ScriptAnnotation objects
+            k2annotations.play.forEach { annotation ->
+                when {
+                    annotation.startsWith("@file:Import(") -> {
+                        val value = extractQuotedValueFromAnnotation(annotation)
+                        if (value != null) annotations.add(Include(value))
+                    }
+                    annotation.startsWith("@file:Repository(") -> {
+                        val repository = parseRepositoryAnnotation(annotation)
+                        if (repository != null) annotations.add(repository)
+                    }
+                    annotation == "shebang" -> {
+                        annotations.addAll(sheBang)
+                    }
+                }
+            }
+            
+            // Also extract imports using the entity scanner
+            val imports = KotlinEntityScanner.scanImports(scriptContent)
+            imports.play.forEach { importPath ->
+                annotations.add(ImportName(importPath))
+            }
+            
+        } catch (e: Exception) {
+            // Fallback to line-by-line parsing if entity scanner fails
+            return parseContentLineByLine(scriptLocation, scriptContent)
+        }
+        
+        return annotations
+    }
+    */
+    
+    /**
+     * Fallback line-by-line parsing using existing regex-based approach
+     */
+    private fun parseContentLineByLine(scriptLocation: ScriptLocation, scriptContent: String): List<ScriptAnnotation> {
+        val annotations = mutableListOf<ScriptAnnotation>()
+        
+        scriptContent.lines().forEachIndexed { lineIndex, line ->
+            parsers.forEach { parser ->
+                try {
+                    val result = parser(scriptLocation, lineIndex + 1, line)
+                    annotations.addAll(result)
+                } catch (e: Exception) {
+                    // Skip parsing errors and continue with other parsers
+                }
+            }
+        }
+        
+        return annotations
+    }
+    
+    /**
+     * Extract quoted value from annotation string like @file:Import("value")
+     */
+    private fun extractQuotedValueFromAnnotation(annotation: String): String? {
+        val regex = """@file:\w+\("([^"]+)"\)""".toRegex()
+        return regex.find(annotation)?.groupValues?.get(1)
+    }
+    
+    /**
+     * Parse repository annotation into Repository object
+     */
+    private fun parseRepositoryAnnotation(annotation: String): Repository? {
+        val regex = """@file:Repository\("([^"]+)"(?:,\s*user="([^"]*)")?(?:,\s*password="([^"]*)")?\)""".toRegex()
+        val match = regex.find(annotation) ?: return null
+        
+        val url = match.groupValues[1]
+        val user = match.groupValues.getOrNull(2) ?: ""
+        val password = match.groupValues.getOrNull(3) ?: ""
+        
+        return Repository("", url, user, password)
+    }
 
     fun parseSheBang(scriptLocation: ScriptLocation, line: Int, text: String): List<ScriptAnnotation> {
         if (text.startsWith("#!/")) {
