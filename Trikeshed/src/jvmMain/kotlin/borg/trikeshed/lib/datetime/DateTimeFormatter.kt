@@ -8,13 +8,12 @@ import java.util.*
 actual fun getCurrentDateTime(): DateTimeComponents {
     val now = ZonedDateTime.now(ZoneOffset.UTC)
     return DateTimeComponents(
-        dayOfWeek = now.dayOfWeek.toString().take(3),
-        day = now.dayOfMonth,
-        month = now.month.toString().take(3),
         year = now.year,
+        month = now.monthValue,
+        day = now.dayOfMonth,
         hour = now.hour,
         minute = now.minute,
         second = now.second,
-        timeZone = "GMT"
+        millisecond = now.nano / 1_000_000
     )
 }

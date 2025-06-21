@@ -13,6 +13,8 @@
 ## Memory: Project Setup
 
 - before creating new code open trikeshed CoreTypes.kt first so its in the context
+#memory   
+-use borg.trikeshed.lib.z and nz for cmpz brevity 
 
 ## MetaSeries → Indexed Refactoring Plan
 

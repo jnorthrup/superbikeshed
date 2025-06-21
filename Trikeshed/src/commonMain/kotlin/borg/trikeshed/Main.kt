@@ -33,7 +33,7 @@ object MainOrchestrator {
         HttpResponse(
             status = HttpStatusCode(200),
             reasonPhrase = HttpReasonPhrase("OK"),
-            headers = (0 j { _ -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }).play.toList(),
+            headers = (1 j { _ -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }).play.toList(),
             body = "Action '${environment.action}' completed successfully.".encodeToByteArray()
         )
     }
@@ -47,7 +47,7 @@ object MainOrchestrator {
 
         // --- SCENARIO 1: A request to process a Series of numbers ---
         val request1 = HttpRequest(
-            method = HttpMethod("POST"),
+            method = HttpMethod.POST,
             path = HttpRequestPath("/process/series"),
             version = HttpVersion("HTTP/1.1"),
             headers = emptyList()
@@ -61,7 +61,7 @@ object MainOrchestrator {
 
         // --- SCENARIO 2: A request to process a Cursor of data ---
         val request2 = HttpRequest(
-            method = HttpMethod("POST"),
+            method = HttpMethod.POST,
             path = HttpRequestPath("/process/cursor"),
             version = HttpVersion("HTTP/1.1"),
             headers = emptyList()
@@ -85,11 +85,11 @@ object MainOrchestrator {
             environment = Environment(
                 action = "DoubleAndSumSeries",
                 // THE PAYLOAD IS A SERIES
-                payload = (0 j { i -> listOf(1, 2, 3, 4, 5)[i] }).play.toList()
+                payload = (5 j { i -> listOf(1, 2, 3, 4, 5)[i] }).play.toList()
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR SERIES
-                rules = (0 j { _ -> { payload: Any -> 
+                rules = (1 j { _ -> { payload: Any -> 
                     when (payload) {
                         is List<*> -> payload.map { (it as Int) * 2 }
                         else -> payload
@@ -119,7 +119,7 @@ object MainOrchestrator {
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR CURSORS
-                rules = (0 j { _ -> { payload: Any -> 
+                rules = (1 j { _ -> { payload: Any -> 
                     when (payload) {
                         is List<*> -> payload.size
                         else -> 0
