@@ -5,6 +5,12 @@ package borg.trikeshed.parse.json
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Either
 import kotlin.jvm.JvmInline
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.play
+import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.α
 
 /**
  * TrikeShed JSON Scanner - Production Implementation

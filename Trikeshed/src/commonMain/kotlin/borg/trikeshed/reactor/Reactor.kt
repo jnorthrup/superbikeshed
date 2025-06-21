@@ -10,6 +10,9 @@ import borg.trikeshed.reactor.SelectableChannel // Import SelectableChannel
 import borg.trikeshed.reactor.SelectorInterface // Import SelectorInterface
 import borg.trikeshed.reactor.SelectionKey // Import SelectionKey
 
+// Placeholder IO dispatcher for commonMain - uses Default dispatcher
+val PlaceholderIO: CoroutineDispatcher = Dispatchers.Default
+
 /**
  * Reactor: Attention Distribution Mechanism for Main()'s Pursuit of Happiness
  * 
@@ -105,8 +108,8 @@ private class SelectorThread(
     }
 
     suspend fun runEventLoop(isRunning: MutableStateFlow<Boolean>) = coroutineScope {
-        // Launch a separate coroutine to handle blocking selector.select() on IO dispatcher
-        launch(Dispatchers.IO) {
+        // Launch a separate coroutine to handle blocking selector.select() on placeholder IO dispatcher
+        launch(PlaceholderIO) {
             while (isRunning.value && isActive) {
                 try {
                     if (selector.select() > 0) {
@@ -136,11 +139,7 @@ private class SelectorThread(
         // Handle selector events
         launch {
             selectorEvents.receiveAsFlow().collect { readyKeys ->
-                val iterator = readyKeys.iterator()
-                while (iterator.hasNext()) {
-                    val key = iterator.next()
-                    iterator.remove() // Remove from selected set
-
+                readyKeys.forEach { key ->
                     if (key.isValid()) {
                         keyReactions[key]?.let { reaction ->
                             try {
@@ -149,12 +148,13 @@ private class SelectorThread(
                                 } ?: run {
                                     keyReactions.remove(key)
                                     key.cancel()
+                                    try { key.channel().close() } catch (_: Exception) {}
                                 }
                             } catch (e: Exception) {
                                 println("Error during reaction for key $key: ${e.message}")
                                 keyReactions.remove(key)
                                 key.cancel()
-                                launch { try { key.channel().close() } catch (_: Exception) {} }
+                                try { key.channel().close() } catch (_: Exception) {}
                             }
                         } else {
                             keyReactions.remove(key)
