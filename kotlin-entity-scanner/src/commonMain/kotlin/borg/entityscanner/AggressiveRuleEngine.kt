@@ -358,7 +358,8 @@ object UltraAggressiveRuleEngine {
     private fun applyPrioritizedRule(context: ParseContext, rule: PrioritizedRule): ParseContext {
         val (entropyRule, priority) = rule
         val (parsingRule, entropyData) = entropyRule
-        val (ruleData, evaluator) = parsingRule
+        val (ruleId, weightAndEvaluator) = parsingRule
+        val (weight, evaluator) = weightAndEvaluator
         val (entropy, threshold) = entropyData
         
         // Apply rule with entropy-based activation
@@ -366,7 +367,7 @@ object UltraAggressiveRuleEngine {
         
         return if (activation.activation >= threshold.threshold) {
             // Rule fired - apply transformation
-            applyRuleTransformation(context, ruleData, entropy, activation)
+            applyRuleTransformation(context, ruleId j weight, entropy, activation)
         } else {
             context
         }

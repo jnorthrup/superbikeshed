@@ -2,7 +2,7 @@
 
 package borg.trikeshed.lib
 
-/**
+/** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
  * # TrikeShed Metaclass Architecture
  * 
  * TrikeShed implements a **compositional metaclass system** where types are constructed through
@@ -652,7 +652,7 @@ typealias Tensor<T> = MetaSeries<Shape, T>
  * 
  * **Definition:**
  * ```kotlin
- * typealias MetaSeries<T> = Join<Series<T>, Map<String, Any?>>
+ * typealias MetaSeriesWithMetadata<T> = Join<Series<T>, Map<String, Any?>>
  * //                        ^           ^   ^
  * //                        |           |   └── Metadata values
  * //                        |           └──── Metadata keys  
@@ -668,7 +668,18 @@ typealias Tensor<T> = MetaSeries<Shape, T>
  * )
  * ```
  */
-typealias MetaSeries<T> = Join<Series<T>, Map<String, Any?>>
+typealias MetaSeriesWithMetadata<T> = Join<Series<T>, Map<String, Any?>>
+
+/**
+ * ## ColumnMeta - Database Column Metadata
+ * 
+ * ColumnMeta contains **database column context** including type, name, and other metadata.
+ */
+data class ColumnMeta(
+    val name: String,
+    val type: String,
+    val nullable: Boolean = true
+)
 
 /**
  * ## RowVec - Database Row Metaclass  
@@ -687,6 +698,16 @@ typealias MetaSeries<T> = Join<Series<T>, Map<String, Any?>>
 typealias RowVec = Series2<Any?, () -> ColumnMeta>
 
 /**
+ * ## TableMeta - Database Table Metadata
+ * 
+ * TableMeta contains **database table context** including schema, connection info,
+ * and other metadata needed for cursor operations.
+ */
+data class TableMeta(val name: String) {
+    // Placeholder - would contain schema, connection, etc.
+}
+
+/**
  * ## CursorIndex - Database Row Index Type
  * 
  * CursorIndex represents a **database-specific index** that combines table metadata
@@ -702,17 +723,6 @@ typealias RowVec = Series2<Any?, () -> ColumnMeta>
  * ```
  */
 typealias CursorIndex = Join<TableMeta, Int>
-
-/**
- * ## TableMeta - Database Table Metadata
- * 
- * TableMeta contains **database table context** including schema, connection info,
- * and other metadata needed for cursor operations.
- */
-@JvmInline
-value class TableMeta(val name: String) {
-    // Placeholder - would contain schema, connection, etc.
-}
 
 /**
  * ## Cursor - Database Table Metaclass (Specialized Realm)

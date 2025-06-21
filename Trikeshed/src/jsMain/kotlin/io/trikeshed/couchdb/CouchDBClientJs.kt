@@ -1,7 +1,7 @@
 package io.trikeshed.couchdb
 
 import kotlinx.coroutines.await
-import kotlinx.serialization.json.Json
+
 import org.w3c.fetch.RequestInit
 import org.w3c.fetch.Response
 import kotlin.js.json

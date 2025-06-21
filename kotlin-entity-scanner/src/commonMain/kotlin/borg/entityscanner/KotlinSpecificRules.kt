@@ -55,8 +55,8 @@ object CoroutineForwardRules {
      */
     fun suspendFunctionChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "suspend_function_detect",
             entropy = 3.9,
             threshold = 0.96,
@@ -66,8 +66,8 @@ object CoroutineForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "coroutine_builder_detect",
             entropy = 3.7,
             threshold = 0.94,
@@ -77,8 +77,8 @@ object CoroutineForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_5,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_5),
             id = "flow_operator_chain",
             entropy = 3.5,
             threshold = 0.92,
@@ -88,8 +88,8 @@ object CoroutineForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_2_0,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_2_0),
             id = "structured_concurrency",
             entropy = 3.8,
             threshold = 0.95,
@@ -104,8 +104,8 @@ object CoroutineForwardRules {
      */
     fun asyncAwaitChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "async_call_detect",
             entropy = 3.6,
             threshold = 0.93,
@@ -115,8 +115,8 @@ object CoroutineForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "await_call_detect",
             entropy = 3.5,
             threshold = 0.91,
@@ -137,8 +137,8 @@ object DelegateForwardRules {
      */
     fun propertyDelegateChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.DELEGATES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.DELEGATES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "lazy_delegate_detect",
             entropy = 3.4,
             threshold = 0.90,
@@ -148,8 +148,8 @@ object DelegateForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.DELEGATES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.DELEGATES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "observable_delegate_detect",
             entropy = 3.3,
             threshold = 0.89,
@@ -159,8 +159,8 @@ object DelegateForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.DELEGATES,
-            level = LanguageLevel.KOTLIN_1_5,
+            feature = KotlinFeature(KotlinFeature.DELEGATES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_5),
             id = "custom_delegate_detect",
             entropy = 3.2,
             threshold = 0.87,
@@ -175,8 +175,8 @@ object DelegateForwardRules {
      */
     fun classDelegateChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.DELEGATES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.DELEGATES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "interface_delegate_detect",
             entropy = 3.5,
             threshold = 0.91,
@@ -197,8 +197,8 @@ object ExtensionForwardRules {
      */
     fun extensionFunctionChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.EXTENSIONS,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.EXTENSIONS),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "extension_function_detect",
             entropy = 3.6,
             threshold = 0.93,
@@ -208,8 +208,8 @@ object ExtensionForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.EXTENSIONS,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.EXTENSIONS),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "extension_property_detect",
             entropy = 3.4,
             threshold = 0.90,
@@ -219,8 +219,8 @@ object ExtensionForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.EXTENSIONS,
-            level = LanguageLevel.KOTLIN_1_5,
+            feature = KotlinFeature(KotlinFeature.EXTENSIONS),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_5),
             id = "scoped_extension_detect",
             entropy = 3.3,
             threshold = 0.88,
@@ -241,8 +241,8 @@ object DSLForwardRules {
      */
     fun dslBuilderChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.DSL,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.DSL),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "dsl_marker_detect",
             entropy = 3.7,
             threshold = 0.94,
@@ -252,8 +252,8 @@ object DSLForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.DSL,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.DSL),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "lambda_with_receiver_detect",
             entropy = 3.5,
             threshold = 0.91,
@@ -263,8 +263,8 @@ object DSLForwardRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.DSL,
-            level = LanguageLevel.KOTLIN_1_5,
+            feature = KotlinFeature(KotlinFeature.DSL),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_5),
             id = "builder_scope_detect",
             entropy = 3.4,
             threshold = 0.90,
@@ -287,8 +287,8 @@ object KotlinTypeInferenceRules {
      */
     fun advancedTypeInferenceChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.GENERICS,
-            level = LanguageLevel.KOTLIN_2_0,
+            feature = KotlinFeature(KotlinFeature.GENERICS),
+            level = LanguageLevel(LanguageLevel.KOTLIN_2_0),
             id = "generic_type_inference_back",
             entropy = 3.8,
             threshold = 0.95,
@@ -298,8 +298,8 @@ object KotlinTypeInferenceRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.NULLABLE_TYPES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.NULLABLE_TYPES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "nullable_type_inference_back",
             entropy = 3.6,
             threshold = 0.93,
@@ -309,8 +309,8 @@ object KotlinTypeInferenceRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.LAMBDAS,
-            level = LanguageLevel.KOTLIN_1_5,
+            feature = KotlinFeature(KotlinFeature.LAMBDAS),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_5),
             id = "lambda_type_inference_back",
             entropy = 3.4,
             threshold = 0.90,
@@ -325,8 +325,8 @@ object KotlinTypeInferenceRules {
      */
     fun smartCastValidationChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.NULLABLE_TYPES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.NULLABLE_TYPES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "smart_cast_validation_back",
             entropy = 3.5,
             threshold = 0.92,
@@ -336,8 +336,8 @@ object KotlinTypeInferenceRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.NULLABLE_TYPES,
-            level = LanguageLevel.KOTLIN_2_0,
+            feature = KotlinFeature(KotlinFeature.NULLABLE_TYPES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_2_0),
             id = "exhaustive_when_back",
             entropy = 3.3,
             threshold = 0.89,
@@ -358,8 +358,8 @@ object KotlinScopeValidationRules {
      */
     fun coroutineScopeValidationChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "coroutine_scope_validation_back",
             entropy = 3.7,
             threshold = 0.94,
@@ -369,8 +369,8 @@ object KotlinScopeValidationRules {
         },
         
         createKotlinRule(
-            feature = KotlinFeature.COROUTINES,
-            level = LanguageLevel.KOTLIN_1_5,
+            feature = KotlinFeature(KotlinFeature.COROUTINES),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_5),
             id = "flow_context_validation_back",
             entropy = 3.5,
             threshold = 0.91,
@@ -385,8 +385,8 @@ object KotlinScopeValidationRules {
      */
     fun extensionReceiverValidationChain(): FeatureRuleSet = listOf(
         createKotlinRule(
-            feature = KotlinFeature.EXTENSIONS,
-            level = LanguageLevel.KOTLIN_1_0,
+            feature = KotlinFeature(KotlinFeature.EXTENSIONS),
+            level = LanguageLevel(LanguageLevel.KOTLIN_1_0),
             id = "extension_receiver_validation_back",
             entropy = 3.4,
             threshold = 0.90,
@@ -409,7 +409,7 @@ object KotlinComprehensiveRuleEngine {
      */
     fun executeKotlinSpecificChaining(
         source: KotlinSourceCode,
-        languageLevel: LanguageLevel = LanguageLevel.KOTLIN_2_1
+        languageLevel: LanguageLevel = LanguageLevel(LanguageLevel.KOTLIN_2_1)
     ): Join<GraphNodeSeries, RefinementSeries> {
         
         var context = createKotlinParseContext(source, languageLevel)
@@ -578,5 +578,5 @@ private fun checkReceiverCompatibility(context: ParseContext, pos: Int): Boolean
 /**
  * Extension for Kotlin-specific parsing
  */
-fun KotlinSourceCode.parseWithKotlinRules(level: LanguageLevel = LanguageLevel.KOTLIN_2_1): Join<GraphNodeSeries, RefinementSeries> =
+fun KotlinSourceCode.parseWithKotlinRules(level: LanguageLevel = LanguageLevel(LanguageLevel.KOTLIN_2_1)): Join<GraphNodeSeries, RefinementSeries> =
     KotlinComprehensiveRuleEngine.executeKotlinSpecificChaining(this, level)

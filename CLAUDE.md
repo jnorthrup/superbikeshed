@@ -111,7 +111,7 @@ dependencies {
 
 **Serialization and Annotation Libs:**
 
-- we dont use *kotlin* serialization or the annotation libs yet and dont plan to
+- we support our internal serializaers and we import the kotlin core serializer package api to support our serializers. we do not use tools that deny us experience with the edge cases
 
 **Migration Tasks:**
 
@@ -392,3 +392,18 @@ typealias AttentionScore = Double                               // borg.trikeshe
 ## RUNTIME MEMORY
 
 - remove all kotlin serialization references as soon as you see one
+
+## Migration Memories
+
+- **Shunned Classes Memory**: 
+  - Defer use of `List<T>`
+  - Defer use of `Pair<A,B>`
+  - Prefer `Series<T>`, `primitive array`, `Join<A,B>` instead
+
+## Memory: CCEK Meaning
+
+- CCEK stands for CoroutineContextElement.Key
+
+## Memory: Code Cleaning Liberties
+
+- if it wasn't mentioned before we do not tolerate "cleaning" liberties at all.  we need all our code and we paid you for all our code and do not give rights of disposal.  you may move code to a musem area and we will find a model that can do your job for you later and delete you when we have time.  that is all

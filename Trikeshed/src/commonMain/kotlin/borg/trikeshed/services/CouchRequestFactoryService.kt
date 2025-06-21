@@ -66,5 +66,10 @@ class CouchRequestFactoryService(
         methodValidators[methodName] = validator
     }
 
+    override suspend fun invokeService(serviceName: String, data: ByteArray): ByteArray {
+        // Placeholder implementation
+        return ByteArray(0)
+    }
+
     private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
 } 

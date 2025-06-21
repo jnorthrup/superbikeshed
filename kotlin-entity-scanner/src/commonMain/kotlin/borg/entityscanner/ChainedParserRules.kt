@@ -453,13 +453,14 @@ object ChainedParserEngine {
             // Apply all forward rules at current position
             rules.play.forEach { rule ->
                 val (ruleData, chainData) = rule
-                val (ruleInfo, evaluator) = ruleData
+                val (ruleId, weightAndEvaluator) = ruleData
+                val (weight, evaluator) = weightAndEvaluator
                 val (direction, window) = chainData
                 
-                if (direction.direction and ChainDirection.FORWARD != 0u) {
-                    val activation = evaluator(currentContext, pos)
+                if ((direction.direction and ChainDirection.FORWARD) != 0u.toUByte()) {
+                    val activation = evaluator(currentContext)
                     if (activation.activation > 0.5) {
-                        currentContext = applyRule(currentContext, ruleInfo, pos)
+                        currentContext = applyRule(currentContext, ruleId j weight, pos)
                     }
                 }
             }
@@ -484,13 +485,14 @@ object ChainedParserEngine {
             // Apply all backward rules at current position
             rules.play.forEach { rule ->
                 val (ruleData, chainData) = rule
-                val (ruleInfo, evaluator) = ruleData
+                val (ruleId, weightAndEvaluator) = ruleData
+                val (weight, evaluator) = weightAndEvaluator
                 val (direction, window) = chainData
                 
-                if (direction.direction and ChainDirection.BACKWARD != 0u) {
-                    val activation = evaluator(currentContext, pos)
+                if ((direction.direction and ChainDirection.BACKWARD) != 0u.toUByte()) {
+                    val activation = evaluator(currentContext)
                     if (activation.activation > 0.5) {
-                        currentContext = applyRule(currentContext, ruleInfo, pos)
+                        currentContext = applyRule(currentContext, ruleId j weight, pos)
                     }
                 }
             }

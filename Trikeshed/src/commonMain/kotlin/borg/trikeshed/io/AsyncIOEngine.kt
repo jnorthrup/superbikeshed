@@ -3,7 +3,6 @@ package borg.trikeshed.io
 import kotlinx.coroutines.flow.Flow
 
 /**
-/**
  * Common interface for async I/O engines
  */
 interface AsyncIOEngine {
@@ -91,4 +90,9 @@ data class IOResult(
 ) {
     val isSuccess: Boolean get() = error == 0
     val isError: Boolean get() = error != 0
-} 
+}
+
+/**
+ * I/O handle type
+ */
+typealias IOHandle = Int 

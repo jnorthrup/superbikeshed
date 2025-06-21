@@ -11,6 +11,7 @@ import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.PlatformDatagramPacket
 import borg.trikeshed.nio.PlatformDatagramSocket
 import borg.trikeshed.nio.PlatformInetSocketAddress
+import kotlinx.coroutines.CoroutineDispatcher
 
 /**
  * QUIC connection implementation with 0-RTT support and stream multiplexing
@@ -18,7 +19,8 @@ import borg.trikeshed.nio.PlatformInetSocketAddress
 class QuicConnection(
     private val config: QuicConfig,
     private val sessionCache: QuicSessionCache,
-    private val coroutineScope: CoroutineScope // Scope for launching background tasks like packet receiver
+    private val coroutineScope: CoroutineScope, // Scope for launching background tasks like packet receiver
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default // Injectable dispatcher
 ) {
     private var socket: PlatformDatagramSocket? = null
     private var remoteServerAddress: PlatformInetSocketAddress? = null // New property to store the remote server address
@@ -52,7 +54,7 @@ class QuicConnection(
         // Reset flow control counters on new connection attempt
         bytesSentSinceLastWindowUpdate = 0L
 
-        val connectedSuccessfully = withContext(Dispatchers.IO) {
+        val connectedSuccessfully = withContext(dispatcher) {
             val cachedSession = sessionCache.getSession(serverAddress, port)
             val serverAddr = PlatformInetSocketAddress(serverAddress, port)
             if (cachedSession != null && config.enable0RTT) {
@@ -73,7 +75,7 @@ class QuicConnection(
         }
         if (socket != null && socket!!.isConnected) {
             this.remoteServerAddress = PlatformInetSocketAddress(serverAddress, port) // Store the remote address
-            packetReceiverJob = coroutineScope.launch(Dispatchers.IO) { startPacketReceiver() }
+            packetReceiverJob = coroutineScope.launch(dispatcher) { startPacketReceiver() }
             println("Connection established to $serverAddress:$port. Receiver started.")
             return true
         }
@@ -90,7 +92,7 @@ class QuicConnection(
         socket = establishRegularConnection(serverAddr)
         if (socket != null && socket!!.isConnected) {
             this.remoteServerAddress = PlatformInetSocketAddress(serverAddress, port) // Store the remote address
-            packetReceiverJob = coroutineScope.launch(Dispatchers.IO) { startPacketReceiver() }
+            packetReceiverJob = coroutineScope.launch(dispatcher) { startPacketReceiver() }
             println("Regular connection established to $serverAddress:$port. Receiver started.")
             return true
         }
@@ -127,7 +129,7 @@ class QuicConnection(
     /**
      * Sends data over a specific stream
      */
-    suspend fun sendData(streamId: Long, data: PlatformByteBuffer): Boolean = withContext(Dispatchers.IO) {
+    suspend fun sendData(streamId: Long, data: PlatformByteBuffer): Boolean = withContext(dispatcher) {
         val stream = activeStreams[streamId] ?: run {
             println("Stream $streamId not found for sending data.")
             return@withContext false
@@ -230,7 +232,7 @@ class QuicConnection(
                 if (stream != null && !stream.isClosed()) {
                     // remaining data for the stream (after stream ID)
                     val streamData = PlatformByteBuffer.allocate(receivedBuffer.remaining())
-                    receivedBuffer.get(streamData.array(), 0, receivedBuffer.remaining()) // Read remaining data into streamData
+                    receivedBuffer.get(streamData.array()) // Read remaining data into streamData's backing array
                     streamData.flip()
                     stream.internalReceiveChannel.send(streamData)
                 } else {
@@ -274,13 +276,17 @@ class QuicConnection(
         return newSocket
     }
 
-
-    fun close() {
-        packetReceiverJob?.cancel()
-        socket?.close()
-        socket = null
-        remoteServerAddress = null // Clear the remote server address on close
-        println("QuicConnection closed.")
+    /**
+     * Closes the connection and all associated resources.
+     */
+    suspend fun close() {
+        packetReceiverJob?.cancel() // Stop the receiver loop
+        withContext(dispatcher) {
+            socket?.close()
+        }
+        activeStreams.values.forEach { it.close() }
+        activeStreams.clear()
+        println("QUIC connection closed.")
     }
 
     private fun allocateStreamId(): Long {

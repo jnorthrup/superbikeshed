@@ -44,8 +44,6 @@ value class ParsePosition(val position: Int)
 @JvmInline
 value class AccuracyDelta(val delta: Double) // Change in accuracy
 
-@JvmInline
-value class RuleId(val id: String)
 
 // Core Evidence and Parse State Types
 typealias Evidence = Join<EvidenceType, EvidenceStrength>
