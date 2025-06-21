@@ -4,8 +4,8 @@ package borg.trikeshed.net.http
 import borg.trikeshed.ccek.CcekContext
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
-import borg.trikeshed.services.DealService
-import borg.trikeshed.services.*
+// import borg.trikeshed.services.DealService
+// import borg.trikeshed.services.*
 import borg.trikeshed.io.*
 import borg.trikeshed.net.http.HttpParser
 import kotlin.jvm.JvmInline
@@ -35,6 +35,7 @@ data class HttpServerConfig(
  * Creates a router that combines multiple handlers with priority ordering.
  * This allows us to handle both API endpoints and static files.
  */
+/*
 fun createRouter(
     staticRoot: String,
     dealService: DealService,
@@ -60,6 +61,7 @@ fun createRouter(
         }
     }
 }
+*/
 
 class HttpServer(
     private val config: HttpServerConfig,

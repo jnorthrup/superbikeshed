@@ -13,6 +13,10 @@ import platform.posix._SC_PAGE_SIZE
 import platform.posix.sysconf
 import platform.posix.uint32_t as __u32
 
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.play
+import borg.trikeshed.lib.s_
+import borg.trikeshed.lib.toSeries
 //import linux_uring.fstatat
 import platform.posix.off_t as __off_t
 import platform.posix.*
@@ -31,13 +35,13 @@ class PosixFile(
     override fun read64(buf: ByteArray): ULong {
         val addressOf = buf.pin().addressOf(0)
         val b: CArrayPointer<ByteVar> = addressOf.reinterpret()
-        val read = read(fd, b, buf.size.toULong())
+        val read = platform.posix.read(fd, b, buf.size.toULong())
         HasPosixErr.posixRequires(read >= 0) { "read failed with result ${HasPosixErr.reportErr(read.toInt())}" }
         return read.toULong()
     }
 
     override fun close(): Int {
-        val close = close(fd)
+        val close = platform.posix.close(fd)
         HasPosixErr.posixRequires(close >= 0) { "close failed with result ${HasPosixErr.reportErr(close)}" }
         st_?.let { nativeHeap.free(it.rawPtr) }
         return close
@@ -125,7 +129,7 @@ class PosixFile(
         //rewrite with very verbose debug{} blocks and logdebug{ progress}
         val addressOf = buf.pin().addressOf(0)
         val b: CArrayPointer<ByteVar> = addressOf.reinterpret()
-        val write = write(fd, b, buf.size.toULong())
+        val write = platform.posix.write(fd, b, buf.size.toULong())
         HasPosixErr.posixRequires(write >= 0) { "write failed with result ${HasPosixErr.reportErr(write.toInt())}" }
         return write.toULong()
 
@@ -485,11 +489,11 @@ class PosixFile(
 
 
 
-        fun namedDirAndFile(file_path: String): borg.trikeshed.lib.Series<String> = file_path.lastIndexOf('/').let { tail ->
-            if (tail == -1) borg.trikeshed.common.collections.s_["", file_path] else borg.trikeshed.common.collections.s_[
+        fun namedDirAndFile(file_path: String): Series<String> = file_path.lastIndexOf('/').let { tail ->
+            if (tail == -1) s_("", file_path) else s_(
                 file_path.substring(0, tail),
                 file_path.substring(tail.inc())
-            ]
+            )
         }
 
         fun exists(fname: String): Boolean = access(fname, F_OK).z
@@ -520,7 +524,7 @@ class PosixFile(
 
         }
 
-        fun readLines(path: String): borg.trikeshed.lib.Series<String> = memScoped {
+        fun readLines(path: String): Series<String> = memScoped {
             val file = PosixFile(path)
             val fp = fdopen(file.fd, "r")
             val line: CPointerVarOf<CPointer<ByteVarOf<Byte>>> = alloc()
@@ -539,7 +543,10 @@ class PosixFile(
                 perror("ferror")
                 exit(1)
             }
-            return list.toSeries().also { file.close().also { fclose(fp) } }
+            return list.toSeries().also {
+                file.close()
+                fclose(fp)
+            }
         }
 
         fun readAllBytes(filename: String): ByteArray = memScoped {
@@ -565,15 +572,17 @@ class PosixFile(
         /**
          * writes \n terminated lines to a file
          */
-        fun writeLines(filename: String, lines: borg.trikeshed.lib.Series<String>): Unit = memScoped {
-            val O_FLAGS = PosixOpenOpts.withFlags(PosixOpenOpts.O_Creat, PosixOpenOpts.O_Trunc, PosixOpenOpts.O_WrOnly)
-            val file = PosixFile(filename, O_FLAGS)
-            lines.forEach { line ->
-                val len = line.length
-                val buf = line.plus('\n').cstr.getPointer(this)
-                val written = write(file.fd, buf, len.inc().convert())
-                HasPosixErr.posixRequires(written == len.inc().toLong()) { "writeLines $filename" }
-            }.also {
+        fun writeLines(filename: String, lines: Series<String>) {
+            memScoped {
+                val O_FLAGS =
+                    PosixOpenOpts.withFlags(PosixOpenOpts.O_Creat, PosixOpenOpts.O_Trunc, PosixOpenOpts.O_WrOnly)
+                val file = PosixFile(filename, O_FLAGS)
+                lines.play.forEach { line: String ->
+                    val len = line.length
+                    val buf = line.plus('\n').cstr.getPointer(this)
+                    val written = write(file.fd, buf, len.inc().convert())
+                    HasPosixErr.posixRequires(written == len.inc().toLong()) { "writeLines $filename" }
+                }
                 file.close()
             }
         }

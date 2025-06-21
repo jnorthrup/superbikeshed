@@ -19,7 +19,8 @@ object JsPathBuilder {
      * Example: "user.profile.name" -> [String("user"), String("profile"), String("name")]
      */
     fun fromString(path: String): JsPath {
-        return path.split(".").map { JsPathElement.left(it) }.toSeries()
+        val elements: List<JsPathElement> = path.split(".").map { Either.Left(it) }
+        return elements.toSeries()
     }
     
     /**
@@ -33,14 +34,16 @@ object JsPathBuilder {
      * Create a JsPath for object key access
      */
     fun key(key: String): JsPath {
-        return 1 j { JsPathElement.left(key) }
+        val element: JsPathElement = Either.Left(key)
+        return (1 j { element })
     }
     
     /**
      * Create a JsPath for array index access
      */
     fun index(index: Int): JsPath {
-        return 1 j { JsPathElement.right(index) }
+        val element: JsPathElement = Either.Right(index)
+        return (1 j { element })
     }
     
     /**

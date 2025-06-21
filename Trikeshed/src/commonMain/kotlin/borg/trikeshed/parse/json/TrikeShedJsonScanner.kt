@@ -3,6 +3,8 @@
 package borg.trikeshed.parse.json
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Either
+import kotlin.jvm.JvmInline
 
 /**
  * TrikeShed JSON Scanner - Production Implementation
@@ -99,30 +101,34 @@ object TrikeShedJsonScanner {
     private fun tokenize(chars: JsonCharSeries): JsonTokenSeries {
         val tokens = mutableListOf<JsonToken>()
         var pos = 0
-        
+
         while (pos < chars.size) {
-            val char = chars[pos]
-            val token = when {
-                char.isWhitespace() -> scanWhitespace(chars, pos)
-                char == '{' -> JsonTokenTypes.LBRACE j (pos j 1)
-                char == '}' -> JsonTokenTypes.RBRACE j (pos j 1)
-                char == '[' -> JsonTokenTypes.LBRACKET j (pos j 1)
-                char == ']' -> JsonTokenTypes.RBRACKET j (pos j 1)
-                char == ':' -> JsonTokenTypes.COLON j (pos j 1)
-                char == ',' -> JsonTokenTypes.COMMA j (pos j 1)
-                char == '"' -> scanString(chars, pos)
-                char.isDigit() || char == '-' -> scanNumber(chars, pos)
-                char == 't' -> scanLiteral(chars, pos, "true", JsonTokenTypes.TRUE)
-                char == 'f' -> scanLiteral(chars, pos, "false", JsonTokenTypes.FALSE)
-                char == 'n' -> scanLiteral(chars, pos, "null", JsonTokenTypes.NULL)
-                else -> JsonTokenTypes.WHITESPACE j (pos j 1) // Skip unknown chars
-            }
-            
+            val token = scanNextToken(chars, pos)
             tokens.add(token)
-            pos += token.b.b // Advance by token length
+            pos += token.b.b.coerceAtLeast(1) // Advance by token length, ensuring progress
         }
-        
-        return tokens.toSeries()
+
+        val tokenArray = tokens.toTypedArray()
+        return tokenArray.size j tokenArray::get
+    }
+
+    private inline fun scanNextToken(chars: JsonCharSeries, pos: JsonPosition): JsonToken {
+        val char = chars[pos]
+        return when {
+            char.isWhitespace() -> scanWhitespace(chars, pos)
+            char == '{' -> JsonTokenTypes.LBRACE j (pos j 1)
+            char == '}' -> JsonTokenTypes.RBRACE j (pos j 1)
+            char == '[' -> JsonTokenTypes.LBRACKET j (pos j 1)
+            char == ']' -> JsonTokenTypes.RBRACKET j (pos j 1)
+            char == ':' -> JsonTokenTypes.COLON j (pos j 1)
+            char == ',' -> JsonTokenTypes.COMMA j (pos j 1)
+            char == '"' -> scanString(chars, pos)
+            char.isDigit() || char == '-' -> scanNumber(chars, pos)
+            char == 't' -> scanLiteral(chars, pos, "true", JsonTokenTypes.TRUE)
+            char == 'f' -> scanLiteral(chars, pos, "false", JsonTokenTypes.FALSE)
+            char == 'n' -> scanLiteral(chars, pos, "null", JsonTokenTypes.NULL)
+            else -> JsonTokenTypes.WHITESPACE j (pos j 1) // Skip unknown chars
+        }
     }
     
     /**
@@ -326,19 +332,6 @@ fun JsonStructuralSeries.analyzeNesting(): JsonNestingSeries =
 
 fun JsonTokenSeries.extractValues(jsonString: JsonStringValue): JsonValueSeries = 
     TrikeShedJsonScanner.extractValues(this, jsonString)
-
-/**
- * Either type for error handling - simple implementation
- */
-sealed interface Either<out L, out R> {
-    data class Left<L>(val value: L) : Either<L, Nothing>
-    data class Right<R>(val value: R) : Either<Nothing, R>
-    
-    companion object {
-        fun <L> left(value: L): Either<L, Nothing> = Left(value)
-        fun <R> right(value: R): Either<Nothing, R> = Right(value)
-    }
-}
 
 /**
  * Utility functions for Series operations
