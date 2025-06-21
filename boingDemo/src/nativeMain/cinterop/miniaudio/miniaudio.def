@@ -1,0 +1,12 @@
+headers = miniaudio.h
+headerFilter = miniaudio.h
+packageName = thirdparty.miniaudio
+
+compilerOpts.linux = -D_POSIX_C_SOURCE=200809L -DMA_NO_JACK
+compilerOpts.macos = -D_POSIX_C_SOURCE=200809L
+
+// We will need to ensure MA_IMPLEMENTATION is handled.
+// This might be by adding a miniaudio_impl.c file that defines it and includes miniaudio.h,
+// and then compiling that source file.
+// For now, we set up the .def file. The build script modification will add compilerOpts
+// for MA_IMPLEMENTATION as a first attempt.
