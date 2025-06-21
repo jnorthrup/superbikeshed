@@ -7,6 +7,8 @@ import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 import kotlinx.serialization.json.*
+import kotlinx.serialization.modules.EmptySerializersModule
+import kotlinx.serialization.modules.SerializersModule
 
 /**
  * High-performance JSON decoder using TrikeShed's lightning bitmap scanning
@@ -29,178 +31,351 @@ typealias JsonStructuralSeries = MetaSeries<Int, JsonStructuralIndex>
  * Core bitmap-based JSON decoder that implements kotlinx-serialization Decoder interface
  */
 class BitmapJsonDecoder(
-    private val json: JsonSerializersModule = EmptySerializersModule(),
+    override val serializersModule: SerializersModule,
     private val input: String,
-    private val bitmapArray: JsonBitmapArray,
+    private val bitmapArray: JsonBitmapArray, // Currently unused, but kept for future SIMD/bitmap ops
     private val structuralIndices: JsonStructuralSeries,
     private var currentIndex: Int = 0
 ) : AbstractDecoder() {
     
-    override val serializersModule: SerializersModule = json
-    
-    private var elementIndex = 0
+    // elementIndex is inherited from AbstractDecoder and managed by it.
+
+    // === Helper to get string for primitive values ===
+    private fun getPrimitiveValueString(): String {
+        // Assumes currentIndex points to the structural token *before* the primitive value (e.g., ':', '[', or ',')
+        val valueStartIndex = structuralIndices[currentIndex] + 1
+
+        // The primitive value ends just before the next structural token
+        val valueEndIndex = if (currentIndex + 1 < structuralIndices.size) {
+            structuralIndices[currentIndex + 1]
+        } else {
+            input.length // Primitive is the last thing in the input
+        }
+
+        if (valueStartIndex >= input.length || valueStartIndex > valueEndIndex) {
+             // Handles cases like `[,]` or `{"key":}` or `[1,]` where the last element is missing
+            throw SerializationException("Missing or empty primitive value after token at ${structuralIndices[currentIndex]} between $valueStartIndex and $valueEndIndex")
+        }
+        return input.substring(valueStartIndex, valueEndIndex).trim()
+    }
     
     // === Core Decoding Interface ===
     
     override fun decodeBoolean(): Boolean {
-        val value = getCurrentStructuralValue()
-        advanceToNextStructural()
-        return when (value) {
+        val s = getPrimitiveValueString()
+        currentIndex++ // Advance past the structural token that contained the primitive value
+        return when (s) {
             "true" -> true
             "false" -> false
-            else -> throw SerializationException("Expected boolean value, got: $value")
+            else -> throw SerializationException("Expected boolean value, got: '$s'")
         }
     }
     
-    override fun decodeByte(): Byte = getCurrentStructuralValue().toByte().also { advanceToNextStructural() }
-    override fun decodeShort(): Short = getCurrentStructuralValue().toShort().also { advanceToNextStructural() }
-    override fun decodeInt(): Int = getCurrentStructuralValue().toInt().also { advanceToNextStructural() }
-    override fun decodeLong(): Long = getCurrentStructuralValue().toLong().also { advanceToNextStructural() }
-    override fun decodeFloat(): Float = getCurrentStructuralValue().toFloat().also { advanceToNextStructural() }
-    override fun decodeDouble(): Double = getCurrentStructuralValue().toDouble().also { advanceToNextStructural() }
-    override fun decodeChar(): Char = getCurrentStructuralValue().single().also { advanceToNextStructural() }
+    override fun decodeByte(): Byte {
+        val s = getPrimitiveValueString()
+        currentIndex++
+        try {
+            return s.toByte()
+        } catch (e: NumberFormatException) {
+            throw SerializationException("Invalid byte literal: '$s'", e)
+        }
+    }
+    override fun decodeShort(): Short {
+        val s = getPrimitiveValueString()
+        currentIndex++
+        try {
+            return s.toShort()
+        } catch (e: NumberFormatException) {
+            throw SerializationException("Invalid short literal: '$s'", e)
+        }
+    }
+    override fun decodeInt(): Int {
+        val s = getPrimitiveValueString()
+        currentIndex++
+        try {
+            return s.toInt()
+        } catch (e: NumberFormatException) {
+            throw SerializationException("Invalid int literal: '$s'", e)
+        }
+    }
+    override fun decodeLong(): Long {
+        val s = getPrimitiveValueString()
+        currentIndex++
+        try {
+            return s.toLong()
+        } catch (e: NumberFormatException) {
+            throw SerializationException("Invalid long literal: '$s'", e)
+        }
+    }
+    override fun decodeFloat(): Float {
+        val s = getPrimitiveValueString()
+        currentIndex++
+        // Kotlin's String.toFloat() can be quite lenient.
+        // JSON spec for numbers is stricter but often parsers are lenient too.
+        // For stricter parsing, one might need a custom number parser.
+        try {
+            return s.toFloat()
+        } catch (e: NumberFormatException) { // Though toFloat() might not throw this as often as toInt()
+            throw SerializationException("Invalid float literal: '$s'", e)
+        }
+    }
+    override fun decodeDouble(): Double {
+        val s = getPrimitiveValueString()
+        currentIndex++
+        try {
+            return s.toDouble()
+        } catch (e: NumberFormatException) {
+            throw SerializationException("Invalid double literal: '$s'", e)
+        }
+    }
+    override fun decodeChar(): Char { // JSON doesn't have a separate char type; usually treated as string of length 1
+        val s = decodeString()
+        if (s.length != 1) throw SerializationException("Expected single char, got string: \"$s\"")
+        return s.single()
+    }
     
     override fun decodeString(): String {
-        val value = getCurrentStructuralValue()
-        advanceToNextStructural()
-        return when {
-            value.startsWith('"') && value.endsWith('"') -> value.substring(1, value.length - 1)
-            else -> value
+        val openQuoteInputIndex = structuralIndices[currentIndex]
+        if (input[openQuoteInputIndex] != '"') {
+            throw SerializationException("Expected string starting with '\"' at $openQuoteInputIndex, found ${input[openQuoteInputIndex]}")
         }
+
+        if (currentIndex + 1 >= structuralIndices.size || input[structuralIndices[currentIndex + 1]] != '"') {
+            throw SerializationException("Missing closing quote in structuralIndices for string starting at $openQuoteInputIndex")
+        }
+        val closeQuoteInputIndex = structuralIndices[currentIndex + 1]
+
+        val valueStartInInput = openQuoteInputIndex + 1
+        val valueEndInInput = closeQuoteInputIndex // exclusive end for subSequence/substring
+
+        if (valueStartInInput > valueEndInInput) { // Empty string ""
+            currentIndex += 2
+            return ""
+        }
+
+        var hasEscapes = false
+        for (i in valueStartInInput until valueEndInInput) {
+            if (input[i] == '\\') {
+                hasEscapes = true
+                break
+            }
+        }
+
+        val result: String
+        if (!hasEscapes) {
+            result = input.substring(valueStartInInput, valueEndInInput)
+        } else {
+            result = unescapeStringAlreadyKnownBounds(input, valueStartInInput, valueEndInInput)
+        }
+
+        currentIndex += 2 // Advance past open and close quote structural indices.
+        return result
+    }
+
+    // This function is only called if escapes ARE present in the slice [valueStart, valueEnd).
+    private fun unescapeStringAlreadyKnownBounds(originalInput: String, valueStart: Int, valueEnd: Int): String {
+        val sb = StringBuilder(valueEnd - valueStart) // Pre-size StringBuilder
+        var currentPosInSlice = valueStart
+
+        while (currentPosInSlice < valueEnd) {
+            val char = originalInput[currentPosInSlice]
+            if (char == '\\') {
+                currentPosInSlice++ // Consume backslash
+                if (currentPosInSlice >= valueEnd) throw SerializationException("Unterminated escape sequence at end of string slice, started at $valueStart")
+
+                val escapedChar = originalInput[currentPosInSlice]
+                when (escapedChar) {
+                    '"', '\\', '/' -> sb.append(escapedChar)
+                    'b' -> sb.append('\b')
+                    'f' -> sb.append('\u000c') // Form feed
+                    'n' -> sb.append('\n')
+                    'r' -> sb.append('\r')
+                    't' -> sb.append('\t')
+                    'u' -> {
+                        if (currentPosInSlice + 4 >= valueEnd) { // Check boundary within the slice for the 4 hex digits
+                            throw SerializationException("Incomplete unicode escape sequence: \\u${originalInput.substring(currentPosInSlice + 1, kotlin.math.min(currentPosInSlice + 1 + 4, valueEnd))}")
+                        }
+                        val hexCode = originalInput.substring(currentPosInSlice + 1, currentPosInSlice + 5)
+                        try {
+                            sb.append(hexCode.toInt(16).toChar())
+                        } catch (e: NumberFormatException) {
+                            throw SerializationException("Invalid unicode escape sequence: \\u$hexCode")
+                        }
+                        currentPosInSlice += 4 // Advance past the 4 hex digits
+                    }
+                    else -> throw SerializationException("Invalid escape character: '\\$escapedChar'")
+                }
+            } else {
+                // Regular character (cannot be '"' within the slice if valueEnd is the closing quote's index)
+                sb.append(char)
+            }
+            currentPosInSlice++
+        }
+        return sb.toString()
     }
     
     override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
+        // Enums are typically encoded as strings
         val value = decodeString()
-        return enumDescriptor.getElementIndex(value)
+        val enumIndex = enumDescriptor.getElementIndex(value)
+        if (enumIndex == CompositeDecoder.UNKNOWN_NAME) {
+            throw SerializationException("Enum ${enumDescriptor.serialName} does not contain element '$value'")
+        }
+        return enumIndex
     }
     
+    override fun decodeNotNullMark(): Boolean {
+        // If the current token is 'null', it's a null value. Otherwise, it's not null.
+        // This assumes currentIndex points to the start of the value (or token before primitive).
+        // For primitives, getPrimitiveValueString() would read "null".
+        // For strings, input[structuralIndices[currentIndex]] would be '"'.
+        // For objects/arrays, it would be '{' or '['.
+        // This is tricky because "null" is a primitive value.
+
+        // A robust way: try to read "null" as a primitive. If it matches, it's null.
+        // Peek ahead without advancing currentIndex yet.
+        val valueStartIndex = structuralIndices[currentIndex] + 1
+        val valueEndIndex = if (currentIndex + 1 < structuralIndices.size) structuralIndices[currentIndex + 1] else input.length
+        if (valueStartIndex < valueEndIndex && input.substring(valueStartIndex, valueEndIndex).trim() == "null") {
+            return false // It is null
+        }
+        return true // It is not null
+    }
+
     override fun decodeNull(): Nothing? {
-        val value = getCurrentStructuralValue()
-        if (value != "null") throw SerializationException("Expected null, got: $value")
-        advanceToNextStructural()
+        val s = getPrimitiveValueString()
+        if (s != "null") throw SerializationException("Expected 'null' literal, got: '$s'")
+        currentIndex++ // Advance past the structural token that contained "null"
         return null
     }
     
     // === Composite Decoding ===
     
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        val startChar = peekCurrentStructuralChar()
-        when (descriptor.kind) {
-            StructureKind.LIST -> {
-                if (startChar != '[') throw SerializationException("Expected '[' for list, got: $startChar")
-                advanceToNextStructural() // consume '['
-            }
-            StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> {
-                if (startChar != '{') throw SerializationException("Expected '{' for object, got: $startChar")
-                advanceToNextStructural() // consume '{'
-            }
+        val currentTokenPos = structuralIndices[currentIndex]
+        val startChar = input[currentTokenPos]
+
+        val expectedChar = when (descriptor.kind) {
+            StructureKind.LIST -> '['
+            StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> '{'
+            else -> null // Or throw exception for unsupported kinds
         }
-        return BitmapJsonDecoder(json, input, bitmapArray, structuralIndices, currentIndex)
+
+        if (expectedChar != null && startChar != expectedChar) {
+            throw SerializationException("Expected '$expectedChar' for ${descriptor.kind} at $currentTokenPos, got '$startChar'")
+        }
+
+        advanceToNextStructural() // Consume the opening bracket/brace structural token itself
+
+        // Return a new decoder instance for the substructure, starting at the advanced index.
+        // The new decoder will have its own elementIndex starting from 0.
+        return BitmapJsonDecoder(serializersModule, input, bitmapArray, structuralIndices, currentIndex)
     }
     
     override fun endStructure(descriptor: SerialDescriptor) {
-        val endChar = peekCurrentStructuralChar()
+        // This is called on the child decoder instance after all its elements are decoded.
+        // currentIndex should now point to the closing bracket/brace of the structure.
+        val currentTokenPos = structuralIndices[currentIndex]
+        val endChar = input[currentTokenPos]
+
+        val expectedChar = when (descriptor.kind) {
+            StructureKind.LIST -> ']'
+            StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> '}'
+            else -> null // Or throw exception
+        }
+
+        if (expectedChar != null && endChar != expectedChar) {
+            throw SerializationException("Expected '$expectedChar' to end ${descriptor.kind} at $currentTokenPos, got '$endChar'")
+        }
+        
+        advanceToNextStructural() // Consume the closing bracket/brace structural token.
+                                  // The parent decoder will resume from this new currentIndex.
+    }
+    
+    // decodeSequentially is true by default in AbstractDecoder. Good.
+    // override fun decodeSequentially(): Boolean = true
+
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
+        // `elementIndex` (from AbstractDecoder) is the index of the *next* element to be decoded.
+        // `currentIndex` (our internal state) points to the structural token that *starts* or *precedes* this next element.
+
+        val currentTokenAtIndex = structuralIndices[currentIndex]
+        val char = input[currentTokenAtIndex]
+
+        // First, check for end of structure markers ']' or '}'
+        if (char == ']' || char == '}') {
+            return CompositeDecoder.DECODE_DONE
+        }
+
+        // Delimiter handling based on elementIndex (0 for first, >0 for subsequent)
+        // and descriptor kind (list vs map/object)
         when (descriptor.kind) {
             StructureKind.LIST -> {
-                if (endChar == ']') advanceToNextStructural()
-            }
-            StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> {
-                if (endChar == '}') advanceToNextStructural()
-            }
-        }
-    }
-    
-    override fun decodeSequentially(): Boolean = true
-    
-    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
-        if (currentIndex >= structuralIndices.size) return CompositeDecoder.DECODE_DONE
-        
-        val char = peekCurrentStructuralChar()
-        when {
-            char == '}' || char == ']' -> return CompositeDecoder.DECODE_DONE
-            char == ',' -> {
-                advanceToNextStructural() // consume ','
-                return elementIndex++
-            }
-            elementIndex == 0 -> return elementIndex++
-            else -> return CompositeDecoder.DECODE_DONE
-        }
-    }
-    
-    // === Bitmap Navigation Helpers ===
-    
-    private fun getCurrentStructuralValue(): String {
-        if (currentIndex >= structuralIndices.size) 
-            throw SerializationException("Unexpected end of JSON input")
-        
-        val startIdx = structuralIndices[currentIndex]
-        val endIdx = if (currentIndex + 1 < structuralIndices.size) 
-            structuralIndices[currentIndex + 1] else input.length
-        
-        return extractValue(startIdx, endIdx)
-    }
-    
-    private fun peekCurrentStructuralChar(): Char {
-        if (currentIndex >= structuralIndices.size) return '\u0000'
-        return input[structuralIndices[currentIndex]]
-    }
-    
-    private fun advanceToNextStructural() {
-        currentIndex++
-    }
-    
-    private fun extractValue(start: Int, end: Int): String {
-        val char = input[start]
-        return when (char) {
-            '"' -> extractStringValue(start)
-            '[', '{', ']', '}', ',' -> char.toString()
-            else -> extractPrimitiveValue(start, end)
-        }
-    }
-    
-    private fun extractStringValue(start: Int): String {
-        var pos = start + 1 // skip opening quote
-        val sb = StringBuilder()
-        
-        while (pos < input.length) {
-            val char = input[pos]
-            when (char) {
-                '"' -> return "\"${sb}\"" // include quotes for consistency
-                '\\' -> {
-                    pos++
-                    if (pos < input.length) {
-                        when (input[pos]) {
-                            '"', '\\', '/' -> sb.append(input[pos])
-                            'b' -> sb.append('\b')
-                            'f' -> sb.append('\u000c')
-                            'n' -> sb.append('\n')
-                            'r' -> sb.append('\r')
-                            't' -> sb.append('\t')
-                            'u' -> {
-                                // Unicode escape sequence
-                                val unicode = input.substring(pos + 1, pos + 5).toInt(16)
-                                sb.append(unicode.toChar())
-                                pos += 4
-                            }
-                            else -> sb.append(input[pos])
+                if (elementIndex > 0) { // If not the first element, expect a comma
+                    if (char == ',') {
+                        advanceToNextStructural() // Consume comma
+                        // After comma, check if immediately followed by list terminator (e.g. trailing comma)
+                        if (currentIndex < structuralIndices.size && input[structuralIndices[currentIndex]] == ']') {
+                            return CompositeDecoder.DECODE_DONE // Lenient: allow trailing comma
                         }
+                    } else {
+                        // No comma and not ']', error for strict JSON
+                        throw SerializationException("Expected ',' or ']' in list at $currentTokenAtIndex, found '$char'")
                     }
                 }
-                else -> sb.append(char)
+                // If first element (elementIndex == 0), or after consuming a comma,
+                // currentIndex now points to the start of the element itself (or token before primitive).
             }
-            pos++
+            StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> {
+                if (elementIndex > 0) { // Not the first key-value pair
+                    if (elementIndex % 2 == 0) { // Expecting a key (after a previous key-value pair)
+                        if (char == ',') {
+                            advanceToNextStructural() // Consume comma
+                            // After comma, check if immediately followed by object terminator (e.g. trailing comma)
+                             if (currentIndex < structuralIndices.size && input[structuralIndices[currentIndex]] == '}') {
+                                return CompositeDecoder.DECODE_DONE // Lenient: allow trailing comma
+                            }
+                        } else {
+                             // No comma and not '}', error for strict JSON
+                            throw SerializationException("Expected ',' or '}' in object at $currentTokenAtIndex, found '$char'")
+                        }
+                    } else { // Expecting a value (after a key)
+                        if (char == ':') {
+                            advanceToNextStructural() // Consume colon
+                        } else {
+                            throw SerializationException("Expected ':' after map key at $currentTokenAtIndex, found '$char'")
+                        }
+                    }
+                } else { // First element (elementIndex == 0), must be a key.
+                    // No comma or colon to consume yet. currentIndex points to the start of the key (e.g. opening quote).
+                }
+            }
+            else -> { /* No special delimiter handling for other kinds */ }
         }
-        throw SerializationException("Unterminated string")
+
+        // If, after consuming delimiters, we are at the end of input or structure unexpectedly
+        if (currentIndex >= structuralIndices.size || input[structuralIndices[currentIndex]] == ']' || input[structuralIndices[currentIndex]] == '}') {
+            // This could happen if input ends abruptly after a comma/colon, or with trailing comma + end
+            return CompositeDecoder.DECODE_DONE
+        }
+
+        return elementIndex // Return the element index to be decoded. AbstractDecoder will increment it.
     }
     
-    private fun extractPrimitiveValue(start: Int, end: Int): String {
-        var actualEnd = start
-        while (actualEnd < end && actualEnd < input.length) {
-            val char = input[actualEnd]
-            if (char in " \t\n\r,]}") break
-            actualEnd++
+    // === Bitmap Navigation Helpers (internal) ===
+
+    // Removed getCurrentStructuralValue() as its logic is now split into getPrimitiveValueString() and direct handling for strings.
+    // Removed extractValue() as it's replaced by more specific extraction.
+    // Renamed extractStringValue to extractAndUnescapeString and modified it.
+    // Removed extractPrimitiveValue as getPrimitiveValueString() covers it.
+
+    private fun advanceToNextStructural() {
+        currentIndex++
+        if (currentIndex >= structuralIndices.size) {
+            // This check can be useful for debugging, but might be too strict if input can end without closing structures.
+            // Consider if an exception here is always appropriate.
+            // For now, allow advancing past the end, subsequent checks will handle it.
         }
-        return input.substring(start, actualEnd)
     }
 }
 
