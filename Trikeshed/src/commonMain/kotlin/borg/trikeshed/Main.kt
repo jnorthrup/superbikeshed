@@ -21,7 +21,7 @@ object MainOrchestrator {
 
         // 1. Validate the payload using the provided rule.
         if (!knowledge.validator(environment.payload)) {
-            throw SecurityException("Invalid payload for action: ${environment.action}")
+            throw IllegalArgumentException("Invalid payload for action: ${environment.action}")
         }
 
         // 2. Transform the payload using the series of rules.
@@ -33,7 +33,7 @@ object MainOrchestrator {
         HttpResponse(
             status = HttpStatusCode(200),
             reasonPhrase = HttpReasonPhrase("OK"),
-            headers = seriesOf(HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain")),
+            headers = (0 j { _ -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }).play.toList(),
             body = "Action '${environment.action}' completed successfully.".encodeToByteArray()
         )
     }
@@ -50,7 +50,7 @@ object MainOrchestrator {
             method = HttpMethod("POST"),
             path = HttpRequestPath("/process/series"),
             version = HttpVersion("HTTP/1.1"),
-            headers = emptySeries()
+            headers = emptyList()
         )
         // Assemble the CCEK with Series-specific payload and rules.
         val seriesCcek = assembleCcekForSeriesProcessing(request1)
@@ -64,7 +64,7 @@ object MainOrchestrator {
             method = HttpMethod("POST"),
             path = HttpRequestPath("/process/cursor"),
             version = HttpVersion("HTTP/1.1"),
-            headers = emptySeries()
+            headers = emptyList()
         )
         // Assemble the CCEK with Cursor-specific payload and rules.
         val cursorCcek = assembleCcekForCursorProcessing(request2)
@@ -85,15 +85,17 @@ object MainOrchestrator {
             environment = Environment(
                 action = "DoubleAndSumSeries",
                 // THE PAYLOAD IS A SERIES
-                payload = seriesOf(1, 2, 3, 4, 5)
+                payload = (0 j { i -> listOf(1, 2, 3, 4, 5)[i] }).play.toList()
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR SERIES
-                rules = seriesOf(
-                    { payload -> (payload as Series<Int>).α { it * 2 } }, // Double it
-                    { payload -> (payload as Series<Int>).play.sum() }    // Sum it
-                ),
-                validator = { payload -> payload is Series<*> && payload.size > 0 }
+                rules = (0 j { _ -> { payload: Any -> 
+                    when (payload) {
+                        is List<*> -> payload.map { (it as Int) * 2 }
+                        else -> payload
+                    }
+                } }).play.toList(),
+                validator = { payload -> payload is List<*> && payload.isNotEmpty() }
             )
         )
     }
@@ -104,7 +106,7 @@ object MainOrchestrator {
     private fun assembleCcekForCursorProcessing(request: HttpRequest): CcekContext {
         // This function would build a real cursor from a database or file.
         // We'll mock it for this example.
-        val mockCursor = borg.trikeshed.cursor.Cursor(emptySeries())
+        val mockCursor = emptyList<Any>()
 
         println("Orchestrator: Assembling CCEK for a CURSOR operation.")
         return CcekContext(
@@ -117,10 +119,13 @@ object MainOrchestrator {
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR CURSORS
-                rules = seriesOf(
-                    { payload -> (payload as borg.trikeshed.cursor.Cursor).rowCount }
-                ),
-                validator = { payload -> payload is borg.trikeshed.cursor.Cursor }
+                rules = (0 j { _ -> { payload: Any -> 
+                    when (payload) {
+                        is List<*> -> payload.size
+                        else -> 0
+                    }
+                } }).play.toList(),
+                validator = { payload -> payload is List<*> }
             )
         )
     }

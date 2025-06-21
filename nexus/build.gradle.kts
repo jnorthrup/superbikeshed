@@ -32,6 +32,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":Trikeshed"))
+                implementation(project(":k2script"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
@@ -44,6 +45,7 @@ kotlin {
         
         val jvmMain by getting {
             dependencies {
+                implementation(project(":k2script"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             }
