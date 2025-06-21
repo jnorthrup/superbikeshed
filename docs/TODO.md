@@ -23,7 +23,58 @@ Comprehensive task list for TrikeShed ecosystem including **brokeshed** core, se
 - [ ] **PFOR (Patched Frame of Reference)** for sorted datasets
 - [ ] **ISAM integration** when **brokeshed** dependencies are available
 
-## Priority 2: TrikeShed Core Type System (CLAUDE.md Compliance)
+## Priority 2: Architecture Enhancement Projects
+
+### Making Awesome More Awesome
+
+#### 🔄 boingDemo Multiplatform Audio Enhancement
+- [ ] **Implement native audio support** - Complete the native `playSound` implementation
+  - Use C-interop library like miniaudio or OpenAL for `nativeMain`
+  - Achieve feature parity with other platforms for the "boing" sound effect
+  - Location: `boingDemo/src/nativeMain/kotlin/com/example/boingdemo/`
+
+#### 🔄 k2script AI-Powered Features 
+- [ ] **Integrate LiteLLMClient into k2script CLI** - Add AI capabilities to the command-line tool
+  - Add `--ai <prompt>` flag for AI-powered script generation
+  - Implement script generation: `kscript --ai "create a script to find all jpg files and resize them"`
+  - Implement code explanation: `kscript --ai "explain this script" < script.kts`
+  - Location: `k2script/src/main/kotlin/k2script/`
+
+### From Bad to Rad: Architecture Replacements
+
+#### 🔄 Replace flatton JSON Scanner
+- [ ] **Deprecate SimdJsonScanner in flatton** - Replace with superior kotlinx-serialization-scanner
+  - Remove `flatton/src/commonMain/kotlin/org/.../SimdJsonScanner.kt`
+  - Remove `JsonWireProtoAdapter` implementation
+  - Refactor `FlattonService.queryViewAsCursor` to use `BitmapJsonDecoder`
+  - Location: `flatton/src/commonMain/kotlin/org/`
+
+#### 🔄 Upgrade k2script Annotation Parser
+- [ ] **Replace regex-based LineParser with KotlinEntityScanner** - More robust parsing
+  - Replace `LineParser.kt` regex patterns with `kotlin-entity-scanner`
+  - Use Inductive Graph Parsing and Chained Rules for script annotations
+  - Parse `@file:DependsOn` and other directives with contextual awareness
+  - Location: `k2script/src/main/kotlin/kscript/parser/`
+
+#### 🔄 Rebuild nexus Agent Architecture
+- [ ] **Delete broken nexus implementation** - Remove `nexus/src/commonMain/BROKEN/`
+  - Remove entire `nexus/src/commonMain/BROKEN` directory
+  - Remove `NexusTypes_OLD.kt` and `DefaultNexusAgent.kt`
+- [ ] **Implement new nexus architecture** - Based on k2script patterns
+  - Create main entry point with argument parsing
+  - Add `NexusConfigBuilder` for settings management  
+  - Add `ActionExecutor` for task handling
+  - Integrate `LiteLLMClient` as core AI provider
+  - Location: `nexus/src/commonMain/kotlin/`
+
+#### 🔄 Consolidate Core Type Definitions
+- [ ] **Establish canonical CoreTypes.kt** - Single source of truth for foundational types
+  - Make `Trikeshed/src/commonMain/kotlin/borg/trikeshed/lib/CoreTypes.kt` canonical
+  - Remove duplicate `Series`, `Join` definitions from other modules
+  - Update imports in `moneyfan`, `k2script`, etc. to reference Trikeshed
+  - Verify no circular dependencies are created
+
+## Priority 3: TrikeShed Core Type System (CLAUDE.md Compliance)
 
 ### ✅ Completed: NIO Migration & Foundation (**brokeshed**)
 - [x] **NIO Migration**: Moved `borg.trikeshed.io.*` to `borg.trikeshed.nio.*` in **brokeshed**

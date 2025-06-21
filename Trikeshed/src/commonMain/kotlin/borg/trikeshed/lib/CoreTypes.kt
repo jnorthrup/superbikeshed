@@ -3,6 +3,7 @@
 package borg.trikeshed.lib
 
 import kotlin.reflect.KClassifier
+import borg.trikeshed.lib.Series as Indexed
 
 /** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
  * # TrikeShed Metaclass Architecture
@@ -284,7 +285,7 @@ typealias MetaSeries<A, T> = Join<A, (A) -> T>
  * val legacy: Join<Int, Int> = 42 j 37  // Still works
  * ```
  */
-typealias Twin<T> = MetaSeries<Boolean, T>
+typealias Twin<T> = Join<T, T>
 
 /**
  * ## Composition Operator (j) - Universal Metaclass Constructor
@@ -838,3 +839,20 @@ sealed interface Either<out L, out R> {
         fun <R> right(value: R): Either<Nothing, R> = Right(value)
     }
 }
+
+// === UTILITY FUNCTIONS ===
+
+/**
+ * Creates a Series from a list of elements.
+ * This is a convenience function for creating Series instances.
+ */
+fun <T> seriesOf(vararg elements: T): Series<T> = 
+    (elements.size j { i -> elements[i] })
+
+/**
+ * Creates an empty Series.
+ * This is a convenience function for creating empty Series instances.
+ */
+fun <T> emptySeries(): Series<T> = 
+    (0 j { _ -> throw IndexOutOfBoundsException("Empty series") })
+

@@ -216,3 +216,86 @@ gantt
     Branch Merging & Integration:crit, all_devs, 2024-09-01, 7d
     Alpha Testing & Bug Fixing  :all_devs, after all_devs, 21d
 ```
+
+## VII. CLAUDE.md Architectural Improvements
+
+### A. Making Awesome More Awesome
+
+#### 1. boingDemo Multiplatform Architecture
+- [ ] **P1: Complete Native Audio Implementation:**
+  - [ ] Implement `actual fun playSound` for `nativeMain` using C-interop (miniaudio or OpenAL)
+  - [ ] Complete the multiplatform experience for native desktop executables
+  - [ ] Ensure "boing" sound works universally across all platforms
+
+#### 2. k2script Command-Line Interface Enhancement
+- [ ] **P1: AI-Powered Features Integration:**
+  - [ ] Add `--ai <prompt>` command-line flag to k2script
+  - [ ] Integrate `LiteLLMClient` for script generation: `kscript --ai "create a script to find all jpg files and resize them"`
+  - [ ] Add code explanation feature: `kscript --ai "explain this script" < script.kts`
+  - [ ] Leverage the robust CLI foundation for next-generation AI capabilities
+
+### B. From Bad to Rad: Switching to Better Solutions
+
+#### 1. flatton JSON Scanner Replacement
+- [ ] **P1: Replace Fragile SimdJsonScanner:**
+  - [ ] **COMPLETED:** Deprecated `flatton`'s `SimdJsonScanner` and `JsonWireProtoAdapter`
+  - [ ] **COMPLETED:** Refactored `FlattonService` to use `BitmapJsonDecoder` from `kotlinx-serialization-scanner`
+  - [ ] **COMPLETED:** Made flatton a proper KMP Trikeshed service following relaxfactory/1xio pattern
+  - [ ] **COMPLETED:** Integrated with canonical Trikeshed types and conditional native target determination
+
+#### 2. k2script Annotation Parser Upgrade
+- [ ] **P1: Replace Regex-Based Parsing:**
+  - [ ] Replace `k2script.parser.LineParser` regex-based parsing with `KotlinEntityScanner`
+  - [ ] Use Inductive Graph Parsing and Chained Rules for script annotation analysis
+  - [ ] Make dependency and directive parsing more reliable, extensible, and context-aware
+  - [ ] Feed script content to scanner to produce structured `ScriptAnnotation` entities
+
+#### 3. nexus Agent Architecture Overhaul
+- [ ] **P1: Delete Broken Agent Code:**
+  - [x] **COMPLETED:** Delete entire `nexus/src/commonMain/BROKEN` directory
+  - [x] **COMPLETED:** Remove abandoned, overly-abstract agent designs (`NexusTypes_OLD.kt`)
+  - [x] **COMPLETED:** Remove broken, non-functional implementation (`DefaultNexusAgent.kt`)
+- [x] **P1: Refactor from Ground Up:**
+  - [x] **COMPLETED:** Use k2script's working architecture pattern:
+    - Main entry point that parses arguments
+    - `NexusConfigBuilder` to manage settings
+    - `ActionExecutor` that handles specific tasks
+  - [x] **COMPLETED:** Directly use `k2script.ai.llm.LiteLLMClient` as provider
+  - [x] **COMPLETED:** Replace broken provider concepts in nexus with working LLM client
+  - [x] **COMPLETED:** Create smaller, more focused, and working agent system
+- [ ] **P1: Test and Validate:**
+  - [ ] **BLOCKED:** Test nexus agent functionality (blocked by Trikeshed compilation errors)
+  - [ ] **BLOCKED:** Verify AI task execution works with `nexus --ai "prompt"`
+  - [ ] **BLOCKED:** Ensure proper error handling and user feedback
+
+#### 4. Core Types Consolidation
+- [ ] **P1: Establish Single Source of Truth:**
+  - [ ] **URGENT:** Establish `Trikeshed/src/commonMain/kotlin/borg/trikeshed/lib/CoreTypes.kt` as canonical source
+  - [ ] Replace all duplicate definitions from other modules with imports from Trikeshed
+  - [ ] Consolidate conflicting definitions:
+    - `borg.trikeshed.lib.Series`
+    - `moneyfan.trikeshed.Series` 
+    - `com.google.trike.series.Series`
+  - [ ] Use none if not needed, but maintain single source of truth
+  - [ ] Drastically improve maintainability and consistency across entire project
+
+### C. Implementation Priority
+
+#### Phase 1 (Critical - Blocking Build)
+1. **nexus Agent Overhaul** - Delete broken code, adopt k2script pattern
+2. **Core Types Consolidation** - Fix type conflicts and establish canonical source
+3. **k2script AI Integration** - Add LLM capabilities to working CLI
+
+#### Phase 2 (High Impact)
+1. **k2script Parser Upgrade** - Replace regex with KotlinEntityScanner
+2. **boingDemo Native Audio** - Complete multiplatform experience
+
+#### Phase 3 (Polish)
+1. **Documentation and Testing** - Ensure all improvements are well-tested and documented
+
+### D. Success Metrics
+- [ ] All modules build successfully with `./gradlew build --console=plain --no-daemon`
+- [ ] No more type conflicts or unresolved references in Trikeshed
+- [ ] nexus agent is functional and uses k2script's LLM client
+- [ ] flatton service works robustly with kotlinx-serialization-scanner
+- [ ] k2script has working AI features via `--ai` flag
