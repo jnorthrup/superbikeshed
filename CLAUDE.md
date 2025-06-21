@@ -39,3 +39,11 @@
 - Eventually IntelliJ inline when ready to make permanent
 - This prevents system shock and dueling architect AIs during transition
  
+when solving a problem of 1 factor of effects, first read for 
+## Safety Features
+
+- **2-Factor Reach Analysis**: Check direct + transitive impact before changes
+- **Conflict Detection**: Executor prevents overlapping modifications
+- **Risk Assessment**: Low/medium/high risk levels for different operations
+- **Executive Escalation**: Human approval required for high-risk changes
+- **Rollback Capability**: All changes planned with undo procedures

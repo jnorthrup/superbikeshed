@@ -10,6 +10,24 @@ import borg.trikeshed.reactor.SelectableChannel // Import SelectableChannel
 import borg.trikeshed.reactor.SelectorInterface // Import SelectorInterface
 import borg.trikeshed.reactor.SelectionKey // Import SelectionKey
 
+/**
+ * Reactor: Attention Distribution Mechanism for Main()'s Pursuit of Happiness
+ * 
+ * Main() is the beneficiary in pursuit of happiness (its original interest).
+ * The Reactor is one of the attention distribution mechanisms that main() uses
+ * to fulfill its desires across multiple abstractions.
+ * 
+ * Taxonomic Breakdown of Attention Distribution:
+ * - Main() has original interest (e.g., "handle concurrent requests")
+ * - Main() distributes attention across abstractions (Reactor, Protocol Stack, Business Logic, etc.)
+ * - Each abstraction receives attention and works toward main()'s interest
+ * - Attention flows back to main() as progress toward the original goal
+ * - Main() continues distributing attention until its interest is fulfilled
+ * 
+ * The Reactor specifically manages event-driven attention through interestOps,
+ * where each handler (UnaryAsyncReaction) can set what the reactor should pay
+ * attention to next, enabling WAM-style continuation chains.
+ */
 class Reactor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val numSelectorThreads: Int = max(1, 4)
