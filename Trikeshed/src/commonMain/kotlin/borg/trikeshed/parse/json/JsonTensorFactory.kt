@@ -190,38 +190,38 @@ object LightningJson {
         if (path.size == 0) {
             return if (reifyResult) reify(context.b.play.joinToString("")) else context
         }
-        
-        val (pathHead, pathTail) = path.first() j path.drop(1)
-        
-        return pathHead.fold(
-            // String branch - object key lookup
-            { key ->
+
+        val pathHead = path.first()
+        val pathTail = path.drop(1)
+
+        when (pathHead) {
+            is Either.Left -> {
+                val key = pathHead.value
                 val (element, src) = context
                 val segments = getSegments(element, src)
-                
-                for (segment in segments) {
-                    val keyValue = parseKeyValuePair(segment.play.joinToString(""))
-                    val (segmentKey, _) = keyValue
+
+                for (segment in segments.play) {
+                    val (segmentKey, _) = parseKeyValuePair(segment.play.joinToString(""))
                     if (segmentKey == key) {
-                        val newContext = segment j src
+                        val newContext = index(segment.play.joinToString("")) j src
                         return jsPath(newContext, pathTail, reifyResult)
                     }
                 }
-                null
-            },
-            // Int branch - array index lookup
-            { index ->
+                return null
+            }
+            is Either.Right -> {
+                val index = pathHead.value
                 val (element, src) = context
                 val segments = getSegments(element, src)
-                
+
                 if (index < segments.size) {
                     val segment = segments[index]
-                    val newContext = segment j src
+                    val newContext = index(segment.play.joinToString("")) j src
                     return jsPath(newContext, pathTail, reifyResult)
                 }
-                null
+                return null
             }
-        )
+        }
     }
     
     /**
@@ -253,17 +253,15 @@ object LightningJson {
     
     // Helper functions
     
-    private fun parseKeyValuePair(json: String): Pair<String, Any?> {
-        val colonIndex = json.indexOf(':')
-        if (colonIndex == -1) throw IllegalArgumentException("Invalid key-value pair: $json")
-        
-        val key = json.substring(0, colonIndex).trim().removeSurrounding("\"")
-        val value = json.substring(colonIndex + 1).trim()
-        
-        return key to reify(value)
+    private fun parseKeyValuePair(segment: String): Pair<String, Any?> {
+        val parts = segment.split(':', limit = 2)
+        val key = parts.getOrNull(0)?.trim()?.removeSurrounding("\"") ?: ""
+        val valueString = parts.getOrNull(1)?.trim() ?: "null"
+        val value = reify(valueString)
+        return key to value
     }
     
-    private fun getSegments(element: JsonStructuralIndices, src: Series<Char>): Series<JsonSegment> {
+    private fun getSegments(element: JsonStructuralIndices, src: Series<Char>): Series<Series<Char>> {
         val (openIdx, closeIdx) = element.a
         val commaIdxs = element.b
         
@@ -272,20 +270,22 @@ object LightningJson {
         commaIdxs.play.forEach { allIndices.add(it) }
         allIndices.add(closeIdx)
         
-        return allIndices.zipWithNext().map { (start, end) ->
-            (start j end) j src[start + 1 until end]
-        }.toSeries()
+        return allIndices.zipWithNext().toSeries().α { (start, end) ->
+            val segment = src[start + 1 until end]
+            segment
+        }
     }
     
     private fun escapeString(str: String): String {
         return str.replace("\\", "\\\\")
                  .replace("\"", "\\\"")
+                 .replace("\b", "\\b")
                  .replace("\n", "\\n")
                  .replace("\r", "\\r")
                  .replace("\t", "\\t")
     }
 }
 
-// Extension functions for convenience
-fun String.toSeries(): Series<Char> = length j { index -> this[index] }
-fun <T> List<T>.toSeries(): Series<T> = size j { index -> this[index] }
+fun String.toSeries(): Series<Char> = length j { i -> this[i] }
+fun <T> Series<T>.first(): T = this[0]
+fun <T> Series<T>.drop(n: Int): Series<T> = (size - n) j { i -> this[i + n] }

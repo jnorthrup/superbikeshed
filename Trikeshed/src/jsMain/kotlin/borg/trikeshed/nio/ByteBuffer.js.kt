@@ -4,107 +4,134 @@ import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.DataView
 import org.khronos.webgl.Int8Array
 
-actual interface ByteBuffer {
-    actual fun clear()
-    actual fun flip()
-    actual fun hasRemaining(): Boolean
-    actual fun remaining(): Int
-    actual fun position(): Int
-    actual fun position(newPosition: Int)
-    actual fun put(byte: Byte)
-    actual fun put(bytes: ByteArray)
-    actual fun putInt(value: Int)
-    actual fun putLong(value: Long)
-    actual fun get(): Byte
-    actual fun get(bytes: ByteArray)
-    actual fun getInt(): Int
-    actual fun getLong(): Long
-    actual fun limit(): Int
-    actual fun limit(newLimit: Int)
-    actual fun capacity(): Int
-}
-
-class JsNioByteBuffer(capacity: Int) : ByteBuffer {
-    private val arrayBuffer = ArrayBuffer(capacity)
-    private val dataView = DataView(arrayBuffer)
-    private val int8Array = Int8Array(arrayBuffer)
-    private var pos: Int = 0
-    private var lim: Int = capacity
-    private val cap: Int = capacity
-
-    override fun clear() {
-        pos = 0
-        lim = cap
-    }
-
-    override fun flip() {
-        lim = pos
-        pos = 0
-    }
-
-    override fun hasRemaining(): Boolean = pos < lim
-    override fun remaining(): Int = lim - pos
-    override fun position(): Int = pos
-    override fun position(newPosition: Int) { pos = newPosition }
-
-    override fun put(byte: Byte) {
-        if (pos >= lim) throw RuntimeException("Buffer overflow")
-        int8Array[pos++] = byte
-    }
-
-    override fun put(bytes: ByteArray) {
-        if (pos + bytes.size > lim) throw RuntimeException("Buffer overflow")
-        for (i in bytes.indices) {
-            int8Array[pos + i] = bytes[i]
+actual class ByteBuffer private constructor(
+    private val arrayBuffer: ArrayBuffer,
+    private val dataView: DataView,
+    private val int8Array: Int8Array,
+    private var pos: Int = 0,
+    private var lim: Int
+) {
+    actual companion object {
+        actual fun allocate(capacity: Int): ByteBuffer {
+            val arrayBuffer = ArrayBuffer(capacity)
+            return ByteBuffer(
+                arrayBuffer = arrayBuffer,
+                dataView = DataView(arrayBuffer),
+                int8Array = Int8Array(arrayBuffer),
+                lim = capacity
+            )
         }
-        pos += bytes.size
+
+        actual fun wrap(array: ByteArray): ByteBuffer {
+            val int8Array = array.unsafeCast<Int8Array>()
+            return ByteBuffer(
+                arrayBuffer = int8Array.buffer,
+                dataView = DataView(int8Array.buffer, int8Array.byteOffset, int8Array.byteLength),
+                int8Array = int8Array,
+                lim = array.size
+            )
+        }
     }
 
-    override fun putInt(value: Int) {
-        if (pos + 4 > lim) throw RuntimeException("Buffer overflow")
-        dataView.setInt32(pos, value, false) // Big-endian
-        pos += 4
-    }
+    actual val capacity: Int
+        get() = arrayBuffer.byteLength
 
-    override fun putLong(value: Long) {
-        if (pos + 8 > lim) throw RuntimeException("Buffer overflow")
-        // JavaScript doesn't have native 64-bit ints, so we split into two 32-bit parts
-        val high = (value shr 32).toInt()
-        val low = value.toInt()
-        dataView.setInt32(pos, high, false)
-        dataView.setInt32(pos + 4, low, false)
-        pos += 8
-    }
+    actual var position: Int
+        get() = pos
+        set(value) {
+            if (value < 0 || value > lim) throw IndexOutOfBoundsException("Invalid position: $value")
+            pos = value
+        }
+    actual var limit: Int
+        get() = lim
+        set(value) {
+            if (value < 0 || value > capacity) throw IndexOutOfBoundsException("Invalid limit: $value")
+            lim = value
+            if (pos > lim) pos = lim
+        }
 
-    override fun get(): Byte {
+    actual fun remaining(): Int = lim - pos
+    actual fun hasRemaining(): Boolean = pos < lim
+
+    actual fun get(): Byte {
         if (pos >= lim) throw RuntimeException("Buffer underflow")
         return int8Array[pos++]
     }
 
-    override fun get(bytes: ByteArray) {
-        if (pos + bytes.size > lim) throw RuntimeException("Buffer underflow")
-        for (i in bytes.indices) {
-            bytes[i] = int8Array[pos + i]
+    actual fun get(dst: ByteArray, offset: Int, length: Int): ByteBuffer {
+        if (remaining() < length) throw RuntimeException("Buffer underflow")
+        for (i in 0 until length) {
+            dst[offset + i] = int8Array[pos + i]
         }
-        pos += bytes.size
+        pos += length
+        return this
     }
 
-    override fun getInt(): Int {
-        if (pos + 4 > lim) throw RuntimeException("Buffer underflow")
+    actual fun put(byte: Byte): ByteBuffer {
+        if (pos >= lim) throw RuntimeException("Buffer overflow")
+        int8Array[pos++] = byte
+        return this
+    }
+
+    actual fun put(src: ByteArray, offset: Int, length: Int): ByteBuffer {
+        if (remaining() < length) throw RuntimeException("Buffer overflow")
+        for (i in 0 until length) {
+            int8Array[pos + i] = src[offset + i]
+        }
+        pos += length
+        return this
+    }
+
+    actual fun getInt(): Int {
+        if (remaining() < 4) throw RuntimeException("Buffer underflow")
         val result = dataView.getInt32(pos, false) // Big-endian
         pos += 4
         return result
     }
 
-    override fun getLong(): Long {
-        if (pos + 8 > lim) throw RuntimeException("Buffer underflow")
+    actual fun putInt(value: Int): ByteBuffer {
+        if (remaining() < 4) throw RuntimeException("Buffer overflow")
+        dataView.setInt32(pos, value, false) // Big-endian
+        pos += 4
+        return this
+    }
+
+    actual fun getLong(): Long {
+        if (remaining() < 8) throw RuntimeException("Buffer underflow")
         val high = dataView.getInt32(pos, false).toLong()
         val low = dataView.getInt32(pos + 4, false).toLong() and 0xFFFFFFFFL
         pos += 8
         return (high shl 32) or low
     }
 
-    override fun limit(): Int = lim
-    override fun limit(newLimit: Int) { lim = newLimit }
-    override fun capacity(): Int = cap
+    actual fun putLong(value: Long): ByteBuffer {
+        if (remaining() < 8) throw RuntimeException("Buffer overflow")
+        val high = (value shr 32).toInt()
+        val low = value.toInt()
+        dataView.setInt32(pos, high, false)
+        dataView.setInt32(pos + 4, low, false)
+        pos += 8
+        return this
+    }
+
+    actual fun flip(): ByteBuffer {
+        lim = pos
+        pos = 0
+        return this
+    }
+
+    actual fun rewind(): ByteBuffer {
+        pos = 0
+        return this
+    }
+
+    actual fun clear(): ByteBuffer {
+        pos = 0
+        lim = capacity
+        return this
+    }
+
+    actual fun array(): ByteArray {
+        return Int8Array(arrayBuffer, 0, lim).unsafeCast<ByteArray>()
+    }
 }

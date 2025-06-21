@@ -251,7 +251,7 @@ class GzIndex {
         val windowSize = list[index].winsize
         val orign_window = list[index].window
         logDebug {
-            val bytes = orign_window.toSeries() α UByte::toByte
+            val bytes = orign_window.toSeries()
             "--- before inflateIndexWindow: windowSize=$windowSize, orign_window=${bytes}"
         }
         orign_window.usePinned { window ->
@@ -266,140 +266,12 @@ class GzIndex {
                 strm.next_out = tbuf.addressOf(0)
                 val ret = inflate(strm.ptr, Z_NO_FLUSH)
                 logDebug {
-                    val bytes = throwaway.toSeries() α UByte::toByte
+                    val bytes = throwaway.toSeries()
                     "+++ after inflateIndexWindow: ret=$ret, throwaway=${bytes}"
                 }
                 posixRequires(ret == Z_STREAM_END) { "Error: inflate failed: $ret not Z_STREAM_END (${Z_STREAM_END})" }
             }
         }
         return strm
-    }
-}
-
-
-fun createindex(args: Array<String>) {
-    /**
-     *  [ -s <span> ] [ gzFName  ] [ idxfname.index ]
-     *
-     *  gzFName: input file name or stdin
-     *  idxfname: index file name or stdout
-     */
-
-    var span = (8 shl 20).toULong()
-    var gzFileName: String? = null
-    var indexFileName: String? = null
-    var skip = -1
-    for ((ix, arg) in args.withIndex()) {
-        when {
-            skip == ix -> skip = -1
-            arg == "-s" -> span = args[(ix + 1).apply { skip = this }].toULong()
-            (arg.contains(".index") || null != gzFileName) -> indexFileName = arg
-            else -> gzFileName = args[ix]
-        }
-    }
-
-    val gzFile = gzFileName?.let { fopen(gzFileName, "rb") } ?: stdin
-    ?: throw IllegalStateException("Error: could not open gzip file $gzFileName")
-
-    val gzIndex = GzIndex()
-    gzIndex.build(gzFile, span)
-    fclose(gzFile)
-
-    gzIndex.fpName = indexFileName
-    if (indexFileName != null) gzIndex.writeIndex(indexFileName)
-}
-
-@ExperimentalUnsignedTypes
-fun decode(args: Array<String>) {
-    var indexFileName: String? = null
-    var gzFileName: String? = null
-    var outfile: String? = null
-    var expr: String? = null
-    var skip = -1
-    /**
-     *   <-s "expr"> [-o outfile] [ gzFName ] [ "idxfname.index" ]
-     *    expr =  min[..max]
-     */
-
-    for ((ix, arg) in args.withIndex()) {
-        when {
-            skip == ix -> skip = -1
-            arg == "-s" -> expr = args[(ix + 1).apply { skip = this }]
-            arg == "-o" -> outfile = args[(ix + 1).apply { skip = this }]
-            (arg.matches("\\.index$".toRegex()) || null != gzFileName) -> indexFileName = arg
-            else -> gzFileName = args[ix]
-        }
-    }
-
-    fun parseRangeExpression(expr: String): Twin<ULong> {
-        val rangeComponents = expr.split("..")
-        val start = rangeComponents[0].toULongOrNull() ?: 0UL
-        val end = rangeComponents.getOrNull(1)?.toULongOrNull() ?: ULong.MAX_VALUE
-        return start j end
-    }
-
-    val (start, end) = expr?.let { parseRangeExpression(expr) } ?: (0UL j ULong.MAX_VALUE)
-
-
-    if (gzFileName == null && indexFileName == null) throw IllegalStateException("stdin used twice")
-
-    val gzFile = gzFileName?.let { fopen(gzFileName, "rb") } ?: stdin
-    ?: throw IllegalStateException("Error: could not open gzip file $gzFileName")
-
-    val gzIndex = GzIndex()
-    gzIndex.fpName = indexFileName
-    posixRequires(gzIndex.readIndex(indexFileName).z) { "Error: could not read index file $indexFileName" }
-
-    val outputStream = outfile?.let { fopen(it, "wb") } ?: stdout
-    ?: throw IllegalStateException("Error: could not open output file $outfile")
-
-    for (i in start until end) {
-        val window = gzIndex.getWindow(i.toInt())
-        window.usePinned { fwrite(it.addressOf(0), 1u, window.size.toULong(), stdout) }
-    }
-
-    val list = gzIndex.list
-    val binEntry = (list.toSeries() α { it.output }).binarySearch(start)
-    val chunk = if (binEntry >= 0) binEntry else max(0, -binEntry - 2)
-    val point = list[chunk]
-    if (gzFileName != null) {
-        val fseek = fseek(gzFile, point.input.toLong(), SEEK_SET)
-        posixRequires(fseek == 0) { "Error: could not seek to ${point.input} in $gzFileName" }
-    }
-    gzIndex.prepareIndexEntry(chunk).let { strm: z_stream ->
-        val inflateSequence: Sequence<UByte> = sequence {
-            var fail = false
-            val buf = UByteArray(32 shl 10)
-            while (!fail) {
-                buf.usePinned { tbuf ->
-                    val bytesRead = fread(tbuf.addressOf(0), 1u, buf.size.toULong(), gzFile)
-                    if (bytesRead == 0UL) fail = true else {
-                        strm.avail_in = bytesRead.toUInt()
-                        strm.next_in = tbuf.addressOf(0)
-                        while (strm.avail_in > 0U) {
-                            strm.avail_out = buf.size.toUInt()
-                            strm.next_out = tbuf.addressOf(0)
-                            val ret = inflate(strm.ptr, Z_NO_FLUSH)
-                            if (ret != Z_OK) fail = true
-                            if (!fail)
-                                for (i in 0 until buf.size - strm.avail_out.toInt())
-                                    this.yield(buf[i])
-                        }
-                    }
-                }
-            }
-        }
-
-        val ofsrc: Sequence<UByte> = inflateSequence
-            .drop(start.toInt() - point.output.toInt())
-            .take((end - start).toInt())
-
-        val buf = UByteArray(1)
-        for (uByte in ofsrc) {
-            buf[0] = uByte
-            fwrite(buf.refTo(0), 1u, 1UL, outputStream).also {
-                posixRequires(it == 1UL) { "Error: could not write to $outfile" }
-            }
-        }
     }
 }

@@ -2,6 +2,8 @@
 
 package borg.trikeshed.lib
 
+import kotlin.reflect.KClassifier
+
 /** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
  * # TrikeShed Metaclass Architecture
  * 
@@ -675,11 +677,7 @@ typealias MetaSeriesWithMetadata<T> = Join<Series<T>, Map<String, Any?>>
  * 
  * ColumnMeta contains **database column context** including type, name, and other metadata.
  */
-data class ColumnMeta(
-    val name: String,
-    val type: String,
-    val nullable: Boolean = true
-)
+typealias ColumnMeta = Join<String, KClassifier>
 
 /**
  * ## RowVec - Database Row Metaclass  
@@ -689,13 +687,13 @@ data class ColumnMeta(
  * 
  * **Definition:**
  * ```kotlin
- * typealias RowVec = Series2<Any?, () -> ColumnMeta>
+ * typealias RowVec = Series<Join<Any?, () -> ColumnMeta>>
  * //               = Series<Join<Any?, () -> ColumnMeta>>
  * ```
  * 
  * This enables **structured data access** with type information embedded at runtime.
  */
-typealias RowVec = Series2<Any?, () -> ColumnMeta>
+typealias RowVec = Series<Join<Any?, () -> ColumnMeta>>
 
 /**
  * ## TableMeta - Database Table Metadata
@@ -826,3 +824,17 @@ typealias TensorCursor = Series<Tensor<Any?>>
  * This **compositional approach** enables domain-specific types that maintain
  * mathematical properties while expressing business concepts directly in the type system.
  */
+
+/**
+ * Either type for error handling and disjoint unions.
+ * Moved to CoreTypes as a foundational data structure.
+ */
+sealed interface Either<out L, out R> {
+    data class Left<L>(val value: L) : Either<L, Nothing>
+    data class Right<R>(val value: R) : Either<Nothing, R>
+
+    companion object {
+        fun <L> left(value: L): Either<L, Nothing> = Left(value)
+        fun <R> right(value: R): Either<Nothing, R> = Right(value)
+    }
+}
