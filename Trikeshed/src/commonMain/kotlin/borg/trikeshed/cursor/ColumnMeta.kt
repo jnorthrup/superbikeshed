@@ -26,3 +26,10 @@ value class ColumnMeta(val memento: IOMemento) {
         }
     }
 }
+
+data class ColumnMeta(
+    val name: String,
+    val type: String,
+    val begin: Int,
+    val end: Int
+)

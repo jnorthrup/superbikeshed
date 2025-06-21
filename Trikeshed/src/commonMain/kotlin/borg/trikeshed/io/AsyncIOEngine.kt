@@ -1,32 +1,31 @@
 package borg.trikeshed.io
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 /**
 /**
  * Common interface for async I/O engines
  */
-expect class AsyncIOEngine {
+interface AsyncIOEngine {
     /**
      * Initialize the async I/O engine
      */
-    fun initialize()
+    suspend fun initialize()
     
     /**
      * Clean up resources
      */
-    fun cleanup()
+    suspend fun cleanup()
     
     /**
      * Submit a read operation
      */
-    suspend fun read(handle: IOHandle, buffer: ByteArray, offset: Long = 0): Int
+    suspend fun read(handle: IOHandle, buffer: ByteArray, offset: Long): Int
     
     /**
      * Submit a write operation
      */
-    suspend fun write(handle: IOHandle, data: ByteArray, offset: Long = 0): Int
+    suspend fun write(handle: IOHandle, data: ByteArray, offset: Long): Int
     
     /**
      * Submit multiple operations and wait for completion
@@ -38,7 +37,7 @@ expect class AsyncIOEngine {
      */
     fun completedOperations(): Flow<IOResult>
     
-    expect companion object {
+    companion object {
         fun create(): AsyncIOEngine
     }
 }

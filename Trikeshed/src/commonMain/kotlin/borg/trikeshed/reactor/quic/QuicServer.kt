@@ -9,6 +9,21 @@ import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
+import kotlinx.coroutines.flow.Flow
+
+interface ByteBuffer {
+    fun remaining(): Int
+    fun hasRemaining(): Boolean
+    fun get(): Byte
+    fun put(byte: Byte)
+    fun array(): ByteArray
+}
+
+interface QuicServer {
+    suspend fun send(data: ByteArray): Int
+    suspend fun receive(): ByteArray
+    fun close()
+}
 
 class QuicServer(private val config: QuicServerConfig) {
 

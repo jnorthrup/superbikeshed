@@ -95,10 +95,6 @@ target/
 .metals/
 .bloop/
 
-# Kotlin
-.kotlin/
-*.kotlin
-
 # Python
 __pycache__/
 *.py[cod]
@@ -140,15 +136,11 @@ test-output/
 
 # Runtime configuration
 .vscode/settings.json
-
-# Aider AI assistant files
-.aider*
-
-# Ignore Gradle project-specific cache directory
-.gradle
-
-# Ignore Gradle build output directory
-build
-
-# Repair project
-superbikeshed_repair/
+.aider.tags.cache.v4/cache.db
+.aider.tags.cache.v4/a9/28/dec0b99c4a30164bd43a232b776d.val
+.aider.tags.cache.v4/ac/3a/5a37af97adc81205249b4a9a06fd.val
+.aider.tags.cache.v4/b9/ff/27308213adcbbf47fd16bce8264a.val
+.aider.chat.history.md
+.aider.input.history
+.kotlin
+ 

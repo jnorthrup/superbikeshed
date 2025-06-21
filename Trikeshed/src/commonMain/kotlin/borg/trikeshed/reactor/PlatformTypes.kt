@@ -4,6 +4,8 @@ import borg.trikeshed.nio.platformCurrentTimeMillis
 
 typealias Interest = Int
 
+expect fun currentTimeMillis(): Long
+
 sealed class AsyncReaction {
     object Continue : AsyncReaction()
     class Change(val ops: List<Operation>) : AsyncReaction()

@@ -59,53 +59,45 @@ data class StraceAnalysis(
     val summary: String
 )
 
-/**
- * Common interface for strace attention system that can be used from commonMain
- * to call exec and track system calls for LLM and data acquisition.
- */
-expect class StraceAttention {
+interface StraceAttention {
+    val summary: String
+    val attentionWeights: Map<String, Double>
+    val dataPatterns: List<DataPattern>
+    val llmPrompt: String
     
-    /**
-     * Execute a command with strace monitoring
-     */
-    suspend fun execWithStrace(
-        command: String,
-        args: List<String> = emptyList(),
-        config: StraceConfig = StraceConfig()
-    ): Flow<SyscallEvent>
-    
-    /**
-     * Analyze syscall events and generate attention weights for LLM
-     */
-    suspend fun analyzeAttention(
-        events: Flow<SyscallEvent>,
-        context: String = ""
-    ): Flow<AttentionWeight>
-    
-    /**
-     * Extract data acquisition patterns from syscall events
-     */
-    suspend fun extractDataAcquisition(
-        events: Flow<SyscallEvent>
-    ): Flow<DataAcquisitionPattern>
-    
-    /**
-     * Generate LLM prompt from strace analysis
-     */
-    suspend fun generateLLMPrompt(
-        events: Flow<SyscallEvent>,
-        attentionWeights: Flow<AttentionWeight>
-    ): String
-    
-    /**
-     * Real-time monitoring with attention feedback
-     */
-    suspend fun monitorWithAttention(
-        command: String,
-        args: List<String> = emptyList(),
-        config: StraceConfig = StraceConfig()
-    ): Flow<StraceAnalysis>
+    suspend fun monitorWithAttention(command: String): Flow<StraceEvent>
+    suspend fun execWithStrace(command: String): Flow<StraceEvent>
+    suspend fun analyzeAttention(events: Flow<StraceEvent>): AttentionAnalysis
+    suspend fun generateLLMPrompt(events: Flow<StraceEvent>): String
 }
+
+data class StraceEvent(
+    val timestamp: Long,
+    val pid: Int,
+    val syscall: String,
+    val args: List<String>,
+    val result: String,
+    val error: String?
+)
+
+data class DataPattern(
+    val pattern: String,
+    val dataSize: Int,
+    val confidence: Double
+)
+
+data class AttentionAnalysis(
+    val summary: String,
+    val attentionWeights: Map<String, Double>,
+    val dataPatterns: List<DataPattern>
+)
+
+expect class StraceSummary(
+    totalSyscalls: Int,
+    uniqueSyscalls: Int,
+    duration: Long,
+    patterns: List<DataPattern>
+)
 
 /**
  * Common utilities for strace analysis

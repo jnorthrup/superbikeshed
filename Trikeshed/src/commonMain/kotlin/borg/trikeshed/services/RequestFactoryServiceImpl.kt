@@ -11,6 +11,7 @@ import borg.trikeshed.lib.b
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.bridge.*
 import kotlin.jvm.JvmInline
+import kotlinx.coroutines.flow.Flow
 
 /**
  * BrokeShed Implementation of RequestFactoryService 
@@ -63,4 +64,10 @@ internal class BrokeShedRequestFactoryServiceImpl : RequestFactoryService {
     }
 
     private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+}
+
+class RequestFactoryServiceImpl : RequestFactoryService {
+    override suspend fun invokeService(serviceName: String, data: ByteArray): ByteArray {
+        return ByteArray(0)
+    }
 } 
