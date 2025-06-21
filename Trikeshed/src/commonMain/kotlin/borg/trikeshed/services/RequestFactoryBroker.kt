@@ -418,3 +418,7 @@ object RequestFactoryBroker {
     private fun generateEntityId(): String = 
         platformCurrentTimeMillis().toString(16) + (0..0xFFFF).random().toString(16)
 }
+
+expect fun parse(data: ByteArray): Any
+expect fun stringify(data: Any): String
+expect suspend fun invokeService(serviceName: String, data: ByteArray): ByteArray

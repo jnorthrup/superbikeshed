@@ -22,21 +22,12 @@ kotlin {
         binaries.executable()
     }
     
-    // Platform detection for native target
-    val hostOs = System.getProperty("os.name")
-    val hostArch = System.getProperty("os.arch")
-    val isMacOS = hostOs == "Mac OS X"
-    val isLinux = hostOs == "Linux"
-    val isWindows = hostOs == "Windows"
-    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
-
-    when {
-        isMacOS && isArm64 -> macosArm64()
-        isMacOS -> macosX64()
-        isLinux && isArm64 -> linuxArm64()
-        isLinux -> linuxX64()
-        isWindows -> mingwX64()
-    }
+    // Support all common targets that dependents might need
+    macosArm64()
+    macosX64()
+    linuxX64()
+    linuxArm64()
+    mingwX64()
 
     sourceSets {
         val commonMain by getting {
@@ -98,7 +89,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xno-source-roots-assertions",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
             "-Xopt-in=kotlin.RequiresOptIn",
-            "-Xopt-in=kotlin.ExperimentalStdlibApi"
+            "-Xopt-in=kotlin.ExperimentalStdlibApi",
+            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
+            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
         )
     }
 }

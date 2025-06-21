@@ -10,6 +10,7 @@ import borg.trikeshed.lib.b
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
+import kotlinx.coroutines.flow.Flow
 
 /**
  * BrokeShed RequestFactory Service Interface
@@ -30,6 +31,8 @@ interface RequestFactoryService {
      * Register a method validator for security
      */
     fun registerMethodValidator(methodName: String, validator: (Any) -> Boolean)
+
+    suspend fun invokeService(serviceName: String, data: ByteArray): ByteArray
 }
 
 // === REQUESTFACTORY ALIEN TYPES ===
@@ -61,4 +64,9 @@ object RequestFactoryRegistry {
     fun getService(serviceClass: String): Any? = serviceLocators[serviceClass]?.invoke()
     fun validateMethod(methodName: String, params: Any): Boolean = 
         methodValidators[methodName]?.invoke(params) ?: true
+}
+
+class RequestFactoryService {
+    val a: String = "test"
+    val b: String = "test2"
 }

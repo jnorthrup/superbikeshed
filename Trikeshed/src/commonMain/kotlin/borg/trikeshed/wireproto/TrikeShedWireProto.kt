@@ -424,3 +424,5 @@ inline fun <reified T> Series<T>.toWireBytes(): UByteArray =
  */
 inline fun <reified T> UByteArray.toSeries(): Series<T> =
     TrikeShedWireSerializer.deserializeSeries(this)
+
+expect fun pack(data: ByteArray): ByteArray

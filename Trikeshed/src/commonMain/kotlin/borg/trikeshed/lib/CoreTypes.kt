@@ -362,6 +362,23 @@ inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
 typealias Series<T> = Join<Int, (Int) -> T>
 
 /**
+ * ## LongSeries<T> - Long-Indexed Series Metaclass
+ * 
+ * LongSeries<T> is a **functional metaclass** that represents long-indexed sequences.
+ * This is useful for large datasets that exceed Int.MAX_VALUE in size.
+ * 
+ * **Definition:**
+ * ```kotlin
+ * typealias LongSeries<T> = Join<Long, (Long) -> T>
+ * //                      ^     ^    ^
+ * //                      |     |    └── Element accessor function
+ * //                      |     └───────── Index parameter  
+ * //                      └─────────────── Series size
+ * ```
+ */
+typealias LongSeries<T> = Join<Long, (Long) -> T>
+
+/**
  * ## Series2<A, B> - MetaSeries with Join Elements
  * 
  * Series2<A,B> represents a **MetaSeries where the element type is a Join<A,B>**.
