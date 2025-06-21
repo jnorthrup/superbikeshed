@@ -11,6 +11,9 @@ import borg.trikeshed.lib.play
 import borg.trikeshed.lib.size
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import k2script.ai.llm.LiteLLMClient
 import kotlin.system.exitProcess
 
 /**
@@ -38,8 +41,10 @@ object K2script {
                 args[0] == "--env" -> showEnvironment()
                 args[0] == "--env-check" -> checkEnvironment()
                 args[0] == "--components" -> showComponents(engine)
+                args[0] == "--ai" -> handleAiFeature(args)
                 else -> executeScript(args)
             }
+            // LiteLLMClient.stopService() should be called here in a finally block
         } catch (e: Exception) {
             System.err.println("K2script error: ${e.message}")
             if (EnvironmentManager.K2Script.isVerbose()) {
@@ -60,6 +65,7 @@ object K2script {
               --version, -v     Show version  
               --env-check       Check environment
               --components      Show engine components (DSL vines)
+              --ai <prompt>   Generate or explain script using AI
         """.trimIndent())
     }
     
@@ -144,6 +150,157 @@ object K2script {
                 e.printStackTrace()
             }
             exitProcess(1)
+        }
+    }
+
+    private suspend fun handleAiFeature(args: Array<String>) {
+        // Ensure LiteLLM service is started
+        if (!LiteLLMClient.isServiceRunning()) {
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                println("Starting LiteLLM service...")
+            }
+            if (!LiteLLMClient.startService()) {
+                System.err.println("Error: Failed to start AI service.")
+                exitProcess(1)
+            }
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                println("LiteLLM service started.")
+            }
+        }
+
+        if (args.size < 2) {
+            System.err.println("Error: No prompt provided for --ai flag.")
+            exitProcess(1)
+        }
+        val prompt = args[1]
+        if (prompt == "explain this script" && System.`in`.available() > 0) {
+            val reader = BufferedReader(InputStreamReader(System.`in`))
+            val scriptContent = reader.readText()
+            explainScript(scriptContent)
+        } else if (prompt == "explain this script") {
+            System.err.println("Error: No script content piped for explanation.")
+            exitProcess(1)
+        } else {
+            generateScript(prompt)
+        }
+    }
+
+    private suspend fun explainScript(scriptContent: String) {
+        if (EnvironmentManager.K2Script.isVerbose()) {
+            println("AI Action: Explain Script")
+            println("Script Content:\n$scriptContent")
+        }
+
+        val messages = listOf(
+            mapOf("role" to "system", "content" to "You are a helpful assistant that explains Kotlin scripts."),
+            mapOf("role" to "user", "content" to "Explain the following Kotlin script:\n```kotlin\n$scriptContent\n```")
+        )
+
+        try {
+            if (!LiteLLMClient.isServiceRunning()) {
+                // This should ideally be handled in handleAiFeature or a higher level
+                System.err.println("Error: AI service is not running. Attempting to start...")
+                if (!LiteLLMClient.startService()) {
+                     System.err.println("Error: Failed to start AI service.")
+                     exitProcess(1) // Or handle more gracefully
+                }
+            }
+
+            val modelName = EnvironmentManager.AI.getDefaultModel() ?: "gpt-3.5-turbo"
+            val apiKey = EnvironmentManager.AI.getApiKey() // This might return null if no key is set for the default provider
+
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                println("Using AI model: $modelName")
+                if (apiKey == null) {
+                    println("No API key found in environment for default provider. LiteLLM might use its own environment variables.")
+                }
+            }
+
+            val responseFuture = LiteLLMClient.complete(
+                model = modelName,
+                messages = messages,
+                apiKey = apiKey
+                // temperature = 0.7 // Example: Add other parameters if desired
+            )
+
+            val llmResponse = responseFuture.join() // Wait for the response
+
+            if (llmResponse.status == "success" && llmResponse.content != null) {
+                println("\nScript Explanation:\n-------------------")
+                println(llmResponse.content)
+            } else {
+                System.err.println("Error explaining script: ${llmResponse.error_message ?: "Unknown error from AI service."}")
+                if (EnvironmentManager.K2Script.isVerbose()) {
+                    System.err.println("Raw response: ${llmResponse.raw_response}")
+                }
+            }
+        } catch (e: Exception) {
+            System.err.println("Failed to get explanation from AI service: ${e.message}")
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                e.printStackTrace()
+            }
+            // exitProcess(1) // Decide if failure here should terminate
+        }
+    }
+
+    private suspend fun generateScript(prompt: String) {
+        if (EnvironmentManager.K2Script.isVerbose()) {
+            println("AI Action: Generate Script")
+            println("Prompt: $prompt")
+        }
+
+        val messages = listOf(
+            mapOf("role" to "system", "content" to "You are a helpful assistant that generates Kotlin scripts based on user prompts. Output only the raw Kotlin code for the script. Do not include any markdown formatting or explanations unless it's within comments in the code itself."),
+            mapOf("role" to "user", "content" to "Generate a Kotlin script that does the following: $prompt")
+        )
+
+        try {
+            // Ensure service is running (it should be if called from handleAiFeature after starting)
+            if (!LiteLLMClient.isServiceRunning()) {
+                 System.err.println("Error: AI service is not running. This should have been started by handleAiFeature.")
+                 // Optionally attempt to restart, or instruct user
+                 if (!LiteLLMClient.startService()) {
+                     System.err.println("Error: Failed to start AI service.")
+                     return // Exit this function, let caller decide on process exit
+                 }
+            }
+
+            val modelName = EnvironmentManager.AI.getDefaultModel() ?: "gpt-3.5-turbo"
+            val apiKey = EnvironmentManager.AI.getApiKey()
+
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                println("AI Generate Script: Using model '$modelName'. API key provided: ${apiKey != null}")
+                println("AI Generate Script: Prompt: '$prompt'")
+            }
+
+            val responseFuture = LiteLLMClient.complete(
+                model = modelName,
+                messages = messages,
+                apiKey = apiKey,
+                temperature = 0.5 // Optional: for more deterministic output
+            )
+            val llmResponse = responseFuture.join() // Block for the result
+
+            if (llmResponse.status == "success" && llmResponse.content != null) {
+                println("\nGenerated Script:\n-----------------")
+                var scriptContent = llmResponse.content
+
+                // Clean markdown code block delimiters
+                scriptContent = scriptContent.removePrefix("```kotlin\n").removePrefix("```\n").removeSuffix("\n```").trim()
+
+                println(scriptContent)
+            } else {
+                System.err.println("Error generating script: ${llmResponse.error_message ?: "Unknown error from AI service."}")
+                if (EnvironmentManager.K2Script.isVerbose()) {
+                    System.err.println("Raw response: ${llmResponse.raw_response}")
+                }
+            }
+        } catch (e: Exception) {
+            System.err.println("Failed to generate script from AI service: ${e.message}")
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                e.printStackTrace()
+            }
+            // Do not call exitProcess(1) here
         }
     }
 }
