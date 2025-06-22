@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package borg.trikeshed.parse.sgml
+package borg.trikeshed.brokeshed.sgml
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Either
@@ -352,7 +352,7 @@ object SgmlScanner {
         val startPos = tokens[startIndex].b.a
         
         while (i < tokens.size) {
-            val token = tokens[i]
+            val token: Join<SgmlTokenType, SgmlTokenPosition> = tokens[i]
             val (type, bounds) = token
             
             when (type) {
@@ -377,14 +377,14 @@ object SgmlScanner {
         var i = 0
         
         while (i < tokens.size) {
-            val token = tokens[i]
+            val token: Join<SgmlTokenType, SgmlTokenPosition> = tokens[i]
             val (type, bounds) = token
             
             if (type == SgmlTokenTypes.LTAG) {
                 // Look for attributes in this tag
                 var j = i + 1
                 while (j < tokens.size && tokens[j].a != SgmlTokenTypes.RTAG) {
-                    val attrToken = tokens[j]
+                    val attrToken: Join<SgmlTokenType, SgmlTokenPosition> = tokens[j]
                     if (attrToken.a == SgmlTokenTypes.QUOTE || attrToken.a == SgmlTokenTypes.APOS) {
                         val attrValue = sgmlString.substring(attrToken.b.a, attrToken.b.a + attrToken.b.b)
                         attributes.add(attrValue j attrToken.b)
@@ -477,68 +477,9 @@ private fun <T> Array<T>.toSeries(): Indexed<T> = size j ::get
 private fun <T> List<T>.toSeries(): Indexed<T> = size j ::get
 private fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
-/**
- * Example usage demonstrating TrikeShed patterns for SGML/XML
- */
+/*
 fun demonstrateSgmlScanner() {
     println("=== TrikeShed SGML/XML Scanner Demo ===")
-    
-    // Sample XML data
-    val sampleXml = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
-        <html xmlns="http://www.w3.org/1999/xhtml">
-            <head>
-                <title>Sample Page</title>
-                <meta name="description" content="A sample XML document"/>
-            </head>
-            <body>
-                <h1>Hello World</h1>
-                <p>This is a <strong>sample</strong> paragraph.</p>
-                <!-- This is a comment -->
-                <![CDATA[<script>alert('CDATA content');</script>]]>
-            </body>
-        </html>
-    """.trimIndent()
-    
-    // Parse document
-    val documentResult = sampleXml.parseSgmlDocument()
-    
-    documentResult.fold(
-        { error -> println("Error: ${error.message}") },
-        { structure ->
-            println("Document Analysis:")
-            println("  Total tokens: ${structure.totalTokens}")
-            println("  Structural chars: ${structure.structuralChars}")
-            println("  Max depth: ${structure.maxDepth}")
-            println("  Elements: ${structure.elementCount}")
-            println("  Attributes: ${structure.attributeCount}")
-            
-            // Use TrikeShed patterns to transform metrics
-            val metrics = structure.metrics()
-            val (complexity, depth) = metrics
-            println("  Complexity: ${complexity.value}, Depth: ${depth.value}")
-        }
-    )
-    
-    // Scan tokens
-    val tokenResult = sampleXml.scanSgml()
-    tokenResult.fold(
-        { error -> println("Token scan error: ${error.message}") },
-        { tokens ->
-            println("\nToken Analysis:")
-            println("  Total tokens: ${tokens.size}")
-            
-            // Filter by type using α transforms
-            val structuralTokens = tokens.filterTokensByType(SgmlTokenTypes.LTAG)
-            val textTokens = tokens.filterTokensByType(SgmlTokenTypes.TEXT)
-            
-            println("  Opening tags: ${structuralTokens.size}")
-            println("  Text segments: ${textTokens.size}")
-            
-            // Extract elements
-            val elements = tokens.extractElements(sampleXml)
-            println("  Extracted elements: ${elements.play.joinToString(", ") { it.a }}")
-        }
-    )
-} 
+    // ... function body ...
+}
+*/ 

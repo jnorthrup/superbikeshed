@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package borg.trikeshed.parse.sgml
+package borg.trikeshed.brokeshed.sgml
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline

@@ -1,12 +1,7 @@
 package borg.trikeshed.lib
 
-fun assert(value: Boolean) {
-    if (!value) throw AssertionError("Assertion failed")
-}
-
-fun assert(value: Boolean, lazyMessage: () -> Any) {
-    if (!value) throw AssertionError(lazyMessage().toString())
-}
+expect fun assert(value: Boolean)
+expect fun assert(value: Boolean, lazyMessage: () -> Any)
 
 fun assert(condition: Boolean, message: String = "Assertion failed") {
     if (!condition) throw AssertionError(message)

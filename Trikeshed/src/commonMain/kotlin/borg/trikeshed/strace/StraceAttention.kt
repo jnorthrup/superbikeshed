@@ -1,6 +1,7 @@
 package borg.trikeshed.strace
 
 import kotlinx.coroutines.flow.Flow
+import borg.trikeshed.strace.DataPattern // from StraceEnums.kt
 
 /**
  * Data class representing a system call event captured by strace
@@ -95,12 +96,12 @@ data class AttentionAnalysis(
     val dataPatterns: List<DataPattern>
 )
 
-expect class StraceSummary(
-    totalSyscalls: Int,
-    uniqueSyscalls: Int,
-    duration: Long,
-    patterns: List<StraceDataPattern>
-)
+expect class StraceSummary {
+    val totalSyscalls: Int
+    val uniqueSyscalls: Int
+    val duration: Long
+    val patterns: List<DataPattern>
+}
 
 /**
  * Common utilities for strace analysis

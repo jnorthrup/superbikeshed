@@ -31,6 +31,8 @@ val PlaceholderIO: CoroutineDispatcher = Dispatchers.Default
  * where each handler (UnaryAsyncReaction) can set what the reactor should pay
  * attention to next, enabling WAM-style continuation chains.
  */
+// TODO: Commented out for multiplatform build unblock. Move to JVM or provide expect/actual as needed.
+/*
 class Reactor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val numSelectorThreads: Int = max(1, 4)
@@ -165,3 +167,4 @@ private class SelectorThread(
         }
     }
 }
+*/
