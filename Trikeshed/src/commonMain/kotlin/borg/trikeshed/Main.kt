@@ -2,9 +2,12 @@ package borg.trikeshed
 
 import borg.trikeshed.ccek.*
 import borg.trikeshed.db.*
+import borg.trikeshed.dsl.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
+import kotlinx.serialization.json.*
+import kotlin.jvm.JvmStatic
 
 @Serializable
 data class MyDoc(val name: String, val wheels: Int)
@@ -63,8 +66,14 @@ object MainOrchestrator {
 
         this.cancel() // Clean up the main scope
     }
+    
 }
 
-fun main() {
-    println("CCEK RelaxFactory Demo - Use platform-specific main functions to run the demo")
+fun main(args: Array<String>) {
+    if (args.isEmpty()) {
+        println("TrikeShed - Use platform-specific main functions or provide --route argument")
+        println("Example: trikeshed --route test-all")
+    } else {
+        println("TrikeShed - Use platform-specific main or --help")
+    }
 } 
