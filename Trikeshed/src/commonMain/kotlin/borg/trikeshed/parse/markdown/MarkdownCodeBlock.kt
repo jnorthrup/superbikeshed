@@ -97,7 +97,7 @@ object LightningMarkdown {
     /**
      * Parse markdown string to structural bitmap using lightning-fast SIMD processing.
      */
-    fun parseToBitmap(markdownString: String): Series<UByte> {
+    fun parseToBitmap(markdownString: String): Indexed<UByte> {
         val markdownBytes = markdownString.encodeToByteArray().toUByteArray()
         return createBitmapAsSeries(markdownBytes)
     }
@@ -105,7 +105,7 @@ object LightningMarkdown {
     /**
      * Find all code block boundaries in markdown.
      */
-    fun findCodeBlockBoundaries(markdownString: String): Series<Int> {
+    fun findCodeBlockBoundaries(markdownString: String): Indexed<Int> {
         val bitmap = parseToBitmap(markdownString)
         val boundaries = mutableListOf<Int>()
         
@@ -122,7 +122,7 @@ object LightningMarkdown {
     /**
      * Extract code blocks using Series<T> operations - pure TrikeShed style.
      */
-    fun extractCodeBlocks(markdownString: String): Series<MarkdownCodeBlock> {
+    fun extractCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val boundaries = findCodeBlockBoundaries(markdownString)
         val markdownChars = markdownString.toSeries()
         
@@ -147,7 +147,7 @@ object LightningMarkdown {
                     val contentSlice = if (rangeSize > 0) {
                         rangeSize j { i -> markdownChars[startIndex + i] }
                     } else {
-                        emptySeries<Char>()
+                        emptyIndex<Char>()
                     }
                     
                     val contentString = contentSlice.play.joinToString("").trim()
@@ -182,7 +182,7 @@ object LightningMarkdown {
     /**
      * Extract only Kotlin code blocks from markdown.
      */
-    fun extractKotlinCodeBlocks(markdownString: String): Series<MarkdownCodeBlock> {
+    fun extractKotlinCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val allBlocks = extractCodeBlocks(markdownString)
         val kotlinBlocks = allBlocks.play.filter { block ->
             block.language?.equals("kotlin", ignoreCase = true) == true
@@ -193,7 +193,7 @@ object LightningMarkdown {
     /**
      * Extract code block content as Series of strings.
      */
-    fun extractCodeBlockContent(markdownString: String): Series<String> {
+    fun extractCodeBlockContent(markdownString: String): Indexed<String> {
         val blocks = extractCodeBlocks(markdownString)
         val content = blocks.play.map { it.content }.toList()
         return content.toSeries()
@@ -202,7 +202,7 @@ object LightningMarkdown {
     /**
      * Extract Kotlin code block content as Series of strings.
      */
-    fun extractKotlinCodeBlockContent(markdownString: String): Series<String> {
+    fun extractKotlinCodeBlockContent(markdownString: String): Indexed<String> {
         val kotlinBlocks = extractKotlinCodeBlocks(markdownString)
         val content = kotlinBlocks.play.map { it.content }.toList()
         return content.toSeries()
@@ -218,7 +218,7 @@ object LightningMarkdown {
  *         underlying ULongArray on demand.
  */
 @OptIn(ExperimentalUnsignedTypes::class)
-fun createBitmapAsSeries(input: UByteArray): Series<UByte> {
+fun createBitmapAsSeries(input: UByteArray): Indexed<UByte> {
     // 1. Eagerly create the bitmap using the hyper-optimized `actual` implementation.
     val bitmapArray = MarkdownBitmapSimd.createBitmap(input)
     val inputSize = input.size
@@ -268,4 +268,4 @@ data class MarkdownCodeBlockStats(
 )
 
 // Import String.toSeries() extension function
-fun String.toSeries(): Series<Char> = length j { index -> this[index] } 
+fun String.toSeries(): Indexed<Char> = length j { index -> this[index] }

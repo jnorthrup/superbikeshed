@@ -3,7 +3,6 @@
 package borg.trikeshed.lib
 
 import kotlin.reflect.KClassifier
-import borg.trikeshed.lib.Series as Indexed
 
 /** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
  * # TrikeShed Metaclass Architecture
@@ -71,6 +70,20 @@ import borg.trikeshed.lib.Series as Indexed
  * 
  * Core TrikeShed Types - Minimal foundational definitions
  */
+
+/**
+ * Either type for error handling and disjoint unions.
+ * Moved to CoreTypes as a foundational data structure.
+ */
+sealed interface Either<out L, out R> {
+    data class Left<L>(val value: L) : Either<L, Nothing>
+    data class Right<R>(val value: R) : Either<Nothing, R>
+
+    companion object {
+        fun <L> left(value: L): Either<L, Nothing> = Left(value)
+        fun <R> right(value: R): Either<Nothing, R> = Right(value)
+    }
+}
 
 // === FOUNDATION METACLASS: JOIN ===
 
@@ -362,7 +375,7 @@ inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
  * val strings = numbers α { it.toString() }  // ["0", "1", "4", "9", ...]
  * ```
  */
-typealias Series<T> = Join<Int, (Int) -> T>
+typealias Indexed<T> = Join<Int, (Int) -> T>
 
 /**
  * ## LongSeries<T> - Long-Indexed Series Metaclass
@@ -379,7 +392,7 @@ typealias Series<T> = Join<Int, (Int) -> T>
  * //                      └─────────────── Series size
  * ```
  */
-typealias LongSeries<T> = Join<Long, (Long) -> T>
+typealias LongIndexed<T> = Join<Long, (Long) -> T>
 
 /**
  * ## Series2<A, B> - MetaSeries with Join Elements
@@ -428,7 +441,7 @@ typealias LongSeries<T> = Join<Long, (Long) -> T>
  * typealias Tensor2<A, B> = MetaSeries<Shape, Join<A, B>>
  * ```
  */
-typealias Series2<A, B> = MetaSeries<Int, Join<A, B>>
+typealias Indexed2<A, B> = Indexed< Join<A, B>>
 
 // === METACLASS OPERATIONS ===
 
@@ -438,7 +451,7 @@ typealias Series2<A, B> = MetaSeries<Int, Join<A, B>>
  * Extracts the size component from a Series<T> metaclass.
  * This is a **zero-cost abstraction** that accesses the first component of the Join.
  */
-val <T> Series<T>.size: Int get() = a
+val <T> Indexed<T>.size: Int get() = a
 
 /**
  * ## Series Element Accessor
@@ -446,7 +459,7 @@ val <T> Series<T>.size: Int get() = a
  * Accesses elements in a Series<T> by invoking the accessor function.
  * This provides **array-like syntax** while maintaining functional composition.
  */
-operator fun <T> Series<T>.get(i: Int): T = b(i)
+operator fun <T> Indexed<T>.get(i: Int): T = b(i)
 
 /**
  * ## Transform Operator (α) - Series Metaclass Functor
@@ -474,7 +487,7 @@ operator fun <T> Series<T>.get(i: Int): T = b(i)
  * val strings = squares α { it.toString() }    // ["0", "1", "4", ..., "81"]
  * ```
  */
-inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> = size j { i -> xform(this[i]) }
+inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = size j { i -> xform(this[i]) }
 
 /**
  * ## Play Materialization (▶) - ENSHRINED PATTERN
@@ -493,16 +506,16 @@ inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series
  * val eager = series.play.map { it.toString() }.filter { it.length > 2 }
  * ```
  */
-val <T> Series<T>.play: IterableSeries<T> get() = this as? IterableSeries<T> ?: IterableSeries(this)
+val <T> Indexed<T>.play: IterableSeries<T> get() = this as? IterableSeries<T> ?: IterableSeries(this)
 
 @kotlin.jvm.JvmInline
-value class IterableSeries<A>(val s: Series<A>) : Iterable<A> {
+value class IterableSeries<A>(val s: Indexed<A>) : Iterable<A> {
     override fun iterator(): Iterator<A> = s.iterator()
     val size: Int get() = s.size
     operator fun get(i: Int): A = s[i]
 }
 
-fun <T> Series<T>.iterator(): Iterator<T> = object : Iterator<T> {
+fun <T> Indexed<T>.iterator(): Iterator<T> = object : Iterator<T> {
     private var index = 0
     override fun hasNext(): Boolean = index < size
     override fun next(): T = get(index++)
@@ -510,22 +523,23 @@ fun <T> Series<T>.iterator(): Iterator<T> = object : Iterator<T> {
 
 // === COLLECTION CONVERSIONS ===
 
-fun <T> List<T>.toSeries(): Series<T> = this.size j { i -> this[i] }
-fun <T> Array<T>.toSeries(): Series<T> = this.size j { i -> this[i] }  
-fun <T> Series<T>.toList(): List<T> = this.play.toList()
-inline fun <reified T> Series<T>.toArray(): Array<T> = this.play.toList().toTypedArray()
+fun <T> List<T>.toSeries(): Indexed<T> = this.size j ::get
+fun <T> Array<T>.toSeries(): Indexed<T> = this.size j ::get  
+fun <T> Indexed<T>.toList(): List<T> = this.play.toList()
+inline fun <reified T> Indexed<T>.toArray(): Array<T> = this.play.toList().toTypedArray()
 
 // Special case for ByteArray
-fun Series<Byte>.toArray(): ByteArray = ByteArray(this.size) { this[it] }
+fun Indexed<Byte>.toArray(): ByteArray = ByteArray(this.size) { this[it] }
 
 // === EMPTY SERIES ===
 
-fun <T> emptySeries(): Series<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+fun <T> emptyIndex(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 // === SERIES CONSTRUCTION BRIDGE ===
 
 /** Series constructor function from Review */
-fun <T> s_(vararg elements: T): Series<T> = elements.toList().toSeries()
+fun <T> _i(vararg elements: T): Indexed<T> =
+    (elements.size j { i -> elements[i] })
 
 // === ADVANCED METACLASSES ===
 
@@ -580,7 +594,7 @@ fun <T> s_(vararg elements: T): Series<T> = elements.toList().toSeries()
  * //                   = Join<Series<Int>, (Series<Int>) -> T>
  * ```
  */
-typealias Shape = Series<Int>
+typealias Shape = Indexed<Int>
 
 /**
  * ## Tensor<T> - Shape-Indexed Realm Specialization
@@ -671,7 +685,7 @@ typealias Tensor<T> = MetaSeries<Shape, T>
  * )
  * ```
  */
-typealias MetaSeriesWithMetadata<T> = Join<Series<T>, Map<String, Any?>>
+typealias MetaSeriesWithMetadata<T> = Join<Indexed<T>, Map<String, Any?>>
 
 /**
  * ## ColumnMeta - Database Column Metadata
@@ -694,7 +708,7 @@ typealias ColumnMeta = Join<String, KClassifier>
  * 
  * This enables **structured data access** with type information embedded at runtime.
  */
-typealias RowVec = Series<Join<Any?, () -> ColumnMeta>>
+typealias RowVec = Indexed<Join<Any?, () -> ColumnMeta>>
 
 /**
  * ## TableMeta - Database Table Metadata
@@ -798,7 +812,7 @@ typealias Cursor = MetaSeries<CursorIndex, RowVec>
  * val element = batch.b(intArrayOf(1, 2, 3))  // Access tensor element
  * ```
  */
-typealias TensorCursor = Series<Tensor<Any?>>
+typealias TensorCursor = Indexed<Tensor<Any?>>
 
 // === METACLASS ECOSYSTEM ===
 
@@ -825,34 +839,4 @@ typealias TensorCursor = Series<Tensor<Any?>>
  * This **compositional approach** enables domain-specific types that maintain
  * mathematical properties while expressing business concepts directly in the type system.
  */
-
-/**
- * Either type for error handling and disjoint unions.
- * Moved to CoreTypes as a foundational data structure.
- */
-sealed interface Either<out L, out R> {
-    data class Left<L>(val value: L) : Either<L, Nothing>
-    data class Right<R>(val value: R) : Either<Nothing, R>
-
-    companion object {
-        fun <L> left(value: L): Either<L, Nothing> = Left(value)
-        fun <R> right(value: R): Either<Nothing, R> = Right(value)
-    }
-}
-
-// === UTILITY FUNCTIONS ===
-
-/**
- * Creates a Series from a list of elements.
- * This is a convenience function for creating Series instances.
- */
-fun <T> seriesOf(vararg elements: T): Series<T> = 
-    (elements.size j { i -> elements[i] })
-
-/**
- * Creates an empty Series.
- * This is a convenience function for creating empty Series instances.
- */
-fun <T> emptySeries(): Series<T> = 
-    (0 j { _ -> throw IndexOutOfBoundsException("Empty series") })
 

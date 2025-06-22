@@ -59,6 +59,9 @@ data class StraceAnalysis(
     val summary: String
 )
 
+/**
+ * Minimal StraceAttention interface to fix missing references
+ */
 interface StraceAttention {
     val summary: String
     val attentionWeights: Map<String, Double>
@@ -80,7 +83,7 @@ data class StraceEvent(
     val error: String?
 )
 
-data class DataPattern(
+data class StraceDataPattern(
     val pattern: String,
     val dataSize: Int,
     val confidence: Double
@@ -96,7 +99,7 @@ expect class StraceSummary(
     totalSyscalls: Int,
     uniqueSyscalls: Int,
     duration: Long,
-    patterns: List<DataPattern>
+    patterns: List<StraceDataPattern>
 )
 
 /**

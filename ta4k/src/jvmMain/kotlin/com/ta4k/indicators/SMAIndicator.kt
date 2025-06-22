@@ -2,17 +2,17 @@ package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path is correct
 import borg.trikeshed.lib.j // For creating Series instance for 'values' via infix j
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
  * Simple Moving Average (SMA) indicator.
  * Calculates the average of a kline property (typically close price) over a specified period.
- * Operates on a Trikethed [Series] of [Kline].
+ * Operates on a Trikethed [Indexed] of [Kline].
  */
 class SMAIndicator(
-    private val klineSeries: Series<Kline>, // Changed from List<Kline>
+    private val klineIndexed: Indexed<Kline>, // Changed from List<Kline>
     private val period: Int,
     private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
 ) {
@@ -26,15 +26,15 @@ class SMAIndicator(
 
     private fun ensureCalculatedUpTo(targetIndex: Int) {
         // Do not proceed if targetIndex is invalid or already calculated
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+        if (targetIndex < 0 || targetIndex >= klineIndexed.size || targetIndex <= calculatedUpToIndex) {
             return
         }
 
         // Expand results list with nulls if it's smaller than needed up to targetIndex
         // This ensures results.add() can be replaced by results[i] = value if we decide to prefill.
         // For now, results.add() is fine as we iterate sequentially.
-        if (results.size < klineSeries.size) {
-            for (k in results.size until klineSeries.size) {
+        if (results.size < klineIndexed.size) {
+            for (k in results.size until klineIndexed.size) {
                 results.add(null) // Pre-fill with nulls up to series size
             }
         }
@@ -52,12 +52,12 @@ class SMAIndicator(
             var sum = BigDecimal.ZERO
             for (j in 0 until period) {
                 // Use series[index] accessor
-                sum += klinePropertySelector(klineSeries[i - j])
+                sum += klinePropertySelector(klineIndexed[i - j])
             }
 
             // Determine scale: use the scale of the input property, or default if it's 0 (e.g. for integers converted to BigDecimal)
             // Adding +4 for precision in average calculation, can be adjusted.
-            val currentKlinePrice = klinePropertySelector(klineSeries[i])
+            val currentKlinePrice = klinePropertySelector(klineIndexed[i])
             val calculationScale = currentKlinePrice.scale() + 4
             results[i] = sum.divide(BigDecimal(period), calculationScale, RoundingMode.HALF_UP)
         }
@@ -70,7 +70,7 @@ class SMAIndicator(
      * @return The SMA value, or null if there's not enough data for the period or index is out of bounds.
      */
     fun getValue(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
+        if (index < 0 || index >= klineIndexed.size) {
             return null
         }
         ensureCalculatedUpTo(index) // Ensure calculation up to the requested index
@@ -79,21 +79,21 @@ class SMAIndicator(
 
     /**
      * Returns all calculated SMA values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val values: Series<BigDecimal?>
+    val values: Indexed<BigDecimal?>
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
             // Wrap the internal mutable list 'results' into a Series for output
-            return klineSeries.size j { index:Int -> // Use infix j
+            return klineIndexed.size j { index:Int -> // Use infix j
                 // getValue will ensure calculation if needed for a specific index,
                 // but ensureCalculatedUpTo above should have populated most of it.
                 // This direct access assumes results is padded to klineSeries.size
-                if (index < 0 || index >= klineSeries.size) {
-                    throw IndexOutOfBoundsException("Index $index is out of bounds for Series of size ${klineSeries.size}")
+                if (index < 0 || index >= klineIndexed.size) {
+                    throw IndexOutOfBoundsException("Index $index is out of bounds for Series of size ${klineIndexed.size}")
                 }
                 if (index < results.size) results[index] else null
             }

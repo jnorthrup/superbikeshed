@@ -6,7 +6,7 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Either
 import kotlin.jvm.JvmInline
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
 import borg.trikeshed.lib.toSeries
@@ -32,23 +32,23 @@ typealias JsonBooleanValue = Boolean
 typealias JsonNullValue = Nothing?
 
 // Core JSON Processing Types
-typealias JsonCharSeries = Series<JsonChar>
+typealias JsonCharSeries = Indexed<JsonChar>
 typealias JsonTokenType = UByte
 typealias JsonTokenPosition = Join<JsonPosition, JsonLength>
 typealias JsonToken = Join<JsonTokenType, JsonTokenPosition>
-typealias JsonTokenSeries = Series<JsonToken>
+typealias JsonTokenSeries = Indexed<JsonToken>
 
 // Structural Analysis Types  
 typealias JsonStructuralChar = Join<JsonChar, JsonPosition>
-typealias JsonStructuralSeries = Series<JsonStructuralChar>
+typealias JsonStructuralSeries = Indexed<JsonStructuralChar>
 typealias JsonNestingLevel = Join<JsonDepth, JsonPosition>
-typealias JsonNestingSeries = Series<JsonNestingLevel>
+typealias JsonNestingSeries = Indexed<JsonNestingLevel>
 
 // Value Extraction Types
 typealias JsonValueBounds = Join<JsonPosition, JsonPosition> // start j end
 typealias JsonValueType = UByte
 typealias JsonValue = Join<JsonValueType, JsonValueBounds>
-typealias JsonValueSeries = Series<JsonValue>
+typealias JsonValueSeries = Indexed<JsonValue>
 
 // Error Handling Types
 @JvmInline
@@ -342,9 +342,9 @@ fun JsonTokenSeries.extractValues(jsonString: JsonStringValue): JsonValueSeries 
 /**
  * Utility functions for Series operations
  */
-private fun <T> Array<T>.toSeries(): Series<T> = size j { i -> this[i] }
-private fun <T> List<T>.toSeries(): Series<T> = size j { i -> this[i] }
-private fun <T> emptySeries(): Series<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+private fun <T> Array<T>.toSeries(): Indexed<T> = size j ::get
+private fun <T> List<T>.toSeries(): Indexed<T> = size j ::get
+private fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /**
  * Example usage demonstrating TrikeShed patterns

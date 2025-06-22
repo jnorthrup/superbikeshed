@@ -16,13 +16,13 @@ data class ReplicationConfig(
     val continuous: Boolean = false,
     val filter: String? = null,
     val queryParams: Map<String, String> = emptyMap(),
-    val docIds: Series<DocumentId>? = null,
+    val docIds: Indexed<DocumentId>? = null,
     val userContext: ReplicationUserContext? = null
 )
 
 data class ReplicationUserContext(
     val name: String,
-    val roles: Series<String>
+    val roles: Indexed<String>
 )
 
 data class ReplicationStats(
@@ -50,7 +50,7 @@ data class ReplicationHistory(
 data class ReplicationResponse(
     val ok: Boolean,
     val id: DocumentId,
-    val history: Series<ReplicationHistory>? = null
+    val history: Indexed<ReplicationHistory>? = null
 )
 
 // Extension functions for CouchClient
@@ -94,5 +94,5 @@ suspend fun CouchClient.getReplicationStatus(id: DocumentId): ReplicationRespons
             error = h.error
         )
     }
-    return ReplicationResponse(ok = true, id = id, history = history?.let { Series.of(*it.toTypedArray()) })
+    return ReplicationResponse(ok = true, id = id, history = history?.let { Indexed.of(*it.toTypedArray()) })
 } 

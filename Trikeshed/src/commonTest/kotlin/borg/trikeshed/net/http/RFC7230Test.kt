@@ -237,6 +237,6 @@ class RFC7230Test {
         assertEquals("", headerField.b.value)
     }
     
-    private fun String.toCharSeries(): Series<Char> = length j { this[it] }
-    private fun ByteArray.toSeries(): Series<Byte> = size j { this[it] }
+    private fun String.toCharSeries(): Indexed<Char> = length j { this[it] }
+    private fun ByteArray.toSeries(): Indexed<Byte> = size j { this[it] }
 }

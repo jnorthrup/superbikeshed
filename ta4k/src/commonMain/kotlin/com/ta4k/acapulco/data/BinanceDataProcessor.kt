@@ -25,7 +25,7 @@ class BinanceDataProcessor {
     /**
      * Converts Binance kline data to Moneyfan candlestick format
      */
-    fun convertKlinesToCandles(klines: Series<Kline>, symbol: String): CandleSeries {
+    fun convertKlinesToCandles(klines: Indexed<Kline>, symbol: String): CandleSeries {
         val candleData = mutableListOf<Candlestick>()
         
         klines.play.forEach { kline ->
@@ -51,13 +51,13 @@ class BinanceDataProcessor {
             candleData.add(candle)
         }
         
-        return Series.of(candleData.size) { i -> candleData[i] }
+        return Indexed.of(candleData.size) { i -> candleData[i] }
     }
     
     /**
      * Processes Binance trade data into market ticks
      */
-    fun processTradeData(trades: Series<BinanceTrade>, symbol: String): TickSeries {
+    fun processTradeData(trades: Indexed<BinanceTrade>, symbol: String): TickSeries {
         val tickData = mutableListOf<MarketTick>()
         
         trades.play.forEach { trade ->
@@ -69,7 +69,7 @@ class BinanceDataProcessor {
             tickData.add(tick)
         }
         
-        return Series.of(tickData.size) { i -> tickData[i] }
+        return Indexed.of(tickData.size) { i -> tickData[i] }
     }
     
     /**

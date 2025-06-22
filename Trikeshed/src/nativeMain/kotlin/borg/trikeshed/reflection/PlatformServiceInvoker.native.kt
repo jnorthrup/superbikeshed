@@ -1,11 +1,11 @@
 package borg.trikeshed.reflection
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
 // Native platform service invoker using a registry pattern
 // This provides a working reflection alternative for Native platforms
 actual class PlatformServiceInvoker {
-    private val methodRegistry = mutableMapOf<Pair<String, String>, (Any, Series<Any?>) -> Any?>()
+    private val methodRegistry = mutableMapOf<Pair<String, String>, (Any, Indexed<Any?>) -> Any?>()
     
     actual fun findMethod(service: Any, methodName: String): Any? {
         val serviceClassName = service::class.simpleName ?: "Unknown"
@@ -13,8 +13,8 @@ actual class PlatformServiceInvoker {
         return methodRegistry[key]
     }
 
-    actual fun callMethod(method: Any, service: Any, args: Series<Any?>): Any? {
-        val methodImpl = method as? ((Any, Series<Any?>) -> Any?)
+    actual fun callMethod(method: Any, service: Any, args: Indexed<Any?>): Any? {
+        val methodImpl = method as? ((Any, Indexed<Any?>) -> Any?)
             ?: throw IllegalArgumentException("Method must be a registered function implementation")
         
         return try {
@@ -25,11 +25,11 @@ actual class PlatformServiceInvoker {
     }
     
     // Registry methods for registering service methods at runtime
-    fun registerMethod(serviceClassName: String, methodName: String, implementation: (Any, Series<Any?>) -> Any?) {
+    fun registerMethod(serviceClassName: String, methodName: String, implementation: (Any, Indexed<Any?>) -> Any?) {
         methodRegistry[serviceClassName to methodName] = implementation
     }
     
-    fun registerServiceMethods(serviceClass: Any, methods: Map<String, (Any, Series<Any?>) -> Any?>) {
+    fun registerServiceMethods(serviceClass: Any, methods: Map<String, (Any, Indexed<Any?>) -> Any?>) {
         val className = serviceClass::class.simpleName ?: "Unknown"
         methods.forEach { (methodName, impl) ->
             registerMethod(className, methodName, impl)

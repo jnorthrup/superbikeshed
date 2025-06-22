@@ -36,8 +36,8 @@ data class BinanceTicker(
 
 data class BinanceOrderBook(
     val symbol: BinanceSymbol,
-    val bids: Series<Join<Price, Volume>>, // price j volume pairs
-    val asks: Series<Join<Price, Volume>>,
+    val bids: Indexed<Join<Price, Volume>>, // price j volume pairs
+    val asks: Indexed<Join<Price, Volume>>,
     val timestamp: Instant
 )
 
@@ -187,8 +187,8 @@ class BinanceAttentionIngest {
                 
                 val orderBook = BinanceOrderBook(
                     symbol = symbol,
-                    bids = Series.of(bids.size) { bids[it] },
-                    asks = Series.of(asks.size) { asks[it] },
+                    bids = Indexed.of(bids.size) { bids[it] },
+                    asks = Indexed.of(asks.size) { asks[it] },
                     timestamp = kotlinx.datetime.Clock.System.now()
                 )
                 
@@ -260,7 +260,7 @@ class AcapulcoAttentionAggregator {
         }
     }
     
-    fun calculateMarketAttention(windows: Series<AttentionWindow>): Decimal {
+    fun calculateMarketAttention(windows: Indexed<AttentionWindow>): Decimal {
         val totalAttention = windows.play.sumOf { it.attentionScore.value }
         val avgVolatility = windows.play.map { it.volatility }.average()
         

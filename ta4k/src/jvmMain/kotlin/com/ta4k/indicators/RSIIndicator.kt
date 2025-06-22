@@ -1,7 +1,7 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -20,7 +20,7 @@ import java.math.RoundingMode
  * 6. Calculate RSI = 100 - (100 / (1 + RS))
  */
 class RSIIndicator(
-    private val klineSeries: Series<Kline>,
+    private val klineIndexed: Indexed<Kline>,
     private val period: Int,
     private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
 ) {
@@ -44,7 +44,7 @@ class RSIIndicator(
     }
 
     private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+        if (targetIndex < 0 || targetIndex >= klineIndexed.size || targetIndex <= calculatedUpToIndex) {
             return
         }
 
@@ -63,8 +63,8 @@ class RSIIndicator(
                 continue
             }
 
-            val currentPrice = klinePropertySelector(klineSeries[i])
-            val prevPrice = klinePropertySelector(klineSeries[i - 1])
+            val currentPrice = klinePropertySelector(klineIndexed[i])
+            val prevPrice = klinePropertySelector(klineIndexed[i - 1])
             val priceChange = currentPrice.subtract(prevPrice)
 
             val gain = if (priceChange > BigDecimal.ZERO) priceChange else BigDecimal.ZERO
@@ -130,7 +130,7 @@ class RSIIndicator(
      * @return The RSI value (0-100), or null if there's not enough data or index is out of bounds.
      */
     fun getValue(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
+        if (index < 0 || index >= klineIndexed.size) {
             return null
         }
         ensureCalculatedUpTo(index)
@@ -139,14 +139,14 @@ class RSIIndicator(
 
     /**
      * Returns all calculated RSI values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val values: Series<BigDecimal?>
+    val values: Indexed<BigDecimal?>
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
-            return klineSeries.size j { idx:Int -> this.getValue(idx) }
+            return klineIndexed.size j { idx:Int -> this.getValue(idx) }
         }
 }

@@ -54,7 +54,7 @@ class MockCouchClient : CouchClient {
         TODO("Not implemented")
     }
 
-    override suspend fun bulkDocs(dbName: DatabaseName, docs: Series<CouchDocument>, allOrNothing: Boolean): Series<CouchResponse> {
+    override suspend fun bulkDocs(dbName: DatabaseName, docs: Indexed<CouchDocument>, allOrNothing: Boolean): Indexed<CouchResponse> {
         TODO("Not implemented")
     }
 

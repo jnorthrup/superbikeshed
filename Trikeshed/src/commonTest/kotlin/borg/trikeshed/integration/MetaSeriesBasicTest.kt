@@ -22,7 +22,7 @@ class MetaSeriesBasicTest {
     @Test
     fun `Series realm specialization`() {
         // Series<T> = MetaSeries<Int, T>
-        val numbers: Series<Double> = 5 j { i -> i * 3.14 }
+        val numbers: Indexed<Double> = 5 j { i -> i * 3.14 }
         
         assertEquals(5, numbers.size)
         assertEquals(0.0, numbers[0])
@@ -78,7 +78,7 @@ class MetaSeriesBasicTest {
     @Test
     fun `Series2 with Join elements`() {
         // Series2<A,B> = MetaSeries<Int, Join<A,B>>
-        val keyValues: Series2<String, Double> = 4 j { i ->
+        val keyValues: Indexed2<String, Double> = 4 j { i ->
             "key$i" j (i * 2.5)
         }
         
@@ -95,8 +95,8 @@ class MetaSeriesBasicTest {
     
     @Test
     fun `Series α transformation operator`() {
-        val base: Series<Int> = 5 j { it + 1 } // [1, 2, 3, 4, 5]
-        val doubled: Series<Int> = base α { it * 2 } // [2, 4, 6, 8, 10]
+        val base: Indexed<Int> = 5 j { it + 1 } // [1, 2, 3, 4, 5]
+        val doubled: Indexed<Int> = base α { it * 2 } // [2, 4, 6, 8, 10]
         
         assertEquals(5, doubled.size)
         assertEquals(2, doubled[0])
@@ -108,10 +108,10 @@ class MetaSeriesBasicTest {
     
     @Test
     fun `Play materialization for standard library`() {
-        val series: Series<String> = 6 j { i -> "item-$i" }
+        val indexed: Indexed<String> = 6 j { i -> "item-$i" }
         
         // Use play to materialize for std lib operations
-        val filtered = series.play.filter { it.contains("2") || it.contains("4") }
+        val filtered = indexed.play.filter { it.contains("2") || it.contains("4") }
         val mapped = filtered.map { it.uppercase() }
         
         assertEquals(listOf("ITEM-2", "ITEM-4"), mapped)
@@ -120,7 +120,7 @@ class MetaSeriesBasicTest {
     @Test
     fun `Functional composition with nested transformations`() {
         // Create Series of Shapes (each shape is Series<Int>)
-        val shapes: Series<Shape> = 3 j { shapeIndex ->
+        val shapes: Indexed<Shape> = 3 j { shapeIndex ->
             val dimensions = shapeIndex + 1 // 1D, 2D, 3D
             dimensions j { dim -> dim + 2 } // [2], [2,3], [2,3,4]
         }
@@ -160,7 +160,7 @@ class MetaSeriesBasicTest {
         val startTime = TimeSource.Monotonic.markNow()
         
         // Create large MetaSeries
-        val largeData: Series<Long> = 50_000 j { i -> i.toLong() * 7 }
+        val largeData: Indexed<Long> = 50_000 j { i -> i.toLong() * 7 }
         
         // Transform
         val processed = largeData α { it + 1 }
@@ -179,17 +179,17 @@ class MetaSeriesBasicTest {
     
     @Test
     fun `Type safety prevents realm mixing`() {
-        val series: Series<String> = 3 j { "item$it" }
+        val indexed: Indexed<String> = 3 j { "item$it" }
         val twin: Twin<String> = true j { if (it) "yes" else "no" }
         
         // These have different index types (Int vs Boolean)
         // so they maintain realm separation
-        assertEquals("item1", series[1])    // Int index
+        assertEquals("item1", indexed[1])    // Int index
         assertEquals("yes", twin.b(true))   // Boolean index
         assertEquals("no", twin.b(false))   // Boolean index
         
         // Verify they're both based on MetaSeries foundation
-        assertTrue(series is MetaSeries<*, *>)
+        assertTrue(indexed is MetaSeries<*, *>)
         assertTrue(twin is MetaSeries<*, *>)
     }
     
@@ -216,7 +216,7 @@ class MetaSeriesBasicTest {
     @Test
     fun `MetaSeries realm separation example`() {
         // Different realms use different index types
-        val intRealm: Series<String> = 5 j { "pos$it" }          // Int realm
+        val intRealm: Indexed<String> = 5 j { "pos$it" }          // Int realm
         val boolRealm: Twin<String> = true j { if (it) "T" else "F" } // Boolean realm
         val shapeRealm: Tensor<String> = (2 j { it + 1 }) j { coords -> 
             "cell[${coords[0]},${coords[1]}]" 

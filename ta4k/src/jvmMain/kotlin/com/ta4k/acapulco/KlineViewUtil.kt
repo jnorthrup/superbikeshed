@@ -6,12 +6,10 @@ package borg.trikeshed.acapulco // Adjusted package
 import borg.trikeshed.cursor.*
 import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.lib.*
-import borg.trikeshed.common.collections.s_
 
 import borg.trikeshed.acapulco.model.TradingWallet
 import borg.trikeshed.acapulco.util.DateShed
 import borg.trikeshed.acapulco.util.horizon
-import borg.trikeshed.acapulco.TradePairEventMuxer
 
 object KlineViewUtil {
     val depthScalr: () -> ColumnMeta = { ColumnMeta("depth", IOMemento.IoInt) }
@@ -24,11 +22,11 @@ object KlineViewUtil {
     ): Cursor {
         val assetKey = muxer.model.tradeSymbol
         val (c0, intra) = event0
-        if (c0.isEmpty()) return emptySeries()
+        if (c0.isEmpty()) return emptyIndex()
 
         val curs: Cursor = c0.reversed()
         val openTimeColIndex = curs.meta.`play`.indexOfFirst { it.name == "Open_time" }.takeIf { it >= 0 } ?: 0
-        val copentime: Series<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
+        val copentime: Indexed<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
         val walletFreeCursor = tradingWallet.walletFree(assetKey, "USDT")
         val depthIntraCursor: Cursor = s_[
             s_[
@@ -43,7 +41,7 @@ object KlineViewUtil {
                 if (instant != null) {
                     DateShed.normalizeInstant(instant)
                 } else {
-                    emptySeries()
+                    emptyIndex()
                 }
             }
         } else {
@@ -69,7 +67,7 @@ object KlineViewUtil {
 
     var brandedPancake: Int? = null
     fun pancake(c: Cursor): Cursor {
-        if (c.isEmpty()) return emptySeries()
+        if (c.isEmpty()) return emptyIndex()
         val numInputCols = c.row(0).size
         val numInputRows = c.size
 
@@ -78,7 +76,7 @@ object KlineViewUtil {
         }
 
         val totalOutputCols = numInputRows * numInputCols
-        if (totalOutputCols == 0) return emptySeries()
+        if (totalOutputCols == 0) return emptyIndex()
 
         return totalOutputCols j { flatIndex:Int ->
             val rowIndex = flatIndex / numInputCols

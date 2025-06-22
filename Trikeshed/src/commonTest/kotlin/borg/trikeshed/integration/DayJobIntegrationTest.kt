@@ -20,9 +20,9 @@ class DayJobIntegrationTest {
     // Type definitions matching TrikeShed patterns
     private lateinit var cursor: Cursor
     private lateinit var testCursor: Cursor
-    private lateinit var coords: Series<Join<Int, Int>>
-    private lateinit var drivers: Series<IOMemento>
-    private lateinit var names: Series<String>
+    private lateinit var coords: Indexed<Join<Int, Int>>
+    private lateinit var drivers: Indexed<IOMemento>
+    private lateinit var names: Indexed<String>
     
     private val testRecordCount: Int = 100_000
     private val superannuateDataPath = "../superannuate/superannuated1909.fwf"
@@ -67,7 +67,7 @@ class DayJobIntegrationTest {
     
     private fun setupTestCursor() {
         // Create column metadata matching TrikeShed Cursor pattern
-        val columnMeta: Series<ColumnMeta> = names α { name -> 
+        val columnMeta: Indexed<ColumnMeta> = names α { name ->
             ColumnMeta.create(name, "String") 
         }
         
@@ -173,7 +173,7 @@ class DayJobIntegrationTest {
         println("=== Memory Efficiency Test ===")
         
         // Test memory-efficient operations without full materialization
-        val selected: Series<RowVec> = testCursor α { row: RowVec ->
+        val selected: Indexed<RowVec> = testCursor α { row: RowVec ->
             // Select only date, area, quantity columns
             3 j { colIndex: Int ->
                 val originalIndex = when (colIndex) {
@@ -215,7 +215,7 @@ class DayJobIntegrationTest {
         val clusters = createClusters(testCursor, 1)
         
         // Create bloom filters for each cluster
-        val bloomFilters: Series<SimpleBloomFilter> = clusters α { cluster: List<Int> ->
+        val bloomFilters: Indexed<SimpleBloomFilter> = clusters α { cluster: List<Int> ->
             createSimpleBloomFilter(cluster)
         }
         
@@ -367,7 +367,7 @@ class DayJobIntegrationTest {
         return groupedRows.size j { i: Int -> groupedRows[i] }
     }
     
-    private fun createClusters(cursor: Cursor, clusterColumn: Int): Series<List<Int>> {
+    private fun createClusters(cursor: Cursor, clusterColumn: Int): Indexed<List<Int>> {
         val clusters = mutableMapOf<String, MutableList<Int>>()
         
         for (i in 0 until cursor.size) {

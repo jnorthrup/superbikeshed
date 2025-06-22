@@ -7,7 +7,7 @@ import borg.trikeshed.lib.*
  * Represents a path through JSON structure using either string keys (for objects) or integer indices (for arrays)
  */
 typealias JsPathElement = Either<String, Int>
-typealias JsPath = Series<JsPathElement>
+typealias JsPath = Indexed<JsPathElement>
 
 /**
  * JsPath builder and utility functions
@@ -63,7 +63,7 @@ object JsPathBuilder {
  */
 fun JsPath.first(): JsPathElement = this[0]
 fun JsPath.drop(n: Int): JsPath = (size - n) j { i -> this[i + n] }
-fun JsPath.take(n: Int): JsPath = minOf(n, size) j { i -> this[i] }
+fun JsPath.take(n: Int): JsPath = minOf(n, size) j ::get
 
 /**
  * Convenience functions for creating JsPaths

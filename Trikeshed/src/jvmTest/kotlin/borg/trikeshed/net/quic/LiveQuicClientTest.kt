@@ -1,6 +1,6 @@
 package borg.trikeshed.net.quic
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.`play`
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -9,7 +9,6 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -65,7 +64,7 @@ class LiveQuicClientTest {
             val serverAddr = InetSocketAddress("127.0.0.1", serverPort)
             
             // QUIC connection establishment sequence
-            val handshakeSteps = Series.of(
+            val handshakeSteps = Indexed.of(
                 "INITIAL_CLIENT_HELLO",
                 "HANDSHAKE_CRYPTO_FRAME", 
                 "DATA_APPLICATION_PAYLOAD"

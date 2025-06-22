@@ -130,10 +130,10 @@ class QuicConnectionFlowControl(val connectionId: String) {
 // === SERIES CONSTRUCTION BRIDGE ===
 
 /** Series constructor function from Review */
-fun <T> s_(vararg elements: T): Series<T> = elements.toList().toSeries()
+fun <T> s_(vararg elements: T): Indexed<T> = elements.toList().toSeries()
 
 /** Series size property bridge */
-val <T> Series<T>.size: Int get() = this.a
+val <T> Indexed<T>.size: Int get() = this.a
 
 // === JSON BRIDGE ===
 
@@ -274,10 +274,10 @@ fun Any.writeToBuffer(buffer: Any) = Unit
 // === TYPE CONVERSIONS ===
 
 /** Convert Series<Byte> to ByteArray for platform interop */
-fun Series<Byte>.toByteArray(): ByteArray = this.play.toList().toByteArray()
+fun Indexed<Byte>.toByteArray(): ByteArray = this.play.toList().toByteArray()
 
 /** Convert ByteArray to Series<Byte> for TrikeShed interop */
-fun ByteArray.toBytesSeries(): Series<Byte> = this.toList().toSeries()
+fun ByteArray.toBytesSeries(): Indexed<Byte> = this.toList().toSeries()
 
 /** Lambda parameter helper for 'it' resolution */
 inline fun <T, R> T.withIt(block: (T) -> R): R = block(this)

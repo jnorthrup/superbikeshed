@@ -1,9 +1,7 @@
 package com.ta4k.backtesting
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series     // Corrected import
 import com.ta4k.trikeshedutils.toSeries // Planned new location
-import borg.trikeshed.lib.get         // Corrected import (though might not be used directly)
 import com.ta4k.strategy.examples.SMACrossoverStrategy
 import com.ta4k.trading.entities.OrderType
 import org.junit.jupiter.api.Test

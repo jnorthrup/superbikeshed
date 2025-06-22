@@ -8,15 +8,10 @@ import borg.trikeshed.acapulco.model.AssetModel
 import borg.trikeshed.acapulco.model.ITradingWallet
 import borg.trikeshed.acapulco.node.config.Help
 import borg.trikeshed.cursor.*
-import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.lib.*
 import borg.trikeshed.common.collections.CirQlar
-import borg.trikeshed.common.collections.s_
 import borg.trikeshed.lib.logDebug
-import borg.trikeshed.lib.debug
-import com.binance.api.client.BinanceApiClientFactory
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlin.time.Duration
 
 class MuxIo @JvmOverloads constructor(
@@ -30,16 +25,16 @@ class MuxIo @JvmOverloads constructor(
     val timeWindow: Int = 14.days.inWholeMinutes.toInt(),
     val hzWidth: Int = Help.horizonDepthMinutes.value.toInt(),
 ) {
-    val cursHorizon: CirQlar<Series<RowVec>> = CirQlar(historySize)
+    val cursHorizon: CirQlar<Indexed<RowVec>> = CirQlar(historySize)
 
     init {
         logDebug { "Horizon window examples (0-19): ${(0 until 20).map { horizon(it, hzWidth, timeWindow) }}" }
     }
 
-    val allTime: Series<Series<RowVec>>
+    val allTime: Indexed<Indexed<RowVec>>
         get() {
             val currentHistorySize = min(historyViewSize, cursHorizon.size)
-            if (currentHistorySize == 0) return emptySeries()
+            if (currentHistorySize == 0) return emptyIndex()
             val indicesToFetch = (0 until currentHistorySize).map { x -> horizon(x, historyViewSize, cursHorizon.size) }
             return indicesToFetch.size j { i:Int -> cursHorizon[indicesToFetch[i]] }
         }
@@ -49,7 +44,7 @@ class MuxIo @JvmOverloads constructor(
             val startTime = System.currentTimeMillis()
             try {
                 coroutineScope {
-                    val rowsToOffer: Series<RowVec> = muxers.map { (assetKey, mux) ->
+                    val rowsToOffer: Indexed<RowVec> = muxers.map { (assetKey, mux) ->
                         async {
                             val (TC, CC) = assetKey
                             val baseCost = coins.pathValue(TC, CC)

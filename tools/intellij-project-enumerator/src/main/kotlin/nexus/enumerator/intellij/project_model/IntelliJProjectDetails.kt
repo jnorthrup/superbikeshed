@@ -1,4 +1,3 @@
-// TODO: Resolve this duplication. These data classes should ideally be imported from a shared Nexus module.
 package nexus.enumerator.intellij.project_model
 
 import kotlinx.serialization.Serializable

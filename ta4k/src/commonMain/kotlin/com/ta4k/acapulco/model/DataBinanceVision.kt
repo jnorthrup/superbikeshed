@@ -1,22 +1,14 @@
 package com.ta4k.acapulco.model
 
 import borg.trikeshed.cursor.Cursor
-import borg.trikeshed.cursor.TypeMemento
 import borg.trikeshed.cursor.calendar.UnixTimeRemapper
-import borg.trikeshed.cursor.get
-import borg.trikeshed.cursor.io.IOMemento
-import borg.trikeshed.cursor.unaryMinus
-import borg.trikeshed.vec.macros.Vect0r
 import borg.trikeshed.vec.macros.size
-import borg.trikeshed.vec.util._v
 import borg.trikeshed.isam.meta.IOMemento
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.j
-import borg.trikeshed.lib.`↺`
+import borg.trikeshed.lib.Indexed
 
 enum class DataBinanceVision(
-    val names: Series<String>,
-    val types: Series<IOMemento>,
+    val names: Indexed<String>,
+    val types: Indexed<IOMemento>,
     val fixup: (Cursor) -> Cursor = { it },
 ) {
     aggtrades(

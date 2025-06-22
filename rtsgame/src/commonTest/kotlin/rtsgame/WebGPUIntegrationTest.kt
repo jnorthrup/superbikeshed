@@ -35,7 +35,7 @@ class WebGPUIntegrationTest {
         )
         
         gameState = GameState(
-            entities = Series.of(entities.size) { i -> entities[i] },
+            entities = Indexed.of(entities.size) { i -> entities[i] },
             tick = GameTick(1)
         )
     }
@@ -150,7 +150,7 @@ class SpaceGraphIntegrationTest {
         )
         
         val gameState = GameState(
-            entities = Series.of(entities.size) { i -> entities[i] },
+            entities = Indexed.of(entities.size) { i -> entities[i] },
             tick = GameTick(1)
         )
         
@@ -185,7 +185,7 @@ class SpaceGraphIntegrationTest {
         )
         
         val gameState = GameState(
-            entities = Series.of(entities.size) { i -> entities[i] },
+            entities = Indexed.of(entities.size) { i -> entities[i] },
             tick = GameTick(1)
         )
         
@@ -228,7 +228,7 @@ class SpaceGraphIntegrationTest {
         )
         
         val gameState = GameState(
-            entities = Series.of(entities.size) { i -> entities[i] },
+            entities = Indexed.of(entities.size) { i -> entities[i] },
             tick = GameTick(1)
         )
         

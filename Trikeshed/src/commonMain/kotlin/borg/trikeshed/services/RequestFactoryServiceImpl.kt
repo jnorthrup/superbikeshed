@@ -1,14 +1,7 @@
 package borg.trikeshed.services
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.α
 import borg.trikeshed.lib.play
-import borg.trikeshed.lib.toSeries
-import borg.trikeshed.lib.*
-import borg.trikeshed.lib.bridge.*
-import kotlin.jvm.JvmInline
-import kotlinx.coroutines.flow.Flow
 
 /**
  * BrokeShed Implementation of RequestFactoryService 
@@ -29,7 +22,7 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
     // Simple counter for demo purposes (replaces system time)
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
+    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
         val requestJson = requestPayload.play.joinToString("") { it.toInt().toChar().toString() }
         
         return try {
@@ -65,5 +58,5 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
         return """{"success":false,"error":"$message","code":$code}"""
     }
 
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toSeries(): Indexed<Byte> = size j { index: Int -> this[index] }
 } 

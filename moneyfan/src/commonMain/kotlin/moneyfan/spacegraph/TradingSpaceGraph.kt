@@ -69,8 +69,8 @@ data class EdgeData(
 data class Vector3D(val x: Double, val y: Double, val z: Double)
 
 data class TradingVisualization(
-    val nodes: Series<TradingNode>,
-    val edges: Series<TradingEdge>,
+    val nodes: Indexed<TradingNode>,
+    val edges: Indexed<TradingEdge>,
     val metadata: VisualizationMetadata
 )
 
@@ -132,8 +132,8 @@ class TradingSpaceGraphRenderer {
         )
         
         val visualization = TradingVisualization(
-            nodes = Series.of(nodes.size) { i -> nodes[i] },
-            edges = Series.of(edges.size) { i -> edges[i] },
+            nodes = Indexed.of(nodes.size) { i -> nodes[i] },
+            edges = Indexed.of(edges.size) { i -> edges[i] },
             metadata = metadata
         )
         

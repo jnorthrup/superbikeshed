@@ -52,9 +52,9 @@ enum class MarketRegime {
 }
 
 // Skimmer data structures using TrikeShed patterns
-typealias BaselineSeries = Series<BaselineValue>
-typealias DeviationSeries = Series<DeviationPercent>
-typealias SkimmerSignalSeries = Series<SkimmerAction>
+typealias BaselineSeries = Indexed<BaselineValue>
+typealias DeviationSeries = Indexed<DeviationPercent>
+typealias SkimmerSignalSeries = Indexed<SkimmerAction>
 typealias PortfolioState = Join<MarketRegime, DeviationPercent>
 
 // Baseline tracking for individual symbols
@@ -258,9 +258,9 @@ class KrakenSkimmerStrategy(
         }
     }
     
-    fun getTrackedSymbols(): Series<Symbol> {
+    fun getTrackedSymbols(): Indexed<Symbol> {
         val symbols = baselineTrackers.keys.toList()
-        return Series.of(symbols.size) { i -> symbols[i] }
+        return Indexed.of(symbols.size) { i -> symbols[i] }
     }
 }
 
@@ -297,7 +297,7 @@ data class SkimmerAnalysis(
             cycleCount = 0,
             requiredCycles = 3,
             marketRegime = MarketRegime.RANGING,
-            candles = Series.of(0) { error("Empty analysis") }
+            candles = Indexed.of(0) { error("Empty analysis") }
         )
     }
 }
@@ -309,7 +309,7 @@ class PortfolioSkimmer(
     private val portfolioDeviationThreshold: Double = 5.0 // % portfolio deviation
 ) {
     
-    fun analyzePortfolio(symbolData: Series<Join<Symbol, CandleSeries>>): PortfolioSkimmerAnalysis {
+    fun analyzePortfolio(symbolData: Indexed<Join<Symbol, CandleSeries>>): PortfolioSkimmerAnalysis {
         val analyses = symbolData.α { (symbol, candles) ->
             skimmerStrategy.analyzeSymbol(symbol, candles)
         }
@@ -343,20 +343,20 @@ class PortfolioSkimmer(
 
 // Portfolio analysis results
 data class PortfolioSkimmerAnalysis(
-    val symbolAnalyses: Series<SkimmerAnalysis>,
+    val symbolAnalyses: Indexed<SkimmerAnalysis>,
     val portfolioState: PortfolioState,
     val crashProtectionActive: Boolean,
     val totalSymbols: Int,
     val decliningSymbols: Int
 ) {
-    val harvestCandidates: Series<SkimmerAnalysis>
+    val harvestCandidates: Indexed<SkimmerAnalysis>
         get() = symbolAnalyses.play.filter { it.shouldHarvest }.let { candidates ->
-            Series.of(candidates.size) { i -> candidates[i] }
+            Indexed.of(candidates.size) { i -> candidates[i] }
         }
     
-    val rebalanceCandidates: Series<SkimmerAnalysis>
+    val rebalanceCandidates: Indexed<SkimmerAnalysis>
         get() = symbolAnalyses.play.filter { it.shouldRebalance }.let { candidates ->
-            Series.of(candidates.size) { i -> candidates[i] }
+            Indexed.of(candidates.size) { i -> candidates[i] }
         }
     
     val portfolioDeviation: DeviationPercent
@@ -372,18 +372,18 @@ class AttentionKrakenSkimmer(
     private val attentionActivator: AttentionStrategyActivator
 ) {
     
-    fun analyzeWithAttention(symbolData: Series<Join<Symbol, CandleSeries>>): PortfolioSkimmerAnalysis {
+    fun analyzeWithAttention(symbolData: Indexed<Join<Symbol, CandleSeries>>): PortfolioSkimmerAnalysis {
         // Filter to only high-attention symbols for skimmer strategy
         val attentionFiltered = symbolData.play.filter { (symbol, _) ->
             attentionActivator.shouldActivateStrategy(symbol, "KrakenSkimmer")
         }.let { filtered ->
-            Series.of(filtered.size) { i -> filtered[i] }
+            Indexed.of(filtered.size) { i -> filtered[i] }
         }
         
         return portfolioSkimmer.analyzePortfolio(attentionFiltered)
     }
     
-    fun getActiveSymbols(maxCount: Int = 10): Series<Symbol> {
+    fun getActiveSymbols(maxCount: Int = 10): Indexed<Symbol> {
         return attentionActivator.getActiveSymbolsForStrategy("KrakenSkimmer", maxCount)
     }
 }

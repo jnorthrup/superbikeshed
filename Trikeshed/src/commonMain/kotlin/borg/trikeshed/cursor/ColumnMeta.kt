@@ -9,15 +9,15 @@ import kotlin.jvm.JvmInline
  * Provides information about a column in a cursor/dataset.
  */
 @JvmInline
-value class ColumnMeta(val memento: IOMemento) {
+value class CursorColumnMeta(val memento: IOMemento) {
     val name: String get() = memento.name ?: "unnamed"
     val type: String get() = memento.type ?: "unknown"
     val size: Int get() = memento.width ?: 0
     val nullable: Boolean get() = memento.nullable ?: true
     
     companion object {
-        fun create(name: String, type: String, size: Int = 0, nullable: Boolean = true): ColumnMeta {
-            return ColumnMeta(IOMemento().apply {
+        fun create(name: String, type: String, size: Int = 0, nullable: Boolean = true): CursorColumnMeta {
+            return CursorColumnMeta(IOMemento().apply {
                 this.name = name
                 this.type = type
                 this.width = size
@@ -26,10 +26,3 @@ value class ColumnMeta(val memento: IOMemento) {
         }
     }
 }
-
-data class ColumnMeta(
-    val name: String,
-    val type: String,
-    val begin: Int,
-    val end: Int
-)

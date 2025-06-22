@@ -1,12 +1,11 @@
 package com.ta4k.backtesting
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series // Using local TrikeShed Series
+import borg.trikeshed.lib.Indexed // Using local TrikeShed Series
 import borg.trikeshed.lib.size // Import Series extensions
 import borg.trikeshed.lib.get  // Import Series extensions
 import com.ta4k.strategy.Strategy
 import com.ta4k.trading.TradingRecord
-import com.ta4k.trading.entities.Order
 import com.ta4k.trading.entities.OrderType
 import com.ta4k.trading.entities.OrderStatus
 import java.math.BigDecimal
@@ -14,7 +13,7 @@ import java.math.BigDecimal
 /**
  * A basic backtesting engine that simulates a strategy over historical kline data.
  *
- * @property klineSeries The historical kline data to run the backtest on.
+ * @property klineIndexed The historical kline data to run the backtest on.
  * @property strategy The trading strategy to simulate.
  * @property initialCapital While not used for P&L calculations directly in this version
  *                          (P&L is absolute), it's a common concept. For now, it's illustrative.
@@ -22,7 +21,7 @@ import java.math.BigDecimal
  *                              For simplicity, using a fixed amount for now.
  */
 class Backtester(
-    private val klineSeries: Series<Kline>,
+    private val klineIndexed: Indexed<Kline>,
     private val strategy: Strategy,
     @Suppress("UNUSED_PARAMETER") private val initialCapital: BigDecimal = BigDecimal("100000"), // Illustrative, marked unused
     private val defaultOrderAmount: BigDecimal = BigDecimal("1")    // e.g., 1 unit of base asset
@@ -35,19 +34,19 @@ class Backtester(
     fun run(): TradingRecord {
         val tradingRecord = TradingRecord()
 
-        if (klineSeries.size == 0) {
+        if (klineIndexed.size == 0) {
             System.err.println("Warning: Kline series is empty. Nothing to backtest.")
             return tradingRecord
         }
 
         val startIndex = strategy.warmUpPeriod
-        if (startIndex >= klineSeries.size) {
-            System.err.println("Warning: Warm-up period (${strategy.warmUpPeriod}) is too long for the kline series size (${klineSeries.size}). No trading will occur.")
+        if (startIndex >= klineIndexed.size) {
+            System.err.println("Warning: Warm-up period (${strategy.warmUpPeriod}) is too long for the kline series size (${klineIndexed.size}). No trading will occur.")
             return tradingRecord
         }
 
-        for (index in startIndex until klineSeries.size) {
-            val currentKline = klineSeries[index]
+        for (index in startIndex until klineIndexed.size) {
+            val currentKline = klineIndexed[index]
             val currentOpenPosition = tradingRecord.getOpenPosition()
 
             // Update open position's market price for unrealized P&L tracking
@@ -104,9 +103,9 @@ class Backtester(
         }
         // If a position is still open at the end, update its final mark-to-market price
         tradingRecord.getOpenPosition()?.let {
-            if (klineSeries.size > 0) { // Ensure there's at least one kline to get a price from
-                 val lastKlineIndex = klineSeries.size -1
-                 val lastPrice = klineSeries[lastKlineIndex].closePrice
+            if (klineIndexed.size > 0) { // Ensure there's at least one kline to get a price from
+                 val lastKlineIndex = klineIndexed.size -1
+                 val lastPrice = klineIndexed[lastKlineIndex].closePrice
                  tradingRecord.updateOpenPositionMarketPrice(lastKlineIndex, lastPrice)
             }
         }

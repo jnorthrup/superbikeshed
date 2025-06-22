@@ -1,7 +1,6 @@
 package borg.trikeshed.parse.json
 
-import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
 import borg.trikeshed.lib.toSeries
@@ -15,7 +14,7 @@ import borg.trikeshed.lib.toSeries
  *         underlying ULongArray on demand.
  */
 @OptIn(ExperimentalUnsignedTypes::class)
-fun createBitmapAsSeries(input: UByteArray): Series<UByte> {
+fun createBitmapAsSeries(input: UByteArray): Indexed<UByte> {
     // 1. Eagerly create the bitmap using the hyper-optimized `actual` implementation.
     val bitmapArray = JsonBitmapSimd.createBitmap(input)
     val inputSize = input.size
@@ -40,7 +39,7 @@ object LightningJson {
     /**
      * Parse JSON string to structural bitmap using lightning-fast SIMD processing.
      */
-    fun parseToBitmap(jsonString: String): Series<UByte> {
+    fun parseToBitmap(jsonString: String): Indexed<UByte> {
         val jsonBytes = jsonString.encodeToByteArray().toUByteArray()
         return createBitmapAsSeries(jsonBytes)
     }
@@ -48,7 +47,7 @@ object LightningJson {
     /**
      * Find all structural indices (opening/closing braces, brackets, commas) in JSON.
      */
-    fun findStructuralIndices(jsonString: String): Series<Int> {
+    fun findStructuralIndices(jsonString: String): Indexed<Int> {
         val bitmap = parseToBitmap(jsonString)
         val indices = mutableListOf<Int>()
         
@@ -65,7 +64,7 @@ object LightningJson {
     /**
      * Extract JSON values using Series<T> operations - pure TrikeShed style.
      */
-    fun extractValues(jsonString: String): Series<String> {
+    fun extractValues(jsonString: String): Indexed<String> {
         val structuralIndices = findStructuralIndices(jsonString)
         val jsonChars = jsonString.toSeries()
         
@@ -265,7 +264,7 @@ object LightningJson {
         return key to value
     }
     
-    private fun getSegments(element: JsonStructuralIndices, src: Series<Char>): Series<Series<Char>> {
+    private fun getSegments(element: JsonStructuralIndices, src: Indexed<Char>): Indexed<Indexed<Char>> {
         val (openIdx, closeIdx) = element.a
         val commaIdxs = element.b
         
@@ -290,6 +289,6 @@ object LightningJson {
     }
 }
 
-fun String.toSeries(): Series<Char> = length j { i -> this[i] }
-fun <T> Series<T>.first(): T = this[0]
-fun <T> Series<T>.drop(n: Int): Series<T> = (size - n) j { i -> this[i + n] }
+fun String.toSeries(): Indexed<Char> = length j ::get
+fun <T> Indexed<T>.first(): T = this[0]
+fun <T> Indexed<T>.drop(n: Int): Indexed<T> = (size - n) j { i -> this[i + n] }

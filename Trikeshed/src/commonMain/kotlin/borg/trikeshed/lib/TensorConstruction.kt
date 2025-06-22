@@ -39,7 +39,7 @@ fun <T> List<List<T>>.toTensor(): Tensor<T> {
  */
 fun <T> List<T>.toTensor1D(): Tensor<T> {
     val size = this.size
-    return TensorSeries(size) { i -> this[i] }
+    return TensorSeries(size) ::get
 }
 
 /**

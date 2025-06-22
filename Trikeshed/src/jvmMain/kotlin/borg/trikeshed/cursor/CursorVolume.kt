@@ -1,24 +1,23 @@
 package borg.trikeshed.cursor
 
-import borg.trikeshed.lib.Series
-import borg.trikeshed.cursor.RowVec
+import borg.trikeshed.lib.Indexed
 
 class CursorVolume(
-    private val series: Series<Series<RowVec>>,
+    private val indexed: Indexed<Indexed<RowVec>>,
     private val cacheLineSize: Int = 64
 ) {
-    fun reconstitute(useCase: String): Series<RowVec> {
+    fun reconstitute(useCase: String): Indexed<RowVec> {
         return when (useCase) {
             "cache_aligned" -> alignToCacheLines()
             "sequential" -> optimizeForSequentialAccess()
             "random" -> optimizeForRandomAccess()
-            else -> series.flatten()
+            else -> indexed.flatten()
         }
     }
 
-    private fun alignToCacheLines(): Series<RowVec> {
+    private fun alignToCacheLines(): Indexed<RowVec> {
         // Align data to cache lines for optimal memory access
-        return series.map { s ->
+        return indexed.map { s ->
             s.map { row ->
                 // Pad row to cache line boundary if needed
                 val padding = (cacheLineSize - (row.size % cacheLineSize)) % cacheLineSize
@@ -31,9 +30,9 @@ class CursorVolume(
         }.flatten()
     }
 
-    private fun optimizeForSequentialAccess(): Series<RowVec> {
+    private fun optimizeForSequentialAccess(): Indexed<RowVec> {
         // Optimize for sequential access patterns
-        return series.map { s ->
+        return indexed.map { s ->
             s.map { row ->
                 // Reorder fields for sequential access
                 row.sortedBy { it.begin }
@@ -41,9 +40,9 @@ class CursorVolume(
         }.flatten()
     }
 
-    private fun optimizeForRandomAccess(): Series<RowVec> {
+    private fun optimizeForRandomAccess(): Indexed<RowVec> {
         // Optimize for random access patterns
-        return series.map { s ->
+        return indexed.map { s ->
             s.map { row ->
                 // Reorder fields for random access
                 row.sortedBy { it.name }

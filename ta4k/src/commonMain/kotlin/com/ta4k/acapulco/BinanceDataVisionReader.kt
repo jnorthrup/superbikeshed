@@ -1,8 +1,7 @@
 package com.ta4k.acapulco
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.j
+import borg.trikeshed.lib.Indexed
 
 /**
  * Reads and processes Binance Data Vision archive files.
@@ -15,7 +14,7 @@ expect class BinanceDataVisionReader() {
          * @param filePath Path to the archive file
          * @return Series of Klines
          */
-        fun readArchive(filePath: String): Series<Kline>
+        fun readArchive(filePath: String): Indexed<Kline>
         
         /**
          * Fetches klines from Binance Data Vision archives for a specific symbol and time range
@@ -32,7 +31,7 @@ expect class BinanceDataVisionReader() {
             startDate: String? = null,
             endDate: String? = null,
             cacheDir: String = "~/mpdata/cache"
-        ): Series<Kline>
+        ): Indexed<Kline>
         
         /**
          * Downloads and processes a single month of kline data
@@ -47,7 +46,7 @@ expect class BinanceDataVisionReader() {
             interval: String,
             yearMonth: String,
             cacheDir: String
-        ): Series<Kline>
+        ): Indexed<Kline>
         
         /**
          * Downloads and processes daily kline data for recent periods
@@ -62,14 +61,14 @@ expect class BinanceDataVisionReader() {
             interval: String,
             days: Int = 30,
             cacheDir: String = "~/mpdata/cache"
-        ): Series<Kline>
+        ): Indexed<Kline>
         
         /**
          * Combines multiple kline series into a single sorted series
-         * @param klineSeries List of kline series to combine
+         * @param klineIndexed List of kline series to combine
          * @return Combined and sorted Series of Klines
          */
-        fun combineKlineSeries(klineSeries: List<Series<Kline>>): Series<Kline>
+        fun combineKlineSeries(klineIndexed: List<Indexed<Kline>>): Indexed<Kline>
         
         /**
          * Filters klines by time range
@@ -79,9 +78,9 @@ expect class BinanceDataVisionReader() {
          * @return Filtered Series of Klines
          */
         fun filterKlinesByTimeRange(
-            klines: Series<Kline>,
+            klines: Indexed<Kline>,
             startTime: Long,
             endTime: Long
-        ): Series<Kline>
+        ): Indexed<Kline>
     }
 } 

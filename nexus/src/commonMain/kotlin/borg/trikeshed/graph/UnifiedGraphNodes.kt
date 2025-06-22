@@ -51,7 +51,7 @@ typealias GraphNode = Join<Join<UnifiedNodeId, NodeType>, NodeConfidence>
 /**
  * Collection of graph nodes using TrikeShed Series
  */
-typealias GraphNodeSeries = Series<GraphNode>
+typealias GraphNodeSeries = Indexed<GraphNode>
 
 /**
  * Dependency edge between two nodes
@@ -61,7 +61,7 @@ typealias DependencyEdge = Join<UnifiedNodeId, UnifiedNodeId>
 /**
  * Collection of dependency edges
  */
-typealias DependencyGraph = Series<DependencyEdge>
+typealias DependencyGraph = Indexed<DependencyEdge>
 
 /**
  * Analysis metadata with context information

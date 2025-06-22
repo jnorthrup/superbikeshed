@@ -44,7 +44,7 @@ include(":moneyfan")
 include(":spacegraph")
 include(":k2script")
 include(":flatton")
-// include(":boingDemo")  // Temporarily disabled due to configuration issues
+// include(":boingDemo")  // Native audio implemented, but gradle config needs debugging
 include(":ta4k-spacegraph-moneyfan-demo")
 include(":tools")
 include(":superbikeshed")

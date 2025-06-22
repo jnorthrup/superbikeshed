@@ -39,7 +39,7 @@ data class Vector3D(
 class RTSSpaceGraphRenderer(
     private val config: RenderingConfig = RenderingConfig()
 ) {
-    private var nodeMappings: Series<NodeMapping> = Series.of(0) { throw IndexOutOfBoundsException() }
+    private var nodeMappings: Indexed<NodeMapping> = Indexed.of(0) { throw IndexOutOfBoundsException() }
     private var lastGameState: GameState? = null
     
     fun renderGameState(gameState: GameState): RenderResult {
@@ -52,14 +52,14 @@ class RTSSpaceGraphRenderer(
         val edgeData = if (config.showConnections) {
             generateEntityConnections(gameState.entities)
         } else {
-            Series.of(0) { throw IndexOutOfBoundsException() }
+            Indexed.of(0) { throw IndexOutOfBoundsException() }
         }
         
         lastGameState = gameState
         
         return RenderResult(
             nodes = nodeData,
-            edges = edgeData as Series<SpaceGraphEdge>,
+            edges = edgeData as Indexed<SpaceGraphEdge>,
             metadata = RenderMetadata(
                 entityCount = gameState.entities.`play`.size,
                 tick = gameState.tick
@@ -99,7 +99,7 @@ class RTSSpaceGraphRenderer(
         }
     }
     
-    private fun generateEntityConnections(entities: EntitySeries): Series<SpaceGraphEdge> {
+    private fun generateEntityConnections(entities: EntitySeries): Indexed<SpaceGraphEdge> {
         val entityList = entities.`play`
         val connections = mutableListOf<SpaceGraphEdge>()
         
@@ -120,7 +120,7 @@ class RTSSpaceGraphRenderer(
             }
         }
         
-        return Series.of(connections.size) { i -> connections[i] }
+        return Indexed.of(connections.size) { i -> connections[i] }
     }
     
     private fun shouldConnect(entity1: Entity, entity2: Entity): Boolean {
@@ -166,8 +166,8 @@ data class SpaceGraphEdge(
 )
 
 data class RenderResult(
-    val nodes: Series<SpaceGraphNode>,
-    val edges: Series<SpaceGraphEdge>,
+    val nodes: Indexed<SpaceGraphNode>,
+    val edges: Indexed<SpaceGraphEdge>,
     val metadata: RenderMetadata
 )
 

@@ -7,10 +7,7 @@ import java.io.File
 import kotlin.system.exitProcess
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.Reactor
-import borg.trikeshed.reactor.http.createRequestFactoryHandler
 import borg.trikeshed.services.*
-import borg.trikeshed.reactor.quic.QuicServer
-import borg.trikeshed.reactor.quic.QuicServerConfig
 import borg.trikeshed.reactor.quic.quicd
 
 fun main(args: Array<String>) {
@@ -118,7 +115,7 @@ private fun createDealService(): DealService = object : DealService {
 
     override suspend fun findDeal(id: String): DealProxy? = deals[id]
 
-    override suspend fun findDealsByProduct(query: String): Series<DealProxy> {
+    override suspend fun findDealsByProduct(query: String): Indexed<DealProxy> {
         val matching = deals.values.filter { 
             it.product.contains(query, ignoreCase = true) 
         }
@@ -134,7 +131,7 @@ private fun createDealService(): DealService = object : DealService {
         ))
     }
 
-    override suspend fun getVendors(): Series<VendorProxy> =
+    override suspend fun getVendors(): Indexed<VendorProxy> =
         vendors.toSeries()
 }
 

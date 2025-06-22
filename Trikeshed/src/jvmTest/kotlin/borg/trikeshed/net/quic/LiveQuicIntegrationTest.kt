@@ -1,18 +1,16 @@
 package borg.trikeshed.net.quic
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join  
 import borg.trikeshed.lib.`play`
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.flow
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -108,7 +106,7 @@ class LiveQuicIntegrationTest {
                 
                 try {
                     // QUIC connection lifecycle simulation
-                    val connectionPhases = Series.of(
+                    val connectionPhases = Indexed.of(
                         "HANDSHAKE_INITIAL_$clientId",
                         "HANDSHAKE_CRYPTO_$clientId",
                         "HANDSHAKE_FINISH_$clientId"

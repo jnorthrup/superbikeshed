@@ -30,7 +30,7 @@ typealias SkimmerPosition = Join<CapWeightedAsset, SkimmerPercent>
 // Market cap ranking on specific date
 data class CapRanking(
     val date: LocalDate,
-    val rankings: Series<CapWeightedAsset>,
+    val rankings: Indexed<CapWeightedAsset>,
     val totalMarketCap: MarketCap
 )
 
@@ -45,7 +45,7 @@ data class SkimmerResult(
     val holdingPeriod: Int // days
 )
 
-typealias SkimmerResults = Series<SkimmerResult>
+typealias SkimmerResults = Indexed<SkimmerResult>
 
 /**
  * Cap-based backtester with skimmer strategy
@@ -78,7 +78,7 @@ class CapBasedBacktester {
             .take(topN)
             .map { (symbol, cap) -> Symbol(symbol) j cap }
         
-        val rankings = Series.of(sortedAssets.size) { sortedAssets[it] }
+        val rankings = Indexed.of(sortedAssets.size) { sortedAssets[it] }
         val totalCap = MarketCap(sortedAssets.sumOf { (_, cap) -> cap.value })
         
         return CapRanking(date, rankings, totalCap)
@@ -145,11 +145,11 @@ class CapBasedBacktester {
             results.add(result)
         }
         
-        val resultsSeries = Series.of(results.size) { results[it] }
+        val resultsIndexed = Indexed.of(results.size) { results[it] }
         val totalProfit = results.sumOf { it.profit.value }
         val finalValue = Price(initialCapital.value + totalProfit)
         
-        return resultsSeries j finalValue
+        return resultsIndexed j finalValue
     }
     
     private fun generateEntryPrice(symbol: Symbol): Price {

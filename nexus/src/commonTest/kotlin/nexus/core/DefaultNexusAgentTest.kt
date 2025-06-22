@@ -11,12 +11,11 @@ import kotlinx.coroutines.flow.toList
 import kotlin.coroutines.CoroutineContext
 
 // TrikeShed core types and helpers
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j // For Join infix constructor
-import borg.trikeshed.lib.seriesOf // For creating series easily
+import borg.trikeshed.lib._i // For creating series easily
 import borg.trikeshed.lib.materialize
 import borg.trikeshed.lib.TensorSeries // For creating series from list
-import borg.trikeshed.lib.emptySeries
 
 
 // TrikeShed Assertions
@@ -36,14 +35,10 @@ import nexus.core.Solution
 import nexus.core.Action
 import nexus.core.Outcome
 import nexus.core.ScoredSuggestion
-import nexus.core.Change
-import nexus.core.Pattern
 import nexus.core.Workflow
-import nexus.core.WorkflowOutcome
 import nexus.core.PredictedAction
 import nexus.core.Feedback
 import nexus.core.LearningUpdate
-import nexus.core.AgentConfiguration
 import nexus.core.GossipPayload
 import nexus.core.SerializableKeyValuePair // Import for deserialization in test
 
@@ -97,7 +92,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `scanEnvironment should return expected context`() = runBlocking {
         val (agent, _) = createAgent()
-        val expectedContext: EnvironmentContext = seriesOf(
+        val expectedContext: EnvironmentContext = _i(
             "OS" j "Linux",
             "KotlinVersion" j "1.9.22",
             "Cores" j "8"
@@ -110,10 +105,10 @@ class DefaultNexusAgentTest {
     @Test
     fun `discoverCapabilities should return expected capabilities`() = runBlocking {
         val (agent, _) = createAgent()
-        val expectedCapabilities: Series<Capability> = seriesOf(
-            "RunCommand" j seriesOf("command:String", "timeout:Int (ms)"),
-            "ReadFile" j seriesOf("filePath:String"),
-            "WriteFile" j seriesOf("filePath:String", "content:String")
+        val expectedCapabilities: Indexed<Capability> = _i(
+            "RunCommand" j _i("command:String", "timeout:Int (ms)"),
+            "ReadFile" j _i("filePath:String"),
+            "WriteFile" j _i("filePath:String", "content:String")
         )
         val actualCapabilities = agent.discoverCapabilities()
         actualCapabilities.shouldHaveSize(3)
@@ -134,9 +129,9 @@ class DefaultNexusAgentTest {
     @Test
     fun `processRequest should return expected response`() = runBlocking {
         val (agent, _) = createAgent()
-        val testRequest: Request = seriesOf("Test problem: App crashes on startup", "Provide diagnostic steps.")
+        val testRequest: Request = _i("Test problem: App crashes on startup", "Provide diagnostic steps.")
         val requestContent = testRequest.materialize().joinToString(separator = "; ") { it }
-        val expectedResponse: Response = seriesOf(
+        val expectedResponse: Response = _i(
             "Agent [${agent.agentId}] received problem: \"$requestContent\"",
             "DefaultNexusAgent is processing this.",
             "Solution is pending implementation."
@@ -175,25 +170,25 @@ class DefaultNexusAgentTest {
     @Test
     fun `generateSolutions should return sample solutions`() = runBlocking {
         val (agent, _) = createAgent()
-        val problem: Problem = seriesOf("High CPU usage", "Application becomes unresponsive.")
-        val context: ProjectContext = seriesOf("OS" j "Ubuntu 22.04", "AppVersion" j "1.2.3")
+        val problem: Problem = _i("High CPU usage", "Application becomes unresponsive.")
+        val context: ProjectContext = _i("OS" j "Ubuntu 22.04", "AppVersion" j "1.2.3")
         val problemDescription = problem.materialize().joinToString("\n") { it }
         val contextSummary = context.materialize().joinToString("; ") { "${it.a}=${it.b}" }
-        val expectedSol1: Solution = seriesOf(
+        val expectedSol1: Solution = _i(
             "Solution Alpha for problem: '$problemDescription'",
             "Based on context: '$contextSummary'",
             "Step 1: Analyze requirements.",
             "Step 2: Implement feature X.",
             "Step 3: Write unit tests for X."
         )
-        val expectedSol2: Solution = seriesOf(
+        val expectedSol2: Solution = _i(
             "Solution Beta (alternative) for problem: '$problemDescription'",
             "Considering context: '$contextSummary'",
             "Step 1: Refactor module Y.",
             "Step 2: Add new API endpoint.",
             "Step 3: Document changes."
         )
-        val expectedSolutions: Series<Solution> = seriesOf(expectedSol1, expectedSol2)
+        val expectedSolutions: Indexed<Solution> = indexOf(expectedSol1, expectedSol2)
         val actualSolutions = agent.generateSolutions(problem, context)
         actualSolutions.shouldHaveSize(2)
         actualSolutions.shouldBe(expectedSolutions) { solA, solB ->
@@ -212,7 +207,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `executeAction should return sample outcome`() = runBlocking {
         val (agent, _) = createAgent()
-        val action: Action = "RunDiagnostics" j seriesOf("target=CPU", "level=Detailed")
+        val action: Action = "RunDiagnostics" j _i("target=CPU", "level=Detailed")
         val actionName = action.a
         val argsString = action.b.materialize().joinToString(", ") { it }
         val actualOutcome = agent.executeAction(action)
@@ -226,7 +221,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `getSuggestions should return predefined suggestions`() = runBlocking {
         val (agent, _) = createAgent()
-        val expectedSuggestions: Series<ScoredSuggestion> = TensorSeries.fromList(
+        val expectedSuggestions: Indexed<ScoredSuggestion> = TensorSeries.fromList(
             listOf(
                 0.5 j "Suggestion for pattern: (code_smell - long_method - class_X)",
                 0.6 j "Suggestion for pattern: (performance_issue - database_query - entity_Y)",
@@ -257,9 +252,9 @@ class DefaultNexusAgentTest {
     @Test
     fun `orchestrateWorkflow should execute actions and collect outcomes`() = runBlocking {
         val (agent, _) = createAgent()
-        val action1: Action = "SetupEnv" j seriesOf("config=A")
-        val action2: Action = "RunBuild" j seriesOf("target=all")
-        val workflow: Workflow = seriesOf(action1, action2)
+        val action1: Action = "SetupEnv" j _i("config=A")
+        val action2: Action = "RunBuild" j _i("target=all")
+        val workflow: Workflow = indexOf(action1, action2)
 
         val workflowOutcome = agent.orchestrateWorkflow(workflow)
 
@@ -300,11 +295,11 @@ class DefaultNexusAgentTest {
     fun `predictNextActions should return predefined actions with scores`() = runBlocking {
         val (agent, _) = createAgent()
 
-        val expectedAction1: Action = "CommitChanges" j seriesOf("message:Finalize feature X", "push:true")
-        val expectedAction2: Action = "RunTests" j seriesOf("scope:unit", "module:featureX")
-        val expectedAction3: Action = "RequestReview" j seriesOf("reviewer:@teamLead", "crNumber:123")
+        val expectedAction1: Action = "CommitChanges" j _i("message:Finalize feature X", "push:true")
+        val expectedAction2: Action = "RunTests" j _i("scope:unit", "module:featureX")
+        val expectedAction3: Action = "RequestReview" j _i("reviewer:@teamLead", "crNumber:123")
 
-        val expectedPredictions: Series<PredictedAction> = TensorSeries.fromList(listOf(
+        val expectedPredictions: Indexed<PredictedAction> = TensorSeries.fromList(listOf(
             expectedAction1 j 0.75,
             expectedAction2 j 0.60,
             expectedAction3 j 0.85
@@ -334,8 +329,8 @@ class DefaultNexusAgentTest {
     @Test
     fun `evolveSolution should append feedback to solution`() = runBlocking {
         val (agent, _) = createAgent()
-        val initialSolution: Solution = seriesOf("Step 1: Initial code", "Step 2: Basic test")
-        val feedback: Feedback = "ReviewComment" j seriesOf("Add more error handling", "Improve test coverage")
+        val initialSolution: Solution = _i("Step 1: Initial code", "Step 2: Basic test")
+        val feedback: Feedback = "ReviewComment" j _i("Add more error handling", "Improve test coverage")
 
         val evolvedSolution = agent.evolveSolution(initialSolution, feedback)
 
@@ -350,7 +345,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `learnFromOutcome should return learning update`() = runBlocking {
         val (agent, _) = createAgent()
-        val outcome: Outcome = seriesOf("Action executed successfully", "Output: Value=42", "Log: Processing complete.")
+        val outcome: Outcome = _i("Action executed successfully", "Output: Value=42", "Log: Processing complete.")
 
         val learningUpdate = agent.learnFromOutcome(outcome)
 
@@ -363,7 +358,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `adaptToEnvironment should return agent configuration`() = runBlocking {
         val (agent, _) = createAgent()
-        val envContext: EnvironmentContext = seriesOf(
+        val envContext: EnvironmentContext = _i(
             "OS" j "Windows 11",
             "KotlinVersion" j "1.9.23",
             "Network" j "Available"
@@ -386,7 +381,7 @@ class DefaultNexusAgentTest {
     fun `gossipAbout should publish serialized payload`() = runBlocking {
         val (agent, testIpfsService) = createAgent()
         val topic = "nexus/test_gossip"
-        val payload: GossipPayload = seriesOf(
+        val payload: GossipPayload = _i(
             "data_point_1" j "value_alpha",
             "metric_A" j "123.45"
         )
@@ -420,7 +415,7 @@ class DefaultNexusAgentTest {
         // This test assumes 'k2script' might not be found, or if found, 'non_existent_script.kts' won't exist.
         // We are testing the agent's behavior in calling the command.
         val scriptPath = "non_existent_script.kts"
-        val action = ActionNames.K2SCRIPT_EXECUTE j seriesOf(scriptPath)
+        val action = ActionNames.K2SCRIPT_EXECUTE j _i(scriptPath)
 
         val outcome = agent.executeAction(action).materialize()
 
@@ -448,7 +443,7 @@ class DefaultNexusAgentTest {
         val (agent, _) = createAgent()
         val scriptPath = "another_non_existent_script.kts"
         val scriptArgs = listOf("arg1", "--option", "value")
-        val action = ActionNames.K2SCRIPT_EXECUTE j seriesOf(scriptPath, *scriptArgs.toTypedArray())
+        val action = ActionNames.K2SCRIPT_EXECUTE j _i(scriptPath, *scriptArgs.toTypedArray())
 
         val outcome = agent.executeAction(action).materialize()
         val outcomeString = outcome.joinToString("\n")
@@ -469,7 +464,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `executeAction K2SCRIPT_EXECUTE with no script path`() = runBlocking {
         val (agent, _) = createAgent()
-        val action = ActionNames.K2SCRIPT_EXECUTE j seriesOf() // Empty series for arguments
+        val action = ActionNames.K2SCRIPT_EXECUTE j _i() // Empty series for arguments
 
         val outcome = agent.executeAction(action).materialize()
         val outcomeString = outcome.joinToString("\n")

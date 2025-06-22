@@ -3,10 +3,10 @@
 // =====================================================================
 package borg.trikeshed.acapulco.util // Adjusted package
 
-import borg.trikeshed.lib.Series // Replaces Vect0r
+import borg.trikeshed.lib.Indexed // Replaces Vect0r
 import borg.trikeshed.lib.get // Replaces get extension or operator
 
-fun calcSmmaDown(open: Series<Double>, close: Series<Double>, n: Int, i: Int, avgDt1: Double): Double =
+fun calcSmmaDown(open: Indexed<Double>, close: Indexed<Double>, n: Int, i: Int, avgDt1: Double): Double =
     if (avgDt1 == 0.0) {
         var sumDownChanges = 0.0
         var j = 0

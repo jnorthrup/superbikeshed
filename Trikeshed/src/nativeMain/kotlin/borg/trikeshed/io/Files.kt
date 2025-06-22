@@ -4,7 +4,7 @@ import kotlinx.cinterop.*
 import platform.posix.*
 import borg.trikeshed.native.HasPosixErr
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toSeries
 
 actual object Files {
@@ -66,7 +66,7 @@ actual object Files {
         }
     }
 
-    actual fun iterateLines(fileName: String, bufsize: Int): Iterable<Join<Long, Series<Byte>>> {
+    actual fun iterateLines(fileName: String, bufsize: Int): Iterable<Join<Long, Indexed<Byte>>> {
         val lines = readAllLines(fileName)
         return lines.mapIndexed { index, line ->
             Join(index.toLong(), line.encodeToByteArray().toSeries())

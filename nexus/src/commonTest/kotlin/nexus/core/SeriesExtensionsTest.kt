@@ -4,20 +4,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.runBlocking // Not strictly needed if extensions are not suspend, but good for consistency
 
 // TrikeShed core types and helpers
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j // For Join infix constructor
-import borg.trikeshed.lib.seriesOf
-import borg.trikeshed.lib.emptySeries
+import borg.trikeshed.lib._i
+import borg.trikeshed.lib.emptyIndex
 import borg.trikeshed.lib.materialize
 
 // TrikeShed Assertions (assuming they are in this package or accessible)
 import borg.trikeshed.lib.shouldHaveSize
 import borg.trikeshed.lib.shouldBe
-import borg.trikeshed.lib.elementAtShouldBe // May not be needed if using shouldBe
 
 // Types from nexus.core (for Score, Pattern, Confidence if used directly in tests)
 import nexus.core.Score
@@ -45,22 +41,22 @@ class SeriesExtensionsTest {
 
     @Test
     fun `best element in series`() {
-        val series1 = seriesOf(3, 1, 4, 1, 5, 9, 2, 6)
+        val series1 = _i(3, 1, 4, 1, 5, 9, 2, 6)
         assertEquals(9, series1.best())
 
-        val series2 = seriesOf(-1, -5, -2)
+        val series2 = _i(-1, -5, -2)
         assertEquals(-1, series2.best())
 
-        val seriesStr = seriesOf("apple", "zebra", "banana")
+        val seriesStr = _i("apple", "zebra", "banana")
         assertEquals("zebra", seriesStr.best())
 
-        val emptyIntSeries = emptySeries<Int>()
+        val emptyIntSeries = emptyIndex<Int>()
         assertNull(emptyIntSeries.best(), "Best of empty series should be null")
     }
 
     @Test
     fun `scoreWith and rankByScore`() {
-        val items = seriesOf("apple", "banana", "cherry", "date")
+        val items = _i("apple", "banana", "cherry", "date")
 
         // Scorer: length of the string as score
         val scorer: (String) -> Score = { it.length.toDouble() }
@@ -96,7 +92,7 @@ class SeriesExtensionsTest {
         assertEquals(4.0 j "date", rankedSeries.elementAt(3))
 
         // Test with empty series
-        val emptyItems = emptySeries<String>()
+        val emptyItems = emptyIndex<String>()
         val emptyScored = emptyItems.scoreWith(scorer)
         emptyScored.shouldHaveSize(0)
         val emptyRanked = emptyScored.rankByScore()
@@ -105,11 +101,11 @@ class SeriesExtensionsTest {
 
     @Test
     fun `take elements from series`() {
-        val series = seriesOf(10, 20, 30, 40, 50)
+        val series = _i(10, 20, 30, 40, 50)
 
         val take2 = series.take(2)
         take2.shouldHaveSize(2)
-        take2.shouldBe(seriesOf(10, 20))
+        take2.shouldBe(_i(10, 20))
 
         val take0 = series.take(0)
         take0.shouldHaveSize(0)
@@ -125,27 +121,27 @@ class SeriesExtensionsTest {
         takeMoreThanSize.shouldHaveSize(5)
         takeMoreThanSize.shouldBe(series) // Should be all original elements
 
-        val emptyS = emptySeries<Int>()
+        val emptyS = emptyIndex<Int>()
         emptyS.take(5).shouldHaveSize(0)
     }
 
     // Minimal test for evolveWith to ensure it compiles and runs
     @Test
     fun `evolveWith applies transformation`() {
-        val series = seriesOf(1, 2, 3)
+        val series = _i(1, 2, 3)
         val evolved = series.evolveWith { it * 2 }
         evolved.shouldHaveSize(3)
-        evolved.shouldBe(seriesOf(2, 4, 6))
+        evolved.shouldBe(_i(2, 4, 6))
     }
 
     // Minimal test for selectTop
     @Test
     fun `selectTop selects correct ratio of elements`() {
-        val series = seriesOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) // size 10
+        val series = _i(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) // size 10
         // selectTop implies order matters or it's pre-sorted. Our take is from the start.
         val top20percent = series.selectTop(0.2) // Should take 2 elements
         top20percent.shouldHaveSize(2)
-        top20percent.shouldBe(seriesOf(1, 2))
+        top20percent.shouldBe(_i(1, 2))
 
         val top0percent = series.selectTop(0.0)
         top0percent.shouldHaveSize(0)

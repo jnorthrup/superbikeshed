@@ -2,7 +2,7 @@ package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
 import borg.trikeshed.lib.j      // Import infix j
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
 // kotlin.math.sqrt is not directly used by ATR, but was in the prompt. Removed for cleanliness.
@@ -10,10 +10,10 @@ import java.math.RoundingMode
 /**
  * Average True Range (ATR) indicator.
  * Measures market volatility.
- * Operates on a Trikethed [Series] of [Kline].
+ * Operates on a Trikethed [Indexed] of [Kline].
  */
 class ATRIndicator(
-    private val klineSeries: Series<Kline>, // Changed
+    private val klineIndexed: Indexed<Kline>, // Changed
     private val period: Int
 ) {
     init {
@@ -27,14 +27,14 @@ class ATRIndicator(
 
     private val calculationScale = 8 // Internal calculation precision
     // Result scale for ATR usually matches price scale or a bit more
-    private val resultScale = klineSeries.firstOrNull()?.closePrice?.scale()?.let { it + 2 } ?: 4
+    private val resultScale = klineIndexed.firstOrNull()?.closePrice?.scale()?.let { it + 2 } ?: 4
 
     // Helper to get the first Kline from the series, returns null if series is empty.
     // Used to determine the scale for BigDecimal results, avoiding repeated checks.
-    private fun Series<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
+    private fun Indexed<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
 
     private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+        if (targetIndex < 0 || targetIndex >= klineIndexed.size || targetIndex <= calculatedUpToIndex) {
             return
         }
 
@@ -43,19 +43,19 @@ class ATRIndicator(
         // Pre-allocate lists if this is the first major calculation run, or if lists are too small.
         // This helps avoid repeated checks for list size during the loop and allows direct [i] access.
         if (calculatedUpToIndex == -1) { // First time calculation is triggered significantly
-            for (k in 0 until klineSeries.size) { // Initialize to full size of input series
+            for (k in 0 until klineIndexed.size) { // Initialize to full size of input series
                 trueRangeResults.add(null)
                 atrResults.add(null)
             }
         } else { // If called again to extend calculation, ensure lists are large enough
-            while (trueRangeResults.size < klineSeries.size) trueRangeResults.add(null)
-            while (atrResults.size < klineSeries.size) atrResults.add(null)
+            while (trueRangeResults.size < klineIndexed.size) trueRangeResults.add(null)
+            while (atrResults.size < klineIndexed.size) atrResults.add(null)
         }
 
         val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
 
         for (i in startIndex..targetIndex) {
-            val currentKline = klineSeries[i]
+            val currentKline = klineIndexed[i]
             val high = currentKline.highPrice
             val low = currentKline.lowPrice
 
@@ -63,7 +63,7 @@ class ATRIndicator(
             if (i == 0) {
                 currentRawTR = high.subtract(low) // TR for day 1 is H-L
             } else {
-                val prevClose = klineSeries[i - 1].closePrice
+                val prevClose = klineIndexed[i - 1].closePrice
                 var tr = high.subtract(low)
                 tr = tr.max(high.subtract(prevClose).abs())
                 tr = tr.max(low.subtract(prevClose).abs())
@@ -101,7 +101,7 @@ class ATRIndicator(
      * @return The True Range value, or null if data is insufficient or index is out of bounds.
      */
     fun getTrueRange(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
+        if (index < 0 || index >= klineIndexed.size) {
             return null
         }
         ensureCalculatedUpTo(index) // Ensures trueRangeResults[index] is computed
@@ -115,7 +115,7 @@ class ATRIndicator(
      * @return The ATR value, or null if there's not enough data or index is out of bounds.
      */
     fun getValue(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) {
+        if (index < 0 || index >= klineIndexed.size) {
             return null
         }
         ensureCalculatedUpTo(index) // Ensures atrResults[index] is computed
@@ -125,15 +125,15 @@ class ATRIndicator(
 
     /**
      * Returns all calculated ATR values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val values: Series<BigDecimal?>
+    val values: Indexed<BigDecimal?>
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
-            return klineSeries.size j { idx:Int -> // Use infix j
+            return klineIndexed.size j { idx:Int -> // Use infix j
                 // getValue will ensure calculation and apply scaling for the specific index
                 this.getValue(idx)
             }
@@ -141,15 +141,15 @@ class ATRIndicator(
 
     /**
      * Returns all calculated True Range values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val trueRangeValues: Series<BigDecimal?> // Renamed to trueRangeValues to distinguish from trueRangeResults list
+    val trueRangeValues: Indexed<BigDecimal?> // Renamed to trueRangeValues to distinguish from trueRangeResults list
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
-            return klineSeries.size j { idx:Int ->
+            return klineIndexed.size j { idx:Int ->
                 this.getTrueRange(idx)
             }
         }

@@ -2,7 +2,6 @@ package borg.trikeshed.services
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.bridge.*
-import kotlin.jvm.JvmInline
 
 /**
  * BrokeShed CouchDB-backed RequestFactory Service
@@ -26,7 +25,7 @@ class CouchRequestFactoryService(
     // Simple counter for demo purposes (replaces system time)
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
+    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
         val requestJson = requestPayload.play.joinToString("") { it.toInt().toChar().toString() }
         
         return try {
@@ -71,5 +70,5 @@ class CouchRequestFactoryService(
         return ByteArray(0)
     }
 
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toSeries(): Indexed<Byte> = size j { index: Int -> this[index] }
 } 
