@@ -101,4 +101,4 @@ fun handleAria2c(args: List<String>): Int {
             this.trikeshedCoord = trikeshedCoord
         }
     }
-} 
+}
