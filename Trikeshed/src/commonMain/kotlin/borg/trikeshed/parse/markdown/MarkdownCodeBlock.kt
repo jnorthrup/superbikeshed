@@ -1,6 +1,7 @@
 package borg.trikeshed.parse.markdown
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.bridge.toSeries
 import kotlin.math.ceil
 
 /**

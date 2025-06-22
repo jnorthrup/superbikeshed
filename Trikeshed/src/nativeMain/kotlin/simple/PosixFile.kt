@@ -14,8 +14,9 @@ import platform.posix.uint32_t as __u32
 
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.play
-import borg.trikeshed.lib.s_
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.CZero.z
+import borg.trikeshed.lib.bridge.s_
+import borg.trikeshed.lib.bridge.toSeries
 //import linux_uring.fstatat
 import platform.posix.off_t as __off_t
 import platform.posix.*

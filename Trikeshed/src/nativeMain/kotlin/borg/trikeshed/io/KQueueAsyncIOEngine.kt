@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalForeignApi::class)
 package borg.trikeshed.io
 
 import kotlinx.cinterop.*

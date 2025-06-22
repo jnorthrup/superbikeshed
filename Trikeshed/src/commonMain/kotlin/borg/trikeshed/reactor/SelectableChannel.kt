@@ -27,12 +27,12 @@ interface BufferPool {
     suspend fun accept(): ClientChannel?
 }
 
-interface ServerChannel : SelectableChannel {
+expect interface ServerChannel : SelectableChannel {
     suspend fun bind(port: Int)
     suspend fun accept(): ClientChannel?
 }
 
-interface ClientChannel : ReadableChannel, WritableChannel {
+expect interface ClientChannel : ReadableChannel, WritableChannel {
     suspend fun connect(host: String, port: Int)
 }
 

@@ -3,6 +3,7 @@ package borg.trikeshed.net.http
 
 import borg.trikeshed.ccek.CcekContext
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.bridge.toSeries
 import borg.trikeshed.reactor.*
 import borg.trikeshed.services.DealService
 import borg.trikeshed.services.RequestFactoryService
