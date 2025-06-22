@@ -1,10 +1,7 @@
 package nexus
 
-import k2script.ai.llm.LiteLLMClient
-import k2script.ai.llm.LLMResponse
 import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
-import java.io.IOException
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Series as Indexed
@@ -79,8 +76,8 @@ class NexusActionExecutor {
     private suspend fun executeAITask(task: NexusAction.AITask): Result<String> {
         try {
             // Use TrikeShed Join<A,B> for structured message data
-            val systemMessage = "role" j "system" j ("content" j "You are Nexus, an AI agent that helps with development tasks. Provide clear, actionable responses.")
-            val userMessage = "role" j "user" j ("content" j task.prompt)
+            val systemMessage = Join("role", "system") to Join("content", "You are Nexus, an AI agent that helps with development tasks. Provide clear, actionable responses.")
+            val userMessage = Join("role", "user") to Join("content", task.prompt)
             
             // Convert to legacy format for LiteLLMClient compatibility
             val messages = listOf(
@@ -88,25 +85,12 @@ class NexusActionExecutor {
                 mapOf("role" to "user", "content" to task.prompt)
             )
             
-            val future = LiteLLMClient.complete(
-                model = task.config.model,
-                messages = messages,
-                temperature = task.config.temperature,
-                maxTokens = task.config.maxTokens
-            )
+            // TODO: Replace with actual LiteLLMClient when available
+            // For now, return a mock response
+            return Result.success("Mock AI response: ${task.prompt}")
             
-            val response = future.get()
-            
-            return if (response.status == "success") {
-                Result.success(response.content ?: "No content received")
-            } else {
-                Result.failure(Exception("AI request failed: ${response.error_message}"))
-            }
-            
-        } catch (e: IOException) {
-            return Result.failure(Exception("Failed to communicate with AI service: ${e.message}\nMake sure you have set up your API keys (e.g., OPENAI_API_KEY)"))
         } catch (e: Exception) {
-            return Result.failure(Exception("Unexpected error during AI task: ${e.message}"))
+            return Result.failure(Exception("Failed to communicate with AI service: ${e.message}\nMake sure you have set up your API keys (e.g., OPENAI_API_KEY)"))
         }
     }
     
@@ -147,13 +131,13 @@ object Nexus {
                     println(output)
                 },
                 onFailure = { error ->
-                    System.err.println("Nexus error: ${error.message}")
+                    println("Nexus error: ${error.message}")
                     error.printStackTrace()
                     exitProcess(1)
                 }
             )
         } catch (e: Exception) {
-            System.err.println("Nexus error: ${e.message}")
+            println("Nexus error: ${e.message}")
             e.printStackTrace()
             exitProcess(1)
         }

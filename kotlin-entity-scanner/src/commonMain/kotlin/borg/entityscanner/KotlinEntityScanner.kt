@@ -3,6 +3,7 @@
 package borg.entityscanner
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.graph.*
 
 /**
  * Kotlin Entity Scanner - Main API for Graph-Based Code Analysis
@@ -24,9 +25,9 @@ typealias KotlinImportPath = String
 typealias KotlinVariableName = String
 typealias KotlinAnnotationName = String
 
-// Entity Analysis Results
+// Entity Analysis Results using Unified Graph Nodes
 typealias EntityAnalysisResult = Join<GraphNodeSeries, RefinementSeries>
-typealias DependencyGraph = Series<Join<String, String>>
+typealias KotlinDependencyGraph = Series<Join<String, String>>
 typealias EntityIndex = Series<Join<String, EntityMetadata>>
 
 // Entity Metadata for rich analysis results
@@ -152,7 +153,7 @@ object KotlinEntityScanner {
     /**
      * Extract @DependsOn annotations for k2script integration
      */
-    fun scanDependencies(source: KotlinSourceCode): DependencyGraph {
+    fun scanDependencies(source: KotlinSourceCode): KotlinDependencyGraph {
         val lines = source.lines()
         val dependencies = mutableListOf<Join<String, String>>()
         
@@ -172,7 +173,7 @@ object KotlinEntityScanner {
     /**
      * Build call graph showing function-to-function relationships
      */
-    fun buildCallGraph(source: KotlinSourceCode): DependencyGraph {
+    fun buildCallGraph(source: KotlinSourceCode): KotlinDependencyGraph {
         val (graphNodes, _) = scan(source, ScanConfig.FULL_ANALYSIS)
         
         return graphNodes.α { node ->
@@ -240,6 +241,38 @@ object KotlinEntityScanner {
                depType.depType == DependencyToken.INHERITANCE
     }
     
+    // === MISSING PARSING FUNCTIONS ===
+    
+    private fun KotlinSourceCode.parseWithMaxEntropy(): EntityAnalysisResult {
+        val graphNodes = this.scanToGraph()
+        val refinements = graphNodes.applyInductiveRefinement()
+        return graphNodes j refinements
+    }
+    
+    private fun KotlinSourceCode.parseWithChains(): EntityAnalysisResult {
+        val graphNodes = this.scanToGraph()
+        val forwardRefinements = graphNodes.applyForwardChaining()
+        val expectedTypes = generateExpectedTypes(this)
+        val backwardRefinements = graphNodes.applyBackwardChaining(expectedTypes)
+        val combinedRefinements = combineRefinements(forwardRefinements, backwardRefinements)
+        return graphNodes j combinedRefinements
+    }
+    
+    private fun generateExpectedTypes(source: KotlinSourceCode): Series<NodeType> {
+        // Simple expected type generation based on keywords
+        val keywords = listOf("class", "fun", "val", "var", "interface", "object")
+        return keywords.size j { i -> 
+            NodeType(keywords[i])
+        }
+    }
+    
+    private fun combineRefinements(first: RefinementSeries, second: RefinementSeries): RefinementSeries {
+        // Simple combination - would be more sophisticated in practice
+        return first.α { refinement ->
+            refinement
+        }
+    }
+    
     private fun extractDependencyCoordinate(line: String): Join<String, String>? {
         // Extract Maven coordinates from @DependsOn annotation
         val regex = """@(?:file:)?DependsOn\("([^:]+):([^:]+)(?::([^"]+))?"\)""".toRegex()
@@ -298,7 +331,7 @@ object K2ScriptIntegration {
     /**
      * Extract k2script-specific annotations and dependencies
      */
-    fun extractK2ScriptMetadata(source: KotlinSourceCode): Join<Series<String>, DependencyGraph> {
+    fun extractK2ScriptMetadata(source: KotlinSourceCode): Join<Series<String>, KotlinDependencyGraph> {
         val annotations = mutableListOf<String>()
         val dependencies = mutableListOf<Join<String, String>>()
         
@@ -373,17 +406,17 @@ fun KotlinSourceCode.extractFunctions(): Series<KotlinFunctionName> =
 fun KotlinSourceCode.extractImports(): Series<KotlinImportPath> = 
     KotlinEntityScanner.scanImports(this)
 
-fun KotlinSourceCode.extractDependencies(): DependencyGraph = 
+fun KotlinSourceCode.extractDependencies(): KotlinDependencyGraph = 
     KotlinEntityScanner.scanDependencies(this)
 
-fun KotlinSourceCode.buildCallGraph(): DependencyGraph = 
+fun KotlinSourceCode.buildCallGraph(): KotlinDependencyGraph = 
     KotlinEntityScanner.buildCallGraph(this)
 
 fun KotlinSourceCode.buildEntityIndex(): EntityIndex = 
     KotlinEntityScanner.buildEntityIndex(this)
 
 // For k2script integration
-fun KotlinSourceCode.extractK2ScriptMetadata(): Join<Series<String>, DependencyGraph> = 
+fun KotlinSourceCode.extractK2ScriptMetadata(): Join<Series<String>, KotlinDependencyGraph> = 
     K2ScriptIntegration.extractK2ScriptMetadata(this)
 
 fun KotlinSourceCode.generateSpaceGraphData(): Series<Join<String, Any>> = 

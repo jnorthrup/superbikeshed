@@ -5,6 +5,7 @@ import borg.trikeshed.parse.TypeEvidence
 import borg.trikeshed.lib.*
 import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.common.*
+import borg.trikeshed.graph.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -188,11 +189,11 @@ data class TaxonomicGraph(
     /**
      * Find related entities with attention scores
      */
-    fun findRelatedEntities(entityId: SemanticId, threshold: AttentionScore = 0.5): List<Pair<SemanticId, AttentionScore>> {
+    fun findRelatedEntities(entityId: SemanticId, threshold: AttentionScore = 0.5): List<Join<SemanticId, AttentionScore>> {
         val entity = entities[entityId] ?: return emptyList()
         return entities.entries
             .filter { it.key != entityId }
-            .map { it.key to calculateAttention(entityId, it.key) }
+            .map { it.key j calculateAttention(entityId, it.key) }
             .filter { it.second >= threshold }
             .sortedByDescending { it.second }
     }
@@ -380,9 +381,9 @@ class TaxonomicPandasDSL(private val graph: TaxonomicGraph) {
     /**
      * Get related entities for a given entity
      */
-    fun related(entityId: SemanticId, threshold: AttentionScore = 0.5): List<Pair<TaxonomicEntity, AttentionScore>> {
-        return graph.findRelatedEntities(entityId, threshold).map { (id, score) ->
-            graph.entities[id]!! to score
+    fun related(entityId: SemanticId, threshold: AttentionScore = 0.5): List<Join<TaxonomicEntity, AttentionScore>> {
+        return graph.findRelatedEntities(entityId, threshold).map { join ->
+            graph.entities[join.a]!! j join.b
         }
     }
     

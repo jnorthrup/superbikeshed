@@ -33,7 +33,9 @@ class IntelliJProjectParser {
         }
 
         val projectName = parseProjectName(ideaDir, projectRoot)
-        val (projectSdkName, projectJdkVersion) = parseProjectSdk(ideaDir)
+        val sdkJoin = parseProjectSdk(ideaDir)
+        val projectSdkName = sdkJoin.a
+        val projectJdkVersion = sdkJoin.b
         var projectGroupId: String? = null
         var projectVersion: String? = null
 
@@ -233,14 +235,14 @@ class IntelliJProjectParser {
         return imlPaths
     }
 
-    private fun parseProjectSdk(ideaDir: Path): Pair<String?, String?> {
+    private fun parseProjectSdk(ideaDir: Path): Join<String?, String?> {
         val miscXmlFile = ideaDir.resolve("misc.xml") // Common location
         // Other potential files: projectRootManager.xml, jdk.table.xml (more complex)
         // For simplicity, focusing on misc.xml's ProjectRootManager component first.
 
         if (!miscXmlFile.toFile().exists()) {
              System.err.println("Warning: misc.xml not found at $miscXmlFile. Project SDK info might be missing.")
-            return Pair(null, null)
+            return null j null
         }
 
         var jdkName: String? = null
@@ -267,7 +269,7 @@ class IntelliJProjectParser {
             System.err.println("Error parsing misc.xml for Project SDK: ${e.message}")
         }
         // We return jdkName as projectSdkName. The version might be part of this name or requires deeper inspection.
-        return Pair(jdkName, jdkName) // Using jdkName for both name and "version" for now.
+        return jdkName j jdkName // Using jdkName for both name and "version" for now.
     }
 
     // parseProjectSdk remains private, tested via parseProject integration.
