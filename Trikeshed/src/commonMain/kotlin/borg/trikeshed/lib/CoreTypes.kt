@@ -3,6 +3,7 @@
 package borg.trikeshed.lib
 
 import kotlin.reflect.KClassifier
+import kotlinx.datetime.Clock
 
 /** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
  * # TrikeShed Metaclass Architecture
@@ -680,7 +681,7 @@ typealias Tensor<T> = MetaSeries<Shape, T>
  * ```kotlin
  * val data = (10 j { it * it }) j mapOf(
  *     "name" to "squares",
- *     "created" to System.currentTimeMillis(),
+ *     "created" to Clock.System.now().toEpochMilliseconds(),
  *     "version" to "1.0"
  * )
  * ```

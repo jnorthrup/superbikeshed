@@ -1,6 +1,7 @@
 package borg.trikeshed.ccek
 
 import borg.trikeshed.lib.Indexed
+import kotlinx.datetime.Clock
 
 /**
  * CCEK (Control, Context, Environment, Knowledge)
@@ -14,28 +15,11 @@ data class CcekContext(
     val knowledge: Knowledge
 )
 
-data class Control(val executionId: String)
-data class Context(val sourceIp: String, val securityToken: String?)
-
-// The Environment carries the specific "payload" and action.
-// The handler receives this and knows exactly what to do.
-data class Environment(
-    val action: String,
-    val payload: Any // This could be a Cursor, a Series, or any other TrikeShed type
-)
-
-// The Knowledge contains the rules for this specific operation.
-data class Knowledge(
-    val rules: Indexed<(Any) -> Any>, // A series of transformation functions
-    val validator: (Any) -> Boolean
-)
-
-// === CORE CCEK TYPES ===
-
 /**
  * Control - represents the flow control and execution context
  */
 data class Control(
+    val executionId: String,
     val phase: ExecutionPhase = ExecutionPhase.INIT,
     val priority: Int = 0,
     val timeout: Long? = null,
@@ -46,18 +30,22 @@ data class Control(
  * Context - represents the current execution context and state
  */
 data class Context(
-    val sessionId: String,
+    val sourceIp: String, 
+    val securityToken: String?,
+    val sessionId: String = "",
     val userId: String? = null,
     val metadata: Map<String, String> = emptyMap(),
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds()
 )
 
 /**
  * Environment - represents the runtime environment and configuration
  */
 data class Environment(
-    val platform: String,
-    val version: String,
+    val action: String,
+    val payload: Any, // This could be a Cursor, a Series, or any other TrikeShed type
+    val platform: String = "",
+    val version: String = "",
     val config: Map<String, Any> = emptyMap(),
     val capabilities: Set<String> = emptySet()
 )
@@ -66,8 +54,10 @@ data class Environment(
  * Knowledge - represents the domain knowledge and data schema
  */
 data class Knowledge(
-    val schema: DataSchema,
-    val rules: List<TransformationRule> = emptyList(),
+    val rules: Indexed<(Any) -> Any>, // A series of transformation functions
+    val validator: (Any) -> Boolean,
+    val schema: DataSchema? = null,
+    val transformationRules: List<TransformationRule> = emptyList(),
     val constraints: List<Constraint> = emptyList()
 )
 
@@ -237,7 +227,7 @@ class CCEKEngine(
     
     private suspend fun executeTransformation(data: Any, step: TransformationStep): Any {
         // Apply transformation rules from knowledge
-        val sortedRules = knowledge.rules.sortedByDescending { it.priority }
+        val sortedRules = knowledge.transformationRules.sortedByDescending { it.priority }
         
         var transformedData = data
         for (rule in sortedRules) {
@@ -254,7 +244,7 @@ class CCEKEngine(
         return when (step.format) {
             SerializationFormat.JSON -> serializeToJson(data)
             SerializationFormat.PROTOBUF -> serializeToProtobuf(data)
-            SerializationFormat.CUSTOM -> serializeCustom(data, step.customFormat)
+            SerializationFormat.CUSTOM -> serializeCustom(data, step.customFormat ?: "default")
         }
     }
     
@@ -432,7 +422,7 @@ fun ccekPipeline(name: String, block: CCEKDSL.() -> Unit): TransformationPipelin
 suspend fun executeCCEK(
     data: Any,
     pipeline: TransformationPipeline,
-    control: Control = Control(),
+    control: Control = Control("default-execution-id"),
     context: Context,
     environment: Environment,
     knowledge: Knowledge

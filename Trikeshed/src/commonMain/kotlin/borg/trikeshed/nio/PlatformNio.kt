@@ -2,6 +2,7 @@ package borg.trikeshed.nio
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.datetime.Clock
 
 /**
  * Expected interface for a platform-agnostic ByteBuffer.
@@ -100,7 +101,7 @@ expect abstract class PlatformSocketAddress
 
 /**
  * Expected function to get current time in milliseconds.
- * This abstracts System.currentTimeMillis().
+ * This abstracts Clock.System.now().toEpochMilliseconds().
  */
 expect fun platformCurrentTimeMillis(): Long
 

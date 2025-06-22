@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform") version "2.1.21"
     kotlin("plugin.serialization") version "2.1.21"
     `maven-publish`
+    signing
 }
 
 group = "borg.trikeshed"
@@ -89,4 +90,58 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
         )
     }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            groupId = project.group.toString()
+            artifactId = project.name
+            version = project.version.toString()
+            
+            from(components["kotlin"])
+            
+            pom {
+                name.set("TrikeShed")
+                description.set("TrikeShed - Core multiplatform data structures and algorithms")
+                url.set("https://github.com/superbikeshed/superbikeshed")
+                
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("superbikeshed")
+                        name.set("SuperBikeShed Team")
+                        email.set("team@superbikeshed.org")
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/superbikeshed/superbikeshed.git")
+                    developerConnection.set("scm:git:ssh://github.com/superbikeshed/superbikeshed.git")
+                    url.set("https://github.com/superbikeshed/superbikeshed")
+                }
+            }
+        }
+    }
+    
+    repositories {
+        maven {
+            val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
+            
+            credentials {
+                username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
+                password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
+            }
+        }
+    }
+}
+
+signing {
+    sign(publishing.publications["mavenJava"])
 }

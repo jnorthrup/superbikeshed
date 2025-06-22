@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 /**
  * I/O Daemon that coordinates high-performance I/O operations
@@ -77,7 +78,7 @@ data class IODaemonOperation(
     
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (this::class != other?.this::class) return false
         
         other as IODaemonOperation
         
@@ -112,7 +113,7 @@ data class IODaemonResult(
     val bytesTransferred: Int,
     val error: Int = 0,
     val flags: Int = 0,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds()
 ) {
     val isSuccess: Boolean get() = error == 0
     val isError: Boolean get() = error != 0

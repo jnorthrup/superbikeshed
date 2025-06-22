@@ -3,14 +3,6 @@ package borg.trikeshed.io
 import borg.trikeshed.lib.LongIndexed
 import borg.trikeshed.lib.Usable
 
-interface FileBuffer : LongIndexed, Usable {
-    val path: String
-    val size: Long
-    
-    fun open()
-    fun close()
-}
-
 expect class FileBuffer(
     filename: String,
     initialOffset: Long,

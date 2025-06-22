@@ -37,7 +37,7 @@ interface AsyncIOEngine {
     fun completedOperations(): Flow<IOResult>
     
     companion object {
-        fun create(): AsyncIOEngine
+        expect fun create(): AsyncIOEngine
     }
 }
 
@@ -57,7 +57,7 @@ data class IOOperation(
     
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (this::class != other!!::class) return false
         
         other as IOOperation
         
