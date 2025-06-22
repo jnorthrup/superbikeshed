@@ -1,6 +1,6 @@
 package borg.trikeshed.lib
 
-import kotlinx.cinterop.*
+// Platform-specific imports moved to platform modules
 
 fun logDebug(block: () -> String) {
     println("[DEBUG] ${block()}")
@@ -26,7 +26,7 @@ fun humanReadableByteCountIEC(bytes: Long): String {
         size /= 1024.0
         unitIndex++
     }
-    return "%.1f %s".format(size, units[unitIndex])
+    return "${(size * 10).toInt() / 10.0} ${units[unitIndex]}"
 }
 
 fun humanReadableByteCountSI(bytes: Long): String {
@@ -37,10 +37,8 @@ fun humanReadableByteCountSI(bytes: Long): String {
         size /= 1000.0
         unitIndex++
     }
-    return "%.1f %s".format(size, units[unitIndex])
+    return "${(size * 10).toInt() / 10.0} ${units[unitIndex]}"
 }
 
-expect fun writeULong(value: ULong, file: CPointer<out CPointed>?)
-expect fun writeUShort(value: UShort, file: CPointer<out CPointed>?)
-expect fun readULong(file: CPointer<out CPointed>?): ULong
-expect fun readUShort(file: CPointer<out CPointed>?): UShort 
+// File I/O functions moved to platform-specific modules
+// These will be implemented in nativeMain with proper CPointer types 

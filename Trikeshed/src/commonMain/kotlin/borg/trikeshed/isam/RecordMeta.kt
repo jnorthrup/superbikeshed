@@ -1,7 +1,5 @@
 package borg.trikeshed.isam
 
-import borg.trikeshed.cursor.ColumnMeta
-import borg.trikeshed.cursor.TypeMemento
 import borg.trikeshed.isam.meta.IOMemento
 
 /**
@@ -16,19 +14,19 @@ import borg.trikeshed.isam.meta.IOMemento
  * @param child a child RecordMeta for a child record, for instance, CSV conversion to ISAM might define two RecordMetas for two steps
  */
 class RecordMeta(
-    override val name: String,
+    val name: String,
     /** enum-resident Type describing byte marshalling strategies - a specialization of TypeMemento */
-    override val type: IOMemento,
+    val type: IOMemento,
     /** context-specific byte offset beginning*/
     val begin: Int = -1,
     /** context-specific byte offset ending*/
     val end: Int = -1,
     /** a lambda that converts a byte[] to downstream, often but not necessarily the IoMemento utility */
-    val decoder: (ByteArray) -> Any? = type.createDecoder(end - begin),
+    val decoder: (ByteArray) -> Any? = { byteArray -> byteArray }, // Placeholder decoder
     /** a lambda that produces a byte[] for marshalling to disk or elsewhere */
-    val encoder: (Any?) -> ByteArray = type.createEncoder(end - begin),
+    val encoder: (Any?) -> ByteArray = { value -> value.toString().encodeToByteArray() }, // Placeholder encoder
     /** open to interpretation, for instance, CSV conversion to ISAM might define two RecordMetas for two steps*/
     var child: RecordMeta? = null,
-) : ColumnMeta {
+) {
     override fun toString(): String = "RecordMeta(name='$name', type=$type, begin=$begin, end=$end, decoder=$decoder, encoder=$encoder, child=$child)"
 } 

@@ -3,7 +3,7 @@
 package borg.trikeshed.parse.json
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.Either
+// Either type removed - using Result instead
 import kotlin.jvm.JvmInline
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Indexed
@@ -53,7 +53,7 @@ typealias JsonValueSeries = Indexed<JsonValue>
 // Error Handling Types
 @JvmInline
 value class JsonError(val message: String)
-typealias JsonResult<T> = Either<JsonError, T>
+typealias JsonResult<T> = Result<T>
 
 /**
  * JSON Token Types - Encoded as UByte for performance
@@ -95,10 +95,10 @@ object TrikeShedJsonScanner {
      * Scan JSON string into token series using α transforms
      */
     fun scan(jsonString: JsonStringValue): JsonResult<JsonTokenSeries> {
-        if (jsonString.isEmpty()) return Either.right(emptySeries())
+        if (jsonString.isEmpty()) return Result.success(emptySeries())
         
-        val chars = jsonString.toCharArray().toSeries()
-        return Either.right(tokenize(chars))
+        val chars = jsonString.toList().toSeries()
+        return Result.success(tokenize(chars))
     }
     
     /**
@@ -295,9 +295,9 @@ object TrikeShedJsonScanner {
     fun parseNumberValue(jsonString: JsonStringValue, bounds: JsonValueBounds): JsonResult<JsonNumberValue> {
         return try {
             val str = getStringValue(jsonString, bounds)
-            Either.right(str.toDouble())
+            Result.success(str.toDouble())
         } catch (e: NumberFormatException) {
-            Either.left(JsonError("Invalid number format"))
+            Result.failure(Exception("Invalid number format"))
         }
     }
     
@@ -356,10 +356,8 @@ object JsonScannerExample {
         // Scan using α transforms and Join composition
         val scanResult = jsonText.scanJson()
         
-        when (scanResult) {
-            is Either.Right -> {
-                val tokens = scanResult.value
-                
+        scanResult.fold(
+            onSuccess = { tokens ->
                 // Extract structural information using α transforms
                 val structural = tokens.extractStructural()
                 val nesting = structural.analyzeNesting()
@@ -369,10 +367,10 @@ object JsonScannerExample {
                 println("Tokens: ${tokens.play.toList()}")
                 println("Nesting levels: ${nesting.play.toList()}")
                 println("Values: ${values.play.toList()}")
+            },
+            onFailure = { error ->
+                println("Scan error: ${error.message}")
             }
-            is Either.Left -> {
-                println("Scan error: ${scanResult.value.message}")
-            }
-        }
+        )
     }
 }

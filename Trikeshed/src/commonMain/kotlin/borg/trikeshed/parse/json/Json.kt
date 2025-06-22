@@ -4,7 +4,7 @@ package borg.trikeshed.parse.json
 
 import borg.trikeshed.lib.*
 
-// Lightning JSON Bridge - Complete implementation with full functionality
+// JSON Bridge - Simple implementation using existing parsers
 
 typealias JsonBounds = Twin<Int>
 typealias JsonCommaIndices = Indexed<Int>
@@ -13,41 +13,75 @@ typealias JsonSegmentContent = Indexed<Char>
 typealias JsonSegment = Join<JsonBounds, JsonSegmentContent>
 typealias JsonParseContext = Join<JsonStructuralIndices, Indexed<Char>>
 
-// Lightning JSON Implementation - Complete
+// JSON Implementation - Using existing TrikeShed parsers
 object Json {
     fun parse(jsonString: String): Indexed<UByte> {
-        return LightningJson.parseToBitmap(jsonString)
+        // Use existing bitmap creation from JsonTensorFactory
+        return createBitmapAsSeries(jsonString.encodeToByteArray().toUByteArray())
     }
     
     fun stringify(value: Any): String {
-        return LightningJson.stringify(value)
+        // Simple JSON stringify - basic implementation
+        return when (value) {
+            is String -> "\"$value\""
+            is Number -> value.toString()
+            is Boolean -> value.toString()
+            null -> "null"
+            is List<*> -> "[${value.joinToString(",") { stringify(it ?: "null") }}]"
+            is Map<*, *> -> "{${value.entries.joinToString(",") { "\"${it.key}\":${stringify(it.value)}" }}}"
+            else -> "\"$value\""
+        }
     }
     
     fun extractValues(jsonString: String): Indexed<String> {
-        return LightningJson.extractValues(jsonString)
+        // Use existing parser from JsonTensorFactory
+        return parseJsonToTensor(jsonString)
     }
     
     fun findStructuralIndices(jsonString: String): Indexed<Int> {
-        return LightningJson.findStructuralIndices(jsonString)
+        // Simple structural character detection
+        val indices = mutableListOf<Int>()
+        jsonString.forEachIndexed { index, char ->
+            if (char in "{}[]:,") {
+                indices.add(index)
+            }
+        }
+        return indices.toSeries()
     }
     
-    // Complete reify implementation
+    // Simple reify implementation
     fun reify(jsonString: String): Any? {
-        return LightningJson.reify(jsonString)
+        return try {
+            when {
+                jsonString == "null" -> null
+                jsonString == "true" -> true
+                jsonString == "false" -> false
+                jsonString.startsWith("\"") && jsonString.endsWith("\"") -> 
+                    jsonString.substring(1, jsonString.length - 1)
+                jsonString.toDoubleOrNull() != null -> jsonString.toDouble()
+                else -> jsonString
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
     
-    // Complete index implementation
+    // Simple index implementation
     fun index(jsonString: String): JsonStructuralIndices {
-        return LightningJson.index(jsonString)
+        val indices = findStructuralIndices(jsonString)
+        val bounds = 2 j { i -> if (i == 0) 0 else jsonString.length }
+        val commaIndices = indices.play.filter { jsonString[it] == ',' }.toSeries()
+        return bounds j commaIndices
     }
     
-    // Complete jsPath implementation
+    // Simple jsPath implementation
     fun jsPath(context: JsonParseContext, path: JsPath, reifyResult: Boolean = true): Any? {
-        return LightningJson.jsPath(context, path, reifyResult)
+        // Placeholder implementation
+        return null
     }
 }
 
-// Lightning JSON is the performance implementation
+// JSON extension functions
 fun String.parseJson(): Indexed<UByte> = Json.parse(this)
 fun Any.toJsonString(): String = Json.stringify(this)
 fun String.reifyJson(): Any? = Json.reify(this)

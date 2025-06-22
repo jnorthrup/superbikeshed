@@ -3,7 +3,7 @@ package borg.trikeshed.net.quic
 import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.PlatformInetSocketAddress
 import kotlinx.coroutines.channels.Channel
-import kotlin.jvm.Volatile
+import kotlin.concurrent.Volatile
 
 /**
  * Represents a QUIC stream

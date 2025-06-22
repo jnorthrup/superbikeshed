@@ -1,5 +1,7 @@
 package borg.trikeshed.lib
 
+import borg.trikeshed.lib.j
+
 /**
  * Slices a tensor along a specified dimension.
  *
@@ -11,19 +13,27 @@ fun <T> Tensor<T>.slice(dimension: Int, index: Int): Tensor<T> {
     require(dimension >= 0 && dimension < rank) { "Dimension $dimension out of bounds for rank $rank" }
     require(index >= 0 && index < shape[dimension]) { "Index $index out of bounds for dimension $dimension (size ${shape[dimension]})" }
 
-    val newShape = shape.filterIndexed { i, _ -> i != dimension }.toIntArray()
+    // Create new shape by removing the specified dimension
+    val newShapeValues = mutableListOf<Int>()
+    for (i in 0 until rank) {
+        if (i != dimension) {
+            newShapeValues.add(shape[i])
+        }
+    }
+    val newShape: Shape = newShapeValues.size j { i -> newShapeValues[i] }
 
     return newShape j { newCoords ->
-        val originalCoords = IntArray(rank)
-        var newCoordIndex = 0
-        for (i in 0 until rank) {
-            if (i == dimension) {
-                originalCoords[i] = index
+        // Map new coordinates to original coordinates
+        val originalCoords: Shape = rank j { i ->
+            if (i < dimension) {
+                newCoords[i]
+            } else if (i == dimension) {
+                index
             } else {
-                originalCoords[i] = newCoords[newCoordIndex++]
+                newCoords[i - 1]
             }
         }
-        this(originalCoords)
+        this.accessor(originalCoords)
     }
 }
 
@@ -31,13 +41,16 @@ fun <T> Tensor<T>.slice(dimension: Int, index: Int): Tensor<T> {
  * Reshapes a tensor to a new shape.
  * The total number of elements must remain the same.
  *
- * @param newShape The new shape for the tensor.
+ * @param newShapeValues The new shape dimensions for the tensor.
  * @return A new tensor with the specified shape, sharing the same underlying data.
  */
-fun <T> Tensor<T>.reshape(vararg newShape: Int): Tensor<T> {
-    val newTotalSize = newShape.reduce { acc, i -> acc * i }
-    require(newTotalSize == totalSize) { "New shape $newShape must have the same total number of elements as original ($totalSize)" }
+fun <T> Tensor<T>.reshape(vararg newShapeValues: Int): Tensor<T> {
+    val newTotalSize = newShapeValues.reduce { acc, i -> acc * i }
+    require(newTotalSize == totalSize) { "New shape ${newShapeValues.toList()} must have the same total number of elements as original ($totalSize)" }
 
+    // Create new shape
+    val newShape: Shape = newShapeValues.size j { i -> newShapeValues[i] }
+    
     // This is a view, so the accessor needs to map new coordinates to old
     val originalShape = this.shape
     val originalAccessor = this.accessor
@@ -48,15 +61,17 @@ fun <T> Tensor<T>.reshape(vararg newShape: Int): Tensor<T> {
         var multiplier = 1
         for (i in newCoords.size - 1 downTo 0) {
             linearIndex += newCoords[i] * multiplier
-            multiplier *= newShape[i]
+            multiplier *= newShapeValues[i]
         }
 
         // Map linear index back to originalCoords
-        val oldCoords = IntArray(originalShape.size)
-        var remainingIndex = linearIndex
-        for (i in originalShape.size - 1 downTo 0) {
-            oldCoords[i] = remainingIndex % originalShape[i]
-            remainingIndex /= originalShape[i]
+        val oldCoords: Shape = originalShape.size j { i ->
+            val remainingIndex = linearIndex
+            var result = remainingIndex
+            for (j in originalShape.size - 1 downTo i + 1) {
+                result /= originalShape[j]
+            }
+            result % originalShape[i]
         }
         originalAccessor(oldCoords)
     }
@@ -69,6 +84,7 @@ fun <T> Tensor<T>.reshape(vararg newShape: Int): Tensor<T> {
  */
 fun <T> Tensor<T>.transpose(): Tensor<T> {
     require(rank == 2) { "Transpose is only supported for 2D tensors" }
-    val (rows, cols) = shape
-    return TensorCursor(cols, rows) { c, r -> this(r, c) }
+    val rows = shape[0]
+    val cols = shape[1]
+    return TensorCursor(cols, rows) { c, r -> this.accessor(2 j { i -> if (i == 0) r else c }) }
 }

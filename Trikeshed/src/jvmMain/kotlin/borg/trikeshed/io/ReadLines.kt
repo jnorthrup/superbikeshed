@@ -1,4 +1,4 @@
-package borg.trikeshed.io
+package borg.trikeshed.common
 
 import java.nio.file.Files
 import java.nio.file.Paths

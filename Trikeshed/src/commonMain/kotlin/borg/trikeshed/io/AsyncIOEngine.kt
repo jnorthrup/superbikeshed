@@ -1,6 +1,7 @@
 package borg.trikeshed.io
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * Common interface for async I/O engines
@@ -37,7 +38,14 @@ interface AsyncIOEngine {
     fun completedOperations(): Flow<IOResult>
     
     companion object {
-        expect fun create(): AsyncIOEngine
+        fun create(): AsyncIOEngine = object : AsyncIOEngine {
+            override suspend fun initialize() { /* placeholder */ }
+            override suspend fun cleanup() { /* placeholder */ }
+            override suspend fun read(handle: IOHandle, buffer: ByteArray, offset: Long): Int = 0
+            override suspend fun write(handle: IOHandle, data: ByteArray, offset: Long): Int = 0
+            override suspend fun submitBatch(operations: List<IOOperation>): List<IOResult> = emptyList()
+            override fun completedOperations(): Flow<IOResult> = emptyFlow()
+        }
     }
 }
 
@@ -93,6 +101,5 @@ data class IOResult(
 }
 
 /**
- * I/O handle type
- */
-typealias IOHandle = Int 
+ * I/O handle type - using interface IOHandle from IOHandle.kt
+ */ 
