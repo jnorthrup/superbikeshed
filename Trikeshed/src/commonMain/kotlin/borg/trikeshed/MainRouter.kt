@@ -166,10 +166,8 @@ class RouteContext(val args: Array<String>) {
     }
     
     // Jetsam gossip
-    fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
-        runBlocking {
-            JetsamGossipManager.block()
-        }
+    suspend fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
+        JetsamGossipManager.block()
     }
     
     // Cursor operations
@@ -235,7 +233,7 @@ class CursorContext(private val cursor: DatabaseCursor) {
 /**
  * Main entry point using DSL
  */
-fun main(args: Array<String>) = MainRouter.trikeshed(args) {
+suspend fun main(args: Array<String>) = MainRouter.trikeshed(args) {
     
     // C10K server with static files and servlets
     route("server") {
@@ -245,8 +243,9 @@ fun main(args: Array<String>) = MainRouter.trikeshed(args) {
             enableQuic = true
         }
         
+        val staticRootPath = arg(1, "./static")
         val servlets = servlets {
-            scriptRoot = "$staticRoot/servlets"
+            scriptRoot = "$staticRootPath/servlets"
             cacheScripts = true
         }
         

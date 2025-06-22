@@ -7,6 +7,7 @@ import borg.trikeshed.distributed.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 
 /**
  * Production Main - Ready to run today
@@ -14,8 +15,7 @@ import kotlinx.coroutines.*
  */
 object ProductionMain {
     
-    @JvmStatic
-    fun main(args: Array<String>) = runBlocking {
+    suspend fun main(args: Array<String>) = coroutineScope {
         val command = args.firstOrNull() ?: "help"
         
         when (command) {
@@ -27,7 +27,7 @@ object ProductionMain {
         }
     }
     
-    private suspend fun runC10KServer(args: Array<String>) = coroutineScope {
+    private suspend fun runC10KServer(args: Array<String>): Nothing = coroutineScope {
         val port = args.getOrNull(1)?.toIntOrNull() ?: 8080
         val staticRoot = args.getOrNull(2) ?: "./static"
         
@@ -55,7 +55,7 @@ object ProductionMain {
         awaitCancellation()
     }
     
-    private suspend fun runRTSHost(args: Array<String>) = coroutineScope {
+    private suspend fun runRTSHost(args: Array<String>): Nothing = coroutineScope {
         val port = args.getOrNull(1)?.toIntOrNull() ?: 7777
         val maxPlayers = args.getOrNull(2)?.toIntOrNull() ?: 8
         
@@ -77,12 +77,12 @@ object ProductionMain {
         awaitCancellation()
     }
     
-    private suspend fun runIPFSNode(args: Array<String>) = coroutineScope {
+    private suspend fun runIPFSNode(args: Array<String>): Nothing = coroutineScope {
         println("Starting IPFS Node")
         
         // Generate peer ID
         val peerId = PeerId(
-            id = "node_${System.currentTimeMillis()}".toByteArray().let { 
+            id = "node_${Clock.System.now().toEpochMilliseconds()}".toByteArray().let { 
                 it.size j { i -> it[i] }
             }
         )
@@ -109,7 +109,7 @@ object ProductionMain {
         awaitCancellation()
     }
     
-    private suspend fun runDistributedNode(args: Array<String>) = coroutineScope {
+    private suspend fun runDistributedNode(args: Array<String>): Nothing = coroutineScope {
         val mode = args.getOrNull(1) ?: "hybrid"
         
         println("Starting Distributed Storage Node")
@@ -120,7 +120,7 @@ object ProductionMain {
         // Initialize with all components
         val context = storage.initialize(
             peerId = PeerId(
-                id = "distributed_${System.currentTimeMillis()}".toByteArray().let {
+                id = "distributed_${Clock.System.now().toEpochMilliseconds()}".toByteArray().let {
                     it.size j { i -> it[i] }
                 }
             ),
