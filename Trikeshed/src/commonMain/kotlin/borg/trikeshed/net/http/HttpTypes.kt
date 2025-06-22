@@ -140,6 +140,27 @@ data class HttpResponse(
 
 suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation needed")
 
+// Protocol upgrade types
+@JvmInline value class ProtocolName(val value: String)
+@JvmInline value class ProtocolVersion(val value: String)
+
+data class UpgradeProtocol(
+    val name: ProtocolName,
+    val version: ProtocolVersion
+)
+
+object HttpUpgrade {
+    fun canUpgrade(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>, protocol: ProtocolName): Boolean {
+        val upgradeHeader = (0 until headers.a).asSequence().map { headers.b(it) }
+            .find { it.a.value.equals("Upgrade", ignoreCase = true) }?.b?.value
+        val connectionHeader = (0 until headers.a).asSequence().map { headers.b(it) }
+            .find { it.a.value.equals("Connection", ignoreCase = true) }?.b?.value
+        
+        return upgradeHeader?.equals(protocol.value, ignoreCase = true) == true &&
+               connectionHeader?.contains("upgrade", ignoreCase = true) == true
+    }
+}
+
 // HTTP utilities
 object HttpUtils {
     fun parseHeaders(headerString: String): Indexed<Join<HttpHeaderName, HttpHeaderValue>> {

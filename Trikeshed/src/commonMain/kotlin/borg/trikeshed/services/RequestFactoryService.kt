@@ -55,3 +55,11 @@ object RequestFactoryRegistry {
     fun validateMethod(methodName: String, params: Any): Boolean = 
         methodValidators[methodName]?.invoke(params) ?: true
 }
+
+/**
+ * Stub interface for DealService
+ * TODO: Implement proper DealService
+ */
+interface DealService {
+    fun process(data: ByteArray): ByteArray
+}

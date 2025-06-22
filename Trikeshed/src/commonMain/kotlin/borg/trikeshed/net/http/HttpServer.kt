@@ -4,12 +4,14 @@ package borg.trikeshed.net.http
 import borg.trikeshed.ccek.CcekContext
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.*
-// import borg.trikeshed.services.DealService
-// import borg.trikeshed.services.*
+import borg.trikeshed.services.DealService
+import borg.trikeshed.services.RequestFactoryService
 import borg.trikeshed.io.*
 import borg.trikeshed.net.http.HttpParser
 import kotlin.jvm.JvmInline
 import kotlinx.coroutines.*
+import borg.trikeshed.nio.PlatformByteBuffer
+import borg.trikeshed.nio.ByteBuffer
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
 
@@ -87,22 +89,9 @@ class HttpServer(
         serverChannel.bind(config.port.value)
         println("TrikeShed HTTP Server started on ${config.host.value}:${config.port.value}")
 
-        reactor.register(serverChannel) {
-            val clientChannel = serverChannel.accept()
-            if (clientChannel != null) {
-                clientChannel.configureBlocking(false)
-                // In a real implementation, this would hand off to the MainOrchestrator
-                // to build the CCEK and call processRequest.
-                reactor.reactorScope.launch {
-                    println("Accepted connection from ${clientChannel.remoteAddress}")
-                    clientChannel.close() // Simplified for this example
-                }
-            }
-            null // No further reaction needed
-        }
-        
+        reactor.register(serverChannel, 1) // Register for accept operations
         println("TrikeShed HTTP Server running on port ${config.port.value}")
-        reactor.run()
+        reactor.start()
     }
 
     suspend fun stop() {
@@ -124,7 +113,7 @@ class HttpConnectionHandler(
         try {
             // Read request data directly into ByteArray
             val buffer = ByteArray(8192) // 8KB buffer
-            val bytesRead = channel.read(ByteBuffer.wrap(buffer))
+            val bytesRead = channel.read(PlatformByteBuffer.wrap(buffer, 0, buffer.size))
             if (bytesRead <= 0) {
                 channel.close()
                 return
@@ -134,13 +123,31 @@ class HttpConnectionHandler(
             val requestString = requestBytes.decodeToString()
 
             // Use RFC7230 parser
-            val requestMessage = HttpParser.parseHttpMessage(requestString.toSeries())
+            // Parse HTTP message from string
+            val requestMessage = try {
+                val request = HttpRequest.parse(requestBytes)
+                object : HttpMessage {
+                    override val startLine = object : HttpRequestLine {
+                        override val method = request.method.name
+                        override val requestTarget = request.path.value
+                        override val httpVersion = request.version.value
+                    }
+                    override val headerFields: Indexed<Join<String, String>> = request.headers.α { 
+                        Join(it.a.value, it.b.value) 
+                    }
+                    override val messageBody = request.body.decodeToString()
+                }
+            } catch (e: Exception) {
+                null
+            }
             if (requestMessage == null) {
                 sendErrorResponse(400, "Bad Request")
                 return
             }
 
-            val request = convertToHttpRequest(requestMessage)
+            val request = convertToHttpRequest(requestMessage ?: return run {
+                sendErrorResponse(400, "Bad Request")
+            })
             if (request == null) {
                 sendErrorResponse(400, "Bad Request")
                 return
@@ -154,7 +161,7 @@ class HttpConnectionHandler(
 
             // Write response directly using ByteArray
             val responseBytes = response.toByteArray()
-            channel.write(ByteBuffer.wrap(responseBytes))
+            channel.write(PlatformByteBuffer.wrap(responseBytes, 0, responseBytes.size))
         } catch (e: Exception) {
             println("Connection error: ${e.message}")
         } finally {
@@ -164,14 +171,16 @@ class HttpConnectionHandler(
 
     private fun convertToHttpRequest(message: HttpMessage): HttpRequest? {
         val startLine = message.startLine as? HttpRequestLine ?: return null
-        val headers = message.headerFields.α { HttpHeaderName(it.a.value) j HttpHeaderValue(it.b.value) }
-        return HttpRequest(startLine.method, HttpRequestPath(startLine.requestTarget.value), headers, message.messageBody, startLine.httpVersion)
+        val headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>> = message.headerFields.α { 
+            HttpHeaderName(it.a) j HttpHeaderValue(it.b) 
+        }
+        return HttpRequest(HttpMethod.valueOf(startLine.method), HttpRequestPath(startLine.requestTarget), headers, message.messageBody.toByteArray(), HttpVersion(startLine.httpVersion))
     }
 
     private suspend fun sendErrorResponse(code: Int, phrase: String) {
         val response = HttpResponse(HttpStatusCode(code), HttpReasonPhrase(phrase))
         val responseBytes = response.toByteArray()
-        channel.write(ByteBuffer.wrap(responseBytes))
+        channel.write(PlatformByteBuffer.wrap(responseBytes, 0, responseBytes.size))
         channel.close()
     }
 }
@@ -191,7 +200,7 @@ fun createStaticFileHandler(rootDir: String): HttpHandler {
         } else {
             // Opportunistic Gzip
             val acceptEncoding = request.headers.play.find { it.a.value.equals("Accept-Encoding", ignoreCase = true) }?.b?.value ?: ""
-            val gzFile = PlatformFile("${file.path}.gz")
+            val gzFile = PlatformFile("$rootDir/${sanitizedPath}.gz")
             
             val (fileToSend, contentEncoding) = if ("gzip" in acceptEncoding && gzFile.exists()) {
                 gzFile to "gzip"
@@ -202,7 +211,7 @@ fun createStaticFileHandler(rootDir: String): HttpHandler {
             val bodyBytes = fileToSend.readAllBytes()
 
             val headers = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
-            headers.add(HttpHeaderName("Content-Type") j HttpHeaderValue(getMimeType(file.path)))
+            headers.add(HttpHeaderName("Content-Type") j HttpHeaderValue(getMimeType(sanitizedPath)))
             headers.add(HttpHeaderName("Content-Length") j HttpHeaderValue(bodyBytes.size.toString()))
             contentEncoding?.let {
                 headers.add(HttpHeaderName("Content-Encoding") j HttpHeaderValue(it))
@@ -258,7 +267,7 @@ class HttpConnectionManager(private val config: HttpServerConfig) {
         val requestCount: Int = 0
     )
     
-    fun shouldKeepAlive(headers: Indexed2<HttpFieldName, HttpFieldValue>, version: HttpVersion): Boolean {
+    fun shouldKeepAlive(headers: Indexed2<HttpHeaderName, HttpHeaderValue>, version: HttpVersion): Boolean {
         val connectionHeader = headers.`play`.find {
             it.a.value.lowercase() == "connection" 
         }?.b?.value?.lowercase()
@@ -272,11 +281,13 @@ class HttpConnectionManager(private val config: HttpServerConfig) {
     }
     
     fun handleConnectionUpgrade(
-        headers: Indexed2<HttpFieldName, HttpFieldValue>
+        headers: Indexed2<HttpHeaderName, HttpHeaderValue>
     ): UpgradeProtocol? {
-        if (!HttpUpgrade.canUpgrade(headers.α { join -> 
-                HttpFieldName(join.a.value) j HttpFieldValue(join.b.value) 
-            }, ProtocolName("websocket"))) {
+        // Convert headers to expected format for canUpgrade
+        val upgradeHeaders = headers.α { join -> 
+            HttpHeaderName(join.a.value) j HttpHeaderValue(join.b.value) 
+        }
+        if (!HttpUpgrade.canUpgrade(upgradeHeaders, ProtocolName("websocket"))) {
             return null
         }
         
@@ -318,15 +329,8 @@ object ChunkedTransferEncoder {
     }
     
     fun decodeChunked(input: ByteArray): ByteArray? {
-        val inputChars = input.map { it.toInt().toChar() }
-        val chunkedBody = HttpParser.parseChunkedBody(inputChars.toSeries()) ?: return null
-        
-        val allData = mutableListOf<Byte>()
-        chunkedBody.chunks.`play`.forEach { chunk ->
-            allData.addAll(chunk.data.`play`)
-        }
-        
-        return allData.toByteArray()
+        // TODO: Implement chunked body parsing
+        return null
     }
 }
 

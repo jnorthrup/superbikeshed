@@ -28,7 +28,7 @@ object Json {
             is Boolean -> value.toString()
             null -> "null"
             is List<*> -> "[${value.joinToString(",") { stringify(it ?: "null") }}]"
-            is Map<*, *> -> "{${value.entries.joinToString(",") { "\"${it.key}\":${stringify(it.value)}" }}}"
+            is Map<*, *> -> "{${value.entries.joinToString(",") { entry -> "\"${entry.key}\":${stringify(entry.value ?: "null")}" }}}"
             else -> "\"$value\""
         }
     }
@@ -69,7 +69,7 @@ object Json {
     // Simple index implementation
     fun index(jsonString: String): JsonStructuralIndices {
         val indices = findStructuralIndices(jsonString)
-        val bounds = 2 j { i -> if (i == 0) 0 else jsonString.length }
+        val bounds = 2 j { i: Int -> if (i == 0) 0 else jsonString.length }
         val commaIndices = indices.play.filter { jsonString[it] == ',' }.toSeries()
         return bounds j commaIndices
     }

@@ -1,147 +1,70 @@
 package borg.trikeshed
 
-// Temporarily commented out to fix build issues
-/*
 import borg.trikeshed.ccek.*
-import borg.trikeshed.lib.*
-import borg.trikeshed.net.http.*
-import borg.trikeshed.reactor.*
+import borg.trikeshed.db.*
+import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 
-/**
- * The Main Orchestrator.
- * Its only job is to "pump specificity" into the system by assembling
- * and injecting the correct CCEK context for any given request.
- */
+@Serializable
+data class MyDoc(val name: String, val wheels: Int)
+
 object MainOrchestrator {
 
-    // The handler is defined once. It's generic.
-    // It blindly executes the rules and uses the payload from the CCEK.
-    private val httpHandler: CcekHttpHandler = { request, ccek ->
-        val (control, context, environment, knowledge) = ccek
+    suspend fun run() = coroutineScope {
+        println("=== CCEK RelaxFactory Reboot Demo ===")
 
-        println("Handler executing action '${environment.action}' with Execution ID '${control.executionId}'")
-
-        // 1. Validate the payload using the provided rule.
-        if (!knowledge.validator(environment.payload)) {
-            throw IllegalArgumentException("Invalid payload for action: ${environment.action}")
-        }
-
-        // 2. Transform the payload using the series of rules.
-        val finalPayload = knowledge.rules.play.fold(environment.payload) { current, rule ->
-            rule(current)
-        }
-
-        // 3. Return a success response.
-        HttpResponse(
-            status = HttpStatusCode(200),
-            reasonPhrase = HttpReasonPhrase("OK"),
-            headers = 1 j { _: Int -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") },
-            body = "Action '${environment.action}' completed successfully.".encodeToByteArray()
+        // 1. Instantiate all services
+        val jsonService = JsonServiceImpl()
+        val httpClient = FakeHttpClient() // Use our fake client for the demo
+        val relaxFactory = RelaxFactoryImpl()
+        
+        // 2. Define the context for a specific database
+        val myCouchDbContext = CouchDbContext(
+            baseUrl = "http://127.0.0.1:5984",
+            dbName = "trikeshed-db"
         )
-    }
 
-    // The server instance, configured with our generic handler.
-    private val server = HttpServer(
-        config = HttpServerConfig(),
-        reactor = Reactor(),
-        handler = httpHandler
-    )
+        // 3. Compose the complete application context using the '+' operator.
+        // This context now contains everything needed to talk to CouchDB.
+        val applicationContext = jsonService + httpClient + relaxFactory + myCouchDbContext
 
-    // The main entry point. This simulates receiving two different requests.
-    suspend fun run() {
-        println("=== ORCHESTRATOR STARTING ===")
+        // 4. Launch a coroutine with the fully composed context to run an operation.
+        launch(applicationContext) {
+            println("\n--- Simulating a Database Operation ---")
+            
+            // Get the factory directly from the context.
+            val db = coroutineContext[RelaxFactory.Key] ?: error("RelaxFactory not found!")
 
-        // --- SCENARIO 1: A request to process an Indexed of numbers ---
-        val request1 = HttpRequest(
-            method = HttpMethod.POST,
-            path = HttpRequestPath("/process/series"),
-            version = HttpVersion("HTTP/1.1"),
-            headers = 0 j { _: Int -> HttpHeaderName("") j HttpHeaderValue("") }
-        )
-        // Assemble the CCEK with Series-specific payload and rules.
-        val seriesCcek = assembleCcekForSeriesProcessing(request1)
-        // Pump the specificity into the server.
-        server.processRequest(request1, seriesCcek)
+            // Use the clean, direct API. No request builders needed.
+            println("Putting a document into CouchDB...")
+            val docToSave = MyDoc("Trike", 3)
+            val putResponse = db.put("test-doc", docToSave, serializer<MyDoc>())
+            println("CouchDB Response: $putResponse")
 
-        println("\n" + "=".repeat(40) + "\n")
+            println("\nFetching the document back...")
+            val fetchedDoc = db.get("test-doc", serializer<MyDoc>())
+            
+            if (fetchedDoc != null) {
+                println("Successfully fetched: ${fetchedDoc.name} with ${fetchedDoc.wheels} wheels.")
+            } else {
+                println("Document not found.")
+            }
 
-        // --- SCENARIO 2: A request to process a Cursor of data ---
-        val request2 = HttpRequest(
-            method = HttpMethod.POST,
-            path = HttpRequestPath("/process/cursor"),
-            version = HttpVersion("HTTP/1.1"),
-            headers = 0 j { _: Int -> HttpHeaderName("") j HttpHeaderValue("") }
-        )
-        // Assemble the CCEK with Cursor-specific payload and rules.
-        val cursorCcek = assembleCcekForCursorProcessing(request2)
-        // Pump the specificity into the server.
-        server.processRequest(request2, cursorCcek)
+            println("\nChecking if document exists...")
+            val exists = db.exists("test-doc")
+            println("Document exists: $exists")
 
-        println("=== ORCHESTRATOR FINISHED ===")
-    }
+            println("\nGetting database info...")
+            val info = db.info()
+            println("Database info: $info")
 
-    /**
-     * Assembles a CCEK specifically for an Indexed processing task.
-     */
-    private fun assembleCcekForSeriesProcessing(request: HttpRequest): CcekContext {
-        println("Orchestrator: Assembling CCEK for an INDEXED operation.")
-        return CcekContext(
-            control = Control("exec_series_123"),
-            context = Context(sourceIp = "127.0.0.1", securityToken = "token_valid"),
-            environment = Environment(
-                action = "DoubleAndSumSeries",
-                // THE PAYLOAD IS AN INDEXED
-                payload = (5 j { i -> listOf(1, 2, 3, 4, 5)[i] }).toList()
-            ),
-            knowledge = Knowledge(
-                // THE RULES ARE FOR INDEXED
-                rules = 1 j { _: Int -> { payload: Any -> 
-                    when (payload) {
-                        is List<*> -> payload.map { (it as Int) * 2 }
-                        else -> payload
-                    }
-                } },
-                validator = { payload -> payload is List<*> && payload.isNotEmpty() }
-            )
-        )
-    }
+        }.join() // Wait for the demo operation to complete
 
-    /**
-     * Assembles a CCEK specifically for a Cursor processing task.
-     */
-    private fun assembleCcekForCursorProcessing(request: HttpRequest): CcekContext {
-        // This function would build a real cursor from a database or file.
-        // We'll mock it for this example.
-        val mockCursor = emptyList<Any>()
-
-        println("Orchestrator: Assembling CCEK for a CURSOR operation.")
-        return CcekContext(
-            control = Control("exec_cursor_456"),
-            context = Context(sourceIp = "127.0.0.1", securityToken = "token_valid"),
-            environment = Environment(
-                action = "CountCursorRows",
-                // THE PAYLOAD IS A CURSOR
-                payload = mockCursor
-            ),
-            knowledge = Knowledge(
-                // THE RULES ARE FOR CURSORS
-                rules = 1 j { _: Int -> { payload: Any -> 
-                    when (payload) {
-                        is List<*> -> payload.size
-                        else -> 0
-                    }
-                } },
-                validator = { payload -> payload is List<*> }
-            )
-        )
+        this.cancel() // Clean up the main scope
     }
 }
 
-suspend fun main() {
-    MainOrchestrator.run()
-}*/
-
-// Simple working main function for testing
 fun main() {
-    println("TrikeShed core types loaded successfully")
+    println("CCEK RelaxFactory Demo - Use platform-specific main functions to run the demo")
 } 
