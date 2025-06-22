@@ -158,7 +158,7 @@ class RTSNetworkHost(
      */
     private fun processPlayerInput(
         input: PlayerInput,
-        units: MutableMap<UnitId, Unit>,
+        units: MutableMap<UnitId, RtsUnit>,
         resources: MutableMap<PlayerId, Resources>
     ) {
         when (input) {
@@ -187,7 +187,7 @@ class RTSNetworkHost(
                 
                 if (playerResources.minerals >= cost) {
                     // Create new unit
-                    val newUnit = Unit(
+                    val newUnit = RtsUnit(
                         id = generateUnitId(),
                         type = input.unitType,
                         owner = input.playerId,
@@ -210,7 +210,7 @@ class RTSNetworkHost(
     /**
      * Update unit position and state
      */
-    private fun updateUnit(unit: Unit, allUnits: Map<UnitId, Unit>) {
+    private fun updateUnit(unit: RtsUnit, allUnits: Map<UnitId, RtsUnit>) {
         // Move towards target
         if (unit.targetX != null && unit.targetY != null) {
             val dx = unit.targetX - unit.x
@@ -247,7 +247,7 @@ class RTSNetworkHost(
     /**
      * Check unit collisions
      */
-    private fun checkCollisions(units: MutableMap<UnitId, Unit>) {
+    private fun checkCollisions(units: MutableMap<UnitId, RtsUnit>) {
         val toRemove = mutableListOf<UnitId>()
         
         units.forEach { (id, unit) ->
@@ -413,7 +413,7 @@ class RTSNetworkHost(
         )
     }
     
-    private fun calculateChecksum(units: Map<UnitId, Unit>, resources: Map<PlayerId, Resources>): Long {
+    private fun calculateChecksum(units: Map<UnitId, RtsUnit>, resources: Map<PlayerId, Resources>): Long {
         var checksum = 0L
         
         units.values.sortedBy { it.id }.forEach { unit ->
@@ -448,7 +448,7 @@ enum class UnitType {
 }
 
 @Serializable
-data class Unit(
+data class RtsUnit(
     val id: UnitId,
     val type: UnitType,
     val owner: PlayerId,
@@ -470,7 +470,7 @@ data class Resources(
 @Serializable
 data class GameState(
     val tick: Long,
-    val units: Map<UnitId, Unit>,
+    val units: Map<UnitId, RtsUnit>,
     val resources: Map<PlayerId, Resources>,
     val checksum: Long
 )
