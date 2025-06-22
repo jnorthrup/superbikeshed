@@ -1,0 +1,35 @@
+# Claude Agent Memo Template
+
+Agent: nexus-kotlin-entity-ksp-unification-agent
+Scope: nexus,kotlin-entity-scanner,ksp-processors
+Action: Unify and gap-analyze nexus + kotlin-entity-scanner + ksp for rapid kotlin graph node meta knowledge
+Dependencies: Read-only access to documentation across all three modules
+Risk: low
+Priority: high
+
+## Detailed Description
+Create a unified analysis agent that combines the capabilities of:
+- nexus AI agent architecture 
+- kotlin-entity-scanner aggressive rule engine
+- ksp-processors symbol processing
+Goal: Rapidly advance meta knowledge of kotlin graph nodes for enhanced AI agent utility
+
+## Files Affected
+Analysis only - read documentation from:
+- nexus/*.md (7 files)
+- kotlin-entity-scanner/*.md (4 files) 
+- ksp-processors/*.md (1 file)
+
+## Factor Analysis
+Factor 1 (Direct): Documentation analysis and gap identification
+Factor 2 (Transitive): Future unified architecture recommendations
+
+## Testing Plan
+Generate comprehensive gap analysis report with actionable recommendations
+
+## Rollback Plan
+Analysis only - no code changes required
+
+---
+Generated: 2025-06-21
+Agent Version: nexus-kotlin-entity-ksp-unification-agent

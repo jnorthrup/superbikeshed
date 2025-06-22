@@ -102,7 +102,7 @@ class TaxonomicStorage(
     suspend fun findRelatedEntities(
         entityId: SemanticId,
         threshold: AttentionScore = 0.5
-    ): List<Pair<SemanticId, AttentionScore>> {
+    ): List<Join<SemanticId, AttentionScore>> {
         val entity = getEntity(entityId) ?: return emptyList()
         val graph = getGraph("graph_${entity.version}") ?: return emptyList()
         return graph.findRelatedEntities(entityId, threshold)

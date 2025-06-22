@@ -1,0 +1,226 @@
+package moneyfan.test
+
+import kotlinx.coroutines.runBlocking
+import java.io.File
+import java.math.BigDecimal
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.zip.ZipInputStream
+
+/**
+ * Simple test to verify Binance data loading functionality
+ * This bypasses the broken TrikeShed dependencies
+ */
+object BinanceDataTest {
+    
+    data class SimpleKline(
+        val openTimeMillis: Long,
+        val openPrice: BigDecimal,
+        val highPrice: BigDecimal,
+        val lowPrice: BigDecimal,
+        val closePrice: BigDecimal,
+        val volume: BigDecimal,
+        val closeTimeMillis: Long,
+        val quoteAssetVolume: BigDecimal,
+        val numberOfTrades: Int,
+        val takerBuyBaseAssetVolume: BigDecimal,
+        val takerBuyQuoteAssetVolume: BigDecimal
+    )
+    
+    @JvmStatic
+    fun main(args: Array<String>) = runBlocking {
+        println("🔥 Testing Binance Data Loading")
+        println("=" .repeat(50))
+        
+        // Test 1: Download and parse a small sample
+        testDownloadSample()
+        
+        // Test 2: Test CSV parsing
+        testCsvParsing()
+        
+        // Test 3: Test date range filtering
+        testDateRangeFiltering()
+        
+        println("\n✅ Binance data loading test complete!")
+    }
+    
+    private suspend fun testDownloadSample() {
+        println("\n📊 Test 1: Downloading sample data...")
+        
+        val cacheDir = File(System.getProperty("user.home"), "mpdata/cache")
+        cacheDir.mkdirs()
+        
+        val symbolDir = File(cacheDir, "klines/1m/DOGEUSDT")
+        symbolDir.mkdirs()
+        
+        val fileName = "DOGEUSDT-1m-2024-01.zip"
+        val zipFile = File(symbolDir, fileName)
+        val csvFile = File(symbolDir, "DOGEUSDT-1m-2024-01.csv")
+        
+        try {
+            // Download if not exists
+            if (!zipFile.exists()) {
+                val url = "https://data.binance.vision/data/spot/monthly/klines/DOGEUSDT/1m/$fileName"
+                downloadFile(url, zipFile.absolutePath)
+                println("✅ Downloaded $fileName")
+            } else {
+                println("✅ File already exists: $fileName")
+            }
+            
+            // Extract and parse
+            if (zipFile.exists()) {
+                val klines = extractZipArchive(zipFile)
+                println("✅ Extracted ${klines.size} klines")
+                
+                // Save as CSV for future use
+                saveKlinesToCsv(klines, csvFile)
+                println("✅ Saved to CSV: ${csvFile.name}")
+                
+                // Show sample data
+                if (klines.isNotEmpty()) {
+                    val first = klines.first()
+                    val last = klines.last()
+                    println("📈 First kline: ${formatKline(first)}")
+                    println("📉 Last kline: ${formatKline(last)}")
+                    println("💰 Price range: ${first.lowPrice} - ${last.highPrice}")
+                }
+            }
+        } catch (e: Exception) {
+            println("❌ Error in download test: ${e.message}")
+        }
+    }
+    
+    private fun testCsvParsing() {
+        println("\n📊 Test 2: CSV parsing...")
+        
+        val sampleCsv = """
+            1704067200000,0.0812,0.0813,0.0811,0.0812,1234567.89,1704067259999,100234.56,1234,567890.12,46144.44
+            1704067260000,0.0812,0.0814,0.0811,0.0813,2345678.90,1704067319999,190345.67,2345,1234567.89,66988.78
+        """.trimIndent()
+        
+        val klines = mutableListOf<SimpleKline>()
+        sampleCsv.lines().forEach { line ->
+            parseKlineCsvLine(line)?.let { klines.add(it) }
+        }
+        
+        println("✅ Parsed ${klines.size} klines from sample CSV")
+        klines.forEach { kline ->
+            println("   ${formatKline(kline)}")
+        }
+    }
+    
+    private fun testDateRangeFiltering() {
+        println("\n📊 Test 3: Date range filtering...")
+        
+        val klines = listOf(
+            SimpleKline(1704067200000, BigDecimal("0.0812"), BigDecimal("0.0813"), BigDecimal("0.0811"), BigDecimal("0.0812"), BigDecimal("1234567.89"), 1704067259999, BigDecimal("100234.56"), 1234, BigDecimal("567890.12"), BigDecimal("46144.44")),
+            SimpleKline(1704067260000, BigDecimal("0.0812"), BigDecimal("0.0814"), BigDecimal("0.0811"), BigDecimal("0.0813"), BigDecimal("2345678.90"), 1704067319999, BigDecimal("190345.67"), 2345, BigDecimal("1234567.89"), BigDecimal("66988.78")),
+            SimpleKline(1704153600000, BigDecimal("0.0820"), BigDecimal("0.0825"), BigDecimal("0.0818"), BigDecimal("0.0822"), BigDecimal("3456789.01"), 1704153659999, BigDecimal("284345.67"), 3456, BigDecimal("2345678.90"), BigDecimal("49800.77"))
+        )
+        
+        val startTime = 1704067200000L
+        val endTime = 1704067300000L
+        
+        val filtered = klines.filter { kline ->
+            kline.openTimeMillis >= startTime && kline.openTimeMillis <= endTime
+        }
+        
+        println("✅ Filtered ${filtered.size} klines from ${klines.size} total")
+        filtered.forEach { kline ->
+            println("   ${formatKline(kline)}")
+        }
+    }
+    
+    private suspend fun downloadFile(url: String, filePath: String) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val connection = java.net.URL(url).openConnection()
+                connection.connectTimeout = 30000
+                connection.readTimeout = 30000
+                
+                connection.getInputStream().use { input ->
+                    File(filePath).outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to download $url: ${e.message}", e)
+            }
+        }
+    }
+    
+    private fun extractZipArchive(zipFile: File): List<SimpleKline> {
+        val klines = mutableListOf<SimpleKline>()
+        
+        ZipInputStream(zipFile.inputStream()).use { zipStream ->
+            var entry = zipStream.nextEntry
+            while (entry != null) {
+                if (!entry.isDirectory && entry.name.endsWith(".csv")) {
+                    zipStream.bufferedReader().use { reader ->
+                        // Skip header if present
+                        val firstLine = reader.readLine()
+                        if (firstLine?.contains("Open_time") == true) {
+                            // Header present, skip it
+                        } else {
+                            // No header, reset reader
+                            reader.reset()
+                        }
+
+                        // Process data lines
+                        reader.forEachLine { line ->
+                            parseKlineCsvLine(line)?.let { klines.add(it) }
+                        }
+                    }
+                }
+                entry = zipStream.nextEntry
+            }
+        }
+
+        return klines
+    }
+    
+    private fun saveKlinesToCsv(klines: List<SimpleKline>, csvFile: File) {
+        csvFile.bufferedWriter().use { writer ->
+            // Write header
+            writer.write("Open_time,Open,High,Low,Close,Volume,Close_time,Quote_asset_volume,Number_of_trades,Taker_buy_base_asset_volume,Taker_buy_quote_asset_volume,Ignore\n")
+            
+            // Write data
+            klines.forEach { kline ->
+                writer.write("${kline.openTimeMillis},${kline.openPrice},${kline.highPrice},${kline.lowPrice},${kline.closePrice},${kline.volume},${kline.closeTimeMillis},${kline.quoteAssetVolume},${kline.numberOfTrades},${kline.takerBuyBaseAssetVolume},${kline.takerBuyQuoteAssetVolume},\n")
+            }
+        }
+    }
+    
+    private fun parseKlineCsvLine(line: String): SimpleKline? {
+        val parts = line.split(",")
+        if (parts.size < 11) return null // Invalid line format
+
+        return try {
+            SimpleKline(
+                openTimeMillis = parts[0].toLong(),
+                openPrice = BigDecimal(parts[1]),
+                highPrice = BigDecimal(parts[2]),
+                lowPrice = BigDecimal(parts[3]),
+                closePrice = BigDecimal(parts[4]),
+                volume = BigDecimal(parts[5]),
+                closeTimeMillis = parts[6].toLong(),
+                quoteAssetVolume = BigDecimal(parts[7]),
+                numberOfTrades = parts[8].toInt(),
+                takerBuyBaseAssetVolume = BigDecimal(parts[9]),
+                takerBuyQuoteAssetVolume = BigDecimal(parts[10])
+            )
+        } catch (e: Exception) {
+            null // Skip invalid lines
+        }
+    }
+    
+    private fun formatKline(kline: SimpleKline): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val openTime = Instant.ofEpochMilli(kline.openTimeMillis)
+            .atZone(ZoneOffset.UTC)
+            .format(formatter)
+        
+        return "$openTime | O:${kline.openPrice} H:${kline.highPrice} L:${kline.lowPrice} C:${kline.closePrice} V:${kline.volume}"
+    }
+} 
