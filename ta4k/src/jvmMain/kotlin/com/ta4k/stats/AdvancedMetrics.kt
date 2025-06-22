@@ -1,12 +1,11 @@
 package com.ta4k.stats
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.math.pow
 import kotlin.math.sqrt
 import java.math.MathContext
 
@@ -22,8 +21,8 @@ class AdvancedMetrics {
      * Calculate the Treynor ratio
      */
     fun treynorRatio(
-        returns: Series<BigDecimal>,
-        benchmark: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
+        benchmark: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         periods: Int = 252
     ): BigDecimal {
@@ -45,7 +44,7 @@ class AdvancedMetrics {
      * Calculate the Omega ratio
      */
     fun omega(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         requiredReturn: BigDecimal = BigDecimal.ZERO,
         periods: Int = 252
@@ -72,7 +71,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Calmar ratio
      */
-    fun calmar(returns: Series<BigDecimal>, periods: Int = 252): BigDecimal {
+    fun calmar(returns: Indexed<BigDecimal>, periods: Int = 252): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val cagr = StatsUtils.cagr(returns, periods = periods)
@@ -85,7 +84,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Ulcer Index
      */
-    fun ulcerIndex(returns: Series<BigDecimal>): BigDecimal {
+    fun ulcerIndex(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         var peak = BigDecimal.ONE
@@ -107,7 +106,7 @@ class AdvancedMetrics {
      * Calculate the Ulcer Performance Index
      */
     fun ulcerPerformanceIndex(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         periods: Int = 252
     ): BigDecimal {
@@ -124,7 +123,7 @@ class AdvancedMetrics {
      * Calculate the Serenity Index
      */
     fun serenityIndex(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         periods: Int = 252
     ): BigDecimal {
@@ -143,7 +142,7 @@ class AdvancedMetrics {
      * Calculate the Recovery Factor
      */
     fun recoveryFactor(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         periods: Int = 252
     ): BigDecimal {
@@ -162,7 +161,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Risk-Return Ratio
      */
-    fun riskReturnRatio(returns: Series<BigDecimal>, periods: Int = 252): BigDecimal {
+    fun riskReturnRatio(returns: Indexed<BigDecimal>, periods: Int = 252): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val cagr = StatsUtils.cagr(returns, periods = periods)
@@ -175,7 +174,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Gain to Pain Ratio (GPR)
      */
-    fun gainToPainRatio(returns: Series<BigDecimal>): BigDecimal {
+    fun gainToPainRatio(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val totalReturn = returns.`play`.sumOf { it }
@@ -189,7 +188,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Risk of Ruin
      */
-    fun riskOfRuin(returns: Series<BigDecimal>): BigDecimal {
+    fun riskOfRuin(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val winRate = PortfolioMetrics().winRate(returns)
@@ -209,7 +208,7 @@ class AdvancedMetrics {
      * Calculate Value at Risk (VaR)
      */
     fun valueAtRisk(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         sigma: Int = 1,
         confidence: BigDecimal = BigDecimal("0.95")
     ): BigDecimal {
@@ -226,7 +225,7 @@ class AdvancedMetrics {
      * Calculate Conditional Value at Risk (CVaR)
      */
     fun conditionalValueAtRisk(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         sigma: Int = 1,
         confidence: BigDecimal = BigDecimal("0.95")
     ): BigDecimal {
@@ -243,7 +242,7 @@ class AdvancedMetrics {
      * Calculate the Tail Ratio
      */
     fun tailRatio(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         cutoff: BigDecimal = BigDecimal("0.95")
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
@@ -259,7 +258,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Payoff Ratio
      */
-    fun payoffRatio(returns: Series<BigDecimal>): BigDecimal {
+    fun payoffRatio(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val wins = returns.`play`.filter { it > BigDecimal.ZERO }
@@ -277,7 +276,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Common Sense Ratio
      */
-    fun commonSenseRatio(returns: Series<BigDecimal>): BigDecimal {
+    fun commonSenseRatio(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val winRate = PortfolioMetrics().winRate(returns)
@@ -291,7 +290,7 @@ class AdvancedMetrics {
      * Calculate the Outlier Win Ratio
      */
     fun outlierWinRatio(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         quantile: BigDecimal = BigDecimal("0.99")
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
@@ -310,7 +309,7 @@ class AdvancedMetrics {
      * Calculate the Outlier Loss Ratio
      */
     fun outlierLossRatio(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         quantile: BigDecimal = BigDecimal("0.01")
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
@@ -328,7 +327,7 @@ class AdvancedMetrics {
     /**
      * Calculate the CPC Index
      */
-    fun cpcIndex(returns: Series<BigDecimal>): BigDecimal {
+    fun cpcIndex(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val profitFactor = PortfolioMetrics().profitFactor(returns)
@@ -342,7 +341,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Profit Ratio
      */
-    fun profitRatio(returns: Series<BigDecimal>): BigDecimal {
+    fun profitRatio(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val wins = returns.`play`.filter { it >= BigDecimal.ZERO }
@@ -362,7 +361,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Kelly Criterion
      */
-    fun kellyCriterion(returns: Series<BigDecimal>): BigDecimal {
+    fun kellyCriterion(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val winRate = PortfolioMetrics().winRate(returns)
@@ -382,7 +381,7 @@ class AdvancedMetrics {
     /**
      * Calculate the R-squared value
      */
-    fun rSquared(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
+    fun rSquared(returns: Indexed<BigDecimal>, benchmark: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
         val returnsMean = returns.`play`.average()
@@ -409,7 +408,7 @@ class AdvancedMetrics {
     /**
      * Calculate the Information Ratio
      */
-    fun informationRatio(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
+    fun informationRatio(returns: Indexed<BigDecimal>, benchmark: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
         val excessReturns = returns.`play`.zip(benchmark.`play`) { ret, bench ->
@@ -427,8 +426,8 @@ class AdvancedMetrics {
      * Calculate the Greeks (beta, alpha)
      */
     fun greeks(
-        returns: Series<BigDecimal>,
-        benchmark: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
+        benchmark: Indexed<BigDecimal>,
         periods: Int = 252
     ): Map<String, BigDecimal> {
         if (returns.isEmpty() || benchmark.isEmpty()) {
@@ -456,8 +455,8 @@ class AdvancedMetrics {
      * Calculate Rolling Greeks
      */
     fun rollingGreeks(
-        returns: Series<BigDecimal>,
-        benchmark: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
+        benchmark: Indexed<BigDecimal>,
         window: Int = 126,
         periods: Int = 252
     ): List<Map<String, BigDecimal>> {
@@ -528,7 +527,7 @@ class AdvancedMetrics {
     /**
      * Calculate the monthly returns
      */
-    fun monthlyReturns(returns: Series<BigDecimal>, eoy: Boolean = true, compounded: Boolean = true): Series<BigDecimal> {
+    fun monthlyReturns(returns: Indexed<BigDecimal>, eoy: Boolean = true, compounded: Boolean = true): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -564,7 +563,7 @@ class AdvancedMetrics {
     /**
      * Calculate the consecutive wins
      */
-    fun consecutiveWins(returns: Series<BigDecimal>): Int {
+    fun consecutiveWins(returns: Indexed<BigDecimal>): Int {
         if (returns.isEmpty()) return 0
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -586,7 +585,7 @@ class AdvancedMetrics {
     /**
      * Calculate the consecutive losses
      */
-    fun consecutiveLosses(returns: Series<BigDecimal>): Int {
+    fun consecutiveLosses(returns: Indexed<BigDecimal>): Int {
         if (returns.isEmpty()) return 0
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -608,7 +607,7 @@ class AdvancedMetrics {
     /**
      * Calculate the best return
      */
-    fun bestReturn(returns: Series<BigDecimal>): BigDecimal {
+    fun bestReturn(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         return returns.`play`.maxOrNull() ?: BigDecimal.ZERO
     }
@@ -616,7 +615,7 @@ class AdvancedMetrics {
     /**
      * Calculate the worst return
      */
-    fun worstReturn(returns: Series<BigDecimal>): BigDecimal {
+    fun worstReturn(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         return returns.`play`.minOrNull() ?: BigDecimal.ZERO
     }
@@ -624,7 +623,7 @@ class AdvancedMetrics {
     /**
      * Calculate the geometric mean
      */
-    fun geometricMean(returns: Series<BigDecimal>): BigDecimal {
+    fun geometricMean(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -641,7 +640,7 @@ class AdvancedMetrics {
     /**
      * Calculate the expected return
      */
-    fun expectedReturn(returns: Series<BigDecimal>): BigDecimal {
+    fun expectedReturn(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         return returns.`play`.average()
     }
@@ -649,7 +648,7 @@ class AdvancedMetrics {
     /**
      * Calculate the distribution
      */
-    fun distribution(returns: Series<BigDecimal>): Map<String, BigDecimal> {
+    fun distribution(returns: Indexed<BigDecimal>): Map<String, BigDecimal> {
         if (returns.isEmpty()) return mapOf(
             "min" to BigDecimal.ZERO,
             "max" to BigDecimal.ZERO,
@@ -677,7 +676,7 @@ class AdvancedMetrics {
     /**
      * Calculate the probabilistic Sharpe ratio
      */
-    fun probabilisticSharpeRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
+    fun probabilisticSharpeRatio(returns: Indexed<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -694,7 +693,7 @@ class AdvancedMetrics {
     /**
      * Calculate the probabilistic Sortino ratio
      */
-    fun probabilisticSortinoRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
+    fun probabilisticSortinoRatio(returns: Indexed<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -714,7 +713,7 @@ class AdvancedMetrics {
     /**
      * Calculate the probabilistic adjusted Sortino ratio
      */
-    fun probabilisticAdjustedSortinoRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
+    fun probabilisticAdjustedSortinoRatio(returns: Indexed<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -738,7 +737,7 @@ class AdvancedMetrics {
     /**
      * Calculate the probabilistic ratio
      */
-    fun probabilisticRatio(returns: Series<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO, base: String = "sharpe"): BigDecimal {
+    fun probabilisticRatio(returns: Indexed<BigDecimal>, rf: BigDecimal = BigDecimal.ZERO, base: String = "sharpe"): BigDecimal {
         return when (base.lowercase()) {
             "sharpe" -> probabilisticSharpeRatio(returns, rf)
             "sortino" -> probabilisticSortinoRatio(returns, rf)
@@ -780,7 +779,7 @@ class AdvancedMetrics {
     /**
      * Calculate the percentage rank
      */
-    fun pctRank(returns: Series<BigDecimal>, window: Int = 60): Series<BigDecimal> {
+    fun pctRank(returns: Indexed<BigDecimal>, window: Int = 60): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -801,7 +800,7 @@ class AdvancedMetrics {
     /**
      * Calculate the compound sum
      */
-    fun compSum(returns: Series<BigDecimal>): Series<BigDecimal> {
+    fun compSum(returns: Indexed<BigDecimal>): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -819,7 +818,7 @@ class AdvancedMetrics {
     /**
      * Calculate the compound returns
      */
-    fun comp(returns: Series<BigDecimal>): Series<BigDecimal> {
+    fun comp(returns: Indexed<BigDecimal>): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -837,7 +836,7 @@ class AdvancedMetrics {
     /**
      * Calculate the outliers
      */
-    fun outliers(returns: Series<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Series<BigDecimal> {
+    fun outliers(returns: Indexed<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -852,7 +851,7 @@ class AdvancedMetrics {
     /**
      * Remove outliers
      */
-    fun removeOutliers(returns: Series<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Series<BigDecimal> {
+    fun removeOutliers(returns: Indexed<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -867,7 +866,7 @@ class AdvancedMetrics {
     /**
      * Calculate the exposure
      */
-    fun exposure(returns: Series<BigDecimal>): BigDecimal {
+    fun exposure(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -880,7 +879,7 @@ class AdvancedMetrics {
     /**
      * Calculate the win rate
      */
-    fun winRate(returns: Series<BigDecimal>): BigDecimal {
+    fun winRate(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -893,7 +892,7 @@ class AdvancedMetrics {
     /**
      * Calculate the average return
      */
-    fun avgReturn(returns: Series<BigDecimal>): BigDecimal {
+    fun avgReturn(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         return returns.`play`.average()
     }
@@ -901,7 +900,7 @@ class AdvancedMetrics {
     /**
      * Calculate the average win
      */
-    fun avgWin(returns: Series<BigDecimal>): BigDecimal {
+    fun avgWin(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
@@ -913,7 +912,7 @@ class AdvancedMetrics {
     /**
      * Calculate the average loss
      */
-    fun avgLoss(returns: Series<BigDecimal>): BigDecimal {
+    fun avgLoss(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()

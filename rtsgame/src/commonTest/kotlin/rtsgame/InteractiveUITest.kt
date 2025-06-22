@@ -210,7 +210,7 @@ class ButtonStateTest {
             id = PanelId("test_panel"),
             position = Vector3D(0.0, 0.0, 10.0),
             size = Vector3D(200.0, 50.0, 10.0),
-            buttons = Series.of(buttons.size) { i -> buttons[i] },
+            buttons = Indexed.of(buttons.size) { i -> buttons[i] },
             visible = true
         )
         

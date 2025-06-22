@@ -1,4 +1,3 @@
-// TODO: Resolve model duplication. Import from shared module once available.
 package nexus.enumerator.intellij
 
 import nexus.enumerator.intellij.project_model.*

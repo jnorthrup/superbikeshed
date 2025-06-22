@@ -29,6 +29,9 @@ object DselInterfaceAugmented {
     // Simplified global Moneyfan states for the demo
     var crashProtectionActiveGlobally: Boolean = false
     val assetConfigs = mutableMapOf<String, DemoMoneyfanAssetConfig>()
+    
+    // ADZ state transition tracking
+    private val adzStateTracking = mutableMapOf<String, ADZStateTracker>()
 
     /**
      * Generates a DSEL Series of [VisualGraphPointWithMoneyfanOutcome] by processing input Kline data,
@@ -139,8 +142,8 @@ object DselInterfaceAugmented {
                     else -> basicMoneyfanSuggestion // HOLD or NO_ACTION
                 }
             }
-            // TODO: Implement ADZ state transition logic for demo (e.g., based on time in dead zone or action taken)
-            // For now, adzActive is only changed by UI toggle.
+            // ADZ state transition logic implementation
+            updateADZStateTransition(assetSymbol, assetConfig, deviationPercent, taSignal, determinedMoneyfanAction)
 
             augmentedPoints.add(
                 VisualGraphPointWithMoneyfanOutcome(
@@ -187,6 +190,39 @@ object DselInterfaceAugmented {
         console.log("DselInterfaceAugmented: Global Crash Protection is now ${if(crashProtectionActiveGlobally) "ON" else "OFF"}")
         return crashProtectionActiveGlobally
     }
+    
+    /**
+     * Updates ADZ state transitions based on market conditions and time factors
+     */
+    private fun updateADZStateTransition(
+        assetSymbol: String, 
+        assetConfig: DemoMoneyfanAssetConfig, 
+        deviationPercent: Double?, 
+        taSignal: TASignalType,
+        moneyfanAction: MoneyfanActionType
+    ) {
+        val tracker = adzStateTracking.getOrPut(assetSymbol) { ADZStateTracker() }
+        
+        if (deviationPercent == null) return
+        
+        val absDeviation = kotlin.math.abs(deviationPercent)
+        val deadZoneThreshold = 0.02 // 2% neutral zone
+        val inDeadZone = absDeviation < deadZoneThreshold
+        
+        tracker.updateState(inDeadZone, taSignal, moneyfanAction)
+        
+        // Transition to ADZ if conditions met
+        if (!assetConfig.adzActive && tracker.shouldEnterADZ()) {
+            assetConfig.adzActive = true
+            console.log("DselInterfaceAugmented: ADZ auto-activated for $assetSymbol after ${tracker.deadZoneCount} periods in dead zone")
+        }
+        
+        // Exit ADZ if significant movement or action taken
+        if (assetConfig.adzActive && tracker.shouldExitADZ()) {
+            assetConfig.adzActive = false
+            console.log("DselInterfaceAugmented: ADZ auto-deactivated for $assetSymbol due to ${tracker.exitReason}")
+        }
+    }
 }
 
 // Helper for maxOf if not available in current Kotlin/JS stdlib scope (e.g. commonMain without platform specifics)
@@ -194,3 +230,52 @@ object DselInterfaceAugmented {
 // private fun maxOf(a: Int, b: Int, c: Int): Int = kotlin.math.max(kotlin.math.max(a, b), c)
 // Using vararg version for simplicity
 private fun maxOf(vararg values: Int): Int = values.maxOrNull() ?: 0
+
+/**
+ * ADZ State Tracker for automatic transitions
+ */
+private class ADZStateTracker {
+    var deadZoneCount: Int = 0
+    var lastAction: MoneyfanActionType = MoneyfanActionType.HOLD
+    var consecutiveNeutralSignals: Int = 0
+    var exitReason: String = ""
+    
+    private val deadZoneThresholdForActivation = 10 // 10 periods of dead zone
+    private val actionTakenExitThreshold = 3 // Exit after 3 periods with actual actions
+    
+    fun updateState(inDeadZone: Boolean, taSignal: TASignalType, moneyfanAction: MoneyfanActionType) {
+        if (inDeadZone) {
+            deadZoneCount++
+        } else {
+            deadZoneCount = 0
+        }
+        
+        if (taSignal == TASignalType.NEUTRAL) {
+            consecutiveNeutralSignals++
+        } else {
+            consecutiveNeutralSignals = 0
+        }
+        
+        lastAction = moneyfanAction
+    }
+    
+    fun shouldEnterADZ(): Boolean {
+        return deadZoneCount >= deadZoneThresholdForActivation && consecutiveNeutralSignals >= 5
+    }
+    
+    fun shouldExitADZ(): Boolean {
+        // Exit if significant action taken
+        if (lastAction in listOf(MoneyfanActionType.OPPORTUNITY_ADZ_BUY, MoneyfanActionType.OPPORTUNITY_ADZ_SELL)) {
+            exitReason = "ADZ opportunity action taken"
+            return true
+        }
+        
+        // Exit if out of dead zone for too long
+        if (deadZoneCount == 0 && consecutiveNeutralSignals < 3) {
+            exitReason = "left dead zone with active signals"
+            return true
+        }
+        
+        return false
+    }
+}

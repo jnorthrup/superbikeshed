@@ -16,7 +16,7 @@ typealias JsonStructure = Join<JsonBounds, Int> // bounds j elementCount
 object SimpleJsonScanner {
     
     fun scanStructure(jsonStr: String): JsonStructure {
-        val chars = Series.of(jsonStr.length) { jsonStr[it] }
+        val chars = Indexed.of(jsonStr.length) { jsonStr[it] }
         var depth = 0
         var start = -1
         var end = -1
@@ -41,7 +41,7 @@ object SimpleJsonScanner {
     }
     
     // Extract numeric values using Series transforms
-    fun extractNumbers(jsonStr: String): Series<Double> {
+    fun extractNumbers(jsonStr: String): Indexed<Double> {
         val numbers = mutableListOf<Double>()
         var currentNumber = ""
         var inNumber = false
@@ -65,7 +65,7 @@ object SimpleJsonScanner {
             currentNumber.toDoubleOrNull()?.let { numbers.add(it) }
         }
         
-        return Series.of(numbers.size) { numbers[it] }
+        return Indexed.of(numbers.size) { numbers[it] }
     }
     
     // Trading-specific analysis

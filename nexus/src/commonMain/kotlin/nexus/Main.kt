@@ -2,9 +2,7 @@ package nexus
 
 import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
-import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series as Indexed
 
 /**
  * Nexus Agent - AI-powered task execution using k2script's LiteLLMClient
@@ -132,13 +130,11 @@ object Nexus {
                 },
                 onFailure = { error ->
                     println("Nexus error: ${error.message}")
-                    error.printStackTrace()
                     exitProcess(1)
                 }
             )
         } catch (e: Exception) {
             println("Nexus error: ${e.message}")
-            e.printStackTrace()
             exitProcess(1)
         }
     }

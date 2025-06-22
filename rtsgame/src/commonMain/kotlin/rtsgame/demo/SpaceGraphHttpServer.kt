@@ -301,13 +301,13 @@ class SpaceGraphHttpServer {
         )
     }
     
-    private fun createHeaders(vararg headers: Pair<HttpHeaderName, HttpHeaderValue>): Series2<HttpHeaderName, HttpHeaderValue> {
+    private fun createHeaders(vararg headers: Pair<HttpHeaderName, HttpHeaderValue>): Indexed2<HttpHeaderName, HttpHeaderValue> {
         return headers.size join { i: Int ->
             headers[i].first join headers[i].second
         }
     }
     
-    private fun createEmptyHeaders(): Series2<HttpHeaderName, HttpHeaderValue> {
+    private fun createEmptyHeaders(): Indexed2<HttpHeaderName, HttpHeaderValue> {
         return 0 join { _: Int -> HttpHeaderName("") join HttpHeaderValue("") }
     }
 }

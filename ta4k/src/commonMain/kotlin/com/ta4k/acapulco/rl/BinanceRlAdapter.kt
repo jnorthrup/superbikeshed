@@ -6,7 +6,6 @@ package borg.trikeshed.acapulco.rl
 import borg.trikeshed.cursor.Cursor // Assuming Cursor is Series<RowVec>
 import borg.trikeshed.rl.Agent
 import borg.trikeshed.rl.Environment
-import borg.trikeshed.lib.Series
 import borg.trikeshed.cursor.RowVec
 
 /**

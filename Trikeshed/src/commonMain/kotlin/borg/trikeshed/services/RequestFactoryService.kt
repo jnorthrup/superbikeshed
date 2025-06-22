@@ -1,13 +1,6 @@
 package borg.trikeshed.services
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.j
-import borg.trikeshed.lib.α
-import borg.trikeshed.lib.play
-import borg.trikeshed.lib.toSeries
-import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Indexed
 import kotlin.jvm.JvmInline
-import kotlinx.coroutines.flow.Flow
 
 /**
  * BrokeShed RequestFactory Service Interface
@@ -17,7 +10,7 @@ interface RequestFactoryService {
     /**
      * Process a RequestFactory call and return response payload
      */
-    fun process(requestPayload: Series<Byte>): Series<Byte>
+    fun process(requestPayload: Indexed<Byte>): Indexed<Byte>
     
     /**
      * Register a service locator for dependency injection
@@ -41,8 +34,8 @@ data class ServiceMethod(val service: ServiceClass, val method: MethodName)
 // === GWT-SPECIFIC TYPES ===
 
 @JvmInline value class RequestContext(val json: String)
-@JvmInline value class RequestData(val payload: Series<Byte>)
-@JvmInline value class ResponseData(val payload: Series<Byte>)
+@JvmInline value class RequestData(val payload: Indexed<Byte>)
+@JvmInline value class ResponseData(val payload: Indexed<Byte>)
 
 // === SERVICE REGISTRY ===
 

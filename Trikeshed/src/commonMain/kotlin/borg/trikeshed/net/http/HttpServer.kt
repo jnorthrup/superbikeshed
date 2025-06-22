@@ -242,7 +242,7 @@ private fun HttpResponse(
     )
 }
 
-private fun String.toSeries(): Series<Char> = this.length j { this[it] }
+private fun String.toSeries(): Indexed<Char> = this.length j { this[it] }
 
 
 // ===== CONNECTION MANAGEMENT (RFC 7230 Section 6) =====
@@ -258,7 +258,7 @@ class HttpConnectionManager(private val config: HttpServerConfig) {
         val requestCount: Int = 0
     )
     
-    fun shouldKeepAlive(headers: Series2<HttpFieldName, HttpFieldValue>, version: HttpVersion): Boolean {
+    fun shouldKeepAlive(headers: Indexed2<HttpFieldName, HttpFieldValue>, version: HttpVersion): Boolean {
         val connectionHeader = headers.`play`.find {
             it.a.value.lowercase() == "connection" 
         }?.b?.value?.lowercase()
@@ -272,7 +272,7 @@ class HttpConnectionManager(private val config: HttpServerConfig) {
     }
     
     fun handleConnectionUpgrade(
-        headers: Series2<HttpFieldName, HttpFieldValue>
+        headers: Indexed2<HttpFieldName, HttpFieldValue>
     ): UpgradeProtocol? {
         if (!HttpUpgrade.canUpgrade(headers.α { join -> 
                 HttpFieldName(join.a.value) j HttpFieldValue(join.b.value) 
@@ -332,8 +332,8 @@ object ChunkedTransferEncoder {
 
 // ===== UTILITY EXTENSIONS =====
 
-private fun ByteArray.toSeries(): Series<Byte> = size j { this[it] }
-private fun List<Char>.toSeries(): Series<Char> = size j { this[it] }
+private fun ByteArray.toSeries(): Indexed<Byte> = size j { this[it] }
+private fun List<Char>.toSeries(): Indexed<Char> = size j { this[it] }
 
 
 // ===== CCEK SERVICE HANDLERS =====

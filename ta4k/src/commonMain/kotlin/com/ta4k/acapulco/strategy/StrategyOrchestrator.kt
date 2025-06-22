@@ -48,7 +48,7 @@ data class CombinedAnalysis(
     val carlosAnalysis: StrategyAnalysis,
     val skimmerAnalysis: SkimmerAnalysis,
     val attentionScore: AttentionScore,
-    val votes: Series<StrategyVote>,
+    val votes: Indexed<StrategyVote>,
     val timestamp: Instant
 ) {
     val isActionable: Boolean
@@ -99,7 +99,7 @@ class StrategyOrchestrator(
         // Run both strategies
         val carlosAnalysis = carlosStrategy.analyzeWithAttention(symbol, candles)
         val skimmerAnalysis = krakenSkimmer.analyzeWithAttention(
-            Series.of(1) { symbol j candles }
+            Indexed.of(1) { symbol j candles }
         ).symbolAnalyses.let { analyses ->
             if (analyses.size > 0) analyses[0] else SkimmerAnalysis.empty(symbol)
         }
@@ -125,7 +125,7 @@ class StrategyOrchestrator(
         carlosAnalysis: StrategyAnalysis,
         skimmerAnalysis: SkimmerAnalysis,
         attentionScore: AttentionScore
-    ): Series<StrategyVote> {
+    ): Indexed<StrategyVote> {
         val votes = mutableListOf<StrategyVote>()
         
         // Carlos RSI2 vote
@@ -152,7 +152,7 @@ class StrategyOrchestrator(
             source = "Kraken Skimmer"
         ))
         
-        return Series.of(votes.size) { i -> votes[i] }
+        return Indexed.of(votes.size) { i -> votes[i] }
     }
     
     private fun convertCarlosSignal(carlosSignal: TradeSignal): TradeSignal = carlosSignal
@@ -189,7 +189,7 @@ class StrategyOrchestrator(
         return StrategyConfidence(confidence)
     }
     
-    private fun combineSignals(votes: Series<StrategyVote>): CombinedSignal {
+    private fun combineSignals(votes: Indexed<StrategyVote>): CombinedSignal {
         if (votes.size == 0) return CombinedSignal.HOLD
         
         // Calculate weighted scores
@@ -227,7 +227,7 @@ class StrategyOrchestrator(
         }
     }
     
-    fun analyzeTopSymbols(maxSymbols: Int = 10): Series<CombinedAnalysis> {
+    fun analyzeTopSymbols(maxSymbols: Int = 10): Indexed<CombinedAnalysis> {
         // Get top attention symbols
         val topSymbols = attentionTracker.getMostAttentionSymbols(maxSymbols)
         
@@ -241,14 +241,14 @@ class StrategyOrchestrator(
             kotlin.math.abs(analysis.signalStrength) * analysis.attentionScore.value
         }
         
-        return Series.of(sortedAnalyses.size) { i -> sortedAnalyses[i] }
+        return Indexed.of(sortedAnalyses.size) { i -> sortedAnalyses[i] }
     }
     
-    fun getActionableSignals(maxSymbols: Int = 10): Series<CombinedAnalysis> {
+    fun getActionableSignals(maxSymbols: Int = 10): Indexed<CombinedAnalysis> {
         val allAnalyses = analyzeTopSymbols(maxSymbols)
         val actionable = allAnalyses.play.filter { it.isActionable }
         
-        return Series.of(actionable.size) { i -> actionable[i] }
+        return Indexed.of(actionable.size) { i -> actionable[i] }
     }
     
     fun generateTradingReport(): TradingReport {
@@ -283,7 +283,7 @@ data class TradingReport(
     val topBuyCandidate: Symbol?,
     val topSellCandidate: Symbol?,
     val attentionSummary: AttentionSummary,
-    val analyses: Series<CombinedAnalysis>
+    val analyses: Indexed<CombinedAnalysis>
 ) {
     val marketActivity: String
         get() = when {

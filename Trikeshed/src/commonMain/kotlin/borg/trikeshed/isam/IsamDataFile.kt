@@ -1,26 +1,26 @@
 package borg.trikeshed.isam
 
-import borg.trikeshed.cursor.ColumnMeta
-import borg.trikeshed.cursor.Cursor
-import borg.trikeshed.cursor.RowVec
-import borg.trikeshed.lib.Join
-import borg.trikeshed.io.Usable
+import borg.trikeshed.lib.ColumnMeta
+import borg.trikeshed.lib.Cursor
+import borg.trikeshed.lib.RowVec
+import borg.trikeshed.lib.Usable
 
-interface IsamDataFile : Usable {
+/**
+ * ISAM data file interface
+ */
+expect interface IsamDataFile : Usable {
     val datafileFilename: String
-    val metafile: IsamMetaFileReader
+    val datafilePath: String
+    val datafileSize: Long
+    val datafileRecordCount: Long
+    val datafileRecordSize: Int
+    val datafileColumnCount: Int
+    val datafileColumns: List<ColumnMeta>
     
-    fun open()
-    fun close()
+    override fun open()
+    override fun close()
 
-    companion object {
-        fun write(cursor: Cursor, datafilename: String, varChars: Map<String, Int> = emptyMap())
-
-        fun append(
-            msf: Iterable<RowVec>,
-            datafilename: String,
-            varChars: Map<String, Int> = emptyMap(),
-            transform: ((RowVec) -> RowVec)? = null,
-        )
-    }
+    fun write(cursor: Cursor): Unit
+    fun append(row: RowVec): Unit
+    fun read(): RowVec
 } 

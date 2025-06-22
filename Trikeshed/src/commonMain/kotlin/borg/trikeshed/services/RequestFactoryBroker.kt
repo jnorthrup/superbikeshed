@@ -31,7 +31,7 @@ object RequestFactoryBroker {
         data class Invoke(
             override val serviceToken: ServiceToken,
             override val methodToken: MethodToken,
-            val args: Series<Any?>
+            val args: Indexed<Any?>
         ) : Request
 
         data class Create(
@@ -82,7 +82,7 @@ object RequestFactoryBroker {
         suspend fun invoke(
             serviceToken: String,
             methodToken: String,
-            args: Series<Any?>,
+            args: Indexed<Any?>,
             callback: (Response) -> Unit
         ) {
             val request = Request.Invoke(
@@ -148,7 +148,7 @@ object RequestFactoryBroker {
             transport.send(json.play.toByteArray().toSeries())
         }
 
-        suspend fun handleResponse(responseBytes: Series<Byte>) {
+        suspend fun handleResponse(responseBytes: Indexed<Byte>) {
             val responseJson = responseBytes.play.toByteArray().decodeToString()
             val response = JsonImpl.parse(responseJson)
             
@@ -175,17 +175,17 @@ object RequestFactoryBroker {
         private val services = mutableMapOf<ServiceToken, Any>()
         
         private val entityVersions = mutableMapOf<EntityProxyId, Long>()
-        private val validators = mutableMapOf<MethodToken, (Series<Any?>) -> Boolean>()
+        private val validators = mutableMapOf<MethodToken, (Indexed<Any?>) -> Boolean>()
 
         fun registerService(token: String, service: Any) {
             services[token] = service
         }
 
-        fun registerValidator(methodToken: String, validator: (Series<Any?>) -> Boolean) {
+        fun registerValidator(methodToken: String, validator: (Indexed<Any?>) -> Boolean) {
             validators[methodToken] = validator
         }
 
-        suspend fun handleRequest(requestBytes: Series<Byte>): Series<Byte> {
+        suspend fun handleRequest(requestBytes: Indexed<Byte>): Indexed<Byte> {
             val requestJson = requestBytes.play.toByteArray().decodeToString()
             val request = JsonImpl.parse(requestJson)
             
@@ -262,8 +262,8 @@ object RequestFactoryBroker {
 
     // Transport interface for client-server communication
     interface Transport {
-        suspend fun send(data: Series<Byte>)
-        suspend fun receive(): Series<Byte>
+        suspend fun send(data: Indexed<Byte>)
+        suspend fun receive(): Indexed<Byte>
     }
 
     // Helper functions for request/response parsing

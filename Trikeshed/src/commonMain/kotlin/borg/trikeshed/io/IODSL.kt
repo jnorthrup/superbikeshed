@@ -18,7 +18,7 @@ class IODSL(private val daemon: IODaemon) {
     /**
      * Create a new I/O handle for a specific operation type
      */
-    fun handle(type: IODaemonOperation.IODaemonOperationType): IOHandle = IOHandle(type, daemon)
+    fun handle(type: IODaemonOperation.IODaemonOperationType): IODaemonHandle = IODaemonHandle(type, daemon)
     
     /**
      * Execute a batch of operations
@@ -138,7 +138,7 @@ class IOSession(
 /**
  * I/O Handle for specific operation types
  */
-class IOHandle(
+class IODaemonHandle(
     private val type: IODaemonOperation.IODaemonOperationType,
     private val daemon: IODaemon
 ) {

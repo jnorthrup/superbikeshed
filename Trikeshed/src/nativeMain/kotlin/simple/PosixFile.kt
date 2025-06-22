@@ -2,7 +2,6 @@
 
 package simple
 
-import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.native.HasDescriptor
 import borg.trikeshed.native.HasPosixErr
 import kotlinx.cinterop.*
@@ -13,7 +12,7 @@ import platform.posix._SC_PAGE_SIZE
 import platform.posix.sysconf
 import platform.posix.uint32_t as __u32
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.play
 import borg.trikeshed.lib.s_
 import borg.trikeshed.lib.toSeries
@@ -489,7 +488,7 @@ class PosixFile(
 
 
 
-        fun namedDirAndFile(file_path: String): Series<String> = file_path.lastIndexOf('/').let { tail ->
+        fun namedDirAndFile(file_path: String): Indexed<String> = file_path.lastIndexOf('/').let { tail ->
             if (tail == -1) s_("", file_path) else s_(
                 file_path.substring(0, tail),
                 file_path.substring(tail.inc())
@@ -524,7 +523,7 @@ class PosixFile(
 
         }
 
-        fun readLines(path: String): Series<String> = memScoped {
+        fun readLines(path: String): Indexed<String> = memScoped {
             val file = PosixFile(path)
             val fp = fdopen(file.fd, "r")
             val line: CPointerVarOf<CPointer<ByteVarOf<Byte>>> = alloc()
@@ -572,7 +571,7 @@ class PosixFile(
         /**
          * writes \n terminated lines to a file
          */
-        fun writeLines(filename: String, lines: Series<String>) {
+        fun writeLines(filename: String, lines: Indexed<String>) {
             memScoped {
                 val O_FLAGS =
                     PosixOpenOpts.withFlags(PosixOpenOpts.O_Creat, PosixOpenOpts.O_Trunc, PosixOpenOpts.O_WrOnly)

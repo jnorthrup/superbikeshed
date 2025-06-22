@@ -1,8 +1,7 @@
 package borg.trikeshed.reflection
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import kotlin.reflect.KCallable
-import kotlin.reflect.full.members
 
 actual class PlatformServiceInvoker {
     actual fun findMethod(service: Any, methodName: String): Any? {
@@ -17,7 +16,7 @@ actual class PlatformServiceInvoker {
         }
     }
 
-    actual fun callMethod(method: Any, service: Any, args: Series<Any?>): Any? {
+    actual fun callMethod(method: Any, service: Any, args: Indexed<Any?>): Any? {
         val kCallable = method as? KCallable<*> 
             ?: throw IllegalArgumentException("Method must be a KCallable on JVM, got: ${method::class.simpleName}")
         

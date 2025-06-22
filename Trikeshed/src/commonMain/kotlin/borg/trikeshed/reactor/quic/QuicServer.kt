@@ -1,15 +1,12 @@
 package borg.trikeshed.reactor.quic
 
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.s_
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toArray
+import borg.trikeshed.lib.j
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
-import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
-import kotlinx.coroutines.flow.Flow
 
 interface ByteBuffer {
     fun remaining(): Int
@@ -25,7 +22,7 @@ interface QuicServer {
     fun close()
 }
 
-class QuicServer(private val config: QuicServerConfig) {
+class QuicServerImpl(private val config: QuicServerConfig) {
 
     suspend fun start() = coroutineScope {
         val channel = DatagramChannel.open()
@@ -97,17 +94,18 @@ class QuicStream(val streamId: Long, private val connection: QuicConnection) {
 
     suspend fun read(): ByteBuffer = incoming.receive()
 
-    suspend fun readAll(): Series<Byte> {
+    suspend fun readAll(): Indexed<Byte> {
         val bytes = mutableListOf<Byte>()
         // This is a simplified version. A real version would handle stream termination.
         val buffer = read()
         while(buffer.hasRemaining()) {
             bytes.add(buffer.get())
         }
-        return borg.trikeshed.lib.s_(elements = bytes.toByteArray())
+        val byteArray = bytes.toByteArray()
+        return byteArray.size j { byteArray[it] }
     }
 
-    fun write(data: Series<Byte>) {
+    fun write(data: Indexed<Byte>) {
         // Simplified: assumes data fits in one buffer
         val bytes = data.toArray()
         connection.send(streamId, ByteBuffer.wrap(bytes))

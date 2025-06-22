@@ -110,7 +110,7 @@ private class SelectorThread(
     suspend fun runEventLoop(isRunning: MutableStateFlow<Boolean>) = coroutineScope {
         // Launch a separate coroutine to handle blocking selector.select() on placeholder IO dispatcher
         launch(PlaceholderIO) {
-            while (isRunning.value && isActive) {
+            while (isRunning.value) {
                 try {
                     if (selector.select() > 0) {
                         val readyKeys = selector.selectedKeys()

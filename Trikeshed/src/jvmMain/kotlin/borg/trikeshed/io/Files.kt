@@ -1,7 +1,7 @@
 package borg.trikeshed.io
 
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toSeries
 import java.nio.file.Files as JFiles
 import java.nio.file.Paths
@@ -43,7 +43,7 @@ actual object Files {
         }
     }
 
-    actual fun iterateLines(fileName: String, bufsize: Int ): Iterable<Join<Long, Series<Byte>>> = Iterable {
+    actual fun iterateLines(fileName: String, bufsize: Int ): Iterable<Join<Long, Indexed<Byte>>> = Iterable {
         val path = Paths.get(fileName)
         val lines = JFiles.readAllLines(path)
         lines.mapIndexed { index: Int, line: String ->

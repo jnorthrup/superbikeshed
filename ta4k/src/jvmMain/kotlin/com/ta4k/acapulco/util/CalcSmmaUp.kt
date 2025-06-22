@@ -3,11 +3,11 @@
 // =====================================================================
 package borg.trikeshed.acapulco.util // Adjusted package
 
-import borg.trikeshed.lib.Series // Replaces Vect0r
+import borg.trikeshed.lib.Indexed // Replaces Vect0r
 import borg.trikeshed.lib.get // Replaces get extension or operator
 
 //todo:fold
-fun calcSmmaUp(open: Series<Double>, close: Series<Double>, n: Int, i: Int, avgUt1: Double): Double {
+fun calcSmmaUp(open: Indexed<Double>, close: Indexed<Double>, n: Int, i: Int, avgUt1: Double): Double {
     return if (avgUt1 == 0.0) {
         var sumUpChanges = 0.0
         var j = 0

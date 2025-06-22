@@ -3,12 +3,9 @@ package com.ta4k.indicators
 import com.ta4k.core.model.Kline
 import com.ta4k.trikeshedutils.toSeries // Planned new location
 // import com.ta4k.trikeshedutils.toList // ADX uses getters, not a single .values property
-import borg.trikeshed.lib.size
-import borg.trikeshed.lib.Series // Should be imported if Series is explicitly typed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import java.math.BigDecimal
-import java.math.RoundingMode
 
 class ADXIndicatorTest {
 

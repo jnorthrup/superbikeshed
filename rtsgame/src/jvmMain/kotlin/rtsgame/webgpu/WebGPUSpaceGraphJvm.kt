@@ -1,7 +1,6 @@
 package rtsgame.webgpu
 
 import borg.trikeshed.lib.*
-import rtsgame.core.*
 
 /**
  * JVM platform implementation using LWJGL for WebGPU bindings
@@ -31,7 +30,7 @@ actual class WebGPUSpaceGraph actual constructor() {
         return true
     }
     
-    actual fun createVertexBuffer(data: Series<VertexData>): BufferId {
+    actual fun createVertexBuffer(data: Indexed<VertexData>): BufferId {
         val bufferId = BufferId(nextBufferId++)
         val buffer = GPUBuffer() // TODO: Create actual LWJGL buffer
         buffers[bufferId] = buffer

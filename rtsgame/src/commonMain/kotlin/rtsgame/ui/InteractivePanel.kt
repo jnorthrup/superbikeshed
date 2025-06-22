@@ -29,7 +29,7 @@ data class PanelState(
     val id: PanelId,
     val position: Vector3D,
     val size: Vector3D,
-    val buttons: Series<ButtonState>,
+    val buttons: Indexed<ButtonState>,
     val visible: Boolean = true
 )
 
@@ -101,7 +101,7 @@ class InteractiveWebGPUPanel {
             id = PanelId("main_control"),
             position = Vector3D(0.0, 0.0, 10.0),
             size = Vector3D(800.0, 100.0, 10.0),
-            buttons = Series.of(buttons.size) { i -> buttons[i] }
+            buttons = Indexed.of(buttons.size) { i -> buttons[i] }
         )
     }
     
@@ -168,7 +168,7 @@ class InteractiveWebGPUPanel {
         }
         
         return panel.copy(
-            buttons = Series.of(updatedButtons.size) { i -> updatedButtons[i] }
+            buttons = Indexed.of(updatedButtons.size) { i -> updatedButtons[i] }
         )
     }
     
@@ -214,7 +214,7 @@ class InteractiveWebGPUPanel {
         ))
         
         return GameState(
-            entities = Series.of(entities.size) { i -> entities[i] },
+            entities = Indexed.of(entities.size) { i -> entities[i] },
             tick = GameTick(0)
         )
     }
@@ -233,7 +233,7 @@ class InteractiveWebGPUPanel {
         val allEntities = currentState.entities.`play` + newUnit
         
         return currentState.copy(
-            entities = Series.of(allEntities.size) { i -> allEntities[i] }
+            entities = Indexed.of(allEntities.size) { i -> allEntities[i] }
         )
     }
 }

@@ -33,7 +33,7 @@ class FlattonService(private val client: CouchClient) {
         designDocId: DocumentId,
         viewName: ViewName,
         params: ViewQueryParams = ViewQueryParams()
-    ): Series<JsonObjectCursor> {
+    ): Indexed<JsonObjectCursor> {
         // Get the raw response as a Series<Byte> for efficient processing
         val responseJson = client.queryView<Any, Any>(dbName, designDocId, viewName, params).toString()
         val responseBytes = responseJson.encodeToByteArray().toSeries()
@@ -53,7 +53,7 @@ class FlattonService(private val client: CouchClient) {
         viewName: ViewName,
         params: ViewQueryParams = ViewQueryParams(),
         transform: (JsonObjectCursor) -> T
-    ): Series<T> {
+    ): Indexed<T> {
         val cursors = queryViewAsCursor(dbName, designDocId, viewName, params)
         return cursors.map(transform)
     }
@@ -138,7 +138,7 @@ class FlattonService(private val client: CouchClient) {
  * A materialized view that caches cursor results for efficient repeated access.
  * This follows the relaxfactory pattern for state management.
  */
-class MaterializedView(private val cursors: Series<JsonObjectCursor>) {
+class MaterializedView(private val cursors: Indexed<JsonObjectCursor>) {
     
     /**
      * Gets the total number of items in the view.
@@ -153,14 +153,14 @@ class MaterializedView(private val cursors: Series<JsonObjectCursor>) {
     /**
      * Maps the cursors to a new Series using the provided transform function.
      */
-    fun <T> map(transform: (JsonObjectCursor) -> T): Series<T> {
+    fun <T> map(transform: (JsonObjectCursor) -> T): Indexed<T> {
         return cursors.map(transform)
     }
     
     /**
      * Filters the cursors using the provided predicate.
      */
-    fun filter(predicate: (JsonObjectCursor) -> Boolean): Series<JsonObjectCursor> {
+    fun filter(predicate: (JsonObjectCursor) -> Boolean): Indexed<JsonObjectCursor> {
         return cursors.filter(predicate)
     }
     

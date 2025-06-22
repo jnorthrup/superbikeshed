@@ -5,11 +5,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /** a mutable listView of a List which performs a copy to MutableList on first mutation.  not threadsafe or concurrent. */
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.emptySeries
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.emptyIndex
 
-class ListCowView<T>(private var list: Series<T> = emptySeries())
-class ListCowView<T>(private var list: Series<T> = emptySeries())
+class ListCowView<T>(private var list: Indexed<T> = emptyIndex())
+class ListCowView<T>(private var list: Indexed<T> = emptyIndex())
 class ListCowView<T>(private var list: List<T> = emptyList()) : List<T>, AbstractMutableList<T>() {
     //keep our inital list until a mutable operation, then replace with .toMutableList
    private var once: Mutex? = Mutex()

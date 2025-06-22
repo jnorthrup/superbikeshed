@@ -7,15 +7,15 @@ import borg.trikeshed.lib.*
 // Lightning JSON Bridge - Complete implementation with full functionality
 
 typealias JsonBounds = Twin<Int>
-typealias JsonCommaIndices = Series<Int>
+typealias JsonCommaIndices = Indexed<Int>
 typealias JsonStructuralIndices = Join<JsonBounds, JsonCommaIndices>
-typealias JsonSegmentContent = Series<Char>
+typealias JsonSegmentContent = Indexed<Char>
 typealias JsonSegment = Join<JsonBounds, JsonSegmentContent>
-typealias JsonParseContext = Join<JsonStructuralIndices, Series<Char>>
+typealias JsonParseContext = Join<JsonStructuralIndices, Indexed<Char>>
 
 // Lightning JSON Implementation - Complete
 object Json {
-    fun parse(jsonString: String): Series<UByte> {
+    fun parse(jsonString: String): Indexed<UByte> {
         return LightningJson.parseToBitmap(jsonString)
     }
     
@@ -23,11 +23,11 @@ object Json {
         return LightningJson.stringify(value)
     }
     
-    fun extractValues(jsonString: String): Series<String> {
+    fun extractValues(jsonString: String): Indexed<String> {
         return LightningJson.extractValues(jsonString)
     }
     
-    fun findStructuralIndices(jsonString: String): Series<Int> {
+    fun findStructuralIndices(jsonString: String): Indexed<Int> {
         return LightningJson.findStructuralIndices(jsonString)
     }
     
@@ -48,7 +48,7 @@ object Json {
 }
 
 // Lightning JSON is the performance implementation
-fun String.parseJson(): Series<UByte> = Json.parse(this)
+fun String.parseJson(): Indexed<UByte> = Json.parse(this)
 fun Any.toJsonString(): String = Json.stringify(this)
 fun String.reifyJson(): Any? = Json.reify(this)
 fun String.indexJson(): JsonStructuralIndices = Json.index(this)

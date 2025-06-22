@@ -1,14 +1,10 @@
 package borg.trikeshed.acapulco.util
 
-import borg.trikeshed.cursor.ColumnMeta
 import borg.trikeshed.cursor.Cursor
 import borg.trikeshed.cursor.RowVec
 import borg.trikeshed.cursor.at
-import borg.trikeshed.cursor.get
-import borg.trikeshed.cursor.meta
 import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.lib.*
-import borg.trikeshed.common.collections.s_
 import java.lang.ref.SoftReference
 import java.util.*
 import kotlin.math.max
@@ -33,8 +29,8 @@ fun Cursor.bollinger(depth: Int, k: Double = 2.5): Cursor {
  }
 
  return size j { y: Int ->
- val prevRows: Series<RowVec> = (0 until depth).map { this at max(0, y - it) }.toSeries()
- val valuesForCalc: Series<Double> = prevRows α { row -> todub(row.left[0]) }
+ val prevRows: Indexed<RowVec> = (0 until depth).map { this at max(0, y - it) }.toSeries()
+ val valuesForCalc: Indexed<Double> = prevRows α { row -> todub(row.left[0]) }
  val key = "${this.hashCode()}:$y:$depth:$k" 
  val cachedResult: Join<RowVec, String>? = bolCache[key]?.get()
 

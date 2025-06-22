@@ -5,11 +5,9 @@ package borg.trikeshed.acapulco.scripts
 
 import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
 import borg.trikeshed.cursor.RowVec // Type alias for Series2<Any?, () -> ColumnMeta>
-import borg.trikeshed.cursor.SimpleCursor // Assuming ported or replaced
 import borg.trikeshed.acapulco.rl.BinanceRlAdapter // Assuming ported
 import borg.trikeshed.rl.QLearner // Assuming ported/available
 import borg.trikeshed.lib.* // Trikeshed lib
-import borg.trikeshed.common.collections.s_ // Use s_ for Series
 
 /**
  * Entry point for the Acapulco Binance RL adapter using Trikeshed types.
@@ -19,7 +17,7 @@ fun main(args: Array<String>) {
 
     // TODO: Replace with actual cursor source for Binance simulator (e.g., IsamDataFile)
     // Placeholder: Creating an empty cursor
-    val emptyCursor: Cursor = emptySeries() // An empty Series<RowVec>
+    val emptyCursor: Cursor = emptyIndex() // An empty Series<RowVec>
     val cursor: Cursor = emptyCursor // Use the empty cursor for now
 
     // Ensure Agent state type matches Cursor row type (RowVec)

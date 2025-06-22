@@ -1,9 +1,8 @@
 package com.ta4k.acapulco
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toList
 import com.ta4k.core.model.Kline
-import java.math.BigDecimal
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -21,7 +20,7 @@ class SpaceGraphVisualizer {
          * @param klines Series of Klines to visualize
          * @return SpaceGraph visualization data
          */
-        fun visualizeKlines(klines: Series<Kline>): SpaceGraphData {
+        fun visualizeKlines(klines: Indexed<Kline>): SpaceGraphData {
             val nodes = mutableListOf<Node>()
             val edges = mutableListOf<Edge>()
             

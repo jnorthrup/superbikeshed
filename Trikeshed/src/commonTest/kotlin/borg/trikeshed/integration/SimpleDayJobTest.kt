@@ -22,7 +22,7 @@ class SimpleDayJobTest {
     @Test
     fun `Series realm specialization works`() {
         // Series is MetaSeries<Int, T>
-        val numbers: Series<Int> = 10 j { i -> i * i }
+        val numbers: Indexed<Int> = 10 j { i -> i * i }
         
         assertEquals(10, numbers.size)
         assertEquals(9, numbers[3]) // 3 * 3 = 9
@@ -40,8 +40,8 @@ class SimpleDayJobTest {
     
     @Test
     fun `Series transformation with α operator`() {
-        val numbers: Series<Int> = 5 j { i -> i + 1 }
-        val doubled: Series<Int> = numbers α { it * 2 }
+        val numbers: Indexed<Int> = 5 j { i -> i + 1 }
+        val doubled: Indexed<Int> = numbers α { it * 2 }
         
         assertEquals(5, doubled.size)
         assertEquals(2, doubled[0])  // (0 + 1) * 2 = 2
@@ -52,7 +52,7 @@ class SimpleDayJobTest {
     @Test
     fun `Series2 with Join elements`() {
         // Series2<A,B> is MetaSeries<Int, Join<A,B>>
-        val pairs: Series2<String, Int> = 3 j { i ->
+        val pairs: Indexed2<String, Int> = 3 j { i ->
             "key-$i" j (i * 10)
         }
         
@@ -116,7 +116,7 @@ class SimpleDayJobTest {
         val startTime = TimeSource.Monotonic.markNow()
         
         // Create a larger series for performance testing
-        val largeData: Series<Int> = 100_000 j { i -> i * 2 }
+        val largeData: Indexed<Int> = 100_000 j { i -> i * 2 }
         
         // Transform the data
         val processed = largeData α { it + 1 }
@@ -136,10 +136,10 @@ class SimpleDayJobTest {
     
     @Test
     fun `Play materialization for standard library integration`() {
-        val series: Series<String> = 5 j { i -> "value-$i" }
+        val indexed: Indexed<String> = 5 j { i -> "value-$i" }
         
         // Use play to materialize for standard library operations
-        val materialized = series.play.map { it.uppercase() }.filter { it.contains("2") }
+        val materialized = indexed.play.map { it.uppercase() }.filter { it.contains("2") }
         
         assertEquals(listOf("VALUE-2"), materialized)
     }
@@ -149,7 +149,7 @@ class SimpleDayJobTest {
         // Demonstrate complex composition using MetaSeries patterns
         
         // Create a series of shapes (each shape is itself a Series<Int>)
-        val shapes: Series<Shape> = 3 j { i ->
+        val shapes: Indexed<Shape> = 3 j { i ->
             val dimensions = i + 2 // 2D, 3D, 4D
             dimensions j { dim -> dim + 1 } // [1,2], [1,2,3], [1,2,3,4]
         }

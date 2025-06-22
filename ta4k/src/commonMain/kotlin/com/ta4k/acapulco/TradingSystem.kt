@@ -1,6 +1,6 @@
 package com.ta4k.acapulco
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import com.ta4k.core.model.Kline
 import com.ta4k.acapulco.model.PortfolioRow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +36,7 @@ class TradingSystem {
         startTime: Instant,
         endTime: Instant,
         timeframe: String = DogeDataLoader.DEFAULT_TIMEFRAME
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         return dogeDataLoader.loadHistoricalData(startTime, endTime, timeframe)
     }
     
@@ -44,7 +44,7 @@ class TradingSystem {
      * Update the visualization with new kline data.
      * @param klines Series of Klines to visualize
      */
-    fun updateVisualization(klines: Series<Kline>) {
+    fun updateVisualization(klines: Indexed<Kline>) {
         _visualizationState.value = SpaceGraphVisualizer.visualizeKlines(klines)
     }
     
@@ -73,7 +73,7 @@ class TradingSystem {
     suspend fun loadLastNPeriods(
         n: Int,
         timeframe: String = DogeDataLoader.DEFAULT_TIMEFRAME
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         return dogeDataLoader.loadLastNPeriods(n, timeframe)
     }
 } 

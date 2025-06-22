@@ -1,10 +1,8 @@
 package com.ta4k.stats
 
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.j
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.math.sqrt
 
 /**
  * Risk metrics implementation ported from quantstats
@@ -20,7 +18,7 @@ class RiskMetrics {
      * Value at Risk (VaR) calculation
      */
     fun valueAtRisk(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         sigma: Double = DEFAULT_SIGMA,
         confidence: Double = DEFAULT_CONFIDENCE
     ): BigDecimal {
@@ -36,7 +34,7 @@ class RiskMetrics {
      * Conditional Value at Risk (CVaR) calculation
      */
     fun conditionalValueAtRisk(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         sigma: Double = DEFAULT_SIGMA,
         confidence: Double = DEFAULT_CONFIDENCE
     ): BigDecimal {
@@ -54,7 +52,7 @@ class RiskMetrics {
      * Expected Shortfall calculation
      */
     fun expectedShortfall(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         sigma: Double = DEFAULT_SIGMA,
         confidence: Double = DEFAULT_CONFIDENCE
     ): BigDecimal {
@@ -65,7 +63,7 @@ class RiskMetrics {
      * Tail Ratio calculation
      */
     fun tailRatio(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         cutoff: Double = DEFAULT_CONFIDENCE
     ): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
@@ -81,7 +79,7 @@ class RiskMetrics {
     /**
      * Risk of Ruin calculation
      */
-    fun riskOfRuin(returns: Series<BigDecimal>): BigDecimal {
+    fun riskOfRuin(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val winRate = returns.count { it > BigDecimal.ZERO }.toDouble() / returns.size
@@ -96,7 +94,7 @@ class RiskMetrics {
             .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
     }
 
-    private fun Series<BigDecimal>.average(): BigDecimal {
+    private fun Indexed<BigDecimal>.average(): BigDecimal {
         if (isEmpty()) return BigDecimal.ZERO
         return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
     }

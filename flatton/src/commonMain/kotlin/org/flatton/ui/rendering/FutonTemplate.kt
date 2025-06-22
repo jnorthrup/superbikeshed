@@ -1,8 +1,7 @@
 package org.flatton.ui.rendering
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import org.flatton.types.CouchDatabase
-import org.flatton.types.DatabaseName
 
 /**
  * A simple templating engine that mimics the functionality needed by Futon
@@ -29,7 +28,7 @@ object FutonTemplate {
         result = eachRegex.replace(result) { matchResult ->
             val listName = matchResult.groupValues[1]
             val innerTemplate = matchResult.groupValues[2]
-            val items = context[listName] as? Series<*> ?: return@replace ""
+            val items = context[listName] as? Indexed<*> ?: return@replace ""
 
             items.play.joinToString("") { item ->
                 val itemContext = when (item) {

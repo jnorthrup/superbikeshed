@@ -2,17 +2,17 @@ package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
 import borg.trikeshed.lib.j // For creating Series from results
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
  * Average Directional Index (ADX) indicator.
  * Measures trend strength. It uses smoothed +DM, -DM, and TR.
- * Operates on a Trikethed [Series] of [Kline].
+ * Operates on a Trikethed [Indexed] of [Kline].
  */
 class ADXIndicator(
-    private val klineSeries: Series<Kline>, // Changed
+    private val klineIndexed: Indexed<Kline>, // Changed
     private val period: Int
 ) {
     init {
@@ -45,27 +45,27 @@ class ADXIndicator(
     }
 
     private fun preAllocateListsIfNeeded() {
-        if (klineSeries.size == 0) return
+        if (klineIndexed.size == 0) return
         // Only pre-allocate if lists are currently empty, meaning it's the first pass
-        if (plusDMResults.isEmpty()) ensureListSize(plusDMResults, klineSeries.size)
-        if (minusDMResults.isEmpty()) ensureListSize(minusDMResults, klineSeries.size)
-        if (trueRangeResults.isEmpty()) ensureListSize(trueRangeResults, klineSeries.size)
-        if (smoothedPlusDM.isEmpty()) ensureListSize(smoothedPlusDM, klineSeries.size)
-        if (smoothedMinusDM.isEmpty()) ensureListSize(smoothedMinusDM, klineSeries.size)
-        if (smoothedTR.isEmpty()) ensureListSize(smoothedTR, klineSeries.size)
-        if (plusDIResults.isEmpty()) ensureListSize(plusDIResults, klineSeries.size)
-        if (minusDIResults.isEmpty()) ensureListSize(minusDIResults, klineSeries.size)
-        if (dxResults.isEmpty()) ensureListSize(dxResults, klineSeries.size)
-        if (adxResults.isEmpty()) ensureListSize(adxResults, klineSeries.size)
+        if (plusDMResults.isEmpty()) ensureListSize(plusDMResults, klineIndexed.size)
+        if (minusDMResults.isEmpty()) ensureListSize(minusDMResults, klineIndexed.size)
+        if (trueRangeResults.isEmpty()) ensureListSize(trueRangeResults, klineIndexed.size)
+        if (smoothedPlusDM.isEmpty()) ensureListSize(smoothedPlusDM, klineIndexed.size)
+        if (smoothedMinusDM.isEmpty()) ensureListSize(smoothedMinusDM, klineIndexed.size)
+        if (smoothedTR.isEmpty()) ensureListSize(smoothedTR, klineIndexed.size)
+        if (plusDIResults.isEmpty()) ensureListSize(plusDIResults, klineIndexed.size)
+        if (minusDIResults.isEmpty()) ensureListSize(minusDIResults, klineIndexed.size)
+        if (dxResults.isEmpty()) ensureListSize(dxResults, klineIndexed.size)
+        if (adxResults.isEmpty()) ensureListSize(adxResults, klineIndexed.size)
     }
 
 
     private fun ensureCalculatedUpTo(targetIndex: Int) {
-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex ) {
+        if (targetIndex < 0 || targetIndex >= klineIndexed.size || targetIndex <= calculatedUpToIndex ) {
             return
         }
 
-        if (calculatedUpToIndex == -1 && klineSeries.size > 0) {
+        if (calculatedUpToIndex == -1 && klineIndexed.size > 0) {
             preAllocateListsIfNeeded()
         }
 
@@ -76,13 +76,13 @@ class ADXIndicator(
             if (i == 0) {
                 plusDMResults[i] = BigDecimal.ZERO
                 minusDMResults[i] = BigDecimal.ZERO
-                trueRangeResults[i] = klineSeries[0].highPrice.subtract(klineSeries[0].lowPrice)
+                trueRangeResults[i] = klineIndexed[0].highPrice.subtract(klineIndexed[0].lowPrice)
                 // Other lists (smoothed, DI, DX, ADX) remain null for index 0 as set by preAllocate
                 continue
             }
 
-            val currentKline = klineSeries[i]
-            val prevKline = klineSeries[i - 1]
+            val currentKline = klineIndexed[i]
+            val prevKline = klineIndexed[i - 1]
 
             // Calculate +DM, -DM
             val upMove = currentKline.highPrice.subtract(prevKline.highPrice)
@@ -163,50 +163,50 @@ class ADXIndicator(
     }
 
     fun getPlusDI(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
+        if (index < 0 || index >= klineIndexed.size) return null
         ensureCalculatedUpTo(index)
         return if (index >= period && index < plusDIResults.size) plusDIResults[index]?.setScale(resultScale, RoundingMode.HALF_UP) else null
     }
 
     fun getMinusDI(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
+        if (index < 0 || index >= klineIndexed.size) return null
         ensureCalculatedUpTo(index)
         return if (index >= period && index < minusDIResults.size) minusDIResults[index]?.setScale(resultScale, RoundingMode.HALF_UP) else null
     }
 
     fun getDX(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
+        if (index < 0 || index >= klineIndexed.size) return null
         ensureCalculatedUpTo(index)
         return if (index >= period && index < dxResults.size) dxResults[index]?.setScale(resultScale, RoundingMode.HALF_UP) else null
     }
 
     fun getADX(index: Int): BigDecimal? {
-        if (index < 0 || index >= klineSeries.size) return null
+        if (index < 0 || index >= klineIndexed.size) return null
         ensureCalculatedUpTo(index)
         return if (index >= (2 * period - 1) && index < adxResults.size) adxResults[index]?.setScale(resultScale, RoundingMode.HALF_UP) else null
     }
 
-    val plusDISeries: Series<BigDecimal?>
+    val plusDIIndexed: Indexed<BigDecimal?>
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
-            return klineSeries.size j { idx:Int -> this.getPlusDI(idx) }
+            return klineIndexed.size j { idx:Int -> this.getPlusDI(idx) }
         }
 
-    val minusDISeries: Series<BigDecimal?>
+    val minusDIIndexed: Indexed<BigDecimal?>
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
-            return klineSeries.size j { idx:Int -> this.getMinusDI(idx) }
+            return klineIndexed.size j { idx:Int -> this.getMinusDI(idx) }
         }
 
-    val adxValueSeries: Series<BigDecimal?> // Renamed from adxSeries to avoid conflict with adxResults list
+    val adxValueIndexed: Indexed<BigDecimal?> // Renamed from adxSeries to avoid conflict with adxResults list
         get() {
-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
-                ensureCalculatedUpTo(klineSeries.size - 1)
+            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+                ensureCalculatedUpTo(klineIndexed.size - 1)
             }
-            return klineSeries.size j { idx:Int -> this.getADX(idx) }
+            return klineIndexed.size j { idx:Int -> this.getADX(idx) }
         }
 }

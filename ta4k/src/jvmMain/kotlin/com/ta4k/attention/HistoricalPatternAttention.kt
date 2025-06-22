@@ -1,9 +1,8 @@
 package com.ta4k.attention
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
-import java.time.Instant
 import kotlin.math.abs
 
 /**
@@ -39,13 +38,13 @@ class HistoricalPatternAttention(
     /**
      * Analyze a new batch of klines for patterns
      */
-    fun analyze(klineSeries: Series<Kline>, startIndex: Int = 0): Series<Pattern> {
-        if (startIndex < 0 || startIndex >= klineSeries.size) {
+    fun analyze(klineIndexed: Indexed<Kline>, startIndex: Int = 0): Indexed<Pattern> {
+        if (startIndex < 0 || startIndex >= klineIndexed.size) {
             return 0 j { _: Int -> null }
         }
 
-        val endIndex = minOf(startIndex + windowSize, klineSeries.size)
-        val window = klineSeries.slice(startIndex until endIndex)
+        val endIndex = minOf(startIndex + windowSize, klineIndexed.size)
+        val window = klineIndexed.slice(startIndex until endIndex)
 
         // Analyze different pattern types
         val pricePatterns = analyzePricePatterns(window, startIndex)
@@ -68,7 +67,7 @@ class HistoricalPatternAttention(
     /**
      * Analyze price action patterns
      */
-    private fun analyzePricePatterns(window: Series<Kline>, startIndex: Int): List<Pattern> {
+    private fun analyzePricePatterns(window: Indexed<Kline>, startIndex: Int): List<Pattern> {
         val patterns = mutableListOf<Pattern>()
         
         // Detect trend patterns
@@ -109,7 +108,7 @@ class HistoricalPatternAttention(
     /**
      * Analyze volume patterns
      */
-    private fun analyzeVolumePatterns(window: Series<Kline>, startIndex: Int): List<Pattern> {
+    private fun analyzeVolumePatterns(window: Indexed<Kline>, startIndex: Int): List<Pattern> {
         val patterns = mutableListOf<Pattern>()
         
         // Calculate volume moving average
@@ -142,7 +141,7 @@ class HistoricalPatternAttention(
     /**
      * Analyze technical indicator patterns
      */
-    private fun analyzeIndicatorPatterns(window: Series<Kline>, startIndex: Int): List<Pattern> {
+    private fun analyzeIndicatorPatterns(window: Indexed<Kline>, startIndex: Int): List<Pattern> {
         val patterns = mutableListOf<Pattern>()
         
         // RSI patterns
@@ -184,7 +183,7 @@ class HistoricalPatternAttention(
     /**
      * Analyze combined patterns (price + volume + indicators)
      */
-    private fun analyzeCombinedPatterns(window: Series<Kline>, startIndex: Int): List<Pattern> {
+    private fun analyzeCombinedPatterns(window: Indexed<Kline>, startIndex: Int): List<Pattern> {
         val patterns = mutableListOf<Pattern>()
         
         // Example: Volume confirmation of price movement
@@ -213,7 +212,7 @@ class HistoricalPatternAttention(
     /**
      * Calculate volume moving average
      */
-    private fun calculateVolumeMA(window: Series<Kline>): Series<Double> {
+    private fun calculateVolumeMA(window: Indexed<Kline>): Indexed<Double> {
         val period = 20
         return window.size j { i: Int ->
             if (i < period - 1) {
@@ -231,7 +230,7 @@ class HistoricalPatternAttention(
     /**
      * Calculate RSI values
      */
-    private fun calculateRSI(window: Series<Kline>): Series<Double> {
+    private fun calculateRSI(window: Indexed<Kline>): Indexed<Double> {
         val period = 14
         val gains = mutableListOf<Double>()
         val losses = mutableListOf<Double>()
@@ -273,7 +272,7 @@ class HistoricalPatternAttention(
     /**
      * Get all patterns that overlap with a given range
      */
-    fun getPatternsInRange(startIndex: Int, endIndex: Int): Series<Pattern> {
+    fun getPatternsInRange(startIndex: Int, endIndex: Int): Indexed<Pattern> {
         val filteredPatterns = patterns.filter { pattern ->
             pattern.startIndex <= endIndex && pattern.endIndex >= startIndex
         }
@@ -283,7 +282,7 @@ class HistoricalPatternAttention(
     /**
      * Get the most recent patterns
      */
-    fun getRecentPatterns(limit: Int = 10): Series<Pattern> {
+    fun getRecentPatterns(limit: Int = 10): Indexed<Pattern> {
         val recentPatterns = patterns.takeLast(limit)
         return recentPatterns.size j { idx: Int -> recentPatterns.getOrNull(idx) }
     }

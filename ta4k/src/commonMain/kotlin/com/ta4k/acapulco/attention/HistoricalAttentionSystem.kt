@@ -2,7 +2,6 @@ package com.ta4k.acapulco.attention
 
 import borg.trikeshed.lib.*
 import com.ta4k.acapulco.data.*
-import kotlinx.datetime.Instant
 import kotlin.math.*
 
 /**
@@ -34,7 +33,7 @@ value class AttentionWindow(val startIndex: Int, val endIndex: Int, val score: A
 // Core attention data structures using TrikeShed Join patterns
 typealias GaugeReading = Join<VolatilityGauge, VolumeGauge>
 typealias AttentionFocus = Join<Symbol, AttentionScore>
-typealias AttentionSeries = Series<AttentionWindow>
+typealias AttentionSeries = Indexed<AttentionWindow>
 typealias WeightedSymbol = Join<Symbol, AttentionScore>
 
 // Historical attention analyzer
@@ -42,7 +41,7 @@ class HistoricalAttentionAnalyzer {
     
     fun analyzeCandles(candles: CandleSeries): AttentionSeries {
         if (candles.size < 2) {
-            return Series.of(0) { error("Insufficient data") }
+            return Indexed.of(0) { error("Insufficient data") }
         }
         
         // Calculate attention windows using Series.α transformations
@@ -56,9 +55,9 @@ class HistoricalAttentionAnalyzer {
         return findAttentionWindows(attentionScores)
     }
     
-    private fun calculateVolatilityScores(candles: CandleSeries): Series<VolatilityGauge> {
+    private fun calculateVolatilityScores(candles: CandleSeries): Indexed<VolatilityGauge> {
         // Calculate price volatility using Series transformations
-        val priceChanges = Series.of(candles.size - 1) { i ->
+        val priceChanges = Indexed.of(candles.size - 1) { i ->
             val current = candles[i + 1].a.ohlc.close.value
             val previous = candles[i].a.ohlc.close.value
             abs(current - previous) / previous
@@ -68,11 +67,11 @@ class HistoricalAttentionAnalyzer {
         return priceChanges.α { change -> VolatilityGauge(change) }
     }
     
-    private fun calculateVolumeScores(candles: CandleSeries): Series<VolumeGauge> {
+    private fun calculateVolumeScores(candles: CandleSeries): Indexed<VolumeGauge> {
         // Calculate volume normalized by moving average
         val windowSize = minOf(20, candles.size)
         
-        return Series.of(candles.size) { i ->
+        return Indexed.of(candles.size) { i ->
             val currentVolume = candles[i].a.volume.value
             
             // Calculate average volume in window
@@ -88,10 +87,10 @@ class HistoricalAttentionAnalyzer {
         }
     }
     
-    private fun combineGauges(volatilityScores: Series<VolatilityGauge>, volumeScores: Series<VolumeGauge>): Series<AttentionScore> {
+    private fun combineGauges(volatilityScores: Indexed<VolatilityGauge>, volumeScores: Indexed<VolumeGauge>): Indexed<AttentionScore> {
         val minSize = minOf(volatilityScores.size, volumeScores.size)
         
-        return Series.of(minSize) { i ->
+        return Indexed.of(minSize) { i ->
             val volatilityAttention = volatilityScores[i].toAttentionScore()
             val volumeAttention = volumeScores[i].toAttentionScore()
             
@@ -101,7 +100,7 @@ class HistoricalAttentionAnalyzer {
         }
     }
     
-    private fun findAttentionWindows(attentionScores: Series<AttentionScore>): AttentionSeries {
+    private fun findAttentionWindows(attentionScores: Indexed<AttentionScore>): AttentionSeries {
         val threshold = AttentionScore(2.0) // Configurable attention threshold
         val minWindowSize = 5
         val windows = mutableListOf<AttentionWindow>()
@@ -133,7 +132,7 @@ class HistoricalAttentionAnalyzer {
             windows.add(AttentionWindow(windowStart, attentionScores.size - 1, windowScore))
         }
         
-        return Series.of(windows.size) { i -> windows[i] }
+        return Indexed.of(windows.size) { i -> windows[i] }
     }
 }
 
@@ -143,7 +142,7 @@ class HistoricalAttentionTracker(
     private val analyzer: HistoricalAttentionAnalyzer = HistoricalAttentionAnalyzer()
 ) {
     
-    fun analyzeAllSymbols(): Series<WeightedSymbol> {
+    fun analyzeAllSymbols(): Indexed<WeightedSymbol> {
         val symbols = dataManager.getAvailableSymbols()
         val weightedSymbols = mutableListOf<WeightedSymbol>()
         
@@ -169,14 +168,14 @@ class HistoricalAttentionTracker(
         // Sort by attention score (descending)
         val sortedSymbols = weightedSymbols.sortedByDescending { it.b.value }
         
-        return Series.of(sortedSymbols.size) { i -> sortedSymbols[i] }
+        return Indexed.of(sortedSymbols.size) { i -> sortedSymbols[i] }
     }
     
-    fun getMostAttentionSymbols(count: Int): Series<WeightedSymbol> {
+    fun getMostAttentionSymbols(count: Int): Indexed<WeightedSymbol> {
         val allWeighted = analyzeAllSymbols()
         val actualCount = minOf(count, allWeighted.size)
         
-        return Series.of(actualCount) { i -> allWeighted[i] }
+        return Indexed.of(actualCount) { i -> allWeighted[i] }
     }
     
     fun getSymbolAttentionWindows(symbol: Symbol): AttentionSeries {
@@ -184,7 +183,7 @@ class HistoricalAttentionTracker(
         return if (candles.size > 0) {
             analyzer.analyzeCandles(candles)
         } else {
-            Series.of(0) { error("No data for symbol: ${symbol.value}") }
+            Indexed.of(0) { error("No data for symbol: ${symbol.value}") }
         }
     }
     
@@ -219,7 +218,7 @@ class AttentionStrategyActivator(
     private val attentionTracker: HistoricalAttentionTracker
 ) {
     
-    fun getActiveSymbolsForStrategy(strategy: String, maxSymbols: Int = 5): Series<Symbol> {
+    fun getActiveSymbolsForStrategy(strategy: String, maxSymbols: Int = 5): Indexed<Symbol> {
         val topSymbols = attentionTracker.getMostAttentionSymbols(maxSymbols)
         
         // Extract just the symbols using Series.α transformation

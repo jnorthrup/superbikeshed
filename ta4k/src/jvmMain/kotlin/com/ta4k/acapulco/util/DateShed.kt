@@ -7,22 +7,14 @@ import borg.trikeshed.cursor.ColumnMeta
 import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
 import borg.trikeshed.cursor.RowVec // Type alias for Series2<Any?, () -> ColumnMeta>
 import borg.trikeshed.cursor.at
-import borg.trikeshed.cursor.get
 import borg.trikeshed.cursor.meta
-import borg.trikeshed.cursor.SimpleCursor // Needs porting or replacement
 import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.lib.* // Imports Join, Series, j, α, etc.
-import borg.trikeshed.common.collections.s_ // Replaces _v for Series creation
-import borg.trikeshed.acapulco.ml.DummySpec // Assuming ported
 import borg.trikeshed.acapulco.ml.featureRange // Assuming ported
-import borg.trikeshed.acapulco.ml.normalize // Assuming ported
-import borg.trikeshed.acapulco.util.todub // Assuming ported or replaced
-import java.lang.ref.SoftReference
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.*
-import kotlin.collections.component1
 
 object DateShed {
     /**
@@ -51,7 +43,7 @@ object DateShed {
     @JvmStatic
     @JvmName("componentize1")
     fun componentize(td: OffsetDateTime): Cursor { // Returns Series<RowVec>
-        val meta: Series<ColumnMeta> = s_[
+        val meta: Indexed<ColumnMeta> = s_[
             ColumnMeta("since017", IOMemento.IoInt),
             ColumnMeta("month", IOMemento.IoInt),
             ColumnMeta("dayOfMonth", IOMemento.IoInt),
@@ -59,7 +51,7 @@ object DateShed {
             ColumnMeta("hour", IOMemento.IoInt),
             ColumnMeta("minute", IOMemento.IoInt)
         ]
-        val data: Series<Series<Any>> = s_[ // Outer Series for rows (only 1 row here)
+        val data: Indexed<Indexed<Any>> = s_[ // Outer Series for rows (only 1 row here)
             s_[ // Inner Series for columns in the row
                 td.year - 2017,
                 td.month.ordinal,
@@ -96,19 +88,19 @@ object DateShed {
             ]
         }
     }
-    val scalarsBottom60: Series<ColumnMeta> by lazy { bottom60.meta } // Get meta from the cursor
+    val scalarsBottom60: Indexed<ColumnMeta> by lazy { bottom60.meta } // Get meta from the cursor
 
 
-    val bottom60DoubleRanges: Series<Twin<Double>> = run { // Use Series<Twin<Double>>
+    val bottom60DoubleRanges: Indexed<Twin<Double>> = run { // Use Series<Twin<Double>>
         val b = bottom60
         val numCols = scalarsBottom60.size
         numCols j { x:Int -> // Iterate through columns
             // Extract the column as Series<Int>, then convert to Series<Double>
-            val columnIntSeries: Series<Int> = b α { row -> row.left[x] as Int }
-            val columnDoubleSeries: Series<Double> = columnIntSeries α { it.toDouble() }
+            val columnIntIndexed: Indexed<Int> = b α { row -> row.left[x] as Int }
+            val columnDoubleIndexed: Indexed<Double> = columnIntIndexed α { it.toDouble() }
 
             // TODO: featureRange needs to be ported or reimplemented for Series<Double>
-             featureRange(columnDoubleSeries) // Assuming featureRange accepts Series<Double>
+             featureRange(columnDoubleIndexed) // Assuming featureRange accepts Series<Double>
             // Placeholder:
              0.0 j 1.0
         }
@@ -118,13 +110,13 @@ object DateShed {
      * rowvec.left[0] must be IoInstant type
      */
     @JvmStatic
-    fun normalizeInstant(td: Instant): Series<Double> { // Returns Series<Double>
+    fun normalizeInstant(td: Instant): Indexed<Double> { // Returns Series<Double>
         val crono = componentize(td.atOffset(ZoneOffset.UTC))
         // Assuming componentize returns a Cursor (Series<RowVec>) with one row
-        val row: Series<Double> = crono.first.left α { todub(it) } // Get first row, extract left (values), convert to double
+        val row: Indexed<Double> = crono.first.left α { todub(it) } // Get first row, extract left (values), convert to double
 
         val normies = bottom60DoubleRanges
-        val res: Series<Double> = normies.size j { x:Int ->
+        val res: Indexed<Double> = normies.size j { x:Int ->
              normies[x].normalize(row[x]) // Assuming normalize accepts (Twin<Double>, Double)
             // Placeholder:
              0.0

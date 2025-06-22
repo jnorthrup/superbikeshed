@@ -1,6 +1,6 @@
 package borg.trikeshed.ccek
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
 /**
  * CCEK (Control, Context, Environment, Knowledge)
@@ -26,7 +26,7 @@ data class Environment(
 
 // The Knowledge contains the rules for this specific operation.
 data class Knowledge(
-    val rules: Series<(Any) -> Any>, // A series of transformation functions
+    val rules: Indexed<(Any) -> Any>, // A series of transformation functions
     val validator: (Any) -> Boolean
 )
 

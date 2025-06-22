@@ -125,14 +125,14 @@ object TrikeShedWireSerializer {
     /**
      * Serialize Series<T> to wire format with type information
      */
-    inline fun <reified T> serializeSeries(series: Series<T>): UByteArray {
+    inline fun <reified T> serializeSeries(indexed: Indexed<T>): UByteArray {
         val payload = buildWirePayload {
             writeString(T::class.simpleName ?: "Unknown")
-            writeVarInt(series.size)
+            writeVarInt(indexed.size)
             
             // Serialize elements
-            for (i in 0 until series.size) {
-                writeElement(series[i])
+            for (i in 0 until indexed.size) {
+                writeElement(indexed[i])
             }
         }
         
@@ -143,19 +143,19 @@ object TrikeShedWireSerializer {
     /**
      * Serialize Series<Int> with optimal packing strategy
      */
-    fun serializeIntSeries(series: Series<Int>, useOptimalPacking: Boolean = true): UByteArray {
+    fun serializeIntSeries(indexed: Indexed<Int>, useOptimalPacking: Boolean = true): UByteArray {
         return if (useOptimalPacking) {
-            val packed = series.pack("optimal")
+            val packed = indexed.pack("optimal")
             packed.toWireBytes()
         } else {
-            serializeSeries(series)
+            serializeSeries(indexed)
         }
     }
     
     /**
      * Deserialize wire format to Series<T>
      */
-    inline fun <reified T> deserializeSeries(data: UByteArray): Series<T> {
+    inline fun <reified T> deserializeSeries(data: UByteArray): Indexed<T> {
         val message = deserializeMessage(data)
         require(message.messageType == "Series") { "Expected Series message" }
         
@@ -416,13 +416,13 @@ fun UByteArray.toIoMemento(): borg.trikeshed.isam.meta.IOMemento =
 /**
  * Serialize Series<T> to wire bytes
  */
-inline fun <reified T> Series<T>.toWireBytes(): UByteArray =
+inline fun <reified T> Indexed<T>.toWireBytes(): UByteArray =
     TrikeShedWireSerializer.serializeSeries(this)
 
 /**
  * Deserialize wire bytes to Series<T>
  */
-inline fun <reified T> UByteArray.toSeries(): Series<T> =
+inline fun <reified T> UByteArray.toSeries(): Indexed<T> =
     TrikeShedWireSerializer.deserializeSeries(this)
 
 expect fun pack(data: ByteArray): ByteArray
