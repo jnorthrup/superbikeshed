@@ -6,14 +6,14 @@ This project scans and analyzes kotlinx-serialization usage patterns.
 
 ## Data Structure Patterns
 
-- Use `Series<T>` for serialization metadata collections
+- Use `Indexed<T>` for serialization metadata collections
 - Use `Join<A,B>` for type-to-serializer mappings
 - Follow TrikeShed type system for scan result representations
 - Prefer functional data structures for immutable scan results
 
 ## Scanning Guidelines
 
-- **Type Analysis**: Series-based type collection and analysis
+- **Type Analysis**: Indexed-based type collection and analysis
 - **Serializer Mapping**: Join for type-to-serializer relationships
 - **Performance**: for loops for scanning performance
 - **Results**: TrikeShed data structures for output

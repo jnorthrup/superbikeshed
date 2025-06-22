@@ -6,7 +6,7 @@ This project demonstrates integration between ta4k, spacegraph, and moneyfan com
 
 ## Integration Patterns
 
-- Use `Series<T>` for cross-component data flows
+- Use `Indexed<T>` for cross-component data flows
 - Use `Join<A,B>` for component interface mappings
 - Follow TrikeShed patterns across all integrated components
 - Demonstrate architectural coherence across subsystems
@@ -16,7 +16,7 @@ This project demonstrates integration between ta4k, spacegraph, and moneyfan com
 - **ta4k Integration**: Technical analysis with TrikeShed data structures
 - **spacegraph Integration**: Graph database for trading relationships
 - **moneyfan Integration**: Trading bot with graph-based strategies
-- **Cross-Component**: Series/Join-based data exchange
+- **Cross-Component**: Indexed/Join-based data exchange
 
 ## Development Guidelines
 

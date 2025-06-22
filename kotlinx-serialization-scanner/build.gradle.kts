@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
-    kotlin("plugin.serialization") version "2.1.21"
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 group = "borg.trikeshed"
@@ -15,9 +15,8 @@ kotlin {
         }
     }
     
-    js(IR) {
+    wasmJs {
         browser()
-        nodejs()
         binaries.executable()
     }
     
@@ -40,10 +39,10 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":Trikeshed"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation(libs.kotlinx.serialization.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.datetime)
             }
         }
         
@@ -55,13 +54,13 @@ kotlin {
         
         jvmTest.dependencies {
             implementation(kotlin("test-junit5"))
-            implementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
-            runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+            implementation(libs.junit.jupiter.api)
+            runtimeOnly(libs.junit.jupiter.engine)
         }
 
-        val jsMain by getting {
+        val wasmJsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
         

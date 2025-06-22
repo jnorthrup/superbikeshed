@@ -7,12 +7,12 @@ class CursorVolume(
     private val cacheLineSize: Int = 64
 ) {
     fun reconstitute(useCase: String): Indexed<ByteArray> {
-        // Simplified implementation
+        // Simplified implementation - return first inner series
         return when (useCase) {
             "cache_aligned" -> alignToCacheLines()
             "sequential" -> optimizeForSequentialAccess()
             "random" -> optimizeForRandomAccess()
-            else -> indexed.b(0) // Return first inner series
+            else -> indexed.b(0)
         }
     }
 

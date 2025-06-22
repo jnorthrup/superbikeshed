@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
 
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    alias(libs.plugins.kotlin.multiplatform)
     `maven-publish`
     signing
 }
@@ -23,9 +23,8 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js(IR) {
+    wasmJs {
         browser()
-        nodejs()
         binaries.executable()
     }
     // Platform detection for native target
@@ -104,16 +103,15 @@ kotlin {
             }
         }
         
-        val jsMain by getting {
+        val wasmJsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
         
-        val jsTest by getting {
+        val wasmJsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
+                implementation(kotlin("test"))
             }
         }
     }
