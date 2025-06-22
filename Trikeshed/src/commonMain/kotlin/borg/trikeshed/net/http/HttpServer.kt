@@ -359,7 +359,7 @@ fun createBatchHandler(dealService: DealService): HttpHandler = { request ->
 
 fun createRequestFactoryHandler(requestFactoryService: RequestFactoryService): HttpHandler = { request ->
     // Delegate to CCEK RequestFactoryService
-    val requestBodySeries = request.body.size j { request.body[it] }
+    val requestBodySeries = request.body.size j { i: Int -> request.body[i] }
     val responsePayloadSeries = requestFactoryService.process(requestBodySeries)
     val responsePayload = responsePayloadSeries.play.toList().toByteArray()
     HttpResponse(
