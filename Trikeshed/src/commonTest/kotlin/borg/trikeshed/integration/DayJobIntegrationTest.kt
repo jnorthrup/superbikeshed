@@ -6,6 +6,7 @@ import borg.trikeshed.lib.*
 import kotlin.test.*
 import kotlin.time.*
 import kotlin.random.Random
+import java.io.File
 
 /**
  * Comprehensive integration test ported from columnar project's DayJobTest.kt
@@ -241,6 +242,33 @@ class DayJobIntegrationTest {
         
         assertTrue(clusters.size > 0, "Should create clusters")
         assertTrue(totalTime < 10.seconds, "Bloom filter operations should be efficient")
+    }
+    
+    @Test
+    fun `fetchklines integration test template`() {
+        // TODO: Implement fetchklines integration using superannuate LFS data
+        val dataPath = "../../../../superannuate/fetchklines_nightly.csv" // Example path
+        println("Fetchklines integration test using: $dataPath")
+        // Add fetchklines test logic here
+        // assertTrue(File(dataPath).exists(), "fetchklines_nightly.csv should exist in superannuate directory")
+    }
+
+    @Test
+    fun `columnar integration test template`() {
+        // TODO: Implement columnar integration using superannuate LFS data
+        val dataPath = "../../../../superannuate/columnar_nightly.fwf" // Example path
+        println("Columnar integration test using: $dataPath")
+        // Add columnar test logic here
+        // assertTrue(File(dataPath).exists(), "columnar_nightly.fwf should exist in superannuate directory")
+    }
+
+    @Test
+    fun `extended latency storage objects integration test template`() {
+        // TODO: Implement extended latency storage object integration using superannuate LFS data
+        val dataPath = "../../../../superannuate/latency_object_nightly.dat" // Example path
+        println("Extended latency storage object test using: $dataPath")
+        // Add extended latency storage object test logic here
+        // assertTrue(File(dataPath).exists(), "latency_object_nightly.dat should exist in superannuate directory")
     }
     
     // Utility methods for data operations
