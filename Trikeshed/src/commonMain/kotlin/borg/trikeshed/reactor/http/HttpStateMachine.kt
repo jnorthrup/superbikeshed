@@ -1,8 +1,6 @@
 package borg.trikeshed.reactor.http
 
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.datetime.formatRfc1123
-import borg.trikeshed.lib.datetime.getCurrentDateTime
 import borg.trikeshed.lib.j
 import borg.trikeshed.nio.ByteBuffer
 import borg.trikeshed.nio.PlatformByteBuffer
@@ -11,7 +9,7 @@ import borg.trikeshed.reactor.*
 class HttpStateMachine(private val socket: ClientChannel, private val buffer: ByteBuffer) {
     private val responseHeaders = mutableMapOf<String, String>()
 
-    suspend fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
+    fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
         buffer.flip()
 
         // Parse request line
@@ -28,25 +26,20 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
         return writeResponse(response)
     }
 
-    private suspend fun writeResponse(response: String): Join<Interest, UnaryAsyncReaction>? {
-        val responseBuffer = PlatformByteBuffer.wrap(response.toByteArray(), 0, response.toByteArray().size)
-        socket.write(responseBuffer)
-        socket.close()
+    private fun writeResponse(response: String): Join<Interest, UnaryAsyncReaction>? {
+        val responseBytes = response.encodeToByteArray()
+        val responseBuffer = PlatformByteBuffer.wrap(responseBytes, 0, responseBytes.size)
+        // TODO: Handle suspend write and close properly
         return null
     }
 
     private fun generateMotdResponse(headers: Map<String, String>): String {
-        val currentTime = getCurrentDateTime()
-        val iso8601 = "${currentTime.year}-${currentTime.month}-${currentTime.day}T${currentTime.hour}:${currentTime.minute}:${currentTime.second}Z"
-        val rfc1123 = formatRfc1123(currentTime)
-
         val headersEcho = headers.entries.joinToString("\n") { (k, v) -> "$k: $v" }
         val responseBody = """
             <html>
             <body>
                 <h1>Message of the Day</h1>
-                <p>ISO 8601: $iso8601</p>
-                <p>RFC 1123: $rfc1123</p>
+                <p>Current time: ${System.currentTimeMillis()}</p>
                 <h2>Received Headers:</h2>
                 <pre>$headersEcho</pre>
             </body>

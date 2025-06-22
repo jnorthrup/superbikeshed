@@ -69,8 +69,8 @@ object Json {
     // Simple index implementation
     fun index(jsonString: String): JsonStructuralIndices {
         val indices = findStructuralIndices(jsonString)
-        val bounds = 2 j { i: Int -> if (i == 0) 0 else jsonString.length }
-        val commaIndices = indices.play.filter { jsonString[it] == ',' }.toSeries()
+        val bounds: JsonBounds = Twin(0, jsonString.length)
+        val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toSeries()
         return bounds j commaIndices
     }
     

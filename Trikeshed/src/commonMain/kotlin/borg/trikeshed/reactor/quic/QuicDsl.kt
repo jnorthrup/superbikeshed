@@ -1,7 +1,5 @@
 package borg.trikeshed.reactor.quic
 
-import kotlinx.coroutines.runBlocking
-
 data class QuicServerConfig(
     var port: Int = 4433,
     var host: String = "0.0.0.0",
@@ -27,7 +25,6 @@ fun quicd(block: QuicDsl.() -> Unit) {
     val dsl = QuicDsl().apply(block)
     val config = dsl.build()
     
-    runBlocking {
-        QuicServer(config).start()
-    }
+    // TODO: Implement proper QUIC server startup
+    println("QUIC server would start on port ${config.port}")
 } 
