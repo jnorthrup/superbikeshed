@@ -424,7 +424,7 @@ fun CoroutineRouter.child(block: CoroutineRouter.RouterBuilder.() -> Unit): Coro
  */
 fun asyncRouter(block: CoroutineRouter.RouterBuilder.() -> Unit): CoroutineRouter {
     return router {
-        context(Dispatchers.IO)
+        context(Dispatchers.Default)
         block()
     }
 }

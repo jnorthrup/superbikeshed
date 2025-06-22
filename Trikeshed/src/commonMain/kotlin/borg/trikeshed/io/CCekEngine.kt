@@ -37,7 +37,7 @@ expect class CCekEngine {
     /**
      * Receive and deserialize object with decompression
      */
-    suspend fun <T> receiveObject(source: String, clazz: Class<T>): T? where T : Serializable
+    suspend fun <T> receiveObject(source: String, clazz: kotlin.reflect.KClass<T>): T? where T : Serializable
     
     /**
      * Broadcast compressed data to multiple targets

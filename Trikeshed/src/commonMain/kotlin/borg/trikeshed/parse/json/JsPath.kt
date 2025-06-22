@@ -3,10 +3,17 @@ package borg.trikeshed.parse.json
 import borg.trikeshed.lib.*
 
 /**
+ * Simple sealed class to represent either a string key or integer index
+ */
+sealed class JsPathElement {
+    data class Key(val value: String) : JsPathElement()
+    data class Index(val value: Int) : JsPathElement()
+}
+
+/**
  * JsPath - JSON path for navigation and querying
  * Represents a path through JSON structure using either string keys (for objects) or integer indices (for arrays)
  */
-typealias JsPathElement = Either<String, Int>
 typealias JsPath = Indexed<JsPathElement>
 
 /**
@@ -16,10 +23,10 @@ object JsPathBuilder {
     
     /**
      * Create a JsPath from a dot-separated string path
-     * Example: "user.profile.name" -> [String("user"), String("profile"), String("name")]
+     * Example: "user.profile.name" -> [Key("user"), Key("profile"), Key("name")]
      */
     fun fromString(path: String): JsPath {
-        val elements: List<JsPathElement> = path.split(".").map { Either.Left(it) }
+        val elements: List<JsPathElement> = path.split(".").map { JsPathElement.Key(it) }
         return elements.toSeries()
     }
     
@@ -27,54 +34,48 @@ object JsPathBuilder {
      * Create a JsPath from a list of path components
      */
     fun fromComponents(vararg components: JsPathElement): JsPath {
-        return components.toSeries()
+        return components.toList().toSeries()
     }
     
     /**
      * Create a JsPath for object key access
      */
-    fun key(key: String): JsPath {
-        val element: JsPathElement = Either.Left(key)
-        return (1 j { element })
+    fun key(name: String): JsPath {
+        return listOf(JsPathElement.Key(name)).toSeries()
     }
     
     /**
      * Create a JsPath for array index access
      */
-    fun index(index: Int): JsPath {
-        val element: JsPathElement = Either.Right(index)
-        return (1 j { element })
+    fun index(idx: Int): JsPath {
+        return listOf(JsPathElement.Index(idx)).toSeries()
     }
     
     /**
-     * Combine multiple JsPaths
+     * Combine multiple paths
      */
     fun combine(vararg paths: JsPath): JsPath {
-        val combined = mutableListOf<JsPathElement>()
+        val allElements = mutableListOf<JsPathElement>()
         paths.forEach { path ->
-            path.play.forEach { combined.add(it) }
+            path.play.forEach { element ->
+                allElements.add(element)
+            }
         }
-        return combined.toSeries()
+        return allElements.toSeries()
     }
 }
 
 /**
- * Extension functions for JsPath
- */
-fun JsPath.first(): JsPathElement = this[0]
-fun JsPath.drop(n: Int): JsPath = (size - n) j { i -> this[i + n] }
-fun JsPath.take(n: Int): JsPath = minOf(n, size) j ::get
-
-/**
- * Convenience functions for creating JsPaths
+ * Extension functions for easier path construction
  */
 fun String.toJsPath(): JsPath = JsPathBuilder.fromString(this)
-fun Int.toJsPath(): JsPath = JsPathBuilder.index(this)
-fun List<JsPathElement>.toJsPath(): JsPath = toSeries()
 
-/**
- * JsPath operators for easy path construction
- */
-operator fun String.div(other: String): JsPath = JsPathBuilder.combine(this.toJsPath(), other.toJsPath())
-operator fun JsPath.div(other: String): JsPath = JsPathBuilder.combine(this, other.toJsPath())
-operator fun JsPath.div(other: Int): JsPath = JsPathBuilder.combine(this, other.toJsPath()) 
+fun JsPath.append(element: JsPathElement): JsPath {
+    val elements = mutableListOf<JsPathElement>()
+    this.play.forEach { elements.add(it) }
+    elements.add(element)
+    return elements.toSeries()
+}
+
+fun JsPath.append(key: String): JsPath = append(JsPathElement.Key(key))
+fun JsPath.append(index: Int): JsPath = append(JsPathElement.Index(index))

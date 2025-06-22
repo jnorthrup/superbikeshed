@@ -30,265 +30,93 @@ fun createBitmapAsSeries(input: UByteArray): Indexed<UByte> {
 }
 
 /**
- * Lightning-fast JSON parser using SIMD bitmap and Series<T> for TrikeShed integration.
- * Complete implementation with full functionality matching the original JsonParser.
+ * Simplified JSON parsing without regex dependencies
  */
-@OptIn(ExperimentalUnsignedTypes::class)
-object LightningJson {
+fun parseJsonToTensor(jsonString: String): Indexed<String> {
+    // Simple JSON value extraction - basic implementation
+    val values = mutableListOf<String>()
+    var inString = false
+    var current = StringBuilder()
     
-    /**
-     * Parse JSON string to structural bitmap using lightning-fast SIMD processing.
-     */
-    fun parseToBitmap(jsonString: String): Indexed<UByte> {
-        val jsonBytes = jsonString.encodeToByteArray().toUByteArray()
-        return createBitmapAsSeries(jsonBytes)
-    }
-    
-    /**
-     * Find all structural indices (opening/closing braces, brackets, commas) in JSON.
-     */
-    fun findStructuralIndices(jsonString: String): Indexed<Int> {
-        val bitmap = parseToBitmap(jsonString)
-        val indices = mutableListOf<Int>()
-        
-        bitmap.play.forEachIndexed { index, pixel ->
-            val jsState = pixel.toInt() and 0b11
-            if (jsState != JsonBitmapProcessor.JsStateEvent.Unchanged.ordinal) {
-                indices.add(index)
-            }
-        }
-        
-        return indices.toSeries()
-    }
-    
-    /**
-     * Extract JSON values using Series<T> operations - pure TrikeShed style.
-     */
-    fun extractValues(jsonString: String): Indexed<String> {
-        val structuralIndices = findStructuralIndices(jsonString)
-        val jsonChars = jsonString.toSeries()
-        
-        // Simple value extraction between structural characters
-        val values = mutableListOf<String>()
-        var i = 0
-        
-        structuralIndices.play.zipWithNext().forEach { (start, end) ->
-            val segment = jsonChars[start + 1 until end]
-            val value = segment.play.joinToString("").trim()
-            if (value.isNotEmpty() && value != ":") {
-                values.add(value)
-            }
-        }
-        
-        return values.toSeries()
-    }
-    
-    /**
-     * Complete index implementation - indexes JSON structure and returns structural indices.
-     */
-    fun index(jsonString: String): JsonStructuralIndices {
-        val chars = jsonString.toSeries()
-        var depth = 0
-        var openIdx = -1
-        var closeIdx = -1
-        val commaIdxs = mutableListOf<Int>()
-        var insideQuote = false
-        var escapeNextChar = false
-        
-        chars.play.forEachIndexed { i, char ->
-            when {
-                insideQuote -> when {
-                    escapeNextChar -> escapeNextChar = false
-                    char == '\\' -> escapeNextChar = true
-                    char == '"' -> insideQuote = false
-                }
-                else -> when (char) {
-                    '{', '[' -> {
-                        depth++
-                        if (depth == 1) openIdx = i
-                    }
-                    '}', ']' -> {
-                        depth--
-                        if (depth == 0) {
-                            closeIdx = i
-                            return@forEachIndexed
-                        }
-                    }
-                    ',' -> if (depth == 1) {
-                        commaIdxs.add(i)
-                    }
-                    '"' -> insideQuote = true
-                }
-            }
-        }
-        
-        return (openIdx j closeIdx) j commaIdxs.toSeries()
-    }
-    
-    /**
-     * Complete reify implementation - converts JSON string to Kotlin objects.
-     */
-    fun reify(jsonString: String): Any? {
-        val chars = jsonString.trim().toSeries()
-        if (chars.size == 0) return null
-        
-        return when (chars[0]) {
-            '{', '[' -> {
-                val index = index(jsonString)
-                val (openIdx, closeIdx) = index.a
-                val commaIdxs = index.b
-                
-                val isObj = chars[0] == '{'
-                
-                if (commaIdxs.size == 0) {
-                    // Empty object or array
-                    return if (isObj) emptyMap<String, Any?>() else emptyList<Any?>()
-                }
-                
-                // Combine indices for segment extraction
-                val allIndices = mutableListOf<Int>()
-                allIndices.add(openIdx)
-                commaIdxs.play.forEach { allIndices.add(it) }
-                allIndices.add(closeIdx)
-                
-                val segments = allIndices.zipWithNext().map { (start, end) ->
-                    val segment = chars[start + 1 until end]
-                    val trimmed = segment.play.joinToString("").trim()
-                    if (isObj) {
-                        parseKeyValuePair(trimmed)
-                    } else {
-                        reify(trimmed)
-                    }
-                }
-                
-                if (isObj) {
-                    segments.associate { pair ->
-                        val (key, value) = pair as Pair<String, Any?>
-                        key to value
-                    }
-                } else {
-                    segments
-                }
-            }
+    for (char in jsonString) {
+        when (char) {
             '"' -> {
-                // Parse string
-                val content = chars.play.drop(1).takeWhile { it != '"' }.joinToString("")
-                content
+                inString = !inString
+                if (!inString && current.isNotEmpty()) {
+                    values.add(current.toString())
+                    current.clear()
+                }
             }
-            't' -> true
-            'f' -> false
-            'n' -> null
-            else -> {
-                // Parse number
-                val content = chars.play.joinToString("")
-                content.toDoubleOrNull() ?: content.toLongOrNull() ?: content
-            }
-        }
-    }
-    
-    /**
-     * Complete jsPath implementation - path-based JSON traversal.
-     */
-    fun jsPath(context: JsonParseContext, path: JsPath, reifyResult: Boolean = true): Any? {
-        if (path.size == 0) {
-            return if (reifyResult) reify(context.b.play.joinToString("")) else context
-        }
-
-        val pathHead = path.first()
-        val pathTail = path.drop(1)
-
-        when (pathHead) {
-            is Either.Left -> {
-                val key = pathHead.value
-                val (element, src) = context
-                val segments = getSegments(element, src)
-
-                for (segment in segments.play) {
-                    val (segmentKey, _) = parseKeyValuePair(segment.play.joinToString(""))
-                    if (segmentKey == key) {
-                        val newContext = index(segment.play.joinToString("")) j src
-                        return jsPath(newContext, pathTail, reifyResult)
+            ',', ']', '}' -> {
+                if (!inString && current.isNotEmpty()) {
+                    val value = current.toString().trim()
+                    if (value.isNotEmpty() && value != ":" && value != "{" && value != "[") {
+                        values.add(value)
                     }
+                    current.clear()
                 }
-                return null
             }
-            is Either.Right -> {
-                val index = pathHead.value
-                val (element, src) = context
-                val segments = getSegments(element, src)
+            ':', '{', '[' -> {
+                if (!inString && current.isNotEmpty()) {
+                    val value = current.toString().trim()
+                    if (value.isNotEmpty()) {
+                        values.add(value)
+                    }
+                    current.clear()
+                }
+            }
+            else -> {
+                if (inString || !char.isWhitespace()) {
+                    current.append(char)
+                }
+            }
+        }
+    }
+    
+    // Add final value if exists
+    if (current.isNotEmpty()) {
+        val value = current.toString().trim()
+        if (value.isNotEmpty()) {
+            values.add(value)
+        }
+    }
+    
+    return values.toSeries()
+}
 
-                if (index < segments.size) {
-                    val segment = segments[index]
-                    val newContext = index(segment.play.joinToString("")) j src
-                    return jsPath(newContext, pathTail, reifyResult)
+/**
+ * Basic shape detection for JSON arrays
+ */
+fun detectArrayShape(jsonString: String): Indexed<Int> {
+    var depth = 0
+    var maxDepth = 0
+    val dimensions = mutableListOf<Int>()
+    var currentCount = 0
+    
+    for (char in jsonString) {
+        when (char) {
+            '[' -> {
+                depth++
+                maxDepth = maxOf(maxDepth, depth)
+                if (depth == 1) currentCount = 0
+            }
+            ']' -> {
+                if (depth == 1 && currentCount > 0) {
+                    dimensions.add(currentCount)
                 }
-                return null
+                depth--
+            }
+            ',' -> {
+                if (depth == 1) currentCount++
             }
         }
     }
     
-    /**
-     * Complete stringify implementation - converts Kotlin objects to JSON string.
-     */
-    fun stringify(value: Any?): String {
-        return when (value) {
-            null -> "null"
-            is String -> "\"${escapeString(value)}\""
-            is Boolean -> value.toString()
-            is Number -> value.toString()
-            is Map<*, *> -> {
-                val pairs = value.map { (k, v) ->
-                    "\"${k}\":${stringify(v)}"
-                }
-                "{${pairs.joinToString(",")}}"
-            }
-            is List<*> -> {
-                val elements = value.map { stringify(it) }
-                "[${elements.joinToString(",")}]"
-            }
-            is Array<*> -> {
-                val elements = value.map { stringify(it) }
-                "[${elements.joinToString(",")}]"
-            }
-            else -> "\"${value.toString()}\""
-        }
-    }
-    
-    // Helper functions
-    
-    private fun parseKeyValuePair(segment: String): Pair<String, Any?> {
-        val parts = segment.split(':', limit = 2)
-        val key = parts.getOrNull(0)?.trim()?.removeSurrounding("\"") ?: ""
-        val valueString = parts.getOrNull(1)?.trim() ?: "null"
-        val value = reify(valueString)
-        return key to value
-    }
-    
-    private fun getSegments(element: JsonStructuralIndices, src: Indexed<Char>): Indexed<Indexed<Char>> {
-        val (openIdx, closeIdx) = element.a
-        val commaIdxs = element.b
-        
-        val allIndices = mutableListOf<Int>()
-        allIndices.add(openIdx)
-        commaIdxs.play.forEach { allIndices.add(it) }
-        allIndices.add(closeIdx)
-        
-        return allIndices.zipWithNext().toSeries().α { (start, end) ->
-            val segment = src[start + 1 until end]
-            segment
-        }
-    }
-    
-    private fun escapeString(str: String): String {
-        return str.replace("\\", "\\\\")
-                 .replace("\"", "\\\"")
-                 .replace("\b", "\\b")
-                 .replace("\n", "\\n")
-                 .replace("\r", "\\r")
-                 .replace("\t", "\\t")
+    return if (dimensions.isEmpty()) {
+        1 j { 0 }
+    } else {
+        dimensions.size j { i -> dimensions[i] }
     }
 }
 
-fun String.toSeries(): Indexed<Char> = length j ::get
-fun <T> Indexed<T>.first(): T = this[0]
-fun <T> Indexed<T>.drop(n: Int): Indexed<T> = (size - n) j { i -> this[i + n] }
+// JsonBitmapSimd is defined as expect object in JsonBitmapSimd.kt

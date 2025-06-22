@@ -2,16 +2,13 @@ package borg.trikeshed.io
 
 import borg.trikeshed.lib.Usable
 
-interface PosixFile : Usable {
-    val path: String?
-    
-    fun open()
-    fun close()
-}
-
 typealias PosixOffset = Long
 
-expect class PosixFile(path: String?) : PosixFile {
+expect class PosixFile(path: String?) : Usable {
+    val path: String?
+    
+    override fun open()
+    override fun close()
     fun read64(buf: ByteArray): ULong
     fun write64(buf: ByteArray): ULong
     fun seek(offset: PosixOffset, whence: Int): ULong
@@ -23,11 +20,7 @@ expect class PosixFile(path: String?) : PosixFile {
     }
 }
 
-expect class MappedPointer {
-    fun getByte(index: Long): Byte
-    fun putByte(index: Long, value: Byte)
-    fun unmap()
-}
+// Using MappedPointer interface from MappedPointer.kt
 
 expect val SEEK_SET_CONSTANT: Int
 expect val O_RDONLY_FLAG: Int 

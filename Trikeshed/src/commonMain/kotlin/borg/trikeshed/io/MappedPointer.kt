@@ -6,4 +6,5 @@ interface MappedPointer {
     fun getByte(offset: Long): Byte
     fun putByte(offset: Long, value: Byte)
     fun close()
+    fun unmap()
 } 

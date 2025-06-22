@@ -8,7 +8,8 @@ import borg.trikeshed.lib.j // Explicitly import the j infix function from this 
  */
 inline fun <T> TensorSeries(size: Int, noinline accessor: (Int) -> T): Tensor<T> {
     require(size >= 0) { "Size must be non-negative" }
-    return intArrayOf(size) j { coords -> accessor(coords[0]) }
+    val shape: Shape = 1 j { size }
+    return shape j { coords -> accessor(coords[0]) }
 }
 
 /**
@@ -16,7 +17,8 @@ inline fun <T> TensorSeries(size: Int, noinline accessor: (Int) -> T): Tensor<T>
  */
 inline fun <T> TensorCursor(rows: Int, cols: Int, noinline accessor: (Int, Int) -> T): Tensor<T> {
     require(rows >= 0 && cols >= 0) { "Rows and columns must be non-negative" }
-    return intArrayOf(rows, cols) j { coords -> accessor(coords[0], coords[1]) }
+    val shape: Shape = 2 j { i -> if (i == 0) rows else cols }
+    return shape j { coords -> accessor(coords[0], coords[1]) }
 }
 
 /**
@@ -39,19 +41,19 @@ fun <T> List<List<T>>.toTensor(): Tensor<T> {
  */
 fun <T> List<T>.toTensor1D(): Tensor<T> {
     val size = this.size
-    return TensorSeries(size) ::get
+    return TensorSeries(size) { i -> this[i] }
 }
 
 /**
  * Creates a tensor filled with a single value.
  */
-inline fun <T> fillTensor(shape: IntArray, value: T): Tensor<T> {
+inline fun <T> fillTensor(shape: Shape, value: T): Tensor<T> {
     return shape j { _ -> value }
 }
 
 /**
  * Creates a tensor with a specified shape and initializes elements using a generator function.
  */
-inline fun <T> generateTensor(shape: IntArray, noinline generator: (IntArray) -> T): Tensor<T> {
+inline fun <T> generateTensor(shape: Shape, noinline generator: (Shape) -> T): Tensor<T> {
     return shape j generator
 }

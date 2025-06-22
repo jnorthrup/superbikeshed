@@ -36,5 +36,5 @@ fun formatRfc1123(dateTime: DateTimeComponents): String {
     val month = months[dateTime.month - 1]
     
     return "${dayOfWeek}, ${dateTime.day.toString().padStart(2, '0')} $month ${dateTime.year} " +
-           "${dateTime.hour.toString().padStart(2, '0')}:${dateTime.minute.toString().padStart(2, '0')}:${dateTime.second.toString().padStart(2, '0','0')} GMT"
+           "${dateTime.hour.toString().padStart(2, '0')}:${dateTime.minute.toString().padStart(2, '0')}:${dateTime.second.toString().padStart(2, '0')} GMT"
 } 

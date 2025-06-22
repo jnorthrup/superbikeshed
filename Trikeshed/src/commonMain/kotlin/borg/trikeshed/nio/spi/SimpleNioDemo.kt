@@ -8,16 +8,14 @@ object SimpleNioDemo {
     fun demonstrateSpiSystem() {
         println("=== SPI NIO System Demonstration ===")
         
-        // Register the JVM provider
-        val provider = JvmNioProvider()
-        ServiceRegistry.register("jvm", provider)
+        // Register a platform-specific provider (placeholder for demo)
+        println("Platform-specific NIO provider would be registered here")
         
         println("Registered providers: ${ServiceRegistry.listProviders()}")
         
         // Demonstrate buffer creation with attention monitoring
         println("\n--- Buffer Creation Demo ---")
-        val buffer = provider.createBuffer(1024)
-        println("Created buffer with capacity: ${buffer.limit()}")
+        println("Buffer creation would be demonstrated with platform-specific provider")
         
         // Demonstrate buffer wrapping with attention monitoring
         println("\n--- Buffer Wrapping Demo ---")

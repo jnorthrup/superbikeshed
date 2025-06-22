@@ -78,7 +78,7 @@ data class IODaemonOperation(
     
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (this::class != other?.this::class) return false
+        if (this::class != other!!::class) return false
         
         other as IODaemonOperation
         
