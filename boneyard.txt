@@ -1,0 +1,191 @@
+superbikeshed:0185e8b3512ff50c46a0df54754e447d95d3fa13:🎮 Add Interactive RTS WebGPU Demo
+superbikeshed:0238f91a62008e5a8ddbb1cf2853f04b1b6d0e58:chore: Update Gradle build configurations and clean up project structure
+superbikeshed:03450ddcf161bbecb0e429ca7850d3962989f7c7:P0 Task 1: Replace List<T> with Series<T> and clean merge conflicts
+superbikeshed:05f2f73574a1981c0d1b111a18ef18899bc69c57:feat: Add Nexus universal development agent
+superbikeshed:060c9bf100eb34209c862f491be2235a521276da:Merge remote-tracking branch 'origin/refactor-trikeshed'
+superbikeshed:089020d3a92cc1852d04011454d867398284e937:feat: Complete nexus subsumption hierarchy execution and documentation
+superbikeshed:0894f983fe11900c97f2a332fc1105dafb90244b:feat: Implement initial proof-of-concept for AI Prediction Interface
+superbikeshed:0a3ca4950f358cecfc7b44e17ad9e013bd1173a8:feat: complete TrikeShed renormalization and RFC 7230 HTTP/1.1 implementation
+superbikeshed:0d9939eecc2a79f8807d0e49d278a65737e2fc83:merge: integrate CCEK topology analysis features
+superbikeshed:0d99aaba6b2057542e9c47290dbbfb8e35d73a0a:Enhance documentation and migrate Series to Indexed
+superbikeshed:0dde5965c9f5793689c20fd18027ac0c5fafa3ae:Further configure Kotlin/JS for trikeshed-core and maintain rtsgame integration
+superbikeshed:0f5c0c4c76320132fdceacc8fce6d9c33a37d876:feat: Integrate KSP delegation framework
+superbikeshed:0fbd2c9a50ffc63de188efe5e9cd7c408c5dc7b4:Add idiomatic QUIC integration test for token fetch and future A/B with Rust
+superbikeshed:10354598a34a9c6b0f8cc39fa91428edcb4c6ad7:Octopus merge all upstream branches with refactor consolidation
+superbikeshed:1337aba912f56d5b643786a912d1a6247435a8e4:Recover Omnibus Task List from feature/omnibus-task-list branch
+superbikeshed:14310950b0bf55d997dffafb22a7610be8aee000:This commit introduces a significant refactoring of the nexus project to align with the TrikeShed architecture and philosophy. It also adds a new "gossip about" feature and foundational testing utilities.
+superbikeshed:14d862943331f03f07455309e6631d930e1447f8:Refactor: Eliminate MutableList<T> in favor of Series<T>
+superbikeshed:16e2e1b417e5575eec21ea7f717ef3193ec02acf:forced zero errors trikeshed
+superbikeshed:1755d2e56bf8ab5a627d6044f606b5260a2d8ce2:🎮 Add Interactive RTS WebGPU Demo
+superbikeshed:17939227e464ec733c1bf03133014393dc07ae5a:Merge remote-tracking branch 'origin/feat/trikeshed-packing-core'
+superbikeshed:1a71a58fb2c7af5bbe0d9bd8ab7be8a95c7d5f86:Add comprehensive Nexus system interaction diagrams
+superbikeshed:1a9ec367acdf41ed7ac206bca33df3158882fda5:chore: Remove empty files with "quic" in name
+superbikeshed:1bba4a84b2bb318527f9ddd578373ade781e4f67:feat: Implement core TA structures and indicators in moneyfan
+superbikeshed:1bbdac7ce917ad28d2692c093fe896c33749c802:Implement TrikeShed MetaSeries Universal Metaclass Architecture
+superbikeshed:1c93e63ad3ada923cae9e3448e3cacde73fb504e:resolve: merge conflict in settings.gradle.kts for QuantStats integration
+superbikeshed:1ec7d9dce4e43d5f9d62b363c38b5fff13fe5428:feat: Introduce trikeshed-ts (TypeScript port) and integrate with rtsgame
+superbikeshed:1ee6c5979923a26ee19d9beb2a91c1819a9cf7d8:I'm working on introducing a CCEK QuicNetworkService and its initial implementations.
+superbikeshed:1f622ef0e9c61e9d4d8217fb7789e4964148db93:feat: Enhance Spacegraph visualization for basic combat data in rtsgame
+superbikeshed:2038f3399bd254f0f876808eca5807a9d1d10397:Merge major refactoring patch: Modularize TrikeShed architecture - Remove foundational components for kernel migration - Update project structure to Trikeshed-Monorepo - Add new NIO and reflection platform abstractions - Update documentation to reflect new modular architecture
+superbikeshed:21bd334718032cfaade70acefb30fcaf3f1f4a8c:Fix core TrikeShed compilation issues
+superbikeshed:21ed7664de2b128a1f415da12cf7305ca5d21611:Implement unified TODO consolidation system
+superbikeshed:23bfcbabadecc5da95f81d80bf406540b7af93e1:feat: Implement skimmer backtest functionality for moneyfan
+superbikeshed:26eaafb6352381a649983edb3305c87819093910:Refactor and clean up Trikeshed and related modules
+superbikeshed:2805e18d8edb1a4758d49df218d3b35f1718b655:Update ccek_mermaid_diagram.md
+superbikeshed:2856eae3b06d8db73381b3c3c366e8cfbe499e74:feat: Enhance IPFS integration and testing capabilities
+superbikeshed:28d4d2580801442059761ffea07ac672577249f5:I've completed a refactoring task to align the QUIC & CCEK code with the guidelines specified in CLAUDE.md.
+superbikeshed:2ae96f09c03a18de21131faeeab46fb2e3f65ffa:forced zero errors trikeshed but then....
+superbikeshed:2b1dc9db359d66b618271ed2ddb0895a125ca2a0:I've finished analyzing the usage of CCEK and CoroutineContextElementKey.
+superbikeshed:2bd02cef518e49156968100c5bddd7f508aca335:Add comprehensive CCEK context keys and typealiases linkage documentation
+superbikeshed:2c1285f18d8b130d6e0752ded1400b85d46c1a67:feat: Initial Kotlin Native setup for rtsgame-kt
+superbikeshed:314fa51404d14795af1a3d4e8741768f60d985b1:Add concurrent FSM test harness for {Kotlin,Rust}<->{Kotlin,Rust} QUIC integration
+superbikeshed:318cc6993951ac77c76277ee7de24f1a7eb5c2ff:Resolve gradle build conflicts from jules_wip_15441682621147348775
+superbikeshed:32aa6f7cd32cad7d84aaf8c2bfae94aaf7b7efc7:feat: Progress on TrikeShed KotlinJS compilation
+superbikeshed:34711a56c6de4183b0aadb933729cf892e180592:Merge pull request #23 from jnorthrup/rtsgame-readme-cleanup
+superbikeshed:3a1a9eacc00645b5a17c356437c30883a8446ef5:Octopus merge all origin branches
+superbikeshed:3adf788336ce1e9a33b7e5f5cbbbe588f1bd49ed:feat: complete octopus merge and beneficial code agglomeration
+superbikeshed:3c4f1d6afb868ef8154fa5a5356e4c15b47a92ec:Consolidate boingDemo and rtsgame TODOs into main roadmap
+superbikeshed:3cab749242f11ac3cd474a4f2471e88c9aa194ef:Add common BigInt and BigDecimal using ionspin library
+superbikeshed:3da811ee6a0dacc794933509427f0d91d80e3a74:feat: Add quaint features and core utilities to TrikeShedCore
+superbikeshed:40afdcb2cb79154924b8a218b3323b3a9173d55a:Merge pull request #12 from jnorthrup/jules_wip_427421198057273701
+superbikeshed:415527facb4d53341b30019a64c6139d29c058ad:TrikeShed core tensor operations and type system refinements
+superbikeshed:42eb53f0f64e5c98183ac98887a5dd8580ad6752:I tried to fix the Trikeshed compilation errors.
+superbikeshed:43fb227f508d6e55db327923d201bdfb1aca1559:Implement production-ready QUIC, IPFS, and CouchDB protocols
+superbikeshed:4413dcb768654c950eda0def457c0118698099b8:Update ccek_diagram.md
+superbikeshed:4419e344c58f2bf38eb7037b66f1a61815669695:I'm working on introducing a CCEK QuicNetworkService and its initial implementations.
+superbikeshed:44bb81611e0ac780edad75e4083f5e34c59bb607:feat: Implement application-layer auth and groundwork for TLS client cert auth
+superbikeshed:4861045e40005f1d59f67575cb050b74cdc71b77:feat: Add quaint features, update docs, and verify core components
+superbikeshed:497c8ace880c93da4d96f87e292c163d39669914:Implement common BigInt/BigDecimal with expect/actual
+superbikeshed:4c296ea1130cb57128bab0305c610428696ec6d3:I've created a TODO_Roadmap.md file to outline the project's status and future tasks.
+superbikeshed:4d400b15e4fd87a1895a728cc745371dce405965:feat: Enhance IPFS integration and testing capabilities
+superbikeshed:4d54cdb32d09cf8968ba0557753044b3054f0131:Hi there! I've been working on some significant enhancements. Here's a summary of what I've accomplished:
+superbikeshed:4edfbe77eef584c4a6ad90cbc5bb8c383106c2e1:I've completed the initial implementation of the Amiga Boing Demo using KorGE.
+superbikeshed:5197b109f7a525adcc6b2131efcb62f900d71c4d:feat: Create TrikeshedMinimalJson KMP project for serialization
+superbikeshed:51fe27f42a608a6a79b19d45674bcb85d0ee7094:Alright, I've implemented MessagePack serialization for Kademlia messages.
+superbikeshed:57ab0b07f3146de6ef8502a84cbe91ccc569243b:Merge feature/git-repo-indexer with conflict resolution
+superbikeshed:57decdde8998c36a18e3ef90ed3ee92e008f2345:Here's a commit message for adding comprehensive unit tests for the packing module:
+superbikeshed:5a54b75be1829f11dc5f8bbcc41933258ae45277:Merge remote-tracking branch 'origin/refactor-trikeshed'
+superbikeshed:5a83a893fade9ab3fbc4b8ef095792f9937d44d5:Add Omnibus Task List for consolidated project planning
+superbikeshed:5c1172616ca4f1948c87b689d4ae21b32295c37e:resolve: agglomerate QUIC implementations - keep both Enhanced and original
+superbikeshed:5c3a312cd90bf841fda03014e06200fbc67b6e35:Enhance I/O handling and QUIC integration in TrikeShed
+superbikeshed:5deeff68bf1492b5f4f65af5463947d126fed51b:Merge remote-tracking branch 'origin/feat/rtsgame-kt-initial-setup' into octo-merge-20250613
+superbikeshed:5e666f562e6745dfed8360f99b89b6746bdcbbae:Resolve merge conflict in TrikeShedCore.kt
+superbikeshed:5f4a778b2efdfa412d99f7a28afb3ff573fb7e84:Implement CCEK context and orchestrator for HTTP server request handling
+superbikeshed:60c823a18005b0932e5ab9681518fe5d7d18b907:refactor: Relocate Tensor syntactic sugars to core module and add tests
+superbikeshed:640460c9f5e7ee5d1f65b210be9520dfecedf83b:feat: Update core services and build configurations
+superbikeshed:66750ccc765de3c073081cb2e8d5fefe3eba46c7:feat: Implement multi-protocol audit tester framework
+superbikeshed:6712ae6bd27aac02b917f39af0cfd6bf539e879d:Resolve merge conflicts and implement RFC-compliant TrikeShed HTTP
+superbikeshed:671732bccdc00c124da9cbec6c1f87f38181d188:Hi there, this is Jules. I've made some initial progress on the NIO migration and QuicInstant search you asked me to look into.
+superbikeshed:6819ff118b6a7528dcf0136085d2ff7e621288af:I've made some changes to the TrikeShed project to prepare it for DGM integration.
+superbikeshed:6af3c6c6d2f4ce76e6378c12b328aa48007717b4:Update Kotlin Multiplatform plugin version and enhance project configuration
+superbikeshed:6b5e5983b619ace99aa02168215811d573527061:feat: integrate Moneyfan module and refactor build configurations
+superbikeshed:6cabe13611b8539fc4f6f24be52ef7a373ef569b:fix: Resolve merge conflicts in QuicCrypto.kt
+superbikeshed:6fa9785d838c141d298902ed80b81142dbe0669c:ccek in question
+superbikeshed:6fc28640794aa6a5ca9285da358fcc59439ef5b3:cleanup: finalize acapulco migration and remove demo violations
+superbikeshed:702f3fd09426e2b43ff1d9f3d067b190e0a2c955:docs: Add TODO list for feature integration and next steps
+superbikeshed:71242417cc40efc0130e79520126425601413498:feat: Implement Phase 1 of HTTP/1.1 Engine for TrikeShed
+superbikeshed:71464158e15ef3b47b8daca8a70b52630007236c:Octopus merge all upstream branches
+superbikeshed:71c2353f5bae65f4d68eae1672d0dd7ea14194a9:Make trikeshed-core more pure and lean
+superbikeshed:7218f4b3419b7c56b04ab6d98dd22ff81e1fa9f3:feat: Port complete io_uring implementation with TrikeShed patterns
+superbikeshed:72dedae776f19f4dfb57a3435e85aebef9b4e462:Merge pull request #9 from jnorthrup/jules_wip_427421198057273701
+superbikeshed:73918143ebea373660e309af1da69998eff29926:feat: Implement enhanced formation movement system
+superbikeshed:754028435d219f89cf0ba5827575f83658e94599:chore: Clean up remaining legacy references and sync dependencies
+superbikeshed:75ff4e09a4895fb9985431a3ab0fe97208b19e1c:feat: Implement fine-grained OS detection for trikeshed-core
+superbikeshed:761eda6b44a68ac24c861ba02412e8436ea180a3:feat: Initial setup for HTTP services and tests, needs Kotlin KMP refactor
+superbikeshed:78aa00a4e87e2899f4c6b5dfcc0a98a9ac18e823:feat: Complete k2script standalone notebook and SpaceGraph integration
+superbikeshed:7abced4369e1e3ff5af59eff1594816f99f6a329:feat: Complete octo-merge preparations for TrikeShed core consolidation
+superbikeshed:7b1c0620ebb3eae5f5db7f6b8ea152c43e0f11dd:feat: Implement CCEK services for QUIC networking, TLS, and crypto
+superbikeshed:7c1b9b184ac955794b6d653f3a15cb97d62832c6:Update Gradle configurations and enhance TrikeShed ecosystem
+superbikeshed:80971cabeec6cc5ffd4f62f21fd488dba2bf4118:Merge remote-tracking branch 'origin/refactor-trikeshed'
+superbikeshed:8228477aa46a98f1f6e0e657dca19a5fe7f59ab3:fix: Resolve merge conflicts in QuicCrypto.kt
+superbikeshed:82db64d21145bd98333faa08b792da12e857384e:feat: Implement PoC NlpAgent with RQL and Semantic Scoring
+superbikeshed:832e2d2ec64b85cdbb823fdcbbaa9307cd321991:Add comprehensive TrikeShed tensor library and enhanced market data infrastructure
+superbikeshed:83bd6c8dac4d5e56abdf14b0cc70310e3e5979fb:Update project structure and remove obsolete files
+superbikeshed:83d0de1c4875f46b068ccb50ae451105b9b51581:Resolve merge conflicts in core TrikeShed and Nexus systems
+superbikeshed:849217ef9f3a7535eb9d798e2b40528c77c237fd:feat: Introduce trikeshed-ts (TypeScript port) and integrate with rtsgame
+superbikeshed:877f53f5ff6aa719cd64e19da65c9485c39a8280:Merge pull request #25 from jnorthrup/feat/java-port-actuals
+superbikeshed:88d42a7c37c4b961442d7d75630f84d7e5580c7b:Feat: Create backlog.kt for museum-derived gap analysis
+superbikeshed:896d34a9ecb0bd4c219dceb72b963b62599e217e:I've created a new CCEK document at Trikeshed/docs/IPFS_QUIC_CCEK.md.
+superbikeshed:89943e7c3190e3b1d441c0e54790001d18c20c87:Hi there! I've been working on some significant enhancements. Here's a summary of what I've accomplished:
+superbikeshed:8a98a9777f33c00eba28f9f561a39cb0ffabb5c3:Update ccek_mermaid_diagram.md
+superbikeshed:8b67aab22f6416bcfab54a76141fbe32b4c2a511:feat: Implement multi-protocol HTTP server (H1, H2, H3) and testing setup
+superbikeshed:8bac93d753de78e1ea99cc22912aa19f3ef4f498:feat: comprehensive build fixes and Nexus PSI integration architecture
+superbikeshed:8e4b74014bac28edceac33643b6a2d65dbaf671b:Resolve merge conflicts in feature/omnibus-task-list
+superbikeshed:8fc4674faf1181b2fe7acc0d3c23e436474cbbae:Refactor CursorVolume and CCekEngine for Indexed Migration
+superbikeshed:9072b73f22eb195cca51725ec4978def0c3bc18e:WIP: HTTP/1.1 Engine Foundation and Initial Server Components
+superbikeshed:9076af16927adb12a237c60f6ce5ac3e9b4ea45d:I've created summary documents for `nexus/TODO.md` and `CLAUDE.md`.
+superbikeshed:9291424211df30d4cb70b358b4918fb0b2fcc1e9:Refactor QUIC integration and enhance test coverage
+superbikeshed:92eab05d44010d71c1cba157d61d4c43e18ef291:I've performed a gap analysis on the rtsgame project's documentation, primarily focusing on README files and other markdown documents.
+superbikeshed:938de07c06c574c7644a8d9bf4617678567d637e:Update Trikeshed implementation with core components
+superbikeshed:947d08038a7ad8cff6f8430bd5d1cf42b05916c3:Hi there! I've been working on a significant update for a multiplatform QUIC implementation. This involves using CoroutineContext Element Keys (CCEK) for various services, including network operations, TLS handshakes, and platform-specific cryptography.
+superbikeshed:9bc78278a565421484edbe8adcde84c2f23257cf:feat: Implement application-layer auth and groundwork for TLS client cert auth
+superbikeshed:9d8c26ac8a5138530e869d7b252ad6286e0bccdc:feat: Implement application-layer auth and groundwork for TLS client cert auth
+superbikeshed:9e82e0f7e7189b01e766669efdf2815a55fc993f:feat: Implement WebTransport echo server and abusive testing framework
+superbikeshed:a067829614b18da70f39695985389ad2602de6cc:feat: Enhance Spacegraph visualization for basic combat data in rtsgame
+superbikeshed:a1354767668e78a7fc5c963c909c22b7a3318482:Okay, I've made some changes to the `trikeshed-core` to implement a Git repository indexer.
+superbikeshed:a1766ec109fbe929b33a1b13357bdc7cdfb11006:Merge pull request #3 from jnorthrup/refactor-trikeshed
+superbikeshed:a3a537725eee790a081655b3c6a5a471bb082e0e:ljson.md
+superbikeshed:a8b9b0e9f9fc771eb750b1bcf6bf4c1288b310e4:feat: Implement async I/O abstractions for Linux and macOS
+superbikeshed:a9bcc74bb8fc7cfca4b9b07a8d436f14a8376f23:Remove Nginx Docker setup documentation and configuration files. Update Gradle build files to comment out WebAssembly support across multiple projects, streamlining the build process for JVM targets. Enhance TensorMath operations in the TrikeShed library by replacing deprecated methods with a new tensor generation approach.
+superbikeshed:ac134222cbc833b7540ad29f44e23fd979675dc3:feat: Enhance HTTP/3 server and outline multi-protocol support
+superbikeshed:aca2777cf87bbd83d545e45d04f31bc1127739b4:feat: Implement core bit-packing infrastructure for TrikeShed
+superbikeshed:ace67a00e0be295b23bd79b7313e85594422e9c6:feat: Integrate KSP delegation framework
+superbikeshed:b25c2877d8b5b12ea36aa7223fad62da35653705:Merge pull request #10 from jnorthrup/jules_wip_427421198057273701
+superbikeshed:b264672f7be16de63f195864c85a47891b8df4aa:Refactor: Move CouchDB to its own TrikeShed consumer project
+superbikeshed:b3b942bb3b865a12695cce5c625418a42182e6e4:feat: Implement basic QUIC 0-RTT and Stream Multiplexing
+superbikeshed:b3e74ce18a700be359b318aac20b7f4ddd446dce:I've designed and created the initial framework for QUIC, CouchDB-IPFS, and Kademlia Agents.
+superbikeshed:b672a971f6f4a83f37350d4258e9052f891862e7:feat: Implement OS and architecture detection for KMPP native targets
+superbikeshed:b75ec9d6feb6dace6dc74c230500388df8b9979f:Refactor: Replace Pair<A,B> with Join<A,B> in lib classes
+superbikeshed:b83f81ccc5a59e7780bf6d344cfa23460355ab61:feat: Implement multi-protocol audit tester framework
+superbikeshed:b99ea850355756460d6094078c772561e4943f86:Add maven-publish plugin to trikeshed-core
+superbikeshed:bd9680f1c26bbd6191f45f6142b2d8ea922a1b18:Docs: Update CLAUDE.md guides for accuracy, clarity, and consistency
+superbikeshed:bf6c28b273afa7b50fc34459fb577d4dc7096cf2:feat: Initial integration of Spacegraph.js into rtsgame for visualization
+superbikeshed:bfa15ab337c9c39e42ca7c49860b9d834df16143:feat: Initial port of QuantStats to Kotlin within ta4k.commonMain
+superbikeshed:c03c363f6f8321e1f38b46dd45af29c6ac4b367e:Merge pull request #11 from jnorthrup/refactor-trikeshed
+superbikeshed:c0c615dd98482dadae24469f8e4e4ecc4a31b966:feat: Enhance IPFS integration and testing capabilities
+superbikeshed:c14de6a74ba4e32d55367ea3f9697357888a73de:Octopus merge all upstream branches with enhanced features
+superbikeshed:c5a665153c2a09f58565aeec0352e14378682f6c:feat: Outline Kademlia DHT and Gossip Service features
+superbikeshed:c6bc62d2aa78af56c1e8573491263f4a83b5cb47:refactor: Refactor QuicCrypto and QuicSimpleExpectActual for JS/Native
+superbikeshed:caa87c881ba3fdad2cd95038425780dae6c48fc6:Make trikeshed-core more pure and lean
+superbikeshed:cbee74c006b4943ac9c85b3e8e4b45ff8c6573dd:feat: add audit tester framework and TrikeShed acapulco integration
+superbikeshed:ccb3fea82159885ecf827389d1993a938b0bc7a8:merge: integrate QUIC protocol enhancements
+superbikeshed:ceccbbab7e4808d9144ce6c8a64d1c8edbbcacdd:Enhance QUIC support in TrikeShed
+superbikeshed:cf15402531b8d71e42b358fce56401cc1dc9a360:Merge pull request #21 from jnorthrup/rtsgame-readme-cleanup
+superbikeshed:cf4d038d54296d875f4a7916f62c0ddb4c27e050:feat: Add comprehensive QUIC live integration tests with real sockets
+superbikeshed:cfc8b2c192361dab585098df90352991b5b7cf0c:feat: Implement CCEK services for QUIC networking, TLS, and crypto
+superbikeshed:d33b4f8f1ada2762293fcb497c5dce13fdc95589:Refactor: Move RequestFactory to a separate client module
+superbikeshed:d98b077295987565bc14ff29c8e1a384906ec131:feat: Initial DGM integration with TrikeShed
+superbikeshed:d9ff7de72a4749d4c83e2ae0e7980d32460fd39c:feat: Initial port of QuantStats to Kotlin within ta4k.commonMain
+superbikeshed:da3e76bb7f4e498a1afebeafc318479930b056bf:Add TrikeShed parser integration rules
+superbikeshed:dc1bed411bca2b28f1962f0e3ecdd00500df3bc2:Merge feat/trikeshed-dgm-integration branch with conflict resolution
+superbikeshed:dd882ab2b8b17d3cb5e2cc83149bb737c025ad6d:Refactor: Convert List<T> to Series<T> in key areas
+superbikeshed:e30393e02dc39a7ec721be4f87fd40125fa5d90d:feat: Implement core concurrent and sorted collection classes
+superbikeshed:e334f3cc7db09be4bfe68eb2a993587b354670b6:feat: Implement basic resource system in rtsgame using trikeshed-ts
+superbikeshed:e3cd3a1f022dee007fb1ca4c43789b358994e739:Merge pull request #20 from jnorthrup/claude-deep-self-hosting-merge
+superbikeshed:e41e6439648c90b772bc0a1d8bf1b0f611608ac1:Add MetaSeries Cursor End-to-End Implementation Strategy
+superbikeshed:e43ad7d6c8db1289947479b3a9f3418caeeb66f0:I've merged the content of DEEP_SELF_HOSTING_TASKS.md into Trikeshed/CLAUDE.md for you.
+superbikeshed:e8a42f3da72db510ff51aee04db5d52b4942f1f2:feat: Initial Kotlinization of Bao-Cline core
+superbikeshed:e9a3a72d0888731860bde77166ef90c4b5be2f7c:Resolve conflicts from jules_wip_14632361620357509613 merge
+superbikeshed:e9d1d1349dff4326fe5b2b75b50c332eee7a1e1e:Enhance K2script build configuration and core functionality
+superbikeshed:ea235c34270fe6bd4a9f711c4f876b5ccbe9d2fe:feat: Define custom binary serialization strategy for Kademlia events
+superbikeshed:ea3ddbae87277c1c91237c5d4d0ea835388908eb:Merge remote-tracking branch 'origin/feat/dgm-nexus-integration-phase1' into octo-merge-20250613
+superbikeshed:eabf3f92dbcb3b972bdcb181a99c5f1437d363c3:Merge jules_wip_427421198057273701 with TrikeShed patterns
+superbikeshed:eb295f642d341cffa1c152da7a44fed57ee65737:Okay, I've outlined the conceptual implementation for the `ta4k-spacegraph-moneyfan-dsel-demo` module.
+superbikeshed:ec44bdee67b4a8922998756df1285a15f8f7c249:feat: Implement CCEK services for QUIC networking, TLS, and crypto
+superbikeshed:ec8171e98b89f1cfb86f7b61230679c0233a0d90:Integrate rtsgame with trikeshed-core via Kotlin/JS (Conceptual)
+superbikeshed:eccd611199cb65942a0630a49721ce2daad53c3b:fix: correct CouchDB environment variable typo and enhance Moneyfan README
+superbikeshed:eda569e1c4131cec90e055672d8960bda2ead585:I've proposed some changes to the Gradle build configuration and updated the documentation for rtsgame.
+superbikeshed:ee53ac68bf72789c62443c0367beb8fc101f4c8e:feat: add TrikeShed dependency to ta4k for Series<T> types
+superbikeshed:ef534c23257ebd528b3be716563c3f0f373c298f:feat: Refactor QuicCrypto for JS, remove Crypto object, use context
+superbikeshed:f1928f06a3c21122efd399319dcbd046429a65a9:feat: Implement QUIC networking enhancements
+superbikeshed:f304cd14d3ddf662afa7cce897a3a8decb7f0d6e:Add CCEK Architecture Diagram header to documentation
+superbikeshed:f4a76dee33cc56373d7b14858f0c71e813fd7f22:feat: Implement basic QUIC 0-RTT and Stream Multiplexing
+superbikeshed:f61ed1b21676bfb90d98d6d29d2d6628b2b63244:Merge remote-tracking branch 'origin/refactor-trikeshed'
+superbikeshed:f64b99be745eeca7278a8b4187a2a72cec3afe65:feat: Implement Smooth Zoom and Smooth Pan for Camera
+superbikeshed:f76e06680c100c75b1eef01cdc0ae4ff9d1b1ed9:feat: Implement advanced physics and system mapping for RTS game
+superbikeshed:f798837b6ad2854168d5f94f47e0bb4fc4e9a2eb:feat: Add Java port for Trikeshed 'actuals'
+superbikeshed:f84e01d8ecbf02098dcf6534e23178ccaa7e496d:Merge remote-tracking branch 'origin/feature/trikeshed-integration-design-v1'
+superbikeshed:f8b7dfcc486670aac31252a52c8a0ea4ce57046b:merge: integrate IPFS enhancements
+superbikeshed:fc64dbb883668a40f152d903ae75d1dc8f82488a:feat: Implement platform TlsServices for client certs & KMP Base64 util
+superbikeshed:fe9e18eda6a3b80cf991c9030379d5a76645014b:I've refactored the code to update nio import paths and replace List with Series.
+superbikeshed:ff7859c065801459e57609c13f19fd55062e0f11:Refactor trikeshed and integrate with other libraries

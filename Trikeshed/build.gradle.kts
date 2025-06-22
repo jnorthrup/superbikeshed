@@ -48,6 +48,7 @@ kotlin {
                 implementation(libs.kotlinx.collections.immutable)
                 implementation(libs.kotlinx.atomicfu)
                 implementation(libs.kotlinx.serialization.core)
+                implementation(libs.kotlinx.serialization.json)
             }
         }
         
@@ -76,6 +77,7 @@ kotlin {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
+                implementation(libs.kotlinx.serialization.json)
             }
         }
     }
