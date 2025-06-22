@@ -1,6 +1,7 @@
 package borg.trikeshed.parse.json
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.bridge.toSeries
 
 /**
  * Simple sealed class to represent either a string key or integer index

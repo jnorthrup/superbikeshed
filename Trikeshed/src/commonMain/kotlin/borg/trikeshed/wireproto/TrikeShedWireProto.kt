@@ -3,6 +3,7 @@
 package borg.trikeshed.wireproto
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.bridge.toSeries
 import kotlin.jvm.JvmInline
 
 /**

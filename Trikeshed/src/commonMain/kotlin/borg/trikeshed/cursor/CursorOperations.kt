@@ -1,6 +1,7 @@
 package borg.trikeshed.cursor
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.ColumnMeta
 import borg.trikeshed.isam.meta.IOMemento
 import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmOverloads
@@ -12,26 +13,24 @@ import kotlin.reflect.KClass
 /**
  * TRIKESHED CURSOR OPERATIONS - Merged from Columnar
  * 
- * Comprehensive cursor operations that combine TrikeShed's Indexed-based design
- * with sophisticated columnar operations from the original columnar system.
+ * Simplified cursor operations that combine TrikeShed's Indexed-based design
+ * with columnar operations from the original columnar system.
  * 
  * Key Features:
- * - Advanced slicing and indexing operations
- * - Pivot and group operations
- * - Type-safe transformations
+ * - Basic cursor operations
+ * - Utility functions
  * - Performance optimizations
- * - Database-like operations
  */
 
 // ============================================================================
-// ADVANCED CURSOR OPERATIONS (Columnar Heritage)
+// BASIC CURSOR OPERATIONS
 // ============================================================================
 
 /**
  * Resample operation - creates a new cursor with specified size
  * Useful for downsampling or upsampling data
  */
-fun Cursor.resample(newSize: Int): Cursor {
+fun DatabaseCursor.resample(newSize: Int): DatabaseCursor {
     require(newSize >= 0) { "Resample size must be non-negative" }
     return newSize j { i -> 
         val originalIndex = (i * this.a) / newSize
@@ -43,11 +42,15 @@ fun Cursor.resample(newSize: Int): Cursor {
  * Order operation - sorts cursor by specified columns
  * Supports multiple column sorting with custom comparators
  */
-fun Cursor.ordered(
+fun DatabaseCursor.ordered(
     columnIndices: IntArray,
     comparator: Comparator<RowVec>? = null
-): Cursor {
-    val rows = this.play.toMutableList()
+): DatabaseCursor {
+    val rows = mutableListOf<RowVec>()
+    for (i in 0 until this.a) {
+        rows.add(this.b(i))
+    }
+    
     val actualComparator = comparator ?: compareBy { row ->
         columnIndices.joinToString("|") { colIndex ->
             row[colIndex].a?.toString() ?: ""
@@ -58,68 +61,12 @@ fun Cursor.ordered(
 }
 
 /**
- * Pivot operation - transforms cursor into pivot table format
- * Groups by key columns, creates value columns, and aggregates measure columns
- */
-fun Cursor.pivot(
-    keyColumns: IntArray,
-    valueColumns: IntArray,
-    measureColumns: IntArray
-): Cursor {
-    // Group by key columns
-    val groups = mutableMapOf<String, MutableList<RowVec>>()
-    
-    for (i in 0 until this.a) {
-        val row = this.b(i)
-        val key = keyColumns.joinToString("|") { colIndex ->
-            row[colIndex].a?.toString() ?: ""
-        }
-        groups.getOrPut(key) { mutableListOf() }.add(row)
-    }
-    
-    // Create pivot table
-    val pivotRows = mutableListOf<RowVec>()
-    for ((key, groupRows) in groups) {
-        val keyValues = key.split("|")
-        val pivotRow = (keyColumns.size + valueColumns.size * measureColumns.size) j { colIndex ->
-            when {
-                colIndex < keyColumns.size -> groupRows[0][keyColumns[colIndex]]
-                else -> {
-                    val valueColIndex = (colIndex - keyColumns.size) / measureColumns.size
-                    val measureColIndex = (colIndex - keyColumns.size) % measureColumns.size
-                    val valueCol = valueColumns[valueColIndex]
-                    val measureCol = measureColumns[measureColIndex]
-                    
-                    // Aggregate measure values for this key-value combination
-                    val values = groupRows.mapNotNull { row ->
-                        if (row[valueCol].a == groupRows[0][valueCol].a) {
-                            row[measureCol].a as? Number
-                        } else null
-                    }
-                    
-                    values.sumOf { it.toDouble() } j { 
-                        IOMemento().apply { 
-                            name = "pivot_${valueCol}_${measureCol}"
-                            type = "double"
-                        }
-                    }
-                }
-            }
-        }
-        pivotRows.add(pivotRow)
-    }
-    
-    return pivotRows.size j { i -> pivotRows[i] }
-}
-
-/**
  * Group operation - groups cursor by specified columns
  * Returns map of group keys to cursors
  */
-fun Cursor.group(
-    keyColumns: IntArray,
-    aggregator: (Indexed<Any?>) -> Any? = { it.play.firstOrNull() }
-): Map<String, Cursor> {
+fun DatabaseCursor.group(
+    keyColumns: IntArray
+): Map<String, DatabaseCursor> {
     val groups = mutableMapOf<String, MutableList<RowVec>>()
     
     for (i in 0 until this.a) {
@@ -135,114 +82,14 @@ fun Cursor.group(
     }
 }
 
-/**
- * Join operation - joins two cursors on specified columns
- * Supports inner, left, right, and full outer joins
- */
-fun Cursor.join(
-    other: Cursor,
-    leftColumns: IntArray,
-    rightColumns: IntArray,
-    joinType: JoinType = JoinType.INNER
-): Cursor {
-    // Build index for right cursor
-    val rightIndex = mutableMapOf<String, MutableList<RowVec>>()
-    for (i in 0 until other.a) {
-        val row = other.b(i)
-        val key = rightColumns.joinToString("|") { colIndex ->
-            row[colIndex].a?.toString() ?: ""
-        }
-        rightIndex.getOrPut(key) { mutableListOf() }.add(row)
-    }
-    
-    val joinedRows = mutableListOf<RowVec>()
-    
-    // Process left cursor
-    for (i in 0 until this.a) {
-        val leftRow = this.b(i)
-        val key = leftColumns.joinToString("|") { colIndex ->
-            leftRow[colIndex].a?.toString() ?: ""
-        }
-        
-        val matchingRightRows = rightIndex[key] ?: emptyList()
-        
-        when (joinType) {
-            JoinType.INNER -> {
-                for (rightRow in matchingRightRows) {
-                    joinedRows.add(combineRows(leftRow, rightRow))
-                }
-            }
-            JoinType.LEFT -> {
-                if (matchingRightRows.isEmpty()) {
-                    joinedRows.add(combineRows(leftRow, createNullRow(other.cols)))
-                } else {
-                    for (rightRow in matchingRightRows) {
-                        joinedRows.add(combineRows(leftRow, rightRow))
-                    }
-                }
-            }
-            JoinType.RIGHT -> {
-                if (matchingRightRows.isEmpty()) {
-                    joinedRows.add(combineRows(createNullRow(this.cols), leftRow))
-                } else {
-                    for (rightRow in matchingRightRows) {
-                        joinedRows.add(combineRows(leftRow, rightRow))
-                    }
-                }
-            }
-            JoinType.FULL -> {
-                if (matchingRightRows.isEmpty()) {
-                    joinedRows.add(combineRows(leftRow, createNullRow(other.cols)))
-                } else {
-                    for (rightRow in matchingRightRows) {
-                        joinedRows.add(combineRows(leftRow, rightRow))
-                    }
-                }
-            }
-        }
-    }
-    
-    return joinedRows.size j { i -> joinedRows[i] }
-}
-
 // ============================================================================
 // UTILITY OPERATIONS
 // ============================================================================
 
 /**
- * Join types for cursor join operations
- */
-enum class JoinType {
-    INNER, LEFT, RIGHT, FULL
-}
-
-/**
- * Combine two rows into a single row
- */
-private fun combineRows(left: RowVec, right: RowVec): RowVec {
-    return (left.size + right.size) j { i ->
-        if (i < left.size) left[i] else right[i - left.size]
-    }
-}
-
-/**
- * Create a row with null values
- */
-private fun createNullRow(cols: Int): RowVec {
-    return cols j { i -> 
-        null j { 
-            IOMemento().apply { 
-                name = "null_$i"
-                type = "null"
-            }
-        }
-    }
-}
-
-/**
  * Fill NA values with specified default
  */
-fun Cursor.fillNa(defaultValue: Any?): Cursor {
+fun DatabaseCursor.fillNa(defaultValue: Any?): DatabaseCursor {
     return this.α { row ->
         row.α { cell ->
             if (cell.a == null) defaultValue j { cell.b() } else cell
@@ -253,12 +100,14 @@ fun Cursor.fillNa(defaultValue: Any?): Cursor {
 /**
  * Float-specific fill NA operation
  */
-fun Cursor.floatFillNa(defaultValue: Float): Cursor {
+fun DatabaseCursor.floatFillNa(defaultValue: Float): DatabaseCursor {
     return this.α { row ->
         row.α { cell ->
-            when (cell.a) {
-                null, is Float -> (cell.a as? Float ?: defaultValue) j { cell.b() }
-                is Number -> (cell.a.toFloat()) j { cell.b() }
+            val value = cell.a
+            when {
+                value == null -> defaultValue j { cell.b() }
+                value is Float -> value j { cell.b() }
+                value is Number -> value.toFloat() j { cell.b() }
                 else -> cell
             }
         }
@@ -296,7 +145,7 @@ fun stringOf(row: RowVec): String {
 fun lazyCursor(
     size: Int,
     rowFactory: (Int) -> RowVec
-): Cursor {
+): DatabaseCursor {
     return size j { i -> rowFactory(i) }
 }
 
@@ -307,7 +156,7 @@ fun lazyCursor(
 fun cachedCursor(
     size: Int,
     rowFactory: (Int) -> RowVec
-): Cursor {
+): DatabaseCursor {
     val cache = mutableMapOf<Int, RowVec>()
     return size j { i -> 
         cache.getOrPut(i) { rowFactory(i) }

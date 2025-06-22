@@ -9,7 +9,7 @@ import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.bridge.toSeries
 import borg.trikeshed.lib.α
 
 /**

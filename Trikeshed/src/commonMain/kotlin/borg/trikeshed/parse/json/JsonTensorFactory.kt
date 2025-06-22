@@ -3,7 +3,7 @@ package borg.trikeshed.parse.json
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.bridge.toSeries
 
 /**
  * Creates a lazy, tensor-native view of a pre-computed JSON bitmap using TrikeShed's Series<T>.

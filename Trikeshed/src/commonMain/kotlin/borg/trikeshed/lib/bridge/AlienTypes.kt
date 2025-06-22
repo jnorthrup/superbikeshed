@@ -129,6 +129,12 @@ class QuicConnectionFlowControl(val connectionId: String) {
 
 // === SERIES CONSTRUCTION BRIDGE ===
 
+/** Convert List to Indexed (Series) */
+fun <T> List<T>.toSeries(): Indexed<T> = this.size j { i -> this[i] }
+
+/** Convert List to Indexed (alternate name) */
+fun <T> List<T>.toIndexed(): Indexed<T> = this.toSeries()
+
 /** Series constructor function from Review */
 fun <T> s_(vararg elements: T): Indexed<T> = elements.toList().toSeries()
 

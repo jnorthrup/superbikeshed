@@ -2,8 +2,10 @@
 
 package borg.trikeshed.cursor
 
+// import the IoMemento enum
+import borg.trikeshed.isam.meta.IOMemento.*
 import borg.trikeshed.lib.*
-import borg.trikeshed.isam.meta.IOMemento
+import borg.trikeshed.lib.bridge.toSeries
 import kotlin.jvm.JvmInline
 import kotlin.jvm.JvmOverloads
 import kotlin.math.max
@@ -11,125 +13,49 @@ import kotlin.math.min
 import kotlin.random.Random
 import kotlin.reflect.KClass
 
-/**
- * TRIKESHED CURSOR IMPLEMENTATION - Series-Based Design
+// Use DatabaseCursor for operations
+// typealias RowVec = Indexed2<Any?, () -> ColumnMeta>
+// typealias Cursor = Indexed<RowVec>
+
+/** Operator DatabaseCursor '/' Class<A>
  *
- * Restores TrikeShed's original philosophy of functional composition:
- * - Cursor = Indexed<RowVec> (delegates to Indexed, doesn't inherit)
- * - RowVec = Indexed<Join<Value, Meta>> (preserves Join pattern)
- * - All operations through Indexed composition
- * - Maintains TrikeShed's Join<Value, Meta> pattern for columnar data
- * - Enables 50k+ column scale through lazy evaluation
+ * returns Indexed<Indexed<A?>>> where the meta is stripped out and the values are cast using
  *
- * CANONICAL USAGE PATTERN:
- * ```
- * curs[-"unused"][2..7]["Close","High"] at(1)
- * ```
- * 
- * This elegant chained syntax demonstrates the power of operator overloading:
- * 1. curs[-"unused"] - exclude the "unused" column
- * 2. [2..7] - select rows 2-7  
- * 3. ["Close","High"] - select columns by name
- * 4. at(1) - get row 1 from the result
- * 
- * The operator overloads work together to create this fluent, composable API.
- * Collisions between get(row: Int) and get(vararg colIndices: Int) are resolved
- * by the compiler based on parameter types and context.
- */
+ * it "as?" A return only A values and null for non-A values */
+inline operator fun <A : Any, IR : Any?, SrInnr : Indexed<Join<A, *>>, SrOutr : Indexed<SrInnr>, RC : KClass<A?>> SrOutr.div(
+    c: KClass<out A>,
+): Indexed<Indexed<A?>> = this α { it α Join<A, *>::a } α { it α { it } } α { it α { it } }
 
-// ============================================================================
-// INDEXED-BASED CURSOR TYPEALIASES
-// ============================================================================
 
-/**
- * Cursor - Indexed of RowVec (functional composition)
- */
-typealias Cursor = Indexed<RowVec>
-
-/**
- * CursorWithMeta - Cursor with attached metadata (Join pattern)
- */
-typealias CursorWithMeta = Join<Cursor, Indexed<ColumnMeta>>
-
-// ============================================================================
-// CURSOR ACCESSORS (Indexed-Based)
-// ============================================================================
-
-// Cursor dimensions
-val Cursor.rows: Int get() = size
-val Cursor.cols: Int get() = if (size > 0) this[0].size else 0
-
-// Row access (delegates to Indexed)
-fun Cursor.row(index: Int): RowVec {
-    require(index >= 0 && index < size) { "Row index $index out of bounds [0, $size)" }
-    return this[index]
-}
-
-// Column access through Indexed composition
-fun Cursor.columns(): Indexed<Indexed<Any?>> = this.α { row -> row.α { it.a } }
-
-// ============================================================================
-// TRIKESHED CURSOR OPERATORS (Indexed-Based)
-// ============================================================================
-
-/**
- * Cursor slicing by row range
- * 
- * Usage: cursor[0..5] - selects rows 0-5
- */
-operator fun Cursor.get(rowRange: IntRange): Cursor {
-    require(rowRange.first >= 0) { "Row range start ${rowRange.first} out of bounds" }
-    require(rowRange.last < size) { "Row range end ${rowRange.last} out of bounds" }
-
-    val newSize = rowRange.last - rowRange.first + 1
-    return newSize j { i -> this[rowRange.first + i] }
-}
-
-/**
- * Cursor slicing by column indices (preserves TrikeShed pattern)
- * 
- * Usage: cursor[0, 2, 4] - selects columns 0, 2, and 4
- * 
- * Note: This can collide with get(row: Int) when called with a single integer.
- * The compiler resolves this based on parameter types and context.
- */
-operator fun Cursor.get(vararg colIndices: Int): Cursor {
-    require(colIndices.all { it >= 0 }) { "Column indices must be non-negative" }
-    
-    return this.α { row ->
-        colIndices.size j { i ->
-            val colIndex = colIndices[i]
-            require(colIndex < row.size) { "Column index $colIndex out of bounds" }
-            row[colIndex]
+/** cursor get by IntRange -- return a DatabaseCursor with the columns specified by the IntRange */
+operator fun DatabaseCursor.get(i: IntRange): DatabaseCursor {
+    require(i.first >= 0) { "index ${i.first} out of bounds for cursor of size ${this.a}" }
+    require(i.last < this.a) { "index ${i.last} out of bounds for cursor of size ${this.a}" }
+    return this.a j { y ->
+        // get the size of range
+        val rangeSize = i.last - i.first + 1
+        rangeSize j { x ->
+            row(y)[i.first + x]
         }
     }
 }
 
-/**
- * Cursor slicing by column names (requires metadata)
- * 
- * Usage: cursorWithMeta["Close", "High"] - selects columns by name
- */
-fun CursorWithMeta.get(vararg columnNames: String): CursorWithMeta {
-    val cursor = a // data
-    val meta = b // metadata
-
-    val colIndices = mutableListOf<Int>()
-    for (name in columnNames) {
-        val index = meta.play.indexOfFirst { it.name == name }
-        require(index >= 0) { "Column '$name' not found" }
-        colIndices.add(index)
+/** get meta for a cursor from row 0 */
+val DatabaseCursor.meta: Indexed<ColumnMeta>
+    get() = row(0) α { (_, b): Join<*, () -> ColumnMeta> ->
+        b()
     }
 
-    val newCursor = cursor[colIndices.toIntArray()]
-    val newMeta = colIndices.size j { i -> meta[colIndices[i]] }
-
-    return newCursor j newMeta
+/** create an Intarray of cursor meta by Strings of column names */
+fun DatabaseCursor.meta(vararg s: String): Indexed<Int> {
+    val meta: Indexed<ColumnMeta> = meta
+    return s.size j { i ->
+        meta.play.indexOfFirst { columnMeta: ColumnMeta -> columnMeta.a == s[i] }
+    }
 }
 
-// ============================================================================
-// COLUMN EXCLUSION (TrikeShed Pattern)
-// ============================================================================
+/** cursor get by String vararg -- return a DatabaseCursor with the columns specified by the vararg */
+fun DatabaseCursor.get(vararg s: String): DatabaseCursor = this[meta(*s).play.toList().toIntArray()]
 
 /** ColumnExclusion value class
  *
@@ -144,127 +70,94 @@ value class ColumnExclusion(val name: String) {
 /** create operator unary minus for ColumnExclusion on string */
 operator fun String.unaryMinus(): ColumnExclusion = ColumnExclusion(this)
 
-/**
- * Exclude columns by names
- * 
- * Usage: cursor[-"unused", -"temp"] - excludes columns named "unused" and "temp"
- */
-fun CursorWithMeta.exclude(vararg exclusions: ColumnExclusion): CursorWithMeta {
-    val cursor = a
-    val meta = b
-
-    val excludeNames = exclusions.map { it.name }.toSet()
-    val retainedIndices = meta.play.mapIndexedNotNull { index, columnMeta ->
-        if (columnMeta.name !in excludeNames) index else null
-    }
-
-    val newCursor = cursor[retainedIndices.toIntArray()]
-    val newMeta = retainedIndices.size j { i -> meta[retainedIndices[i]] }
-
-    return newCursor j newMeta
+/** Return cursor with columns excluded by indexes */
+operator fun DatabaseCursor.minus(killbag: Indexed<Int>) {
+    val toSet = (0 until meta.size).toSet()
+    val ints = (toSet - killbag.play.toSet()).toIntArray()
+    this[ints]
 }
 
-// ============================================================================
-// CURSOR DISPLAY OPERATIONS (TrikeShed Heritage)
-// ============================================================================
+/** cursor get by ColumnExclusion vararg -- return a DatabaseCursor with the columns excluded by the vararg */
+fun DatabaseCursor.get(s: Indexed<ColumnExclusion>): DatabaseCursor {
 
-/**
- * Show cursor head (default 5 rows)
- */
-fun Cursor.head(count: Int = 5) {
-    val showRows = min(count, size)
-    println("Cursor: $size rows x $cols columns")
-
-    for (r in 0 until showRows) {
-        val row = this[r]
-        val rowData = row.play.map { it.a }
-        println("Row $r: $rowData")
+    val exclusionBag = mutableSetOf<Int>()
+    s.play.forEachIndexed { i: Int, it: ColumnExclusion ->
+        exclusionBag.add(meta.play.indexOfFirst { columnMeta -> columnMeta.a == it.name })
     }
-
-    if (showRows < size) {
-        println("... ${size - showRows} more rows")
-    }
+    val retained = ((0 until meta.size).toSet() - exclusionBag).toIntArray()
+    return this[retained]
 }
 
-/** head default 5 rows just like unix head */
+//in columnar project this is meta.right
+val Indexed<ColumnMeta>.names get() = this α { it.a }
+
+/** head default 5 rows
+ * just like unix head - print default 5 lines from cursor contents to stdout */
 @JvmOverloads
-fun Cursor.head(last: Int = 5): Unit = show(0 until (max(0, min(last, size))))
+fun DatabaseCursor.head(last: Int = 5): Unit = show(0 until (max(0, min(last, this.a))))
 
 /** run head starting at random index */
-fun Cursor.showRandom(n: Int = 5) {
-    head(0); repeat(n) {
-        if (size > 0) showValues(Random.nextInt(0, size).let { it..it })
+fun DatabaseCursor.showRandom(n: Int = 5) {
+    head(0);repeat(n) {
+        if (this.a > 0) showValues(Random.nextInt(0, this.a).let { it..it })
     }
 }
 
 /** simple printout macro*/
-fun CursorWithMeta.show(range: IntRange = 0 until a.size) {
-    val meta: Indexed<ColumnMeta> = b
-    println("rows:${a.size}" to meta.play.map { it.name })
+fun DatabaseCursor.show(range: IntRange = 0 until this.a) {
+    val meta: Indexed<ColumnMeta> = meta
+    println("rows:${this.a}" to meta.names.play.toList())
     showValues(range)
 }
 
-fun CursorWithMeta.showValues(range: IntRange) {
-    val cursor = a
+fun DatabaseCursor.showValues(range: IntRange) {
     try {
-        for (x in range) {
-            val row: RowVec = cursor.row(x)
-            val rowData = row.play.map { it.a }
-            println(rowData)
+        range.forEach { x: Int ->
+            val row: RowVec = row(x)
+
+            val show = row α { cell ->
+                val value = cell.a
+                val meta = cell.b()
+                when ((meta.b as? KClass<*>)?.simpleName) {
+                    "IoCharSeries" -> meta.a to (value as? Indexed<Char>)?.play?.joinToString("") ?: value
+                    else -> meta.a to value
+                }
+            }
+
+            println(show.play.toList())
         }
     } catch (e: NoSuchElementException) {
         println("cannot fully access range $range")
     }
 }
 
-infix fun Cursor.at(y: Int): RowVec = row(if (y < 0) size + y else y)
+
+/** gets the RowVec at y or if y is negative then -y from last */
+infix fun DatabaseCursor.at(y: Int): RowVec = b(if (y < 0) this.a - y else y)
+infix fun DatabaseCursor.row(y: Int): RowVec = at(y)
+
+/** Cursor get by Int vararg -- return a DatabaseCursor with the columns specified by the vararg */
+operator fun DatabaseCursor.get(vararg i: Int): DatabaseCursor = this.a j { y: Int ->
+    i.size j { x: Int ->
+        row(y)[i[x]]
+    }
+}
+
 
 /** IsNumerical
  * iterate the meta enum types and check if all are numerical
  *
- * IoByte,IoShort,IoInt,IoDouble,IoLong qualify as numerical
+ * IoByte,IoShort,IoInt,IoDouble,IoLong   qualify as numerical
+ *
+ * kotlin enumset is not available in JS
+ *
  */
-val CursorWithMeta.isNumerical: Boolean
-    get() {
-        val meta = b
-        return meta.play.all { columnMeta ->
-            when (columnMeta.type) {
-                "byte", "short", "int", "float", "double", "long" -> true
-                else -> false
-            }
+val DatabaseCursor.isNumerical: Boolean
+    get() = meta.play.all {
+        when ((it.b as? KClass<*>)?.simpleName) {
+            "IoByte", "IoShort", "IoInt", "IoFloat", "IoDouble", "IoLong" -> true
+            else -> false
         }
     }
 
-val CursorWithMeta.isHomomorphic: Boolean
-    get() {
-        val meta = b
-        if (meta.size == 0) return true
-        val firstType = meta[0].type
-        return meta.play.all { it.type == firstType }
-    }
-
-// ============================================================================
-// TYPE-BASED FLATMAPPING (TrikeShed Pattern)
-// ============================================================================
-
-/**
- * Operator Cursor '/' Class<A>
- *
- * returns Indexed<Indexed<A?>>> where the meta is stripped out and the values are cast using
- * "as?" A return only A values and null for non-A values
- */
-inline operator fun <A : Any, IR : Any?, SrInnr : Indexed<Join<A, *>>, SrOutr : Indexed<SrInnr>, RC : KClass<A?>> SrOutr.div(
-    c: KClass<out A>,
-): Indexed<Indexed<A?>> = this α { it α Join<A, *>::a } α { it α { it } } α { it α { it } }
-
-// ============================================================================
-// CURSOR INTERFACE (Platform-Specific Implementations)
-// ============================================================================
-
-/**
- * Cursor interface for platform-specific implementations
- */
-interface CursorInterface {
-    val a: Int
-    val b: (Int) -> RowVec
-} 
+val DatabaseCursor.isHomoMorphic: Boolean get() = !meta.play.any { it.b != meta[0].b } 

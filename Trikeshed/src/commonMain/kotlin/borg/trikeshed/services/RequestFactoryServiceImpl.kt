@@ -2,6 +2,7 @@ package borg.trikeshed.services
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
+import borg.trikeshed.lib.bridge.toSeries
 
 /**
  * BrokeShed Implementation of RequestFactoryService 

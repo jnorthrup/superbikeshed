@@ -321,6 +321,20 @@ typealias Twin<T> = Join<T, T>
  */
 inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
 
+/**
+ * ## Series Construction Operator (j) - Indexed Sequence Builder
+ * 
+ * The `j` operator for Int creates Indexed sequences from size and accessor function.
+ * This is the primary constructor for Indexed<T> metaclasses.
+ * 
+ * **Usage:**
+ * ```kotlin
+ * val numbers = 10 j { i -> i * i }  // Indexed<Int> with squares
+ * val strings = 5 j { i -> "item$i" }  // Indexed<String>
+ * ```
+ */
+inline infix fun <T> Int.j(noinline getter: (index: Int) -> T): Indexed<T> = Join.invoke(this, getter)
+
 // === SERIES METACLASS SYSTEM ===
 
 /**
@@ -444,6 +458,57 @@ typealias LongIndexed<T> = Join<Long, (Long) -> T>
  */
 typealias Indexed2<A, B> = Indexed< Join<A, B>>
 
+/**
+ * ## Indexed2 Left Projection
+ * 
+ * Extracts the left component of an Indexed2<A,B> as an Indexed<A>.
+ * This provides a view of just the first elements from each pair.
+ */
+val <A, B> Indexed2<A, B>.left: Indexed<A> 
+    get() = this.a j { i -> this.b(i).a }
+
+/**
+ * ## Indexed2 Right Projection  
+ * 
+ * Extracts the right component of an Indexed2<A,B> as an Indexed<B>.
+ * This provides a view of just the second elements from each pair.
+ */
+val <A, B> Indexed2<A, B>.right: Indexed<B>
+    get() = this.a j { i -> this.b(i).b }
+
+// === CZERO UTILITIES ===
+
+/**
+ * CZero utilities for C-style zero/non-zero checks
+ * Provides idiomatic Kotlin extensions for C interop
+ */
+object CZero {
+    /** Check if value is zero */
+    val Int.z: Boolean get() = this == 0
+    val UInt.z: Boolean get() = this == 0u
+    val Long.z: Boolean get() = this == 0L
+    val ULong.z: Boolean get() = this == 0uL
+    
+    /** Check if value is non-zero */
+    val Int.nz: Boolean get() = this != 0
+    val UInt.nz: Boolean get() = this != 0u
+    val Long.nz: Boolean get() = this != 0L
+    val ULong.nz: Boolean get() = this != 0uL
+}
+
+// === HELPER FUNCTIONS ===
+
+/**
+ * Empty Indexed collection
+ * Returns an empty indexed collection of the specified type
+ */
+fun <T> emptyIndex(): Indexed<T> = 0 j { _ -> throw IndexOutOfBoundsException("Empty index") }
+
+/**
+ * Empty Indexed collection (alternate name)
+ */
+fun <T> emptyIndexed(): Indexed<T> = emptyIndex()
+
 // === METACLASS OPERATIONS ===
 
 /**
@@ -530,10 +595,6 @@ inline fun <reified T> Indexed<T>.toArray(): Array<T> = this.play.toList().toTyp
 
 // Special case for ByteArray
 fun Indexed<Byte>.toArray(): ByteArray = ByteArray(this.size) { this[it] }
-
-// === EMPTY SERIES ===
-
-fun <T> emptyIndex(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 // === SERIES CONSTRUCTION BRIDGE ===
 
@@ -955,7 +1016,10 @@ fun DatabaseCursor.mirror(): DatabaseCursor =
  * Converts cursor to pure data series
  */
 operator fun DatabaseCursor.unaryMinus(): CursorSeries<CursorSeries<*>> = 
-    this.a j { x: Int -> this.b(x).left }
+    this.a j { x: Int -> 
+        val row = this.b(x)  // Get RowVec which is Indexed<Join<Any?, () -> ColumnMeta>>
+        row.a j { i -> row.b(i).a }  // Extract just the values (left/a component of each cell)
+    }
 
 /**
  * Type extraction operator using reified generics
@@ -1021,7 +1085,7 @@ fun DatabaseCursor.pivot(
     for (i in 0 until this.a) {
         val row = this.b(i)
         val key = axis.map { colIndex -> 
-            if (colIndex < row.a) row.b(colIndex).first else null 
+            if (colIndex < row.a) row.b(colIndex).a else null 
         }
         distinctKeys.add(key)
     }
@@ -1048,7 +1112,7 @@ fun DatabaseCursor.pivot(
                     
                     // Check if current row matches this key
                     val currentKey = axis.map { axisColIndex ->
-                        if (axisColIndex < originalRow.a) originalRow.b(axisColIndex).first else null
+                        if (axisColIndex < originalRow.a) originalRow.b(axisColIndex).a else null
                     }
                     
                     if (keyIndex < keysList.size && currentKey == keysList[keyIndex]) {
@@ -1092,7 +1156,7 @@ fun DatabaseCursor.ordered(
     val indexedKeys = (0 until this.a).map { rowIndex ->
         val row = this.b(rowIndex)
         val key = axis.map { colIndex ->
-            if (colIndex < row.a) row.b(colIndex).first else null
+            if (colIndex < row.a) row.b(colIndex).a else null
         }
         rowIndex to key
     }.sortedWith { a, b -> comparator.compare(a.second, b.second) }

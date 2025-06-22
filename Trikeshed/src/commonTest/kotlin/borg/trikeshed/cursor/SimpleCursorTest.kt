@@ -1,6 +1,6 @@
 package borg.trikeshed.cursor
 
-import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.j
 import borg.trikeshed.isam.meta.IOMemento
 import kotlin.test.*
@@ -13,15 +13,29 @@ class SimpleCursorTest {
     
     @Test
     fun testBasicCursorCreation() {
-        // Create a simple cursor with string data
-        val data = 3 j { i ->
-            val rowData = 2 j { j -> "row${i}_col${j}" }
-            rowData
+        // Create a simple cursor with 3 rows
+        val cursor: DatabaseCursor = 3 j { rowIndex: Int ->
+            // Each row has 2 columns - RowVec is Indexed<Join<Any?, () -> ColumnMeta>>
+            2 j { colIndex: Int ->
+                val value: Any? = when (colIndex) {
+                    0 -> "col${colIndex}_row${rowIndex}"
+                    1 -> rowIndex * 10
+                    else -> null
+                }
+                // Create Join<Any?, () -> ColumnMeta> - value j function
+                value j { ColumnMeta("col$colIndex", String::class) }
+            }
         }
         
-        assertEquals(3, data.size)
-        assertEquals("row0_col0", data[0][0])
-        assertEquals("row1_col1", data[1][1])
+        assertEquals(3, cursor.a, "Cursor should have 3 rows")
+        assertEquals(2, cursor.width, "Cursor should have 2 columns")
+        
+        // Test accessing first row
+        val firstRow = cursor.b(0)
+        assertEquals(2, firstRow.a, "First row should have 2 columns")
+        
+        val firstCell = firstRow.b(0)
+        assertEquals("col0_row0", firstCell.a, "First cell should contain correct value")
     }
     
     @Test
@@ -133,5 +147,50 @@ class SimpleCursorTest {
         assertEquals("value_0", singleRow[0][0])
         assertEquals("value_1", singleRow[0][1])
         assertEquals("value_2", singleRow[0][2])
+    }
+    
+    @Test
+    fun testCursorOperations() {
+        // Create a simple cursor
+        val cursor: DatabaseCursor = 2 j { rowIndex: Int ->
+            2 j { colIndex: Int ->
+                val value: Int = rowIndex + colIndex
+                // Create Join<Any?, () -> ColumnMeta>
+                value j { { ColumnMeta("col$colIndex", Int::class) } }
+            }
+        }
+        
+        // Test resample operation
+        val resampled = cursor.resample(4)
+        assertEquals(4, resampled.a, "Resampled cursor should have 4 rows")
+        
+        // Test fillNa operation
+        val filled = cursor.fillNa(999)
+        assertNotNull(filled, "FillNa should return a valid cursor")
+    }
+    
+    @Test
+    fun testBasicCursorOperations() {
+        // Create a simple cursor
+        val cursor: DatabaseCursor = 2 j { rowIndex: Int ->
+            2 j { colIndex: Int ->
+                val value: Int = rowIndex + colIndex
+                // Create Join<Any?, () -> ColumnMeta> - value j function
+                value j { ColumnMeta("col$colIndex", Int::class) }
+            }
+        }
+        
+        // Test basic operations that don't require complex cursor operations
+        assertEquals(2, cursor.a, "Cursor should have 2 rows")
+        assertEquals(2, cursor.width, "Cursor should have 2 columns")
+        
+        // Test accessing rows
+        val firstRow = cursor.b(0)
+        val secondRow = cursor.b(1)
+        
+        assertEquals(0, firstRow.b(0).a, "First cell should be 0")
+        assertEquals(1, firstRow.b(1).a, "Second cell should be 1")
+        assertEquals(1, secondRow.b(0).a, "First cell of second row should be 1")
+        assertEquals(2, secondRow.b(1).a, "Second cell of second row should be 2")
     }
 } 

@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalForeignApi::class)
 package borg.trikeshed.io
 
 import kotlinx.cinterop.*
@@ -5,16 +6,18 @@ import platform.posix.*
 import borg.trikeshed.native.HasPosixErr
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.bridge.toSeries
 
 actual object Files {
     actual fun readAllLines(path: String): List<String> = memScoped {
         val lines = mutableListOf<String>()
         val file = fopen(path, "r")
         if (file != null) {
-            var line: CPointer<ByteVar>? = null
-            while (fgets(line?.ptr, 0, file) != null) {
-                lines.add(line!!.toKString())
+            val buffer = ByteArray(4096)
+            buffer.usePinned { pinned ->
+                while (fgets(pinned.addressOf(0), buffer.size, file) != null) {
+                    lines.add(pinned.get().toKString().trimEnd('\n', '\r'))
+                }
             }
             fclose(file)
         }
@@ -69,7 +72,8 @@ actual object Files {
     actual fun iterateLines(fileName: String, bufsize: Int): Iterable<Join<Long, Indexed<Byte>>> {
         val lines = readAllLines(fileName)
         return lines.mapIndexed { index, line ->
-            Join(index.toLong(), line.encodeToByteArray().toSeries())
+            val bytes = line.encodeToByteArray()
+            index.toLong() j bytes.toList().toSeries()
         }
     }
 

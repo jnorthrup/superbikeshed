@@ -10,6 +10,7 @@ import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.rea
 import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.writeULong
 import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.writeUShort
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.bridge.toSeries
 import borg.trikeshed.lib.CZero.nz
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.native.HasPosixErr.Companion.posixFailOn
