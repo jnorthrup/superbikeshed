@@ -31,4 +31,3 @@ class CursorVolume(
         return indexed
     }
 } 
-} 
