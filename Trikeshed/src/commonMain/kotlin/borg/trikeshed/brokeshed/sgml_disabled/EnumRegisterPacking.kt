@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package borg.trikeshed.parse.sgml
+package borg.trikeshed.brokeshed.sgml
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
@@ -12,109 +12,11 @@ import kotlin.jvm.JvmInline
  * Avoids inefficient 'to' function and uses direct register packing
  */
 
-// === ENUM REGISTER PACKING ===
-
-/**
- * XPath Operation - Enum designed for register packing
- */
-enum class XPathOp(val symbol: String, val precedence: Int) {
-    CHILD("/", 100),
-    DESCENDANT("//", 90),
-    PARENT("..", 80),
-    ATTRIBUTE("@", 60),
-    TEXT("text()", 50),
-    EQUALS("=", 30),
-    NOT_EQUALS("!=", 29),
-    COUNT("count()", 20),
-    WILDCARD("*", 0);
-    
-    companion object {
-        fun fromSymbol(symbol: String): XPathOp? = 
-            values().find { it.symbol == symbol }
-    }
-}
-
-/**
- * XPath Parameter Type - Enum for register packing
- */
-enum class XPathParamType(val typeName: String) {
-    STRING("string"),
-    NUMBER("number"),
-    BOOLEAN("boolean"),
-    NODE("node"),
-    NODE_SET("node-set");
-    
-    companion object {
-        fun fromTypeName(typeName: String): XPathParamType? = 
-            values().find { it.typeName == typeName }
-    }
-}
-
-// === REGISTER-PACKED ENUM JOINS ===
-
-/**
- * XPath Operation Context - Register-packed enum join
- * Uses enum ordinal for efficient register packing
- */
-@JvmInline
-value class XPathOpContext(val packed: Int) {
-    val operation: XPathOp get() = XPathOp.values()[packed shr 16]
-    val paramType: XPathParamType get() = XPathParamType.values()[(packed shr 8) and 0xFF]
-    val paramIndex: Int get() = packed and 0xFF
-    
-    companion object {
-        fun pack(op: XPathOp, paramType: XPathParamType, paramIndex: Int): XPathOpContext {
-            require(paramIndex in 0..255) { "Parameter index must fit in 8 bits" }
-            val packed = (op.ordinal shl 16) or (paramType.ordinal shl 8) or paramIndex
-            return XPathOpContext(packed)
-        }
-        
-        fun pack(op: XPathOp): XPathOpContext = pack(op, XPathParamType.STRING, 0)
-    }
-}
-
-/**
- * XPath Operation Chain - Register-packed enum series
- * Uses bit-packed enums for efficient register storage
- */
-@JvmInline
-value class XPathOpChain(val packed: Long) {
-    val op1: XPathOp get() = XPathOp.values()[(packed shr 48).toInt() and 0xFF]
-    val op2: XPathOp get() = XPathOp.values()[(packed shr 40).toInt() and 0xFF]
-    val op3: XPathOp get() = XPathOp.values()[(packed shr 32).toInt() and 0xFF]
-    val op4: XPathOp get() = XPathOp.values()[(packed shr 24).toInt() and 0xFF]
-    val op5: XPathOp get() = XPathOp.values()[(packed shr 16).toInt() and 0xFF]
-    val op6: XPathOp get() = XPathOp.values()[(packed shr 8).toInt() and 0xFF]
-    val op7: XPathOp get() = XPathOp.values()[packed.toInt() and 0xFF]
-    
-    companion object {
-        fun pack(vararg ops: XPathOp): XPathOpChain {
-            require(ops.size <= 7) { "Can pack at most 7 operations" }
-            var packed: Long = 0
-            ops.forEachIndexed { index, op ->
-                packed = packed or (op.ordinal.toLong() shl (48 - index * 8))
-            }
-            return XPathOpChain(packed)
-        }
-    }
-}
-
-// === REGISTER-PACKED META SERIES ===
-
-/**
- * XPath Operation MetaSeries - Register-packed enum linking
- * Uses enum ordinals for efficient MetaSeries construction
- */
-typealias XPathOpMetaSeries = Join<XPathOpContext, XPathOpChain>
-
-/**
- * XPath Parameter MetaSeries - Register-packed parameter linking
- * Uses enum ordinals for efficient parameter storage
- */
-typealias XPathParamMetaSeries = Join<XPathParamType, Indexed<String>>
-
 // === REGISTER-PACKED DISPATCH ===
 
+// NOTE: Register packing logic is deprecated. Use canonical Indexed-based types from CorrectMetaSeries.kt.
+// The following code is commented out due to removal of value class logic:
+/*
 /**
  * Register-Packed Enum Dispatcher - Uses register-packed enums for dispatch
  */
@@ -243,6 +145,9 @@ object RegisterPackedBuilder {
 
 // === EXAMPLE USAGE ===
 
+// NOTE: Register packing logic is deprecated. Use canonical Indexed-based types from CorrectMetaSeries.kt.
+// The following code is commented out due to removal of value class logic:
+/*
 /**
  * Example demonstrating register-packed enum dispatch
  */
@@ -298,4 +203,5 @@ fun main() {
     println("XPathOpContext size: ${XPathOpContext::class.java.simpleName} packs into 32 bits")
     println("XPathOpChain size: ${XPathOpChain::class.java.simpleName} packs into 64 bits")
     println("No 'to' function overhead - direct register packing!")
-} 
+}
+*/ 

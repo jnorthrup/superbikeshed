@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package borg.trikeshed.parse.sgml
+package borg.trikeshed.brokeshed.sgml
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Either
@@ -113,7 +113,8 @@ enum class XPathTokenType(val symbol: String, val precedence: Int) {
     // Value tokens
     IDENTIFIER("identifier", 2),
     STRING("string", 1),
-    NUMBER("number", 0);
+    NUMBER("number", 0),
+    WILDCARD("*", -1);
     
     companion object {
         fun fromSymbol(symbol: String): XPathTokenType? = 
@@ -523,8 +524,10 @@ fun main() {
     // Parse expression using MetaSeries
     val parseResult = xpath.parseXPath()
     parseResult.α { expression ->
-        val (tokens, context) = expression
-        val (nodes, predicates) = context
+        val tokens = expression.a
+        val context = expression.b
+        val nodes = context.a
+        val predicates = context.b
         
         println("Nodes: ${nodes.play.joinToString(", ") { it.type.symbol }}")
         println("Predicates: ${predicates.size} predicate functions")

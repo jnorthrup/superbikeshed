@@ -1,9 +1,11 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package borg.trikeshed.parse.sgml
+package borg.trikeshed.brokeshed.sgml
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
 
 /**
  * Correct MetaSeries - Using existing j and jj infrastructure for register packing, not duplicating the register packer.
@@ -57,12 +59,12 @@ typealias XPathParamMetaSeries = MetaSeries<XPathParamType, String>
 /**
  * XPath Operation Chain - Series of operations with size prefix
  */
-typealias XPathOpChain = Series<XPathOp>
+typealias XPathOpChain = Indexed<XPathOp>
 
 /**
  * XPath Parameter Chain - Series of parameters with size prefix
  */
-typealias XPathParamChain = Series<String>
+typealias XPathParamChain = Indexed<String>
 
 // === REGISTER-PACKED META SERIES ===
 
@@ -74,12 +76,12 @@ typealias XPathOpContext = Join<XPathOp, XPathParamType>
 /**
  * XPath Operation Series - Using j for normal join, jj for sticky register packing
  */
-typealias XPathOpSeries = Series<XPathOpContext>
+typealias XPathOpSeries = Indexed<XPathOpContext>
 
 /**
  * XPath Parameter Series - Using j for normal join, jj for sticky register packing
  */
-typealias XPathParamSeries = Series<XPathParamType>
+typealias XPathParamSeries = Indexed<XPathParamType>
 
 // === META SERIES DISPATCH ===
 
@@ -112,7 +114,7 @@ object MetaSeriesDispatcher {
      * Dispatch operation chain using Series with size prefix
      */
     fun dispatchChain(chain: XPathOpChain, parameters: XPathParamChain): XPathParamChain {
-        val results = chain.size j { index ->
+        val results = chain.size j { index: Int ->
             val operation = chain[index]
             val metaSeries = operation j { op -> XPathParamType.STRING } // Default param type
             dispatch(metaSeries, parameters)
@@ -204,14 +206,14 @@ object MetaSeriesBuilder {
      * Build operation chain using Series with size prefix
      */
     fun buildChain(vararg operations: XPathOp): XPathOpChain {
-        return operations.size j { index -> operations[index] }
+        return operations.size j { index: Int -> operations[index] }
     }
     
     /**
      * Build parameter chain using Series with size prefix
      */
     fun buildParamChain(vararg parameters: String): XPathParamChain {
-        return parameters.size j { index -> parameters[index] }
+        return parameters.size j { index: Int -> parameters[index] }
     }
     
     /**
@@ -225,7 +227,7 @@ object MetaSeriesBuilder {
      * Build operation series using Series with size prefix
      */
     fun buildOpSeries(vararg contexts: XPathOpContext): XPathOpSeries {
-        return contexts.size j { index -> contexts[index] }
+        return contexts.size j { index: Int -> contexts[index] }
     }
 }
 

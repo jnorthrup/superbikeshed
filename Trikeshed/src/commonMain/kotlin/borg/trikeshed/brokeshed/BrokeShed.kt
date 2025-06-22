@@ -14,8 +14,6 @@ import kotlinx.serialization.Serializable
 // === Core Financial Types ===
 
 typealias Symbol = String
-typealias Price = Double
-typealias Volume = Long
 typealias Timestamp = Instant
 
 // === Market Data Structures using Indexed ===
@@ -26,8 +24,8 @@ typealias Timestamp = Instant
 @Serializable
 data class Tick(
     val symbol: Symbol,
-    val price: Price,
-    val volume: Volume,
+    val price: Double,
+    val volume: Long,
     val timestamp: Timestamp,
     val side: Side = Side.UNKNOWN
 ) {
@@ -40,11 +38,11 @@ data class Tick(
 @Serializable
 data class OHLCV(
     val symbol: Symbol,
-    val open: Price,
-    val high: Price,
-    val low: Price,
-    val close: Price,
-    val volume: Volume,
+    val open: Double,
+    val high: Double,
+    val low: Double,
+    val close: Double,
+    val volume: Long,
     val timestamp: Timestamp,
     val interval: String = "1m"
 )
@@ -54,8 +52,8 @@ data class OHLCV(
  */
 @Serializable
 data class BookEntry(
-    val price: Price,
-    val volume: Volume,
+    val price: Double,
+    val volume: Long,
     val side: Side
 ) {
     enum class Side { BID, ASK }
@@ -84,10 +82,10 @@ data class MarketData(
 @Serializable
 data class Position(
     val symbol: Symbol,
-    val quantity: Volume,
-    val averagePrice: Price,
-    val unrealizedPnL: Price = 0.0,
-    val realizedPnL: Price = 0.0
+    val quantity: Long,
+    val averagePrice: Double,
+    val unrealizedPnL: Double = 0.0,
+    val realizedPnL: Double = 0.0
 )
 
 @Serializable
@@ -96,8 +94,8 @@ data class Order(
     val symbol: Symbol,
     val side: OrderSide,
     val type: OrderType,
-    val quantity: Volume,
-    val price: Price? = null,
+    val quantity: Long,
+    val price: Double? = null,
     val status: OrderStatus = OrderStatus.PENDING,
     val timestamp: Timestamp
 ) {
@@ -117,8 +115,8 @@ data class Portfolio(
     val accountId: String,
     val positions: PositionSeries,
     val orders: OrderSeries,
-    val cash: Price,
-    val totalValue: Price,
+    val cash: Double,
+    val totalValue: Double,
     val lastUpdated: Timestamp
 )
 
@@ -225,8 +223,8 @@ object BrokeShed {
  */
 @Serializable
 data class PortfolioMetrics(
-    val totalValue: Price,
-    val totalPnL: Price,
+    val totalValue: Double,
+    val totalPnL: Double,
     val positionCount: Int,
     val orderCount: Int,
     val sharpeRatio: Double = 0.0,
