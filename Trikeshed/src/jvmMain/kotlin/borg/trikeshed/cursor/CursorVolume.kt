@@ -12,22 +12,22 @@ class CursorVolume(
             "cache_aligned" -> alignToCacheLines()
             "sequential" -> optimizeForSequentialAccess()
             "random" -> optimizeForRandomAccess()
-            else -> indexed
+            else -> indexed.b(0) // Return first inner series
         }
     }
 
     private fun alignToCacheLines(): Indexed<ByteArray> {
         // Simplified cache line alignment
-        return indexed
+        return indexed.b(0)
     }
 
     private fun optimizeForSequentialAccess(): Indexed<ByteArray> {
         // Simplified sequential optimization
-        return indexed
+        return indexed.b(0)
     }
 
     private fun optimizeForRandomAccess(): Indexed<ByteArray> {
         // Simplified random access optimization
-        return indexed
+        return indexed.b(0)
     }
 } 
