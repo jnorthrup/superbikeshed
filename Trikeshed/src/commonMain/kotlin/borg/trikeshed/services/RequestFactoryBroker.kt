@@ -3,7 +3,7 @@ package borg.trikeshed.services
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.PlatformServiceInvoker
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.toIdx
 
 /**
  * Core types and protocols for the RequestFactory system.
@@ -48,7 +48,7 @@ class RequestFactoryBroker(private val serviceInvoker: PlatformServiceInvoker) {
         suspend fun handleRequest(requestBytes: Indexed<Byte>): Indexed<Byte> {
             // Simplified implementation
             val response = Response.Success("Request handled")
-            return "OK".encodeToByteArray().toList().toSeries()
+            return "OK".encodeToByteArray().toList().toIdx()
         }
     }
 
@@ -186,7 +186,7 @@ class RequestFactoryBroker(private val serviceInvoker: PlatformServiceInvoker) {
         return when (request) {
             is Request.Invoke -> base + mapOf(
                 "type" to "invoke",
-                "args" to request.args.play.toList()
+                "args" to (0 until request.args.a).map { request.args.b(it) }
             )
             is Request.Create -> base + mapOf(
                 "type" to "create",
