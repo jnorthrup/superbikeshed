@@ -1,6 +1,6 @@
 package borg.trikeshed.io
 
-interface MappedFile {
+interface IMappedFile {
     val size: Long
     val backingStore: Any?
 
@@ -15,6 +15,6 @@ interface MappedFile {
  * Platform-specific factory for creating MappedFile instances
  */
 expect object MappedFileFactory {
-    fun map(path: String, size: Long, readOnly: Boolean = false): MappedFile
-    fun allocate(size: Long): MappedFile
+    fun map(path: String, size: Long, readOnly: Boolean = false): IMappedFile
+    fun allocate(size: Long): IMappedFile
 } 

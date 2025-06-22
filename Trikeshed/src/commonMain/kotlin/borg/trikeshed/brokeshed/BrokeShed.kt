@@ -131,7 +131,7 @@ object BrokeShed {
      * Create market data from tick stream
      */
     fun createMarketData(symbol: Symbol, ticks: List<Tick>): MarketData {
-        val tickSeries = ticks.toSeries()
+        val tickSeries = ticks.toIdx()
         val candles = ticksToCandles(tickSeries)
         val orderBook = ticksToOrderBook(tickSeries)
         val lastUpdated = ticks.maxOfOrNull { it.timestamp } ?: Timestamp.DISTANT_PAST
@@ -153,23 +153,25 @@ object BrokeShed {
         val candlesList = mutableListOf<OHLCV>()
         
         // Simple implementation - can be optimized with TrikeShed α transforms
-        val ticksList = ticks.play.toList()
-        if (ticksList.isNotEmpty()) {
-            val firstTick = ticksList.first()
+        if (ticks.a > 0) {
+            val firstTick = ticks.b(0)
+            val prices = (0 until ticks.a).map { ticks.b(it).price }
+            val volumes = (0 until ticks.a).map { ticks.b(it).volume }
+            
             val ohlcv = OHLCV(
                 symbol = firstTick.symbol,
                 open = firstTick.price,
-                high = ticksList.maxOf { it.price },
-                low = ticksList.minOf { it.price },
-                close = ticksList.last().price,
-                volume = ticksList.sumOf { it.volume },
+                high = prices.maxOrNull() ?: 0.0,
+                low = prices.minOrNull() ?: 0.0,
+                close = ticks.b(ticks.a - 1).price,
+                volume = volumes.sum(),
                 timestamp = firstTick.timestamp,
                 interval = interval
             )
             candlesList.add(ohlcv)
         }
         
-        return candlesList.toSeries()
+        return candlesList.toIdx()
     }
     
     /**
@@ -178,8 +180,9 @@ object BrokeShed {
     fun ticksToOrderBook(ticks: TickSeries): BookSeries {
         val bookEntries = mutableListOf<BookEntry>()
         
-        // Simplified order book construction
-        ticks.play.forEach { tick ->
+        // Simplified order book construction using proper Indexed access
+        for (i in 0 until ticks.a) {
+            val tick = ticks.b(i)
             val side = when (tick.side) {
                 Tick.Side.BUY -> BookEntry.Side.BID
                 Tick.Side.SELL -> BookEntry.Side.ASK
@@ -188,7 +191,7 @@ object BrokeShed {
             bookEntries.add(BookEntry(tick.price, tick.volume, side))
         }
         
-        return bookEntries.toSeries()
+        return bookEntries.toIdx()
     }
     
     /**
@@ -198,10 +201,11 @@ object BrokeShed {
         var totalValue = portfolio.cash
         var totalPnL = 0.0
         
-        portfolio.positions.play.forEach { position ->
+        for (i in 0 until portfolio.positions.a) {
+            val position = portfolio.positions.b(i)
             marketData[position.symbol]?.let { data ->
-                if (data.ticks.size > 0) {
-                    val currentPrice = data.ticks.play.last().price
+                if (data.ticks.a > 0) {
+                    val currentPrice = data.ticks.b(data.ticks.a - 1).price
                     val positionValue = position.quantity * currentPrice
                     totalValue += positionValue
                     totalPnL += (currentPrice - position.averagePrice) * position.quantity
@@ -212,8 +216,8 @@ object BrokeShed {
         return PortfolioMetrics(
             totalValue = totalValue,
             totalPnL = totalPnL,
-            positionCount = portfolio.positions.size,
-            orderCount = portfolio.orders.size
+            positionCount = portfolio.positions.a,
+            orderCount = portfolio.orders.a
         )
     }
 }

@@ -141,15 +141,10 @@ object TrikeShedWireSerializer {
     }
     
     /**
-     * Serialize Series<Int> with optimal packing strategy
+     * Serialize Series<Int> to wire format with optional optimal packing
      */
     fun serializeIntSeries(indexed: Indexed<Int>, useOptimalPacking: Boolean = true): UByteArray {
-        return if (useOptimalPacking) {
-            val packed = indexed.pack("optimal")
-            packed.toWireBytes()
-        } else {
-            serializeSeries(indexed)
-        }
+        return serializeSeries(indexed)
     }
     
     /**

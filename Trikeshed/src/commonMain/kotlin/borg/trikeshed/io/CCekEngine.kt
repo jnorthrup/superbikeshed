@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * CCekEngine - Compressed Communication Engine Kit
  * Provides high-performance compressed inter-process communication using async I/O
  */
-expect interface CCekEngine {
+expect class CCekEngine {
     /**
      * Initialize the CCek engine with compression settings
      */
