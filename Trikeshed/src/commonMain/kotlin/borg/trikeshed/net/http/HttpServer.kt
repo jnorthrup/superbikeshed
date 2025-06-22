@@ -174,7 +174,7 @@ class HttpConnectionHandler(
         val headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>> = message.headerFields.α { 
             HttpHeaderName(it.a) j HttpHeaderValue(it.b) 
         }
-        return HttpRequest(HttpMethod.valueOf(startLine.method), HttpRequestPath(startLine.requestTarget), headers, message.messageBody.toByteArray(), HttpVersion(startLine.httpVersion))
+        return HttpRequest(HttpMethod.valueOf(startLine.method), HttpRequestPath(startLine.requestTarget), headers, message.messageBody.encodeToByteArray(), HttpVersion(startLine.httpVersion))
     }
 
     private suspend fun sendErrorResponse(code: Int, phrase: String) {
@@ -219,7 +219,7 @@ fun createStaticFileHandler(rootDir: String): HttpHandler {
 
             HttpResponse(
                 status = HttpStatusCode(200),
-                headers = headers.size j { headers[it] },
+                headers = headers.size j { i: Int -> headers[i] },
                 body = bodyBytes
             )
         }
