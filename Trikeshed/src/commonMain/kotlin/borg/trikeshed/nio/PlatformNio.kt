@@ -45,6 +45,10 @@ expect class PlatformChannel {
  * This abstracts java.net.DatagramSocket.
  */
 expect class PlatformDatagramSocket {
+    companion object {
+        fun create(): PlatformDatagramSocket
+    }
+    
     fun connect(address: PlatformInetSocketAddress)
     fun send(packet: PlatformDatagramPacket)
     fun receive(packet: PlatformDatagramPacket)
@@ -60,7 +64,7 @@ expect class PlatformDatagramSocket {
  * Expected interface for a platform-agnostic InetSocketAddress.
  * This abstracts java.net.InetSocketAddress.
  */
-expect class PlatformInetSocketAddress {
+expect class PlatformInetSocketAddress : PlatformSocketAddress {
     constructor(hostname: String, port: Int)
     constructor(address: PlatformInetAddress, port: Int)
 

@@ -2,6 +2,7 @@ package borg.trikeshed.reactor
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.ByteBufferFactory
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
@@ -45,11 +46,11 @@ class NativeServerChannel : ServerChannel {
     override fun configureBlocking(block: Boolean): SelectableChannel = selectableChannel.configureBlocking(block)
     override fun isBlocking(): Boolean = selectableChannel.isBlocking()
     
-    override fun bind(port: Int) {
+    override suspend fun bind(port: Int) {
         TODO("Native ServerChannel bind not implemented")
     }
     
-    override fun accept(): ClientChannel? {
+    override suspend fun accept(): ClientChannel? {
         TODO("Native ServerChannel accept not implemented")
     }
 }
@@ -62,26 +63,30 @@ class NativeClientChannel : ClientChannel {
     override fun configureBlocking(block: Boolean): SelectableChannel = selectableChannel.configureBlocking(block)
     override fun isBlocking(): Boolean = selectableChannel.isBlocking()
     
-    override fun connect(host: String, port: Int) {
+    override suspend fun connect(host: String, port: Int) {
         TODO("Native ClientChannel connect not implemented")
     }
     
-    override fun read(buffer: ByteBuffer): Int {
+    override suspend fun read(buffer: PlatformByteBuffer): Int {
         TODO("Native ClientChannel read not implemented")
     }
     
-    override fun write(buffer: ByteBuffer): Int {
+    override suspend fun write(buffer: PlatformByteBuffer): Int {
         TODO("Native ClientChannel write not implemented")
     }
 }
 
 class NativeBufferPool(private val bufferSize: Int) : BufferPool {
-    override fun acquire(): ByteBuffer {
+    override suspend fun acquire(): PlatformByteBuffer {
         return ByteBufferFactory.allocate(bufferSize)
     }
     
-    override fun release(buffer: ByteBuffer) {
+    override suspend fun release(buffer: PlatformByteBuffer) {
         // Native memory management - could implement pooling here
+    }
+    
+    override suspend fun accept(): ClientChannel? {
+        TODO("Native BufferPool accept not implemented")
     }
 }
 

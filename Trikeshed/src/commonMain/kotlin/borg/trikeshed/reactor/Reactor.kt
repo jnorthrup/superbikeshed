@@ -168,3 +168,23 @@ private class SelectorThread(
     }
 }
 */
+
+/**
+ * Stub interface for Reactor functionality
+ * TODO: Implement proper Reactor system
+ */
+interface Reactor {
+    fun register(channel: SelectableChannel, ops: Int): SelectionKey
+    fun start()
+    fun stop()
+    val scope: CoroutineScope
+}
+
+/**
+ * Stub interface for Reactor scope
+ * TODO: Implement proper Reactor scope
+ */
+interface ReactorScope {
+    val remoteAddress: String
+    val reactorScope: CoroutineScope
+}

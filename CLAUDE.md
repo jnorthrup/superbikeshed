@@ -49,3 +49,7 @@ when solving a problem of 1 factor of effects, first read for
 - **Rollback Capability**: All changes planned with undo procedures
 
 - i migrated Series to Indexed.
+
+## Acronyms and Clarifications
+
+- CCEK means "CoroutineContextElementKey"

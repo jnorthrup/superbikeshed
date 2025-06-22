@@ -1,3 +1,4 @@
+// TEMPORARILY DISABLED - FIXING COMPILATION ERRORS
 @file:Suppress("NOTHING_TO_INLINE")
 
 package borg.trikeshed.brokeshed.sgml

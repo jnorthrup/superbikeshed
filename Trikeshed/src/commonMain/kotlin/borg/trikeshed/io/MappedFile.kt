@@ -1,6 +1,6 @@
 package borg.trikeshed.io
 
-expect class MappedFile {
+interface MappedFile {
     val size: Long
     val backingStore: Any?
 
@@ -8,11 +8,13 @@ expect class MappedFile {
     fun setByte(offset: Long, value: Byte)
     fun asByteArray(): ByteArray
     fun close()
-
-    companion object {
-        fun map(path: String, size: Long, readOnly: Boolean = false): MappedFile
-        fun allocate(size: Long): MappedFile
-    }
     //todo:  remapping and seeking past 30 bits
-    
+}
+
+/**
+ * Platform-specific factory for creating MappedFile instances
+ */
+expect object MappedFileFactory {
+    fun map(path: String, size: Long, readOnly: Boolean = false): MappedFile
+    fun allocate(size: Long): MappedFile
 } 

@@ -1,3 +1,4 @@
+// TEMPORARILY DISABLED - FIXING COMPILATION ERRORS
 @file:Suppress("NOTHING_TO_INLINE")
 
 package borg.trikeshed.brokeshed.sgml
@@ -73,7 +74,7 @@ enum class XPathParameterType(val typeName: String, val defaultValue: Any?) {
  * XPath Parameter - Inline class for type-safe parameterization
  */
 @JvmInline
-value class XPathParameter<T>(val value: T, val type: XPathParameterType)
+value class XPathParameter<T>(val data: Join<T, XPathParameterType>)
 
 /**
  * XPath Operation Context - MetaSeries for parameterized operations
@@ -100,36 +101,36 @@ object EnumeratedParameterizedDispatcher {
     /**
      * Parameterized dispatch using enum-driven selection
      */
-    fun <reified T> dispatch(
+    fun <T> dispatch(
         operation: XPathOperation,
         parameters: XPathParameterIndexed
     ): XPathOperationResult<T> {
         return when (operation) {
             // Navigation operations - parameterized by node type
-            XPathOperation.CHILD -> dispatchChild(parameters)
-            XPathOperation.DESCENDANT -> dispatchDescendant(parameters)
-            XPathOperation.PARENT -> dispatchParent(parameters)
-            XPathOperation.ANCESTOR -> dispatchAncestor(parameters)
+            XPathOperation.CHILD -> dispatchChild<T>(parameters)
+            XPathOperation.DESCENDANT -> dispatchDescendant<T>(parameters)
+            XPathOperation.PARENT -> dispatchParent<T>(parameters)
+            XPathOperation.ANCESTOR -> dispatchAncestor<T>(parameters)
             
             // Selection operations - parameterized by attribute/text type
-            XPathOperation.ATTRIBUTE -> dispatchAttribute(parameters)
-            XPathOperation.TEXT -> dispatchText(parameters)
-            XPathOperation.COMMENT -> dispatchComment(parameters)
+            XPathOperation.ATTRIBUTE -> dispatchAttribute<T>(parameters)
+            XPathOperation.TEXT -> dispatchText<T>(parameters)
+            XPathOperation.COMMENT -> dispatchComment<T>(parameters)
             
             // Predicate operations - parameterized by comparison type
-            XPathOperation.EQUALS -> dispatchEquals(parameters)
-            XPathOperation.NOT_EQUALS -> dispatchNotEquals(parameters)
-            XPathOperation.LESS_THAN -> dispatchLessThan(parameters)
-            XPathOperation.GREATER_THAN -> dispatchGreaterThan(parameters)
+            XPathOperation.EQUALS -> dispatchEquals<T>(parameters)
+            XPathOperation.NOT_EQUALS -> dispatchNotEquals<T>(parameters)
+            XPathOperation.LESS_THAN -> dispatchLessThan<T>(parameters)
+            XPathOperation.GREATER_THAN -> dispatchGreaterThan<T>(parameters)
             
             // Function operations - parameterized by aggregation type
-            XPathOperation.COUNT -> dispatchCount(parameters)
-            XPathOperation.SUM -> dispatchSum(parameters)
-            XPathOperation.AVG -> dispatchAvg(parameters)
+            XPathOperation.COUNT -> dispatchCount<T>(parameters)
+            XPathOperation.SUM -> dispatchSum<T>(parameters)
+            XPathOperation.AVG -> dispatchAvg<T>(parameters)
             
             // Special operations - parameterized by context
-            XPathOperation.WILDCARD -> dispatchWildcard(parameters)
-            XPathOperation.CURRENT -> dispatchCurrent(parameters)
+            XPathOperation.WILDCARD -> dispatchWildcard<T>(parameters)
+            XPathOperation.CURRENT -> dispatchCurrent<T>(parameters)
         }
     }
     
@@ -143,8 +144,8 @@ object EnumeratedParameterizedDispatcher {
     ): T? {
         return if (index < parameters.size) {
             val param = parameters[index]
-            if (param.type == expectedType && param.value is T) {
-                param.value as T
+            if (param.data.b == expectedType && param.data.a is T) {
+                param.data.a as T
             } else {
                 null
             }
@@ -273,7 +274,7 @@ object EnumeratedParameterizedBuilder {
     ): XPathOperationContext {
         val parameterSeries = parameters.size j { index ->
             val (type, value) = parameters[index]
-            XPathParameter(value, type)
+            XPathParameter(value j type)
         }
         return operation j parameterSeries
     }

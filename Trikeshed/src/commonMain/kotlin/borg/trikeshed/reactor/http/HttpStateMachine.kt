@@ -5,13 +5,13 @@ import borg.trikeshed.lib.datetime.formatRfc1123
 import borg.trikeshed.lib.datetime.getCurrentDateTime
 import borg.trikeshed.lib.j
 import borg.trikeshed.nio.ByteBuffer
-import borg.trikeshed.nio.ByteBufferFactory
+import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.reactor.*
 
 class HttpStateMachine(private val socket: ClientChannel, private val buffer: ByteBuffer) {
     private val responseHeaders = mutableMapOf<String, String>()
 
-    fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
+    suspend fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
         buffer.flip()
 
         // Parse request line
@@ -28,8 +28,8 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
         return writeResponse(response)
     }
 
-    private fun writeResponse(response: String): Join<Interest, UnaryAsyncReaction>? {
-        val responseBuffer = ByteBufferFactory.wrap(response.toByteArray())
+    private suspend fun writeResponse(response: String): Join<Interest, UnaryAsyncReaction>? {
+        val responseBuffer = PlatformByteBuffer.wrap(response.toByteArray(), 0, response.toByteArray().size)
         socket.write(responseBuffer)
         socket.close()
         return null
@@ -62,9 +62,10 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
     }
 
     private fun extractLineFromBuffer(buffer: ByteBuffer, start: Int, end: Int): String? {
+        val bytes = buffer.array()
         val lineBuilder = StringBuilder()
-        for (i in start until end) {
-            val byte = buffer.get(i)
+        for (i in start until minOf(end, bytes.size)) {
+            val byte = bytes[i]
             if (byte.toInt().toChar() == '\n') {
                 if (lineBuilder.isNotEmpty() && lineBuilder.last() == '\r') {
                     lineBuilder.setLength(lineBuilder.length - 1)
