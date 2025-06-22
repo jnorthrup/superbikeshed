@@ -46,6 +46,10 @@ fun routeCommand(command: String, args: Array<String>) {
     when (command) {
         "httpd" -> handleHttpdCommands(args)
         "quicd" -> handleQuicdCommands(args)
+        "server" -> ProductionMain.main(arrayOf("server") + args)
+        "rts" -> ProductionMain.main(arrayOf("rts") + args)
+        "ipfs" -> ProductionMain.main(arrayOf("ipfs") + args)
+        "distributed" -> ProductionMain.main(arrayOf("distributed") + args)
         "help" -> showUsage()
         "version" -> showVersion()
         else -> TODO("Unknown command: $command - use 'trikeshed help' for usage")
@@ -96,8 +100,21 @@ private fun createDealService(): DealService = object : DealService {
 }
 
 fun showUsage() {
-    println("USAGE: trikeshed httpd [--port=8080] [--root=.]")
-    println("       trikeshed quicd [--port=4433]")
+    println("USAGE: trikeshed <command> [options]")
+    println("")
+    println("Legacy commands:")
+    println("  httpd [--port=8080] [--root=.]      - HTTP/1.1 server")
+    println("  quicd [--port=4433]                  - QUIC daemon")
+    println("")
+    println("Production commands:")
+    println("  server [port] [static_root]          - C10K server with K2Script servlets")
+    println("  rts [port] [max_players]             - RTS network host for games")
+    println("  ipfs                                 - IPFS node with content addressing")
+    println("  distributed [mode]                   - Distributed storage (QUIC+IPFS+CouchDB)")
+    println("")
+    println("Other commands:")
+    println("  help                                 - Show this help")
+    println("  version                              - Show version")
 }
 
 fun showVersion() {
