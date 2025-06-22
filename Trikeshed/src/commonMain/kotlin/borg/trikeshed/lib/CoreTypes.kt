@@ -538,9 +538,7 @@ fun <T> emptyIndex(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty 
 
 // === SERIES CONSTRUCTION BRIDGE ===
 
-/** Series constructor function from Review */
-fun <T> _i(vararg elements: T): Indexed<T> =
-    (elements.size j { i -> elements[i] })
+/** Series constructor function from Review - moved to BrokeShed compatibility section */
 
 // === ADVANCED METACLASSES ===
 
@@ -840,4 +838,48 @@ typealias TensorCursor = Indexed<Tensor<Any?>>
  * This **compositional approach** enables domain-specific types that maintain
  * mathematical properties while expressing business concepts directly in the type system.
  */
+
+// === BROKESHED NAMING CONVENTION RENAMES ===
+
+/**
+ * ## BrokeShed Compatibility Renames
+ * 
+ * These functions provide the preferred naming conventions for BrokeShed
+ * and other libraries that prefer different syntax patterns.
+ * 
+ * For now: JavaDoc style documentation as requested.
+ */
+
+/**
+ * Convert List to Indexed using preferred toIdx() naming convention.
+ * 
+ * @param T the element type
+ * @return Indexed<T> containing the list elements
+ */
+fun <T> List<T>.toIdx(): Indexed<T> = this.size j { i -> this[i] }
+
+/**
+ * Convert Array to Indexed using preferred toIdx() naming convention.
+ * 
+ * @param T the element type  
+ * @return Indexed<T> containing the array elements
+ */
+fun <T> Array<T>.toIdx(): Indexed<T> = this.size j { i -> this[i] }
+
+/**
+ * Create Indexed from vararg elements using _i literal syntax.
+ * 
+ * @param elements the elements to include
+ * @param T the element type
+ * @return Indexed<T> containing the elements
+ */
+fun <T> _i(vararg elements: T): Indexed<T> = elements.toList().toIdx()
+
+/**
+ * Create empty Indexed using _i literal syntax.
+ * 
+ * @param T the element type
+ * @return empty Indexed<T>
+ */
+fun <T> emptyIdx(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty indexed") }
 

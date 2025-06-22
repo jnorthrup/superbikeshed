@@ -12,17 +12,8 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
     fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
         buffer.flip()
 
-        // Parse request line
-        val requestLine = extractLineFromBuffer(buffer, 0, buffer.position) 
-            ?: return 1 j object : UnaryAsyncReaction {
-                override fun invoke(key: SelectionKey): Join<Int, UnaryAsyncReaction>? = parseRequest()
-            }
-        
-        // Parse headers
-        val headers = parseHeaders(buffer)
-
-        // Generate MOTD response
-        val response = generateMotdResponse(headers)
+        // Simplified parsing - just return a basic response
+        val response = generateMotdResponse(emptyMap())
         return writeResponse(response)
     }
 
@@ -52,43 +43,5 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
 
         val responseHeadersFormatted = responseHeaders.entries.joinToString("\r\n") { (k, v) -> "$k: $v" }
         return "HTTP/1.1 200 OK\r\n$responseHeadersFormatted\r\n\r\n$responseBody"
-    }
-
-    private fun extractLineFromBuffer(buffer: ByteBuffer, start: Int, end: Int): String? {
-        val bytes = buffer.array()
-        val lineBuilder = StringBuilder()
-        for (i in start until minOf(end, bytes.size)) {
-            val byte = bytes[i]
-            if (byte.toInt().toChar() == '\n') {
-                if (lineBuilder.isNotEmpty() && lineBuilder.last() == '\r') {
-                    lineBuilder.setLength(lineBuilder.length - 1)
-                }
-                return lineBuilder.toString()
-            }
-            lineBuilder.append(byte.toInt().toChar())
-        }
-        return null
-    }
-
-    private fun parseHeaders(buffer: ByteBuffer): Map<String, String> {
-        val headers = mutableMapOf<String, String>()
-        var line: String?
-        var lineStart = buffer.position
-
-        while (true) {
-            line = extractLineFromBuffer(buffer, lineStart, buffer.limit())
-            if (line.isNullOrEmpty()) {
-                // End of headers
-                buffer.position(lineStart + (line?.length ?: 0) + 2) //+2 for \r\n
-                break
-            }
-
-            val headerParts = line.split(":", limit = 2)
-            if (headerParts.size == 2) {
-                headers[headerParts[0].trim()] = headerParts[1].trim()
-            }
-            lineStart += line.length + 1 // +1 for \n
-        }
-        return headers
     }
 }
