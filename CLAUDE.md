@@ -47,3 +47,5 @@ when solving a problem of 1 factor of effects, first read for
 - **Risk Assessment**: Low/medium/high risk levels for different operations
 - **Executive Escalation**: Human approval required for high-risk changes
 - **Rollback Capability**: All changes planned with undo procedures
+
+- i migrated Series to Indexed.

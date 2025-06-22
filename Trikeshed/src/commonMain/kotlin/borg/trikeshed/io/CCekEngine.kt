@@ -1,6 +1,7 @@
 package borg.trikeshed.io
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 
 /**
@@ -80,12 +81,12 @@ data class CCekMessage(
     val compressedSize: Int,
     val originalSize: Int,
     val compressionRatio: Double,
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds(),
     val algorithm: CompressionAlgorithm = CompressionAlgorithm.ZSTD
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (this::class != other!!::class) return false
         
         other as CCekMessage
         

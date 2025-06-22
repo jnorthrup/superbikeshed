@@ -3,7 +3,7 @@
 package simple
 
 
-import borg.trikeshed.lib.CZero.nz
+import borg.trikeshed.lib.nz
 import platform.posix.*
 import platform.posix.uint32_t as __u32
 

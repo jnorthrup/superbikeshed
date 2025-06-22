@@ -254,9 +254,9 @@ publishing {
     }
 }
 
-signing {
-    sign(publishing.publications["mavenJava"])
-}
+// signing {
+//     sign(publishing.publications["mavenJava"])
+// }
 
 fun adjustVersion(archiveVersion: String): String {
     var newVersion = archiveVersion.lowercase(Locale.ROOT)

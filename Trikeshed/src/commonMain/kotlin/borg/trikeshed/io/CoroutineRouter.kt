@@ -3,6 +3,7 @@ package borg.trikeshed.io
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -310,7 +311,7 @@ class CoroutineRouter private constructor(
         batchSize: Int = 10
     ): List<Any> {
         return operations.chunked(batchSize).flatMap { batch ->
-            runBlocking {
+            coroutineScope {
                 batch.map { (key, data) -> async { route(key, data) } }.awaitAll()
             }
         }
@@ -369,13 +370,13 @@ class CoroutineRouter private constructor(
         metricsHandler: suspend (String, Long) -> Unit,
         block: suspend () -> T
     ): T {
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         return try {
             block().also {
-                metricsHandler("success", System.currentTimeMillis() - startTime)
+                metricsHandler("success", Clock.System.now().toEpochMilliseconds() - startTime)
             }
         } catch (e: Exception) {
-            metricsHandler("failure", System.currentTimeMillis() - startTime)
+            metricsHandler("failure", Clock.System.now().toEpochMilliseconds() - startTime)
             throw e
         }
     }
@@ -446,19 +447,19 @@ fun defaultRouter(block: CoroutineRouter.RouterBuilder.() -> Unit): CoroutineRou
  * Supporting classes for advanced routing features
  */
 class RateLimiter(private val permitsPerSecond: Int) {
-    private var lastCheck = System.currentTimeMillis()
+    private var lastCheck = Clock.System.now().toEpochMilliseconds()
     private var available = permitsPerSecond
     
     suspend fun acquire() {
         while (available <= 0) {
-            val now = System.currentTimeMillis()
+            val now = Clock.System.now().toEpochMilliseconds()
             val timePassed = now - lastCheck
             available = minOf(permitsPerSecond, available + (timePassed * permitsPerSecond / 1000).toInt())
             lastCheck = now
             
             if (available <= 0) {
-                // Simple busy wait instead of delay
-                Thread.sleep(1)
+                // Simple yield instead of blocking sleep
+                yield()
             }
         }
         available--

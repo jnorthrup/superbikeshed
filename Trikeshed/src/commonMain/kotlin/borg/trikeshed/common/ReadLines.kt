@@ -1,9 +1,4 @@
 package borg.trikeshed.common
 
-fun readLinesSeq(path: String): Sequence<String> {
-    return emptySequence()
-}
-
-fun readLines(path: String): List<String> {
-    return emptyList()
-} 
+// Actual implementations moved to platform-specific modules
+// See jvmMain/kotlin/borg/trikeshed/io/ReadLines.kt for JVM implementation 

@@ -1,5 +1,7 @@
 package borg.trikeshed.lib.datetime
 
+import kotlinx.datetime.Clock
+
 fun formatDateTime(timestamp: Long): String {
     return timestamp.toString()
 }
@@ -9,7 +11,7 @@ fun parseDateTime(dateString: String): Long {
 }
 
 fun getCurrentTimeMillis(): Long {
-    return System.currentTimeMillis()
+    return Clock.System.now().toEpochMilliseconds()
 }
 
 data class DateTimeComponents(
