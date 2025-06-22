@@ -53,3 +53,8 @@ when solving a problem of 1 factor of effects, first read for
 ## Acronyms and Clarifications
 
 - CCEK means "CoroutineContextElementKey"
+
+## Todo Tasks
+
+- port the columnar/ superannutated test over to ci integration test with pansh nightly galaxy snapshot parser ljson kzran demo
+- todo: port the columnar/ superannutated test over to ci integration test with spansh nightly galaxy snapshot parser ljson kzran demo 

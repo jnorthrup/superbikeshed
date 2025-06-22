@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
-    kotlin("plugin.serialization") version "2.1.21"
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
     id("com.google.devtools.ksp") version "2.1.21-2.0.2"
 }
 
@@ -11,9 +11,9 @@ kotlin {
     jvmToolchain(21)
     
     jvm()
-    js(IR) {
+    wasmJs {
         browser()
-        nodejs()
+        binaries.executable()
     }
     
     val hostOs = System.getProperty("os.name")
@@ -35,7 +35,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":Trikeshed"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
+                implementation(libs.kotlinx.serialization.core)
                 implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
             }
         }
@@ -52,9 +52,9 @@ kotlin {
             }
         }
         
-        val jsMain by getting {
+        val wasmJsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                implementation(libs.kotlinx.serialization.core)
             }
         }
         
@@ -98,7 +98,7 @@ kotlin {
 
 dependencies {
     add("kspJvm", project(":ksp-processors"))
-    add("kspJs", project(":ksp-processors"))
+    add("kspWasmJs", project(":ksp-processors"))
     if (System.getProperty("os.name").startsWith("Mac OS")) {
         add("kspMacosArm64", project(":ksp-processors"))
         add("kspMacosX64", project(":ksp-processors"))

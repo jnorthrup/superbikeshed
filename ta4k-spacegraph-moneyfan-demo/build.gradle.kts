@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
 repositories {
@@ -9,7 +9,7 @@ repositories {
 
 kotlin {
     jvm()
-    js(IR) {
+    wasmJs {
         browser {
             commonWebpackConfig {
                 cssSupport {
@@ -21,10 +21,10 @@ kotlin {
     }
 
     sourceSets {
-        val jsMain by getting {
+        val wasmJsMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.datetime)
                 implementation(npm("three", "^0.162.0"))
                 implementation(npm("@types/three", "^0.162.0"))
                 implementation(project(":ta4k"))
@@ -33,6 +33,6 @@ kotlin {
     }
 }
 
-tasks.named("jsBrowserDevelopmentRun") {
-    dependsOn("jsBrowserDevelopmentWebpack")
+tasks.named("wasmJsBrowserDevelopmentRun") {
+    dependsOn("wasmJsBrowserDevelopmentWebpack")
 }

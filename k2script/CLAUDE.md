@@ -43,7 +43,7 @@ This leverages the awesome CLI foundation to host next-generation AI capabilitie
 
 - Script files should use `.kts` extension
 - Prefer TrikeShed data structures in scripts
-- Use `Series<T>` for ordered collections
+- Use `Indexed<T>` for ordered collections
 - Use `Join<A,B>` for associative data
 - Follow global museum preservation rules
 

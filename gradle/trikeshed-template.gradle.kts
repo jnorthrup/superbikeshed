@@ -1,29 +1,41 @@
+// === TrikeShed Standard Gradle Template ===
+// ==========================================
+//
+// This is the standard multiplatform configuration for TrikeShed modules.
+// Apply this template to maintain consistency across the superbikeshed ecosystem.
+//
+// Usage in module build.gradle.kts:
+// ```kotlin
+// apply(from = "../gradle/trikeshed-template.gradle.kts")
+// ```
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     `maven-publish`
-    signing
 }
-
-group = "borg.trikeshed"
-version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
     
+    // === CORE PLATFORMS ===
+    
+    // JVM - Primary development and server platform
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
     
-    // WASM for modern web deployment (replaces JS)
+    // WASM - Modern web deployment (replaces JS for better performance)
     wasmJs {
         browser()
         binaries.executable()
     }
     
-    // Native targets for high-performance execution
+    // === NATIVE PLATFORMS ===
+    // High-performance native execution for computational workloads
+    
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
     val isMac = hostOs.startsWith("Mac OS")
@@ -39,12 +51,15 @@ kotlin {
         mingwX64()
     }
 
+    // === SOURCE SETS CONFIGURATION ===
+    
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
+                // Core TrikeShed dependencies
                 implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime)
+                implementation(libs.kotlinx.datetime) 
                 implementation(libs.kotlinx.collections.immutable)
                 implementation(libs.kotlinx.atomicfu)
                 implementation(libs.kotlinx.serialization.core)
@@ -54,6 +69,14 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+            }
+        }
+        
+        val jvmMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-jdk8"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(kotlin("reflect"))
             }
         }
         
@@ -71,17 +94,12 @@ kotlin {
             }
         }
         
-        val jvmMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-jdk8"))
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(kotlin("reflect"))
-            }
-        }
+        // Native source sets configured automatically by platform detection above
     }
 }
 
-// Disable linting to keep code terse
+// === COMPILER CONFIGURATION ===
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.addAll(
@@ -91,6 +109,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         )
     }
 }
+
+// === MAVEN PUBLISHING ===
 
 publishing {
     publications {
@@ -102,8 +122,8 @@ publishing {
             from(components["kotlin"])
             
             pom {
-                name.set("TrikeShed")
-                description.set("TrikeShed - Core multiplatform data structures and algorithms")
+                name.set(project.name)
+                description.set("${project.name} - Part of the TrikeShed ecosystem")
                 url.set("https://github.com/superbikeshed/superbikeshed")
                 
                 licenses {
@@ -140,8 +160,4 @@ publishing {
             }
         }
     }
-}
-
-signing {
-    sign(publishing.publications["mavenJava"])
 }

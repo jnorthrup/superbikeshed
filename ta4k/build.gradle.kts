@@ -1,7 +1,7 @@
 plugins {
-    kotlin("multiplatform")
+    alias(libs.plugins.kotlin.multiplatform)
     `maven-publish`
-    id("com.github.ben-manes.versions")
+    alias(libs.plugins.versions)
 }
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
@@ -18,9 +18,8 @@ kotlin {
         }
     }
     
-    js(IR) {
+    wasmJs {
         browser()
-        nodejs()
         binaries.executable()
     }
     
@@ -73,9 +72,8 @@ kotlin {
             }
         }
         
-        val jsMain by getting {
+        val wasmJsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
                 implementation(project(":Trikeshed"))

@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    alias(libs.plugins.kotlin.multiplatform)
     `maven-publish`
 }
 
@@ -10,9 +10,9 @@ kotlin {
     jvmToolchain(21)
     
     jvm()
-    js(IR) {
+    wasmJs {
         browser()
-        nodejs()
+        binaries.executable()
     }
     
     val hostOs = System.getProperty("os.name")
@@ -35,14 +35,14 @@ kotlin {
             dependencies {
                 implementation(project(":Trikeshed"))
                 implementation(project(":kotlinx-serialization-scanner"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
         
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
         
@@ -52,9 +52,9 @@ kotlin {
             }
         }
         
-        val jsMain by getting {
+        val wasmJsMain by getting {
             dependencies {
-                implementation(kotlin("stdlib-js"))
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
         

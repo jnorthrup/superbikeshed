@@ -6,17 +6,17 @@ MoneyFan implements trading bot capabilities with TrikeShed data structures.
 
 ## Data Structure Patterns
 
-- Use `Series<T>` for time-series data (price history, trading signals)
+- Use `Indexed<T>` for time-series data (price history, trading signals)
 - Use `Join<A,B>` for asset mappings and portfolio relationships
 - Prefer primitive arrays for high-frequency trading data
 - Follow TrikeShed type system patterns
 
 ## Trading Components
 
-- **Portfolio Management**: Use Series for asset allocation tracking
-- **Market Data**: Series for candlestick data, order books
+- **Portfolio Management**: Use Indexed for asset allocation tracking
+- **Market Data**: Indexed for candlestick data, order books
 - **Signal Processing**: Join for symbol-to-signal mappings
-- **Risk Management**: Series for risk metrics over time
+- **Risk Management**: Indexed for risk metrics over time
 
 ## Performance Considerations
 

@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -65,7 +65,7 @@ actual class CCekEngine {
         }
     }
     
-    actual suspend fun <T> sendObject(target: String, obj: T): Int where T : Serializable {
+    actual suspend inline fun <reified T> sendObject(target: String, obj: T): Int where T : Serializable {
         val serializedData = Json.encodeToString(obj).toByteArray()
         return send(target, serializedData)
     }
@@ -109,7 +109,7 @@ actual class CCekEngine {
         }
     }
     
-    actual suspend fun <T> receiveObject(source: String, clazz: kotlin.reflect.KClass<T>): T? where T : Serializable {
+    actual suspend inline fun <reified T> receiveObject(source: String, clazz: kotlin.reflect.KClass<T>): T? where T : Serializable {
         val buffer = ByteArray(bufferSize)
         val bytesRead = receive(source, buffer)
         
