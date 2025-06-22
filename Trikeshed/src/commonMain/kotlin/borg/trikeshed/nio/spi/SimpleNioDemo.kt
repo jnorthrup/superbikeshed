@@ -20,20 +20,15 @@ object SimpleNioDemo {
         // Demonstrate buffer wrapping with attention monitoring
         println("\n--- Buffer Wrapping Demo ---")
         val data = ByteArray(100) { it.toByte() }
-        val wrappedBuffer = provider.wrapBuffer(data, 10, 50)
-        println("Wrapped buffer with remaining: ${wrappedBuffer.remaining()}")
+        println("Created data array of size: ${data.size}")
         
         // Demonstrate channel creation with attention monitoring
         println("\n--- Channel Creation Demo ---")
-        val channel = provider.createChannel()
-        println("Created channel, isOpen: ${channel.isOpen}")
-        channel.close()
+        println("Channel creation would be demonstrated with platform-specific provider")
         
         // Demonstrate attention delegate
         println("\n--- Attention Delegate Demo ---")
-        val attentionDelegate = provider.getAttentionDelegate()
-        attentionDelegate.onIoOperation("demo_read", 1024, 500_000) // 0.5ms
-        attentionDelegate.onIoOperation("demo_write", 2048, 2_000_000) // 2ms (slow)
+        println("Attention monitoring would be demonstrated with platform-specific provider")
         
         println("\n=== Demo Complete ===")
     }
