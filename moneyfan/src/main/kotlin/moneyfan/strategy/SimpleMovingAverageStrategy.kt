@@ -12,8 +12,8 @@ class SimpleMovingAverageStrategy(
     private val fastPeriod: Int,
     private val slowPeriod: Int
 ) {
-    fun generateSignals(klines: Series<Kline>): Series<TradeSignal> {
-        // Convert Series<Kline> to ta4j BarSeries
+    fun generateSignals(klines: Indexed<Kline>): Indexed<TradeSignal> {
+        // Convert Indexed<Kline> to ta4j BarSeries
         val barSeries = BaseBarSeries()
         for (i in 0 until klines.size) {
             val kline = klines.get(i)

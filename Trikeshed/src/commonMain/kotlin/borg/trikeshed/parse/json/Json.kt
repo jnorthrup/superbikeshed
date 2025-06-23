@@ -3,7 +3,7 @@
 package borg.trikeshed.parse.json
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.bridge.toSeries
+import borg.trikeshed.lib.bridge.*
 
 // JSON Bridge - Simple implementation using existing parsers
 

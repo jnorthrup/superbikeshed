@@ -10,17 +10,17 @@ import moneyfan.trikeshed.j // For Series construction (Int.j)
  *
  * The SMA is the unweighted mean of the previous `period` data points.
  * For elements where the SMA cannot be calculated (i.e., the first `period - 1` elements),
- * the resulting `Series<Price>` will contain `Price.UNDEFINED`.
+ * the resulting `Indexed<Price>` will contain `Price.UNDEFINED`.
  * The output Series will have the same size as the input `prices` series.
  *
  * @param prices The series of prices to calculate the SMA from.
  * @param period The number of data points to include in the moving average calculation.
  *               Must be greater than 0.
- * @return A `Series<Price>` containing the calculated SMA values.
+ * @return A `Indexed<Price>` containing the calculated SMA values.
  *         Returns an `emptySeries()` if the input `prices` series is empty.
  * @throws IllegalArgumentException if `period` is less than or equal to 0.
  */
-fun calculateSMA(prices: Series<Price>, period: Int): Series<Price> {
+fun calculateSMA(prices: Indexed<Price>, period: Int): Indexed<Price> {
     if (period <= 0) {
         throw IllegalArgumentException("Period must be greater than 0, but was $period.")
     }
@@ -56,7 +56,7 @@ fun calculateSMA(prices: Series<Price>, period: Int): Series<Price> {
 fun main() {
     // Sample prices
     val priceList = listOf(10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0)
-    val priceSeries = priceList.map { Price(it) }.toSeries()
+    val priceSeries = priceList.map { Price(it) }.toIndexed()
 
     val period5 = 5
     val sma5 = calculateSMA(priceSeries, period5)
@@ -76,7 +76,7 @@ fun main() {
     println("SMA(5) for empty series: ${smaEmpty.toList()}") // Expected: []
 
     // Edge case: period longer than series length
-    val shortPriceSeries = listOf(20.0, 21.0).map{ Price(it) }.toSeries()
+    val shortPriceSeries = listOf(20.0, 21.0).map{ Price(it) }.toIndexed()
     val smaShort = calculateSMA(shortPriceSeries, 3)
     println("SMA(3) for short series (2 elements): ${smaShort.toList().map { it.value }}") // Expected: [NaN, NaN]
 

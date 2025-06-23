@@ -266,16 +266,30 @@ object JetsamGossipManager {
      * Merge gossip from peer
      */
     fun mergeGossip(gossip: JetsamGossip) {
-        val existingKeys = mutableSetOf<JetsamKey>()
+        var existingKeys: Indexed<JetsamKey> = 0 j { JetsamKey("") }
+        var existingKeysCount = 0
         for (i in 0 until localPool.entries.a) {
-            existingKeys.add(localPool.entries.b(i).key)
+            val key = localPool.entries.b(i).key
+            existingKeys = (existingKeysCount + 1) j { idx -> 
+                if (idx == existingKeysCount) key 
+                else if (idx < existingKeysCount) existingKeys.b(idx) 
+                else JetsamKey("")
+            }
+            existingKeysCount++
         }
         
-        val newEntries = mutableListOf<JetsamEntry>()
+        var newEntries: Indexed<JetsamEntry> = 0 j { JetsamEntry(JetsamKey(""), "", 0L) }
+        var newEntriesCount = 0
         
         // Add existing entries
         for (i in 0 until localPool.entries.a) {
-            newEntries.add(localPool.entries.b(i))
+            val entry = localPool.entries.b(i)
+            newEntries = (newEntriesCount + 1) j { idx -> 
+                if (idx == newEntriesCount) entry 
+                else if (idx < newEntriesCount) newEntries.b(idx) 
+                else JetsamEntry(JetsamKey(""), "", 0L)
+            }
+            newEntriesCount++
         }
         
         // Add new entries from gossip

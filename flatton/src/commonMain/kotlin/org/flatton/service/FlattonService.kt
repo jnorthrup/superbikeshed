@@ -34,9 +34,9 @@ class FlattonService(private val client: CouchClient) {
         viewName: ViewName,
         params: ViewQueryParams = ViewQueryParams()
     ): Indexed<JsonObjectCursor> {
-        // Get the raw response as a Series<Byte> for efficient processing
+        // Get the raw response as a Indexed<Byte> for efficient processing
         val responseJson = client.queryView<Any, Any>(dbName, designDocId, viewName, params).toString()
-        val responseBytes = responseJson.encodeToByteArray().toSeries()
+        val responseBytes = responseJson.encodeToByteArray().toIndexed()
         
         // Use the robust JsonWireProtoAdapter with BitmapJsonDecoder
         val wireAdapter = JsonWireProtoAdapter()

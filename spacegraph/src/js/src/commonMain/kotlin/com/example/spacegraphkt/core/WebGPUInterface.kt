@@ -23,23 +23,23 @@ value class RenderPassId(val value: Int)
 /**
  * Type aliases for WebGPU data structures using Series and Join
  */
-typealias VertexData = Join<Series<Float>, Series<Float>> // Position and Normal
+typealias VertexData = Join<Indexed<Float>, Indexed<Float>> // Position and Normal
 typealias UniformData = Join<Matrix4, Vector3> // View/Projection Matrix and Camera Position
-typealias RenderData = Join<Series<VertexData>, Series<UniformData>>
+typealias RenderData = Join<Indexed<VertexData>, Indexed<UniformData>>
 
 /**
- * Matrix4 implementation using Series<Float>
+ * Matrix4 implementation using Indexed<Float>
  */
-class Matrix4(val data: Series<Float>) {
+class Matrix4(val data: Indexed<Float>) {
     companion object {
         fun identity(): Matrix4 = Matrix4(Series(16) { if (it % 5 == 0) 1f else 0f })
     }
 }
 
 /**
- * Vector3 implementation using Series<Float>
+ * Vector3 implementation using Indexed<Float>
  */
-class Vector3(val data: Series<Float>) {
+class Vector3(val data: Indexed<Float>) {
     companion object {
         fun zero(): Vector3 = Vector3(Series(3) { 0f })
     }
@@ -66,7 +66,7 @@ interface WebGPUInterface {
     /**
      * Create a vertex buffer from vertex data
      */
-    fun createVertexBuffer(data: Series<VertexData>): BufferId
+    fun createVertexBuffer(data: Indexed<VertexData>): BufferId
 
     /**
      * Create a uniform buffer from uniform data

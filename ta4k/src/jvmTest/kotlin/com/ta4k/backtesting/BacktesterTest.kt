@@ -38,7 +38,7 @@ class BacktesterTest {
         val klinesData = listOf(
             kline("10", 0), kline("8", 1), kline("11", 2),
             kline("9", 3), kline("12", 4), kline("10", 5)
-        ).toSeries()
+        ).toIndexed()
 
         val strategy = SMACrossoverStrategy(klinesData, 1, 2, BigDecimal("1.0")) // Short=1, Long=2
         val backtester = Backtester(klinesData, strategy)
@@ -80,7 +80,7 @@ class BacktesterTest {
         // 4   | 14    | 14   | 13.5 (S > L)
         val klinesData = listOf(
             kline("10",0), kline("11",1), kline("12",2), kline("13",3), kline("14",4)
-        ).toSeries()
+        ).toIndexed()
         val strategy = SMACrossoverStrategy(klinesData, 1, 2) // Warmup period = 2
         val backtester = Backtester(klinesData, strategy)
         val tradingRecord = backtester.run()
@@ -101,7 +101,7 @@ class BacktesterTest {
         // 4   | 14    | 14   | 13.5   | -      | BUY@11 (ends here)
          val klinesData = listOf(
             kline("10",0), kline("8",1), kline("11",2), kline("13",3), kline("14",4)
-        ).toSeries()
+        ).toIndexed()
         val strategy = SMACrossoverStrategy(klinesData, 1, 2)
         val backtester = Backtester(klinesData, strategy)
         val tradingRecord = backtester.run()

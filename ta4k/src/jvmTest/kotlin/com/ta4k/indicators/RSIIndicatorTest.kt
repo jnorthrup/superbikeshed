@@ -30,7 +30,7 @@ class RSIIndicatorTest {
         // RS = 1.33333333 / 0.33333333 = 4.0
         // RSI = 100 - (100 / (1 + 4)) = 100 - 20 = 80.00
 
-        val simplePrices = listOf("10", "12", "11", "13", "12", "14", "13", "15").map { kline(it) }.toSeries()
+        val simplePrices = listOf("10", "12", "11", "13", "12", "14", "13", "15").map { kline(it) }.toIndexed()
         val rsi3 = RSIIndicator(simplePrices, 3)
 
         assertNull(rsi3.getValue(0))
@@ -65,7 +65,7 @@ class RSIIndicatorTest {
 
     @Test
     fun `RSI all upward movement`() {
-        val allUp = listOf(10,11,12,13,14,15,16,17,18,19,20,21,22,23).map { kline(it.toString())}.toSeries()
+        val allUp = listOf(10,11,12,13,14,15,16,17,18,19,20,21,22,23).map { kline(it.toString())}.toIndexed()
         val rsiAllUp = RSIIndicator(allUp, 13) // 13 price changes for 14 prices (index 0 to 13)
                                                // RSI calculable at index 13
         // All gains, no losses. AvgLoss should be 0. RSI should be 100.
@@ -75,7 +75,7 @@ class RSIIndicatorTest {
 
     @Test
     fun `RSI all downward movement`() {
-        val allDown = listOf(23,22,21,20,19,18,17,16,15,14,13,12,11,10).map { kline(it.toString())}.toSeries()
+        val allDown = listOf(23,22,21,20,19,18,17,16,15,14,13,12,11,10).map { kline(it.toString())}.toIndexed()
         val rsiAllDown = RSIIndicator(allDown, 13)
         // All losses, no gains. AvgGain should be 0. RSI should be 0.
         assertNull(rsiAllDown.getValue(12))
@@ -84,7 +84,7 @@ class RSIIndicatorTest {
 
     @Test
     fun `RSI period 1`() {
-        val prices = listOf(kline("10"), kline("11"), kline("10"), kline("10")).toSeries()
+        val prices = listOf(kline("10"), kline("11"), kline("10"), kline("10")).toIndexed()
         val rsi = RSIIndicator(prices, 1)
         // Index 0: null
         // Index 1: P1=11, P0=10. Gain=1, Loss=0. AvgGain=1, AvgLoss=0. RSI=100.
@@ -101,14 +101,14 @@ class RSIIndicatorTest {
 
     @Test
     fun `RSI on empty series`() {
-        val rsi = RSIIndicator(emptyList<Kline>().toSeries(), 14)
+        val rsi = RSIIndicator(emptyList<Kline>().toIndexed(), 14)
         assertNull(rsi.getValue(0))
         assertTrue(rsi.values.toList().isEmpty())
     }
 
     @Test
     fun `RSI values property`() {
-        val simplePrices = listOf("10", "12", "11", "13", "12").map { kline(it) }.toSeries() // size 5
+        val simplePrices = listOf("10", "12", "11", "13", "12").map { kline(it) }.toIndexed() // size 5
         val rsi3 = RSIIndicator(simplePrices, 3) // period 3
         val allValues = rsi3.values.toList() // Should calculate up to index 4
 
@@ -122,7 +122,7 @@ class RSIIndicatorTest {
 
     @Test
     fun `RSI with insufficient data for period`() {
-        val prices = listOf(kline("10"), kline("11")).toSeries() // 2 data points
+        val prices = listOf(kline("10"), kline("11")).toIndexed() // 2 data points
         val rsi = RSIIndicator(prices, 3) // period 3
         assertNull(rsi.getValue(0))
         assertNull(rsi.getValue(1))

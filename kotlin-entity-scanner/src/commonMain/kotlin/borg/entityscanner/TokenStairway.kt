@@ -8,7 +8,7 @@ import borg.trikeshed.lib.*
  * Token Classification Stairway - Hierarchical Inline Class System
  * 
  * Each level adds semantic richness while maintaining zero-cost abstractions
- * Uses TrikeShed patterns: Series<T>, Join<A,B>, α transforms, taxonomical type aliases
+ * Uses TrikeShed patterns: Indexed<T>, Join<A,B>, α transforms, taxonomical type aliases
  */
 
 // ==== LEVEL 1: RAW CHARACTER CLASSIFICATION ====
@@ -48,7 +48,7 @@ value class CharPosition(val index: Int)
 // Level 1 Compositions
 typealias ClassifiedChar = Join<RawChar, CharClass>
 typealias PositionedChar = Join<ClassifiedChar, CharPosition>
-typealias CharSeries = Series<PositionedChar>
+typealias CharSeries = Indexed<PositionedChar>
 
 // ==== LEVEL 2: LEXICAL TOKEN CLASSIFICATION ====
 
@@ -92,7 +92,7 @@ value class TokenBounds(val packed: Long) {
 // Level 2 Compositions
 typealias ClassifiedToken = Join<LexicalToken, TokenType>
 typealias BoundedToken = Join<ClassifiedToken, TokenBounds>
-typealias TokenSeries = Series<BoundedToken>
+typealias TokenSeries = Indexed<BoundedToken>
 
 // ==== LEVEL 3: SYNTACTIC CLASSIFICATION ====
 
@@ -141,7 +141,7 @@ value class VisibilityToken(val access: UByte) {
 // Level 3 Compositions  
 typealias ClassifiedSyntax = Join<SyntaxToken, ScopeLevel>
 typealias VisibleSyntax = Join<ClassifiedSyntax, VisibilityToken>
-typealias SyntaxSeries = Series<VisibleSyntax>
+typealias SyntaxSeries = Indexed<VisibleSyntax>
 
 // ==== LEVEL 4: SEMANTIC ENTITY CLASSIFICATION ====
 
@@ -205,7 +205,7 @@ value class ContextToken(val context: UByte) {
 // Level 4 Compositions
 typealias ClassifiedEntity = Join<EntityToken, RoleToken>
 typealias ContextualEntity = Join<ClassifiedEntity, ContextToken>
-typealias EntitySeries = Series<ContextualEntity>
+typealias EntitySeries = Indexed<ContextualEntity>
 
 // ==== LEVEL 5: GRAPH NODE CLASSIFICATION ====
 
@@ -235,7 +235,7 @@ value class ConfidenceToken(val confidence: UByte) // 0-255 confidence score
 // Level 5 Compositions
 typealias ClassifiedGraphNode = Join<GraphNodeToken, DependencyToken>
 typealias ConfidentGraphNode = Join<ClassifiedGraphNode, ConfidenceToken>
-typealias GraphNodeSeries = Series<ConfidentGraphNode>
+typealias GraphNodeSeries = Indexed<ConfidentGraphNode>
 
 // ==== STAIRWAY TRANSFORMATION ENGINE ====
 

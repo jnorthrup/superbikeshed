@@ -195,7 +195,7 @@ class AgenticOrchestrator {
                 val context = CCEKContext(3 j { i ->
                     when (i) {
                         0 -> "scope" j "development"
-                        1 -> "capabilities" j capabilities.joinToString(",")
+                        1 -> "capabilities" j (0 until capabilities.a).joinToString(",") { capabilities.b(it) }
                         2 -> "timestamp" j kotlin.random.Random.nextLong().toString()
                         else -> "" j ""
                     }
@@ -270,13 +270,16 @@ class AgenticOrchestrator {
     /**
      * Detect current system capabilities
      */
-    private fun detectCapabilities(): List<String> {
-        return listOf(
-            "kotlin-multiplatform",
-            "coroutines",
-            "tensor-processing",
-            "series-operations"
-        )
+    private fun detectCapabilities(): Indexed<String> {
+        return 4 j { i ->
+            when (i) {
+                0 -> "kotlin-multiplatform"
+                1 -> "coroutines"
+                2 -> "tensor-processing"
+                3 -> "series-operations"
+                else -> ""
+            }
+        }
     }
     
     /**
@@ -301,7 +304,7 @@ class AgenticOrchestrator {
         val demoTask = DevelopmentTask(
             type = "analyze",
             description = "Demonstrate autonomous analysis",
-            context = CCEKContext(mapOf("scope" to "demo")),
+            context = CCEKContext(1 j { "scope" j "demo" }),
             priority = 10
         )
         taskQueue.send(demoTask)

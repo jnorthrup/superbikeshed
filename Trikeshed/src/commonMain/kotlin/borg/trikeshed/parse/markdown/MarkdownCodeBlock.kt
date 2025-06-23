@@ -1,7 +1,7 @@
 package borg.trikeshed.parse.markdown
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.bridge.toSeries
+import borg.trikeshed.lib.bridge.toIndexed
 import kotlin.math.ceil
 
 /**
@@ -90,7 +90,7 @@ expect object MarkdownBitmapSimd {
 }
 
 /**
- * Lightning-fast markdown parser using SIMD bitmap and Series<T> for TrikeShed integration.
+ * Lightning-fast markdown parser using SIMD bitmap and Indexed<T> for TrikeShed integration.
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 object LightningMarkdown {
@@ -121,7 +121,7 @@ object LightningMarkdown {
     }
     
     /**
-     * Extract code blocks using Series<T> operations - pure TrikeShed style.
+     * Extract code blocks using Indexed<T> operations - pure TrikeShed style.
      */
     fun extractCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val boundaries = findCodeBlockBoundaries(markdownString)
@@ -211,10 +211,10 @@ object LightningMarkdown {
 }
 
 /**
- * Creates a lazy, tensor-native view of a pre-computed markdown bitmap using TrikeShed's Series<T>.
+ * Creates a lazy, tensor-native view of a pre-computed markdown bitmap using TrikeShed's Indexed<T>.
  *
  * @param input The raw UByteArray of markdown data.
- * @return A Series<UByte> where each element is a 4-bit pixel from the bitmap.
+ * @return A Indexed<UByte> where each element is a 4-bit pixel from the bitmap.
  *         The accessor function performs the necessary bit-shifting to read from the
  *         underlying ULongArray on demand.
  */

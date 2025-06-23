@@ -16,8 +16,8 @@ private val coroutineScope = MainScope()
 private var agentApiInstance: AgentAPI? = null
 private var demoVisualizerInstance: DemoVisualizer? = null
 
-private var currentKlineDataSeries: Series<Kline>? = null
-private var currentAugmentedVisualSeries: Series<VisualGraphPointWithMoneyfanOutcome>? = null
+private var currentKlineDataSeries: Indexed<Kline>? = null
+private var currentAugmentedVisualSeries: Indexed<VisualGraphPointWithMoneyfanOutcome>? = null
 
 // Default values for UI elements, matching index.html defaults
 private const val DEFAULT_ASSET_SYMBOL = "BTC"

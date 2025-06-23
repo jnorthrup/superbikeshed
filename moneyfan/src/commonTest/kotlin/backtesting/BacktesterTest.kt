@@ -16,7 +16,7 @@ private class MockTradingStrategy(private val signalsToReturn: List<TradingSigna
 
     override fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
+        historicalPrices: Indexed<Double>,
         historicalDataPoint: RowVec
     ): TradingSignal {
         if (signalIndex < signalsToReturn.size) {

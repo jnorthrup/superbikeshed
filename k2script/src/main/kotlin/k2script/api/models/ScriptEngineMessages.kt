@@ -27,8 +27,8 @@ data class ValidateScriptQuery(
  */
 data class ParseDependenciesQuery(
     override val payload: File,
-    override val reply: CompletableDeferred<Series<String>> = CompletableDeferred()
-) : Query<File, Series<String>> {
+    override val reply: CompletableDeferred<Indexed<String>> = CompletableDeferred()
+) : Query<File, Indexed<String>> {
     override val address: Address = SCRIPT_ENGINE_ADDRESS
 }
 

@@ -54,7 +54,7 @@ class SpaceGraphHttpServer {
                         status = HttpStatusCode(404),
                         reasonPhrase = HttpReasonPhrase("Not Found"),
                         headers = createEmptyHeaders(),
-                        body = "Not Found".encodeToByteArray().toSeries()
+                        body = "Not Found".encodeToByteArray().toIndexed()
                     )
                 }
             }
@@ -142,7 +142,7 @@ class SpaceGraphHttpServer {
             headers = createHeaders(
                 HttpHeaderName("Content-Type") to HttpHeaderValue("text/html")
             ),
-            body = html.encodeToByteArray().toSeries()
+            body = html.encodeToByteArray().toIndexed()
         )
     }
     
@@ -176,7 +176,7 @@ class SpaceGraphHttpServer {
             headers = createHeaders(
                 HttpHeaderName("Content-Type") to HttpHeaderValue("application/json")
             ),
-            body = json.encodeToByteArray().toSeries()
+            body = json.encodeToByteArray().toIndexed()
         )
     }
     
@@ -187,7 +187,7 @@ class SpaceGraphHttpServer {
         val renderResult = webgpuRenderer.renderGameState(gameState, camera)
         
         // TODO: Implement actual frame data serialization
-        val frameData = ByteArray(0).toSeries()
+        val frameData = ByteArray(0).toIndexed()
         
         return HttpResponse(
             status = HttpStatusCode(200),
@@ -209,7 +209,7 @@ class SpaceGraphHttpServer {
             headers = createHeaders(
                 HttpHeaderName("Content-Type") to HttpHeaderValue("application/json")
             ),
-            body = "{\"success\": true}".encodeToByteArray().toSeries()
+            body = "{\"success\": true}".encodeToByteArray().toIndexed()
         )
     }
     

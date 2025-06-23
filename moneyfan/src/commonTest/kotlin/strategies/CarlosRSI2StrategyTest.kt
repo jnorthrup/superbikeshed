@@ -13,7 +13,7 @@ class CarlosRSI2StrategyTest {
     // Helper to create a dummy RowVec. Useful for testing strategies that might inspect historicalDataPoint.
     // For CarlosRSI2Strategy, historicalPrices and currentPrice are primary inputs for indicators.
     private fun createDummyRowVec(timestamp: Long, price: Double): RowVec {
-        // A RowVec is Series<Join<Any?, () -> ColumnMeta>>.
+        // A RowVec is Indexed<Join<Any?, () -> ColumnMeta>>.
         // We use klinesRecordMeta structure for consistency, though only timestamp and close are used here.
         // If klinesRecordMeta is not directly accessible or desired, define simple ColumnMetas.
         val tsMeta = { ColumnMeta.Builder().name("timestamp").type(DataTypes.LONG).build() }

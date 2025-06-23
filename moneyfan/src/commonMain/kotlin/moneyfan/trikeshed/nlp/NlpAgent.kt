@@ -7,7 +7,7 @@ import moneyfan.trikeshed.nlp.rql.RqlRootQuery
  * Represents the structured output from an [NlpAgent] after it processes a natural language query.
  * This class is designed to be a comprehensive container for various forms of NLP analysis results.
  *
- * @property relevanceScores A [Series<Double>] containing relevance scores. These scores typically correspond
+ * @property relevanceScores A [Indexed<Double>] containing relevance scores. These scores typically correspond
  *                           to the `itemsAsStrings` passed to the [NlpAgent.processQuery] method,
  *                           with each score indicating the relevance of the corresponding item string to the query.
  *                           Scores should ideally be normalized (e.g., between 0.0 for no relevance and 1.0 for high relevance).
@@ -24,7 +24,7 @@ import moneyfan.trikeshed.nlp.rql.RqlRootQuery
  *                  An empty list or `null` indicates that no errors were reported.
  */
 data class NlpAgentResult(
-    val relevanceScores: Series<Double>,
+    val relevanceScores: Indexed<Double>,
     val structuredQuery: RqlRootQuery?,
     val originalQuery: String,
     val errors: List<String>? = null
@@ -58,7 +58,7 @@ interface NlpAgent {
      * 4.  Compile any errors, warnings, or informational messages encountered during processing.
      *
      * @param query The natural language query string to be processed by the agent.
-     * @param itemsAsStrings A [Series<String>] where each element is a textual representation of an item.
+     * @param itemsAsStrings A [Indexed<String>] where each element is a textual representation of an item.
      *                       The agent may use these to calculate context-sensitive relevance scores.
      *                       If the query is purely for structural parsing and relevance scores for items
      *                       are not needed or not applicable, an empty series might be passed.
@@ -68,5 +68,5 @@ interface NlpAgent {
      *         including the series of relevance scores, an optional structured (RQL) query,
      *         the original query string, and a list of any errors.
      */
-    fun processQuery(query: String, itemsAsStrings: Series<String>): NlpAgentResult // PoC: non-suspend
+    fun processQuery(query: String, itemsAsStrings: Indexed<String>): NlpAgentResult // PoC: non-suspend
 }

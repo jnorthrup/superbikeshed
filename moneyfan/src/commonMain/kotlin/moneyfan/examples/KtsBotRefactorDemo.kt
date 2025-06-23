@@ -59,7 +59,7 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
         println("Portfolio is empty. No demonstration possible.")
         return
     }
-    val portfolioSeries: Series<DemoPortfolioRow> = portfolioRows.toSeries()
+    val portfolioSeries: Indexed<DemoPortfolioRow> = portfolioRows.toIndexed()
     println("Original portfolio size: ${portfolioSeries.a}")
 
     // 1. Demonstrate FractionalScope
@@ -107,7 +107,7 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
 fun demonstrateSparseAndExtendedHandling() {
     println("\n--- Demonstrating Sparse and Extended Series Handling ---")
     val pricesWithNullsList = listOf(10.0, null, 12.0, null, null, 15.0, 16.0)
-    val sparsePrices: Series<Double?> = pricesWithNullsList.toSeries()
+    val sparsePrices: Indexed<Double?> = pricesWithNullsList.toIndexed()
     println("Original sparse prices: ${sparsePrices.`play`.joinToString { it?.format(2) ?: "null" }}")
 
     // fillna with a default value
@@ -124,7 +124,7 @@ fun demonstrateSparseAndExtendedHandling() {
 
 
     println("\n--- Demonstrating Series Extension ---")
-    val baseSeries = listOf(1.0, 2.0, 3.0).toSeries()
+    val baseSeries = listOf(1.0, 2.0, 3.0).toIndexed()
     println("Base series: ${baseSeries.`play`.joinToString { it.format(2) }} (Size: ${baseSeries.a})")
 
     // Extend by clamping

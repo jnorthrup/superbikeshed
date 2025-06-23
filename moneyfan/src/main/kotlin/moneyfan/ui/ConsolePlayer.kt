@@ -10,7 +10,7 @@ import moneyfan.strategy.SimpleMovingAverageStrategy
  * ConsolePlayer class to display rolling A, B, C players in separate child panes ticking on the same candles.
  */
 class ConsolePlayer(
-    private val klines: Series<Kline>,
+    private val klines: Indexed<Kline>,
     private val strategyA: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(10, 20),
     private val strategyB: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(5, 15),
     private val strategyC: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(15, 30)

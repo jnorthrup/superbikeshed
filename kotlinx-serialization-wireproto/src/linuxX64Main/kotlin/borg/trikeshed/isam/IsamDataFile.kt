@@ -37,7 +37,7 @@ actual class IsamDataFile actual constructor(
         }
     }
 
-    val constraints: Series<RecordMeta> by lazy { metafile.constraints }
+    val constraints: Indexed<RecordMeta> by lazy { metafile.constraints }
     private lateinit var data: COpaquePointer
     var fileSize: Long = -1
 
@@ -312,7 +312,7 @@ fun asyncIO(block: AsyncIOConfigDSL.() -> Unit): AsyncIOConfig {
  */
 class AsyncIOWriter(private val config: AsyncIOConfig) {
 
-    fun writeIsamData(cursor: Cursor, datafilename: String, meta: Series<RecordMeta>) {
+    fun writeIsamData(cursor: Cursor, datafilename: String, meta: Indexed<RecordMeta>) {
         when {
             config.useUring -> writeWithUring(cursor, datafilename, meta)
             config.useKqueue -> writeWithKqueue(cursor, datafilename, meta)
@@ -337,7 +337,7 @@ class AsyncIOWriter(private val config: AsyncIOConfig) {
         }
     }
 
-    private fun writeWithUring(cursor: Cursor, datafilename: String, meta: Series<RecordMeta>) {
+    private fun writeWithUring(cursor: Cursor, datafilename: String, meta: Indexed<RecordMeta>) {
         // IO_URING implementation with scatter-gather support
         val fd = open(datafilename, O_CREAT or O_WRONLY, 644.fromOctal())
         
@@ -416,22 +416,22 @@ class AsyncIOWriter(private val config: AsyncIOConfig) {
         }
     }
 
-    private fun writeWithKqueue(cursor: Cursor, datafilename: String, meta: Series<RecordMeta>) {
+    private fun writeWithKqueue(cursor: Cursor, datafilename: String, meta: Indexed<RecordMeta>) {
         // kqueue implementation for POSIX systems
         TODO("Implement kqueue-based async I/O")
     }
 
-    private fun writeWithEpoll(cursor: Cursor, datafilename: String, meta: Series<RecordMeta>) {
+    private fun writeWithEpoll(cursor: Cursor, datafilename: String, meta: Indexed<RecordMeta>) {
         // epoll implementation for Linux
         TODO("Implement epoll-based async I/O")
     }
 
-    private fun writeWithMmap(cursor: Cursor, datafilename: String, meta: Series<RecordMeta>) {
+    private fun writeWithMmap(cursor: Cursor, datafilename: String, meta: Indexed<RecordMeta>) {
         // mmap-based implementation
         TODO("Implement mmap-based I/O")
     }
 
-    private fun writeWithBuffered(cursor: Cursor, datafilename: String, meta: Series<RecordMeta>) {
+    private fun writeWithBuffered(cursor: Cursor, datafilename: String, meta: Indexed<RecordMeta>) {
         // Buffered I/O implementation
         TODO("Implement buffered I/O")
     }

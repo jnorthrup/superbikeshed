@@ -36,17 +36,17 @@ typealias WeightedCall = Join<CallRelation, CallWeight>
 typealias DepthCall = Join<WeightedCall, CallDepth>
 
 // Call graph structures
-typealias CallGraph = Series<DepthCall>
-typealias CallerMap = Series<Join<FunctionId, Series<FunctionId>>> // function j its callers
-typealias CalleeMap = Series<Join<FunctionId, Series<FunctionId>>> // function j its callees
+typealias CallGraph = Indexed<DepthCall>
+typealias CallerMap = Indexed<Join<FunctionId, Indexed<FunctionId>>> // function j its callers
+typealias CalleeMap = Indexed<Join<FunctionId, Indexed<FunctionId>>> // function j its callees
 
 // Cycle detection
-typealias CallCycle = Series<FunctionId> // sequence of functions in cycle
-typealias CycleCollection = Series<Join<CycleId, CallCycle>>
+typealias CallCycle = Indexed<FunctionId> // sequence of functions in cycle
+typealias CycleCollection = Indexed<Join<CycleId, CallCycle>>
 
 // Path analysis
-typealias CallPath = Series<FunctionId> // ordered sequence of calls
-typealias PathCollection = Series<Join<Join<FunctionId, FunctionId>, CallPath>> // (start j end) j path
+typealias CallPath = Indexed<FunctionId> // ordered sequence of calls
+typealias PathCollection = Indexed<Join<Join<FunctionId, FunctionId>, CallPath>> // (start j end) j path
 
 /**
  * Call Graph Analyzer - Main analysis engine
@@ -80,7 +80,7 @@ object CallGraphAnalyzer {
     /**
      * Extract all function definitions from source
      */
-    fun extractFunctions(source: KotlinSourceCode): Series<FunctionDefinition> {
+    fun extractFunctions(source: KotlinSourceCode): Indexed<FunctionDefinition> {
         val lines = source.lines()
         val functions = mutableListOf<FunctionDefinition>()
         
@@ -128,13 +128,13 @@ object CallGraphAnalyzer {
             }
         }
         
-        return functions.toSeries()
+        return functions.toIndexed()
     }
     
     /**
      * Extract direct function calls from source
      */
-    fun extractDirectCalls(source: KotlinSourceCode, functions: Series<FunctionDefinition>): CallGraph {
+    fun extractDirectCalls(source: KotlinSourceCode, functions: Indexed<FunctionDefinition>): CallGraph {
         val calls = mutableListOf<DepthCall>()
         val lines = source.lines()
         val functionNames = functions.play.map { it.name }.toSet()
@@ -163,7 +163,7 @@ object CallGraphAnalyzer {
             }
         }
         
-        return calls.toSeries()
+        return calls.toIndexed()
     }
     
     /**
@@ -183,7 +183,7 @@ object CallGraphAnalyzer {
         
         return callerMap.map { (function, callers) ->
             FunctionId(function) j callers.distinct().toSeries { FunctionId(it) }
-        }.toSeries()
+        }.toIndexed()
     }
     
     /**
@@ -203,7 +203,7 @@ object CallGraphAnalyzer {
         
         return calleeMap.map { (function, callees) ->
             FunctionId(function) j callees.distinct().toSeries { FunctionId(it) }
-        }.toSeries()
+        }.toIndexed()
     }
     
     /**
@@ -244,7 +244,7 @@ object CallGraphAnalyzer {
             allCalls.addAll(newCalls)
         }
         
-        return allCalls.distinct().toSeries()
+        return allCalls.distinct().toIndexed()
     }
     
     /**
@@ -289,7 +289,7 @@ object CallGraphAnalyzer {
             }
         }
         
-        return cycles.toSeries()
+        return cycles.toIndexed()
     }
     
     /**
@@ -312,7 +312,7 @@ object CallGraphAnalyzer {
             }
         }
         
-        return paths.toSeries()
+        return paths.toIndexed()
     }
     
     // === HELPER FUNCTIONS ===
@@ -423,7 +423,7 @@ data class FunctionDefinition(
  * Complete call graph analysis result
  */
 data class CallGraphAnalysisResult(
-    val functions: Series<FunctionDefinition>,
+    val functions: Indexed<FunctionDefinition>,
     val directCalls: CallGraph,
     val callerMap: CallerMap,
     val calleeMap: CalleeMap,
@@ -438,33 +438,33 @@ data class CallGraphAnalysisResult(
 /**
  * Get all callers of a function up to N depth
  */
-fun CallGraphAnalysisResult.getCallersOfDepth(functionId: FunctionId, depth: UByte): Series<FunctionId> {
+fun CallGraphAnalysisResult.getCallersOfDepth(functionId: FunctionId, depth: UByte): Indexed<FunctionId> {
     return nDepthGraph.play
         .filter { it.a.a.b == functionId && it.b <= depth }
         .map { it.a.a.a }
         .distinct()
-        .toSeries()
+        .toIndexed()
 }
 
 /**
  * Get all callees of a function up to N depth
  */
-fun CallGraphAnalysisResult.getCalleesOfDepth(functionId: FunctionId, depth: UByte): Series<FunctionId> {
+fun CallGraphAnalysisResult.getCalleesOfDepth(functionId: FunctionId, depth: UByte): Indexed<FunctionId> {
     return nDepthGraph.play
         .filter { it.a.a.a == functionId && it.b <= depth }
         .map { it.a.a.b }
         .distinct()
-        .toSeries()
+        .toIndexed()
 }
 
 /**
  * Get functions involved in cycles
  */
-fun CallGraphAnalysisResult.getCyclicFunctions(): Series<FunctionId> {
+fun CallGraphAnalysisResult.getCyclicFunctions(): Indexed<FunctionId> {
     return cycles.play
         .flatMap { it.b.play }
         .distinct()
-        .toSeries()
+        .toIndexed()
 }
 
 /**

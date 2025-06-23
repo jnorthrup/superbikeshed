@@ -54,7 +54,7 @@ class NexusActualTest {
     
     @Test
     fun `series operations work correctly`() {
-        val series = listOf(1, 5, 3, 9, 2).toSeries()
+        val series = listOf(1, 5, 3, 9, 2).toIndexed()
         
         assertEquals(9, series.best())
         assertEquals(3, series.take(3).toList().size)
@@ -62,4 +62,4 @@ class NexusActualTest {
 }
 
 // Helper to convert Series to List for testing
-fun <T> Series<T>.toList(): List<T> = this play { it }
+fun <T> Indexed<T>.toList(): List<T> = this play { it }

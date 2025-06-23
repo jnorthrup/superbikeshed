@@ -37,8 +37,8 @@ interface TradingStrategyInterface {
      */
     fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
-        historicalDataPoint: RowVec // RowVec is Series<Join<Any?, () -> ColumnMeta>>
+        historicalPrices: Indexed<Double>,
+        historicalDataPoint: RowVec // RowVec is Indexed<Join<Any?, () -> ColumnMeta>>
     ): TradingSignal
 }
 

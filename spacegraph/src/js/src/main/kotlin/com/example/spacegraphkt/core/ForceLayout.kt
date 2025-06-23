@@ -12,8 +12,8 @@ actual class ForceLayout actual constructor(
     actual val spaceGraph: SpaceGraph,
     config: ForceLayoutSettings?
 ) {
-    actual var nodes: Series<BaseNode> = Series()
-    actual var edges: Series<Edge> = Series()
+    actual var nodes: Indexed<BaseNode> = Series()
+    actual var edges: Indexed<Edge> = Series()
     actual val velocities: MutableMap<String, Vector3D> = HashMap()
     actual val fixedNodes: MutableSet<BaseNode> = HashSet()
 

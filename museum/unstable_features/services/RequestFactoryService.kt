@@ -17,7 +17,7 @@ interface RequestFactoryService {
     /**
      * Process a RequestFactory call and return response payload
      */
-    fun process(requestPayload: Series<Byte>): Series<Byte>
+    fun process(requestPayload: Indexed<Byte>): Indexed<Byte>
     
     /**
      * Register a service locator for dependency injection
@@ -41,8 +41,8 @@ data class ServiceMethod(val service: ServiceClass, val method: MethodName)
 // === GWT-SPECIFIC TYPES ===
 
 @JvmInline value class RequestContext(val json: String)
-@JvmInline value class RequestData(val payload: Series<Byte>)
-@JvmInline value class ResponseData(val payload: Series<Byte>)
+@JvmInline value class RequestData(val payload: Indexed<Byte>)
+@JvmInline value class ResponseData(val payload: Indexed<Byte>)
 
 // === SERVICE REGISTRY ===
 

@@ -267,12 +267,12 @@ object CouchSecurityAdapter {
         val map = JsonImpl.parse(json) as Map<String, Any?>
         return CouchSecurity(
             admins = SecurityPrincipal(
-                names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
-                roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
+                names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toIndexed(),
+                roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toIndexed()
             ),
             members = SecurityPrincipal(
-                names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
-                roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
+                names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toIndexed(),
+                roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toIndexed()
             )
         )
     }

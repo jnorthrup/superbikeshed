@@ -6,7 +6,7 @@ import borg.trikeshed.distributed.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.net.quic.*
-import borg.trikeshed.jetsam.*
+// import borg.trikeshed.jetsam.* // Disabled - moved to museum
 import borg.trikeshed.cursor.*
 import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
@@ -274,14 +274,14 @@ class AttentionContext(
         
         return when (request.method) {
             "GET" -> {
-                val jetsam = JetsamGossipManager.gatherJetsam()
+                // val jetsam = JetsamGossipManager.gatherJetsam() // Disabled - moved to museum
                 HttpResponse(200, "OK", "mock_jetsam_response", "application/json")
             }
             "POST" -> {
                 val json = Json.parseToJsonElement(request.body).jsonObject
                 val key = json["key"]?.jsonPrimitive?.content ?: return HttpResponse(400, "Key required")
                 val value = json["value"] ?: JsonNull
-                JetsamGossipManager.addEntry(key, value)
+                // JetsamGossipManager.addEntry(key, value) // Disabled - moved to museum
                 HttpResponse(200, "OK")
             }
             else -> HttpResponse(405, "Method not allowed")

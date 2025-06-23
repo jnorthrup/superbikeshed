@@ -35,7 +35,7 @@ class ADXIndicatorTest {
             kline("11","9.5","10","11.5",4), //4 | 1.5     | 0       | 0.5     (H-pH=-1, pL-L=0.5. H-pC=0, L-pC=1.5)
             kline("10","8","8.5","10",5),   //5 | 2.0     | 0       | 1.5     (H-pH=-1, pL-L=1.5. H-pC=1.5, L-pC=0)
             kline("11","9","10.5","8.5",6)  //6 | 2.5     | 1.0     | 0       (H-pH=1, pL-L=-1. H-pC=2.5, L-pC=0.5)
-        ).toSeries()
+        ).toIndexed()
         val period = 3
         val adxIndicator = ADXIndicator(klines, period)
         val resultScale = 2 // ADXIndicator default for final values
@@ -111,7 +111,7 @@ class ADXIndicatorTest {
 
     @Test
     fun `ADX on empty series`() {
-        val adx = ADXIndicator(emptyList<Kline>().toSeries(), 14)
+        val adx = ADXIndicator(emptyList<Kline>().toIndexed(), 14)
         assertNull(adx.getADX(0))
         assertNull(adx.getPlusDI(0))
         assertNull(adx.getMinusDI(0))
@@ -120,7 +120,7 @@ class ADXIndicatorTest {
 
     @Test
     fun `ADX with insufficient data`() {
-        val klines = listOf(kline("10","9","9.5","9.5",0)).toSeries()
+        val klines = listOf(kline("10","9","9.5","9.5",0)).toIndexed()
         val adx14 = ADXIndicator(klines, 14)
         // First ADX for period 14 is at index 14 + (14-1) = 27
         assertNull(adx14.getADX(0))
@@ -138,7 +138,7 @@ class ADXIndicatorTest {
                    (10 + i*0.1 - (if(i%2==0) 0.1 else -0.1)).toString(), // O
                    i.toLong()
             )
-        }.toSeries()
+        }.toIndexed()
         val adx14 = ADXIndicator(klines, 14)
         // First DI at index 14. First DX at index 14. First ADX at index 14 + 13 = 27.
         assertNull(adx14.getPlusDI(13))

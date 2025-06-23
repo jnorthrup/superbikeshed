@@ -9,7 +9,7 @@ import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
-import borg.trikeshed.lib.bridge.toSeries
+import borg.trikeshed.lib.bridge.*
 import borg.trikeshed.lib.α
 
 /**
@@ -87,7 +87,7 @@ object JsonValueTypes {
 
 /**
  * TrikeShed JSON Scanner - Core Implementation
- * Uses Series<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
+ * Uses Indexed<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
  */
 object TrikeShedJsonScanner {
     

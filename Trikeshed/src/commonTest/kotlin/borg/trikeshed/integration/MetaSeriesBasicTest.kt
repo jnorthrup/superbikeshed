@@ -21,7 +21,7 @@ class MetaSeriesBasicTest {
     
     @Test
     fun `Series realm specialization`() {
-        // Series<T> = MetaSeries<Int, T>
+        // Indexed<T> = MetaSeries<Int, T>
         val numbers: Indexed<Double> = 5 j { i -> i * 3.14 }
         
         assertEquals(5, numbers.size)
@@ -41,7 +41,7 @@ class MetaSeriesBasicTest {
     
     @Test
     fun `Shape as Series of Int`() {
-        // Shape = Series<Int>
+        // Shape = Indexed<Int>
         val matrixShape: Shape = 3 j { dim ->
             when (dim) {
                 0 -> 4  // rows
@@ -119,7 +119,7 @@ class MetaSeriesBasicTest {
     
     @Test
     fun `Functional composition with nested transformations`() {
-        // Create Series of Shapes (each shape is Series<Int>)
+        // Create Series of Shapes (each shape is Indexed<Int>)
         val shapes: Indexed<Shape> = 3 j { shapeIndex ->
             val dimensions = shapeIndex + 1 // 1D, 2D, 3D
             dimensions j { dim -> dim + 2 } // [2], [2,3], [2,3,4]

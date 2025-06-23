@@ -1,6 +1,6 @@
 package borg.trikeshed.orchestration.agents
 
-import borg.ipfs.IpfsPubSubService
+import borg.trikeshed.ipfs.IpfsPubSubService
 import borg.trikeshed.orchestration.AgentMessage
 import borg.trikeshed.orchestration.AgentTopics
 import borg.trikeshed.orchestration.BaseOrchestrationAgent
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
-import kotlin.system.getTimeMillis
+import borg.trikeshed.lib.getCurrentTimeMillis
 
 class EchoServiceAgent(
     parentCoroutineContext: CoroutineContext,
@@ -37,7 +37,7 @@ class EchoServiceAgent(
             while (isActive) {
                 val announcement = ServiceAnnouncement(
                     agentId = agentId,
-                    timestamp = getTimeMillis(),
+                    timestamp = getCurrentTimeMillis(),
                     serviceName = serviceName,
                     serviceEndpointTopic = serviceRequestTopic
                 )
@@ -57,7 +57,7 @@ class EchoServiceAgent(
                             val responsePayload = "Echo from $agentId: ${request.payload}"
                             val response = GenericResponse(
                                 agentId = agentId,
-                                timestamp = getTimeMillis(),
+                                timestamp = getCurrentTimeMillis(),
                                 requestId = request.requestId,
                                 payload = responsePayload
                             )

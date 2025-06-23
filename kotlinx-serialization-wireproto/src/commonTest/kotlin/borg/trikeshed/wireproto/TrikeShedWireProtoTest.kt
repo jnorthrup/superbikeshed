@@ -56,7 +56,7 @@ class TrikeShedWireProtoTest {
     
     @Test
     fun testStringSeriesSerialization() {
-        // Create test Series<String>
+        // Create test Indexed<String>
         val strings = listOf("hello", "world", "test", "data")
         val series = strings.size j { i -> strings[i] }
         
@@ -76,7 +76,7 @@ class TrikeShedWireProtoTest {
     
     @Test
     fun testIntSeriesSerialization() {
-        // Create test Series<Int>
+        // Create test Indexed<Int>
         val numbers = listOf(1, 2, 3, 42, 100, -5)
         val series = numbers.size j { i -> numbers[i] }
         
@@ -91,7 +91,7 @@ class TrikeShedWireProtoTest {
     
     @Test
     fun testDoubleSeriesSerialization() {
-        // Create test Series<Double>
+        // Create test Indexed<Double>
         val doubles = listOf(3.14159, 2.71828, 1.41421, 0.0, -1.5)
         val series = doubles.size j { i -> doubles[i] }
         
@@ -106,7 +106,7 @@ class TrikeShedWireProtoTest {
     
     @Test
     fun testBooleanSeriesSerialization() {
-        // Create test Series<Boolean>
+        // Create test Indexed<Boolean>
         val booleans = listOf(true, false, true, true, false)
         val series = booleans.size j { i -> booleans[i] }
         

@@ -6,7 +6,7 @@ package org.ta4k.quantstats._plotting
  * This file might contain helper functions to prepare data for platform plotters.
  */
 object InternalPlottingCore {
-    // Example: fun prepareDataForTimeSeries(...) : SomeDataStructure
+    // Example: fun prepareDataForTimeIndexed(...) : SomeDataStructure
     fun commonPlotFunctionStub(data: Any, options: Map<String, Any> = emptyMap()) {
         println("WARN: InternalPlottingCore.commonPlotFunctionStub is a placeholder.")
         // Actual common logic for plot data preparation would go here.

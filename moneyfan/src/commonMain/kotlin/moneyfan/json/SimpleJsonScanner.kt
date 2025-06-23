@@ -5,7 +5,7 @@ import borg.trikeshed.lib.*
 
 /**
  * Simplified JSON Scanner DSEL using TrikeShed patterns
- * Demonstrates Series<T> and Join<A,B> for JSON structure analysis
+ * Demonstrates Indexed<T> and Join<A,B> for JSON structure analysis
  */
 
 // Simple scanner results using TrikeShed types

@@ -30,7 +30,7 @@ class DogeDataLoader {
         return klines.filter { kline ->
             kline.openTimeMillis >= startTime.toEpochMilli() &&
             kline.openTimeMillis <= endTime.toEpochMilli()
-        }.sortedBy { it.openTimeMillis }.toSeries()
+        }.sortedBy { it.openTimeMillis }.toIndexed()
     }
 
     /**
@@ -45,7 +45,7 @@ class DogeDataLoader {
     ): Indexed<Kline> {
         val filePath = getDataFilePath(timeframe)
         val klines = KlineCsvParser.parseFile(filePath)
-        return klines.takeLast(n).sortedBy { it.openTimeMillis }.toSeries()
+        return klines.takeLast(n).sortedBy { it.openTimeMillis }.toIndexed()
     }
 
     private fun getDataFilePath(timeframe: String): String {

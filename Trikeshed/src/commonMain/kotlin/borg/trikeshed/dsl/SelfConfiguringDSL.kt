@@ -64,11 +64,15 @@ class DSLBuilder {
      * Resolve dependencies automatically
      */
     private fun resolveDependencies() {
-        val resolved = mutableSetOf<String>()
-        val toResolve = components.values.toMutableList()
+        var resolved: Indexed<String> = 0 j { "" }
+        var resolvedCount = 0
+        // Convert components to TrikeShed structure  
+        var toResolve: Indexed<DSLComponent> = components.size j { i -> components.values.elementAt(i) }
+        var toResolveCount = components.size
         
-        while (toResolve.isNotEmpty()) {
-            val resolvedThisRound = mutableListOf<DSLComponent>()
+        while (toResolveCount > 0) {
+            var resolvedThisRound: Indexed<DSLComponent> = 0 j { DSLComponent("", emptyList()) }
+            var resolvedThisRoundCount = 0
             
             for (component in toResolve) {
                 if (component.dependencies.play.all { dep -> 

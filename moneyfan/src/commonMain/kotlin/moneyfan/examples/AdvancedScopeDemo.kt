@@ -53,7 +53,7 @@ fun runAdvancedScopeDemo() {
         DemoDataRecord(9, "Kitchen Mixer Pro", "appliances", 150.0, "Powerful stand mixer for all your baking needs."),
         DemoDataRecord(10, "Portable SSD 1TB", "electronics", 120.0, "Fast and reliable portable storage gadget for your files.")
     )
-    val dataSeries: Series<DemoDataRecord> = sampleList.toSeries()
+    val dataSeries: Indexed<DemoDataRecord> = sampleList.toIndexed()
 
     println("\n--- Original Data (${dataSeries.a} items) ---")
     dataSeries.`play`.forEach { println(it) }

@@ -8,7 +8,7 @@ import kotlinx.datetime.Instant
 
 /**
  * Attention-based ticker system for trading pairs
- * Uses TrikeShed Series<T> and Join<A,B> to track attention spans on time series data
+ * Uses TrikeShed Indexed<T> and Join<A,B> to track attention spans on time series data
  */
 
 // Variable time gauge attention spans using TrikeShed patterns

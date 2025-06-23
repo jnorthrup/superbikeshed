@@ -10,7 +10,7 @@ import kotlin.jvm.JvmInline
  * BrokeShed Implementation of RequestFactoryService 
  * This is alien GWT technology that belongs in BrokeShed, not TrikeShed core
  * 
- * Processes GWT RequestFactory calls using TrikeShed's native Series<T> and Join<A,B> patterns.
+ * Processes GWT RequestFactory calls using TrikeShed's native Indexed<T> and Join<A,B> patterns.
  */
 internal class BrokeShedRequestFactoryServiceImpl : RequestFactoryService {
     // Maps service class names to their locator functions

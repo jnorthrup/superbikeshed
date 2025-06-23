@@ -2,19 +2,19 @@ package borg.trikeshed.db
 
 import borg.trikeshed.ccek.JsonService
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.Json
 
 /**
- * Simple stub implementation of JsonService.
- * TODO: Implement proper JSON serialization when kotlinx.serialization is available
+ * Full implementation of JsonService using kotlinx.serialization
  */
 class JsonServiceImpl : JsonService {
+    private val json = Json { ignoreUnknownKeys = true }
+    
     override fun <T> toJson(value: T, serializer: KSerializer<T>): String {
-        // Simple stub implementation
-        return value.toString()
+        return json.encodeToString(serializer, value)
     }
 
     override fun <T> fromJson(jsonString: String, serializer: KSerializer<T>): T {
-        // Simple stub implementation - this will need proper implementation
-        throw NotImplementedError("JSON deserialization not implemented yet")
+        return json.decodeFromString(serializer, jsonString)
     }
 } 

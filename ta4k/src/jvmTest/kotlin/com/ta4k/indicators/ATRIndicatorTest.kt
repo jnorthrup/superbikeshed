@@ -37,7 +37,7 @@ class ATRIndicatorTest {
             kline("23.45","23.10","23.20"), // TR[11]= Max(0.35, abs(23.45-23.00)=0.45, abs(23.10-23.00)=0.10) -> 0.45
             kline("23.80","23.40","23.70"), // TR[12]= Max(0.40, abs(23.80-23.20)=0.60, abs(23.40-23.20)=0.20) -> 0.60
             kline("23.71","23.07","23.60")  // TR[13]= Max(0.64, abs(23.71-23.70)=0.01, abs(23.07-23.70)=0.63) -> 0.64
-        ).toSeries()
+        ).toIndexed()
 
         val expectedTrValues = listOf(
             "0.30", "0.40", "0.30", "0.30", "0.22", "0.50", "0.40", "0.60",
@@ -64,7 +64,7 @@ class ATRIndicatorTest {
 
         // Next ATR value (Day 15)
         val klinesListDay15 = klines.toList() + listOf(kline("23.57","23.25","23.25")) // Prev Close = 23.60 (from klines[13])
-        val klinesDay15 = klinesListDay15.toSeries()
+        val klinesDay15 = klinesListDay15.toIndexed()
         // TR for day 15: H-L = 23.57-23.25 = 0.32
         // H-PC = abs(23.57-23.60) = 0.03
         // L-PC = abs(23.25-23.60) = 0.35. Max TR = 0.35
@@ -80,7 +80,7 @@ class ATRIndicatorTest {
 
     @Test
     fun `ATR on empty series`() {
-        val atr = ATRIndicator(emptyList<Kline>().toSeries(), 14)
+        val atr = ATRIndicator(emptyList<Kline>().toIndexed(), 14)
         assertNull(atr.getValue(0))
         assertTrue(atr.values.toList().isEmpty())
     }
@@ -88,7 +88,7 @@ class ATRIndicatorTest {
     @Test
     fun `ATR with period 1`() {
         // ATR(1) is just the True Range for that day
-        val klines = listOf(kline("10","9","9.5"), kline("11","9.5","10.5")).toSeries()
+        val klines = listOf(kline("10","9","9.5"), kline("11","9.5","10.5")).toIndexed()
         val atr = ATRIndicator(klines, 1)
         val resultScale = 4
 
@@ -106,7 +106,7 @@ class ATRIndicatorTest {
             kline("10","9","9.5"),      // TR0 = 1.0
             kline("11","9.5","10.5"),   // TR1 = 1.5 (H-L=1.5, H-PC=1.5, L-PC=0)
             kline("12","10","11.5")     // TR2 = 2.0 (H-L=2.0, H-PC=1.5, L-PC=0.5)
-        ).toSeries()
+        ).toIndexed()
         val period = 2
         val atr = ATRIndicator(klines, period)
         val resultScale = 4
@@ -124,7 +124,7 @@ class ATRIndicatorTest {
 
     @Test
     fun `ATR with insufficient data for period`() {
-        val klines = listOf(kline("10","9","9.5")).toSeries() // 1 data point
+        val klines = listOf(kline("10","9","9.5")).toIndexed() // 1 data point
         val atr = ATRIndicator(klines, 3) // period 3
         assertNull(atr.getValue(0)) // ATR[0] needs 3 TRs, TR[0], TR[1], TR[2]
         assertNull(atr.getValue(1))

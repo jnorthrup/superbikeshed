@@ -31,8 +31,8 @@ class BacktestEngine(
      */
     fun runBacktest(
         pair: TradingPair,
-        klines: Series<Kline>,
-        strategy: (Series<Kline>) -> Series<TradeSignal>
+        klines: Indexed<Kline>,
+        strategy: (Indexed<Kline>) -> Indexed<TradeSignal>
     ): BacktestResult {
         val signals = strategy(klines)
         var currentPosition: Position? = null

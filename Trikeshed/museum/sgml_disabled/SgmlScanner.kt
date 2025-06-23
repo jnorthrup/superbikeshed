@@ -96,7 +96,7 @@ object SgmlElementTypes {
 
 /**
  * TrikeShed SGML/XML Scanner - Core Implementation
- * Uses Series<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
+ * Uses Indexed<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
  */
 object SgmlScanner {
     
@@ -106,7 +106,7 @@ object SgmlScanner {
     fun scan(sgmlString: SgmlStringValue): SgmlResult<SgmlTokenSeries> {
         if (sgmlString.isEmpty()) return Result.success(emptySeries())
         
-        val chars = sgmlString.toList().toSeries()
+        val chars = sgmlString.toList().toIndexed()
         return Result.success(tokenize(chars))
     }
     
@@ -404,7 +404,7 @@ object SgmlScanner {
      * Filter tokens by type using α transform
      */
     fun filterTokensByType(tokens: SgmlTokenSeries, targetType: SgmlTokenType): SgmlTokenSeries {
-        return tokens.play.filter { it.a == targetType }.toSeries()
+        return tokens.play.filter { it.a == targetType }.toIndexed()
     }
     
     /**
@@ -474,8 +474,8 @@ fun SgmlStringValue.parseSgmlDocument(): SgmlResult<SgmlDocumentStructure> =
 /**
  * Utility functions for Series operations
  */
-private fun <T> Array<T>.toSeries(): Indexed<T> = size j ::get
-private fun <T> List<T>.toSeries(): Indexed<T> = size j ::get
+private fun <T> Array<T>.toIndexed(): Indexed<T> = size j ::get
+private fun <T> List<T>.toIndexed(): Indexed<T> = size j ::get
 private fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /*

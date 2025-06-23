@@ -28,7 +28,7 @@ import kotlinx.datetime.Clock
  * **TSX Pattern:**
  * ```typescript
  * type Join<A, B> = { a: A; b: B }
- * type Series<T> = Join<number, (index: number) => T>
+ * type Indexed<T> = Join<number, (index: number) => T>
  * ```
  * 
  * **TrikeShed Realization:**
@@ -131,7 +131,7 @@ sealed interface Either<out L, out R> {
  * val coord = 42 j 37  // Join<Int, Int> aka Twin<Int>
  * 
  * // Functional composition  
- * val series = 10 j { i -> i * 2 }  // Series<Int>
+ * val series = 10 j { i -> i * 2 }  // Indexed<Int>
  * 
  * // Complex composition
  * val table = rowCount j { i -> columnCount j { j -> data[i][j] } }
@@ -216,7 +216,7 @@ interface Join<A, B> {
  * 
  * ```kotlin
  * // Int realm - Sequential access
- * typealias Series<T> = MetaSeries<Int, T>
+ * typealias Indexed<T> = MetaSeries<Int, T>
  * 
  * // Shape realm - Multidimensional access  
  * typealias Tensor<T> = MetaSeries<Shape, T>
@@ -225,7 +225,7 @@ interface Join<A, B> {
  * typealias Twin<T> = MetaSeries<Boolean, T>
  * 
  * // Custom realms - Domain-specific access
- * typealias TimeSeries<T> = MetaSeries<Instant, T>
+ * typealias TimeIndexed<T> = MetaSeries<Instant, T>
  * typealias SpatialSeries<T> = MetaSeries<Coordinate, T>
  * ```
  * 
@@ -241,7 +241,7 @@ interface Join<A, B> {
  * 
  * ```kotlin
  * // Series realm (Int-indexed)
- * val numbers: Series<Double> = 10 j { i -> i * 3.14 }
+ * val numbers: Indexed<Double> = 10 j { i -> i * 3.14 }
  * 
  * // Tensor realm (Shape-indexed) 
  * val matrix: Tensor<Float> = intArrayOf(3, 4) j { coords -> 
@@ -318,7 +318,7 @@ typealias Twin<T> = Join<T, T>
  * **Usage:**
  * ```kotlin
  * val basic = 42 j "hello"           // Join<Int, String>
- * val series = 10 j { i -> i * 2 }   // Series<Int>
+ * val series = 10 j { i -> i * 2 }   // Indexed<Int>
  * val twin = 3.14 j 2.71             // Twin<Double>
  * ```
  */
@@ -341,14 +341,14 @@ inline infix fun <T> Int.j(noinline getter: (index: Int) -> T): Indexed<T> = Joi
 // === SERIES METACLASS SYSTEM ===
 
 /**
- * ## Series<T> - Indexed Sequence Metaclass
+ * ## Indexed<T> - Indexed Sequence Metaclass
  * 
- * Series<T> is a **functional metaclass** that represents indexed sequences through composition
+ * Indexed<T> is a **functional metaclass** that represents indexed sequences through composition
  * of size and accessor function. It's the cornerstone of TrikeShed's data processing.
  * 
  * **Definition:**
  * ```kotlin
- * typealias Series<T> = Join<Int, (Int) -> T>
+ * typealias Indexed<T> = Join<Int, (Int) -> T>
  * //                   ^     ^    ^
  * //                   |     |    └── Element accessor function
  * //                   |     └───────── Index parameter  
@@ -366,7 +366,7 @@ inline infix fun <T> Int.j(noinline getter: (index: Int) -> T): Indexed<T> = Joi
  * 
  * **TSX Equivalent:**
  * ```typescript
- * type Series<T> = {
+ * type Indexed<T> = {
  *   size: number;
  *   accessor: (index: number) => T;
  * }
@@ -374,7 +374,7 @@ inline infix fun <T> Int.j(noinline getter: (index: Int) -> T): Indexed<T> = Joi
  * 
  * ### Series Laws
  * 
- * Series<T> satisfies these **metaclass laws**:
+ * Indexed<T> satisfies these **metaclass laws**:
  * - **Bounds**: 0 <= i < series.size for valid access
  * - **Consistency**: series[i] always returns the same value for the same i
  * - **Laziness**: Elements computed on-demand via accessor function
@@ -517,7 +517,7 @@ fun <T> emptyIndexed(): Indexed<T> = emptyIndex()
 /**
  * ## Series Size Accessor
  * 
- * Extracts the size component from a Series<T> metaclass.
+ * Extracts the size component from a Indexed<T> metaclass.
  * This is a **zero-cost abstraction** that accesses the first component of the Join.
  */
 val <T> Indexed<T>.size: Int get() = a
@@ -525,7 +525,7 @@ val <T> Indexed<T>.size: Int get() = a
 /**
  * ## Series Element Accessor
  * 
- * Accesses elements in a Series<T> by invoking the accessor function.
+ * Accesses elements in a Indexed<T> by invoking the accessor function.
  * This provides **array-like syntax** while maintaining functional composition.
  */
 operator fun <T> Indexed<T>.get(i: Int): T = b(i)
@@ -544,7 +544,7 @@ operator fun <T> Indexed<T>.get(i: Int): T = b(i)
  * **cppfront Equivalent:**
  * ```cpp
  * template<typename X, typename C>
- * auto transform(const Series<X>& series, auto xform) -> Series<C> {
+ * auto transform(const Indexed<X>& series, auto xform) -> Indexed<C> {
  *     return { series.size, [=](int i) { return xform(series[i]); } };
  * }
  * ```
@@ -561,7 +561,7 @@ inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Index
 /**
  * ## Play Materialization (▶) - ENSHRINED PATTERN
  * 
- * The `play` property materializes a lazy Series<T> into an IterableSeries<T>, enabling
+ * The `play` property materializes a lazy Indexed<T> into an IterableSeries<T>, enabling
  * integration with Kotlin's standard library collections operations.
  * 
  * **Design Philosophy:**
@@ -645,12 +645,12 @@ typealias DatabaseCursor = Indexed<RowVec>
  * ## Shape - Tensor Dimension Metaclass
  * 
  * Shape represents the **dimensional structure** of tensors and multidimensional arrays
- * as a Series<Int>. This keeps Shape within the MetaSeries ecosystem while providing
+ * as a Indexed<Int>. This keeps Shape within the MetaSeries ecosystem while providing
  * the same functionality as IntArray with additional compositional benefits.
  * 
  * **MetaSeries Foundation:**
  * ```kotlin
- * typealias Shape = Series<Int>
+ * typealias Shape = Indexed<Int>
  * //              = MetaSeries<Int, Int>
  * //              = Join<Int, (Int) -> Int>
  * ```
@@ -688,8 +688,8 @@ typealias DatabaseCursor = Indexed<RowVec>
  * **Integration with Tensor:**
  * ```kotlin
  * typealias Tensor<T> = MetaSeries<Shape, T>
- * //                   = MetaSeries<Series<Int>, T>
- * //                   = Join<Series<Int>, (Series<Int>) -> T>
+ * //                   = MetaSeries<Indexed<Int>, T>
+ * //                   = Join<Indexed<Int>, (Indexed<Int>) -> T>
  * ```
  */
 typealias Shape = Indexed<Int>
@@ -698,22 +698,22 @@ typealias Shape = Indexed<Int>
  * ## Tensor<T> - Shape-Indexed Realm Specialization
  * 
  * Tensor<T> represents the **Shape realm** of MetaSeries, where elements are accessed
- * by Shape indices (Series<Int>). This provides **multidimensional array semantics**
+ * by Shape indices (Indexed<Int>). This provides **multidimensional array semantics**
  * with full integration into the MetaSeries ecosystem.
  * 
  * **MetaSeries Foundation:**
  * ```kotlin
  * typealias Tensor<T> = MetaSeries<Shape, T>
- * //                   = MetaSeries<Series<Int>, T>
- * //                   = Join<Series<Int>, (Series<Int>) -> T>
+ * //                   = MetaSeries<Indexed<Int>, T>
+ * //                   = Join<Indexed<Int>, (Indexed<Int>) -> T>
  * ```
  * 
  * **Realm Properties:**
- * - **Index Type**: Shape (Series<Int>) - dimensional coordinates
+ * - **Index Type**: Shape (Indexed<Int>) - dimensional coordinates
  * - **Access Pattern**: Multidimensional indexing
  * - **Use Cases**: Matrices, tensors, multidimensional data structures
  * 
- * **Benefits of Shape as Series<Int>:**
+ * **Benefits of Shape as Indexed<Int>:**
  * - **Functional operations**: Shape can be transformed with α operator
  * - **Lazy evaluation**: Coordinates computed on-demand
  * - **Type safety**: Shape operations are type-checked
@@ -727,7 +727,7 @@ typealias Shape = Indexed<Int>
  * 
  * **Usage:**
  * ```kotlin
- * // Construction with Shape as Series<Int>
+ * // Construction with Shape as Indexed<Int>
  * val matrixShape: Shape = 2 j { i -> if (i == 0) 3 else 4 }  // [3, 4]
  * val matrix: Tensor<Double> = matrixShape j { coords -> 
  *     coords[0] * 4.0 + coords[1] 
@@ -771,7 +771,7 @@ typealias Tensor<T> = MetaSeries<Shape, T>
 /**
  * ## toIdx - Indexed Conversion Helper
  * 
- * Converts various collection types to Indexed<T> (formerly Series<T>).
+ * Converts various collection types to Indexed<T> (formerly Indexed<T>).
  * This provides a bridge between standard Kotlin collections and the MetaSeries ecosystem.
  * 
  * **Usage:**
@@ -804,6 +804,6 @@ fun CharArray.toIdx(): Indexed<Char> = size j { this[it] }
 
 // For backward compatibility with existing code
 @Deprecated("Use toIdx() instead", ReplaceWith("toIdx()"))
-fun <T> List<T>.toSeries(): Indexed<T> = toIdx()
+fun <T> List<T>.toIndexed(): Indexed<T> = toIdx()
 
-// Note: Series<T> is already defined at the top of the file as Indexed<T>
+// Note: Indexed<T> is already defined at the top of the file as Indexed<T>

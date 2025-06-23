@@ -131,7 +131,7 @@ class DistributedStorage(
             override suspend fun createDatabase(name: String): borg.trikeshed.dsl.CouchResponse = borg.trikeshed.dsl.CouchResponse(ok = true, error = null, reason = null)
             override suspend fun queryView(database: String, designDoc: String, viewName: String, params: borg.trikeshed.dsl.ViewQueryParams): borg.trikeshed.dsl.ViewQueryResponse = borg.trikeshed.dsl.ViewQueryResponse(emptyIndex())
         }
-        JetsamGossipManager.initialize(peerId, ipfsClient, mockCouchClient, quicEngine)
+        // JetsamGossipManager.initialize(peerId, ipfsClient, mockCouchClient, quicEngine) // Disabled - moved to museum
         
         // Build context with all components
         return baseContext +
@@ -192,11 +192,11 @@ class DistributedStorage(
                 val ipfsCid = cid.await()
                 val rev = "mock_rev"
                 
-                // Add to gossip
-                JetsamGossipManager.addEntry(key, buildJsonObject {
-                    put("ipfs", ipfsCid.encode())
-                    put("couch", rev)
-                })
+                // Add to gossip - DISABLED, moved to museum
+                // JetsamGossipManager.addEntry(key, buildJsonObject {
+                //     put("ipfs", ipfsCid.encode())
+                //     put("couch", rev)
+                // })
                 
                 StorageResult.Success(key, "ipfs:${ipfsCid.encode()},couch:$rev")
             }
@@ -254,7 +254,8 @@ class DistributedStorage(
      * Execute a WAM-style computation graph
      */
     suspend fun executeGraph(graph: ExecutionGraph): Indexed<Any?> = coroutineScope {
-        val results = mutableListOf<Any?>()
+        var results: Indexed<Any?> = 0 j { null }
+        var resultSize = 0
         val depth = coroutineContext[DistributedStorageCCEK.RECURSION_DEPTH]?.depth ?: 0
         
         // Update context with new graph and depth
@@ -262,50 +263,70 @@ class DistributedStorage(
             ExecutionGraphElement(graph) +
             RecursionDepthElement(depth + 1)
         
-        // Execute nodes in topological order
-        val visited = mutableSetOf<Int>()
-        val stack = mutableListOf<Int>()
+        // Execute nodes in topological order using TrikeShed patterns
+        var visited: Indexed<Int> = 0 j { -1 }  // -1 means unvisited
+        var visitedSize = 0
+        var stack: Indexed<Int> = 0 j { -1 }
+        var stackSize = 0
         
         // Find all nodes with no incoming edges (start nodes)
-        val incomingCount = IntArray(graph.nodes.a)
+        var incomingCount: Indexed<Int> = graph.nodes.a j { 0 }
         for (i in 0 until graph.edges.a) {
             val edge = graph.edges.b(i)
-            incomingCount[edge.b]++
+            val targetIndex = edge.b
+            incomingCount = incomingCount.a j { idx -> 
+                if (idx == targetIndex) incomingCount.b(idx) + 1 else incomingCount.b(idx)
+            }
         }
         
         for (i in 0 until graph.nodes.a) {
-            if (incomingCount[i] == 0) {
-                stack.add(i)
+            if (incomingCount.b(i) == 0) {
+                // Add to stack
+                stack = (stackSize + 1) j { idx -> if (idx == stackSize) i else if (idx < stackSize) stack.b(idx) else -1 }
+                stackSize++
             }
         }
         
         // Process nodes
-        while (stack.isNotEmpty()) {
-            val nodeIndex = stack.removeAt(0)
-            if (visited.contains(nodeIndex)) continue
+        while (stackSize > 0) {
+            val nodeIndex = stack.b(0)
+            stackSize--
+            stack = stackSize j { idx -> if (idx < stackSize) stack.b(idx + 1) else -1 }
             
-            visited.add(nodeIndex)
+            var alreadyVisited = false
+            for (v in 0 until visitedSize) {
+                if (visited.b(v) == nodeIndex) {
+                    alreadyVisited = true
+                    break
+                }
+            }
+            if (alreadyVisited) continue
+            
+            visited = (visitedSize + 1) j { idx -> if (idx == visitedSize) nodeIndex else if (idx < visitedSize) visited.b(idx) else -1 }
+            visitedSize++
             val node = graph.nodes.b(nodeIndex)
             
             // Execute node
             val result = withContext(newContext) {
                 executeNode(node)
             }
-            results.add(result)
+            results = (resultSize + 1) j { idx -> if (idx == resultSize) result else if (idx < resultSize) results.b(idx) else null }
+            resultSize++
             
             // Add dependent nodes to stack
             for (i in 0 until graph.edges.a) {
                 val edge = graph.edges.b(i)
                 if (edge.a == nodeIndex) {
-                    incomingCount[edge.b]--
-                    if (incomingCount[edge.b] == 0) {
-                        stack.add(edge.b)
+                    incomingCount = incomingCount.a j { idx -> if (idx == edge.b) incomingCount.b(idx) - 1 else incomingCount.b(idx) }
+                    if (incomingCount.b(edge.b) == 0) {
+                        stack = (stackSize + 1) j { idx -> if (idx == stackSize) edge.b else if (idx < stackSize) stack.b(idx) else -1 }
+                        stackSize++
                     }
                 }
             }
         }
         
-        results.size j { results[it] }
+        resultSize j { idx -> if (idx < resultSize) results.b(idx) else null }
     }
     
     private suspend fun executeNode(node: ExecutionNode): Any? = when (node) {

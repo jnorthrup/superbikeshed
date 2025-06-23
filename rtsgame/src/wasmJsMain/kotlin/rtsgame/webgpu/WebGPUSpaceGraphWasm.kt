@@ -52,7 +52,7 @@ actual external class GPURenderPassEncoder
 actual external class GPUCommandBuffer
 
 // CCEK context for WebGPU WASM implementation
-typealias WebGPUContext = Join<Join<GPUDevice, Series<GPUBuffer>>, Join<Series<GPURenderPipeline>, Series<GPUTexture>>>
+typealias WebGPUContext = Join<Join<GPUDevice, Indexed<GPUBuffer>>, Join<Indexed<GPURenderPipeline>, Indexed<GPUTexture>>>
 
 /**
  * WASM-specific WebGPU implementation using browser WebGPU API
@@ -111,7 +111,7 @@ actual class WebGPUSpaceGraph actual constructor() {
         }
     }
     
-    actual fun createVertexBuffer(data: Series<VertexData>): BufferId {
+    actual fun createVertexBuffer(data: Indexed<VertexData>): BufferId {
         val ctx = context ?: throw IllegalStateException("WebGPU not initialized")
         val device = ctx.a.a.device
         

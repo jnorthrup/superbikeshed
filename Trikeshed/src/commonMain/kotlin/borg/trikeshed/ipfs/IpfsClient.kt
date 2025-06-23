@@ -16,7 +16,7 @@ class IpfsClient(
     private val storage: IpfsStorage = IpfsStorage()
 ) {
     private val routingTable = RoutingTable(localPeerId)
-    private val blockCache = mutableMapOf<CID, IpfsBlock>()
+    private var blockCache: Indexed<Join<CID, IpfsBlock>> = 0 j { CID(0, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, 0 j { 0.toByte() })) j IpfsBlock(CID(0, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, 0 j { 0.toByte() })), 0 j { 0.toByte() }) }
     
     /**
      * Add content to IPFS
@@ -30,7 +30,7 @@ class IpfsClient(
         // Store locally
         val block = IpfsBlock(cid, data)
         storage.putBlock(block)
-        blockCache[cid] = block
+        blockCache = (blockCache.a + 1) j { i -> if (i == blockCache.a) cid j block else blockCache.b(i) }
         
         // Announce to DHT
         launch { announceBlock(cid) }
@@ -81,7 +81,7 @@ class IpfsClient(
         
         val rootBlock = IpfsBlock(rootCid, rootData, blockLinks)
         storage.putBlock(rootBlock)
-        blockCache[rootCid] = rootBlock
+        blockCache = (blockCache.a + 1) j { i -> if (i == blockCache.a) rootCid j rootBlock else blockCache.b(i) }
         
         launch { announceBlock(rootCid) }
         
@@ -93,11 +93,14 @@ class IpfsClient(
      */
     suspend fun get(cid: CID): Indexed<Byte>? = coroutineScope {
         // Check local cache
-        blockCache[cid]?.let { return@coroutineScope it.data }
+        for (i in 0 until blockCache.a) {
+            val entry = blockCache.b(i)
+            if (entry.a == cid) return@coroutineScope entry.b.data
+        }
         
         // Check local storage
         storage.getBlock(cid)?.let { block ->
-            blockCache[cid] = block
+            blockCache = (blockCache.a + 1) j { i -> if (i == blockCache.a) cid j block else blockCache.b(i) }
             return@coroutineScope block.data
         }
         
@@ -113,7 +116,7 @@ class IpfsClient(
             // Verify and cache
             if (verifyBlock(block)) {
                 storage.putBlock(block)
-                blockCache[cid] = block
+                blockCache = (blockCache.a + 1) j { i -> if (i == blockCache.a) cid j block else blockCache.b(i) }
                 return@coroutineScope block.data
             }
         }

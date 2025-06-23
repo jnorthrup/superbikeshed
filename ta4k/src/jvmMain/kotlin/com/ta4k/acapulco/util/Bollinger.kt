@@ -29,7 +29,7 @@ fun Cursor.bollinger(depth: Int, k: Double = 2.5): Cursor {
  }
 
  return size j { y: Int ->
- val prevRows: Indexed<RowVec> = (0 until depth).map { this at max(0, y - it) }.toSeries()
+ val prevRows: Indexed<RowVec> = (0 until depth).map { this at max(0, y - it) }.toIndexed()
  val valuesForCalc: Indexed<Double> = prevRows α { row -> todub(row.left[0]) }
  val key = "${this.hashCode()}:$y:$depth:$k" 
  val cachedResult: Join<RowVec, String>? = bolCache[key]?.get()

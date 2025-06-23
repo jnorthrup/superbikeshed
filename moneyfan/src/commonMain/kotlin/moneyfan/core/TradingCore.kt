@@ -8,7 +8,7 @@ import moneyfan.trikeshed.j
 import moneyfan.models.TradingSignal
 
 /**
- * TrikeShed-based trading core using Series<T> and Join<A,B> patterns
+ * TrikeShed-based trading core using Indexed<T> and Join<A,B> patterns
  * Unified decimal system using Double for performance with precision tracking
  */
 
@@ -126,7 +126,7 @@ data class HFTTickBuffer(
         )
     }
     
-    fun toSeries(): Series<MarketTick> = size j { i ->
+    fun toSeries(): Indexed<MarketTick> = size j { i ->
         val index = if (size < capacity) i else (head + i) % capacity
         MarketTick(
             symbol = symbol,
@@ -146,14 +146,14 @@ data class HFTTickBuffer(
 }
 
 // Enhanced Time-Series Portfolio Management Types
-typealias TimestampSeries = Series<Instant>
-typealias PortfolioTimeSeries<T> = Join<TimestampSeries, Series<T>>
-typealias PositionHistory = PortfolioTimeSeries<Position>
-typealias ValueHistory = PortfolioTimeSeries<Price>
-typealias RiskMetricsHistory = PortfolioTimeSeries<Join<Decimal, Decimal>> // VaR j Beta
+typealias TimestampSeries = Indexed<Instant>
+typealias PortfolioTimeIndexed<T> = Join<TimestampSeries, Indexed<T>>
+typealias PositionHistory = PortfolioTimeIndexed<Position>
+typealias ValueHistory = PortfolioTimeIndexed<Price>
+typealias RiskMetricsHistory = PortfolioTimeIndexed<Join<Decimal, Decimal>> // VaR j Beta
 
 // Advanced Asset Relationship Mappings
-typealias AssetCorrelationMap = Join<Symbol, Series<Join<Symbol, Decimal>>>
+typealias AssetCorrelationMap = Join<Symbol, Indexed<Join<Symbol, Decimal>>>
 typealias PortfolioWeights = Join<Symbol, Decimal>
 typealias AssetAllocation = Join<PortfolioWeights, Join<Price, Volume>>
 typealias RiskFactors = Join<Symbol, Join<Decimal, Join<Decimal, Decimal>>> // beta j (var j covar)
@@ -196,9 +196,9 @@ data class Candlestick(
     val vwap: Price = Price(0.0)
 )
 
-typealias TickSeries = Series<MarketTick>
-typealias CandleSeries = Series<Candlestick>
-typealias PriceSeries = Series<Price>
+typealias TickSeries = Indexed<MarketTick>
+typealias CandleSeries = Indexed<Candlestick>
+typealias PriceSeries = Indexed<Price>
 
 /**
  * Trading engine for processing market data with advanced algorithms
@@ -438,7 +438,7 @@ data class Position(
 )
 
 data class PortfolioState(
-    val positions: Series<Position>,
+    val positions: Indexed<Position>,
     val cashBalance: Price,
     val totalValue: Price,
     val dayPnL: Price,
@@ -794,7 +794,7 @@ object OptimizedTradingCalculations {
  * Enhanced portfolio management with time-series tracking
  */
 data class EnhancedPortfolioState(
-    val positions: Series<Position>,
+    val positions: Indexed<Position>,
     val positionHistory: PositionHistory,
     val valueHistory: ValueHistory,
     val riskHistory: RiskMetricsHistory,

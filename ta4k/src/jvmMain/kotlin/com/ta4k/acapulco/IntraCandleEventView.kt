@@ -3,7 +3,7 @@
 // =====================================================================
 package borg.trikeshed.acapulco // Adjusted package
 
-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
+import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
 import borg.trikeshed.acapulco.ITradePairEventMuxer // Assuming ported
 import borg.trikeshed.lib.Join // Replaces Pai2
 import borg.trikeshed.lib.j // Replaces t2

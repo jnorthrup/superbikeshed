@@ -413,14 +413,20 @@ class RTSNetworkHost(
         )
     }
     
-    private fun calculateChecksum(units: Map<UnitId, RtsUnit>, resources: Map<PlayerId, Resources>): Long {
+    private fun calculateChecksum(units: Indexed<Join<UnitId, RtsUnit>>, resources: Indexed<Join<PlayerId, Resources>>): Long {
         var checksum = 0L
         
-        units.values.sortedBy { it.id }.forEach { unit ->
+        // Process units in deterministic order
+        for (i in 0 until units.a) {
+            val unitPair = units.b(i)
+            val unit = unitPair.b
             checksum = checksum * 31 + unit.hashCode()
         }
         
-        resources.entries.sortedBy { it.key }.forEach { (_, res) ->
+        // Process resources in deterministic order
+        for (i in 0 until resources.a) {
+            val resourcePair = resources.b(i)
+            val res = resourcePair.b
             checksum = checksum * 31 + res.hashCode()
         }
         

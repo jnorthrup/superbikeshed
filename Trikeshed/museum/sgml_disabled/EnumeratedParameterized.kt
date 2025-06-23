@@ -299,7 +299,7 @@ object EnumeratedParameterizedBuilder {
         // Sort by enum precedence for proper evaluation order
         return operations.play
             .sortedBy { it.operation.precedence }
-            .toSeries()
+            .toIndexed()
     }
 }
 

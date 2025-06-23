@@ -101,7 +101,7 @@ class WasmCouchClient(
         return handleResponse(response) { CouchResponseAdapter.fromJson(it) }
     }
 
-    override suspend fun bulkDocs(dbName: DatabaseName, docs: Series<CouchDocument>, allOrNothing: Boolean): Series<CouchResponse> {
+    override suspend fun bulkDocs(dbName: DatabaseName, docs: Indexed<CouchDocument>, allOrNothing: Boolean): Indexed<CouchResponse> {
         val body = JsonImpl.stringify(mapOf(
             "docs" to docs.play.toList().map { JsonImpl.parse(CouchDocumentAdapter.toJson(it)) },
             "all_or_nothing" to allOrNothing

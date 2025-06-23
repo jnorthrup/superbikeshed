@@ -77,7 +77,7 @@ class RealtimeStreamer(
                                 val cursor = HistoryService.fixOpaqueCsv(
                                     tempCsvPath,
                                     DataBinanceVision.klines,
-                                    DataBinanceVision.klines.names.toSeries() // Pass headers
+                                    DataBinanceVision.klines.names.toIndexed() // Pass headers
                                 )
                                 // TODO: Optionally delete the temp file: Files.deleteIfExists(Paths.get(tempCsvPath))
                                 cursor.takeIf { it.isNotEmpty() }

@@ -3,7 +3,7 @@
 package borg.trikeshed.wireproto
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.bridge.toSeries
+import borg.trikeshed.lib.toIdx
 import kotlin.jvm.JvmInline
 
 /**
@@ -124,7 +124,7 @@ object TrikeShedWireSerializer {
     }
     
     /**
-     * Serialize Series<T> to wire format with type information
+     * Serialize Indexed<T> to wire format with type information
      */
     inline fun <reified T> serializeSeries(indexed: Indexed<T>): UByteArray {
         val payload = buildWirePayload {
@@ -142,14 +142,14 @@ object TrikeShedWireSerializer {
     }
     
     /**
-     * Serialize Series<Int> to wire format with optional optimal packing
+     * Serialize Indexed<Int> to wire format with optional optimal packing
      */
     fun serializeIntSeries(indexed: Indexed<Int>, useOptimalPacking: Boolean = true): UByteArray {
         return serializeSeries(indexed)
     }
     
     /**
-     * Deserialize wire format to Series<T>
+     * Deserialize wire format to Indexed<T>
      */
     inline fun <reified T> deserializeSeries(data: UByteArray): Indexed<T> {
         val message = deserializeMessage(data)
@@ -410,15 +410,15 @@ fun UByteArray.toIoMemento(): borg.trikeshed.isam.meta.IOMemento =
     TrikeShedWireSerializer.deserialize(this)
 
 /**
- * Serialize Series<T> to wire bytes
+ * Serialize Indexed<T> to wire bytes
  */
 inline fun <reified T> Indexed<T>.toWireBytes(): UByteArray =
     TrikeShedWireSerializer.serializeSeries(this)
 
 /**
- * Deserialize wire bytes to Series<T>
+ * Deserialize wire bytes to Indexed<T>
  */
-inline fun <reified T> UByteArray.toSeries(): Indexed<T> =
+inline fun <reified T> UByteArray.toIndexed(): Indexed<T> =
     TrikeShedWireSerializer.deserializeSeries(this)
 
 expect fun pack(data: ByteArray): ByteArray

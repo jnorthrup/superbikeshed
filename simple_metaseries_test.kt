@@ -37,19 +37,19 @@ inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
 typealias MetaSeries<A, T> = Join<A, (A) -> T>
 
 // Realm specializations
-typealias Series<T> = MetaSeries<Int, T>
+typealias Indexed<T> = MetaSeries<Int, T>
 typealias Twin<T> = MetaSeries<Boolean, T>
-typealias Shape = Series<Int>
+typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 typealias Series2<A, B> = MetaSeries<Int, Join<A, B>>
 
 // Series operations
-val <T> Series<T>.size: Int get() = a
-operator fun <T> Series<T>.get(i: Int): T = b(i)
-inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> = size j { i -> xform(this[i]) }
+val <T> Indexed<T>.size: Int get() = a
+operator fun <T> Indexed<T>.get(i: Int): T = b(i)
+inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = size j { i -> xform(this[i]) }
 
 // Play materialization for standard library integration
-val <T> Series<T>.play: List<T> get() = (0 until size).map { this[it] }
+val <T> Indexed<T>.play: List<T> get() = (0 until size).map { this[it] }
 
 // Simple assertion helper
 fun assert(condition: Boolean, message: String = "Assertion failed") {
@@ -92,7 +92,7 @@ fun main() {
     
     // Test 2: Series realm
     runTest("Series realm - Int indexed sequences") {
-        val fibonacci: Series<Long> = 10 j { i ->
+        val fibonacci: Indexed<Long> = 10 j { i ->
             when (i) {
                 0 -> 0L
                 1 -> 1L
@@ -126,7 +126,7 @@ fun main() {
         assertEquals(-50.0, minMax.b(false))  // min
     }
     
-    // Test 4: Shape as Series<Int>
+    // Test 4: Shape as Indexed<Int>
     runTest("Shape as Series of Int") {
         val matrixShape: Shape = 4 j { dim ->
             when (dim) {
@@ -203,7 +203,7 @@ fun main() {
     
     // Test 7: α transformation operator
     runTest("α transformation operator - functional mapping") {
-        val numbers: Series<Int> = 8 j { it + 1 }  // [1, 2, 3, 4, 5, 6, 7, 8]
+        val numbers: Indexed<Int> = 8 j { it + 1 }  // [1, 2, 3, 4, 5, 6, 7, 8]
         val squares = numbers α { it * it }         // [1, 4, 9, 16, 25, 36, 49, 64]
         val strings = squares α { "[$it]" }         // ["[1]", "[4]", "[9]", ...]
         
@@ -216,7 +216,7 @@ fun main() {
     
     // Test 8: Play materialization
     runTest("Play materialization for standard library integration") {
-        val series: Series<String> = 10 j { i -> "item-$i" }
+        val series: Indexed<String> = 10 j { i -> "item-$i" }
         
         // Use play to get List<T> for standard library operations
         val filtered = series.play.filter { it.contains("2") || it.contains("5") || it.contains("7") }
@@ -232,7 +232,7 @@ fun main() {
         val batchSize = 3
         val imageShape: Shape = 2 j { if (it == 0) 2 else 2 }  // 2x2 images
         
-        val imageBatch: Series<Tensor<Float>> = batchSize j { batchIdx ->
+        val imageBatch: Indexed<Tensor<Float>> = batchSize j { batchIdx ->
             imageShape j { coords ->
                 val row = coords[0]
                 val col = coords[1]
@@ -257,7 +257,7 @@ fun main() {
         val startTime = TimeSource.Monotonic.markNow()
         
         // Create large dataset
-        val largeData: Series<Double> = 100_000 j { i -> i * Math.PI }
+        val largeData: Indexed<Double> = 100_000 j { i -> i * Math.PI }
         
         // Apply multiple transformations (all lazy)
         val processed = largeData α { it * 2 } α { it + 1 } α { Math.sin(it) }
@@ -286,7 +286,7 @@ fun main() {
     
     // Test 11: Type safety and realm separation
     runTest("Type safety and realm separation") {
-        val intSeries: Series<String> = 3 j { "item$it" }
+        val intSeries: Indexed<String> = 3 j { "item$it" }
         val boolTwin: Twin<String> = true j { if (it) "yes" else "no" }
         val shape: Shape = 2 j { it + 5 }
         val tensor: Tensor<String> = shape j { coords -> "cell[${coords[0]},${coords[1]}]" }
@@ -342,7 +342,7 @@ fun main() {
         println("• ✅ Functional composition with α operator")
         println("• ✅ Standard library integration via play materialization")
         println("• ✅ Type safety across all metaclass operations")
-        println("• ✅ Complex nested structures (Series<Tensor<T>>)")
+        println("• ✅ Complex nested structures (Indexed<Tensor<T>>)")
         println("• ✅ Performance optimized for large datasets")
         println("\nThis validates that our MetaSeries design is sound and ready for production use.")
     } else {

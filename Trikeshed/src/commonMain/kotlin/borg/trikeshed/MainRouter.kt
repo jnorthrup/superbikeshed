@@ -141,10 +141,10 @@ class RouteContext(val args: Array<String>) {
         return "DistributedStorage(${config.peerId})"
     }
     
-    // Jetsam gossip
-    suspend fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
-        JetsamGossipManager.block()
-    }
+    // Jetsam gossip - DISABLED, moved to museum
+    // suspend fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
+    //     JetsamGossipManager.block()
+    // }
     
     // Cursor operations
     fun cursor(data: DatabaseCursor, block: CursorContext.() -> Unit) {

@@ -23,7 +23,7 @@ object TrikeshedForwardRules {
      * Aggregate all registered forward rule chains
      */
     fun all(): ForwardRuleSeries =
-        forwardChains.flatMap { it() }.toSeries()
+        forwardChains.flatMap { it() }.toIndexed()
 
     /**
      * Example: Built-in Trikeshed annotation rule
@@ -40,7 +40,7 @@ object TrikeshedForwardRules {
                 markEntity(context, pos, 99u)
             }
         )
-    ).toSeries()
+    ).toIndexed()
 
     init {
         // Register built-in rules by default
@@ -62,7 +62,7 @@ object TrikeshedBackwardRules {
      * Aggregate all registered backward rule chains
      */
     fun all(): BackwardRuleSeries =
-        backwardChains.flatMap { it() }.toSeries()
+        backwardChains.flatMap { it() }.toIndexed()
 
     /**
      * Example: Built-in Trikeshed usage validation rule
@@ -79,7 +79,7 @@ object TrikeshedBackwardRules {
                 validateTrikeshedUsage(context, pos)
             }
         )
-    ).toSeries()
+    ).toIndexed()
 
     init {
         // Register built-in rules by default

@@ -13,7 +13,7 @@ infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
  * - Main entry point that parses arguments
  * - NexusConfigBuilder for configuration management
  * - NexusActionExecutor for task execution
- * - TrikeShed data structures (Series<T>, Join<A,B>)
+ * - TrikeShed data structures (Indexed<T>, Join<A,B>)
  * - Direct integration with k2script's LiteLLMClient
  */
 

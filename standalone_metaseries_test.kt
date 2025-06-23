@@ -40,19 +40,19 @@ inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
 typealias MetaSeries<A, T> = Join<A, (A) -> T>
 
 // Realm specializations
-typealias Series<T> = MetaSeries<Int, T>
+typealias Indexed<T> = MetaSeries<Int, T>
 typealias Twin<T> = MetaSeries<Boolean, T>
-typealias Shape = Series<Int>
+typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 typealias Series2<A, B> = MetaSeries<Int, Join<A, B>>
 
 // Series operations
-val <T> Series<T>.size: Int get() = a
-operator fun <T> Series<T>.get(i: Int): T = b(i)
-inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> = size j { i -> xform(this[i]) }
+val <T> Indexed<T>.size: Int get() = a
+operator fun <T> Indexed<T>.get(i: Int): T = b(i)
+inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = size j { i -> xform(this[i]) }
 
 // Play materialization for standard library integration
-val <T> Series<T>.play: List<T> get() = (0 until size).map { this[it] }
+val <T> Indexed<T>.play: List<T> get() = (0 until size).map { this[it] }
 
 // === TESTS ===
 
@@ -73,8 +73,8 @@ class MetaSeriesTest {
     
     @Test
     fun `Series realm - Int indexed sequences`() {
-        // Series<T> = MetaSeries<Int, T>
-        val fibonacci: Series<Long> = 10 j { i ->
+        // Indexed<T> = MetaSeries<Int, T>
+        val fibonacci: Indexed<Long> = 10 j { i ->
             when (i) {
                 0 -> 0L
                 1 -> 1L
@@ -114,7 +114,7 @@ class MetaSeriesTest {
     
     @Test
     fun `Shape as Series of Int`() {
-        // Shape = Series<Int> - dimensional metadata
+        // Shape = Indexed<Int> - dimensional metadata
         val matrixShape: Shape = 4 j { dim ->
             when (dim) {
                 0 -> 5    // batch size
@@ -134,7 +134,7 @@ class MetaSeriesTest {
         // Calculate volume using functional operations
         val volume = matrixShape.play.fold(1) { acc, dim -> acc * dim }
         assertEquals(120, volume) // 5 * 3 * 4 * 2 = 120
-        println("✓ Shape as Series<Int> works for 4D tensor (volume=$volume)")
+        println("✓ Shape as Indexed<Int> works for 4D tensor (volume=$volume)")
     }
     
     @Test
@@ -197,7 +197,7 @@ class MetaSeriesTest {
     
     @Test
     fun `α transformation operator - functional mapping`() {
-        val numbers: Series<Int> = 8 j { it + 1 }  // [1, 2, 3, 4, 5, 6, 7, 8]
+        val numbers: Indexed<Int> = 8 j { it + 1 }  // [1, 2, 3, 4, 5, 6, 7, 8]
         val squares = numbers α { it * it }         // [1, 4, 9, 16, 25, 36, 49, 64]
         val strings = squares α { "[$it]" }         // ["[1]", "[4]", "[9]", ...]
         
@@ -212,7 +212,7 @@ class MetaSeriesTest {
     
     @Test
     fun `Play materialization for standard library integration`() {
-        val series: Series<String> = 10 j { i -> "item-$i" }
+        val series: Indexed<String> = 10 j { i -> "item-$i" }
         
         // Use play to get List<T> for standard library operations
         val filtered = series.play.filter { it.contains("2") || it.contains("5") || it.contains("7") }
@@ -229,7 +229,7 @@ class MetaSeriesTest {
         val batchSize = 3
         val imageShape: Shape = 2 j { if (it == 0) 2 else 2 }  // 2x2 images
         
-        val imageBatch: Series<Tensor<Float>> = batchSize j { batchIdx ->
+        val imageBatch: Indexed<Tensor<Float>> = batchSize j { batchIdx ->
             imageShape j { coords ->
                 val row = coords[0]
                 val col = coords[1]
@@ -248,7 +248,7 @@ class MetaSeriesTest {
         val pixelValue = image1.b(coord)
         assertEquals(13.0f, pixelValue)  // 1*10 + 1*3 + 0 = 13
         
-        println("✓ Complex nested composition: Series<Tensor<Float>> works")
+        println("✓ Complex nested composition: Indexed<Tensor<Float>> works")
     }
     
     @Test
@@ -256,7 +256,7 @@ class MetaSeriesTest {
         val startTime = TimeSource.Monotonic.markNow()
         
         // Create large dataset
-        val largeData: Series<Double> = 100_000 j { i -> i * Math.PI }
+        val largeData: Indexed<Double> = 100_000 j { i -> i * Math.PI }
         
         // Apply multiple transformations (all lazy)
         val processed = largeData α { it * 2 } α { it + 1 } α { Math.sin(it) }
@@ -281,7 +281,7 @@ class MetaSeriesTest {
     
     @Test
     fun `Type safety and realm separation`() {
-        val intSeries: Series<String> = 3 j { "item$it" }
+        val intSeries: Indexed<String> = 3 j { "item$it" }
         val boolTwin: Twin<String> = true j { if (it) "yes" else "no" }
         val shape: Shape = 2 j { it + 5 }
         val tensor: Tensor<String> = shape j { coords -> "cell[${coords[0]},${coords[1]}]" }
@@ -360,7 +360,7 @@ fun main() {
         println("• ✅ Functional composition with α operator")
         println("• ✅ Standard library integration via play materialization")
         println("• ✅ Type safety across all metaclass operations")
-        println("• ✅ Complex nested structures (Series<Tensor<T>>)")
+        println("• ✅ Complex nested structures (Indexed<Tensor<T>>)")
         println("• ✅ Performance optimized for large datasets")
         
     } catch (e: Exception) {

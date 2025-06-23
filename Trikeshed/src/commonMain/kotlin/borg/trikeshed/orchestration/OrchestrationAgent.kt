@@ -1,6 +1,6 @@
 package borg.trikeshed.orchestration
 
-import borg.ipfs.IpfsPubSubService
+import borg.trikeshed.ipfs.IpfsPubSubService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
