@@ -35,15 +35,15 @@ enum class SkimmerAction { HARVEST_SELL, REBALANCE_BUY, HOLD }
 enum class CombinedSignal { STRONG_BUY, BUY, WEAK_BUY, HOLD, WEAK_SELL, SELL, STRONG_SELL }
 
 // Mock Series implementation (simplified)
-class Series<T>(val data: List<T>) {
+class Indexed<T>(val data: List<T>) {
     val size: Int get() = data.size
     operator fun get(index: Int): T = data[index]
     
-    fun <R> map(transform: (T) -> R): Series<R> = Series(data.map(transform))
-    fun filter(predicate: (T) -> Boolean): Series<T> = Series(data.filter(predicate))
+    fun <R> map(transform: (T) -> R): Indexed<R> = Series(data.map(transform))
+    fun filter(predicate: (T) -> Boolean): Indexed<T> = Series(data.filter(predicate))
     
     companion object {
-        fun <T> of(size: Int, generator: (Int) -> T): Series<T> {
+        fun <T> of(size: Int, generator: (Int) -> T): Indexed<T> {
             return Series((0 until size).map(generator))
         }
     }
@@ -67,7 +67,7 @@ data class CombinedAnalysis(
     val combinedSignal: CombinedSignal,
     val signalStrength: Double,
     val attentionScore: AttentionScore,
-    val votes: Series<StrategyVote>,
+    val votes: Indexed<StrategyVote>,
     val timestamp: Instant,
     val carlosSignal: TradeSignal = TradeSignal.HOLD,
     val skimmerSignal: SkimmerAction = SkimmerAction.HOLD
@@ -90,7 +90,7 @@ data class TradingReport(
     val sellSignals: Int,
     val topBuyCandidate: Symbol?,
     val topSellCandidate: Symbol?,
-    val analyses: Series<CombinedAnalysis>
+    val analyses: Indexed<CombinedAnalysis>
 ) {
     val marketActivity: String
         get() = when {
@@ -222,15 +222,15 @@ class StrategyOrchestrator {
     private val symbols = listOf("BTCUSDT", "ETHUSDT", "ADAUSDT", "SOLUSDT", "DOTUSDT", "LTCUSDT", "DOGEUSDT")
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     
-    private fun calculateRSI(pricesSeries: Series<Price>, period: Int): Double {
-        TODO("Calculate RSI using TrikeShed Series<Price> with α transformations")
+    private fun calculateRSI(pricesSeries: Indexed<Price>, period: Int): Double {
+        TODO("Calculate RSI using TrikeShed Indexed<Price> with α transformations")
     }
     
-    private fun calculateSMA(pricesSeries: Series<Price>, period: Int): Price {
-        TODO("Calculate SMA using TrikeShed Series<Price> with α transformations")
+    private fun calculateSMA(pricesSeries: Indexed<Price>, period: Int): Price {
+        TODO("Calculate SMA using TrikeShed Indexed<Price> with α transformations")
     }
     
-    suspend fun getActionableSignals(maxSymbols: Int = 10): Series<CombinedAnalysis> = withContext(Dispatchers.Default) {
+    suspend fun getActionableSignals(maxSymbols: Int = 10): Indexed<CombinedAnalysis> = withContext(Dispatchers.Default) {
         TODO("Get actionable signals using TrikeShed patterns")
     }
     

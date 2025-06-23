@@ -215,7 +215,7 @@ object XPathPredicateSystem {
             }
         }
         
-        return candidates.toSeries()
+        return candidates.toIndexed()
     }
     
     /**
@@ -243,7 +243,7 @@ object XPathPredicateSystem {
             } else {
                 null
             }
-        }.play.filterNotNull().toSeries()
+        }.play.filterNotNull().toIndexed()
     }
     
     /**
@@ -282,7 +282,7 @@ object XPathScanner {
     fun scan(xpathString: XPathStringValue): XPathResult<XPathTokenIndexed> {
         if (xpathString.isEmpty()) return Either.right(emptyIndex())
         
-        val chars = xpathString.toCharArray().toSeries()
+        val chars = xpathString.toCharArray().toIndexed()
         return Either.right(tokenize(chars))
     }
     
@@ -506,8 +506,8 @@ fun XPathTokenIndexed.parseNodes(): XPathNodeIndexed =
 /**
  * Utility functions for Series operations
  */
-private fun <T> Array<T>.toSeries(): Indexed<T> = size j ::get
-private fun <T> List<T>.toSeries(): Indexed<T> = size j ::get
+private fun <T> Array<T>.toIndexed(): Indexed<T> = size j ::get
+private fun <T> List<T>.toIndexed(): Indexed<T> = size j ::get
 private fun <T> emptyIndex(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty index") }
 
 /**

@@ -23,11 +23,11 @@ import moneyfan.models.Price.Companion.UNDEFINED as UNDEFINED_PRICE // Alias for
  * @return A Series of TradingSignal objects of the same size as `klines`.
  */
 fun executeKrakenSkimmerStrategy(
-    klines: Series<Kline>,
+    klines: Indexed<Kline>,
     baselinePeriod: Int = 20,
     harvestThreshold: Double = 0.03,
     rebalanceThreshold: Double = 0.04
-): Series<TradingSignal> {
+): Indexed<TradingSignal> {
 
     if (klines.isEmpty()) {
         return moneyfan.trikeshed.emptySeries()
@@ -79,9 +79,9 @@ fun executeKrakenSkimmerStrategy(
 // --- Example Usage (Conceptual) ---
 /*
 fun main() {
-    // Assume klineDataSeries is a Series<Kline> loaded elsewhere
+    // Assume klineDataSeries is a Indexed<Kline> loaded elsewhere
 
-    // val klineDataSeries: Series<Kline> = ... create or load some Kline data ...
+    // val klineDataSeries: Indexed<Kline> = ... create or load some Kline data ...
     // if (klineDataSeries.isNotEmpty()) {
     //     val signals = executeKrakenSkimmerStrategy(klineDataSeries) // Using default parameters
     //

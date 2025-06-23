@@ -110,7 +110,7 @@ suspend fun runHistoricalDataServiceExample() {
     println("\n--- HistoricalDataService Example Finished ---")
 }
 
-fun printKlines(klines: Series<Kline>) {
+fun printKlines(klines: Indexed<Kline>) {
     if (klines.isEmpty()) {
         println("No klines found or returned empty series.")
         return

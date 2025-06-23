@@ -25,15 +25,15 @@ internal object PocSemanticScorer {
      * Calculates relevance scores for a series of item strings against a query string.
      *
      * @param query The natural language query string. Keywords are extracted from this query.
-     * @param itemsAsStrings A [Series<String>] containing the textual representation of items to score.
+     * @param itemsAsStrings A [Indexed<String>] containing the textual representation of items to score.
      *                       Scores will correspond index-wise to this series.
-     * @return A [Series<Double>] of relevance scores, aligned with `itemsAsStrings`.
+     * @return A [Indexed<Double>] of relevance scores, aligned with `itemsAsStrings`.
      *         Scores are normalized by the number of unique, non-trivial keywords found in the query.
      *         - If `itemsAsStrings` is empty, an empty series is returned.
      *         - If the `query` yields no usable keywords (e.g., it's empty or contains only very short words),
      *           all items in a non-empty `itemsAsStrings` series will receive a score of `0.0`.
      */
-    fun score(query: String, itemsAsStrings: Series<String>): Series<Double> {
+    fun score(query: String, itemsAsStrings: Indexed<String>): Indexed<Double> {
         if (itemsAsStrings.isEmpty()) {
             return emptySeries()
         }
@@ -102,16 +102,16 @@ class HybridNlpAgentPoc : NlpAgent {
      * This implementation is **non-suspend (blocking)** for PoC purposes.
      *
      * @param query The natural language query string.
-     * @param itemsAsStrings A [Series<String>] of item representations to be scored. The resulting
+     * @param itemsAsStrings A [Indexed<String>] of item representations to be scored. The resulting
      *                       `relevanceScores` in [NlpAgentResult] will align with this series.
      * @return An [NlpAgentResult] containing:
-     *         - `relevanceScores`: A [Series<Double>] from [PocSemanticScorer].
+     *         - `relevanceScores`: A [Indexed<Double>] from [PocSemanticScorer].
      *         - `structuredQuery`: An [RqlRootQuery] from [SimpleRqlParser] if parsing was successful; `null` otherwise.
      *         - `originalQuery`: The unmodified input `query` string.
      *         - `errors`: A list of error messages. For this PoC, it may include a message if
      *           [SimpleRqlParser] fails to parse a non-blank query, or if an unexpected exception occurs.
      */
-    override fun processQuery(query: String, itemsAsStrings: Series<String>): NlpAgentResult {
+    override fun processQuery(query: String, itemsAsStrings: Indexed<String>): NlpAgentResult {
         var structuredQuery: RqlRootQuery? = null
         val errors = mutableListOf<String>()
 

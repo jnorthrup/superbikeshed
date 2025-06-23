@@ -20,7 +20,7 @@ class SwingPointDetectorTest {
             kline("10", "9"),  // 0
             kline("12", "10"), // 1 (potential high)
             kline("10", "9")   // 2
-        ).toSeries()
+        ).toIndexed()
         val points = SwingPointDetector.detectSwingPoints(klines, 1)
         assertEquals(1, points.size)
         assertEquals(1, points[0].index)
@@ -34,7 +34,7 @@ class SwingPointDetectorTest {
             kline("12", "10"), // 0
             kline("11", "8"),  // 1 (potential low)
             kline("12", "10")  // 2
-        ).toSeries()
+        ).toIndexed()
         val points = SwingPointDetector.detectSwingPoints(klines, 1)
         assertEquals(1, points.size)
         assertEquals(1, points[0].index)
@@ -44,11 +44,11 @@ class SwingPointDetectorTest {
 
     @Test
     fun `no swing points if not enough data for strength`() {
-        val klinesShort = listOf(kline("10", "9"), kline("12", "10")).toSeries() // Only 2 klines
+        val klinesShort = listOf(kline("10", "9"), kline("12", "10")).toIndexed() // Only 2 klines
         val pointsShort = SwingPointDetector.detectSwingPoints(klinesShort, 1) // Needs 2*1+1 = 3 klines
         assertTrue(pointsShort.isEmpty())
 
-        val klinesEnoughForS1 = listOf(kline("10", "9"), kline("12", "10"), kline("11","9")).toSeries()
+        val klinesEnoughForS1 = listOf(kline("10", "9"), kline("12", "10"), kline("11","9")).toIndexed()
         val pointsS1 = SwingPointDetector.detectSwingPoints(klinesEnoughForS1, 1)
         // klinesEnoughForS1[1].high (12) > klinesEnoughForS1[0].high (10) AND klinesEnoughForS1[1].high (12) > klinesEnoughForS1[2].high (11) -> SH
         assertEquals(1, pointsS1.size)
@@ -69,7 +69,7 @@ class SwingPointDetectorTest {
             kline("11", "9"),  // 3 (High: 11 not > 10. Low: 9 not < 8)
             kline("9", "7"),   // 4 (Low: 7<9, 7<8)
             kline("10", "8")   // 5
-        ).toSeries()
+        ).toIndexed()
         val points = SwingPointDetector.detectSwingPoints(klines, 1)
         assertEquals(3, points.size)
 
@@ -96,7 +96,7 @@ class SwingPointDetectorTest {
             kline("12", "10"),  // 4
             kline("14", "11"),  // 5 (Not SH: 14 not > 12 to its left with strength 2)
             kline("10", "8")    // 6
-        ).toSeries()
+        ).toIndexed()
         // Strength 2: needs 2 left, 2 right. Candidate index starts at 2, ends at klines.size - 1 - 2 = 6 - 1 - 2 = 3.
         // Candidate i=2 (val 15):
         //   Left: klines[1].H=11, klines[0].H=10. (15 > 11 && 15 > 10) -> True
@@ -125,7 +125,7 @@ class SwingPointDetectorTest {
             kline("12", "10"), //1
             kline("12", "10"), //2 Candidate. 12 not > klines[1].H (12). Not SH.
             kline("10", "9")   //3
-        ).toSeries()
+        ).toIndexed()
         val points = SwingPointDetector.detectSwingPoints(klines, 1)
         assertTrue(points.isEmpty(), "Plateau highs should not be identified as swing highs by this strict definition")
     }
@@ -139,7 +139,7 @@ class SwingPointDetectorTest {
             kline("15", "3"),    // 2 - Candidate. High=15, Low=3
             kline("5", "4"),     // 3
             kline("10", "9")     // 4
-        ).toSeries()
+        ).toIndexed()
         // For index 2 (strength 2):
         // High: 15 > klines[0].H(10) && 15 > klines[1].H(5). AND 15 > klines[3].H(5) && 15 > klines[4].H(10). YES, it's a Swing High.
         // Since it's a Swing High, it should not be tested as a Swing Low.
@@ -156,7 +156,7 @@ class SwingPointDetectorTest {
         val klines = listOf(
             kline("10", "9"), kline("10", "9"), kline("10", "9"),
             kline("10", "9"), kline("10", "9")
-        ).toSeries()
+        ).toIndexed()
         val points = SwingPointDetector.detectSwingPoints(klines, 1)
         assertTrue(points.isEmpty())
     }
@@ -169,7 +169,7 @@ class SwingPointDetectorTest {
             kline("10","8"),  //2 Candidate SL (8 < 11,12 and 8 < 9,10)
             kline("12","9"),  //3
             kline("13","10")  //4
-        ).toSeries()
+        ).toIndexed()
         // Strength 2. Loop for i in 2 until (5-2)=3. So only i=2 is candidate.
         // i=2: Kline H=10, L=8
         // SH Check: 10 not > klines[1].H(14). Not SH.

@@ -102,7 +102,7 @@ fun ytd(data: Any): Any {
 
 // Placeholder for _prepare_returns, _prepare_prices, etc.
 // These are complex and heavily rely on pandas data manipulation.
-// Their translation will depend on the chosen Kotlin data structures (Series<T>, Join<A,B>)
+// Their translation will depend on the chosen Kotlin data structures (Indexed<T>, Join<A,B>)
 // and numerical capabilities.
 
 fun prepareReturns(data: Any, rf: Double = 0.0, nperiods: Int? = null): Any {

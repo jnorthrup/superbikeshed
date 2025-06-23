@@ -5,5 +5,5 @@ interface AgentInterface {
 }
 
 // Placeholder for types based on task description
-typealias AgentObservation = borg.trikeshed.common.Series<*>  // Adjust as per actual implementation
+typealias AgentObservation = borg.trikeshed.common.Indexed<*>  // Adjust as per actual implementation
 typealias AgentAction = DoubleArray  // Represents AssetOutput

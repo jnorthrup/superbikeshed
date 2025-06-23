@@ -7,7 +7,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
- * Extensions for Series<BigDecimal> to support statistical calculations
+ * Extensions for Indexed<BigDecimal> to support statistical calculations
  */
 fun Indexed<BigDecimal>.isEmpty(): Boolean = size == 0
 

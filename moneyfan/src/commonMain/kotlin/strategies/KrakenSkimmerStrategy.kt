@@ -19,13 +19,13 @@ class KrakenSkimmerStrategy : TradingStrategyInterface {
      * Generates a trading signal based on the current price and historical data.
      *
      * @param currentPrice The current price for decision-making.
-     * @param historicalPrices A [Series<Double>] of historical prices up to (but not including) the current point.
+     * @param historicalPrices A [Indexed<Double>] of historical prices up to (but not including) the current point.
      * @param historicalDataPoint The full [RowVec] for the current data point (currently unused).
      * @return [TradingSignal] (BUY, SELL, or HOLD).
      */
     override fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
+        historicalPrices: Indexed<Double>,
         historicalDataPoint: RowVec // Currently unused, available for future strategy enhancements
     ): TradingSignal {
         // For baseline calculation, the current price is appended to historical prices.
@@ -64,12 +64,12 @@ class KrakenSkimmerStrategy : TradingStrategyInterface {
      *
      * CLAUDE.md suggests Series-native operations. This implementation uses `.values.toList()`
      * for pragmatic access to underlying data for windowed SMA calculation, similar to
-     * justifications in `CarlosRSI2Strategy`. The result is wrapped in a new [Series<Double>].
+     * justifications in `CarlosRSI2Strategy`. The result is wrapped in a new [Indexed<Double>].
      *
-     * @param priceSeries The input [Series<Double>] of prices.
-     * @return A [Series<Double>] containing the calculated baseline (SMA) values.
+     * @param priceSeries The input [Indexed<Double>] of prices.
+     * @return A [Indexed<Double>] containing the calculated baseline (SMA) values.
      */
-    internal fun calculateBaseline(priceSeries: Series<Double>): Series<Double> {
+    internal fun calculateBaseline(priceSeries: Indexed<Double>): Indexed<Double> {
         val prices = priceSeries.values.toList()
         if (prices.size < baselinePeriod) {
             return MemSeries.empty(priceSeries.schema()) // Not enough data for even one SMA value

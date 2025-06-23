@@ -48,7 +48,7 @@ typealias GraphRefinement = Join<Join<RefinementType, EvidenceStrength>, Refinem
 /**
  * Series of refinement operations
  */
-typealias RefinementSeries = Series<GraphRefinement>
+typealias RefinementSeries = Indexed<GraphRefinement>
 
 /**
  * Extension functions for GraphRefinement
@@ -90,7 +90,7 @@ object GraphRefinementEngine {
     /**
      * Apply backward chaining refinement to validate classifications
      */
-    fun backwardChain(nodes: GraphNodeSeries, expectedTypes: Series<NodeType>): RefinementSeries {
+    fun backwardChain(nodes: GraphNodeSeries, expectedTypes: Indexed<NodeType>): RefinementSeries {
         return nodes.α { node ->
             val actualType = node.nodeType.type
             val confidence = node.confidence.confidence
@@ -201,7 +201,7 @@ object GraphRefinementEngine {
 fun GraphNodeSeries.applyForwardChaining(): RefinementSeries = 
     GraphRefinementEngine.forwardChain(this)
 
-fun GraphNodeSeries.applyBackwardChaining(expectedTypes: Series<NodeType>): RefinementSeries = 
+fun GraphNodeSeries.applyBackwardChaining(expectedTypes: Indexed<NodeType>): RefinementSeries = 
     GraphRefinementEngine.backwardChain(this, expectedTypes)
 
 fun GraphNodeSeries.accumulateEvidence(priorRefinements: RefinementSeries): RefinementSeries = 
@@ -218,4 +218,4 @@ fun emptySeries(): RefinementSeries = 0 j { throw IndexOutOfBoundsException("Emp
 /**
  * Convenience function for creating empty refinement series
  */
-inline fun <reified T> emptySeries(): Series<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+inline fun <reified T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }

@@ -51,7 +51,7 @@ class MuxIo @JvmOverloads constructor(
                             val (cursorSnapshot, intraCount) = mux.realtime
                             assembleRow(cursorSnapshot, assetKey, intraCount, baseCost, timeWindow, hzWidth, tradingWallet)
                         }
-                    }.awaitAll().toSeries()
+                    }.awaitAll().toIndexed()
                     if (rowsToOffer.isNotEmpty()) {
                         cursHorizon.offer(rowsToOffer)
                     }

@@ -46,10 +46,10 @@ data class Twin<T>(
     val second: T
 )
 
-// CLAUDE.md: "Key Types: Series<T>"
+// CLAUDE.md: "Key Types: Indexed<T>"
 // Represents a sequence of data, possibly time-ordered or event-ordered.
 // Could be a simple wrapper around a list for now, with potential for more complex operations later.
-data class Series<T>(
+data class Indexed<T>(
     val values: List<T>
 ) {
     // Future methods: add, filter, aggregate, etc.

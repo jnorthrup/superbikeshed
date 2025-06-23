@@ -25,11 +25,11 @@ fun createMockKlines(): List<Kline> {
 }
 
 // Placeholder for creating a Trikeshed Series once its construction is clear
-// fun createMockKlineSeries(): borg.trikeshed.Series<Kline> {
+// fun createMockKlineSeries(): borg.trikeshed.Indexed<Kline> {
 //     val klines = createMockKlines()
-//     // Actual construction of Series<Kline> will depend on Join's API
-//     // and how Series<T> = Join<Int, (Int) -> T> is instantiated.
+//     // Actual construction of Indexed<Kline> will depend on Join's API
+//     // and how Indexed<T> = Join<Int, (Int) -> T> is instantiated.
 //     // For example, if Join is data class Join<A,B>(val a: A, val b: B)
 //     // return borg.trikeshed.Join(klines.size) { index -> klines[index] }
-//     throw NotImplementedError("Series<Kline> construction depends on Join API details")
+//     throw NotImplementedError("Indexed<Kline> construction depends on Join API details")
 // }

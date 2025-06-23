@@ -35,7 +35,7 @@ class DemoVisualizer(private val agentApi: AgentAPI) {
      * @param augmentedVisualData The DSEL Series of data points to visualize.
      */
     fun displayDataWithMoneyfanOutcomes(
-        augmentedVisualData: Series<VisualGraphPointWithMoneyfanOutcome>
+        augmentedVisualData: Indexed<VisualGraphPointWithMoneyfanOutcome>
     ) {
         clearGraph() // Start with a fresh graph
 
@@ -153,7 +153,7 @@ class DemoVisualizer(private val agentApi: AgentAPI) {
 
     fun highlightMoneyfanAction(
         actionToHighlight: MoneyfanActionType?,
-        fullVisualData: Series<VisualGraphPointWithMoneyfanOutcome>
+        fullVisualData: Indexed<VisualGraphPointWithMoneyfanOutcome>
     ) {
         if (klineNodeIds.isEmpty() || fullVisualData.size != klineNodeIds.size) {
             console.warn("DemoVisualizer: Cannot highlight, data mismatch or empty.")

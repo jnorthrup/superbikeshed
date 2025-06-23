@@ -19,20 +19,20 @@ import borg.trikeshed.lib.`▶`
 import borg.trikeshed.lib.α
 import borg.trikeshed.lib.*
 
-typealias JsElement = Join<Twin<Int>, Series<Int>> //(openIdx j closeIdx) j commaIdxs
-typealias JsIndex = Join<Twin<Int>, Series<Char>> //(twin j src)
-typealias JsContext = Join<JsElement, Series<Char>>
+typealias JsElement = Join<Twin<Int>, Indexed<Int>> //(openIdx j closeIdx) j commaIdxs
+typealias JsIndex = Join<Twin<Int>, Indexed<Char>> //(twin j src)
+typealias JsContext = Join<JsElement, Indexed<Char>>
 
 
 typealias JsPathElement = Either<String, Int>
-typealias JsPath = Series<JsPathElement>
+typealias JsPath = Indexed<JsPathElement>
 
 //private fun logDebug(t: () -> String) {} //logging turned off for now
 
-fun JsIndex.toSeries(): Series<Char> = this.second [ a.a until a.b]
+fun JsIndex.toIndexed(): Indexed<Char> = this.second [ a.a until a.b]
 
 val List<*>.toJsPath: JsPath
-    get() = this.toSeries() α  {
+    get() = this.toIndexed() α  {
         when (it) {
             is String -> JsPathElement.left(it)
             is Int -> JsPathElement.right(it)
@@ -51,7 +51,7 @@ val JsContext.segments: Iterable<JsIndex>
     get() {
         val (element, src) = this
         val (openIdx, closeIdx) = element.first
-        val commaIdxs: Series<Int> = combine(s_[openIdx], element.second, s_[closeIdx])
+        val commaIdxs: Indexed<Int> = combine(s_[openIdx], element.second, s_[closeIdx])
         return commaIdxs. `▶` .zipWithNext().map { (a: Int, b: Int) -> a.inc() j b }.toList() α { it j src }
     }
 
@@ -61,7 +61,7 @@ val JsContext.segments: Iterable<JsIndex>
 object JsonParser {
     /** includes open and close braces and provides a list of comma indexes*/
     fun index(
-        src: Series<Char>,
+        src: Indexed<Char>,
         /** depths is passed in for the purpose of queries being able to skip a slot if it is too shallow;
          * format is _a[1,1,2,] where any valid segment is at least 1.
          * */
@@ -116,14 +116,14 @@ object JsonParser {
                 }
             }
         }
-        return (openIdx j closeIdx) j commaIdxs.toIntArray().toSeries()
+        return (openIdx j closeIdx) j commaIdxs.toIntArray().toIndexed()
 
 
     }
 
     fun reify(
         /** includes open and close braces, or both quotes, or the raw type*/
-        src1: Series<Char>,
+        src1: Indexed<Char>,
     ): Any? {
         val src: CharSeries = CharSeries(src1).trim
 
@@ -131,13 +131,13 @@ object JsonParser {
             '{', '[' -> {
                 val index: JsElement = index(src)
                 val (openIdx: Int, closeIdx: Int) = index.first
-                val commaIdxs: Series<Int> = index.second
+                val commaIdxs: Indexed<Int> = index.second
 
                 val isObj = '{' == c
                 //if obj we create k-v pairs otherwise we create values
 
                 //iterate  segments exclusive of src first and last and commas in the middle
-                val combine: Series<Int> = combine(s_[openIdx], commaIdxs, s_[closeIdx])
+                val combine: Indexed<Int> = combine(s_[openIdx], commaIdxs, s_[closeIdx])
                 if (commaIdxs.isEmpty()) {
                     val (before, after) = combine.toArray()
                     val possiblyEmpty = src.clone().lim(after).pos(before + 1).trim
@@ -171,10 +171,10 @@ object JsonParser {
                         val join = it as Join<*, *>
                         val (key, value) = join
                         key.let {
-                            it as? String ?: (it as? Series<Char>)?.asString() ?: (it as? CharSeries)?.asString()
+                            it as? String ?: (it as? Indexed<Char>)?.asString() ?: (it as? CharSeries)?.asString()
                             ?: it
                         } to value
-                    } else it as? String ?: (it as? Series<Char>)?.asString() ?: (it as? CharSeries)?.asString()
+                    } else it as? String ?: (it as? Indexed<Char>)?.asString() ?: (it as? CharSeries)?.asString()
                     ?: it
                 }
             }
@@ -230,7 +230,7 @@ object JsonParser {
 
     private fun selectByKey(
         context: JsContext,
-        pathTail: Series<Either<String, Int>>,
+        pathTail: Indexed<Either<String, Int>>,
         reifyResult: Boolean,
     ): (String) -> Any? = { key: String ->
         val (element: JsElement, src) = context
@@ -241,7 +241,7 @@ object JsonParser {
         if (unbrace(cs)) {
 
             for (segment in (context.segments α { t  ->
-                val (bounds: Twin<Int>, src: Series<Char>) = t
+                val (bounds: Twin<Int>, src: Indexed<Char>) = t
                 val (pos, lim) = bounds
                 CharSeries(src, pos, lim).trim
             })) {
@@ -261,7 +261,7 @@ object JsonParser {
                 val key0 = (tmp.dec().flip()).debug { logDebug { "key0 is ${it.asString()}" } }.trim
 
 
-                if (unquote(key0) && key0.seekTo(key.toSeries())
+                if (unquote(key0) && key0.seekTo(key.toIndexed())
                     && (!key0.hasRemaining)
                 ) {
                     logDebug { "key matches" }
@@ -271,12 +271,12 @@ object JsonParser {
                 }
             }
         }
-        r.debug { logDebug { "final return is ${(r as? Series<Char>)?.asString() ?: r}" } }
+        r.debug { logDebug { "final return is ${(r as? Indexed<Char>)?.asString() ?: r}" } }
     }
 
 
     private fun resumePath(
-        pathTail: Series<Either<String, Int>>,
+        pathTail: Indexed<Either<String, Int>>,
         reifyResult: Boolean,
         tmp: CharSeries,
 
@@ -303,7 +303,7 @@ object JsonParser {
 
     fun selectByIndex(
         context: JsContext,
-        pathTail: Series<Either<String, Int>>,
+        pathTail: Indexed<Either<String, Int>>,
         reifyResult: Boolean,
     ): (Int) -> Any? = { idx: Int ->
         var r: Any? = Unit
@@ -313,7 +313,7 @@ object JsonParser {
         val cs = CharSeries(src, pos, lim).trim
         val inObj = cs[0] == '{'
         do {
-            val tmp = CharSeries(context.segments.elementAtOrNull(idx)?.toSeries() ?: break)
+            val tmp = CharSeries(context.segments.elementAtOrNull(idx)?.toIndexed() ?: break)
             val value: CharSeries = if (inObj) {
                 if (!tmp.seekTo(':')) break
                 tmp.slice

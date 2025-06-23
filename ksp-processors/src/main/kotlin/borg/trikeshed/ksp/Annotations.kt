@@ -53,7 +53,7 @@ annotation class GenerateWireAdapters(
 )
 
 /**
- * Marker annotation to generate Series<T> extensions and utilities
+ * Marker annotation to generate Indexed<T> extensions and utilities
  * Eliminates repetitive Series transformation boilerplate
  */
 @Target(AnnotationTarget.CLASS)

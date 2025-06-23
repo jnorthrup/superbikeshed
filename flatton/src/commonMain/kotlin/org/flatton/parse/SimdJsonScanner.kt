@@ -64,7 +64,7 @@ object SimdJsonScanner {
             }
         }
         
-        return indices.toTypedArray().toSeries()
+        return indices.toTypedArray().toIndexed()
     }
     
     /**

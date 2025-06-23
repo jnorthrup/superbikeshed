@@ -41,8 +41,8 @@ typealias RuleAction = (ParseContext, Int) -> ParseContext
 typealias ChainedRule = Join<ParsingRule, Join<ChainDirection, ContextWindow>>
 
 // Rule collections
-typealias ForwardRuleSeries = Series<ChainedRule>
-typealias BackwardRuleSeries = Series<ChainedRule>
+typealias ForwardRuleSeries = Indexed<ChainedRule>
+typealias BackwardRuleSeries = Indexed<ChainedRule>
 typealias RuleChain = Join<ForwardRuleSeries, BackwardRuleSeries>
 
 // ==== KOTLIN SYNTAX RULES ====
@@ -124,7 +124,7 @@ object ForwardChainRules {
                 enterClassBody(context, pos)
             }
         )
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Function Declaration Forward Chain
@@ -198,7 +198,7 @@ object ForwardChainRules {
                 parseReturnType(context, pos)
             }
         )
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Property Declaration Forward Chain
@@ -274,7 +274,7 @@ object ForwardChainRules {
                 parsePropertyAccessors(context, pos)
             }
         )
-    ).toSeries()
+    ).toIndexed()
 }
 
 /**
@@ -355,7 +355,7 @@ object BackwardChainRules {
                 validateAnnotationUsage(context, pos)
             }
         )
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Type Resolution Backward Chain
@@ -430,7 +430,7 @@ object BackwardChainRules {
                 resolveLambdaType(context, pos)
             }
         )
-    ).toSeries()
+    ).toIndexed()
 }
 
 /**
@@ -668,7 +668,7 @@ object KotlinChainedParser {
         allRules.addAll(ForwardChainRules.propertyDeclarationChain().play)
         // --- Trikeshed additive rules ---
         allRules.addAll(borg.trikeshed.TrikeshedForwardRules.all().play)
-        return allRules.toSeries()
+        return allRules.toIndexed()
     }
     
     private fun buildBackwardRuleChains(): BackwardRuleSeries {
@@ -677,7 +677,7 @@ object KotlinChainedParser {
         allRules.addAll(BackwardChainRules.typeResolutionChain().play)
         // --- Trikeshed additive rules ---
         allRules.addAll(borg.trikeshed.TrikeshedBackwardRules.all().play)
-        return allRules.toSeries()
+        return allRules.toIndexed()
     }
     
     private fun createParseContext(source: String): ParseContext = 

@@ -30,18 +30,14 @@ object Aria2cDSL {
     )
 
     infix fun String.download(block: DownloadRequest.() -> Unit): suspend () -> Int {
-        val request = DownloadRequest().apply {
-            uris.add(this@download)
-            block()
-        }
+        val baseRequest = DownloadRequest(uris = 1 j { this@download })
+        val request = baseRequest.apply { block() }
         return { executeAria2c(request) }
     }
 
     infix fun Indexed<String>.downloadAll(block: DownloadRequest.() -> Unit): suspend () -> Int {
-        val request = DownloadRequest().apply {
-            this@downloadAll.play.forEach { uris.add(it) }
-            block()
-        }
+        val baseRequest = DownloadRequest(uris = this@downloadAll)
+        val request = baseRequest.apply { block() }
         return { executeAria2c(request) }
     }
 

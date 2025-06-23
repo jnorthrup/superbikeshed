@@ -26,7 +26,7 @@ interface ScriptEngine {
      * @param scriptFile The .kts file to parse.
      * @return A TrikeShed `Series` of dependency strings.
      */
-    fun parseDependencies(scriptFile: File): Series<String>
+    fun parseDependencies(scriptFile: File): Indexed<String>
 
     /**
      * Executes the script file with the given arguments.

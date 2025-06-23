@@ -48,16 +48,16 @@ value class AccuracyDelta(val delta: Double) // Change in accuracy
 // Core Evidence and Parse State Types
 typealias Evidence = Join<EvidenceType, EvidenceStrength>
 typealias ParseState = Join<ParseStateId, Join<ParsePosition, ParseConfidence>>
-typealias ParseStateSeries = Series<ParseState>
+typealias ParseStateSeries = Indexed<ParseState>
 
 // Forward Chaining Types
 typealias ParseStateUpdate = Join<ParseStateId, ParseConfidence>
 typealias ChainRule = Join<Evidence, ParseStateUpdate>
-typealias ChainRuleSeries = Series<ChainRule>
+typealias ChainRuleSeries = Indexed<ChainRule>
 
 // Graph Refinement Types
 typealias GraphRefinement = Join<ParsePosition, AccuracyDelta>
-typealias RefinementSeries = Series<GraphRefinement>
+typealias RefinementSeries = Indexed<GraphRefinement>
 
 // Parse Context for Evidence Gathering
 typealias ParseContext = Join<ParsePosition, Join<String, ParseStateSeries>>
@@ -68,7 +68,7 @@ typealias ParseContext = Join<ParsePosition, Join<String, ParseStateSeries>>
 value class PredicateResult(val result: Boolean)
 
 typealias ParsePredicate = (Char, ParsePosition) -> PredicateResult
-typealias PredicateSeries = Series<ParsePredicate>
+typealias PredicateSeries = Indexed<ParsePredicate>
 
 /**
  * Predicate-based evidence evaluation system
@@ -108,7 +108,7 @@ object PredicateSystem {
             }
         }
         
-        return candidates.toSeries()
+        return candidates.toIndexed()
     }
     
     /**
@@ -431,7 +431,7 @@ object LearningParser {
             (nodeId j depType) j confToken
         }
         
-        return graphNodes j refinements.toSeries()
+        return graphNodes j refinements.toIndexed()
     }
     
     private fun createContextualPredicates(
@@ -460,14 +460,14 @@ object LearningParser {
             }
         )
         
-        return predicates.toSeries()
+        return predicates.toIndexed()
     }
 }
 
 // ==== UTILITY EXTENSIONS ====
 
-fun <T> List<T>.toSeries(): Series<T> = size j { index -> this[index] }
-fun <T> emptySeries(): Series<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+fun <T> List<T>.toIndexed(): Indexed<T> = size j { index -> this[index] }
+fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /**
  * Extension functions for convenient inductive parsing

@@ -56,7 +56,7 @@ object RegisterPackedDispatcher {
                 else -> ""
             }
         }
-        return results.play.filter { it.isNotEmpty() }.toSeries()
+        return results.play.filter { it.isNotEmpty() }.toIndexed()
     }
     
     // === REGISTER-PACKED DISPATCH IMPLEMENTATIONS ===

@@ -20,12 +20,12 @@ import kotlin.math.abs // For absolute value in losses
  * @param prices The series of prices to calculate RSI from.
  * @param period The look-back period for calculating average gains and losses (e.g., 14).
  *               Must be greater than 0.
- * @return A `Series<Double>` containing the calculated RSI values (0-100), or `Double.NaN` for undefined values.
+ * @return A `Indexed<Double>` containing the calculated RSI values (0-100), or `Double.NaN` for undefined values.
  *         Returns an `emptySeries()` if the input `prices` series does not have enough data
  *         (i.e., `prices.a < period + 1`, as at least `period` deltas are needed).
  * @throws IllegalArgumentException if `period` is less than or equal to 0.
  */
-fun calculateRSI(prices: Series<Price>, period: Int): Series<Double> {
+fun calculateRSI(prices: Indexed<Price>, period: Int): Indexed<Double> {
     if (period <= 0) {
         throw IllegalArgumentException("Period must be greater than 0, but was $period.")
     }
@@ -109,7 +109,7 @@ fun main() {
         44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08,
         45.89, 46.03, 45.61, 46.28, 46.28, 46.00, 46.03, 46.41, 46.22, 45.64
     ).map { Price(it) }
-    val prices = priceList.toSeries()
+    val prices = priceList.toIndexed()
 
     val rsiPeriod = 14 // Common period for RSI
 
@@ -125,7 +125,7 @@ fun main() {
     }
 
 
-    val simplePrices = listOf(10.0, 11.0, 10.0, 12.0, 9.0, 13.0).map { Price(it) }.toSeries()
+    val simplePrices = listOf(10.0, 11.0, 10.0, 12.0, 9.0, 13.0).map { Price(it) }.toIndexed()
     val rsi2 = calculateRSI(simplePrices, 2)
     // Deltas: [0, +1, -1, +2, -3, +4]
     // Gains:  [0,  1,  0,  2,  0,  4]
@@ -156,7 +156,7 @@ fun main() {
 
 
     // Test with insufficient data
-    val tooShortPrices = listOf(10.0, 11.0).map { Price(it) }.toSeries() // Only 2 prices
+    val tooShortPrices = listOf(10.0, 11.0).map { Price(it) }.toIndexed() // Only 2 prices
     val rsiTooShort = calculateRSI(tooShortPrices, 2) // Needs 2+1=3 prices
     println("RSI(2) for too short series: ${rsiTooShort.toList().map { if (it.isNaN()) "NaN" else "%.2f".format(it) }}")
     // Expected: [NaN, NaN] because prices.a < period + 1 condition

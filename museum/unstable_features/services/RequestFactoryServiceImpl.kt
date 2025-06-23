@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
  * BrokeShed Implementation of RequestFactoryService 
  * This is alien GWT technology that belongs in BrokeShed, not TrikeShed core
  * 
- * Processes GWT RequestFactory calls using TrikeShed's native Series<T> and Join<A,B> patterns.
+ * Processes GWT RequestFactory calls using TrikeShed's native Indexed<T> and Join<A,B> patterns.
  */
 internal class RequestFactoryServiceImpl : RequestFactoryService {
     // Maps service class names to their locator functions
@@ -29,7 +29,7 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
     // Simple counter for demo purposes (replaces system time)
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
+    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
         val requestJson = requestPayload.play.joinToString("") { it.toInt().toChar().toString() }
         
         return try {
@@ -41,10 +41,10 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
             val responseJson = buildString {
                 append("""{"success":true,"service":"$serviceClass","method":"$methodName","timestamp":${++requestCounter}}""")
             }
-            responseJson.encodeToByteArray().toSeries()
+            responseJson.encodeToByteArray().toIndexed()
 
         } catch (e: Exception) {
-            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toSeries()
+            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toIndexed()
         }
     }
 
@@ -65,5 +65,5 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
         return """{"success":false,"error":"$message","code":$code}"""
     }
 
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toIndexed(): Indexed<Byte> = size j { index: Int -> this[index] }
 } 

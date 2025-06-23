@@ -40,7 +40,7 @@ package borg.trikeshed.isam//package borg.trikeshed.isam
 //        }
 //    } // unfortunately due to separation of ctor and open, this is not immutable
 //
-//    val constraints: Series<RecordMeta> by lazy { metafile.constraints }
+//    val constraints: Indexed<RecordMeta> by lazy { metafile.constraints }
 //    private lateinit var data: COpaquePointer
 //    var fileSize: Long = -1
 //
@@ -125,7 +125,7 @@ package borg.trikeshed.isam//package borg.trikeshed.isam
 //            val data: Int = open(datafilename, platform.posix.O_CREAT or platform.posix.O_WRONLY, 644.fromOctal())
 //
 //            //create row buffer
-//            val meta: Series<RecordMeta> = cursor.meta α { it as RecordMeta }
+//            val meta: Indexed<RecordMeta> = cursor.meta α { it as RecordMeta }
 //            val rowLen: Int = meta.last().end
 //            val rowBuffer = ByteArray(rowLen)
 //            val clears: IntArray =
@@ -149,7 +149,7 @@ package borg.trikeshed.isam//package borg.trikeshed.isam
 //
 //                //write rows
 //                for (y in 0 until cursor.a) {
-//                    val rowData: Series<Any> = cursor.row(y).left
+//                    val rowData: Indexed<Any> = cursor.row(y).left
 //
 //                    for (x in 0 until cursor.meta.size) {
 //                        val colMeta: RecordMeta = meta[x]

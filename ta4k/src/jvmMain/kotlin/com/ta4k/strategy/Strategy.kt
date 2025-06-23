@@ -12,7 +12,7 @@ interface Strategy {
     /**
      * The kline series on which this strategy operates.
      */
-    val klineSeries: Series<Kline>
+    val klineSeries: Indexed<Kline>
 
     /**
      * The number of klines required to warm up all indicators used by this strategy.

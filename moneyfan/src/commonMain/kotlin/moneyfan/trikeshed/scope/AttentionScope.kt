@@ -25,14 +25,14 @@ sealed interface AttentionScope<T> {
      * that fall within the criteria defined by this scope. The relative order of elements
      * from the source series is generally preserved in the resulting series.
      *
-     * @param source The original [Series<T>] to apply the scope to.
-     * @return A new [Series<T>] representing the focused subset. If the scope results in
+     * @param source The original [Indexed<T>] to apply the scope to.
+     * @return A new [Indexed<T>] representing the focused subset. If the scope results in
      *         no elements being selected, or if the source is empty, an empty series is returned.
      */
-    fun apply(source: Series<T>): Series<T>
+    fun apply(source: Indexed<T>): Indexed<T>
 
     /**
-     * Calculates and returns a [Series<Int>] of sorted indices that this scope would select
+     * Calculates and returns a [Indexed<Int>] of sorted indices that this scope would select
      * from a source series of a given `sourceSize`.
      *
      * This method is useful for understanding which elements *would be* selected by the scope
@@ -40,10 +40,10 @@ sealed interface AttentionScope<T> {
      * selection logic in different contexts. The returned indices are always sorted in ascending order.
      *
      * @param sourceSize The size of the conceptual source [Series] for which to determine scoped indices.
-     * @return A [Series<Int>] of zero-based indices, sorted in ascending order.
+     * @return A [Indexed<Int>] of zero-based indices, sorted in ascending order.
      *         Returns an empty series if the scope selects no indices or if `sourceSize` is 0.
      */
-    fun getScopedIndices(sourceSize: Int): Series<Int>
+    fun getScopedIndices(sourceSize: Int): Indexed<Int>
 }
 
 /**
@@ -63,11 +63,11 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
     }
 
     /**
-     * Returns a [Series<Int>] of indices within the defined range, adjusted for the `sourceSize`.
+     * Returns a [Indexed<Int>] of indices within the defined range, adjusted for the `sourceSize`.
      * The indices are contiguous and sorted.
      * For example, `RangeScope(1, 4).getScopedIndices(5)` would produce `Series[1, 2, 3]`.
      */
-    override fun getScopedIndices(sourceSize: Int): Series<Int> {
+    override fun getScopedIndices(sourceSize: Int): Indexed<Int> {
         if (sourceSize == 0 || startIndex >= sourceSize || startIndex >= endIndexExclusive) {
             return emptySeries()
         }
@@ -88,7 +88,7 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
      * at indices from `startIndex` (inclusive) up to `endIndexExclusive` (exclusive),
      * respecting the bounds of the `source` series.
      */
-    override fun apply(source: Series<T>): Series<T> {
+    override fun apply(source: Indexed<T>): Indexed<T> {
         // getScopedIndices handles empty sourceSize correctly, so this check is belt-and-suspenders
         // but good for clarity if apply is called directly with an empty series.
         if (source.isEmpty()) {
@@ -125,12 +125,12 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
     private fun getRandom(): Random = if (seed != null) Random(seed) else Random.Default
 
     /**
-     * Returns a [Series<Int>] of randomly selected indices.
+     * Returns a [Indexed<Int>] of randomly selected indices.
      * The number of indices is approximately `percentage * sourceSize`.
      * The selected indices are **sorted** to ensure that when [apply] is used,
      * the relative order of elements from the source series is maintained in the result.
      */
-    override fun getScopedIndices(sourceSize: Int): Series<Int> {
+    override fun getScopedIndices(sourceSize: Int): Indexed<Int> {
         if (sourceSize == 0 || percentage == 0.0) {
             return emptySeries()
         }
@@ -154,7 +154,7 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
 
         // Crucially, sort the selected indices. This ensures that applying this scope
         // preserves the relative order of the chosen elements from the source series.
-        return selectedIndices.sorted().toSeries()
+        return selectedIndices.sorted().toIndexed()
     }
 
     /**
@@ -163,7 +163,7 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
      * from the `source`. The size of the subset is approximately `percentage * source.a`.
      * The relative order of the selected elements is preserved.
      */
-    override fun apply(source: Series<T>): Series<T> {
+    override fun apply(source: Indexed<T>): Indexed<T> {
         if (source.isEmpty() || percentage == 0.0) { // Check percentage here too for quick exit
             return emptySeries()
         }

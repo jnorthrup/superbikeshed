@@ -4,7 +4,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import kotlin.math.sqrt
 
-object TimeSeries {
+object TimeIndexed {
     fun rollingWindow(values: List<BigDecimal>, window: Int): List<List<BigDecimal>> {
         return values.windowed(window)
     }

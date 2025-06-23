@@ -22,7 +22,7 @@ class SMAIndicatorTest {
         val klines = listOf(
             createDummyKline("10"), createDummyKline("11"), createDummyKline("12"),
             createDummyKline("13"), createDummyKline("14")
-        ).toSeries()
+        ).toIndexed()
         val sma = SMAIndicator(klines, 3)
 
         assertNull(sma.getValue(0))
@@ -36,7 +36,7 @@ class SMAIndicatorTest {
 
     @Test
     fun `SMA with period larger than series size`() {
-        val klines = listOf(createDummyKline("10"), createDummyKline("11")).toSeries()
+        val klines = listOf(createDummyKline("10"), createDummyKline("11")).toIndexed()
         val sma = SMAIndicator(klines, 3)
         assertNull(sma.getValue(0))
         assertNull(sma.getValue(1))
@@ -45,14 +45,14 @@ class SMAIndicatorTest {
 
     @Test
     fun `SMA on empty series`() {
-        val sma = SMAIndicator(emptyList<Kline>().toSeries(), 3)
+        val sma = SMAIndicator(emptyList<Kline>().toIndexed(), 3)
         assertNull(sma.getValue(0), "getValue(0) on empty series should be null")
         assertTrue(sma.values.toList().isEmpty(), "values list on empty series should be empty")
     }
 
     @Test
     fun `SMA with period 1`() {
-        val klines = listOf(createDummyKline("10.123"), createDummyKline("11.456")).toSeries()
+        val klines = listOf(createDummyKline("10.123"), createDummyKline("11.456")).toIndexed()
         val sma = SMAIndicator(klines, 1)
         // Scale of "10.123" is 3. Calc scale 3+4=7. Then setScale to 4 for assertion.
         assertEquals(BigDecimal("10.1230"), sma.getValue(0)?.setScale(4, RoundingMode.HALF_UP))
@@ -61,7 +61,7 @@ class SMAIndicatorTest {
 
     @Test
     fun `SMA requesting out of bounds index`() {
-        val klines = listOf(createDummyKline("10")).toSeries()
+        val klines = listOf(createDummyKline("10")).toIndexed()
         val sma = SMAIndicator(klines, 1)
         assertNotNull(sma.getValue(0))
         assertNull(sma.getValue(1))
@@ -74,7 +74,7 @@ class SMAIndicatorTest {
             Kline(0L, BigDecimal("10.5"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal("100"), BigDecimal.ZERO, 0L, BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO),
             Kline(0L, BigDecimal("11.5"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal("100"), BigDecimal.ZERO, 0L, BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO),
             Kline(0L, BigDecimal("12.5"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal("100"), BigDecimal.ZERO, 0L, BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO)
-        ).toSeries()
+        ).toIndexed()
         // Open price "10.5" has scale 1. Calculation scale 1+4=5.
         val sma = SMAIndicator(klinesCustom, 2) { it.openPrice }
         assertNull(sma.getValue(0))
@@ -87,7 +87,7 @@ class SMAIndicatorTest {
         val klines = listOf(
             createDummyKline("10"), createDummyKline("11"), createDummyKline("12"),
             createDummyKline("13"), createDummyKline("14")
-        ).toSeries()
+        ).toIndexed()
         val sma = SMAIndicator(klines, 3)
         val allValues = sma.values.toList() // Convert Series to List
         assertEquals(klines.size, allValues.size) // klines.size works on Series
@@ -100,7 +100,7 @@ class SMAIndicatorTest {
 
     @Test
     fun `SMA getValue after accessing values property`() {
-        val klines = listOf(createDummyKline("10"), createDummyKline("11"), createDummyKline("12")).toSeries()
+        val klines = listOf(createDummyKline("10"), createDummyKline("11"), createDummyKline("12")).toIndexed()
         val sma = SMAIndicator(klines, 2)
 
         // Access values property first
@@ -122,7 +122,7 @@ class SMAIndicatorTest {
             createDummyKline("10.1"), // scale 1
             createDummyKline("11.12"), // scale 2
             createDummyKline("12.123") // scale 3
-        ).toSeries()
+        ).toIndexed()
         val sma = SMAIndicator(klines, 2)
 
         // (10.1 + 11.12) / 2 = 21.22 / 2 = 10.61. Input scales are 1 and 2. Max is 2. Calc scale 2+4=6.

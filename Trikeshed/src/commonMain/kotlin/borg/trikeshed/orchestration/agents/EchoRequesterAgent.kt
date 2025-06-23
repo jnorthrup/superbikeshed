@@ -1,9 +1,6 @@
 package borg.trikeshed.orchestration.agents
 
-// Mock IPFS service for compilation
-interface IpfsPubSubService {
-    suspend fun subscribe(topic: String, handler: (String) -> Unit): Job
-}
+import borg.trikeshed.ipfs.IpfsPubSubService
 import borg.trikeshed.orchestration.AgentMessage // Not directly used, but good for context
 import borg.trikeshed.orchestration.AgentTopics
 import borg.trikeshed.orchestration.BaseOrchestrationAgent
@@ -22,8 +19,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.decodeFromString
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
-// Mock getTimeMillis for commonMain
-fun getTimeMillis(): Long = kotlin.random.Random.nextLong()
+import borg.trikeshed.lib.getCurrentTimeMillis
 
 class EchoRequesterAgent(
     parentCoroutineContext: CoroutineContext,
@@ -78,7 +74,7 @@ class EchoRequesterAgent(
 
         val request = GenericRequest(
             agentId = agentId,
-            timestamp = getTimeMillis(),
+            timestamp = getCurrentTimeMillis(),
             requestId = requestId,
             targetService = targetServiceName,
             responseTopic = responseTopic,

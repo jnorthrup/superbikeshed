@@ -24,7 +24,7 @@ class BollingerBandsIndicator(
         require(standardDeviationMultiplier > BigDecimal.ZERO) { "Standard deviation multiplier must be positive" }
     }
 
-    // SMAIndicator has been refactored to accept Series<Kline>.
+    // SMAIndicator has been refactored to accept Indexed<Kline>.
     val middleBandIndicator: SMAIndicator = SMAIndicator(klineIndexed, period, klinePropertySelector)
 
     // Internal caches
@@ -150,7 +150,7 @@ class BollingerBandsIndicator(
 
     val middleBandValues: Indexed<BigDecimal?> // Renamed for consistency
         get() {
-            // SMAIndicator's 'values' property already returns a Series<BigDecimal?>
+            // SMAIndicator's 'values' property already returns a Indexed<BigDecimal?>
             // and handles scaling. We just need to ensure it's calculated.
             if (klineIndexed.size > 0) { // Ensure SMA is calculated if klines exist
                  middleBandIndicator.getValue(klineIndexed.size -1) // Trigger calculation up to the end

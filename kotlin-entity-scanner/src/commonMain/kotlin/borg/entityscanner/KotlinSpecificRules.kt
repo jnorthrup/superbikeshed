@@ -41,7 +41,7 @@ value class LanguageLevel(val level: UByte) {
 
 // Kotlin-specific rule configurations
 typealias KotlinRule = Join<KotlinFeature, Join<LanguageLevel, PrioritizedRule>>
-typealias FeatureRuleSet = Series<KotlinRule>
+typealias FeatureRuleSet = Indexed<KotlinRule>
 
 // ==== COROUTINE FORWARD CHAINING RULES ====
 
@@ -97,7 +97,7 @@ object CoroutineForwardRules {
         ) { context, pos ->
             detectStructuredConcurrency(context, pos) && validateCoroutineStructure(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Async/await pattern detection
@@ -124,7 +124,7 @@ object CoroutineForwardRules {
         ) { context, pos ->
             detectAwaitCall(context, pos) && chainDeferredHandling(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
 }
 
 /**
@@ -168,7 +168,7 @@ object DelegateForwardRules {
         ) { context, pos ->
             detectCustomDelegate(context, pos) && validateDelegateContract(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Class delegation detection
@@ -184,7 +184,7 @@ object DelegateForwardRules {
         ) { context, pos ->
             detectInterfaceDelegate(context, pos) && validateDelegationPattern(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
 }
 
 /**
@@ -228,7 +228,7 @@ object ExtensionForwardRules {
         ) { context, pos ->
             detectScopedExtension(context, pos) && validateExtensionScope(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
 }
 
 /**
@@ -272,7 +272,7 @@ object DSLForwardRules {
         ) { context, pos ->
             detectBuilderScope(context, pos) && validateBuilderPattern(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
 }
 
 // ==== KOTLIN BACKWARD CHAINING RULES ====
@@ -318,7 +318,7 @@ object KotlinTypeInferenceRules {
         ) { context, pos ->
             inferLambdaTypes(context, pos) && validateLambdaTypeChain(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Smart cast validation backward chain
@@ -345,7 +345,7 @@ object KotlinTypeInferenceRules {
         ) { context, pos ->
             validateExhaustiveWhen(context, pos) && checkBranchCompleteness(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
 }
 
 /**
@@ -378,7 +378,7 @@ object KotlinScopeValidationRules {
         ) { context, pos ->
             validateFlowContext(context, pos) && checkFlowSafety(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
     
     /**
      * Extension receiver validation
@@ -394,7 +394,7 @@ object KotlinScopeValidationRules {
         ) { context, pos ->
             validateExtensionReceiver(context, pos) && checkReceiverCompatibility(context, pos)
         }
-    ).toSeries()
+    ).toIndexed()
 }
 
 // ==== COMPREHENSIVE KOTLIN RULE ENGINE ====

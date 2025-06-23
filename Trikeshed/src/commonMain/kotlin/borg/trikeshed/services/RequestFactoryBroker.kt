@@ -177,63 +177,97 @@ class RequestFactoryBroker(private val serviceInvoker: PlatformServiceInvoker) {
         }
     }
 
-    private fun serializeRequest(request: Request): Map<String, Any?> {
-        val base = mapOf(
-            "serviceToken" to request.serviceToken,
-            "methodToken" to request.methodToken
-        )
+    private fun serializeRequest(request: Request): Indexed<Indexed<String, Any?>> {
+        val base = 2 j { i ->
+            when (i) {
+                0 -> "serviceToken" j request.serviceToken
+                1 -> "methodToken" j request.methodToken
+                else -> "" j null
+            }
+        }
         
         return when (request) {
-            is Request.Invoke -> base + mapOf(
-                "type" to "invoke",
-                "args" to (0 until request.args.a).map { request.args.b(it) }
-            )
-            is Request.Create -> base + mapOf(
-                "type" to "create",
-                "entityToken" to request.entityToken,
-                "initialState" to request.initialState
-            )
-            is Request.Update -> base + mapOf(
-                "type" to "update",
-                "entityToken" to request.entityToken,
-                "entityId" to request.delta.id,
-                "changes" to request.delta.changes,
-                "version" to request.version.version
-            )
-            is Request.Delete -> base + mapOf(
-                "type" to "delete",
-                "entityToken" to request.entityToken,
-                "entityId" to request.version.id,
-                "version" to request.version.version
-            )
+            is Request.Invoke -> 3 j { i ->
+                when (i) {
+                    0 -> "serviceToken" j request.serviceToken
+                    1 -> "methodToken" j request.methodToken
+                    2 -> "type" j "invoke"
+                    else -> "" j null
+                }
+            }
+            is Request.Create -> 4 j { i ->
+                when (i) {
+                    0 -> "serviceToken" j request.serviceToken
+                    1 -> "methodToken" j request.methodToken
+                    2 -> "type" j "create"
+                    3 -> "entityToken" j request.entityToken
+                    else -> "" j null
+                }
+            }
+            is Request.Update -> 6 j { i ->
+                when (i) {
+                    0 -> "serviceToken" j request.serviceToken
+                    1 -> "methodToken" j request.methodToken
+                    2 -> "type" j "update"
+                    3 -> "entityToken" j request.entityToken
+                    4 -> "entityId" j request.delta.id
+                    5 -> "version" j request.version.version
+                    else -> "" j null
+                }
+            }
+            is Request.Delete -> 5 j { i ->
+                when (i) {
+                    0 -> "serviceToken" j request.serviceToken
+                    1 -> "methodToken" j request.methodToken
+                    2 -> "type" j "delete"
+                    3 -> "entityToken" j request.entityToken
+                    4 -> "entityId" j request.version.id
+                    else -> "" j null
+                }
+            }
         }
     }
 
-    private fun serializeResponse(response: Response): Map<String, Any?> {
+    private fun serializeResponse(response: Response): Indexed<Indexed<String, Any?>> {
         return when (response) {
-            is Response.Success -> mapOf(
-                "type" to "success",
-                "result" to response.result
-            )
-            is Response.Failure -> mapOf(
-                "type" to "failure",
-                "error" to response.error
-            )
-            is Response.EntityCreated -> mapOf(
-                "type" to "entityCreated",
-                "entityToken" to response.entityToken,
-                "id" to response.id,
-                "version" to response.version
-            )
-            is Response.EntityUpdated -> mapOf(
-                "type" to "entityUpdated",
-                "entityToken" to response.entityToken,
-                "version" to response.version
-            )
-            is Response.EntityDeleted -> mapOf(
-                "type" to "entityDeleted",
-                "entityToken" to response.entityToken
-            )
+            is Response.Success -> 2 j { i ->
+                when (i) {
+                    0 -> "type" j "success"
+                    1 -> "result" j response.result
+                    else -> "" j null
+                }
+            }
+            is Response.Failure -> 2 j { i ->
+                when (i) {
+                    0 -> "type" j "failure"
+                    1 -> "error" j response.error
+                    else -> "" j null
+                }
+            }
+            is Response.EntityCreated -> 4 j { i ->
+                when (i) {
+                    0 -> "type" j "entityCreated"
+                    1 -> "entityToken" j response.entityToken
+                    2 -> "id" j response.id
+                    3 -> "version" j response.version
+                    else -> "" j null
+                }
+            }
+            is Response.EntityUpdated -> 3 j { i ->
+                when (i) {
+                    0 -> "type" j "entityUpdated"
+                    1 -> "entityToken" j response.entityToken
+                    2 -> "version" j response.version
+                    else -> "" j null
+                }
+            }
+            is Response.EntityDeleted -> 2 j { i ->
+                when (i) {
+                    0 -> "type" j "entityDeleted"
+                    1 -> "entityToken" j response.entityToken
+                    else -> "" j null
+                }
+            }
         }
     }
 

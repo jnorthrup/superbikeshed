@@ -3,13 +3,13 @@ package borg.trikeshed.parse.json
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.play
-import borg.trikeshed.lib.bridge.toSeries
+import borg.trikeshed.lib.bridge.toIndexed
 
 /**
- * Creates a lazy, tensor-native view of a pre-computed JSON bitmap using TrikeShed's Series<T>.
+ * Creates a lazy, tensor-native view of a pre-computed JSON bitmap using TrikeShed's Indexed<T>.
  *
  * @param input The raw UByteArray of JSON data.
- * @return A Series<UByte> where each element is a 4-bit pixel from the bitmap.
+ * @return A Indexed<UByte> where each element is a 4-bit pixel from the bitmap.
  *         The accessor function performs the necessary bit-shifting to read from the
  *         underlying ULongArray on demand.
  */

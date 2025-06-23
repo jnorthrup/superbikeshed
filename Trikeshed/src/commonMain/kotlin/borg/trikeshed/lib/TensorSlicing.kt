@@ -13,14 +13,15 @@ fun <T> Tensor<T>.slice(dimension: Int, index: Int): Tensor<T> {
     require(dimension >= 0 && dimension < rank) { "Dimension $dimension out of bounds for rank $rank" }
     require(index >= 0 && index < shape[dimension]) { "Index $index out of bounds for dimension $dimension (size ${shape[dimension]})" }
 
-    // Create new shape by removing the specified dimension
-    val newShapeValues = mutableListOf<Int>()
-    for (i in 0 until rank) {
-        if (i != dimension) {
-            newShapeValues.add(shape[i])
+    // Create new shape by removing the specified dimension using TrikeShed patterns
+    val newRank = rank - 1
+    val newShape: Shape = newRank j { i ->
+        if (i < dimension) {
+            shape[i]
+        } else {
+            shape[i + 1]
         }
     }
-    val newShape: Shape = newShapeValues.size j { i -> newShapeValues[i] }
 
     return newShape j { newCoords ->
         // Map new coordinates to original coordinates
@@ -45,7 +46,7 @@ fun <T> Tensor<T>.slice(dimension: Int, index: Int): Tensor<T> {
  * @return A new tensor with the specified shape, sharing the same underlying data.
  */
 fun <T> Tensor<T>.reshape(vararg newShapeValues: Int): Tensor<T> {
-    val newTotalSize = newShapeValues.reduce { acc, i -> acc * i }
+    val newTotalSize = newShapeValues.reduce(Int::times)
     require(newTotalSize == totalSize) { "New shape ${newShapeValues.toList()} must have the same total number of elements as original ($totalSize)" }
 
     // Create new shape

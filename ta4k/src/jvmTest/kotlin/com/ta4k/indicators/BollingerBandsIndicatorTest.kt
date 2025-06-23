@@ -25,7 +25,7 @@ class BollingerBandsIndicatorTest {
         val klines = listOf(
             kline("10.00"), kline("11.00"), kline("12.00"),
             kline("11.00"), kline("10.00"), kline("9.00")
-        ).toSeries()
+        ).toIndexed()
         // resultScale in BBIndicator will be 2 based on first kline's closePrice scale
         val bb = BollingerBandsIndicator(klines, 3, BigDecimal("2.0"))
 
@@ -63,7 +63,7 @@ class BollingerBandsIndicatorTest {
 
     @Test
     fun `Bollinger Bands on empty series`() {
-        val bb = BollingerBandsIndicator(emptyList<Kline>().toSeries(), 20)
+        val bb = BollingerBandsIndicator(emptyList<Kline>().toIndexed(), 20)
         assertNull(bb.getMiddleBandValue(0))
         assertNull(bb.getUpperBand(0))
         assertNull(bb.getLowerBand(0))
@@ -72,7 +72,7 @@ class BollingerBandsIndicatorTest {
     @Test
     fun `Bollinger Bands with period 1`() {
         // StdDev for period 1 is 0. So Upper and Lower bands are equal to SMA(1) = price.
-        val klines = listOf(kline("10.00"), kline("11.00")).toSeries()
+        val klines = listOf(kline("10.00"), kline("11.00")).toIndexed()
         val bb = BollingerBandsIndicator(klines, 1) // resultScale will be 2
 
         assertEquals(BigDecimal("10.00"), bb.getMiddleBandValue(0))
@@ -88,7 +88,7 @@ class BollingerBandsIndicatorTest {
 
     @Test
     fun `Bollinger Bands with constant price data`() {
-        val klines = List(5) { kline("20.00") }.toSeries() // resultScale will be 2
+        val klines = List(5) { kline("20.00") }.toIndexed() // resultScale will be 2
         val bb = BollingerBandsIndicator(klines, 3)
 
         // For index 2, 3, 4: SMA = 20.00, StdDev = 0.00
@@ -104,7 +104,7 @@ class BollingerBandsIndicatorTest {
     fun `Bollinger Bands with different price scale`() {
         val klines = listOf(
             kline("10.1234", 4), kline("11.4321", 4), kline("12.5678", 4)
-        ).toSeries()
+        ).toIndexed()
         // resultScale in BBIndicator will be 4
         val bb = BollingerBandsIndicator(klines, 3, BigDecimal("2.0"))
 

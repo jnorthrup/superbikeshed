@@ -20,7 +20,7 @@ data class OHLC(
     val close: Price
 ) {
     // Example: How one might convert to/from a Join if that's the Trikeshed pattern.
-    // This is speculative without knowing Join's constructor or if Series<OHLC> takes OHLC directly.
+    // This is speculative without knowing Join's constructor or if Indexed<OHLC> takes OHLC directly.
     fun toJoin(): Join<Price, Join<Price, Join<Price, Price>>> {
         // Assuming Join has a constructor like: data class Join<A,B>(val first: A, val second: B)
         // This will need to be verified based on actual Join definition.

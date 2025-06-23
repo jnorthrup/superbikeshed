@@ -19,7 +19,7 @@ class RSI2Strategy(
     private val rsiLowerThreshold: Int = 5,
     private val rsiUpperThreshold: Int = 95
 ) {
-    fun generateSignals(klines: Series<Kline>): Series<TradeSignal> {
+    fun generateSignals(klines: Indexed<Kline>): Indexed<TradeSignal> {
         // Create indicators
         val shortSma = SMAIndicator(klines, shortPeriod)
         val longSma = SMAIndicator(klines, longPeriod)

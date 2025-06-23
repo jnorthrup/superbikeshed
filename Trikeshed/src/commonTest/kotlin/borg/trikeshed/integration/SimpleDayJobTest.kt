@@ -68,7 +68,7 @@ class SimpleDayJobTest {
     
     @Test
     fun `Shape as Series of Int`() {
-        // Shape is Series<Int>
+        // Shape is Indexed<Int>
         val matrixShape: Shape = 3 j { i ->
             when (i) {
                 0 -> 5  // rows
@@ -148,7 +148,7 @@ class SimpleDayJobTest {
     fun `Complex composition example`() {
         // Demonstrate complex composition using MetaSeries patterns
         
-        // Create a series of shapes (each shape is itself a Series<Int>)
+        // Create a series of shapes (each shape is itself a Indexed<Int>)
         val shapes: Indexed<Shape> = 3 j { i ->
             val dimensions = i + 2 // 2D, 3D, 4D
             dimensions j { dim -> dim + 1 } // [1,2], [1,2,3], [1,2,3,4]

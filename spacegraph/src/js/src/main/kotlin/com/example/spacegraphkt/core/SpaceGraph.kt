@@ -36,9 +36,9 @@ class SpaceGraph actual constructor(
 
     // CSS3D renderer for HTML elements
 // Replace MutableList with Series
-actual val nodes: Series<BaseNode> = Series()
+actual val nodes: Indexed<BaseNode> = Series()
 // Replace MutableList with Series for edges
-actual val edges: Series<Edge> = Series()
+actual val edges: Indexed<Edge> = Series()
     private val cssRenderer = CSS3DRenderer()
     private val cssScene = CSS3DScene()
     private val cssCamera = CSS3DCamera()

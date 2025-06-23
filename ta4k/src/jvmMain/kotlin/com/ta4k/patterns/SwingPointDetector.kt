@@ -36,7 +36,7 @@ object SwingPointDetector {
      *                 A higher strength means more significant (but fewer) swing points.
      * @return A list of [SwingPoint]s, sorted by index.
      */
-    fun detectSwingPoints(klineSeries: Series<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
+    fun detectSwingPoints(klineSeries: Indexed<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
         require(strength > 0) { "Strength must be positive." }
         // Use klineSeries.size
         if (klineSeries.size < (2 * strength + 1)) {

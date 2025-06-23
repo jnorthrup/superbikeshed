@@ -20,13 +20,13 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
      * This method adapts the original `generateSignal` logic to fit the [TradingStrategyInterface].
      *
      * @param currentPrice The current price for decision-making (e.g., the latest close price).
-     * @param historicalPrices A [Series<Double>] of historical prices up to (but not including) the current point.
+     * @param historicalPrices A [Indexed<Double>] of historical prices up to (but not including) the current point.
      * @param historicalDataPoint The full [RowVec] for the current data point, providing broader context if needed.
      * @return [TradingSignal] (BUY, SELL, or HOLD).
      */
     override fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
+        historicalPrices: Indexed<Double>,
         historicalDataPoint: RowVec // Currently unused, but available for future enhancements (e.g., volume data)
     ): TradingSignal {
         // For indicator calculation, the current price is appended to the historical prices
@@ -75,13 +75,13 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
      * However, standard [Series] definitions may not directly support complex windowed
      * calculations like RSI's Wilder smoothing without iteration.
      * This implementation uses `.values.toList()` for pragmatic access to underlying data,
-     * performing calculations, and then wrapping the result in a new [Series<Double>].
+     * performing calculations, and then wrapping the result in a new [Indexed<Double>].
      * The primary API interaction remains with [Series] types.
      *
-     * @param priceSeries The input [Series<Double>] of prices.
-     * @return A [Series<Double>] containing the calculated RSI values.
+     * @param priceSeries The input [Indexed<Double>] of prices.
+     * @return A [Indexed<Double>] containing the calculated RSI values.
      */
-    internal fun calculateRSI2(priceSeries: Series<Double>): Series<Double> {
+    internal fun calculateRSI2(priceSeries: Indexed<Double>): Indexed<Double> {
         val prices = priceSeries.values.toList()
         val period = 2 // RSI period for this strategy
 
@@ -137,15 +137,15 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
      *
      * CLAUDE.md suggests Series-native operations. Similar to RSI, complex windowing
      * for SMA on a generic [Series] might require iteration. This implementation uses
-     * `.values.toList()` for direct data access and constructs a new [Series<Double>] for the result.
+     * `.values.toList()` for direct data access and constructs a new [Indexed<Double>] for the result.
      * The function signature and return type adhere to using [Series].
      *
-     * @param priceSeries The input [Series<Double>] of prices.
+     * @param priceSeries The input [Indexed<Double>] of prices.
      * @param period The period for SMA calculation.
-     * @return A [Series<Double>] of SMA values. The resulting series is shorter than the input
+     * @return A [Indexed<Double>] of SMA values. The resulting series is shorter than the input
      *         by `period - 1` elements.
      */
-    internal fun calculateSMA(priceSeries: Series<Double>, period: Int): Series<Double> {
+    internal fun calculateSMA(priceSeries: Indexed<Double>, period: Int): Indexed<Double> {
         val prices = priceSeries.values.toList()
         if (prices.size < period) {
             return MemSeries.empty(priceSeries.schema()) // Not enough data for even one SMA value

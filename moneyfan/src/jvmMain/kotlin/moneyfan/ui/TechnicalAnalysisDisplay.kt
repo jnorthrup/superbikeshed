@@ -222,7 +222,7 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private suspend fun getCarlosOnlyAnalysis(): Series<CombinedAnalysis> {
+    private suspend fun getCarlosOnlyAnalysis(): Indexed<CombinedAnalysis> {
         // Get analyses and filter to show only Carlos signals
         val topSymbols = orchestrator.analyzeTopSymbols(10)
         return topSymbols.map { analysis ->
@@ -240,7 +240,7 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private suspend fun getSkimmerOnlyAnalysis(): Series<CombinedAnalysis> {
+    private suspend fun getSkimmerOnlyAnalysis(): Indexed<CombinedAnalysis> {
         val topSymbols = orchestrator.analyzeTopSymbols(10)
         return topSymbols.map { analysis ->
             analysis.copy(
@@ -257,7 +257,7 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private suspend fun getAttentionOnlyAnalysis(): Series<CombinedAnalysis> {
+    private suspend fun getAttentionOnlyAnalysis(): Indexed<CombinedAnalysis> {
         val topSymbols = orchestrator.analyzeTopSymbols(10)
         return topSymbols.map { analysis ->
             val attentionSignal = if (analysis.attentionScore.value > 0.7) {
@@ -308,7 +308,7 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private fun updateSignalTable(analyses: Series<CombinedAnalysis>) {
+    private fun updateSignalTable(analyses: Indexed<CombinedAnalysis>) {
         val model = signalTable.model as DefaultTableModel
         model.rowCount = 0
         

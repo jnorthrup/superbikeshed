@@ -28,7 +28,7 @@ class BinanceDataArchiveReader(
     suspend fun readKlinesFromCsv(
         filePath: String,
         skipHeader: Boolean = true
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         // fileContentProvider.fileExists(filePath) could be checked here if desired,
         // but readFileLines should ideally throw if file not found.
         // Depending on FileContentProvider's contract.
@@ -58,7 +58,7 @@ class BinanceDataArchiveReader(
                 throw IllegalArgumentException("Error parsing CSV line in file '$filePath': $line. Error: ${e.message}", e)
             }
         }
-        return klines.toSeries()
+        return klines.toIndexed()
     }
 
     /**
@@ -75,19 +75,19 @@ class BinanceDataArchiveReader(
         startTime: TimestampEpochMillis,
         endTime: TimestampEpochMillis,
         skipHeader: Boolean = true
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         if (startTime.value > endTime.value) {
             return emptySeries() // Return empty series if range is invalid
         }
         // Assuming readKlinesFromCsv will handle file not found by throwing or returning empty.
         // If FileContentProvider.fileExists is cheap, could check filePath existence first.
-        val allKlines: Series<Kline> = readKlinesFromCsv(filePath, skipHeader)
+        val allKlines: Indexed<Kline> = readKlinesFromCsv(filePath, skipHeader)
         if (allKlines.isEmpty()) {
             return emptySeries()
         }
 
         val filteredList = allKlines.toList().filter { it.timestamp.value >= startTime.value && it.timestamp.value <= endTime.value }
-        return filteredList.toSeries()
+        return filteredList.toIndexed()
     }
 
     /**

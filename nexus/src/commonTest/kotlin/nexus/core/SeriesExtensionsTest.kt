@@ -20,14 +20,14 @@ import nexus.core.Score
 
 // The extension functions being tested (auto-imported by package)
 // No explicit import needed if test file is in the same package `nexus.core`
-// or if using fully qualified names (e.g. nexus.core.toSeries())
+// or if using fully qualified names (e.g. nexus.core.toIndexed())
 
 class SeriesExtensionsTest {
 
     @Test
     fun `list toSeries conversion`() {
         val list = listOf(1, 2, 3)
-        val series = list.toSeries()
+        val series = list.toIndexed()
 
         series.shouldHaveSize(3)
         assertEquals(1, series.elementAt(0))
@@ -35,7 +35,7 @@ class SeriesExtensionsTest {
         assertEquals(3, series.elementAt(2))
 
         val emptyList = emptyList<Int>()
-        val emptySeriesConverted = emptyList.toSeries()
+        val emptySeriesConverted = emptyList.toIndexed()
         emptySeriesConverted.shouldHaveSize(0)
     }
 

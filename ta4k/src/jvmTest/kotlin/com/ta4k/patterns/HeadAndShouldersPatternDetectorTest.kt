@@ -48,7 +48,7 @@ class HeadAndShouldersPatternDetectorTest {
         val rs = sp(30, "100.5", SwingType.HIGH, highStr = "101", lowStr = "99") // Right shoulder, slightly higher than LS but valid
 
         val swingPoints = listOf(ls, n1, h, n2, rs)
-        val klines = swingPoints.map { it.kline }.toSeries()
+        val klines = swingPoints.map { it.kline }.toIndexed()
 
         // Default config: shoulderHeadRatioMin = 0.5, shoulderHeadRatioMax = 0.98
         // Avg Neckline = (95+96)/2 = 95.5
@@ -79,7 +79,7 @@ class HeadAndShouldersPatternDetectorTest {
         val rs = sp(30, "99", SwingType.LOW, highStr = "101", lowStr = "99")
 
         val swingPoints = listOf(ls, n1, h, n2, rs)
-        val klines = swingPoints.map { it.kline }.toSeries()
+        val klines = swingPoints.map { it.kline }.toIndexed()
 
         // Avg Neckline = (105+106)/2 = 105.5
         // Head Depth = 105.5 - 95 = 10.5
@@ -106,7 +106,7 @@ class HeadAndShouldersPatternDetectorTest {
         val rs = sp(30, "101", SwingType.HIGH, highStr = "101", lowStr = "99")
 
         val swingPoints = listOf(ls, n1, h, n2, rs)
-        val klines = swingPoints.map { it.kline }.toSeries()
+        val klines = swingPoints.map { it.kline }.toIndexed()
         val patterns = HeadAndShouldersPatternDetector.detect(klines, swingPoints)
         assertTrue(patterns.isEmpty())
     }
@@ -123,7 +123,7 @@ class HeadAndShouldersPatternDetectorTest {
         // LS Height from N1 = 100 - 95 = 5. Ratio = 5/24.5 ~ 0.20 (Too small, default min 0.5)
 
         val swingPoints = listOf(ls, n1, h, n2, rs)
-        val klines = swingPoints.map { it.kline }.toSeries()
+        val klines = swingPoints.map { it.kline }.toIndexed()
         val patterns = HeadAndShouldersPatternDetector.detect(klines, swingPoints)
         assertTrue(patterns.isEmpty(), "Pattern should be rejected due to LS shoulder/head ratio too small")
     }
@@ -144,7 +144,7 @@ class HeadAndShouldersPatternDetectorTest {
 
 
         val swingPoints = listOf(lsTooLarge, n1, h, n2, rs)
-        val klines = swingPoints.map { it.kline }.toSeries()
+        val klines = swingPoints.map { it.kline }.toIndexed()
         val patterns = HeadAndShouldersPatternDetector.detect(klines, swingPoints)
         assertTrue(patterns.isEmpty(), "Pattern should be rejected due to LS shoulder/head ratio too large")
     }
@@ -158,7 +158,7 @@ class HeadAndShouldersPatternDetectorTest {
         val rs = sp(14, "100", SwingType.HIGH, highStr = "100", lowStr = "98") // Duration 14-10 = 4 bars
 
         val swingPoints = listOf(ls, n1, h, n2, rs)
-        val klines = swingPoints.map { it.kline }.toSeries()
+        val klines = swingPoints.map { it.kline }.toIndexed()
         // Default min duration is 10
         val patterns = HeadAndShouldersPatternDetector.detect(klines, swingPoints, HeadAndShouldersPatternDetector.DetectorConfig(minPatternDuration = 5))
         assertTrue(patterns.isEmpty(), "Duration 4 should be less than minPatternDuration 5")

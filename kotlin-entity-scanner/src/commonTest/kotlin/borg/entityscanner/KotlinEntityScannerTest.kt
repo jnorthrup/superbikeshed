@@ -46,7 +46,7 @@ class KotlinEntityScannerTest {
         val source = "class User"
         val chars = TokenStairway.classifyChars(source)
         
-        // Validate Series<T> structure
+        // Validate Indexed<T> structure
         assertTrue(chars.size > 0, "Character series should not be empty")
         assertEquals(10, chars.size, "Should have 10 characters")
         
@@ -71,7 +71,7 @@ class KotlinEntityScannerTest {
         val entities = syntax.extractEntities()
         val graphNodes = entities.extractGraph()
         
-        // Validate each level maintains Series<T> structure
+        // Validate each level maintains Indexed<T> structure
         assertTrue(chars.size > 0, "Characters should exist")
         assertTrue(tokens.size > 0, "Tokens should exist")
         assertTrue(syntax.size > 0, "Syntax elements should exist")
@@ -210,13 +210,13 @@ class KotlinEntityScannerTest {
     fun testTrikeShedCompliance() {
         val source = "val x = 42"
         
-        // Test that all operations use Series<T> and Join<A,B>
+        // Test that all operations use Indexed<T> and Join<A,B>
         val chars = TokenStairway.classifyChars(source)
         val tokens = chars.extractTokens()
         
-        // Validate Series<T> structure
-        assertTrue(chars.size > 0, "Should use Series<T>")
-        assertTrue(tokens.size > 0, "Should use Series<T>")
+        // Validate Indexed<T> structure
+        assertTrue(chars.size > 0, "Should use Indexed<T>")
+        assertTrue(tokens.size > 0, "Should use Indexed<T>")
         
         // Validate Join<A,B> structure
         val firstChar = chars[0]

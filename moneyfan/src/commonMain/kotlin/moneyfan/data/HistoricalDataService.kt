@@ -18,7 +18,7 @@ class HistoricalDataService(
     private val fileContentProvider: FileContentProvider
 ) {
     // In-memory cache for Kline series. Keyed by file path for simplicity.
-    private val klineCache = mutableMapOf<String, Series<Kline>>()
+    private val klineCache = mutableMapOf<String, Indexed<Kline>>()
     private val cacheMutex = Mutex()
 
     // Instantiate the archive reader with the provided file content provider.
@@ -38,14 +38,14 @@ class HistoricalDataService(
      * @param interval The kline interval (e.g., "1d").
      * @param startDate The start date of the desired data range.
      * @param endDate The end date of the desired data range.
-     * @return A `Series<Kline>` containing the requested data, or `emptySeries()` if not found or an error occurs.
+     * @return A `Indexed<Kline>` containing the requested data, or `emptySeries()` if not found or an error occurs.
      */
     suspend fun getHistoricalKlines(
         symbol: String,
         interval: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         // Simplified file path convention: uses only the year from startDate.
         // A more robust solution would handle multi-year ranges or more complex pathing.
         val year = startDate.year
@@ -80,7 +80,7 @@ class HistoricalDataService(
                 // This filter assumes toList() and toSeries() are acceptable for now
                 val filteredFromCache = cachedSeries.toList().filter {
                     it.timestamp.value >= startEpochMillis && it.timestamp.value <= endEpochMillis
-                }.toSeries()
+                }.toIndexed()
                 return filteredFromCache
             }
         }
@@ -116,7 +116,7 @@ class HistoricalDataService(
         // 1. Load WHOLE file if not in cache (keyed by filePath).
         // 2. Filter the loaded/cached series for the specific date range.
 
-        val seriesToCache: Series<Kline>
+        val seriesToCache: Indexed<Kline>
         cacheMutex.withLock {
             // Double check cache in case another coroutine populated it while we were reading file
             if (klineCache.containsKey(filePath)) {
@@ -135,7 +135,7 @@ class HistoricalDataService(
 
         val finalFilteredSeries = seriesToCache.toList().filter {
             it.timestamp.value >= startTimestamp.value && it.timestamp.value <= endTimestamp.value
-        }.toSeries()
+        }.toIndexed()
 
         return finalFilteredSeries
     }

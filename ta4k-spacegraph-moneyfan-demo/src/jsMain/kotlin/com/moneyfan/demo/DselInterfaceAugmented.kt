@@ -42,9 +42,9 @@ object DselInterfaceAugmented {
      * @return A DSEL Series of [VisualGraphPointWithMoneyfanOutcome]. Returns an empty series if input is empty.
      */
     fun generateAugmentedVisualData(
-        klineSeries: Series<Kline>,
+        klineSeries: Indexed<Kline>,
         assetSymbol: String
-    ): Series<VisualGraphPointWithMoneyfanOutcome> {
+    ): Indexed<VisualGraphPointWithMoneyfanOutcome> {
 
         if (klineSeries.size == 0) {
             console.warn("DselInterfaceAugmented: Input klineSeries is empty. Returning empty Series.")
@@ -63,9 +63,9 @@ object DselInterfaceAugmented {
         val smaLongIndicator = SMAIndicator(klineSeries, longSmaPeriod)
         val rsiIndicator = RSIIndicator(klineSeries, rsiPeriod)
 
-        val smaShortValues: Series<BigDecimal?> = smaShortIndicator.values
-        val smaLongValues: Series<BigDecimal?> = smaLongIndicator.values
-        val rsiValues: Series<BigDecimal?> = rsiIndicator.values
+        val smaShortValues: Indexed<BigDecimal?> = smaShortIndicator.values
+        val smaLongValues: Indexed<BigDecimal?> = smaLongIndicator.values
+        val rsiValues: Indexed<BigDecimal?> = rsiIndicator.values
 
         // 2. DSEL Action: Combine Price, TA, and Moneyfan logic
         val augmentedPoints = mutableListOf<VisualGraphPointWithMoneyfanOutcome>()
@@ -156,7 +156,7 @@ object DselInterfaceAugmented {
             )
         }
         // Convert the List to a DSEL Series for output
-        return augmentedPoints.toSeries() // Uses extension from DataHelper.kt
+        return augmentedPoints.toIndexed() // Uses extension from DataHelper.kt
     }
 
     /**

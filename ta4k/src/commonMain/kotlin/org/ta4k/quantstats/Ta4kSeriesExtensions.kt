@@ -1,14 +1,14 @@
 package org.ta4k.quantstats
 
 // Placeholder for ta4k's actual Series data type.
-// Replace 'Ta4kNumericSeries' with the actual type from ta4k's codebase, e.g., Series<Double>
+// Replace 'Ta4kNumericSeries' with the actual type from ta4k's codebase, e.g., Indexed<Double>
 // For now, we use 'Any' as a generic placeholder in stubs.
 
 /**
  * Placeholder for extending ta4k's data series with quantstats functions.
  * This is analogous to Python's `extend_pandas()`.
  *
- * The actual receiver type (e.g., `Series<Double>`) needs to be identified from ta4k's codebase.
+ * The actual receiver type (e.g., `Indexed<Double>`) needs to be identified from ta4k's codebase.
  */
 
 // Example stubs:

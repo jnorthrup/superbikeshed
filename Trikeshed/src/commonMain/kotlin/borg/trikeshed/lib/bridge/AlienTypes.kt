@@ -127,15 +127,12 @@ class QuicConnectionFlowControl(val connectionId: String) {
     var maxAckDelayMs: Long = 25L
 }
 
-// === SERIES CONSTRUCTION BRIDGE ===
+// === INDEXED CONSTRUCTION BRIDGE ===
 
-/** Convert List to Indexed (Series) */
-fun <T> List<T>.toSeries(): Indexed<T> = this.toIdx()
+/** Convert List to Indexed - direct implementation */
+fun <T> List<T>.toIndexed(): Indexed<T> = this.toIdx()
 
-/** Convert List to Indexed (alternate name) */
-fun <T> List<T>.toIndexed(): Indexed<T> = this.toSeries()
-
-/** Series constructor function from Review */
+/** Indexed constructor function */
 fun <T> s_(vararg elements: T): Indexed<T> = elements.toList().toIdx()
 
 /** Series size property bridge */
@@ -279,10 +276,10 @@ fun Any.writeToBuffer(buffer: Any) = Unit
 
 // === TYPE CONVERSIONS ===
 
-/** Convert Series<Byte> to ByteArray for platform interop */
+/** Convert Indexed<Byte> to ByteArray for platform interop */
 fun Indexed<Byte>.toByteArray(): ByteArray = this.play.toList().toByteArray()
 
-/** Convert ByteArray to Series<Byte> for TrikeShed interop */
+/** Convert ByteArray to Indexed<Byte> for TrikeShed interop */
 fun ByteArray.toBytesSeries(): Indexed<Byte> = this.toList().toIdx()
 
 /** Lambda parameter helper for 'it' resolution */

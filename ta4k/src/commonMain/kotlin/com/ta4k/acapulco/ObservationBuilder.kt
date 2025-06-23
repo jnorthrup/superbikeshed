@@ -7,6 +7,6 @@ interface ObservationBuilder {
 }
 
 // Define AgentObservation as per the task; using a placeholder based on description
-typealias AgentObservation = Series<RowVec>  // Adjust RowVec as needed based on existing code
+typealias AgentObservation = Indexed<RowVec>  // Adjust RowVec as needed based on existing code
 
 // Note: RowVec is not defined here; assume it's from existing project files

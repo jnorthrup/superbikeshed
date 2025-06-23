@@ -35,7 +35,7 @@ class SMACrossoverStrategyTest {
             kline("12", 0),
             kline("8", 1),
             kline("11", 2)
-        ).toSeries()
+        ).toIndexed()
         val strategy = SMACrossoverStrategy(testKlines, 1, 2) // ShortPeriod=1, LongPeriod=2. WarmupPeriod=2.
 
         val signal = strategy.generateSignal(2, null) // index 2, no current position
@@ -59,7 +59,7 @@ class SMACrossoverStrategyTest {
             kline("8",0),
             kline("12",1),
             kline("10",2)
-        ).toSeries()
+        ).toIndexed()
         val strategy = SMACrossoverStrategy(testKlines, 1, 2)
 
         val dummyEntryOrder = Order(1, OrderType.BUY, BigDecimal("100"), BigDecimal("1.0"), status = OrderStatus.FILLED, filledAmount = BigDecimal("1.0"), filledPrice = BigDecimal("12"))
@@ -82,7 +82,7 @@ class SMACrossoverStrategyTest {
         // shortPrev=11, longPrev=10.5 (11 > 10.5)
         // shortCurr=12, longCurr=11.5 (12 > 11.5)
         // No cross. Both are S > L.
-        val testKlines = listOf(kline("10"), kline("11"), kline("12")).toSeries()
+        val testKlines = listOf(kline("10"), kline("11"), kline("12")).toIndexed()
         val strategy = SMACrossoverStrategy(testKlines, 1, 2)
         val signal = strategy.generateSignal(2, null)
         assertNull(signal)
@@ -90,7 +90,7 @@ class SMACrossoverStrategyTest {
 
     @Test
     fun `no signal if index is less than warmupPeriod`() {
-        val testKlines = listOf(kline("12"), kline("8"), kline("11")).toSeries()
+        val testKlines = listOf(kline("12"), kline("8"), kline("11")).toIndexed()
         val strategy = SMACrossoverStrategy(testKlines, 1, 2) // Warmup = 2. Indices 0, 1 are warmup.
         val signal = strategy.generateSignal(1, null) // Index 1 is < warmupPeriod (signals start from index 2)
         assertNull(signal)
@@ -103,7 +103,7 @@ class SMACrossoverStrategyTest {
         // SMA(2) needs klines[1], klines[2]
         // SMA(3) needs klines[0], klines[1], klines[2]
         // If we check at index 2 (which is < warmupPeriod=3), SMAs might be null.
-        val testKlines = listOf(kline("10",0), kline("11",1), kline("12",2)).toSeries()
+        val testKlines = listOf(kline("10",0), kline("11",1), kline("12",2)).toIndexed()
         val strategy = SMACrossoverStrategy(testKlines, 2, 3)
 
         // Test signal at index 2 (which is period-1 for the LongSMA, so LongSMA will be null)

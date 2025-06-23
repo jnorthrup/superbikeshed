@@ -34,7 +34,7 @@ class KlinesLoaderTest {
         assertNotNull(mockKlinesSeries, "Mock klines series should not be null.")
         assertTrue(mockKlinesSeries.size > 0, "Mock klines series should contain data.")
 
-        // Convert Series<RowVec> to List<RowVec> for easier comparison later.
+        // Convert Indexed<RowVec> to List<RowVec> for easier comparison later.
         val originalKlinesList = mockKlinesSeries.toList()
 
         // 2. Store the mock klines data to an ISAM file.
