@@ -48,10 +48,17 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+
+                api("org.knowm.xchange:xchange-core:5.2.0")
+                api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                api("org.slf4j:slf4j-api:2.0.9")
+                
                 implementation(kotlin("stdlib-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
                 implementation("com.ionspin.kotlin:bignum:0.3.9")
                 implementation(project(":Trikeshed"))
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
             }
         }
