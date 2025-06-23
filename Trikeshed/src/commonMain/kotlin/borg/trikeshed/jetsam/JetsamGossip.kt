@@ -266,30 +266,16 @@ object JetsamGossipManager {
      * Merge gossip from peer
      */
     fun mergeGossip(gossip: JetsamGossip) {
-        var existingKeys: Indexed<JetsamKey> = 0 j { JetsamKey("") }
-        var existingKeysCount = 0
+        val existingKeys = mutableListOf<JetsamKey>()
         for (i in 0 until localPool.entries.a) {
-            val key = localPool.entries.b(i).key
-            existingKeys = (existingKeysCount + 1) j { idx -> 
-                if (idx == existingKeysCount) key 
-                else if (idx < existingKeysCount) existingKeys.b(idx) 
-                else JetsamKey("")
-            }
-            existingKeysCount++
+            existingKeys.add(localPool.entries.b(i).key)
         }
         
-        var newEntries: Indexed<JetsamEntry> = 0 j { JetsamEntry(JetsamKey(""), "", 0L) }
-        var newEntriesCount = 0
+        val newEntries = mutableListOf<JetsamEntry>()
         
         // Add existing entries
         for (i in 0 until localPool.entries.a) {
-            val entry = localPool.entries.b(i)
-            newEntries = (newEntriesCount + 1) j { idx -> 
-                if (idx == newEntriesCount) entry 
-                else if (idx < newEntriesCount) newEntries.b(idx) 
-                else JetsamEntry(JetsamKey(""), "", 0L)
-            }
-            newEntriesCount++
+            newEntries.add(localPool.entries.b(i))
         }
         
         // Add new entries from gossip
@@ -302,7 +288,7 @@ object JetsamGossipManager {
         
         // Update local pool
         localPool = JetsamPool(
-            entries = newEntries.size j { newEntries[it] },
+            entries = newEntries.toIdx(),
             lastUpdate = Clock.System.now()
         )
         

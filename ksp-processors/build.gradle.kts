@@ -12,6 +12,7 @@ kotlin {
 dependencies {
     implementation("com.google.devtools.ksp:symbol-processing-api:2.1.21-2.0.2")
     implementation("com.squareup:kotlinpoet:1.14.2")
+    implementation("com.squareup:kotlinpoet-ksp:1.14.2")
     implementation(kotlin("stdlib"))
 }
 

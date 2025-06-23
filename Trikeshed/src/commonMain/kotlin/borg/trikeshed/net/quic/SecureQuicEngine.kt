@@ -14,6 +14,21 @@ private fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
     }
 }
 
+// Helper function for combining Indexed collections using TrikeShed pattern
+private fun <T> combineIndexed(vararg series: Indexed<T>): Indexed<T> {
+    val offsets = IntArray(series.size)
+    var offset = 0
+    for (i in series.indices) {
+        offsets[i] = offset
+        offset += series[i].a
+    }
+    return offset j { i ->
+        val j = offsets.binarySearch(i)
+        if (j >= 0) series[j].b(i - offsets[j]) 
+        else series[-j - 2].b(i - offsets[-j - 2])
+    }
+}
+
 /**
  * Secure QUIC Engine with full crypto support
  * Implements QUIC protocol with TLS 1.3, secure key exchange, and encrypted transport

@@ -17,6 +17,7 @@ import borg.trikeshed.lib.play
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.bridge.s_
 import borg.trikeshed.lib.bridge.*
+import borg.trikeshed.lib.toIdx
 //import linux_uring.fstatat
 import platform.posix.off_t as __off_t
 import platform.posix.*
