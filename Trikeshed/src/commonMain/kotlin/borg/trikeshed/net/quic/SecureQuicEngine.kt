@@ -494,7 +494,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
                 packetNumber = 0
             ),
-            frames = 0 j { QuicFrame.QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
+            frames = 0 j { QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
             payload = 0 j { 0.toByte() }
         ) },
         val receivedPackets: Indexed<QuicPacket> = 0 j { QuicPacket(
@@ -505,7 +505,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
                 packetNumber = 0
             ),
-            frames = 0 j { QuicFrame.QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
+            frames = 0 j { QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
             payload = 0 j { 0.toByte() }
         ) },
         val bytesInFlight: Long = 0,
