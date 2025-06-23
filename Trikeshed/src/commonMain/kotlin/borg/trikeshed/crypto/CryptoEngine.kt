@@ -101,7 +101,7 @@ data class EncryptedData(
 object CryptoUtils {
     fun encodeBase64(data: Indexed<Byte>): String {
         return data.play.joinToString("") { 
-            String.format("%02x", it) 
+            it.toString(16).padStart(2, '0') 
         }
     }
     

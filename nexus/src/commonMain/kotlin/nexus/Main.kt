@@ -166,6 +166,22 @@ object NexusDSL {
         fun widget(name: String, config: Map<String, Any>) {
             board["widget_$name"] = config
         }
+        
+        fun ksp(name: String, processor: String, annotation: String) {
+            board["ksp_$name"] = mapOf(
+                "processor" to processor,
+                "annotation" to annotation,
+                "generated" to "${processor}Generated"
+            )
+        }
+        
+        fun dsl(name: String, context: String, functions: List<String>) {
+            board["dsl_$name"] = mapOf(
+                "context" to context,
+                "functions" to functions,
+                "type" to "generated_dsl"
+            )
+        }
     }
     
     @NexusMarker
@@ -199,15 +215,28 @@ object Nexus {
             
             blackboard {
                 cite("trikeshed", "Core multiplatform data structures")
+                cite("ksp", "Kotlin Symbol Processing for code generation")
                 blurb("architecture", "50% taxonomical typealias, 50% DSEL code")
+                blurb("processor", "TrikeShedDslProcessor generates DSL from annotations")
                 link("repo", "https://github.com/superbikeshed/superbikeshed")
-                strings("patterns", "Series", "Join", "Indexed", "CCEK")
-                things("components", "nexus", "trikeshed", "k2script")
+                link("ksp_docs", "https://kotlinlang.org/docs/ksp-overview.html")
+                strings("patterns", "Series", "Join", "Indexed", "CCEK", "TrikeShedDsl")
+                strings("processors", "TrikeShedDslProcessor", "DeepDsl", "SymbolProcessor")
+                things("components", "nexus", "trikeshed", "k2script", "ksp-processors")
+                things("generated", "DeepDsl", "TrikeShedDslContext", "dsl_functions")
                 widget("spacegraph", mapOf(
                     "type" to "introspective",
                     "peers" to 3,
-                    "typealiases" to 2
+                    "typealiases" to 2,
+                    "ksp_enabled" to true
                 ))
+                widget("ksp_pipeline", mapOf(
+                    "processor" to "TrikeShedDslProcessor",
+                    "output" to "borg.trikeshed.dsl.DeepDsl",
+                    "annotation" to "@TrikeShedDsl"
+                ))
+                ksp("trikeshed", "TrikeShedDslProcessor", "@TrikeShedDsl")
+                dsl("deep", "TrikeShedDslContext", listOf("trikeshed", "configBuilder", "dslFunction"))
             }
         }
         
