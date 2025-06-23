@@ -158,7 +158,7 @@ class RFC7230Test {
             }
         }
         
-        val body = "{\"test\":true}".toByteArray().toSeries()
+        val body = "{\"test\":true}".toByteArray().toIdx()
         
         val message = HttpMessage(
             startLine = requestLine,
@@ -177,7 +177,7 @@ class RFC7230Test {
     
     @Test
     fun testChunkedEncoding() {
-        val originalData = "Hello, World! This is a test message.".toByteArray().toSeries()
+        val originalData = "Hello, World! This is a test message.".toByteArray().toIdx()
         val encoded = ChunkedTransferEncoder.encodeChunked(originalData)
         val decoded = ChunkedTransferEncoder.decodeChunked(encoded)
         
@@ -213,7 +213,7 @@ class RFC7230Test {
                 status = HttpStatusCode(200),
                 reasonPhrase = HttpReasonPhrase("OK"),
                 headers = 0 j { HttpHeaderName("") j HttpHeaderValue("") },
-                body = "Success".toByteArray().toSeries()
+                body = "Success".toByteArray().toIdx()
             )
         }
         
@@ -238,5 +238,5 @@ class RFC7230Test {
     }
     
     private fun String.toCharSeries(): Indexed<Char> = length j { this[it] }
-    private fun ByteArray.toSeries(): Indexed<Byte> = size j { this[it] }
+    private fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
 }

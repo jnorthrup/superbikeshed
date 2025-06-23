@@ -5,8 +5,8 @@ package borg.trikeshed.lib
 import kotlin.reflect.KClassifier
 import kotlinx.datetime.Clock
 
-// Migration support: Series as Indexed alias
-typealias Series<T> = Indexed<T>
+// Post-migration: Indexed is now the canonical type
+// Series was migrated to Indexed as per CLAUDE.md migration plan
 
 /** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
  * # TrikeShed Metaclass Architecture

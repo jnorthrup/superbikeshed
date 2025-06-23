@@ -543,7 +543,7 @@ class PosixFile(
                 perror("ferror")
                 exit(1)
             }
-            return list.toSeries().also {
+            return list.toIdx().also {
                 file.close()
                 fclose(fp)
             }

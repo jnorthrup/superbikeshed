@@ -97,7 +97,7 @@ object TrikeShedJsonScanner {
     fun scan(jsonString: JsonStringValue): JsonResult<JsonTokenSeries> {
         if (jsonString.isEmpty()) return Result.success(emptySeries())
         
-        val chars = jsonString.toList().toSeries()
+        val chars = jsonString.toList().toIdx()
         return Result.success(tokenize(chars))
     }
     
@@ -320,7 +320,7 @@ object TrikeShedJsonScanner {
      * Filter tokens by type using α transform
      */
     fun filterTokensByType(tokens: JsonTokenSeries, targetType: JsonTokenType): JsonTokenSeries {
-        return tokens.play.filter { it.a == targetType }.toSeries()
+        return tokens.play.filter { it.a == targetType }.toIdx()
     }
 }
 
@@ -342,8 +342,8 @@ fun JsonTokenSeries.extractValues(jsonString: JsonStringValue): JsonValueSeries 
 /**
  * Utility functions for Series operations
  */
-private fun <T> Array<T>.toSeries(): Indexed<T> = size j ::get
-private fun <T> List<T>.toSeries(): Indexed<T> = size j ::get
+private fun <T> Array<T>.toIdx(): Indexed<T> = size j ::get
+private fun <T> List<T>.toIdx(): Indexed<T> = size j ::get
 private fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /**

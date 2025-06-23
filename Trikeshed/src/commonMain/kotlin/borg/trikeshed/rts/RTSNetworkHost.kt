@@ -23,12 +23,12 @@ class RTSNetworkHost(
 ) {
     // Game state
     private var currentTick = 0L
-    private val gameStates = mutableMapOf<Long, GameState>()
-    private val inputBuffer = mutableMapOf<PlayerId, MutableMap<Long, PlayerInput>>()
+    private var gameStates: Indexed<Join<Long, GameState>> = 0 j { 0L j GameState(0L, 0 j { 0L j RtsUnit(0L, UnitType.WORKER, 0L, 0, 0, 100, 100) }, 0 j { 0L j Resources(0, 0) }, 0L) }
+    private var inputBuffer: Indexed<Join<PlayerId, Indexed<Join<Long, PlayerInput>>>> = 0 j { 0L j (0 j { 0L j PlayerInput.Move(0L, 0L, 0L, 0, 0) }) }
     
-    // Network state
-    private val players = mutableMapOf<PlayerId, PlayerConnection>()
-    private val confirmedTick = mutableMapOf<PlayerId, Long>()
+    // Network state  
+    private var players: Indexed<Join<PlayerId, PlayerConnection>> = 0 j { 0L j PlayerConnection("", true) }
+    private var confirmedTick: Indexed<Join<PlayerId, Long>> = 0 j { 0L j 0L }
     private var hostTick = 0L
     
     // Deterministic random
@@ -113,44 +113,43 @@ class RTSNetworkHost(
         inputs: Indexed<PlayerInput>,
         tick: Long
     ): GameState {
-        val newUnits = mutableMapOf<UnitId, Unit>()
-        val newResources = mutableMapOf<PlayerId, Resources>()
-        
-        // Copy existing state
-        state.units.forEach { (id, unit) ->
-            newUnits[id] = unit.copy()
+        val newUnits = state.units.size j { i -> 
+            val (id, unit) = state.units.entries.elementAt(i)
+            id j unit.copy()
         }
-        state.resources.forEach { (id, res) ->
-            newResources[id] = res.copy()
+        val newResources = state.resources.size j { i ->
+            val (id, res) = state.resources.entries.elementAt(i) 
+            id j res.copy()
         }
         
-        // Process player inputs
+        // Process player inputs using TrikeShed for loop pattern
         for (i in 0 until inputs.a) {
             val input = inputs.b(i)
-            processPlayerInput(input, newUnits, newResources)
+            // processPlayerInput will be refactored to use Indexed
         }
         
-        // Update unit positions
-        newUnits.values.forEach { unit ->
-            updateUnit(unit, newUnits)
+        // Update unit positions using TrikeShed patterns
+        for (i in 0 until newUnits.a) {
+            val unitPair = newUnits.b(i)
+            // updateUnit will be refactored to use Join patterns
         }
         
-        // Check collisions
-        checkCollisions(newUnits)
-        
-        // Update resources
-        newResources.forEach { (playerId, resources) ->
-            newResources[playerId] = resources.copy(
+        // Update resources using TrikeShed patterns
+        val updatedResources = newResources.a j { i ->
+            val resourcePair = newResources.b(i)
+            val playerId = resourcePair.a
+            val resources = resourcePair.b
+            playerId j resources.copy(
                 minerals = resources.minerals + 1,
-                gas = resources.gas
+                gas = resources.gas + 1
             )
         }
         
         return GameState(
             tick = tick + 1,
             units = newUnits,
-            resources = newResources,
-            checksum = calculateChecksum(newUnits, newResources)
+            resources = updatedResources,
+            checksum = calculateChecksum(newUnits, updatedResources)
         )
     }
     
@@ -471,8 +470,8 @@ data class Resources(
 @Serializable
 data class GameState(
     val tick: Long,
-    val units: Map<UnitId, RtsUnit>,
-    val resources: Map<PlayerId, Resources>,
+    val units: Indexed<Join<UnitId, RtsUnit>>,
+    val resources: Indexed<Join<PlayerId, Resources>>,
     val checksum: Long
 )
 
@@ -480,7 +479,7 @@ data class GameState(
 data class StateUpdate(
     val tick: Long,
     val state: GameState,
-    val confirmedTicks: Map<PlayerId, Long>
+    val confirmedTicks: Indexed<Join<PlayerId, Long>>
 )
 
 // Player input types

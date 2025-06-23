@@ -251,7 +251,7 @@ class GzIndex {
         val windowSize = list[index].winsize
         val orign_window = list[index].window
         logDebug {
-            val bytes = orign_window.toSeries() α UByte::toByte
+            val bytes = orign_window.toIdx() α UByte::toByte
             "--- before inflateIndexWindow: windowSize=$windowSize, orign_window=${bytes}"
         }
         orign_window.usePinned { window ->
@@ -266,7 +266,7 @@ class GzIndex {
                 strm.next_out = tbuf.addressOf(0)
                 val ret = inflate(strm.ptr, Z_NO_FLUSH)
                 logDebug {
-                    val bytes = throwaway.toSeries() α UByte::toByte
+                    val bytes = throwaway.toIdx() α UByte::toByte
                     "+++ after inflateIndexWindow: ret=$ret, throwaway=${bytes}"
                 }
                 posixRequires(ret == Z_STREAM_END) { "Error: inflate failed: $ret not Z_STREAM_END (${Z_STREAM_END})" }
@@ -359,7 +359,7 @@ fun decode(args: Array<String>) {
     }
 
     val list = gzIndex.list
-    val binEntry = (list.toSeries() α { it.output }).binarySearch(start)
+    val binEntry = (list.toIdx() α { it.output }).binarySearch(start)
     val chunk = if (binEntry >= 0) binEntry else max(0, -binEntry - 2)
     val point = list[chunk]
     if (gzFileName != null) {

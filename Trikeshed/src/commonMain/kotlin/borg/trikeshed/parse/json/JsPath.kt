@@ -28,28 +28,28 @@ object JsPathBuilder {
      */
     fun fromString(path: String): JsPath {
         val elements: List<JsPathElement> = path.split(".").map { JsPathElement.Key(it) }
-        return elements.toSeries()
+        return elements.toIdx()
     }
     
     /**
      * Create a JsPath from a list of path components
      */
     fun fromComponents(vararg components: JsPathElement): JsPath {
-        return components.toList().toSeries()
+        return components.toList().toIdx()
     }
     
     /**
      * Create a JsPath for object key access
      */
     fun key(name: String): JsPath {
-        return listOf(JsPathElement.Key(name)).toSeries()
+        return listOf(JsPathElement.Key(name)).toIdx()
     }
     
     /**
      * Create a JsPath for array index access
      */
     fun index(idx: Int): JsPath {
-        return listOf(JsPathElement.Index(idx)).toSeries()
+        return listOf(JsPathElement.Index(idx)).toIdx()
     }
     
     /**
@@ -62,7 +62,7 @@ object JsPathBuilder {
                 allElements.add(element)
             }
         }
-        return allElements.toSeries()
+        return allElements.toIdx()
     }
 }
 
@@ -75,7 +75,7 @@ fun JsPath.append(element: JsPathElement): JsPath {
     val elements = mutableListOf<JsPathElement>()
     this.play.forEach { elements.add(it) }
     elements.add(element)
-    return elements.toSeries()
+    return elements.toIdx()
 }
 
 fun JsPath.append(key: String): JsPath = append(JsPathElement.Key(key))

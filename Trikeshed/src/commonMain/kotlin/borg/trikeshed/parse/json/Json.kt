@@ -47,7 +47,7 @@ object Json {
                 indices.add(index)
             }
         }
-        return indices.toSeries()
+        return indices.toIdx()
     }
     
     // Simple reify implementation
@@ -71,7 +71,7 @@ object Json {
     fun index(jsonString: String): JsonStructuralIndices {
         val indices = findStructuralIndices(jsonString)
         val bounds: JsonBounds = Twin(0, jsonString.length)
-        val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toSeries()
+        val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toIdx()
         return bounds j commaIndices
     }
     

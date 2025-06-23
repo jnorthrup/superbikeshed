@@ -539,7 +539,7 @@ class PosixFile(
                 perror("ferror")
                 exit(1)
             }
-            return list.toSeries().also { file.close().also { fclose(fp) } }
+            return list.toIdx().also { file.close().also { fclose(fp) } }
         }
 
         fun readAllBytes(filename: String): ByteArray = memScoped {

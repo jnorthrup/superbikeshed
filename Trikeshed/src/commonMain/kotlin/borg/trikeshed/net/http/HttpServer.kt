@@ -252,7 +252,7 @@ private fun HttpResponse(
     )
 }
 
-private fun String.toSeries(): Indexed<Char> = this.length j { this[it] }
+private fun String.toIdx(): Indexed<Char> = this.length j { this[it] }
 
 
 // ===== CONNECTION MANAGEMENT (RFC 7230 Section 6) =====
@@ -337,8 +337,8 @@ object ChunkedTransferEncoder {
 
 // ===== UTILITY EXTENSIONS =====
 
-private fun ByteArray.toSeries(): Indexed<Byte> = size j { this[it] }
-private fun List<Char>.toSeries(): Indexed<Char> = size j { this[it] }
+private fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
+private fun List<Char>.toIdx(): Indexed<Char> = size j { this[it] }
 
 
 // ===== CCEK SERVICE HANDLERS =====

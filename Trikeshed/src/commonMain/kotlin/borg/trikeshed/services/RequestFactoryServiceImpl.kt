@@ -35,10 +35,10 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
             val responseJson = buildString {
                 append("""{"success":true,"service":"$serviceClass","method":"$methodName","timestamp":${++requestCounter}}""")
             }
-            responseJson.encodeToByteArray().toSeries()
+            responseJson.encodeToByteArray().toIdx()
 
         } catch (e: Exception) {
-            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toSeries()
+            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toIdx()
         }
     }
 
@@ -59,5 +59,5 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
         return """{"success":false,"error":"$message","code":$code}"""
     }
 
-    private fun ByteArray.toSeries(): Indexed<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toIdx(): Indexed<Byte> = size j { index: Int -> this[index] }
 } 

@@ -1,7 +1,7 @@
 package borg.trikeshed.download
 
 import kotlinx.coroutines.*
-import borg.trikeshed.lib.Series as Indexed
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.play
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.toIdx
@@ -9,7 +9,7 @@ import borg.trikeshed.lib.toIdx
 
 object Aria2cDSL {
     data class DownloadRequest(
-        val uris: MutableList<String> = mutableListOf(),
+        val uris: Indexed<String> = 0 j { "" },
         val outputDir: String = ".",
         val outputFile: String? = null,
         val connections: Int = 16,
@@ -17,7 +17,7 @@ object Aria2cDSL {
         val maxSpeed: String? = null,
         val userAgent: String = "trikeshed-aria2c/1.0",
         val referer: String? = null,
-        val headers: MutableMap<String, String> = mutableMapOf(),
+        val headers: Indexed<borg.trikeshed.lib.Join<String, String>> = 0 j { "" j "" },
         val torrent: String? = null,
         val metalink: String? = null,
         val checkIntegrity: Boolean = false,

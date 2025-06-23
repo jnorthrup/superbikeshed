@@ -252,7 +252,7 @@ class GzIndex {
         val windowSize = list[index].winsize
         val orign_window = list[index].window
         logDebug {
-            val bytes = orign_window.toSeries()
+            val bytes = orign_window.toIdx()
             "--- before inflateIndexWindow: windowSize=$windowSize, orign_window=${bytes}"
         }
         orign_window.usePinned { window ->
@@ -267,7 +267,7 @@ class GzIndex {
                 strm.next_out = tbuf.addressOf(0)
                 val ret = inflate(strm.ptr, Z_NO_FLUSH)
                 logDebug {
-                    val bytes = throwaway.toSeries()
+                    val bytes = throwaway.toIdx()
                     "+++ after inflateIndexWindow: ret=$ret, throwaway=${bytes}"
                 }
                 posixRequires(ret == Z_STREAM_END) { "Error: inflate failed: $ret not Z_STREAM_END (${Z_STREAM_END})" }

@@ -78,13 +78,13 @@ fun sha256(input: String): String {
 
 private fun pad(input: ByteArray): ByteArray {
     val l = input.size * 8L
-    val k = ((447 - l) % 512 + 512) % 512
-    val paddingLen = (k + 65) / 8
+    val k = ((447L - l) % 512L + 512L) % 512L
+    val paddingLen = (k + 65L) / 8L
     val padded = ByteArray(input.size + paddingLen.toInt())
     input.copyInto(padded)
     padded[input.size] = 0x80.toByte()
     for (i in 8 downTo 1) {
-        padded[padded.size - i] = ((l ushr ((8 - i) * 8)) and 0xff).toByte()
+        padded[padded.size - i] = ((l ushr ((8 - i) * 8)) and 0xffL).toByte()
     }
     return padded
 }

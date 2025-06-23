@@ -8,7 +8,7 @@ class SeriesKtTest {
     @Test
     fun testStringToSeries() {
         val s = "hello"
-        val series = s.toSeries()
+        val series = s.toIdx()
         val s2 = series.asString()
         assert(s == s2)
 
