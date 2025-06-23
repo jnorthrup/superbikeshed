@@ -23,12 +23,12 @@ class RTSNetworkHost(
 ) {
     // Game state
     private var currentTick = 0L
-    private var gameStates: Indexed<Join<Long, GameState>> = 0 j { 0L j GameState(0L, 0 j { 0L j RtsUnit(0L, UnitType.WORKER, 0L, 0, 0, 100, 100) }, 0 j { 0L j Resources(0, 0) }, 0L) }
-    private var inputBuffer: Indexed<Join<PlayerId, Indexed<Join<Long, PlayerInput>>>> = 0 j { 0L j (0 j { 0L j PlayerInput.Move(0L, 0L, 0L, 0, 0) }) }
+    private var gameStates: Indexed<Join<Long, GameState>> = 0 j { _: Int -> 0L j GameState(0L, 0 j { _: Int -> 0L j RtsUnit(0L, UnitType.WORKER, 0L, 0, 0, 100, 100) }, 0 j { _: Int -> 0L j Resources(0, 0) }, 0L) }
+    private var inputBuffer: Indexed<Join<PlayerId, Indexed<Join<Long, PlayerInput>>>> = 0 j { _: Int -> "player0" j (0 j { _: Int -> 0L j PlayerInput.Move(0L, 0L, 0L, 0, 0) }) }
     
     // Network state  
-    private var players: Indexed<Join<PlayerId, PlayerConnection>> = 0 j { 0L j PlayerConnection("", true) }
-    private var confirmedTick: Indexed<Join<PlayerId, Long>> = 0 j { 0L j 0L }
+    private var players: Indexed<Join<PlayerId, PlayerConnection>> = 0 j { _: Int -> "player0" j PlayerConnection("", Channel<StateUpdate>(Channel.UNLIMITED)) }
+    private var confirmedTick: Indexed<Join<PlayerId, Long>> = 0 j { _: Int -> "player0" j 0L }
     private var hostTick = 0L
     
     // Deterministic random

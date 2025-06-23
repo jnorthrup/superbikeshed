@@ -363,4 +363,3 @@ data class MDIInterfaceState(
     val recentTraces: TraceLog,
     val spaceGraphNodeMappings: Indexed<Join<SpaceGraphNode, String>>
 )
-}

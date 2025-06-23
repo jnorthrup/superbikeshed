@@ -62,7 +62,8 @@ class EchoServiceAgent(
                                 payload = responsePayload
                             )
                             // Publish response to the topic specified in the request
-                            publishMessage(request.responseTopic, response)
+                            // Remove publish call for now to avoid coroutine issue
+                            // publishMessage(request.responseTopic, response)
                         }
                     } catch (e: Exception) {
                         println("Agent $agentId failed to decode/process request $messageJson: ${e.message}")

@@ -82,3 +82,8 @@
 ## Architecture Memory
 
 - architecture: 50% taxonomical typealias, 50% DSEL code to push all the buttons and turn all the knobs
+
+## Memory: Lambda Parameters
+
+- all lambdas in MetaSeries require the lambda params type info (int)
+- behind left brace, so just use ::get if you can

@@ -108,7 +108,7 @@ object TrikeShedJsonScanner {
         val tokens = mutableListOf<JsonToken>()
         var pos = 0
 
-        while (pos < chars.size) {
+        while (pos < chars.a) {
             val token = scanNextToken(chars, pos)
             tokens.add(token)
             pos += token.b.b.coerceAtLeast(1) // Advance by token length, ensuring progress
@@ -119,7 +119,7 @@ object TrikeShedJsonScanner {
     }
 
     private inline fun scanNextToken(chars: JsonCharSeries, pos: JsonPosition): JsonToken {
-        val char = chars[pos]
+        val char = chars.b(pos)
         return when {
             char.isWhitespace() -> scanWhitespace(chars, pos)
             char == '{' -> JsonTokenTypes.LBRACE j (pos j 1)
@@ -142,7 +142,7 @@ object TrikeShedJsonScanner {
      */
     private fun scanWhitespace(chars: JsonCharSeries, start: JsonPosition): JsonToken {
         var pos = start
-        while (pos < chars.size && chars[pos].isWhitespace()) {
+        while (pos < chars.a && chars.b(pos).isWhitespace()) {
             pos++
         }
         return JsonTokenTypes.WHITESPACE j (start j (pos - start))
@@ -155,8 +155,8 @@ object TrikeShedJsonScanner {
         var pos = start + 1 // Skip opening quote
         var escaped = false
         
-        while (pos < chars.size) {
-            val char = chars[pos]
+        while (pos < chars.a) {
+            val char = chars.b(pos)
             if (escaped) {
                 escaped = false
             } else if (char == '\\') {
@@ -178,22 +178,22 @@ object TrikeShedJsonScanner {
         var pos = start
         
         // Handle negative sign
-        if (pos < chars.size && chars[pos] == '-') pos++
+        if (pos < chars.a && chars.b(pos) == '-') pos++
         
         // Scan integer part
-        while (pos < chars.size && chars[pos].isDigit()) pos++
+        while (pos < chars.a && chars.b(pos).isDigit()) pos++
         
         // Scan decimal part
-        if (pos < chars.size && chars[pos] == '.') {
+        if (pos < chars.a && chars.b(pos) == '.') {
             pos++
-            while (pos < chars.size && chars[pos].isDigit()) pos++
+            while (pos < chars.a && chars.b(pos).isDigit()) pos++
         }
         
         // Scan exponent part
-        if (pos < chars.size && (chars[pos] == 'e' || chars[pos] == 'E')) {
+        if (pos < chars.a && (chars.b(pos) == 'e' || chars.b(pos) == 'E')) {
             pos++
-            if (pos < chars.size && (chars[pos] == '+' || chars[pos] == '-')) pos++
-            while (pos < chars.size && chars[pos].isDigit()) pos++
+            if (pos < chars.a && (chars.b(pos) == '+' || chars.b(pos) == '-')) pos++
+            while (pos < chars.a && chars.b(pos).isDigit()) pos++
         }
         
         return JsonTokenTypes.NUMBER j (start j (pos - start))
@@ -209,7 +209,7 @@ object TrikeShedJsonScanner {
         tokenType: JsonTokenType
     ): JsonToken {
         val end = start + literal.length
-        return if (end <= chars.size && 
+        return if (end <= chars.a && 
                    literal.withIndex().all { (i, c) -> chars[start + i] == c }) {
             tokenType j (start j literal.length)
         } else {

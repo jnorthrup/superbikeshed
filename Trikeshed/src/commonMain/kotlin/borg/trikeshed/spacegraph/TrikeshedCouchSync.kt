@@ -1,5 +1,8 @@
 package borg.trikeshed.spacegraph
 
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+
 // Mock HTTP client for commonMain
 interface HttpClient {
     suspend fun get(url: String): HttpResponse
@@ -15,9 +18,6 @@ object ContentType {
         val Json = "application/json"
     }
 }
-
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
 
 @Serializable
 data class CloudWord(val word: String, val weight: Double)

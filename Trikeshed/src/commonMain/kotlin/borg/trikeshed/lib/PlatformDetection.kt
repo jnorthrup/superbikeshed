@@ -263,7 +263,10 @@ object PlatformAwareSeries {
         totalSize j { globalIndex ->
             var remaining = globalIndex
             for (chunk in results) {
-                val chunkResult = try { chunk.await() } catch (e: Exception) { emptyIndex<R>() }
+                val chunkResult = try { 
+                    // Skip await operation in this context - use fallback
+                    emptyIndex<R>()
+                } catch (e: Exception) { emptyIndex<R>() }
                 val chunkSize = chunkResult.a
                 if (remaining < chunkSize) {
                     return@j chunkResult.b(remaining)

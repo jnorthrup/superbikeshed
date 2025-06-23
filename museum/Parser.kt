@@ -165,18 +165,28 @@ object BashParsers {
 }
 
 /**
+ * Mode for brace expansion: ORDERED (preserve order), UNORDERED (deduped, sorted).
+ */
+enum class Mode { ORDERED, UNORDERED }
+
+/**
  * Public API for Bash brace parsing.
  */
 @JvmInline
 value class BashBraceParser(val input: String) {
     /**
      * Parses the input string into a list of expanded strings, or throws on error.
+     * @param mode Mode.ORDERED (default) preserves order, Mode.UNORDERED dedupes and sorts.
      */
-    fun parse(): List<String> {
+    fun parse(mode: Mode = Mode.ORDERED): List<String> {
         val tokens = BashBrace.of(input).scanTokens()
-        return when (val result = BashParsers.fullExpr.parse(tokens)) {
-            is ParseResult.Success -> result.value
-            is ParseResult.Failure -> throw IllegalArgumentException("Failed to parse: $input\n${result.error.message}")
+        val result = when (val r = BashParsers.fullExpr.parse(tokens)) {
+            is ParseResult.Success -> r.value
+            is ParseResult.Failure -> throw IllegalArgumentException("Failed to parse: $input\n${r.error.message}")
+        }
+        return when (mode) {
+            Mode.ORDERED -> result
+            Mode.UNORDERED -> result.toSet().sorted()
         }
     }
     companion object {
