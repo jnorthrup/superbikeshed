@@ -1,6 +1,6 @@
-package parse.bash
+package borg.trikeshed.parse
 
-import borg.trikeshed.common.collections.CirQlar
+// import borg.trikeshed.common.collections.CirQlar // Not used
 
 @JvmInline
 value class Token(val type: TokenType, val literal: String, val pos: Int)
@@ -60,7 +60,7 @@ class BashScanner(val input: String) {
     private fun scanLiteral(): Token {
         while (true) {
             val r = next()
-            if (r == '{' || r == '}' || r == ',' || r == '.' || r.isWhitespace()) {
+            if (r == Char.MIN_VALUE || r == '{' || r == '}' || r == ',' || r == '.' || r.isWhitespace()) {
                 backup()
                 break
             }
@@ -93,7 +93,7 @@ class BashScanner(val input: String) {
     private fun skipWhitespace() {
         while (true) {
             val r = next()
-            if (!r.isWhitespace()) {
+            if (r == Char.MIN_VALUE || !r.isWhitespace()) {
                 backup()
                 break
             }

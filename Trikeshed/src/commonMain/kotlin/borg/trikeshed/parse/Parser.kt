@@ -1,4 +1,4 @@
-package parse.bash
+package borg.trikeshed.parse
 
 @JvmInline
 value class ParseResult<out T>(

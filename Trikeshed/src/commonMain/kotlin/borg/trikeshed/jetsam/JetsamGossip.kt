@@ -8,7 +8,7 @@ import borg.trikeshed.dsl.CouchClient
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import kotlinx.coroutines.*
-import kotlinx.datetime.*
+// import kotlinx.datetime.* // Removed dependency
 
 /**
  * Jetsam Gossip Protocol
@@ -23,7 +23,7 @@ typealias JetsamValue = JsonElement
 data class JetsamEntry(
     val key: JetsamKey,
     val value: JetsamValue,
-    val timestamp: Instant = Clock.System.now(),
+    val timestamp: Long = System.currentTimeMillis(),
     val source: PeerId,
     val signature: Indexed<Byte>? = null
 )
@@ -31,7 +31,7 @@ data class JetsamEntry(
 @Serializable
 data class JetsamPool(
     val entries: Indexed<JetsamEntry>,
-    val lastUpdate: Instant = Clock.System.now()
+    val lastUpdate: Long = System.currentTimeMillis()
 )
 
 @Serializable

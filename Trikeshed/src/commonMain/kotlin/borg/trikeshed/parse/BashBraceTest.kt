@@ -1,4 +1,4 @@
-package parse.bash
+package borg.trikeshed.parse
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -126,18 +126,7 @@ class HttpConnectionHandler(
             // Use RFC7230 parser
             // Parse HTTP message from string
             val requestMessage = try {
-                val request = HttpRequest.parse(requestBytes)
-                object : HttpMessage {
-                    override val startLine = object : HttpRequestLine {
-                        override val method = request.method.name
-                        override val requestTarget = request.path.value
-                        override val httpVersion = request.version.value
-                    }
-                    override val headerFields: Indexed<Join<String, String>> = request.headers.α { 
-                        Join(it.a.value, it.b.value) 
-                    }
-                    override val messageBody = request.body.decodeToString()
-                }
+                HttpParser.parseHttpMessage(requestString)
             } catch (e: Exception) {
                 null
             }
@@ -146,9 +135,7 @@ class HttpConnectionHandler(
                 return
             }
 
-            val request = convertToHttpRequest(requestMessage ?: return run {
-                sendErrorResponse(400, "Bad Request")
-            })
+            val request = convertToHttpRequest(requestMessage)
             if (request == null) {
                 sendErrorResponse(400, "Bad Request")
                 return
@@ -171,11 +158,17 @@ class HttpConnectionHandler(
     }
 
     private fun convertToHttpRequest(message: HttpMessage): HttpRequest? {
-        val startLine = message.startLine as? HttpRequestLine ?: return null
+        val startLine = message.startLine
         val headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>> = message.headerFields.α { 
             HttpHeaderName(it.a) j HttpHeaderValue(it.b) 
         }
-        return HttpRequest(HttpMethod.valueOf(startLine.method), HttpRequestPath(startLine.requestTarget), headers, message.messageBody.encodeToByteArray(), HttpVersion(startLine.httpVersion))
+        return HttpRequest(
+            method = HttpMethod.valueOf(startLine.method), 
+            path = HttpRequestPath(startLine.requestTarget), 
+            headers = headers, 
+            body = message.messageBody.encodeToByteArray(), 
+            version = HttpVersion(startLine.httpVersion)
+        )
     }
 
     private suspend fun sendErrorResponse(code: Int, phrase: String) {

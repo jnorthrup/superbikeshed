@@ -1,7 +1,7 @@
 package borg.trikeshed.net
 
-import com.rtsgame.shared.rts.RTSNetworkHost
-import com.rtsgame.shared.game.GameState
+// import com.rtsgame.shared.rts.RTSNetworkHost // Removed dependency  
+// import com.rtsgame.shared.game.GameState // Removed dependency
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.CZero.nz
@@ -24,14 +24,14 @@ class C10KServer(
     private val port: Int = 7777,
     private val maxPlayers: Int = 16
 ) {
-    private val rtsHost = RTSNetworkHost(
-        scope = scope,
-        gameState = GameState(
-            entities = emptyMap(),
-            resources = emptyMap(),
-            currentTime = 0L
-        )
-    )
+    // private val rtsHost = RTSNetworkHost( // Removed dependency
+    //     scope = scope,
+    //     gameState = GameState(
+    //         entities = emptyMap(),
+    //         resources = emptyMap(),
+    //         currentTime = 0L
+    //     )
+    // )
     // Connection pools
     private val connections = mutableMapOf<Long, ClientConnection>()
     private val pendingConnections = mutableMapOf<Long, PendingConnection>()
@@ -58,10 +58,22 @@ class C10KServer(
         )
     } else null
     
+    // Server configuration
+    private var enableQuic = false
+    private var deterministicMode = false
+    private var staticRoot = "static"
+    
+    init {
+        scope.launch {
+            // Start the server
+            startServer()
+        }
+    }
+    
     /**
      * Start the C10K server
      */
-    suspend fun start() = coroutineScope {
+    private suspend fun startServer() {
         println("C10K Server starting on port $port")
         println("Static root: $staticRoot")
         println("QUIC enabled: $enableQuic")

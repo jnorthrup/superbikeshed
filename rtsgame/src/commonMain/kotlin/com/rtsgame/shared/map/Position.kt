@@ -1,25 +1,24 @@
 package com.rtsgame.shared.map
 
+import kotlin.math.sqrt
+
 /**
  * Represents a 2D position in the game world.
  * This is the canonical position class that all code should use.
  */
-data class Position(
-    val x: Float,
-    val y: Float
-) {
+data class Position(val x: Double, val y: Double) {
     fun copy(
-        x: Float = this.x,
-        y: Float = this.y
+        x: Double = this.x,
+        y: Double = this.y
     ): Position = Position(x, y)
     
-    fun distanceTo(other: Position): Float {
+    fun distanceTo(other: Position): Double {
         val dx = x - other.x
         val dy = y - other.y
-        return kotlin.math.sqrt((dx * dx + dy * dy))
+        return sqrt(dx * dx + dy * dy)
     }
     
-    fun moveTowards(target: Position, speed: Float): Position {
+    fun moveTo(target: Position, speed: Double): Position {
         val distance = distanceTo(target)
         if (distance <= speed) return target
         
@@ -30,6 +29,6 @@ data class Position(
     }
     
     companion object {
-        val ZERO = Position(0f, 0f)
+        val ZERO = Position(0.0, 0.0)
     }
 } 

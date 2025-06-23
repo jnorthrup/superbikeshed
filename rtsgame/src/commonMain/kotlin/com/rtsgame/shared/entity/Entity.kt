@@ -3,23 +3,24 @@ package com.rtsgame.shared.entity
 import com.rtsgame.shared.map.Position
 
 /**
- * Represents a game entity.
- * This is the canonical interface that all Entity implementations must follow.
+ * Represents a game entity in the RTS game
  */
-interface Entity {
-    val id: String // Unique identifier
-    var position: Position // Current position (mutable)
-    var health: Float // Current health (mutable)
-    val maxHealth: Float // Maximum health
-    val speed: Float // Movement speed
-    val team: Int // Team/player ID
-    
-    fun copy(
-        id: String = this.id,
-        position: Position = this.position,
-        health: Float = this.health,
-        maxHealth: Float = this.maxHealth,
-        speed: Float = this.speed,
-        team: Int = this.team
-    ): Entity
+data class Entity(
+    val id: String,
+    val position: Position,
+    val playerId: Int,
+    val type: EntityType,
+    val health: Int,
+    val maxHealth: Int
+) {
+    fun move(newPosition: Position): Entity = copy(position = newPosition)
+    fun damage(amount: Int): Entity = copy(health = (health - amount).coerceAtLeast(0))
+    fun heal(amount: Int): Entity = copy(health = (health + amount).coerceAtMost(maxHealth))
+}
+
+enum class EntityType {
+    WORKER,
+    SOLDIER,
+    BUILDING,
+    RESOURCE
 } 

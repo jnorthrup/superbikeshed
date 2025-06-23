@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
+// import kotlinx.datetime.Clock // Removed dependency
 
 /**
  * I/O Daemon that coordinates high-performance I/O operations
@@ -113,7 +113,7 @@ data class IODaemonResult(
     val bytesTransferred: Int,
     val error: Int = 0,
     val flags: Int = 0,
-    val timestamp: Long = Clock.System.now().toEpochMilliseconds()
+    val timestamp: Long = System.currentTimeMillis()
 ) {
     val isSuccess: Boolean get() = error == 0
     val isError: Boolean get() = error != 0

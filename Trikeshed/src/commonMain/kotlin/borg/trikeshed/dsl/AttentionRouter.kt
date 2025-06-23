@@ -13,6 +13,8 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import kotlinx.serialization.json.JsonObject as KotlinxJsonObject
 import kotlin.coroutines.*
+// import org.flatton.client.CouchClient // Removed dependency
+// import org.flatton.types.* // Removed dependency
 
 /**
  * Stackable Bubbling Router DSL
@@ -147,17 +149,60 @@ class AttentionContext(
     val ipfs: IpfsClient? get() = coroutineContext[DistributedStorageCCEK.IPFS_CLIENT]?.client
     val couch: CouchClient? get() = coroutineContext[DistributedStorageCCEK.COUCH_CLIENT]?.let { 
         object : CouchClient {
-            override suspend fun getDocument(db: String, docId: String): CouchDocument {
-                return CouchDocument(docId, null, buildJsonObject { put("test", "mock_doc") })
+            override suspend fun getDatabaseInfo(dbName: DatabaseName): CouchDatabaseInfo {
+                throw NotImplementedError("Mock implementation")
             }
-            override suspend fun createDocument(db: String, doc: CouchDocument): borg.trikeshed.lib.JsonObject {
-                return borg.trikeshed.lib.JsonObject("""{"ok": true, "id": "${doc.id}", "rev": "1-abc123"}""")
+            
+            override suspend fun createDatabase(dbName: DatabaseName): CouchResponse {
+                return CouchResponse(ok = true)
             }
-            override suspend fun createDatabase(name: String): CouchResponse {
-                return CouchResponse(ok = true, error = null, reason = null)
+            
+            override suspend fun deleteDatabase(dbName: DatabaseName): CouchResponse {
+                throw NotImplementedError("Mock implementation")
             }
-            override suspend fun queryView(database: String, designDoc: String, viewName: String, params: ViewQueryParams): ViewQueryResponse {
-                return ViewQueryResponse(emptyIndex())
+            
+            override suspend fun getDocument(dbName: DatabaseName, docId: DocumentId, rev: RevisionId?): CouchDocument {
+                return CouchDocument(id = docId.value)
+            }
+            
+            override suspend fun createDocument(dbName: DatabaseName, doc: CouchDocument, docId: DocumentId?): CouchResponse {
+                return CouchResponse(ok = true, id = doc.id)
+            }
+            
+            override suspend fun updateDocument(dbName: DatabaseName, doc: CouchDocument): CouchResponse {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun deleteDocument(dbName: DatabaseName, docId: DocumentId, rev: RevisionId): CouchResponse {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun copyDocument(dbName: DatabaseName, fromId: DocumentId, toId: DocumentId, toRev: RevisionId?): CouchResponse {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun bulkDocs(dbName: DatabaseName, docs: Indexed<CouchDocument>, allOrNothing: Boolean): Indexed<CouchResponse> {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun getDesignDocument(dbName: DatabaseName, docId: DocumentId): CouchDesignDocument {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun saveDesignDocument(dbName: DatabaseName, doc: CouchDesignDocument): CouchResponse {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun <K, V> queryView(dbName: DatabaseName, designDocId: DocumentId, viewName: ViewName, params: ViewQueryParams): ViewResponse<K, V> {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun getSecurity(dbName: DatabaseName): CouchSecurity {
+                throw NotImplementedError("Mock implementation")
+            }
+            
+            override suspend fun setSecurity(dbName: DatabaseName, security: CouchSecurity): CouchResponse {
+                throw NotImplementedError("Mock implementation")
             }
         }
     }
@@ -237,14 +282,14 @@ class AttentionContext(
         val parts = couchPath.split('/')
         if (parts.isEmpty()) return HttpResponse(400, "Invalid path")
         
-        val db = parts[0]
-        val docId = parts.getOrNull(1)
+        val dbName = DatabaseName(parts[0])
+        val docId = parts.getOrNull(1)?.let { DocumentId(it) }
         
         return when (request.method) {
             "GET" -> {
                 if (docId != null) {
                     try {
-                        val doc = client.getDocument(db, docId)
+                        val doc = client.getDocument(dbName, docId)
                         HttpResponse(200, "OK", doc.toJson().toString(), "application/json")
                     } catch (e: Exception) {
                         HttpResponse(404, "Document not found")
@@ -256,10 +301,10 @@ class AttentionContext(
             "PUT" -> {
                 if (docId != null) {
                     val doc = CouchDocument(
-                        id = docId,
+                        id = docId.value,
                         data = Json.parseToJsonElement(request.body).jsonObject
                     )
-                    val response = client.createDocument(db, doc)
+                    val response = client.createDocument(dbName, doc)
                     HttpResponse(200, "OK", response.toString())
                 } else {
                     HttpResponse(400, "Document ID required")

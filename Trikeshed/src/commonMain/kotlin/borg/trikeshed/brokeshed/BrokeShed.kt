@@ -2,7 +2,10 @@ package borg.trikeshed.brokeshed
 
 import borg.trikeshed.lib.*
 import kotlinx.datetime.Instant
+import kotlinx.datetime.Clock
+import kotlinx.datetime.DISTANT_PAST
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Contextual
 
 /**
  * BrokeShed - Financial Brokerage and Market Data Processing
@@ -234,3 +237,51 @@ data class PortfolioMetrics(
     val sharpeRatio: Double = 0.0,
     val maxDrawdown: Double = 0.0
 )
+
+@Serializable
+data class BrokeShedEvent(
+    val timestamp: @Contextual Instant,
+    val eventType: String,
+    val details: String
+)
+
+@Serializable
+data class BrokeShedMetrics(
+    val timestamp: @Contextual Instant,
+    val eventCount: Int,
+    val errorRate: Double
+)
+
+fun recordEvent(eventType: String, details: String) {
+    val event = BrokeShedEvent(
+        timestamp = Clock.System.now(),
+        eventType = eventType,
+        details = details
+    )
+    events = (events.a + 1) j { i -> if (i == events.a) event else events.b(i) }
+}
+
+fun getMetrics(): BrokeShedMetrics {
+    val now = Clock.System.now()
+    val errorCount = events.α { it.eventType == "ERROR" }.a
+    val errorRate = if (events.a > 0) errorCount.toDouble() / events.a else 0.0
+    
+    return BrokeShedMetrics(
+        timestamp = now,
+        eventCount = events.a,
+        errorRate = errorRate
+    )
+}
+
+fun getLatestEvent(): BrokeShedEvent? {
+    return if (events.a > 0) events.b(events.a - 1) else null
+}
+
+fun getEventsSince(timestamp: @Contextual Instant): Indexed<BrokeShedEvent> {
+    val filtered = events.α { it.timestamp >= timestamp }
+    return filtered
+}
+
+fun getMaxTimestamp(): @Contextual Instant {
+    return events.α { it.timestamp }.maxOfOrNull { it } ?: DISTANT_PAST
+}

@@ -3,8 +3,12 @@ package borg.trikeshed.ccek
 import borg.trikeshed.lib.Indexed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import kotlinx.datetime.Clock
+// import kotlinx.datetime.Clock // Removed dependency
+// import kotlinx.datetime.Instant // Removed dependency
+// import kotlinx.datetime.DISTANT_PAST // Removed dependency
 import kotlin.coroutines.CoroutineContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Contextual
 
 // Data classes for CcekContext remain the same
 data class Control(

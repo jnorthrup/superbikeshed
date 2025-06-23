@@ -50,7 +50,8 @@ actual class SelectorInterface(private val jvmSelector: Selector) {
         jvmSelector.wakeup()
     }
     actual fun register(channel: SelectableChannel, ops: Int, attachment: Any?): SelectionKey {
-        val jvmSelectableChannel = channel as JvmSelectableChannel
+        val jvmSelectableChannel = channel as? JvmSelectableChannel 
+            ?: throw IllegalArgumentException("Expected JvmSelectableChannel but got ${channel::class}")
         val jvmChannel = jvmSelectableChannel.jvmChannel()
         return SelectionKey(jvmChannel.register(jvmSelector, ops, attachment))
     }

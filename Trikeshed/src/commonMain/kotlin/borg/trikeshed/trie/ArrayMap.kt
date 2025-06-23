@@ -85,8 +85,13 @@ class ArrayMap<K, V>(
             compareFunction: (K, K) -> Int = { a, b -> a.toString().compareTo(b.toString()) }
         ): ArrayMap<K, V> {
             val sortedKeys = map.keys.sortedWith(Comparator(compareFunction))
-            val keysSeries = sortedKeys.size j { i -> sortedKeys[i] }
-            val metaSeries = keysSeries.a j { key -> map[key]!! }
+            val keysSeries = sortedKeys.size j { i -> 
+                if (i < sortedKeys.size) sortedKeys[i] 
+                else throw IndexOutOfBoundsException("Index $i out of bounds for size ${sortedKeys.size}")
+            }
+            val metaSeries = keysSeries.a j { key -> 
+                map[key] ?: throw IllegalStateException("Key $key not found in map")
+            }
             
             return ArrayMap(metaSeries, keysSeries, compareFunction)
         }

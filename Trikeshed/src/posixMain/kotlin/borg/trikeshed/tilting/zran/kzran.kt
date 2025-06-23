@@ -4,7 +4,7 @@
 
 package borg.trikeshed.tilting.zran
 
-import borg.trikeshed.common.collections.binarySearch
+import borg.trikeshed.lib.binarySearch
 import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.readULong
 import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.readUShort
 import borg.trikeshed.isam.meta.PlatformCodec.Companion.currentPlatformCodec.writeULong
@@ -28,12 +28,23 @@ const val CHUNK = 16384
 val __usSz = UShort.SIZE_BYTES.toULong()
 val __ulSz = ULong.SIZE_BYTES.toULong()
 
+data class ZranPoint(
+    val input: ULong,
+    val output: ULong, 
+    val window: UByteArray,
+    val windowSupplier: (() -> UByteArray)? = null
+) {
+    val winsize: UShort get() = window.size.toUShort()
+}
+
+val UByteArray.`↺`: () -> UByteArray get() = { this }
+
 @ExperimentalUnsignedTypes
 class GzIndex {
     val have: Int get() = list.size
     val mode: Int = 0
     var length: ULong = 0u
-    var list: MutableList<Point> = mutableListOf()
+    var list: MutableList<ZranPoint> = mutableListOf()
 
     /** The name of the index file, or null if it's stdin */
     var fpName: String? = null
@@ -126,7 +137,7 @@ class GzIndex {
 
                 compressedData = compressedData.sliceArray(0 until compressedDataSize)
 
-                val point = Point((totin - strm.avail_in.toInt()).toULong(), totout.toULong(), compressedData)
+                val point = ZranPoint((totin - strm.avail_in.toInt()).toULong(), totout.toULong(), compressedData)
                 list += point
                 last = totout.toULong()
             }
@@ -204,7 +215,7 @@ class GzIndex {
         val isStdin = (indexFname == "-")
 
         for (i: Int in pointOutput.indices)
-            list += Point(pointOutput[i], pointInput[i], UByteArray(0),
+            list += ZranPoint(pointOutput[i], pointInput[i], UByteArray(0),
                 windowSupplier = if (isStdin) {
                     val window = UByteArray(windowSizes[i].toInt())
                     window.usePinned { fread(it.addressOf(0), 1u, windowSizes[i].toULong(), stdin) }
@@ -359,7 +370,8 @@ fun decode(args: Array<String>) {
     }
 
     val list = gzIndex.list
-    val binEntry = (list.toIdx() α { it.output }).binarySearch(start)
+    val listIndexed = list.toIdx()
+    val binEntry = listIndexed.binarySearchBy(start) { it.output }
     val chunk = if (binEntry >= 0) binEntry else max(0, -binEntry - 2)
     val point = list[chunk]
     if (gzFileName != null) {
