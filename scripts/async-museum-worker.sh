@@ -106,8 +106,8 @@ if [[ ${#FOUND_ARTIFACTS[@]} -gt 0 ]]; then
     # Process each artifact
     for artifact in "${FOUND_ARTIFACTS[@]}"; do
         if [[ -f "${artifact}" ]]; then
-            local basename=$(basename "${artifact}")
-            local target="${PROJECT_ROOT}/Trikeshed/src/commonMain/kotlin/borg/trikeshed/museum/${KEYWORD}/${basename}"
+            basename=$(basename "${artifact}")
+            target="${PROJECT_ROOT}/Trikeshed/src/commonMain/kotlin/borg/trikeshed/museum/${KEYWORD}/${basename}"
             
             wlog "Adapting artifact: ${basename}"
             
@@ -165,7 +165,7 @@ EOF
     
     # Test basic compilation (simple syntax check)
     wlog "Testing integration compilation..."
-    local compile_errors=0
+    compile_errors=0
     
     for file in "${PROJECT_ROOT}/Trikeshed/src/commonMain/kotlin/borg/trikeshed/museum/${KEYWORD}"/*.kt; do
         if [[ -f "${file}" ]]; then

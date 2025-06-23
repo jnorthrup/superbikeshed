@@ -712,4 +712,81 @@ typealias Shape = Indexed<Int>
  * val volume = matrix.a.play.fold(1) { acc, dim -> acc * dim }  // Shape volume
  * ```
  * 
- * **Advanced Patterns:**/
+ * **Advanced Patterns:**
+ * 
+ * **Shape Composition:**
+ * ```kotlin
+ * val batchShape: Shape = 1 j { 32 }  // [32]
+ * val imageShape: Shape = 3 j { i -> if (i == 0) 224 else 224 }  // [224, 224, 224]
+ * val fullShape: Shape = batchShape.play + imageShape.play  // [32, 224, 224, 224]
+ * ```
+ * 
+ * **Tensor Broadcasting:**
+ * ```kotlin
+ * val scalar: Tensor<Double> = 1 j { _ -> 42.0 }
+ * val vector: Tensor<Double> = 10 j { i -> i.toDouble() }
+ * val result: Tensor<Double> = scalar + vector  // Broadcasting
+ * ```
+ */
+typealias Tensor<T> = MetaSeries<Shape, T>
+
+// === TENSOR CONSTRUCTION UTILITIES ===
+
+/**
+ * ## generateTensor - Tensor Construction Helper
+ * 
+ * Creates a Tensor<T> from a Shape and a coordinate-to-value function.
+ * This is the primary constructor for Tensor instances.
+ * 
+ * **Usage:**
+ * ```kotlin
+ * val shape: Shape = 2 j { i -> if (i == 0) 3 else 4 }  // [3, 4]
+ * val tensor: Tensor<Double> = generateTensor(shape) { coords ->
+ *     coords[0] * 4.0 + coords[1]  // Linear indexing
+ * }
+ * ```
+ */
+fun <T> generateTensor(shape: Shape, generator: (Shape) -> T): Tensor<T> = shape j generator
+
+/**
+ * ## toIdx - Indexed Conversion Helper
+ * 
+ * Converts various collection types to Indexed<T> (formerly Series<T>).
+ * This provides a bridge between standard Kotlin collections and the MetaSeries ecosystem.
+ * 
+ * **Usage:**
+ * ```kotlin
+ * val list = listOf(1, 2, 3, 4, 5)
+ * val series: Indexed<Int> = list.toIdx()
+ * ```
+ */
+fun <T> List<T>.toIdx(): Indexed<T> = size j { this[it] }
+fun <T> Array<T>.toIdx(): Indexed<T> = size j { this[it] }
+fun IntArray.toIdx(): Indexed<Int> = size j { this[it] }
+fun DoubleArray.toIdx(): Indexed<Double> = size j { this[it] }
+fun FloatArray.toIdx(): Indexed<Float> = size j { this[it] }
+fun LongArray.toIdx(): Indexed<Long> = size j { this[it] }
+fun ShortArray.toIdx(): Indexed<Short> = size j { this[it] }
+fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
+fun BooleanArray.toIdx(): Indexed<Boolean> = size j { this[it] }
+fun CharArray.toIdx(): Indexed<Char> = size j { this[it] }
+
+// === PLATFORM-SPECIFIC BRIDGES ===
+
+/**
+ * ## Platform-specific bridges for common operations
+ * 
+ * These provide platform-agnostic interfaces for operations that need
+ * platform-specific implementations.
+ */
+
+expect fun getCurrentTimeMillis(): Long
+expect fun getSystemProperty(key: String): String?
+
+// === COMPATIBILITY ALIASES ===
+
+// For backward compatibility with existing code
+@Deprecated("Use toIdx() instead", ReplaceWith("toIdx()"))
+fun <T> List<T>.toSeries(): Indexed<T> = toIdx()
+
+// Note: Series<T> is already defined at the top of the file as Indexed<T>
