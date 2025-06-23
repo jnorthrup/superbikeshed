@@ -1,6 +1,5 @@
 package borg.trikeshed.parse
 
-@JvmInline
 value class Token(val type: TokenType, val literal: String, val pos: Int)
 
 enum class TokenType {
@@ -99,7 +98,6 @@ class BashScanner(val input: String) {
     }
 }
 
-@JvmInline
 value class BashBrace(val scanner: BashScanner) {
     fun scanTokens(): List<Token> {
         val tokens = mutableListOf<Token>()
@@ -118,13 +116,11 @@ value class BashBrace(val scanner: BashScanner) {
     }
 }
 
-@JvmInline
 value class ParseResult<out T>(
     val value: T,
     val remaining: List<Token>
 )
 
-@JvmInline
 value class Parser<T>(val parse: (List<Token>) -> ParseResult<T>?) {
     companion object {
         fun <T> pure(value: T): Parser<T> = Parser { tokens -> ParseResult(value, tokens) }

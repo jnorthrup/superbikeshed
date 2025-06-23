@@ -29,7 +29,7 @@ object QuicPacketBuilder {
                         0x54, 0x72, 0x69, 0x6B, 0x65, 0x53, 0x68, 0x64  // "TrikeSHd"
                     ).let { it.size j { i -> it[i] } }
                 ),
-                packetNumber = System.currentTimeMillis() and 0xFFFFFF
+                packetNumber = getCurrentTimeMillis() and 0xFFFFFF
             ),
             frames = 1 j {
                 StreamFrame(

@@ -76,7 +76,7 @@ class RTSNetworkHost(
         val tickInterval = 1000L / tickRate
         
         while (isActive) {
-            val startTime = System.currentTimeMillis()
+            val startTime = getCurrentTimeMillis()
             
             // Get current state
             val currentState = gameStates[currentTick] ?: createInitialState()
@@ -95,7 +95,7 @@ class RTSNetworkHost(
             cleanupOldStates()
             
             // Sleep for remaining time
-            val elapsed = System.currentTimeMillis() - startTime
+            val elapsed = getCurrentTimeMillis() - startTime
             if (elapsed < tickInterval) {
                 delay(tickInterval - elapsed)
             } else {

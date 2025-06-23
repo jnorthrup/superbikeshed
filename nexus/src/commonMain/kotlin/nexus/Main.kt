@@ -116,10 +116,60 @@ class NexusActionExecutor {
 }
 // === MAIN ENTRY POINT ===
 
+object NexusDSL {
+    @DslMarker
+    annotation class NexusMarker
+    
+    @NexusMarker
+    class SpaceGraphContext {
+        val peers = mutableListOf<String>()
+        val typeAliases = mutableMapOf<String, String>()
+        
+        fun peer(name: String) {
+            peers.add(name)
+        }
+        
+        fun typealias(name: String, type: String) {
+            typeAliases[name] = type
+        }
+    }
+    
+    @NexusMarker
+    class IntrospectionContext {
+        var observedContext: Any? = null
+        
+        fun observe(context: Any) {
+            observedContext = context
+        }
+    }
+    
+    fun spacegraph(block: SpaceGraphContext.() -> Unit): SpaceGraphContext {
+        return SpaceGraphContext().apply(block)
+    }
+    
+    fun introspect(block: IntrospectionContext.() -> Unit): IntrospectionContext {
+        return IntrospectionContext().apply(block)
+    }
+}
+
 object Nexus {
     private val executor = NexusActionExecutor()
     
     fun main(args: Array<String>) = runBlocking {
+        val spacegraph = NexusDSL.spacegraph {
+            peer("local")
+            peer("remote-cluster-1")
+            peer("remote-cluster-2")
+            typealias("StateFlow", "kotlinx.coroutines.flow.StateFlow")
+            typealias("DataContext", "borg.trikeshed.lib.Join")
+        }
+        
+        val introspection = NexusDSL.introspect {
+            observe(spacegraph)
+        }
+        
+        println("Nexus active with ${spacegraph.peers.size} peers and ${spacegraph.typeAliases.size} type aliases")
+        
         try {
             val action = parseArgs(args)
             val result = executor.execute(action)

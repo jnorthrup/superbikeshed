@@ -71,7 +71,7 @@ class DSLBuilder {
             val resolvedThisRound = mutableListOf<DSLComponent>()
             
             for (component in toResolve) {
-                if (component.dependencies.all { dep -> 
+                if (component.dependencies.play.all { dep -> 
                     resolved.contains(dep) || components.containsKey(dep) 
                 }) {
                     resolved.add(component.name)
@@ -142,7 +142,7 @@ class SelfConfiguringDSL(
         analysis.add("Max dependencies per component: $maxDeps")
         
         // Find independent components
-        val independent = components.play.count { it.dependencies.isEmpty() }
+        val independent = components.play.count { it.dependencies.size == 0 }
         analysis.add("Independent components: $independent")
         
         return analysis.size j { i -> analysis[i] }
@@ -361,7 +361,7 @@ object DSLValidation {
             components = components,
             vines = vines,
             isValid = isValid,
-            timestamp = System.currentTimeMillis()
+            timestamp = getCurrentTimeMillis()
         )
     }
     
@@ -379,7 +379,7 @@ object DSLValidation {
             componentCount = componentCount,
             vineCount = vineCount,
             analysis = analysis,
-            timestamp = System.currentTimeMillis()
+            timestamp = getCurrentTimeMillis()
         )
     }
 }

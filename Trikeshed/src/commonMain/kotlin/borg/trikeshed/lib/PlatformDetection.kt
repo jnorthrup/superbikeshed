@@ -11,6 +11,10 @@ import kotlinx.coroutines.*
  * - Cross-platform compatibility with intelligent fallbacks
  */
 
+// Platform-specific system property access
+expect fun getSystemProperty(key: String): String?
+expect fun getCurrentTimeMillis(): Long
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLATFORM DETECTION CORE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -63,9 +67,9 @@ object PlatformDetection {
      * Detect current platform information
      */
     fun detectCurrentPlatform(): PlatformInfo {
-        val osName = System.getProperty("os.name", "unknown")
-        val osArch = System.getProperty("os.arch", "unknown")
-        val is64Bit = System.getProperty("sun.arch.data.model", "32") == "64"
+        val osName = getSystemProperty("os.name") ?: "unknown"
+        val osArch = getSystemProperty("os.arch") ?: "unknown"
+        val is64Bit = getSystemProperty("sun.arch.data.model") == "64"
         
         val os = when {
             osName.contains("Mac", ignoreCase = true) -> OperatingSystem.MACOS
