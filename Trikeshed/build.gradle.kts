@@ -79,6 +79,8 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
+                implementation("edu.stanford.nlp:stanford-corenlp:4.5.6")
+                implementation("edu.stanford.nlp:stanford-corenlp:4.5.6:models")
             }
         }
     }

@@ -71,10 +71,10 @@ object QuicPacketBuilder {
         buffer.add(0x00) // Literal
         buffer.add(0x21) // Name index 33 (date)
         buffer.add(dateStr.length.toByte())
-        buffer.addAll(dateStr.toByteArray().toList())
+        buffer.addAll(dateStr.encodeToByteArray().toList())
         
         // Body separator and content
-        buffer.addAll("\r\n\r\n<h1>McDonald's WiFi Portal</h1>".toByteArray().toList())
+        buffer.addAll("\r\n\r\n<h1>McDonald's WiFi Portal</h1>".encodeToByteArray().toList())
         
         return buffer.size j { buffer[it] }
     }
@@ -112,13 +112,13 @@ object QuicPacketBuilder {
                 buffer.add(pn.toByte())
             }
             pn < 0x4000 -> {
-                buffer.add((0x40 or (pn shr 8)).toByte())
-                buffer.add((pn and 0xFF).toByte())
+                buffer.add((0x40 or (pn.toInt() shr 8)).toByte())
+                buffer.add((pn.toInt() and 0xFF).toByte())
             }
             else -> {
-                buffer.add((0x80 or (pn shr 16)).toByte())
-                buffer.add(((pn shr 8) and 0xFF).toByte())
-                buffer.add((pn and 0xFF).toByte())
+                buffer.add((0x80 or (pn.toInt() shr 16)).toByte())
+                buffer.add(((pn.toInt() shr 8) and 0xFF).toByte())
+                buffer.add((pn.toInt() and 0xFF).toByte())
             }
         }
         

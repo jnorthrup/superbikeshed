@@ -73,7 +73,7 @@ fun sha256(input: String): String {
         h6 += g
         h7 += h
     }
-    return listOf(h0, h1, h2, h3, h4, h5, h6, h7).joinToString("") { "%08x".format(it) }
+    return listOf(h0, h1, h2, h3, h4, h5, h6, h7).joinToString("") { it.toUInt().toString(16).padStart(8, '0') }
 }
 
 private fun pad(input: ByteArray): ByteArray {
