@@ -712,5 +712,4 @@ typealias Shape = Indexed<Int>
  * val volume = matrix.a.play.fold(1) { acc, dim -> acc * dim }  // Shape volume
  * ```
  * 
- * **Advanced Patterns:**
- * ```
+ * **Advanced Patterns:**/
