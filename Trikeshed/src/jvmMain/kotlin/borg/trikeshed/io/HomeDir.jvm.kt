@@ -20,7 +20,7 @@ actual fun rm(path: String): Boolean {
     return if (file.isDirectory) {
         file.deleteRecursively()
     } else {
-        file.deleteIfExists()
+        Paths.get(path).deleteIfExists()
     }
 }
 

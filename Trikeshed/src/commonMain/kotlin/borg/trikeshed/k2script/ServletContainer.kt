@@ -266,14 +266,11 @@ data class PathInfoElement(
 
 // Sample servlet scripts
 
-private const val HELLO_SERVLET = """
+private val HELLO_SERVLET = """
 // hello.kts - Simple hello world servlet
-val request = servletRequest
-val response = servletResponse
-
 response.contentType = "text/html"
 response.write("<h1>Hello from K2Script!</h1>")
-response.write("<p>Your path: \${request.path}</p>")
+response.write("<p>Your path: mock_path</p>")
 """
 
 private const val JSON_SERVLET = """

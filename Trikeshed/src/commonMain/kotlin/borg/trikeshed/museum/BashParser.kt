@@ -11,7 +11,7 @@ data class Token(
     val literal: String
 )
 
-value class ParseResult<out T>(
+data class ParseResult<out T>(
     val value: T,
     val remaining: List<Token>
 )

@@ -68,12 +68,12 @@ object QuicCurlExample {
         
         while (offset < data.a) {
             // Print offset
-            print(String.format("%08X  ", offset))
+            print("${offset.toString(16).padStart(8, '0').uppercase()}  ")
             
             // Print hex bytes
             for (i in 0 until bytesPerLine) {
                 if (offset + i < data.a) {
-                    print(String.format("%02X ", data.b(offset + i).toInt() and 0xFF))
+                    print("${(data.b(offset + i).toInt() and 0xFF).toString(16).padStart(2, '0').uppercase()} ")
                 } else {
                     print("   ")
                 }
@@ -101,7 +101,7 @@ object QuicCurlExample {
     private fun toHexString(data: Indexed<Byte>): String {
         val sb = StringBuilder()
         for (i in 0 until data.a) {
-            sb.append(String.format("%02x", data.b(i).toInt() and 0xFF))
+            sb.append((data.b(i).toInt() and 0xFF).toString(16).padStart(2, '0'))
         }
         return sb.toString()
     }

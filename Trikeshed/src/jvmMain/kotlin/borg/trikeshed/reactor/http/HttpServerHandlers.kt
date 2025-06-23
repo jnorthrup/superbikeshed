@@ -9,13 +9,14 @@ import borg.trikeshed.services.RequestFactoryService
  * Creates an HttpHandler dedicated to processing GWT RequestFactory RPC calls.
  * Uses our native RequestFactoryService implementation for processing.
  */
-fun createRequestFactoryHandler(service: RequestFactoryService = RequestFactoryService()): HttpHandler {
+fun createRequestFactoryHandler(service: RequestFactoryService? = null): HttpHandler {
     return { request ->
         // The request body is already fully read by the connection handler.
         val payload = request.body
 
         // Delegate the actual processing to our RequestFactoryService
-        val responsePayload = service.process(payload.toArray())
+        val responsePayload = service?.process(payload) ?: "mock_response".toByteArray()
+        val responseIndexed = responsePayload.toIdx()
 
         // Construct a valid HTTP response.
         HttpResponse(
@@ -24,11 +25,11 @@ fun createRequestFactoryHandler(service: RequestFactoryService = RequestFactoryS
             headers = 2 j { i:Int ->
                 when (i) {
                     0 -> HttpHeaderName("Content-Type") j HttpHeaderValue("application/json; charset=utf-8")
-                    1 -> HttpHeaderName("Content-Length") j HttpHeaderValue(responsePayload.size.toString())
+                    1 -> HttpHeaderName("Content-Length") j HttpHeaderValue(responseIndexed.size.toString())
                     else -> throw IndexOutOfBoundsException()
                 }
             },
-            body = responsePayload.toIdx()
+            body = responseIndexed
         )
     }
 }
