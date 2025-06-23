@@ -126,6 +126,7 @@ object NexusDSL {
     class SpaceGraphContext {
         val peers = mutableListOf<String>()
         val typeAliases = mutableMapOf<String, String>()
+        val blackboard = mutableMapOf<String, Any>()
         
         fun peer(name: String) {
             peers.add(name)
@@ -133,6 +134,37 @@ object NexusDSL {
         
         fun typeAlias(name: String, type: String) {
             typeAliases[name] = type
+        }
+        
+        fun blackboard(block: BlackboardContext.() -> Unit) {
+            BlackboardContext(blackboard).apply(block)
+        }
+    }
+    
+    @NexusMarker
+    class BlackboardContext(private val board: MutableMap<String, Any>) {
+        fun cite(name: String, reference: String) {
+            board["cite_$name"] = reference
+        }
+        
+        fun blurb(name: String, text: String) {
+            board["blurb_$name"] = text
+        }
+        
+        fun link(name: String, url: String) {
+            board["link_$name"] = url
+        }
+        
+        fun strings(name: String, vararg items: String) {
+            board["strings_$name"] = items.toList()
+        }
+        
+        fun things(name: String, vararg items: Any) {
+            board["things_$name"] = items.toList()
+        }
+        
+        fun widget(name: String, config: Map<String, Any>) {
+            board["widget_$name"] = config
         }
     }
     
@@ -164,6 +196,19 @@ object Nexus {
             peer("remote-cluster-2")
             typeAlias("StateFlow", "kotlinx.coroutines.flow.StateFlow")
             typeAlias("DataContext", "nexus.Join")
+            
+            blackboard {
+                cite("trikeshed", "Core multiplatform data structures")
+                blurb("architecture", "50% taxonomical typealias, 50% DSEL code")
+                link("repo", "https://github.com/superbikeshed/superbikeshed")
+                strings("patterns", "Series", "Join", "Indexed", "CCEK")
+                things("components", "nexus", "trikeshed", "k2script")
+                widget("spacegraph", mapOf(
+                    "type" to "introspective",
+                    "peers" to 3,
+                    "typealiases" to 2
+                ))
+            }
         }
         
         val introspection = NexusDSL.introspect {
@@ -171,6 +216,10 @@ object Nexus {
         }
         
         println("Nexus active with ${spacegraph.peers.size} peers and ${spacegraph.typeAliases.size} type aliases")
+        println("Blackboard contains ${spacegraph.blackboard.size} entries:")
+        spacegraph.blackboard.forEach { (key, value) ->
+            println("  $key: $value")
+        }
         
         try {
             val action = parseArgs(args)

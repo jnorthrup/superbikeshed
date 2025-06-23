@@ -4,7 +4,7 @@ import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.google.devtools.ksp.toClassName
 import com.squareup.kotlinpoet.*
-import java.io.OutputStream
+import java.io.*
 
 class TrikeShedDslProcessorProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
