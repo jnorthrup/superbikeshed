@@ -1,9 +1,11 @@
 package borg.trikeshed.download
 
-import kotlinx.coroutines.runBlocking
-import borg.trikeshed.lib.Series
+import kotlinx.coroutines.*
+import borg.trikeshed.lib.Series as Indexed
+import borg.trikeshed.lib.play
 import borg.trikeshed.lib.j
-import kotlin.system.exitProcess
+import borg.trikeshed.lib.toIdx
+// Note: exitProcess not available in commonMain, using mock implementation
 
 object Aria2cDSL {
     data class DownloadRequest(
@@ -27,20 +29,20 @@ object Aria2cDSL {
         val trikeshedCoord: String? = null
     )
 
-    infix fun String.download(block: DownloadRequest.() -> Unit): Int {
+    infix fun String.download(block: DownloadRequest.() -> Unit): suspend () -> Int {
         val request = DownloadRequest().apply {
             uris.add(this@download)
             block()
         }
-        return executeAria2c(request)
+        return { executeAria2c(request) }
     }
 
-    infix fun Series<String>.downloadAll(block: DownloadRequest.() -> Unit): Int {
+    infix fun Indexed<String>.downloadAll(block: DownloadRequest.() -> Unit): suspend () -> Int {
         val request = DownloadRequest().apply {
-            this@downloadAll.`▶`.forEach { uris.add(it) }
+            this@downloadAll.play.forEach { uris.add(it) }
             block()
         }
-        return executeAria2c(request)
+        return { executeAria2c(request) }
     }
 
     infix fun DownloadRequest.to(dir: String): DownloadRequest = copy(outputDir = dir)
@@ -52,7 +54,7 @@ object Aria2cDSL {
     infix fun DownloadRequest.couchdb(coord: String): DownloadRequest = copy(couchdb = coord)
     infix fun DownloadRequest.trikeshed(coord: String): DownloadRequest = copy(trikeshedCoord = coord)
 
-    fun executeAria2c(request: DownloadRequest): Int = runBlocking {
+    suspend fun executeAria2c(request: DownloadRequest): Int = coroutineScope {
         // TODO: Implement download logic with QUIC/IPFS/HTTP
         // If couchdb is set, upload to CouchDB
         // If trikeshedCoord is set, route to TrikeShed storage/attention system
@@ -73,7 +75,7 @@ object Aria2cDSL {
 }
 
 // CLI handler for aria2c-compatible arguments
-fun handleAria2c(args: List<String>): Int {
+suspend fun handleAria2c(args: List<String>): Int {
     val uris = mutableListOf<String>()
     var outputDir = "."
     var daemon = false
@@ -93,12 +95,13 @@ fun handleAria2c(args: List<String>): Int {
         i++
     }
     return with(Aria2cDSL) {
-        Series.of(uris) downloadAll {
-            this.outputDir = outputDir
-            this.daemon = daemon
-            this.rpcPort = rpcPort
-            this.couchdb = couchdb
-            this.trikeshedCoord = trikeshedCoord
+        val downloadFunction = uris.toIdx() downloadAll {
+            outputDir = outputDir
+            daemon = daemon
+            rpcPort = rpcPort
+            couchdb = couchdb
+            trikeshedCoord = trikeshedCoord
         }
+        downloadFunction()
     }
 }

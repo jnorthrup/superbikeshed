@@ -241,18 +241,18 @@ class IpfsClient(
     private fun computeHash(data: Indexed<Byte>): Indexed<Byte> {
         // Simplified SHA-256 - would use platform crypto
         val hash = ByteArray(32)
-        var h0 = 0x6a09e667
-        var h1 = 0xbb67ae85
-        var h2 = 0x3c6ef372
-        var h3 = 0xa54ff53a
+        var h0 = 0x6a09e667L
+        var h1 = 0xbb67ae85L
+        var h2 = 0x3c6ef372L
+        var h3 = 0xa54ff53aL
         
         // Very simplified - just XOR bytes
         for (i in 0 until data.a) {
             val b = data.b(i).toInt() and 0xFF
-            h0 = h0 xor (b shl 24)
-            h1 = h1 xor (b shl 16)
-            h2 = h2 xor (b shl 8)
-            h3 = h3 xor b
+            h0 = h0 xor (b.toLong() shl 24)
+            h1 = h1 xor (b.toLong() shl 16)
+            h2 = h2 xor (b.toLong() shl 8)
+            h3 = h3 xor b.toLong()
         }
         
         // Write result

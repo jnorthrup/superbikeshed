@@ -6,7 +6,7 @@ import java.nio.channels.SelectionKey as JvmSelectionKey
 import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 
-class JvmSelectableChannel(private val nativeChannel: JvmSelectableChannel) : SelectableChannel {
+class JvmSelectableChannel(internal val nativeChannel: JvmSelectableChannel) : SelectableChannel {
     override val isOpen: Boolean
         get() = nativeChannel.isOpen
 
@@ -50,7 +50,8 @@ actual class SelectorInterface(private val jvmSelector: Selector) {
         jvmSelector.wakeup()
     }
     actual fun register(channel: SelectableChannel, ops: Int, attachment: Any?): SelectionKey {
-        val jvmChannel = (channel as JvmSelectableChannel).jvmChannel()
+        val jvmSelectableChannel = channel as JvmSelectableChannel
+        val jvmChannel = jvmSelectableChannel.jvmChannel()
         return SelectionKey(jvmChannel.register(jvmSelector, ops, attachment))
     }
     actual fun selectedKeys(): Set<SelectionKey> =

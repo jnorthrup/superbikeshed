@@ -58,13 +58,13 @@ object QuicPacketBuilder {
         buffer.add(0x00) // Literal with name reference
         buffer.add(0x05) // Name index 5 (content-type)
         buffer.add(0x09) // Value length 9
-        buffer.addAll("text/html".toByteArray().toList())
+        buffer.addAll("text/html".encodeToByteArray().toList())
         
         // server: TrikeShed-QUIC
         buffer.add(0x00) // Literal with name reference  
         buffer.add(0x54) // Name index 84 (server)
         buffer.add(0x0E) // Value length 14
-        buffer.addAll("TrikeShed-QUIC".toByteArray().toList())
+        buffer.addAll("TrikeShed-QUIC".encodeToByteArray().toList())
         
         // date: [current date]
         val dateStr = "Sat, 22 Dec 2024 00:00:00 GMT"

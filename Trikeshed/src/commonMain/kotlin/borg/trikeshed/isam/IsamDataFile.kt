@@ -1,9 +1,9 @@
 package borg.trikeshed.isam
 
-import borg.trikeshed.lib.ColumnMeta
-import borg.trikeshed.lib.Cursor
-import borg.trikeshed.lib.RowVec
-import borg.trikeshed.lib.Usable
+import borg.trikeshed.lib.*
+
+// Mock Cursor type for compilation
+typealias Cursor = Indexed<RowVec>
 
 /**
  * ISAM data file interface

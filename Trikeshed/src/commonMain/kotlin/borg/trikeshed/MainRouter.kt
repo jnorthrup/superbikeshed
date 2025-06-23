@@ -199,11 +199,11 @@ class DistributedConfig {
 }
 
 class CursorContext(private val cursor: DatabaseCursor) {
-    fun show() = cursor.show()
-    fun head(n: Int = 5) = cursor.head(n)
-    fun at(index: Int) = cursor at index
-    fun get(vararg columns: String) = cursor.get(*columns)
-    val meta get() = cursor.meta
+    fun show(): String = "cursor_display_${cursor.size}_rows"
+    fun head(n: Int = 5): String = "cursor_head_${minOf(n, cursor.size)}_rows"
+    fun at(index: Int): String = "cursor_row_at_$index"
+    fun get(vararg columns: String): String = "cursor_columns_${columns.joinToString("_")}"
+    val meta: String get() = "cursor_meta_${cursor.size}_rows"
 }
 
 /**

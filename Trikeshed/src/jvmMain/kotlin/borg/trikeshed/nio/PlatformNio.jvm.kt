@@ -82,6 +82,9 @@ actual class PlatformChannel(private val channel: Channel) {
 }
 
 actual class PlatformDatagramSocket(val socket: DatagramSocket = DatagramSocket()) {
+    actual companion object {
+        actual fun create(): PlatformDatagramSocket = PlatformDatagramSocket()
+    }
     actual fun connect(address: PlatformInetSocketAddress) {
         socket.connect(address.javaInetSocketAddress)
     }

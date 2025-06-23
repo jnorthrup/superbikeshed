@@ -46,10 +46,10 @@ fun routeCommand(command: String, args: Array<String>) {
     when (command) {
         "httpd" -> handleHttpdCommands(args)
         "quicd" -> handleQuicdCommands(args)
-        "server" -> ProductionMain.main(arrayOf("server") + args)
-        "rts" -> ProductionMain.main(arrayOf("rts") + args)
-        "ipfs" -> ProductionMain.main(arrayOf("ipfs") + args)
-        "distributed" -> ProductionMain.main(arrayOf("distributed") + args)
+        "server" -> runBlocking { ProductionMain.main(arrayOf("server") + args) }
+        "rts" -> runBlocking { ProductionMain.main(arrayOf("rts") + args) }
+        "ipfs" -> runBlocking { ProductionMain.main(arrayOf("ipfs") + args) }
+        "distributed" -> runBlocking { ProductionMain.main(arrayOf("distributed") + args) }
         "help" -> showUsage()
         "version" -> showVersion()
         else -> TODO("Unknown command: $command - use 'trikeshed help' for usage")

@@ -76,7 +76,7 @@ class C10KServer(
      * Accept new connections
      */
     private suspend fun acceptLoop() = coroutineScope {
-        while (isActive) {
+        while (coroutineContext.isActive) {
             // In real implementation, would accept from socket
             // For now, simulate connection acceptance
             delay(10)
@@ -249,7 +249,7 @@ class C10KServer(
         val tickRate = 60 // 60 ticks per second
         val tickInterval = 1000L / tickRate
         
-        while (isActive) {
+        while (coroutineContext.isActive) {
             val startTime = System.currentTimeMillis()
             
             // Process all commands for this tick
@@ -282,7 +282,7 @@ class C10KServer(
      */
     private suspend fun quicProcessorLoop() {
         quicEngine?.let { engine ->
-            while (isActive) {
+            while (coroutineContext.isActive) {
                 // Process incoming QUIC packets
                 // In real implementation, would receive from UDP socket
                 delay(1)
@@ -294,7 +294,7 @@ class C10KServer(
      * Static file watcher for cache invalidation
      */
     private suspend fun staticFileWatcher() {
-        while (isActive) {
+        while (coroutineContext.isActive) {
             delay(5000) // Check every 5 seconds
             
             // Invalidate old cache entries
@@ -334,7 +334,7 @@ class C10KServer(
         val state = getGameState(simulationTick)
         connections.values.forEach { conn ->
             if (conn.isActive) {
-                launch {
+                kotlinx.coroutines.GlobalScope.launch {
                     conn.sendMessage(state)
                 }
             }
@@ -420,7 +420,7 @@ data class SimulationCommand(
 
 private fun <T> emptyIndex(): Indexed<T> = 0 j { throw NoSuchElementException() }
 
-@TrikeShedDsl("c10k")
+@TrikeShedDsl
 class C10KConfig {
     var port: Int = 8080
     var staticRoot: String = "./static"

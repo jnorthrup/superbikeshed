@@ -142,10 +142,7 @@ data class TransportParameters(
 )
 
 @TrikeShedDsl
-class QuicConfig {
-    var role = QuicEngine.Role.SERVER
-    var transportParams = TransportParameters()
-}
+// Removed duplicate QuicConfig class - using the one from QuicConfig.kt instead
 
 // QUIC connection state
 @Serializable
