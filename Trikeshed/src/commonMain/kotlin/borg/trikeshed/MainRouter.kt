@@ -6,13 +6,15 @@ import borg.trikeshed.net.quic.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.k2script.*
-// import borg.trikeshed.rts.* // Moved to museum
+import borg.trikeshed.rts.*
 import borg.trikeshed.distributed.*
 import borg.trikeshed.jetsam.*
 import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmStatic
+import com.rtsgame.shared.rts.RTSNetworkHost
+import com.rtsgame.shared.game.GameState
 
 /**
  * Main DSL Router - Single entry point to entire TrikeShed codebase
@@ -132,7 +134,7 @@ class RouteContext(val args: Array<String>) {
     // RTS game host - Simplified for compilation
     suspend fun rts(block: RTSConfig.() -> Unit): String {
         val config = RTSConfig().apply(block)
-        return "RTSNetworkHost(port=${config.port})"
+        return "RTSNetworkHost(port=${config.port}, maxPlayers=${config.maxPlayers})"
     }
     
     // Distributed storage - Simplified for compilation
@@ -187,10 +189,8 @@ class ServletConfig {
 }
 
 class RTSConfig {
-    var tickRate = 60
-    var maxPlayers = 8
-    var port = 7777
-    var enableRollback = true
+    var port: Int = 7777
+    var maxPlayers: Int = 16
 }
 
 class DistributedConfig {
@@ -232,9 +232,7 @@ suspend fun main(args: Array<String>) = MainRouter.trikeshed(args) {
     route("rts") {
         val host = rts {
             port = argInt(0, 7777)
-            maxPlayers = argInt(1, 8)
-            tickRate = 60
-            enableRollback = true
+            maxPlayers = argInt(1, 16)
         }
         
         println("RTS host starting on port ${host}")

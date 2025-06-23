@@ -1,5 +1,7 @@
 package borg.trikeshed.net
 
+import com.rtsgame.shared.rts.RTSNetworkHost
+import com.rtsgame.shared.game.GameState
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.CZero.nz
@@ -10,19 +12,29 @@ import kotlinx.coroutines.channels.*
 import kotlin.coroutines.*
 import borg.trikeshed.ksp.TrikeShedDsl
 import borg.trikeshed.lib.Usable
+import borg.trikeshed.net.http.*
+import kotlinx.coroutines.flow.*
 
 /**
  * C10K Server - Production-ready high-performance server
  * Handles 10,000+ concurrent connections for RTS game hosting
  */
 class C10KServer(
-    private val port: Int,
-    private val staticRoot: String,
-    private val enableQuic: Boolean = true,
-    private val deterministicMode: Boolean = false
+    private val scope: CoroutineScope,
+    private val port: Int = 7777,
+    private val maxPlayers: Int = 16
 ) {
+    private val rtsHost = RTSNetworkHost(
+        scope = scope,
+        gameState = GameState(
+            entities = emptyMap(),
+            resources = emptyMap(),
+            currentTime = 0L
+        )
+    )
     // Connection pools
     private val connections = mutableMapOf<Long, ClientConnection>()
+    private val pendingConnections = mutableMapOf<Long, PendingConnection>()
     private val staticCache = mutableMapOf<String, CachedResource>()
     private var nextConnectionId = 0L
     

@@ -1,13 +1,14 @@
 package borg.trikeshed
 
 import borg.trikeshed.net.*
-// import borg.trikeshed.rts.* // Moved to museum
+import borg.trikeshed.rts.*
 import borg.trikeshed.k2script.*
 import borg.trikeshed.distributed.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import com.rtsgame.shared.rts.RTSNetworkHost
 
 /**
  * Production Main - Ready to run today
@@ -57,23 +58,23 @@ object ProductionMain {
     
     private suspend fun runRTSHost(args: Array<String>): Nothing = coroutineScope {
         val port = args.getOrNull(1)?.toIntOrNull() ?: 7777
-        val maxPlayers = args.getOrNull(2)?.toIntOrNull() ?: 8
+        val maxPlayers = args.getOrNull(2)?.toIntOrNull() ?: 16
         
         println("Starting RTS Network Host")
         println("Port: $port")
-        println("Max players: $maxPlayers")
+        println("Max Players: $maxPlayers")
         
-        // RTS Host moved to museum
-        // val host = RTSNetworkHost(
-        //     tickRate = 60,
-        //     maxPlayers = maxPlayers,
-        //     port = port,
-        //     enableRollback = true
-        // )
-        // 
-        // // Start host
-        // host.start()
-        println("RTS functionality temporarily moved to museum for zero-error build")
+        val host = RTSNetworkHost(
+            scope = this,
+            gameState = com.rtsgame.shared.game.GameState(
+                entities = emptyMap(),
+                resources = emptyMap(),
+                currentTime = 0L
+            )
+        )
+        
+        // Start host
+        host.start()
         
         // Keep running
         awaitCancellation()

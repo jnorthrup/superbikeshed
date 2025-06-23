@@ -7,6 +7,10 @@ plugins {
 
 kotlin {
     jvm()
+    js(IR) {
+        browser()
+        nodejs()
+    }
     // Platform detection for native targets
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -27,7 +31,13 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":Trikeshed"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
             }
         }
         

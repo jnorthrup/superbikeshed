@@ -18,35 +18,33 @@ data class LocalEntityId(val value: String)
 data class LocalPlayerId(val value: Int)
 data class LocalHealth(val value: Float)
 
-// CoreEntity: Concrete implementation of the canonical Entity interface
+/**
+ * Core implementation of the Entity interface
+ */
 data class CoreEntity(
-    override val id: String, // From Entity interface
-    override var position: Position, // From Entity interface, using canonical Position
-    override var health: Float, // From Entity interface
-    override val maxHealth: Float, // From Entity interface
-    override val speed: Float, // From Entity interface
-    override val team: Int, // From Entity interface
-
-    // Potentially other CoreEntity-specific properties can be added here
+    override val id: String,
+    override var position: Position,
+    override var health: Float,
+    override val maxHealth: Float,
+    override val speed: Float,
+    override val team: Int,
     val name: String = "Unit"
 ) : Entity {
-    // Helper constructor using local wrapper types if needed for transition
-    constructor(
-        localId: LocalEntityId,
-        pos: Position,
-        localHealth: LocalHealth,
-        maxHp: Float,
-        spd: Float,
-        localPlayerId: LocalPlayerId,
-        entityName: String = "Unit"
-    ) : this(
-        id = localId.value,
-        position = pos,
-        health = localHealth.value,
-        maxHealth = maxHp,
-        speed = spd,
-        team = localPlayerId.value,
-        name = entityName
+    override fun copy(
+        id: String,
+        position: Position,
+        health: Float,
+        maxHealth: Float,
+        speed: Float,
+        team: Int
+    ): Entity = CoreEntity(
+        id = id,
+        position = position,
+        health = health,
+        maxHealth = maxHealth,
+        speed = speed,
+        team = team,
+        name = this.name
     )
 }
 
@@ -55,12 +53,13 @@ data class CoreEntity(
  */
 class GameEngine {
     fun tick(): GameState {
-        // Simple static game state for demo, using canonical types
+        // Create initial game state
         val entitiesMap = mutableMapOf<String, Entity>()
-
+        
+        // Add some initial entities
         val entity1 = CoreEntity(
             id = "unit_1",
-            position = Position(100f, 100f), // Canonical Position
+            position = Position(100f, 100f),
             health = 100f,
             maxHealth = 100f,
             speed = 5f,
@@ -68,62 +67,50 @@ class GameEngine {
             name = "Alpha"
         )
         entitiesMap[entity1.id] = entity1
-
+        
         val entity2 = CoreEntity(
-            localId = LocalEntityId("unit_2"), // Example using helper constructor
-            pos = Position(200f, 150f),
-            localHealth = LocalHealth(75f),
-            maxHp = 100f,
-            spd = Sff,
-            localPlayerId = LocalPlayerId(2),
-            entityName = "Beta"
+            id = "unit_2",
+            position = Position(200f, 150f),
+            health = 75f,
+            maxHealth = 100f,
+            speed = 3f,
+            team = 2,
+            name = "Beta"
         )
         entitiesMap[entity2.id] = entity2
         
-        // Resources map for GameState (PlayerID -> ResourceType -> Amount)
-        // Example: Player 1 has 1000 of each basic resource.
+        // Set up initial resources
         val player1Resources = mapOf(
             ResourceType.GOLD to 1000,
             ResourceType.WOOD to 1000,
             ResourceType.FOOD to 1000
-            // Add other resources as defined in canonical ResourceType
         )
         val resources = mapOf(1 to player1Resources)
-
+        
         return GameState(
             entities = entitiesMap,
-            resources = resources, // Added resources to GameState
-            currentTime = currentTimeMillis() / 1000 // Assuming currentTime is a Long timestamp
+            resources = resources,
+            currentTime = currentTimeMillis() / 1000
         )
     }
     
     fun simulateTick(currentState: GameState): GameState {
         val newEntities = mutableMapOf<String, Entity>()
+        
         currentState.entities.values.forEach { entity ->
-            // Ensure we are working with CoreEntity if we need specific fields not on Entity interface
-            // For now, position is on Entity interface.
-            // val coreEntity = entity as? CoreEntity ?: entity // Keep as Entity if no specific fields needed
-
-            // Simple movement simulation using canonical Position
-            val newX = entity.position.x + (kotlin.random.Random.nextFloat() - 0.5f) * (entity.speed)
-            val newY = entity.position.y + (kotlin.random.Random.nextFloat() - 0.5f) * (entity.speed)
+            // Simple movement simulation
+            val newX = entity.position.x + (kotlin.random.Random.nextFloat() - 0.5f) * entity.speed
+            val newY = entity.position.y + (kotlin.random.Random.nextFloat() - 0.5f) * entity.speed
             
-            // Update position: Entity interface's position is a val, so we need a new instance or make it a var.
-            // For CoreEntity, position is a var.
-            if (entity is CoreEntity) { // Check if it's our concrete type to modify
-                 val movedEntity = entity.copy(position = Position(newX, newY))
-                 newEntities[movedEntity.id] = movedEntity
-            } else {
-                // If it's not a CoreEntity, we can't easily change its position unless Entity interface's position is var
-                // Or we'd need specific logic for other Entity implementers.
-                // For now, just copy non-CoreEntity types.
-                newEntities[entity.id] = entity
-            }
+            // Create new position and update entity
+            val newPosition = Position(newX, newY)
+            val updatedEntity = entity.copy(position = newPosition)
+            newEntities[updatedEntity.id] = updatedEntity
         }
         
         return currentState.copy(
             entities = newEntities,
-            currentTime = currentState.currentTime + 1 // Increment game time (tick)
+            currentTime = currentState.currentTime + 1
         )
     }
 }
