@@ -87,7 +87,8 @@ fun handleSelectionKey(key: SelectionKey, selector: Selector) {
  * Handle ACCEPT operation - create new client connection
  */
 fun handleAccept(key: SelectionKey, selector: Selector) {
-    val serverChannel = key.channel() as ServerSocketChannel
+    val serverChannel = key.channel() as? ServerSocketChannel 
+        ?: throw IllegalStateException("Expected ServerSocketChannel but got ${key.channel()::class}")
     val clientChannel = serverChannel.accept()
     
     if (clientChannel != null) {
@@ -108,8 +109,10 @@ fun handleAccept(key: SelectionKey, selector: Selector) {
  * Handle READ operation - parse HTTP request
  */
 fun handleRead(key: SelectionKey) {
-    val clientChannel = key.channel() as SocketChannel
-    val httpState = key.attachment() as HttpConnectionState
+    val clientChannel = key.channel() as? SocketChannel 
+        ?: throw IllegalStateException("Expected SocketChannel but got ${key.channel()::class}")
+    val httpState = key.attachment() as? HttpConnectionState 
+        ?: throw IllegalStateException("Expected HttpConnectionState but got ${key.attachment()::class}")
     val buffer = ByteBuffer.allocate(8192)
     
     try {
@@ -154,8 +157,10 @@ fun handleRead(key: SelectionKey) {
  * Handle WRITE operation - send HTTP response
  */
 fun handleWrite(key: SelectionKey) {
-    val clientChannel = key.channel() as SocketChannel
-    val httpState = key.attachment() as HttpConnectionState
+    val clientChannel = key.channel() as? SocketChannel 
+        ?: throw IllegalStateException("Expected SocketChannel but got ${key.channel()::class}")
+    val httpState = key.attachment() as? HttpConnectionState 
+        ?: throw IllegalStateException("Expected HttpConnectionState but got ${key.attachment()::class}")
     
     try {
         val bytesWritten = clientChannel.write(httpState.responseBuffer)

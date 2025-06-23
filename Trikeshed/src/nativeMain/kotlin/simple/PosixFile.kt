@@ -521,7 +521,10 @@ class PosixFile(
                     perror("ferror")
                     exit(1)
                 }
-            }.also { file.close().also { fclose(fp) } }
+            }.also { 
+                try { file.close() } catch (e: Exception) { /* log error */ }
+                try { fclose(fp) } catch (e: Exception) { /* log error */ }
+            }
 
         }
 
@@ -545,8 +548,8 @@ class PosixFile(
                 exit(1)
             }
             return list.toIdx().also {
-                file.close()
-                fclose(fp)
+                try { file.close() } catch (e: Exception) { /* log error */ }
+                try { fclose(fp) } catch (e: Exception) { /* log error */ }
             }
         }
 

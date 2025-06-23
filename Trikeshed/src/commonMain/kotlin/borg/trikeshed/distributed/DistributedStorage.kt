@@ -214,8 +214,21 @@ class DistributedStorage(
         when (mode) {
             StorageMode.IPFS_ONLY -> {
                 requireNotNull(ipfs) { "IPFS client required" }
-                // Would need to resolve key to CID first
-                null
+                
+                // Resolve key to CID using metadata store
+                val metadataDoc = couch?.getDocument("storage_metadata", key)
+                val cid = metadataDoc?.let { doc ->
+                    val cidStr = doc.getString("ipfs_cid") 
+                    if (cidStr != null) CID.decode(cidStr) else null
+                }
+                
+                if (cid == null) {
+                    println("No CID found for key: $key")
+                    return@coroutineScope null
+                }
+                
+                // Retrieve data from IPFS
+                ipfs.get(cid)
             }
             
             StorageMode.COUCH_ONLY -> {

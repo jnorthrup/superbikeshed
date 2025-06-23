@@ -1,20 +1,22 @@
 package com.rtsgame.shared.rts
 
+import com.rtsgame.shared.game.GameState
+import com.rtsgame.shared.entity.Entity
+import com.rtsgame.shared.map.Position
+import com.rtsgame.shared.map.ResourceType
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.flow.*
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.CZero.nz
 import borg.trikeshed.net.*
 import borg.trikeshed.net.quic.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import borg.trikeshed.ksp.TrikeShedDsl
-import com.rtsgame.shared.game.GameState
-import com.rtsgame.shared.entity.Entity
-import com.rtsgame.shared.map.Position
-import com.rtsgame.shared.map.ResourceType
-import kotlinx.coroutines.flow.*
 
 /**
  * RTS Network Host - Deterministic simulation for real-time strategy games
@@ -28,72 +30,46 @@ class RTSNetworkHost(
     private val _gameStateFlow = MutableStateFlow(gameState)
     val gameStateFlow: StateFlow<GameState> = _gameStateFlow.asStateFlow()
     
-    private val _entityUpdates = Channel<Entity>()
-    private val _resourceUpdates = Channel<Triple<Int, ResourceType, Int>>()
-    private val _entityRemovals = Channel<String>()
-    
-    private var isRunning = false
-    private var job: Job? = null
-    
-    fun start() {
-        if (isRunning) return
-        isRunning = true
-        
-        job = scope.launch {
-            while (isActive) {
-                processUpdates()
-                delay(tickRate)
+    private val commandChannel = Channel<GameCommand>(Channel.BUFFERED)
+    private val tickJob = scope.launch {
+        var currentTime = gameState.currentTime
+        while (isActive) {
+            delay(tickRate)
+            currentTime++
+            
+            // Process all commands for this tick
+            val commands = mutableListOf<GameCommand>()
+            while (!commandChannel.isEmpty) {
+                commands.add(commandChannel.receive())
             }
+            
+            // Apply commands in deterministic order
+            var currentState = _gameStateFlow.value
+            commands.sortedBy { it.timestamp }.forEach { command ->
+                currentState = when (command) {
+                    is GameCommand.MoveEntity -> {
+                        val entity = currentState.entities[command.entityId]
+                        if (entity != null) {
+                            currentState.updateEntity(command.entityId, entity.move(command.targetPosition))
+                        } else currentState
+                    }
+                    is GameCommand.UpdateResources -> {
+                        currentState.updateResources(command.playerId, command.resourceType, command.amount)
+                    }
+                }
+            }
+            
+            _gameStateFlow.value = currentState.copy(currentTime = currentTime)
         }
+    }
+    
+    suspend fun sendCommand(command: GameCommand) {
+        commandChannel.send(command)
     }
     
     fun stop() {
-        isRunning = false
-        job?.cancel()
-        job = null
+        tickJob.cancel()
     }
-    
-    private suspend fun processUpdates() {
-        var currentState = _gameStateFlow.value
-        
-        // Process entity updates
-        while (!_entityUpdates.isEmpty) {
-            val entity = _entityUpdates.tryReceive().getOrNull() ?: break
-            currentState = currentState.updateEntity(entity)
-        }
-        
-        // Process resource updates
-        while (!_resourceUpdates.isEmpty) {
-            val (playerId, resourceType, amount) = _resourceUpdates.tryReceive().getOrNull() ?: break
-            currentState = currentState.updateResources(playerId, resourceType, amount)
-        }
-        
-        // Process entity removals
-        while (!_entityRemovals.isEmpty) {
-            val entityId = _entityRemovals.tryReceive().getOrNull() ?: break
-            currentState = currentState.removeEntity(entityId)
-        }
-        
-        // Advance time
-        currentState = currentState.advance()
-        
-        _gameStateFlow.value = currentState
-    }
-    
-    suspend fun updateEntity(entity: Entity) {
-        _entityUpdates.send(entity)
-    }
-    
-    suspend fun updateResources(playerId: Int, resourceType: ResourceType, amount: Int) {
-        _resourceUpdates.send(Triple(playerId, resourceType, amount))
-    }
-    
-    suspend fun removeEntity(entityId: String) {
-        _entityRemovals.send(entityId)
-    }
-    
-    fun getEntity(id: String): Entity? = _gameStateFlow.value.getEntity(id)
-    fun getResources(playerId: Int): Map<ResourceType, Int> = _gameStateFlow.value.getResources(playerId)
 }
 
 // Data classes
@@ -175,19 +151,19 @@ sealed class PlayerInput {
 
 // Game commands
 sealed class GameCommand {
-    data class Input(
-        val playerId: PlayerId,
-        val tick: Long,
-        val input: PlayerInput
+    abstract val timestamp: Long
+
+    data class MoveEntity(
+        override val timestamp: Long,
+        val entityId: String,
+        val targetPosition: Position
     ) : GameCommand()
-    
-    data class Join(
-        val playerId: PlayerId,
-        val connection: PlayerConnection
-    ) : GameCommand()
-    
-    data class Leave(
-        val playerId: PlayerId
+
+    data class UpdateResources(
+        override val timestamp: Long,
+        val playerId: Int,
+        val resourceType: ResourceType,
+        val amount: Int
     ) : GameCommand()
 }
 

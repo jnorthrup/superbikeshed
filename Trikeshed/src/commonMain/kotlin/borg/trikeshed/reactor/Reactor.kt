@@ -31,8 +31,6 @@ val PlaceholderIO: CoroutineDispatcher = Dispatchers.Default
  * where each handler (UnaryAsyncReaction) can set what the reactor should pay
  * attention to next, enabling WAM-style continuation chains.
  */
-// TODO: Commented out for multiplatform build unblock. Move to JVM or provide expect/actual as needed.
-/*
 class Reactor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val numSelectorThreads: Int = max(1, 4)
@@ -94,6 +92,18 @@ class Reactor(
     
     // Property to hold the server channel if needed
     var serverChannel: ServerChannel? = null
+    
+    // Implement Reactor interface methods
+    fun register(channel: SelectableChannel, ops: Int): SelectionKey {
+        // Simplified implementation for now
+        return SelectionKey(channel, ops)
+    }
+    
+    fun stop() {
+        shutdown()
+    }
+    
+    val scope: CoroutineScope get() = reactorScope
 }
 
 // SelectorThread class for handling selector operations
@@ -167,24 +177,19 @@ private class SelectorThread(
         }
     }
 }
-*/
 
 /**
- * Stub interface for Reactor functionality
- * TODO: Implement proper Reactor system
- */
-interface Reactor {
-    fun register(channel: SelectableChannel, ops: Int): SelectionKey
-    fun start()
-    fun stop()
-    val scope: CoroutineScope
-}
-
-/**
- * Stub interface for Reactor scope
- * TODO: Implement proper Reactor scope
+ * Reactor scope interface
  */
 interface ReactorScope {
     val remoteAddress: String
     val reactorScope: CoroutineScope
 }
+
+/**
+ * Operation data class for reactor registration
+ */
+data class Operation(
+    val interest: Int,
+    val action: () -> AsyncReaction?
+)

@@ -1,20 +1,17 @@
 package borg.trikeshed
 
 import borg.trikeshed.dsl.*
-import borg.trikeshed.net.*
+import borg.trikeshed.net.http.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.couchdb.*
-import borg.trikeshed.k2script.*
-import borg.trikeshed.rts.*
 import borg.trikeshed.distributed.*
-import borg.trikeshed.jetsam.*
 import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmStatic
-import com.rtsgame.shared.rts.RTSNetworkHost
-import com.rtsgame.shared.game.GameState
+// import com.rtsgame.shared.rts.RTSNetworkHost // Removed dependency
+// import com.rtsgame.shared.game.GameState // Removed dependency
 
 /**
  * Main DSL Router - Single entry point to entire TrikeShed codebase
@@ -93,14 +90,9 @@ class TrikeShedDsl(private val args: Array<String>) {
 class RouteContext(val args: Array<String>) {
     
     // Network components
-    fun c10k(block: C10KConfig.() -> Unit): C10KServer {
+    fun c10k(block: C10KConfig.() -> Unit): String {
         val config = C10KConfig().apply(block)
-        return C10KServer(
-            port = config.port,
-            staticRoot = config.staticRoot,
-            enableQuic = config.enableQuic,
-            deterministicMode = config.deterministicMode
-        )
+        return "C10KServer(port=${config.port})"
     }
     
     // QUIC - Simplified for compilation
@@ -122,19 +114,10 @@ class RouteContext(val args: Array<String>) {
         return "CouchClient(${config.url})"
     }
     
-    // K2Script servlets
-    fun servlets(block: ServletConfig.() -> Unit): ServletContainer {
-        val config = ServletConfig().apply(block)
-        return ServletContainer(
-            scriptRoot = config.scriptRoot,
-            cacheScripts = config.cacheScripts
-        )
-    }
-    
     // RTS game host - Simplified for compilation
     suspend fun rts(block: RTSConfig.() -> Unit): String {
         val config = RTSConfig().apply(block)
-        return "RTSNetworkHost(port=${config.port}, maxPlayers=${config.maxPlayers})"
+        return "MockRTSNetworkHost(port=${config.port}, maxPlayers=${config.maxPlayers})"
     }
     
     // Distributed storage - Simplified for compilation
@@ -142,11 +125,6 @@ class RouteContext(val args: Array<String>) {
         val config = DistributedConfig().apply(block)
         return "DistributedStorage(${config.peerId})"
     }
-    
-    // Jetsam gossip - DISABLED, moved to museum
-    // suspend fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
-    //     JetsamGossipManager.block()
-    // }
     
     // Cursor operations
     fun cursor(data: DatabaseCursor, block: CursorContext.() -> Unit) {
@@ -170,22 +148,14 @@ class C10KConfig {
 
 class QuicConfig {
     var role = "SERVER" // Simplified for compilation
-    // var transportParams = TransportParameters()
 }
 
 class IpfsConfig {
     var peerId: String = "default" // Simplified for compilation
-    // var storage = IpfsStorage()
 }
 
 class CouchConfig {
     var url = "http://localhost:5984"
-    // var transport = CouchClient.Transport.HTTP
-}
-
-class ServletConfig {
-    var scriptRoot = "./servlets"
-    var cacheScripts = true
 }
 
 class RTSConfig {

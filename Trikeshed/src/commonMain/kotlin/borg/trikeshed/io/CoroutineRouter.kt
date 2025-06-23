@@ -3,7 +3,7 @@ package borg.trikeshed.io
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Clock
+// import kotlinx.datetime.Clock // Removed dependency
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -370,13 +370,13 @@ class CoroutineRouter private constructor(
         metricsHandler: suspend (String, Long) -> Unit,
         block: suspend () -> T
     ): T {
-        val startTime = Clock.System.now().toEpochMilliseconds()
+        val startTime = System.currentTimeMillis()
         return try {
             block().also {
-                metricsHandler("success", Clock.System.now().toEpochMilliseconds() - startTime)
+                metricsHandler("success", System.currentTimeMillis() - startTime)
             }
         } catch (e: Exception) {
-            metricsHandler("failure", Clock.System.now().toEpochMilliseconds() - startTime)
+            metricsHandler("failure", System.currentTimeMillis() - startTime)
             throw e
         }
     }
@@ -447,12 +447,12 @@ fun defaultRouter(block: CoroutineRouter.RouterBuilder.() -> Unit): CoroutineRou
  * Supporting classes for advanced routing features
  */
 class RateLimiter(private val permitsPerSecond: Int) {
-    private var lastCheck = Clock.System.now().toEpochMilliseconds()
+    private var lastCheck = System.currentTimeMillis()
     private var available = permitsPerSecond
     
     suspend fun acquire() {
         while (available <= 0) {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = System.currentTimeMillis()
             val timePassed = now - lastCheck
             available = minOf(permitsPerSecond, available + (timePassed * permitsPerSecond / 1000).toInt())
             lastCheck = now

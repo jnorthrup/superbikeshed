@@ -3,7 +3,7 @@
 package borg.trikeshed.lib
 
 import kotlin.reflect.KClassifier
-import kotlinx.datetime.Clock
+// import kotlinx.datetime.Clock // Removed dependency
 
 // Post-migration: Indexed is now the canonical type
 // Series was migrated to Indexed as per CLAUDE.md migration plan

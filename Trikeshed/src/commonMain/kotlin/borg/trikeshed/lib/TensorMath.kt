@@ -12,24 +12,72 @@ fun Shape.shapeEquals(other: Shape): Boolean {
 }
 
 // Basic element-wise operations
+@Suppress("UNCHECKED_CAST")
 operator fun <T : Number> Tensor<T>.plus(other: Tensor<T>): Tensor<T> {
     require(shape.shapeEquals(other.shape)) { "Tensors must have the same shape for addition" }
-    return generateTensor(shape) { coords -> (this.accessor(coords).toDouble() + other.accessor(coords).toDouble()) as T }
+    return generateTensor(shape) { coords -> 
+        val result = this.accessor(coords).toDouble() + other.accessor(coords).toDouble()
+        when (this.accessor(coords)) {
+            is Double -> result as T
+            is Float -> result.toFloat() as T
+            is Long -> result.toLong() as T
+            is Int -> result.toInt() as T
+            is Short -> result.toInt().toShort() as T
+            is Byte -> result.toInt().toByte() as T
+            else -> throw UnsupportedOperationException("Unsupported numeric type: ${this.accessor(coords)::class}")
+        }
+    }
 }
 
+@Suppress("UNCHECKED_CAST")
 operator fun <T : Number> Tensor<T>.minus(other: Tensor<T>): Tensor<T> {
     require(shape.shapeEquals(other.shape)) { "Tensors must have the same shape for subtraction" }
-    return generateTensor(shape) { coords -> (this.accessor(coords).toDouble() - other.accessor(coords).toDouble()) as T }
+    return generateTensor(shape) { coords -> 
+        val result = this.accessor(coords).toDouble() - other.accessor(coords).toDouble()
+        when (this.accessor(coords)) {
+            is Double -> result as T
+            is Float -> result.toFloat() as T
+            is Long -> result.toLong() as T
+            is Int -> result.toInt() as T
+            is Short -> result.toInt().toShort() as T
+            is Byte -> result.toInt().toByte() as T
+            else -> throw UnsupportedOperationException("Unsupported numeric type: ${this.accessor(coords)::class}")
+        }
+    }
 }
 
+@Suppress("UNCHECKED_CAST")
 operator fun <T : Number> Tensor<T>.times(other: Tensor<T>): Tensor<T> {
     require(shape.shapeEquals(other.shape)) { "Tensors must have the same shape for multiplication" }
-    return generateTensor(shape) { coords -> (this.accessor(coords).toDouble() * other.accessor(coords).toDouble()) as T }
+    return generateTensor(shape) { coords -> 
+        val result = this.accessor(coords).toDouble() * other.accessor(coords).toDouble()
+        when (this.accessor(coords)) {
+            is Double -> result as T
+            is Float -> result.toFloat() as T
+            is Long -> result.toLong() as T
+            is Int -> result.toInt() as T
+            is Short -> result.toInt().toShort() as T
+            is Byte -> result.toInt().toByte() as T
+            else -> throw UnsupportedOperationException("Unsupported numeric type: ${this.accessor(coords)::class}")
+        }
+    }
 }
 
+@Suppress("UNCHECKED_CAST")
 operator fun <T : Number> Tensor<T>.div(other: Tensor<T>): Tensor<T> {
     require(shape.shapeEquals(other.shape)) { "Tensors must have the same shape for division" }
-    return generateTensor(shape) { coords -> (this.accessor(coords).toDouble() / other.accessor(coords).toDouble()) as T }
+    return generateTensor(shape) { coords -> 
+        val result = this.accessor(coords).toDouble() / other.accessor(coords).toDouble()
+        when (this.accessor(coords)) {
+            is Double -> result as T
+            is Float -> result.toFloat() as T
+            is Long -> result.toLong() as T
+            is Int -> result.toInt() as T
+            is Short -> result.toInt().toShort() as T
+            is Byte -> result.toInt().toByte() as T
+            else -> throw UnsupportedOperationException("Unsupported numeric type: ${this.accessor(coords)::class}")
+        }
+    }
 }
 
 // Scalar operations
