@@ -2,8 +2,8 @@ package borg.trikeshed.ksp
 
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
-import com.google.devtools.ksp.toClassName
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ksp.toClassName
 import java.io.*
 
 class TrikeShedDslProcessorProvider : SymbolProcessorProvider {

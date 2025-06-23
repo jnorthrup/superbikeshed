@@ -71,22 +71,33 @@ class DSLBuilder {
         var toResolveCount = components.size
         
         while (toResolveCount > 0) {
-            var resolvedThisRound: Indexed<DSLComponent> = 0 j { DSLComponent("", emptyList()) }
-            var resolvedThisRoundCount = 0
+            val resolvedThisRound = mutableListOf<DSLComponent>()
             
-            for (component in toResolve) {
+            for (i in 0 until toResolveCount) {
+                val component = toResolve.b(i)
                 if (component.dependencies.play.all { dep -> 
-                    resolved.contains(dep) || components.containsKey(dep) 
+                    (0 until resolved.a).any { resolved.b(it) == dep } || components.containsKey(dep) 
                 }) {
-                    resolved.add(component.name)
+                    // Add to resolved using TrikeShed pattern
+                    resolved = (resolved.a + 1) j { idx -> if (idx == resolved.a) component.name else resolved.b(idx) }
                     resolvedThisRound.add(component)
                 }
             }
             
-            toResolve.removeAll(resolvedThisRound)
+            // Update toResolve by filtering out resolved components
+            val newToResolve = mutableListOf<DSLComponent>()
+            for (i in 0 until toResolveCount) {
+                val component = toResolve.b(i)
+                if (!resolvedThisRound.contains(component)) {
+                    newToResolve.add(component)
+                }
+            }
+            toResolve = newToResolve.size j { newToResolve[it] }
+            toResolveCount = newToResolve.size
             
-            if (resolvedThisRound.isEmpty() && toResolve.isNotEmpty()) {
-                throw IllegalStateException("Circular dependency detected: ${toResolve.map { it.name }}")
+            if (resolvedThisRound.isEmpty() && toResolveCount > 0) {
+                val names: Indexed<String> = toResolveCount j { i -> toResolve.b(i).name }
+                throw IllegalStateException("Circular dependency detected: ${names.toList()}")
             }
         }
     }
@@ -418,6 +429,11 @@ data class DSLAnalysis(
  * Convert List to Indexed
  */
 fun <T> List<T>.toIndexed(): Indexed<T> = this.size j { i -> this[i] }
+
+/**
+ * Get current time in milliseconds
+ */
+expect fun getCurrentTimeMillis(): Long
 
 /**
  * Extension for DSL builder pattern
