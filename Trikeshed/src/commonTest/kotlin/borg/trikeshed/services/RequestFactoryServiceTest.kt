@@ -26,12 +26,12 @@ class RequestFactoryServiceTest {
         )
 
         // Serialize and process the request
-        val payload = JsonSerializer.serialize(request).play.joinToString("").encodeToByteArray().toSeries()
+        val payload = JsonSerializer.serialize(request).play.joinToString("").encodeToByteArray().toIdx()
         val response = service.process(payload)
 
         // Parse and verify the response
         val responseJson = response.play.toByteArray().decodeToString()
-        val result = JsonParser.parse(responseJson.toSeries())
+        val result = JsonParser.parse(responseJson.toIdx())
 
         assertEquals("Hello World", result.getString("result"))
     }
@@ -51,9 +51,9 @@ class RequestFactoryServiceTest {
             "methodName" to "echo",
             "args" to listOf("Valid Input")
         )
-        val validPayload = JsonSerializer.serialize(validRequest).play.joinToString("").encodeToByteArray().toSeries()
+        val validPayload = JsonSerializer.serialize(validRequest).play.joinToString("").encodeToByteArray().toIdx()
         val validResponse = service.process(validPayload)
-        val validResult = JsonParser.parse(validResponse.play.toByteArray().decodeToString().toSeries())
+        val validResult = JsonParser.parse(validResponse.play.toByteArray().decodeToString().toIdx())
         assertTrue(validResult.getBoolean("success"))
 
         // Test with invalid args
@@ -62,9 +62,9 @@ class RequestFactoryServiceTest {
             "methodName" to "echo",
             "args" to listOf(42) // Wrong type
         )
-        val invalidPayload = JsonSerializer.serialize(invalidRequest).play.joinToString("").encodeToByteArray().toSeries()
+        val invalidPayload = JsonSerializer.serialize(invalidRequest).play.joinToString("").encodeToByteArray().toIdx()
         val invalidResponse = service.process(invalidPayload)
-        val invalidResult = JsonParser.parse(invalidResponse.play.toByteArray().decodeToString().toSeries())
+        val invalidResult = JsonParser.parse(invalidResponse.play.toByteArray().decodeToString().toIdx())
         assertFalse(invalidResult.getBoolean("success"))
     }
 
@@ -75,9 +75,9 @@ class RequestFactoryServiceTest {
             "methodName" to "unknown",
             "args" to listOf()
         )
-        val payload = JsonSerializer.serialize(request).play.joinToString("").encodeToByteArray().toSeries()
+        val payload = JsonSerializer.serialize(request).play.joinToString("").encodeToByteArray().toIdx()
         val response = service.process(payload)
-        val result = JsonParser.parse(response.play.toByteArray().decodeToString().toSeries())
+        val result = JsonParser.parse(response.play.toByteArray().decodeToString().toIdx())
 
         assertFalse(result.getBoolean("success"))
         assertNotNull(result.getString("error"))

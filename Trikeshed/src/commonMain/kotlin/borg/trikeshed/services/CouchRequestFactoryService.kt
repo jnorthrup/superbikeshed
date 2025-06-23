@@ -31,10 +31,10 @@ class CouchRequestFactoryService(
         return try {
             // Simple demo implementation that uses CouchDB
             val response = handleSimpleRequest(requestJson)
-            CouchJsonParser.stringify(response).encodeToByteArray().toSeries()
+            CouchJsonParser.stringify(response).encodeToByteArray().toIdx()
         } catch (e: Exception) {
             val error = mapOf("success" to false, "error" to (e.message ?: "Unknown error"))
-            CouchJsonParser.stringify(error).encodeToByteArray().toSeries()
+            CouchJsonParser.stringify(error).encodeToByteArray().toIdx()
         }
     }
 
@@ -70,5 +70,5 @@ class CouchRequestFactoryService(
         return ByteArray(0)
     }
 
-    private fun ByteArray.toSeries(): Indexed<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toIdx(): Indexed<Byte> = size j { index: Int -> this[index] }
 } 

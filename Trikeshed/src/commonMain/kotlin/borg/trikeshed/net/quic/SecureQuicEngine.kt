@@ -111,7 +111,7 @@ class SecureQuicEngine(
                     val handshakeResponses = processCryptoFrame(frame)
                     responses.addAll(handshakeResponses)
                 }
-                is QuicFrame.StreamFrame -> processStreamFrame(frame)
+                is StreamFrame -> processStreamFrame(frame)
                 is AckFrame -> processAckFrame(frame)
             }
         }
@@ -142,7 +142,7 @@ class SecureQuicEngine(
         val encryptedData = cryptoEngine.encrypt(data, writeKey, EncryptionMode.GCM)
         
         // Create stream frame
-        val frame = QuicFrame.StreamFrame(
+        val frame = StreamFrame(
             streamId = streamId,
             offset = stream.sendOffset,
             data = encryptedData.ciphertext,
@@ -190,7 +190,7 @@ class SecureQuicEngine(
         for (i in 0 until packet.frames.a) {
             val frame = packet.frames.b(i)
             when (frame) {
-                is QuicFrame.StreamFrame -> {
+                is StreamFrame -> {
                     val stream = streamStates.getOrPut(frame.streamId) {
                         SecureQuicStreamState(
                             streamId = frame.streamId,
@@ -471,7 +471,7 @@ class SecureQuicEngine(
         )
     }
     
-    private fun processStreamFrame(frame: QuicFrame.StreamFrame) {
+    private fun processStreamFrame(frame: StreamFrame) {
         // Handle stream frames during handshake
     }
     
@@ -494,7 +494,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
                 packetNumber = 0
             ),
-            frames = 0 j { QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
+            frames = 0 j { StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
             payload = 0 j { 0.toByte() }
         ) },
         val receivedPackets: Indexed<QuicPacket> = 0 j { QuicPacket(
@@ -505,7 +505,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
                 packetNumber = 0
             ),
-            frames = 0 j { QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
+            frames = 0 j { StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
             payload = 0 j { 0.toByte() }
         ) },
         val bytesInFlight: Long = 0,

@@ -162,7 +162,7 @@ class AgenticOrchestrator {
                     context = task.context,
                     action = task.type,
                     outcome = outcome,
-                    timestamp = getCurrentTimeMillis()
+                    timestamp = kotlin.random.Random.nextLong()
                 )
                 learningChannel.trySend(observation)
                 
@@ -187,7 +187,7 @@ class AgenticOrchestrator {
                 val context = CCEKContext(mapOf(
                     "scope" to "development",
                     "capabilities" to capabilities.joinToString(","),
-                    "timestamp" to getCurrentTimeMillis().toString()
+                    "timestamp" to kotlin.random.Random.nextLong().toString()
                 ))
                 
                 // Create monitoring task
@@ -323,18 +323,33 @@ operator fun String.times(count: Int): String = this.repeat(count)
  * Series extension for taking first n elements
  */
 fun <T> Indexed<T>.take(n: Int): Indexed<T> = 
-    minOf(n, this.size) j { i -> this[i] }
+    minOf(n, this.a) j { i -> this.b(i) }
 
 /**
  * Series extension for filtering
  */
 fun <T> Indexed<T>.filter(predicate: (T) -> Boolean): Indexed<T> {
     val filtered = mutableListOf<T>()
-    for (i in 0 until this.size) {
-        val element = this[i]
+    for (i in 0 until this.a) {
+        val element = this.b(i)
         if (predicate(element)) {
             filtered.add(element)
         }
     }
     return filtered.size j { i -> filtered[i] }
-} 
+}
+
+/**
+ * Extension for getting size of Indexed
+ */
+val <T> Indexed<T>.size: Int get() = this.a
+
+/**
+ * Extension for indexing into Indexed
+ */
+operator fun <T> Indexed<T>.get(index: Int): T = this.b(index)
+
+/**
+ * Convert List to Indexed
+ */
+fun <T> List<T>.toIdx(): Indexed<T> = this.size j { i -> this[i] } 

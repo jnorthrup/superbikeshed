@@ -117,7 +117,7 @@ object LightningMarkdown {
             }
         }
         
-        return boundaries.toList().toSeries()
+        return boundaries.toList().toIdx()
     }
     
     /**
@@ -125,7 +125,7 @@ object LightningMarkdown {
      */
     fun extractCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val boundaries = findCodeBlockBoundaries(markdownString)
-        val markdownChars = markdownString.toSeries()
+        val markdownChars = markdownString.toIdx()
         
         val codeBlocks = mutableListOf<MarkdownCodeBlock>()
         var currentStart = -1
@@ -177,7 +177,7 @@ object LightningMarkdown {
             }
         }
         
-        return codeBlocks.toList().toSeries()
+        return codeBlocks.toList().toIdx()
     }
     
     /**
@@ -188,7 +188,7 @@ object LightningMarkdown {
         val kotlinBlocks = allBlocks.play.filter { block ->
             block.language?.equals("kotlin", ignoreCase = true) == true
         }.toList()
-        return kotlinBlocks.toSeries()
+        return kotlinBlocks.toIdx()
     }
     
     /**
@@ -197,7 +197,7 @@ object LightningMarkdown {
     fun extractCodeBlockContent(markdownString: String): Indexed<String> {
         val blocks = extractCodeBlocks(markdownString)
         val content = blocks.play.map { it.content }.toList()
-        return content.toSeries()
+        return content.toIdx()
     }
     
     /**
@@ -206,7 +206,7 @@ object LightningMarkdown {
     fun extractKotlinCodeBlockContent(markdownString: String): Indexed<String> {
         val kotlinBlocks = extractKotlinCodeBlocks(markdownString)
         val content = kotlinBlocks.play.map { it.content }.toList()
-        return content.toSeries()
+        return content.toIdx()
     }
 }
 
@@ -268,5 +268,5 @@ data class MarkdownCodeBlockStats(
     val averageLinesPerBlock: Double
 )
 
-// Import String.toSeries() extension function
-fun String.toSeries(): Indexed<Char> = length j { index -> this[index] }
+// Import String.toIdx() extension function
+fun String.toIdx(): Indexed<Char> = length j { index -> this[index] }

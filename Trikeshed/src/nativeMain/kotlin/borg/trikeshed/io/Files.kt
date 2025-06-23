@@ -73,7 +73,7 @@ actual object Files {
         val lines = readAllLines(fileName)
         return lines.mapIndexed { index, line ->
             val bytes = line.encodeToByteArray()
-            index.toLong() j bytes.toList().toSeries()
+            index.toLong() j bytes.toList().toIdx()
         }
     }
 

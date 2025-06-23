@@ -70,7 +70,7 @@ actual object Files {
     actual fun iterateLines(fileName: String, bufsize: Int): Iterable<Join<Long, Series<Byte>>> {
         val lines = readAllLines(fileName)
         return lines.mapIndexed { index, line ->
-            Join(index.toLong(), line.encodeToByteArray().toSeries())
+            Join(index.toLong(), line.encodeToByteArray().toIdx())
         }
     }
 
