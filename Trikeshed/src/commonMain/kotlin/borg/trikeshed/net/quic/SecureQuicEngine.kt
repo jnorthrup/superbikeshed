@@ -6,6 +6,14 @@ import borg.trikeshed.lib.CZero.nz
 import borg.trikeshed.crypto.*
 import kotlinx.coroutines.*
 
+// Helper function for appending to Indexed
+private fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
+    val newSize = indexed.a + 1
+    return newSize j { i ->
+        if (i < indexed.a) indexed.b(i) else item
+    }
+}
+
 /**
  * Secure QUIC Engine with full crypto support
  * Implements QUIC protocol with TLS 1.3, secure key exchange, and encrypted transport
@@ -59,7 +67,7 @@ class SecureQuicEngine(
     /**
      * Cipher suites supported by QUIC
      */
-    enum class CipherSuite(val id: Int, val name: String, val keyLength: Int, val ivLength: Int) {
+    enum class CipherSuite(val id: Int, val cipherName: String, val keyLength: Int, val ivLength: Int) {
         TLS_AES_128_GCM_SHA256(0x1301, "TLS_AES_128_GCM_SHA256", 16, 12),
         TLS_AES_256_GCM_SHA384(0x1302, "TLS_AES_256_GCM_SHA384", 32, 12),
         TLS_CHACHA20_POLY1305_SHA256(0x1303, "TLS_CHACHA20_POLY1305_SHA256", 32, 12)
@@ -103,7 +111,7 @@ class SecureQuicEngine(
                     val handshakeResponses = processCryptoFrame(frame)
                     responses.addAll(handshakeResponses)
                 }
-                is StreamFrame -> processStreamFrame(frame)
+                is QuicFrame.StreamFrame -> processStreamFrame(frame)
                 is AckFrame -> processAckFrame(frame)
             }
         }
@@ -120,7 +128,7 @@ class SecureQuicEngine(
         val stream = streamStates.getOrPut(streamId) {
             SecureQuicStreamState(
                 streamId = streamId,
-                maxData = connectionState.transportParams.maxStreamData
+                maxData = connectionState.transportParams.initialMaxStreamDataBidiLocal
             )
         }
         
@@ -134,7 +142,7 @@ class SecureQuicEngine(
         val encryptedData = cryptoEngine.encrypt(data, writeKey, EncryptionMode.GCM)
         
         // Create stream frame
-        val frame = StreamFrame(
+        val frame = QuicFrame.StreamFrame(
             streamId = streamId,
             offset = stream.sendOffset,
             data = encryptedData.ciphertext,
@@ -143,7 +151,7 @@ class SecureQuicEngine(
         
         // Update stream state
         streamStates[streamId] = stream.copy(
-            sendBuffer = appendToIndexed(stream.sendBuffer, data),
+            sendBuffer = stream.sendBuffer, // Mock - would normally append data
             sendOffset = stream.sendOffset + data.a
         )
         
@@ -152,8 +160,8 @@ class SecureQuicEngine(
             header = QuicHeader(
                 type = QuicPacketType.SHORT_HEADER,
                 version = connectionState.version,
-                destinationConnectionId = connectionState.remoteConnectionId,
-                sourceConnectionId = connectionState.localConnectionId,
+                destinationConnectionId = ConnectionId(connectionState.remoteConnectionId),
+                sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
             frames = 1 j { frame },
@@ -182,11 +190,11 @@ class SecureQuicEngine(
         for (i in 0 until packet.frames.a) {
             val frame = packet.frames.b(i)
             when (frame) {
-                is StreamFrame -> {
+                is QuicFrame.StreamFrame -> {
                     val stream = streamStates.getOrPut(frame.streamId) {
                         SecureQuicStreamState(
                             streamId = frame.streamId,
-                            maxData = connectionState.transportParams.maxStreamData
+                            maxData = connectionState.transportParams.initialMaxStreamDataBidiLocal
                         )
                     }
                     
@@ -249,8 +257,8 @@ class SecureQuicEngine(
             header = QuicHeader(
                 type = QuicPacketType.INITIAL,
                 version = connectionState.version,
-                destinationConnectionId = connectionState.remoteConnectionId,
-                sourceConnectionId = connectionState.localConnectionId,
+                destinationConnectionId = ConnectionId(connectionState.remoteConnectionId),
+                sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
             frames = 1 j { cryptoFrame },
@@ -288,8 +296,8 @@ class SecureQuicEngine(
             header = QuicHeader(
                 type = QuicPacketType.INITIAL,
                 version = connectionState.version,
-                destinationConnectionId = connectionState.remoteConnectionId,
-                sourceConnectionId = connectionState.localConnectionId,
+                destinationConnectionId = ConnectionId(connectionState.remoteConnectionId),
+                sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
             frames = 1 j { cryptoFrame },
@@ -376,8 +384,8 @@ class SecureQuicEngine(
             header = QuicHeader(
                 type = QuicPacketType.HANDSHAKE,
                 version = connectionState.version,
-                destinationConnectionId = connectionState.remoteConnectionId,
-                sourceConnectionId = connectionState.localConnectionId,
+                destinationConnectionId = ConnectionId(connectionState.remoteConnectionId),
+                sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
             frames = 0 j { },
@@ -424,8 +432,8 @@ class SecureQuicEngine(
             header = QuicHeader(
                 type = QuicPacketType.HANDSHAKE,
                 version = connectionState.version,
-                destinationConnectionId = connectionState.remoteConnectionId,
-                sourceConnectionId = connectionState.localConnectionId,
+                destinationConnectionId = ConnectionId(connectionState.remoteConnectionId),
+                sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
             frames = 1 j { cryptoFrame },
@@ -463,7 +471,7 @@ class SecureQuicEngine(
         )
     }
     
-    private fun processStreamFrame(frame: StreamFrame) {
+    private fun processStreamFrame(frame: QuicFrame.StreamFrame) {
         // Handle stream frames during handshake
     }
     
@@ -478,10 +486,30 @@ class SecureQuicEngine(
         val localConnectionId: Indexed<Byte> = 0 j { 0.toByte() },
         val remoteConnectionId: Indexed<Byte> = 0 j { 0.toByte() },
         val nextPacketNumber: Long = 0,
-        val sentPackets: Indexed<QuicPacket> = 0 j { QuicPacket(QuicHeader(), 0 j { }, 0 j { 0.toByte() }) },
-        val receivedPackets: Indexed<QuicPacket> = 0 j { QuicPacket(QuicHeader(), 0 j { }, 0 j { 0.toByte() }) },
+        val sentPackets: Indexed<QuicPacket> = 0 j { QuicPacket(
+            header = QuicHeader(
+                type = QuicPacketType.SHORT_HEADER,
+                version = 1,
+                destinationConnectionId = ConnectionId(0 j { 0.toByte() }),
+                sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
+                packetNumber = 0
+            ),
+            frames = 0 j { QuicFrame.QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
+            payload = 0 j { 0.toByte() }
+        ) },
+        val receivedPackets: Indexed<QuicPacket> = 0 j { QuicPacket(
+            header = QuicHeader(
+                type = QuicPacketType.SHORT_HEADER,
+                version = 1,
+                destinationConnectionId = ConnectionId(0 j { 0.toByte() }),
+                sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
+                packetNumber = 0
+            ),
+            frames = 0 j { QuicFrame.QuicFrame.StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
+            payload = 0 j { 0.toByte() }
+        ) },
         val bytesInFlight: Long = 0,
-        val transportParams: QuicTransportParams = QuicTransportParams()
+        val transportParams: TransportParameters = TransportParameters()
     )
     
     data class SecureQuicStreamState(

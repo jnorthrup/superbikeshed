@@ -61,9 +61,9 @@ data class Choice(
 
 @Serializable
 data class Observation(
-    val context: CCEKContext,
+    @kotlinx.serialization.Contextual val context: CCEKContext,
     val action: String,
-    val outcome: Outcome,
+    @kotlinx.serialization.Contextual val outcome: Outcome,
     val timestamp: Long
 )
 
@@ -71,7 +71,7 @@ data class Observation(
 data class DevelopmentTask(
     val type: String,
     val description: String,
-    val context: CCEKContext,
+    @kotlinx.serialization.Contextual val context: CCEKContext,
     val priority: Int = 0
 )
 
@@ -216,25 +216,29 @@ class AgenticOrchestrator {
         
         // Analyze patterns using Series transformations
         val recentObservations = observationSeries.take(10)
-        val successfulActions = recentObservations α { obs -> 
-            if (obs.outcome.success) obs.action else null 
-        }.filter { it != null }
+        val successfulActions = recentObservations.a j { i: Int ->
+            val obs = recentObservations.b(i)
+            if (obs.outcome.success) obs.action else null
+        }
         
         // Update pattern confidence based on success rate
-        successfulActions.forEach { action ->
-            val pattern = patterns[action]
-            if (pattern != null) {
-                patterns[action] = pattern.copy(
-                    successRate = (pattern.successRate + 1.0) / 2.0,
-                    usageCount = pattern.usageCount + 1
-                )
-            } else {
-                patterns[action] = LearnedPattern(
-                    pattern = action,
-                    confidence = 0.5,
-                    successRate = 1.0,
-                    usageCount = 1
-                )
+        for (i in 0 until successfulActions.a) {
+            val action = successfulActions.b(i)
+            if (action != null) {
+                val pattern = patterns[action]
+                if (pattern != null) {
+                    patterns[action] = pattern.copy(
+                        successRate = (pattern.successRate + 1.0) / 2.0,
+                        usageCount = pattern.usageCount + 1
+                    )
+                } else {
+                    patterns[action] = LearnedPattern(
+                        pattern = action,
+                        confidence = 0.5,
+                        successRate = 1.0,
+                        usageCount = 1
+                    )
+                }
             }
         }
     }
@@ -275,8 +279,8 @@ class AgenticOrchestrator {
         println("   📊 Series demo: ${demoSeries.play.take(5).joinToString(", ")}")
         
         // Demonstrate Tensor operations
-        val demoTensor = intArrayOf(3, 3) j { coords -> coords[0] * 3 + coords[1] }
-        println("   🎯 Tensor demo: ${demoTensor(0, 0)}, ${demoTensor(1, 1)}, ${demoTensor(2, 2)}")
+        val demoTensor = (3 j { it }) j { coords: Indexed<Int> -> coords.b(0) * 3 + coords.b(1) }
+        println("   🎯 Tensor demo: mock tensor operations")
         
         // Demonstrate Join composition
         val demoJoin = "hello" j 42

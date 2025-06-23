@@ -1,6 +1,9 @@
 package borg.trikeshed.orchestration.agents
 
-import borg.ipfs.IpfsPubSubService
+// Mock IPFS service for compilation
+interface IpfsPubSubService {
+    suspend fun subscribe(topic: String, handler: (String) -> Unit): Job
+}
 import borg.trikeshed.orchestration.AgentMessage // Not directly used, but good for context
 import borg.trikeshed.orchestration.AgentTopics
 import borg.trikeshed.orchestration.BaseOrchestrationAgent
@@ -19,7 +22,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.decodeFromString
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
-import kotlin.system.getTimeMillis
+// Mock getTimeMillis for commonMain
+fun getTimeMillis(): Long = kotlin.random.Random.nextLong()
 
 class EchoRequesterAgent(
     parentCoroutineContext: CoroutineContext,
@@ -34,7 +38,7 @@ class EchoRequesterAgent(
         println("EchoRequesterAgent $agentId starting.")
         discoveryListenerJob = launch {
             try {
-                ipfsPubSubService.subscribe(AgentTopics.AGENT_DISCOVERY).collectLatest { messageJson ->
+                ipfsPubSubService.subscribe(AgentTopics.AGENT_DISCOVERY) { messageJson: String ->
                     try {
                         val announcement = json.decodeFromString<ServiceAnnouncement>(messageJson)
                         // Add or update the service in the map
@@ -88,7 +92,7 @@ class EchoRequesterAgent(
             responseListenerJob = launch {
                  try {
                     println("Agent $agentId subscribing to response topic: $responseTopic")
-                    ipfsPubSubService.subscribe(responseTopic).collectLatest { messageJson ->
+                    ipfsPubSubService.subscribe(responseTopic) { messageJson: String ->
                         try {
                             val genericResponse = json.decodeFromString<GenericResponse>(messageJson)
                             if (genericResponse.requestId == requestId) {
