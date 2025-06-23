@@ -142,3 +142,14 @@ annotation class GenerateSystemPropertyBoilerplate(
     val includePropertyFunctions: Boolean = true,
     val packageName: String = "borg.trikeshed.lib"
 )
+
+@Target(AnnotationTarget.CLASS)
+annotation class TrikeShedDsl(
+    val name: String = ""
+)
+
+@Target(AnnotationTarget.PROPERTY)
+annotation class DslProperty
+
+@Target(AnnotationTarget.FUNCTION)
+annotation class DslAction

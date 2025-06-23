@@ -4,6 +4,7 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.net.quic.*
 import kotlinx.serialization.json.*
 import kotlinx.coroutines.*
+import borg.trikeshed.ksp.TrikeShedDsl
 
 /**
  * IPFS Client implementation using QUIC transport
@@ -324,4 +325,10 @@ class IpfsStorage {
         
         return removed
     }
+}
+
+@TrikeShedDsl
+class IpfsConfig {
+    lateinit var peerId: PeerId
+    var storage = IpfsStorage()
 }

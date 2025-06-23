@@ -4,8 +4,11 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.CZero.nz
 import borg.trikeshed.net.quic.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject as KotlinxJsonObject
 import kotlinx.serialization.json.*
 import kotlinx.coroutines.*
+import borg.trikeshed.ksp.TrikeShedDsl
 
 /**
  * CouchDB Client Implementation
@@ -58,7 +61,7 @@ class CouchClient(
             rev = jsonObj["_rev"]?.jsonPrimitive?.content,
             deleted = jsonObj["_deleted"]?.jsonPrimitive?.boolean,
             attachments = jsonObj["_attachments"]?.jsonObject,
-            data = JsonObject(jsonObj.filterKeys { !it.startsWith("_") })
+            data = JsonObject(jsonObj.filterKeys { !it.startsWith("_") } as Map<String, JsonElement>)
         )
     }
     
@@ -119,7 +122,7 @@ class CouchClient(
                     CouchDocument(
                         id = docObj["_id"]?.jsonPrimitive?.content,
                         rev = docObj["_rev"]?.jsonPrimitive?.content,
-                        data = JsonObject(docObj.filterKeys { !it.startsWith("_") })
+                        data = JsonObject(docObj.filterKeys { !it.startsWith("_") } as Map<String, JsonElement>)
                     )
                 }
             )
@@ -152,7 +155,7 @@ class CouchClient(
                     CouchDocument(
                         id = docObj["_id"]?.jsonPrimitive?.content,
                         rev = docObj["_rev"]?.jsonPrimitive?.content,
-                        data = JsonObject(docObj.filterKeys { !it.startsWith("_") })
+                        data = JsonObject(docObj.filterKeys { !it.startsWith("_") } as Map<String, JsonElement>)
                     )
                 }
             )
@@ -178,7 +181,7 @@ class CouchClient(
         val response = request("GET", "/$dbName/_security")
         val jsonResponse = json.parseToJsonElement(response).jsonObject
         
-        fun parseSecurityObject(obj: JsonObject?): CouchSecurity.SecurityObject {
+        fun parseSecurityObject(obj: KotlinxJsonObject?): CouchSecurity.SecurityObject {
             if (obj == null) return CouchSecurity.SecurityObject()
             
             val namesArray = obj["names"]?.jsonArray ?: JsonArray(emptyList())
@@ -311,4 +314,10 @@ class CouchClient(
     }
     
     private fun <T> emptyIndex(): Indexed<T> = 0 j { throw NoSuchElementException() }
+}
+
+@TrikeShedDsl
+class CouchConfig {
+    var url = "http://localhost:5984"
+    var transport = CouchClient.Transport.HTTP
 }
