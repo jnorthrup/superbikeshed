@@ -81,7 +81,7 @@ fun parseJsonToTensor(jsonString: String): Indexed<String> {
         }
     }
     
-    return values.toIdx()
+    return values.size j { i: Int -> values[i] }
 }
 
 /**

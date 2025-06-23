@@ -1,6 +1,6 @@
 package borg.trikeshed.parse
 
-value class Token(val type: TokenType, val literal: String, val pos: Int)
+data class Token(val type: TokenType, val literal: String, val pos: Int)
 
 enum class TokenType {
     EOF,
@@ -116,7 +116,7 @@ value class BashBrace(val scanner: BashScanner) {
     }
 }
 
-value class ParseResult<out T>(
+data class ParseResult<out T>(
     val value: T,
     val remaining: List<Token>
 )
@@ -241,7 +241,7 @@ object BashParsers {
     )
 }
 
-@JvmInline
+// Removed @JvmInline to fix compilation error
 value class BashBraceParser(val input: String) {
     fun parse(): List<String> {
         val tokens = BashBrace.of(input).scanTokens()

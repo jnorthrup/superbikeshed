@@ -1,7 +1,7 @@
 package borg.trikeshed
 
 import borg.trikeshed.net.*
-import borg.trikeshed.rts.*
+// import borg.trikeshed.rts.* // Moved to museum
 import borg.trikeshed.k2script.*
 import borg.trikeshed.distributed.*
 import borg.trikeshed.ipfs.*
@@ -63,15 +63,17 @@ object ProductionMain {
         println("Port: $port")
         println("Max players: $maxPlayers")
         
-        val host = RTSNetworkHost(
-            tickRate = 60,
-            maxPlayers = maxPlayers,
-            port = port,
-            enableRollback = true
-        )
-        
-        // Start host
-        host.start()
+        // RTS Host moved to museum
+        // val host = RTSNetworkHost(
+        //     tickRate = 60,
+        //     maxPlayers = maxPlayers,
+        //     port = port,
+        //     enableRollback = true
+        // )
+        // 
+        // // Start host
+        // host.start()
+        println("RTS functionality temporarily moved to museum for zero-error build")
         
         // Keep running
         awaitCancellation()

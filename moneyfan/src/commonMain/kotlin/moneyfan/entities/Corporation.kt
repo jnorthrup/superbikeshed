@@ -51,16 +51,17 @@ data class Corporation(
     
     override fun computeNetWorth(): Price {
         val shareValue = if (outstandingShares > 0) {
-            shareholders.play.sumOf { 
-                it.shareValue.value * it.sharesOwned 
+            (0 until shareholders.a).sumOf { i ->
+                val shareholder = shareholders.b(i)
+                shareholder.shareValue.value * shareholder.sharesOwned 
             }
         } else 0.0
         return Price(shareValue)
     }
     
     override fun getBeneficiaries(): Indexed<Beneficiary> {
-        return shareholders.size j { i ->
-            val shareholder = shareholders[i]
+        return shareholders.a j { i: Int ->
+            val shareholder = shareholders.b(i)
             Beneficiary(
                 id = BeneficiaryId(shareholder.id.value),
                 name = shareholder.name,
@@ -102,7 +103,8 @@ data class Corporation(
     
     private fun canTransferShares(action: EntityAction.OwnershipTransfer): Boolean {
         // Check share transfer restrictions in bylaws
-        return bylaws.shareTransferRestrictions.play.all { restriction ->
+        return (0 until bylaws.shareTransferRestrictions.a).all { i ->
+            val restriction = bylaws.shareTransferRestrictions.b(i)
             when (restriction) {
                 is ShareTransferRestriction.RightOfFirstRefusal -> {
                     // Check if ROFR process followed
@@ -157,8 +159,10 @@ data class Corporation(
     
     private fun isEligibleForSCorp(): Boolean {
         // Check S-Corp eligibility requirements
-        return shareholders.size <= 100 && 
-               shareholders.play.all { it.shareholderType.isEligibleForSCorp() }
+        return shareholders.a <= 100 && 
+               (0 until shareholders.a).all { i ->
+                   shareholders.b(i).shareholderType.isEligibleForSCorp()
+               }
     }
 }
 
@@ -199,8 +203,8 @@ enum class ShareholderType {
     QUALIFYING_TRUST,
     ESTATE,
     EXEMPT_ORGANIZATION,
-    CORPORATION // Not eligible for S-Corp
-} {
+    CORPORATION; // Not eligible for S-Corp
+    
     fun isEligibleForSCorp(): Boolean {
         return this != CORPORATION
     }
@@ -583,7 +587,7 @@ object CorporationOperations {
             redemptionRights = null
         )
         
-        return 1 j { commonShares }
+        return 1 j { _: Int -> commonShares }
     }
     
     /**
@@ -640,7 +644,7 @@ object CorporationOperations {
             corporateName = name,
             businessPurpose = "To engage in any lawful business purpose",
             duration = CorporationDuration.Perpetual,
-            authorizedShares = 1 j { 
+            authorizedShares = 1 j { _: Int -> 
                 AuthorizedShareClass(
                     className = "Common",
                     authorizedShares = 10000000,

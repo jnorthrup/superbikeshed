@@ -9,24 +9,20 @@ import kotlinx.coroutines.*
 // Helper function for appending to Indexed
 private fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
     val newSize = indexed.a + 1
-    return newSize j { i ->
+    return newSize j { i: Int ->
         if (i < indexed.a) indexed.b(i) else item
     }
 }
 
-// Helper function for combining Indexed collections using TrikeShed pattern
+// Helper function for combining Indexed collections using ArrayList + toIdx pattern
 private fun <T> combineIndexed(vararg series: Indexed<T>): Indexed<T> {
-    val offsets = IntArray(series.size)
-    var offset = 0
-    for (i in series.indices) {
-        offsets[i] = offset
-        offset += series[i].a
+    val combined = mutableListOf<T>()
+    for (s in series) {
+        for (i in 0 until s.a) {
+            combined.add(s.b(i))
+        }
     }
-    return offset j { i ->
-        val j = offsets.binarySearch(i)
-        if (j >= 0) series[j].b(i - offsets[j]) 
-        else series[-j - 2].b(i - offsets[-j - 2])
-    }
+    return combined.toIdx()
 }
 
 /**
@@ -179,7 +175,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
-            frames = 1 j { frame },
+            frames = 1 j { _: Int -> frame },
             payload = encryptedData.ciphertext
         )
         
@@ -231,7 +227,7 @@ class SecureQuicEngine(
                     
                     // Update stream state
                     streamStates[frame.streamId] = stream.copy(
-                        receiveBuffer = appendToIndexed(stream.receiveBuffer, decrypted),
+                        receiveBuffer = combineIndexed(stream.receiveBuffer, decrypted),
                         receiveOffset = frame.offset + decrypted.a
                     )
                 }
@@ -276,7 +272,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
-            frames = 1 j { cryptoFrame },
+            frames = 1 j { _: Int -> cryptoFrame },
             payload = clientHello
         )
         
@@ -285,7 +281,7 @@ class SecureQuicEngine(
             nextPacketNumber = connectionState.nextPacketNumber + 1
         )
         
-        return 1 j { packet }
+        return 1 j { _: Int -> packet }
     }
     
     private suspend fun startServerHandshake(): Indexed<QuicPacket> {
@@ -315,7 +311,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
-            frames = 1 j { cryptoFrame },
+            frames = 1 j { _: Int -> cryptoFrame },
             payload = serverHello
         )
         
@@ -324,7 +320,7 @@ class SecureQuicEngine(
             nextPacketNumber = connectionState.nextPacketNumber + 1
         )
         
-        return 1 j { packet }
+        return 1 j { _: Int -> packet }
     }
     
     private suspend fun processCryptoFrame(frame: CryptoFrame): List<QuicPacket> {
@@ -385,12 +381,13 @@ class SecureQuicEngine(
         val sharedSecret = cryptoEngine.generateRandomBytes(32)
         
         // Derive master secret
-        val seed = appendToIndexed(
-            appendToIndexed(clientRandom ?: 0 j { 0.toByte() }, serverRandom ?: 0 j { 0.toByte() }),
+        val seed = combineIndexed(
+            clientRandom ?: 0 j { _: Int -> 0.toByte() }, 
+            serverRandom ?: 0 j { _: Int -> 0.toByte() },
             sharedSecret
         )
         
-        masterSecret = cryptoEngine.deriveKey(seed, 0 j { 0.toByte() }, KdfAlgorithm.PBKDF2_SHA256).keyData
+        masterSecret = cryptoEngine.deriveKey(seed, 0 j { _: Int -> 0.toByte() }, KdfAlgorithm.PBKDF2_SHA256).keyData
         
         // Derive traffic keys
         deriveTrafficKeys()
@@ -403,8 +400,8 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
-            frames = 0 j { },
-            payload = 0 j { 0.toByte() }
+            frames = 0 j { _: Int -> throw IndexOutOfBoundsException() },
+            payload = 0 j { _: Int -> 0.toByte() }
         )
     }
     
@@ -433,7 +430,7 @@ class SecureQuicEngine(
     private suspend fun sendFinished(): QuicPacket {
         // Create Finished message with HMAC
         val finishedData = cryptoEngine.hmac(
-            masterSecret ?: 0 j { 0.toByte() },
+            masterSecret ?: 0 j { _: Int -> 0.toByte() },
             "finished".encodeToByteArray().toIdx(),
             HashAlgorithm.SHA_256
         )
@@ -451,7 +448,7 @@ class SecureQuicEngine(
                 sourceConnectionId = ConnectionId(connectionState.localConnectionId),
                 packetNumber = connectionState.nextPacketNumber
             ),
-            frames = 1 j { cryptoFrame },
+            frames = 1 j { _: Int -> cryptoFrame },
             payload = finishedData
         )
     }
@@ -460,20 +457,20 @@ class SecureQuicEngine(
     
     private fun createClientHello(): Indexed<Byte> {
         // Create ClientHello message with supported cipher suites and key exchange algorithms
-        return 0 j { 0.toByte() } // Placeholder
+        return 0 j { _: Int -> 0.toByte() } // Placeholder
     }
     
     private fun createServerHello(): Indexed<Byte> {
         // Create ServerHello message with selected cipher suite and key exchange algorithm
-        return 0 j { 0.toByte() } // Placeholder
+        return 0 j { _: Int -> 0.toByte() } // Placeholder
     }
     
     private fun parseClientHello(data: Indexed<Byte>): Unit {
         // Parse ClientHello and extract peer public key
         peerPublicKey = PublicKey(
             algorithm = KeyAlgorithm.X25519,
-            keyData = 32 j { 0.toByte() },
-            encoded = 32 j { 0.toByte() }
+            keyData = 32 j { _: Int -> 0.toByte() },
+            encoded = 32 j { _: Int -> 0.toByte() }
         )
     }
     
@@ -481,8 +478,8 @@ class SecureQuicEngine(
         // Parse ServerHello and extract peer public key
         peerPublicKey = PublicKey(
             algorithm = KeyAlgorithm.X25519,
-            keyData = 32 j { 0.toByte() },
-            encoded = 32 j { 0.toByte() }
+            keyData = 32 j { _: Int -> 0.toByte() },
+            encoded = 32 j { _: Int -> 0.toByte() }
         )
     }
     
@@ -498,30 +495,30 @@ class SecureQuicEngine(
     
     data class SecureQuicConnectionState(
         val version: Long = 0x00000001,
-        val localConnectionId: Indexed<Byte> = 0 j { 0.toByte() },
-        val remoteConnectionId: Indexed<Byte> = 0 j { 0.toByte() },
+        val localConnectionId: Indexed<Byte> = 0 j { _: Int -> 0.toByte() },
+        val remoteConnectionId: Indexed<Byte> = 0 j { _: Int -> 0.toByte() },
         val nextPacketNumber: Long = 0,
-        val sentPackets: Indexed<QuicPacket> = 0 j { QuicPacket(
+        val sentPackets: Indexed<QuicPacket> = 0 j { _: Int -> QuicPacket(
             header = QuicHeader(
                 type = QuicPacketType.SHORT_HEADER,
                 version = 1,
-                destinationConnectionId = ConnectionId(0 j { 0.toByte() }),
-                sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
+                destinationConnectionId = ConnectionId(0 j { _: Int -> 0.toByte() }),
+                sourceConnectionId = ConnectionId(0 j { _: Int -> 0.toByte() }),
                 packetNumber = 0
             ),
-            frames = 0 j { StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
-            payload = 0 j { 0.toByte() }
+            frames = 0 j { _: Int -> StreamFrame(0, 0, 0 j { _: Int -> 0.toByte() }, false) },
+            payload = 0 j { _: Int -> 0.toByte() }
         ) },
-        val receivedPackets: Indexed<QuicPacket> = 0 j { QuicPacket(
+        val receivedPackets: Indexed<QuicPacket> = 0 j { _: Int -> QuicPacket(
             header = QuicHeader(
                 type = QuicPacketType.SHORT_HEADER,
                 version = 1,
-                destinationConnectionId = ConnectionId(0 j { 0.toByte() }),
-                sourceConnectionId = ConnectionId(0 j { 0.toByte() }),
+                destinationConnectionId = ConnectionId(0 j { _: Int -> 0.toByte() }),
+                sourceConnectionId = ConnectionId(0 j { _: Int -> 0.toByte() }),
                 packetNumber = 0
             ),
-            frames = 0 j { StreamFrame(0, 0, false, 0 j { 0.toByte() }) },
-            payload = 0 j { 0.toByte() }
+            frames = 0 j { _: Int -> StreamFrame(0, 0, 0 j { _: Int -> 0.toByte() }, false) },
+            payload = 0 j { _: Int -> 0.toByte() }
         ) },
         val bytesInFlight: Long = 0,
         val transportParams: TransportParameters = TransportParameters()
@@ -530,8 +527,8 @@ class SecureQuicEngine(
     data class SecureQuicStreamState(
         val streamId: Long,
         val maxData: Long,
-        val sendBuffer: Indexed<Byte> = 0 j { 0.toByte() },
-        val receiveBuffer: Indexed<Byte> = 0 j { 0.toByte() },
+        val sendBuffer: Indexed<Byte> = 0 j { _: Int -> 0.toByte() },
+        val receiveBuffer: Indexed<Byte> = 0 j { _: Int -> 0.toByte() },
         val sendOffset: Long = 0,
         val receiveOffset: Long = 0
     )
