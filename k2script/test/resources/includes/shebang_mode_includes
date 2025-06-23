@@ -1,4 +1,0 @@
-#!/usr/bin/env kscript
-
-@file:Import("rel_includes/include_1.kt")
-include_1()
