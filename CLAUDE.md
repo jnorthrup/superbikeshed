@@ -59,3 +59,11 @@ when solving a problem of 1 factor of effects, first read for
 
 - port the columnar/ superannutated test over to ci integration test with pansh nightly galaxy snapshot parser ljson kzran demo
 - todo: port the columnar/ superannutated test over to ci integration test with spansh nightly galaxy snapshot parser ljson kzran demo 
+
+## Fiduciary Memory
+
+- fiduciary will use lawful and legal taxonomies with a general penchant for a cite name, a blurb, link, and a blackboard of strings and things
+
+## Markets and Information Volume
+
+- todo: markets attention in moneyfan.  llm token markets, storage object markets, everything this would use to grow with money in information volume and p2p enablement

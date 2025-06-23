@@ -8,21 +8,8 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAX_WORKERS=3
 
-# Museum keywords mapped to their likely artifact locations
-declare -A MUSEUM_KEYWORDS=(
-    ["reactor"]="museum/Review/trikeshed-core museum/reactor"
-    ["ljson"]="museum/parse museum/unstable_features"
-    ["couchdb"]="museum/unstable_features/services museum/couchdb-admin"
-    ["threads"]="museum/Review/trikeshed-core museum/threads"
-    ["gztool"]="museum/gztool"
-    ["http2"]="museum/http2"
-    ["http_1_1"]="museum/http_11"
-    ["zran"]="museum/zran"
-    ["relaxfactory"]="museum/relaxfactory"
-    ["ccek"]="museum/unstable_features"
-    ["ipfs"]="museum/unstable_features"
-    ["quic"]="museum/unstable_features"
-)
+# Museum keywords for concurrent processing
+KEYWORDS=(reactor ljson couchdb threads gztool http2 http_1_1 zran relaxfactory ccek ipfs quic)
 
 cd "${PROJECT_ROOT}"
 mkdir -p tmpdir museum
@@ -46,13 +33,13 @@ declare -a WORKER_PIDS=()
 
 # Launch workers concurrently
 worker_id=1
-for keyword in "${!MUSEUM_KEYWORDS[@]}"; do
+for keyword in "${KEYWORDS[@]}"; do
     # Wait for available slot
     while [[ ${#WORKER_PIDS[@]} -ge ${MAX_WORKERS} ]]; do
         sleep 1
         
         # Check for completed workers
-        local new_pids=()
+        new_pids=()
         for pid in "${WORKER_PIDS[@]}"; do
             if kill -0 "${pid}" 2>/dev/null; then
                 new_pids+=("${pid}")
@@ -77,7 +64,7 @@ for keyword in "${!MUSEUM_KEYWORDS[@]}"; do
         ./scripts/async-museum-worker.sh
     ) &
     
-    local worker_pid=$!
+    worker_pid=$!
     WORKER_PIDS+=("${worker_pid}")
     
     echo "[LAUNCHER] Worker ${worker_id} started with PID ${worker_pid} for ${keyword}"

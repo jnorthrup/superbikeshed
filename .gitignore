@@ -144,4 +144,5 @@ test-output/
 .aider.input.history
 .kotlin
 
-museum/ 
+museum/*/
+tmpdir/ 
