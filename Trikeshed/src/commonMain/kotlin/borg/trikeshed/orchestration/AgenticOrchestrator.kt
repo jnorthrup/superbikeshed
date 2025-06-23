@@ -22,11 +22,19 @@ import kotlin.random.Random
 // AGENTIC ORCHESTRATOR CORE - TrikeShed Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-value class CCEKContext(val data: Map<String, String>) {
-    fun extractCurrentScope(): String = data["scope"] ?: "global"
-    fun extractCurrentCapabilities(): List<String> = data["capabilities"]?.split(",") ?: emptyList()
-    fun extractCurrentConstraints(): String = data["constraints"] ?: "none"
-    fun extractCurrentPreferences(): String = data["preferences"] ?: "balanced"
+value class CCEKContext(val data: Indexed<Join<String, String>>) {
+    fun extractCurrentScope(): String = findValue("scope") ?: "global"
+    fun extractCurrentCapabilities(): Indexed<String> = findValue("capabilities")?.split(",")?.toIdx() ?: (0 j { "" })
+    fun extractCurrentConstraints(): String = findValue("constraints") ?: "none"
+    fun extractCurrentPreferences(): String = findValue("preferences") ?: "balanced"
+    
+    private fun findValue(key: String): String? {
+        for (i in 0 until data.a) {
+            val pair = data.b(i)
+            if (pair.a == key) return pair.b
+        }
+        return null
+    }
 }
 
 value class Action(val data: String)
@@ -184,11 +192,14 @@ class AgenticOrchestrator {
             try {
                 // Simulate environment changes
                 val capabilities = detectCapabilities()
-                val context = CCEKContext(mapOf(
-                    "scope" to "development",
-                    "capabilities" to capabilities.joinToString(","),
-                    "timestamp" to kotlin.random.Random.nextLong().toString()
-                ))
+                val context = CCEKContext(3 j { i ->
+                    when (i) {
+                        0 -> "scope" j "development"
+                        1 -> "capabilities" j capabilities.joinToString(",")
+                        2 -> "timestamp" j kotlin.random.Random.nextLong().toString()
+                        else -> "" j ""
+                    }
+                })
                 
                 // Create monitoring task
                 val task = DevelopmentTask(
