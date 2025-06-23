@@ -8,6 +8,8 @@ import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.coroutines.*
+import borg.trikeshed.ksp.TrikeShedDsl
+import borg.trikeshed.lib.Usable
 
 /**
  * C10K Server - Production-ready high-performance server
@@ -417,3 +419,9 @@ data class SimulationCommand(
 )
 
 private fun <T> emptyIndex(): Indexed<T> = 0 j { throw NoSuchElementException() }
+
+@TrikeShedDsl("c10k")
+class C10KConfig {
+    var port: Int = 8080
+    var staticRoot: String = "./static"
+}

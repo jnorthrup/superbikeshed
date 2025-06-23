@@ -603,6 +603,42 @@ fun Indexed<Byte>.toArray(): ByteArray = ByteArray(this.size) { this[it] }
 
 /** Series constructor function from Review - moved to BrokeShed compatibility section */
 
+// === DATABASE CURSOR TYPES ===
+
+/**
+ * ColumnMeta - Database column metadata
+ * Represents the metadata for a database column including name and type information
+ */
+data class ColumnMeta(val a: String, val b: kotlin.reflect.KClass<*>) {
+    companion object {
+        fun create(name: String, typeName: String): ColumnMeta {
+            val kClass = when (typeName) {
+                "String" -> String::class
+                "Int" -> Int::class
+                "Long" -> Long::class
+                "Float" -> Float::class
+                "Double" -> Double::class
+                "Boolean" -> Boolean::class
+                "Byte" -> Byte::class
+                "Short" -> Short::class
+                "Char" -> Char::class
+                else -> String::class // Default to String
+            }
+            return ColumnMeta(name, kClass)
+        }
+    }
+}
+
+/**
+ * Database row vector - represents a single row in a database cursor
+ */
+typealias RowVec = Indexed<Join<Any?, () -> ColumnMeta>>
+
+/**
+ * Database cursor - represents a database table/query result
+ */
+typealias DatabaseCursor = Indexed<RowVec>
+
 // === ADVANCED METACLASSES ===
 
 /**

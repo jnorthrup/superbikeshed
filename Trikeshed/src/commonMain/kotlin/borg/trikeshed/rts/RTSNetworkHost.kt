@@ -9,6 +9,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import borg.trikeshed.ksp.TrikeShedDsl
 
 /**
  * RTS Network Host - Deterministic simulation for real-time strategy games
@@ -554,3 +555,18 @@ class DeterministicRandom(private var seed: Long) {
         return nextInt(1000000) / 1000000f
     }
 }
+
+@TrikeShedDsl
+class RTSConfig {
+    var tickRate = 60
+    var maxPlayers = 8
+    var port = 7777
+    var enableRollback = true
+}
+
+// Player state
+@Serializable
+data class PlayerState(
+    val playerId: PlayerId,
+    val units: MutableMap<Long, RtsUnit> = mutableMapOf()
+)

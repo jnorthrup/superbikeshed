@@ -2,7 +2,9 @@ package nexus
 
 import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
-import borg.trikeshed.lib.Join
+// Simplified TrikeShed-style types for nexus
+data class Join<A, B>(val first: A, val second: B)
+infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
 
 /**
  * Nexus Agent - AI-powered task execution using k2script's LiteLLMClient
@@ -129,7 +131,7 @@ object NexusDSL {
             peers.add(name)
         }
         
-        fun typealias(name: String, type: String) {
+        fun typeAlias(name: String, type: String) {
             typeAliases[name] = type
         }
     }
@@ -160,8 +162,8 @@ object Nexus {
             peer("local")
             peer("remote-cluster-1")
             peer("remote-cluster-2")
-            typealias("StateFlow", "kotlinx.coroutines.flow.StateFlow")
-            typealias("DataContext", "borg.trikeshed.lib.Join")
+            typeAlias("StateFlow", "kotlinx.coroutines.flow.StateFlow")
+            typeAlias("DataContext", "nexus.Join")
         }
         
         val introspection = NexusDSL.introspect {

@@ -78,3 +78,7 @@
 ## Memory: Professional Code Guidelines
 
 - professional code only no demos or mockups - TODO() is acceptable but no hype no documentation, thats just a shim.
+
+## Architecture Memory
+
+- architecture: 50% taxonomical typealias, 50% DSEL code to push all the buttons and turn all the knobs

@@ -4,6 +4,7 @@ import borg.trikeshed.lib.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import kotlin.random.Random
+import borg.trikeshed.ksp.TrikeShedDsl
 
 /**
  * Pure TrikeShed implementation of QUIC protocol
@@ -139,6 +140,12 @@ data class TransportParameters(
     val initialMaxStreamsBidi: Long = 100,
     val initialMaxStreamsUni: Long = 100
 )
+
+@TrikeShedDsl
+class QuicConfig {
+    var role = QuicEngine.Role.SERVER
+    var transportParams = TransportParameters()
+}
 
 // QUIC connection state
 @Serializable

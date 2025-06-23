@@ -33,8 +33,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":Trikeshed"))
-                implementation(project(":k2script"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
             }
@@ -48,7 +46,6 @@ kotlin {
         
         val jvmMain by getting {
             dependencies {
-                implementation(project(":k2script"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             }
@@ -140,7 +137,11 @@ signing {
 // The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
 // If additional dependencies are needed, add them here.
 
-// If you want to expose the enumerator CLI, add:
-// application {
-//     mainClass.set("nexus.enumerator.intellij.MainKt")
-// }
+tasks.register<JavaExec>("runNexus") {
+    dependsOn("jvmJar")
+    group = "application"
+    description = "Run Nexus"
+    mainClass.set("nexus.MainKt")
+    classpath = files(tasks.named("jvmJar").get().outputs.files) + kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles
+    args = if (project.hasProperty("args")) project.property("args").toString().split(" ") else emptyList()
+}
