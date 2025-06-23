@@ -5,6 +5,8 @@ import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.CZero.nz
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonObject as KotlinxJsonObject
+import borg.trikeshed.lib.JsonObject as TrikeShedJsonObject
 
 /**
  * CouchDB Protocol Implementation
@@ -27,10 +29,10 @@ data class CouchDocument(
     @SerialName("_id") val id: String? = null,
     @SerialName("_rev") val rev: String? = null,
     @SerialName("_deleted") val deleted: Boolean? = null,
-    @SerialName("_attachments") val attachments: JsonObject? = null,
-    val data: JsonObject = JsonObject(emptyMap())
+    @SerialName("_attachments") val attachments: KotlinxJsonObject? = null,
+    val data: KotlinxJsonObject = KotlinxJsonObject(emptyMap())
 ) {
-    fun toJson(): JsonObject = buildJsonObject {
+    fun toJson(): KotlinxJsonObject = buildJsonObject {
         id?.let { put("_id", it) }
         rev?.let { put("_rev", it) }
         deleted?.let { put("_deleted", it) }
@@ -106,11 +108,11 @@ data class ViewRow<K, V>(
 // Bulk docs request
 @Serializable
 data class BulkDocsRequest(
-    val docs: Indexed<JsonObject>,
+    val docs: Indexed<KotlinxJsonObject>,
     val new_edits: Boolean = true,
     val all_or_nothing: Boolean = false
 ) {
-    fun toJson(): JsonObject = buildJsonObject {
+    fun toJson(): KotlinxJsonObject = buildJsonObject {
         putJsonArray("docs") {
             for (i in 0 until docs.a) {
                 add(docs.b(i))
@@ -176,10 +178,10 @@ data class ReplicationRequest(
     val continuous: Boolean = false,
     val create_target: Boolean = false,
     val filter: String? = null,
-    val query_params: JsonObject? = null,
+    val query_params: KotlinxJsonObject? = null,
     val doc_ids: Indexed<String>? = null
 ) {
-    fun toJson(): JsonObject = buildJsonObject {
+    fun toJson(): KotlinxJsonObject = buildJsonObject {
         put("source", source)
         put("target", target)
         put("continuous", continuous)
@@ -231,7 +233,7 @@ data class CouchSecurity(
         val roles: Indexed<String> = emptyIndex()
     )
     
-    fun toJson(): JsonObject = buildJsonObject {
+    fun toJson(): KotlinxJsonObject = buildJsonObject {
         putJsonObject("admins") {
             putJsonArray("names") {
                 for (i in 0 until admins.names.a) {
@@ -278,7 +280,7 @@ data class CouchDesignDocument(
         val reduce: String? = null
     )
     
-    fun toJson(): JsonObject = buildJsonObject {
+    fun toJson(): KotlinxJsonObject = buildJsonObject {
         put("_id", id)
         rev?.let { put("_rev", it) }
         put("language", language)

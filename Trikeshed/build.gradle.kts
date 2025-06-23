@@ -49,6 +49,7 @@ kotlin {
                 implementation(libs.kotlinx.atomicfu)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.3")
             }
         }
         
