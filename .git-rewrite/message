@@ -1,4 +1,0 @@
-Revert "Merge pull request #764 from RooVetGit/slash_switch_modes"
-
-This reverts commit e3d7f25d262f0772b32d691012b6b140f597485e, reversing
-changes made to 55e8170369ddee3411ea85c76ff86f4b8b3bcf2b.

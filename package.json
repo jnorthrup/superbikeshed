@@ -1,9 +1,0 @@
-{
-  "name": "superbikeshed",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "echo 'Starting development server...'",
-    "build": "./gradlew build",
-    "postbuild": "cp -r build/js/packages/\\(.*\\) ./dist"
-  }
-}

@@ -1,1 +1,0 @@
-fun included() = "kscript is awesome"
