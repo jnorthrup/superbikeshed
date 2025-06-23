@@ -22,7 +22,6 @@ import kotlin.random.Random
 // AGENTIC ORCHESTRATOR CORE - TrikeShed Integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@JvmInline
 value class CCEKContext(val data: Map<String, String>) {
     fun extractCurrentScope(): String = data["scope"] ?: "global"
     fun extractCurrentCapabilities(): List<String> = data["capabilities"]?.split(",") ?: emptyList()
@@ -30,10 +29,8 @@ value class CCEKContext(val data: Map<String, String>) {
     fun extractCurrentPreferences(): String = data["preferences"] ?: "balanced"
 }
 
-@JvmInline  
 value class Action(val data: String)
 
-@JvmInline
 value class Outcome(val data: String) {
     val success: Boolean get() = !data.contains("error", ignoreCase = true)
 }
@@ -165,7 +162,7 @@ class AgenticOrchestrator {
                     context = task.context,
                     action = task.type,
                     outcome = outcome,
-                    timestamp = System.currentTimeMillis()
+                    timestamp = getCurrentTimeMillis()
                 )
                 learningChannel.trySend(observation)
                 
@@ -190,7 +187,7 @@ class AgenticOrchestrator {
                 val context = CCEKContext(mapOf(
                     "scope" to "development",
                     "capabilities" to capabilities.joinToString(","),
-                    "timestamp" to System.currentTimeMillis().toString()
+                    "timestamp" to getCurrentTimeMillis().toString()
                 ))
                 
                 // Create monitoring task

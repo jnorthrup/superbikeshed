@@ -41,7 +41,6 @@
 - Eventually IntelliJ inline when ready to make permanent
 - This prevents system shock and dueling architect AIs during transition
  
-when solving a problem of 1 factor of effects, first read for 
 ## Safety Features
 
 - **2-Factor Reach Analysis**: Check direct + transitive impact before changes
@@ -58,7 +57,6 @@ when solving a problem of 1 factor of effects, first read for
 
 ## Todo Tasks
 
-- port the columnar/ superannutated test over to ci integration test with pansh nightly galaxy snapshot parser ljson kzran demo
 - todo: port the columnar/ superannutated test over to ci integration test with spansh nightly galaxy snapshot parser ljson kzran demo 
 
 ## Fiduciary Memory
@@ -68,3 +66,15 @@ when solving a problem of 1 factor of effects, first read for
 ## Markets and Information Volume
 
 - todo: markets attention in moneyfan.  llm token markets, storage object markets, everything this would use to grow with money in information volume and p2p enablement
+
+## CI/CD Zero Error Release System
+
+- **Zero Error Release**: Automated releases only when build/test errors = 0
+- **Branch Structure**: dev → release → main
+- **Auto-tagging**: Creates semantic version tags (vYYYY.MM.DD-commit) 
+- **Release Gates**: All tests pass + zero compilation errors + zero test failures
+- **Workflow**: Push to dev → CI validates → Auto-release if zero errors → Merge to release branch
+
+## Memory: Professional Code Guidelines
+
+- professional code only no demos or mockups - TODO() is acceptable but no hype no documentation, thats just a shim.

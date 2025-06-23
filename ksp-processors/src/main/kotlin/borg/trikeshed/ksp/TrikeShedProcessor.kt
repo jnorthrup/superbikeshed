@@ -44,6 +44,9 @@ class TrikeShedProcessor(
         // Process @GenerateTestUtilities
         processTestUtilities(resolver)
         
+        // Process @GenerateSystemPropertyBoilerplate
+        processSystemPropertyBoilerplate(resolver)
+        
         return emptyList()
     }
     
@@ -322,6 +325,110 @@ class TrikeShedProcessor(
         
         // Generate optimized packing strategy implementations
         logger.info("Generated packing strategies")
+    }
+    
+    private fun processSystemPropertyBoilerplate(resolver: Resolver) {
+        val annotated = resolver.getSymbolsWithAnnotation(GenerateSystemPropertyBoilerplate::class.qualifiedName!!)
+        
+        annotated.forEach { symbol ->
+            if (symbol is KSClassDeclaration) {
+                val annotation = symbol.annotations.find { 
+                    it.shortName.asString() == "GenerateSystemPropertyBoilerplate" 
+                }
+                
+                if (annotation != null) {
+                    generateSystemPropertyBoilerplate(annotation)
+                }
+            }
+        }
+        
+        // Always generate system property boilerplate for common use
+        generateSystemPropertyBoilerplate(null)
+    }
+    
+    private fun generateSystemPropertyBoilerplate(annotation: KSAnnotation?) {
+        val packageName = getAnnotationValue<String>(annotation, "packageName") ?: "borg.trikeshed.lib"
+        
+        // Generate JVM implementation
+        val jvmImpl = FileSpec.builder("$packageName", "SystemPropertiesJvm")
+            .addType(
+                TypeSpec.objectBuilder("SystemPropertiesJvm")
+                    .addFunction(
+                        FunSpec.builder("getSystemProperty")
+                            .addModifiers(KModifier.ACTUAL)
+                            .addParameter("key", String::class)
+                            .returns(String::class.asTypeName().copy(nullable = true))
+                            .addStatement("return System.getProperty(key)")
+                            .build()
+                    )
+                    .addFunction(
+                        FunSpec.builder("getCurrentTimeMillis")
+                            .addModifiers(KModifier.ACTUAL)
+                            .returns(Long::class)
+                            .addStatement("return System.currentTimeMillis()")
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+        
+        // Generate Native implementation
+        val nativeImpl = FileSpec.builder("$packageName", "SystemPropertiesNative")
+            .addImport("kotlinx.cinterop", "*")
+            .addImport("platform.posix", "*")
+            .addType(
+                TypeSpec.objectBuilder("SystemPropertiesNative")
+                    .addFunction(
+                        FunSpec.builder("getSystemProperty")
+                            .addModifiers(KModifier.ACTUAL)
+                            .addParameter("key", String::class)
+                            .returns(String::class.asTypeName().copy(nullable = true))
+                            .addStatement("// Native implementation - return null for now")
+                            .addStatement("return null")
+                            .build()
+                    )
+                    .addFunction(
+                        FunSpec.builder("getCurrentTimeMillis")
+                            .addModifiers(KModifier.ACTUAL)
+                            .returns(Long::class)
+                            .addStatement("// Native implementation using platform time")
+                            .addStatement("return 0L") // Placeholder
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+        
+        // Generate JS implementation
+        val jsImpl = FileSpec.builder("$packageName", "SystemPropertiesJs")
+            .addType(
+                TypeSpec.objectBuilder("SystemPropertiesJs")
+                    .addFunction(
+                        FunSpec.builder("getSystemProperty")
+                            .addModifiers(KModifier.ACTUAL)
+                            .addParameter("key", String::class)
+                            .returns(String::class.asTypeName().copy(nullable = true))
+                            .addStatement("// JS implementation - return null for now")
+                            .addStatement("return null")
+                            .build()
+                    )
+                    .addFunction(
+                        FunSpec.builder("getCurrentTimeMillis")
+                            .addModifiers(KModifier.ACTUAL)
+                            .returns(Long::class)
+                            .addStatement("// JS implementation using Date.now()")
+                            .addStatement("return kotlin.js.Date.now().toLong()")
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+        
+        writeFile("$packageName", "SystemPropertiesJvm", jvmImpl)
+        writeFile("$packageName", "SystemPropertiesNative", nativeImpl)
+        writeFile("$packageName", "SystemPropertiesJs", jsImpl)
+        
+        logger.info("Generated system property boilerplate for all platforms")
     }
     
     private fun writeFile(packageName: String, fileName: String, fileSpec: FileSpec) {

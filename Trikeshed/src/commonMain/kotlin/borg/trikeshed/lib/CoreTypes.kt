@@ -733,22 +733,6 @@ typealias Tensor<T> = MetaSeries<Shape, T>
 // === TENSOR CONSTRUCTION UTILITIES ===
 
 /**
- * ## generateTensor - Tensor Construction Helper
- * 
- * Creates a Tensor<T> from a Shape and a coordinate-to-value function.
- * This is the primary constructor for Tensor instances.
- * 
- * **Usage:**
- * ```kotlin
- * val shape: Shape = 2 j { i -> if (i == 0) 3 else 4 }  // [3, 4]
- * val tensor: Tensor<Double> = generateTensor(shape) { coords ->
- *     coords[0] * 4.0 + coords[1]  // Linear indexing
- * }
- * ```
- */
-fun <T> generateTensor(shape: Shape, generator: (Shape) -> T): Tensor<T> = shape j generator
-
-/**
  * ## toIdx - Indexed Conversion Helper
  * 
  * Converts various collection types to Indexed<T> (formerly Series<T>).
@@ -779,9 +763,6 @@ fun CharArray.toIdx(): Indexed<Char> = size j { this[it] }
  * These provide platform-agnostic interfaces for operations that need
  * platform-specific implementations.
  */
-
-expect fun getCurrentTimeMillis(): Long
-expect fun getSystemProperty(key: String): String?
 
 // === COMPATIBILITY ALIASES ===
 

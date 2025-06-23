@@ -130,3 +130,15 @@ annotation class GenerateTestUtilities(
     val includeMocking: Boolean = true,
     val packageName: String = "borg.trikeshed.generated"
 )
+
+/**
+ * Marker annotation to generate system property boilerplate
+ * Eliminates manual platform-specific System.getProperty implementations
+ */
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
+annotation class GenerateSystemPropertyBoilerplate(
+    val includeTimeFunctions: Boolean = true,
+    val includePropertyFunctions: Boolean = true,
+    val packageName: String = "borg.trikeshed.lib"
+)

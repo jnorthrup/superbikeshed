@@ -21,7 +21,6 @@ import kotlin.math.abs
 /**
  * Rule entropy value representing information content
  */
-@JvmInline
 value class RuleEntropy(val entropy: Double) {
     companion object {
         val HIGH = RuleEntropy(3.8)
@@ -33,7 +32,6 @@ value class RuleEntropy(val entropy: Double) {
 /**
  * Activation threshold for rule firing
  */
-@JvmInline
 value class ActivationThreshold(val threshold: Double) {
     companion object {
         val STRICT = ActivationThreshold(0.95)
@@ -45,7 +43,6 @@ value class ActivationThreshold(val threshold: Double) {
 /**
  * Rule priority for ordering
  */
-@JvmInline
 value class RulePriority(val priority: UByte) {
     companion object {
         val CRITICAL = RulePriority(255u)
@@ -58,7 +55,6 @@ value class RulePriority(val priority: UByte) {
 /**
  * Rule confidence level
  */
-@JvmInline
 value class RuleConfidence(val confidence: UByte) {
     companion object {
         val CERTAIN = RuleConfidence(255u)

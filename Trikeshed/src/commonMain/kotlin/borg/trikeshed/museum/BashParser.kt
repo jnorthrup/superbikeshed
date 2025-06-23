@@ -1,12 +1,21 @@
-package parse.bash
+package borg.trikeshed.museum
 
-@JvmInline
+// Token types for bash parsing
+enum class TokenType {
+    LBRACE, RBRACE, COMMA, SEQUENCE, LITERAL
+}
+
+// Token representation
+data class Token(
+    val type: TokenType,
+    val literal: String
+)
+
 value class ParseResult<out T>(
     val value: T,
     val remaining: List<Token>
 )
 
-@JvmInline
 value class Parser<T>(val parse: (List<Token>) -> ParseResult<T>?) {
     companion object {
         fun <T> pure(value: T): Parser<T> = Parser { tokens -> ParseResult(value, tokens) }
@@ -147,7 +156,6 @@ object BashParsers {
 }
 
 // Public API
-@JvmInline
 value class BashBraceParser(val input: String) {
     fun parse(): List<String> {
         val tokens = BashBrace.of(input).scanTokens()
@@ -157,5 +165,62 @@ value class BashBraceParser(val input: String) {
     
     companion object {
         fun of(input: String): BashBraceParser = BashBraceParser(input)
+    }
+}
+
+// BashBrace tokenizer
+value class BashBrace(val input: String) {
+    fun scanTokens(): List<Token> {
+        val tokens = mutableListOf<Token>()
+        var current = 0
+        
+        while (current < input.length) {
+            val char = input[current]
+            
+            when (char) {
+                '{' -> {
+                    tokens.add(Token(TokenType.LBRACE, "{"))
+                    current++
+                }
+                '}' -> {
+                    tokens.add(Token(TokenType.RBRACE, "}"))
+                    current++
+                }
+                ',' -> {
+                    tokens.add(Token(TokenType.COMMA, ","))
+                    current++
+                }
+                '.' -> {
+                    if (current + 1 < input.length && input[current + 1] == '.') {
+                        tokens.add(Token(TokenType.SEQUENCE, ".."))
+                        current += 2
+                    } else {
+                        tokens.add(Token(TokenType.LITERAL, "."))
+                        current++
+                    }
+                }
+                else -> {
+                    // Collect literal
+                    val start = current
+                    while (current < input.length && 
+                           input[current] != '{' && 
+                           input[current] != '}' && 
+                           input[current] != ',' && 
+                           input[current] != '.') {
+                        current++
+                    }
+                    val literal = input.substring(start, current)
+                    if (literal.isNotEmpty()) {
+                        tokens.add(Token(TokenType.LITERAL, literal))
+                    }
+                }
+            }
+        }
+        
+        return tokens
+    }
+    
+    companion object {
+        fun of(input: String): BashBrace = BashBrace(input)
     }
 } 

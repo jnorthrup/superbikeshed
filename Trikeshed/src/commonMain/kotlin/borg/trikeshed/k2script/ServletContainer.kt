@@ -164,7 +164,7 @@ class ServletInstance(
         
         val json = buildJsonObject {
             put("servlet", "json")
-            put("timestamp", System.currentTimeMillis())
+            put("timestamp", getCurrentTimeMillis())
             put("method", request.method)
             put("path", request.path)
             
@@ -187,7 +187,7 @@ class ServletInstance(
         // Game state servlet
         val gameState = buildJsonObject {
             put("type", "gameState")
-            put("tick", System.currentTimeMillis() / 16) // ~60 FPS
+            put("tick", getCurrentTimeMillis() / 16) // ~60 FPS
             putJsonArray("entities") {
                 add(buildJsonObject {
                     put("id", 1)
@@ -287,7 +287,7 @@ response.contentType = "application/json"
 
 val result = buildJsonObject {
     put("message", "Hello from JSON servlet")
-    put("timestamp", System.currentTimeMillis())
+    put("timestamp", getCurrentTimeMillis())
 }
 
 response.write(result.toString())
@@ -303,7 +303,7 @@ val response = servletResponse
 response.contentType = "application/json"
 
 val gameState = buildJsonObject {
-    put("tick", System.currentTimeMillis() / 16)
+    put("tick", getCurrentTimeMillis() / 16)
     putJsonArray("units") {
         for (i in 1..10) {
             add(buildJsonObject {
