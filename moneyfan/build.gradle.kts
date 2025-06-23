@@ -44,7 +44,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(project(":Trikeshed"))
+                // implementation(project(":Trikeshed"))  // Temporarily commented out due to compilation errors
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.core)

@@ -8,6 +8,7 @@
 - our gradle should always defer to superbikeshed/ gradle for versions info and not alter them.  our targets are common,conditionally-local-native,wasm,jvm
 - most of the time you just copy trikeshed gradle for a new project
 - while oraacle is tyrannizing us with native access put        24 +      jvmArgs("--enable-native-access=ALL-UNNAMED") in JAVA_OPTS exported
+- preference: size j { ... } < size j ::get 
 
 ## Migration Memories
 
