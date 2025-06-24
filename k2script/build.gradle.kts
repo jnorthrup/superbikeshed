@@ -1,4 +1,4 @@
-import java.util.Locale // Added for toLowerCase
+import java.util.Locale
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)

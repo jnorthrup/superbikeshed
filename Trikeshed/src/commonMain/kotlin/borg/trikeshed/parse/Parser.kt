@@ -1,6 +1,6 @@
 package borg.trikeshed.parse
 
-import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Indexed
 
 data class ParseResult<out T>(
     val value: T,
@@ -183,4 +183,4 @@ value class BashBraceParser(val input: String) {
     companion object {
         fun of(input: String): BashBraceParser = BashBraceParser(input)
     }
-} 
+}

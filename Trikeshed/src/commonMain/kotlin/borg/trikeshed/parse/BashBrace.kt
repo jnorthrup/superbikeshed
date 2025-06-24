@@ -115,4 +115,4 @@ value class BashBrace(val scanner: BashScanner) {
     companion object {
         fun of(input: String): BashBrace = BashBrace(BashScanner(input))
     }
-} 
+}
