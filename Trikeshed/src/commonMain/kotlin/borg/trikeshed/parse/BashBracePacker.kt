@@ -1,6 +1,9 @@
 package borg.trikeshed.parse
 
-import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.get
+import borg.trikeshed.lib.play
+import borg.trikeshed.lib.size
 
 /**
  * BashBracePacker: Compresses a list of strings into a minimal brace expression.
@@ -117,4 +120,4 @@ object BashBracePacker {
 /**
  * Extension function for convenient packing of Indexed<String>
  */
-fun Indexed<String>.packToBrace(): String = BashBracePacker.pack(this) 
+fun Indexed<String>.packToBrace(): String = BashBracePacker.pack(this)

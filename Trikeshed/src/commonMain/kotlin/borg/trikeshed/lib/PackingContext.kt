@@ -59,8 +59,8 @@ data class PackingContext(
     val strategy: PackingStrategy = PackingStrategy.STANDARD,
     val budget: CpuBudget = CpuBudget.STANDARD,
     val priority: PackingPriority = PackingPriority.BALANCED,
-    val forceSimpleThreshold: Int = 10, // Below this size, always use simple strategies
-    val complexThreshold: Int = 1000, // Above this size, consider complex strategies
+    val forceSimpleThreshold: Int = 10,
+    val complexThreshold: Int = 1000,
 ) : CoroutineContext.Element {
     override val key: CoroutineContext.Key<*> get() = Key
 

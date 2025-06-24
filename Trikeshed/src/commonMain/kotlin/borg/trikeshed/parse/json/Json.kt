@@ -2,7 +2,10 @@
 
 package borg.trikeshed.parse.json
 
-import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Twin
+import borg.trikeshed.lib.createBitmapAsSeries
 
 // JSON Bridge - Simple implementation using existing parsers
 

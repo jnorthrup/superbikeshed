@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJsProjectExtension
-
 plugins {
     kotlin("multiplatform") version "2.1.21"
 }
