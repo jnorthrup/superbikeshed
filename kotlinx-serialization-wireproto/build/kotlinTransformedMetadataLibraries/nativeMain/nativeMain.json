@@ -1,0 +1,32 @@
+[
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2",
+    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.6.2-nativeMain-0z2eOA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-io-core:0.6.0",
+    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-io-core-0.6.0-appleMain-BOEJjg.klib",
+    "sourceSetName": "appleMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-io-core:0.6.0",
+    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-io-core-0.6.0-nativeNonAndroidMain-Ctrzpg.klib",
+    "sourceSetName": "nativeNonAndroidMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-io-core:0.6.0",
+    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-io-core-0.6.0-nativeMain-Ctrzpg.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-io-bytestring:0.6.0",
+    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-io-bytestring-0.6.0-appleMain-Pv9upw.klib",
+    "sourceSetName": "appleMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-io-bytestring:0.6.0",
+    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-io-bytestring-0.6.0-nativeMain-ptgxIQ.klib",
+    "sourceSetName": "nativeMain"
+  }
+]

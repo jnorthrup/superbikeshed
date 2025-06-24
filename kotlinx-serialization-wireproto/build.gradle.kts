@@ -9,13 +9,13 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
-    
+
     jvm()
     wasmJs {
         browser()
         binaries.executable()
     }
-    
+
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
     val isMac = hostOs.startsWith("Mac OS")
@@ -30,62 +30,61 @@ kotlin {
     } else if (isMingwX64) {
         mingwX64()
     }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":Trikeshed"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib"))
             }
         }
-        
+
         val wasmJsMain by getting {
             dependencies {
                 implementation(libs.kotlinx.serialization.core)
             }
         }
-        
+
         if (isMac) {
             val macosArm64Main by getting {
                 dependencies {
                     implementation(kotlin("stdlib"))
                 }
             }
-            
+
             val macosX64Main by getting {
                 dependencies {
                     implementation(kotlin("stdlib"))
                 }
             }
         }
-        
+
         if (isLinux) {
             val linuxX64Main by getting {
                 dependencies {
                     implementation(kotlin("stdlib"))
                 }
             }
-            
+
             val linuxArm64Main by getting {
                 dependencies {
                     implementation(kotlin("stdlib"))
                 }
             }
         }
-        
+
         if (isMingwX64) {
             val mingwX64Main by getting {
                 dependencies {
@@ -109,4 +108,3 @@ dependencies {
         add("kspMingwX64", project(":ksp-processors"))
     }
 }
-

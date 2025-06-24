@@ -53,7 +53,6 @@
           "nativeMain"
         ],
         "moduleDependency": [
-          "borg.trikeshed:Trikeshed",
           "borg.trikeshed:kotlinx-serialization-scanner",
           "org.jetbrains.kotlinx:kotlinx-coroutines-core"
         ],
@@ -66,7 +65,6 @@
         "dependsOn": [],
         "moduleDependency": [
           "org.jetbrains.kotlin:kotlin-stdlib",
-          "borg.trikeshed:Trikeshed",
           "borg.trikeshed:kotlinx-serialization-scanner",
           "org.jetbrains.kotlinx:kotlinx-coroutines-core"
         ],
@@ -78,7 +76,6 @@
           "appleMain"
         ],
         "moduleDependency": [
-          "borg.trikeshed:Trikeshed",
           "borg.trikeshed:kotlinx-serialization-scanner",
           "org.jetbrains.kotlinx:kotlinx-coroutines-core"
         ],
@@ -92,7 +89,6 @@
           "commonMain"
         ],
         "moduleDependency": [
-          "borg.trikeshed:Trikeshed",
           "borg.trikeshed:kotlinx-serialization-scanner",
           "org.jetbrains.kotlinx:kotlinx-coroutines-core"
         ],

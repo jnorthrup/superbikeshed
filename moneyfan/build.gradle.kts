@@ -13,20 +13,20 @@ repositories {
 
 kotlin {
     jvmToolchain(21)
-    
-    // JVM - Primary trading platform  
+
+    // JVM - Primary trading platform
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
-    
+
     // WASM - Web-based trading dashboards
     wasmJs {
         browser()
         binaries.executable()
     }
-    
+
     // Native - High-performance trading algorithms
     val hostOs = System.getProperty("os.name")
     val isMac = hostOs.startsWith("Mac OS")
@@ -39,24 +39,23 @@ kotlin {
         linuxX64()
         linuxArm64()
     }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
-                implementation(project(":Trikeshed"))
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.core)
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
@@ -64,7 +63,7 @@ kotlin {
                 implementation(kotlin("reflect"))
             }
         }
-        
+
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
@@ -88,7 +87,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
-            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
+            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
         )
     }
 }
@@ -103,8 +102,8 @@ tasks.register<JavaExec>("runJvm") {
     dependsOn("jvmMainClasses")
     group = "application"
     description = "Run Moneyfan interactive trading demo on JVM"
-    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
-                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs +
+        (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
     mainClass.set("moneyfan.MainJvmKt")
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }

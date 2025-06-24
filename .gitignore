@@ -1,0 +1,122 @@
+# Gradle build artifacts
+build/
+.gradle/
+gradle-wrapper.jar
+
+# Compiled Kotlin/Java artifacts
+*.class
+*.jar
+*.klib
+*.metadata.jar
+*.wasm
+*.mjs
+*.js.map
+*.wasm.map
+
+# IDE files
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/uiDesigner.xml
+.idea/dbnavigator.xml
+.idea/inspectionProfiles/
+.idea/artifacts/
+.idea/gradle.xml
+.idea/misc.xml
+.vscode/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js artifacts
+node_modules/
+yarn.lock
+yarn-error.log
+npm-debug.log*
+.npm
+
+# Python artifacts
+venv/
+venv_new/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+
+# Temporary and cache files
+tmp/
+tmpdir/
+temp/
+logs/
+*.log
+*.tmp
+.cache/
+
+# Test outputs and reports
+**/build/reports/
+**/build/test-results/
+**/build/kotlin/
+**/build/classes/
+**/build/generated/
+**/build/intermediates/
+**/build/libs/
+**/build/processedResources/
+**/build/compileSync/
+**/build/dist/
+**/build/kotlin-webpack/
+
+# Build configuration leftovers
+kotlin-js-store/
+.kotlin/
+build-cache/
+
+# IntelliJ IDEA project files (keep shared configs)
+.idea/copyright/
+.idea/scopes/
+
+# Webpack and JS artifacts
+webpack.config.js
+*.bundle.js
+*.chunk.js
+
+# KSP generated files
+**/build/generated/ksp/
+
+# Test sandbox artifacts
+**/test/
+**/kscript_test_sandbox/
+
+# Debug and temporary Kotlin files
+debug_packer.kt
+DebugBashBracePacker.kt
+TestBashPacker.kt
+test_bash_packer.kt
+test_parse.kt
+demo_packing_parser.kt
+
+# Platform-specific build outputs
+**/build/bin/
+**/build/obj/
+
+# Archive and backup directories
+archive/
+museum-*/
+worker-*/
+trikeshed-work/
+
+# Documentation build outputs
+docs/build/
+docs/_build/
+
+# Deployment directories
+deploy/

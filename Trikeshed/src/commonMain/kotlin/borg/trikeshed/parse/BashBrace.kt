@@ -10,7 +10,7 @@ enum class TokenType {
     RBRACE,
     COMMA,
     DOT,
-    SEQUENCE
+    SEQUENCE,
 }
 
 class BashScanner(val input: String) {

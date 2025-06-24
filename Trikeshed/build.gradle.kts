@@ -10,19 +10,19 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
-    
+
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
-    
+
     // WASM for modern web deployment (replaces JS)
     wasmJs {
         browser()
         binaries.executable()
     }
-    
+
     // Native targets for high-performance execution
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
@@ -50,13 +50,14 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
-        
+
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
@@ -70,7 +71,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
@@ -90,7 +91,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
-            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
+            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
         )
     }
 }
@@ -101,14 +102,14 @@ publishing {
             groupId = project.group.toString()
             artifactId = project.name
             version = project.version.toString()
-            
+
             from(components["kotlin"])
-            
+
             pom {
                 name.set("TrikeShed")
                 description.set("TrikeShed - Core multiplatform data structures and algorithms")
                 url.set("https://github.com/superbikeshed/superbikeshed")
-                
+
                 licenses {
                     license {
                         name.set("MIT License")
@@ -130,13 +131,13 @@ publishing {
             }
         }
     }
-    
+
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-            
+
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")

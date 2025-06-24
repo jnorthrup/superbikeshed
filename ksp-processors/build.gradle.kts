@@ -21,7 +21,7 @@ tasks.register("generateProcessorService") {
     doLast {
         val servicesDir = file("src/main/resources/META-INF/services")
         servicesDir.mkdirs()
-        
+
         val serviceFile = file("$servicesDir/com.google.devtools.ksp.processing.SymbolProcessorProvider")
         serviceFile.writeText("borg.trikeshed.ksp.TrikeShedProcessorProvider")
     }

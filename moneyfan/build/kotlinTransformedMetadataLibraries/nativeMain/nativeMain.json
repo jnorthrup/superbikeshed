@@ -1,0 +1,42 @@
+[
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.5.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.5.0-darwinMain-FcA7tA.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.5.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.5.0-nativeMain-iqDvsQ.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.8.0-nativeDarwinMain-sy5nKg.klib",
+    "sourceSetName": "nativeDarwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.8.0-nativeMain-UxhG-g.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.8.0-concurrentMain-UxhG-g.klib",
+    "sourceSetName": "concurrentMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.6.2-nativeMain-0z2eOA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:atomicfu:0.23.1",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-atomicfu-0.23.1-nativeMain-wFq7cg.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:atomicfu:0.23.1",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-atomicfu-0.23.1-commonMain-wFq7cg.klib",
+    "sourceSetName": "commonMain"
+  }
+]

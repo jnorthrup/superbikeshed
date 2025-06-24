@@ -11,18 +11,18 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
-    
+
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
-    
+
     wasmJs {
         browser()
         binaries.executable()
     }
-    
+
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     val isMingwX64 = hostOs.startsWith("Windows")
@@ -54,21 +54,21 @@ kotlin {
                 api("org.knowm.xchange:xchange-core:5.2.0")
                 api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
                 api("org.slf4j:slf4j-api:2.0.9")
-                
+
                 implementation(kotlin("stdlib-common"))
                 implementation("com.ionspin.kotlin:bignum:0.3.9")
-                implementation(project(":Trikeshed"))
+                // Removed Trikeshed dependency
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
@@ -78,15 +78,15 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
             }
         }
-        
+
         val wasmJsMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
-                implementation(project(":Trikeshed"))
+                // Removed Trikeshed dependency
             }
         }
-        
+
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))

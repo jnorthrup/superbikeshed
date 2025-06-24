@@ -13,8 +13,8 @@ import kotlin.coroutines.CoroutineContext
 @kotlin.jvm.JvmInline
 value class CpuBudget(val cycles: Long) {
     companion object {
-        val MINIMAL = CpuBudget(10)      // Hot path - diagonal only
-        val STANDARD = CpuBudget(100)    // Warm path - basic strategies  
+        val MINIMAL = CpuBudget(10) // Hot path - diagonal only
+        val STANDARD = CpuBudget(100) // Warm path - basic strategies
         val AGGRESSIVE = CpuBudget(1000) // Cold path - all strategies
         val UNLIMITED = CpuBudget(Long.MAX_VALUE) // Offline/batch processing
     }
@@ -26,15 +26,15 @@ value class CpuBudget(val cycles: Long) {
 enum class PackingStrategy {
     /** Diagonal packing only - zero analysis cost */
     MINIMAL,
-    
+
     /** Diagonal + Prefix + basic heuristics - low analysis cost */
     STANDARD,
-    
+
     /** All strategies including expensive clustering - high analysis cost */
     AGGRESSIVE,
-    
+
     /** Adaptive selection based on data characteristics */
-    ADAPTIVE
+    ADAPTIVE,
 }
 
 /**
@@ -43,12 +43,12 @@ enum class PackingStrategy {
 enum class PackingPriority {
     /** Latency critical - skip expensive analysis */
     REALTIME,
-    
+
     /** Balance speed and memory efficiency */
     BALANCED,
-    
+
     /** Optimize for memory at expense of CPU */
-    MEMORY_OPTIMIZED
+    MEMORY_OPTIMIZED,
 }
 
 /**
@@ -60,41 +60,47 @@ data class PackingContext(
     val budget: CpuBudget = CpuBudget.STANDARD,
     val priority: PackingPriority = PackingPriority.BALANCED,
     val forceSimpleThreshold: Int = 10, // Below this size, always use simple strategies
-    val complexThreshold: Int = 1000     // Above this size, consider complex strategies
+    val complexThreshold: Int = 1000, // Above this size, consider complex strategies
 ) : CoroutineContext.Element {
     override val key: CoroutineContext.Key<*> get() = Key
-    
+
     companion object Key : CoroutineContext.Key<PackingContext> {
         /** Default context for when none is specified */
         val DEFAULT = PackingContext()
-        
+
         /** Hot path context - minimal overhead */
-        val HOT_PATH = PackingContext(
-            strategy = PackingStrategy.MINIMAL,
-            budget = CpuBudget.MINIMAL,
-            priority = PackingPriority.REALTIME
-        )
-        
+        val HOT_PATH =
+            PackingContext(
+                strategy = PackingStrategy.MINIMAL,
+                budget = CpuBudget.MINIMAL,
+                priority = PackingPriority.REALTIME,
+            )
+
         /** Batch processing context - maximize compression */
-        val BATCH = PackingContext(
-            strategy = PackingStrategy.AGGRESSIVE,
-            budget = CpuBudget.UNLIMITED,
-            priority = PackingPriority.MEMORY_OPTIMIZED
-        )
+        val BATCH =
+            PackingContext(
+                strategy = PackingStrategy.AGGRESSIVE,
+                budget = CpuBudget.UNLIMITED,
+                priority = PackingPriority.MEMORY_OPTIMIZED,
+            )
     }
-    
+
     /**
      * Determines if a packing strategy should be attempted based on context
      */
-    fun shouldAttempt(strategy: PackingStrategy, dataSize: Int, estimatedCost: Long): Boolean {
+    fun shouldAttempt(
+        strategy: PackingStrategy,
+        dataSize: Int,
+        estimatedCost: Long,
+    ): Boolean {
         // Always skip if over budget
         if (estimatedCost > budget.cycles) return false
-        
+
         // Force simple for small data
         if (dataSize < forceSimpleThreshold && strategy != PackingStrategy.MINIMAL) {
             return false
         }
-        
+
         // Context-based strategy gating
         return when (this.strategy) {
             PackingStrategy.MINIMAL -> strategy == PackingStrategy.MINIMAL
@@ -109,11 +115,14 @@ data class PackingContext(
             }
         }
     }
-    
+
     /**
      * Get estimated cost for a packing strategy based on data characteristics
      */
-    fun estimateCost(strategy: PackingStrategy, dataSize: Int): Long {
+    fun estimateCost(
+        strategy: PackingStrategy,
+        dataSize: Int,
+    ): Long {
         return when (strategy) {
             PackingStrategy.MINIMAL -> 1L // Diagonal packing - essentially free
             PackingStrategy.STANDARD -> dataSize.toLong() * 5 // Linear scan with basic analysis

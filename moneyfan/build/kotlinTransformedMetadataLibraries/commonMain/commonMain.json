@@ -1,0 +1,22 @@
+[
+  {
+    "moduleId": "module org.jetbrains.kotlin:kotlin-stdlib:2.1.21",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlin-kotlin-stdlib-2.1.21-commonMain-uBNgdg.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.5.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-datetime-0.5.0-commonMain-iqDvsQ.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.8.0-commonMain-UxhG-g.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2",
+    "file": "/Users/jim/work/v2superbikeshed/moneyfan/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.6.2-commonMain-0z2eOA.klib",
+    "sourceSetName": "commonMain"
+  }
+]

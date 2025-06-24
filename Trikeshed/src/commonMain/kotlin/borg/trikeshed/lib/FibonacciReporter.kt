@@ -11,51 +11,64 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
 @JvmOverloads
-tailrec fun fib(n: Int, a: Int = 0, b: Int = 1): Int = when (n) {
-    0 -> a
-    1 -> b
-    else -> fib(n - 1, b, a + b)
-}
+tailrec fun fib(
+    n: Int,
+    a: Int = 0,
+    b: Int = 1,
+): Int =
+    when (n) {
+        0 -> a
+        1 -> b
+        else -> fib(n - 1, b, a + b)
+    }
 
-@OptIn(ExperimentalTime::class)
 /**
  * this is a logger which reports mod-fibbonacci tick indexes.  the onyl method is report, which returns a string if
  * the tick is a report tick.
  */
+@OptIn(ExperimentalTime::class)
 class FibonacciReporter(
     /** if we know the size beforehand we provide estimation */
     val size: Int? = null,
     /** what do we report? */
     val noun: String = "rows",
 ) {
-
     var trigger: Int = 0
     var countdown: Int = 1
     val begin: TimeSource.Monotonic.ValueTimeMark = TimeSource.Monotonic.markNow()
     var count: Int = 0
+
     override fun toString(): String =
         "FibonacciReporter(size=$size, noun='$noun', trigger=$trigger, countdown=$countdown, begin=$begin, count=$count)"
 
     fun open() = println("debug: $noun FibonacciReporter opened @$begin")
+
     fun close() {
-        count--;countdown = 1; println("debug:FibonacciReporter closed ${report()} @ ${TimeSource.Monotonic.markNow()-begin}")
+        count--
+        countdown = 1
+        println("debug:FibonacciReporter closed ${report()} @ ${TimeSource.Monotonic.markNow() - begin}")
     }
 
-    fun report(): String? = (count++).run {
-        if (--countdown == 0) {
-            //without -ea this benchmark only costs a unused variable decrement.
-            countdown = fib(++trigger)
-            val l = begin.elapsedNow()
-            val slice = l / max(1, count)
-            val secondsSinceBegin = l.inWholeSeconds
+    fun report(): String? =
+        (count++).run {
+            if (--countdown == 0) {
+                // without -ea this benchmark only costs a unused variable decrement.
+                countdown = fib(++trigger)
+                val l = begin.elapsedNow()
+                val slice = l / max(1, count)
+                val secondsSinceBegin = l.inWholeSeconds
 
-            "logged $count $noun in $l ${(count.toDouble() / (secondsSinceBegin.toDouble())).toFloat()}/s " + (size?.let {
-                val ticksLeft = size - count
-                val remaining: Duration = slice * ticksLeft
-                "remaining: $remaining est ${
-                    Clock.System.now().plus(remaining).toLocalDateTime(TimeZone.currentSystemDefault())
-                }"
-            } ?: "")
-        } else null
-    }
+                "logged $count $noun in $l ${(count.toDouble() / (secondsSinceBegin.toDouble())).toFloat()}/s " + (
+                    size?.let {
+                        val ticksLeft = size - count
+                        val remaining: Duration = slice * ticksLeft
+                        "remaining: $remaining est ${
+                            Clock.System.now().plus(remaining).toLocalDateTime(TimeZone.currentSystemDefault())
+                        }"
+                    } ?: ""
+                )
+            } else {
+                null
+            }
+        }
 }

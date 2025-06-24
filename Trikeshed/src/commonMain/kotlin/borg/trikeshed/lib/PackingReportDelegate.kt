@@ -6,31 +6,31 @@ package borg.trikeshed.lib
  */
 class PackingReportDelegate(
     private val size: Int,
-    private val noun: String = "packing_ops"
+    private val noun: String = "packing_ops",
 ) {
     private val fibReporter = FibonacciReporter(size, noun)
-    
+
     /**
      * Execute a packing operation with automatic fibonacci interval reporting
      */
     fun <T> pack(operation: (Int) -> T): PackingResult<T> {
         return PackingResult(operation, fibReporter)
     }
-    
+
     /**
      * Result wrapper that provides both the operation result and optional progress reports
      */
     class PackingResult<T>(
         private val operation: (Int) -> T,
-        private val reporter: FibonacciReporter
+        private val reporter: FibonacciReporter,
     ) {
         operator fun invoke(index: Int): T {
             val report = reporter.report()
             return operation(index)
         }
-        
+
         fun getWithReport(index: Int): Pair<T, String?> {
-            val report = reporter.report() 
+            val report = reporter.report()
             val result = operation(index)
             return result to report
         }
@@ -40,4 +40,7 @@ class PackingReportDelegate(
 /**
  * Extension for creating packing delegates with specific nouns
  */
-fun packingDelegate(size: Int, noun: String) = PackingReportDelegate(size, noun)
+fun packingDelegate(
+    size: Int,
+    noun: String,
+) = PackingReportDelegate(size, noun)
