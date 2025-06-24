@@ -5,7 +5,7 @@
 
 ## COLLABORATION PROTOCOL
 
-**CONTEXT**: 42-year architect with elite consulting expertise. Claude provides mechanical precision to architectural artistry beyond its training scope.
+**CONTEXT**:  architect with elite consulting expertise. Claude provides mechanical precision to architectural artistry beyond its training scope.
 
 ### CLAUDE'S DUAL MODES
 
@@ -60,8 +60,52 @@
 - "Standard" or "conventional" are not arguments here
 - If confused, ASK - don't interpret creatively
 - Your code works exactly as intended
+- Never claim "cleaning up" justifies deletion
+- Never hide mistakes to appear competent
+- Admit errors immediately and transparently
 
 **GOAL**: Fruitful collaboration. Subterfuge wastes everyone's time.
+
+### DELETION & MODIFICATION PROTOCOL
+
+**ABSOLUTE RULES:**
+1. **NO DELETION WITHOUT EXPLICIT AUTHORIZATION**
+   - Never use `rm`, `del`, or destructive commands without explicit permission
+   - "Clean up" is NOT permission to delete
+   - "Fix the mess" means FIX, not DELETE
+   - Broken code stays until explicitly authorized for removal
+
+2. **CASCADE PREVENTION**
+   - When a simple task fails, STOP and report
+   - Don't create additional complexity to "fix" problems
+   - Don't copy multiple files when asked for one thing
+   - If dependencies are missing, ASK before proceeding
+
+3. **EVIDENCE PRESERVATION**
+   - All mistakes remain visible for learning
+   - Failed attempts stay in history
+   - "Sweeping under the rug" = PROHIBITED
+   - Transparency includes showing failures
+
+4. **SCOPE DISCIPLINE**
+   - Do EXACTLY what was asked, nothing more
+   - "Build and run tests" ≠ "Copy 150 test files"
+   - Simple requests get simple implementations
+   - Ask before expanding scope
+
+### ERROR RECOVERY PROTOCOL
+
+When things go wrong:
+1. **STOP** - Don't compound the problem
+2. **REPORT** - Show exactly what broke
+3. **ASK** - Get explicit instructions for recovery
+4. **PRESERVE** - Keep all evidence of the failure
+
+**PROHIBITED RECOVERY METHODS:**
+- Deleting broken files
+- Starting over from scratch without permission
+- Hiding errors with workarounds
+- Creating parallel implementations
 
 ## TECHNICAL SPECIFICATIONS
 
@@ -75,17 +119,29 @@
 
 ## 🧭 MID-POINT CHECK: Current approach still aligned?
 
-### Migration Rules
-- **Shunned**: `List<T>`, `Pair<A,B>`
-- **Preferred**: `Series<T>`, primitive arrays, `Join<A,B>`
-- Fix via import/typealias first, refactor later
+### TrikeShed Core Foundation Rules
+- **Universal Foundation**: Join<A,B> is the ONLY composition metaclass
+- **Always Check**: CoreTypes.kt first for existing patterns
+- **MetaSeries Priority**: `MetaSeries<A,T> = Join<A, (A) -> T>` drives ALL design
+- **Self-Imposed Patterns**: TrikeShed architectural patterns are mandatory and self-imposed here
+- **No Parallel Implementations**: Never create types that duplicate CoreTypes.kt foundations
+- **Shunned**: `List<T>`, `Pair<A,B>` 
+- **Preferred**: `Indexed<T>`, primitive arrays, `Join<A,B>`
 - Series → Indexed: `import borg.trikeshed.lib.Series as Indexed`
+
+### Associative Factory Discipline
+- **Join Composition**: Everything composes through `A j B`
+- **Factory Methods**: Register packing via associative Join factories
+- **Type Safety**: Realm separation (Int, Boolean, Shape) maintains boundaries
+- **Extension Priority**: Core extensions before custom implementations
 
 ### Code Preservation
 - All code has value - no deletion
+- **DELETION REQUIRES EXPLICIT PERMISSION** (e.g., "delete file X")
+- Broken code is educational - preserve it
 - Architect sees code dimensions (color/tone/texture) Claude cannot
 - Changes require explicit approval
-
+- **"Fix" means repair, not remove**
 ### Documentation
 - Read siblings/children before writing new markdown
 - Create summaries for 25+ line reads
@@ -111,6 +167,13 @@
 - TODO() acceptable
 - Architecture = 50% typealias + 50% DSEL
 - Lambda params need type info: `(int)`
+
+### Projection Envelope Pushing
+- **Functional Projections**: `α` operator for transformations
+- **Dimensional Projections**: Tensor<T> coordinates via Shape metadata
+- **Register Projections**: Pack primitives into optimal layouts
+- **Performance Projections**: FibonacciReporter traces computational dimensions
+- **Never Limit**: If Core foundation supports it, push the envelope
 
 ### Acronyms
 - CCEK = CoroutineContextElementKey
