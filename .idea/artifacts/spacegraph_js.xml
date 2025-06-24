@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="spacegraph-js">
+    <output-path>$PROJECT_DIR$/spacegraph/build/libs</output-path>
+    <root id="archive" name="spacegraph-js.jar" />
+  </artifact>
+</component>

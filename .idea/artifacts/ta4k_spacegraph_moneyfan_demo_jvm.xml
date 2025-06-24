@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ta4k-spacegraph-moneyfan-demo-jvm">
+    <output-path>$PROJECT_DIR$/ta4k-spacegraph-moneyfan-demo/build/libs</output-path>
+    <root id="archive" name="ta4k-spacegraph-moneyfan-demo-jvm.jar" />
+  </artifact>
+</component>
