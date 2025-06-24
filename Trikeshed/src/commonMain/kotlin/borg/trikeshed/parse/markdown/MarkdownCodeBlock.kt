@@ -8,15 +8,19 @@ import kotlin.math.ceil
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 object MarkdownBitmapProcessor {
-
     // --- Semantic Layer: Enums defining the meaning of the bitmap bits ---
-    
+
     enum class MarkdownStateEvent {
-        Unchanged, CodeBlockStart, CodeBlockEnd, LanguageSpec;
+        Unchanged,
+        CodeBlockStart,
+        CodeBlockEnd,
+        LanguageSpec,
     }
 
     enum class LexerEvents {
-        Unchanged, BacktickIncrement, NewlineIncrement;
+        Unchanged,
+        BacktickIncrement,
+        NewlineIncrement,
     }
 
     // --- Parser: The state machine that decodes the bitmap ---
@@ -29,7 +33,10 @@ object MarkdownBitmapProcessor {
      * @param inputSize The original size of the markdown input in bytes.
      * @return A UByteArray where each byte packs four 2-bit structural results.
      */
-    fun decodeToStructuralBits(bitmap: ULongArray, inputSize: Int): UByteArray {
+    fun decodeToStructuralBits(
+        bitmap: ULongArray,
+        inputSize: Int,
+    ): UByteArray {
         var backtickCounter = 0
         var newlineCounter = 0
         val output = UByteArray(ceil(inputSize / 4.0).toInt())
@@ -49,17 +56,18 @@ object MarkdownBitmapProcessor {
             }
 
             // Structural events are processed based on backtick patterns
-            val finalStructuralBits = when {
-                backtickCounter >= 3 -> {
-                    when (markdownStateBits) {
-                        MarkdownStateEvent.CodeBlockStart.ordinal -> MarkdownStateEvent.CodeBlockStart.ordinal
-                        MarkdownStateEvent.CodeBlockEnd.ordinal -> MarkdownStateEvent.CodeBlockEnd.ordinal
-                        MarkdownStateEvent.LanguageSpec.ordinal -> MarkdownStateEvent.LanguageSpec.ordinal
-                        else -> MarkdownStateEvent.Unchanged.ordinal
+            val finalStructuralBits =
+                when {
+                    backtickCounter >= 3 -> {
+                        when (markdownStateBits) {
+                            MarkdownStateEvent.CodeBlockStart.ordinal -> MarkdownStateEvent.CodeBlockStart.ordinal
+                            MarkdownStateEvent.CodeBlockEnd.ordinal -> MarkdownStateEvent.CodeBlockEnd.ordinal
+                            MarkdownStateEvent.LanguageSpec.ordinal -> MarkdownStateEvent.LanguageSpec.ordinal
+                            else -> MarkdownStateEvent.Unchanged.ordinal
+                        }
                     }
+                    else -> MarkdownStateEvent.Unchanged.ordinal
                 }
-                else -> MarkdownStateEvent.Unchanged.ordinal
-            }
 
             // Pack the 2-bit result into the output UByteArray
             val outputIndex = i / 4
@@ -74,7 +82,7 @@ object MarkdownBitmapProcessor {
 
 /**
  * A multiplatform, SIMD-accelerated engine for creating a structural bitmap of markdown data.
- * 
+ *
  * Simplified implementation for now - can be optimized later with platform-specific SIMD.
  */
 @OptIn(ExperimentalUnsignedTypes::class)
@@ -87,23 +95,24 @@ object MarkdownBitmapSimd {
         // Simple implementation for now - creates a basic bitmap
         val outputSize = (input.size + 15) / 16
         val bitmap = ULongArray(outputSize)
-        
+
         for (i in input.indices) {
             val char = input[i].toInt().toChar()
             val ulongIndex = i / 16
             val bitPosition = (i % 16) * 4
-            
+
             // Simple bit patterns for markdown characters
-            val pixel = when (char) {
-                '`' -> 0b1001uL // Backtick - potential code block marker
-                '\n' -> 0b0010uL // Newline
-                '{', '}', '[', ']' -> 0b0100uL // Structural characters
-                else -> 0b0000uL // Normal character
-            }
-            
+            val pixel =
+                when (char) {
+                    '`' -> 0b1001uL // Backtick - potential code block marker
+                    '\n' -> 0b0010uL // Newline
+                    '{', '}', '[', ']' -> 0b0100uL // Structural characters
+                    else -> 0b0000uL // Normal character
+                }
+
             bitmap[ulongIndex] = bitmap[ulongIndex] or (pixel shl bitPosition)
         }
-        
+
         return bitmap
     }
 }
@@ -113,7 +122,6 @@ object MarkdownBitmapSimd {
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 object LightningMarkdown {
-    
     /**
      * Parse markdown string to structural bitmap using lightning-fast SIMD processing.
      */
@@ -121,38 +129,38 @@ object LightningMarkdown {
         val markdownBytes = markdownString.encodeToByteArray().toUByteArray()
         return createBitmapAsSeries(markdownBytes)
     }
-    
+
     /**
      * Find all code block boundaries in markdown.
      */
     fun findCodeBlockBoundaries(markdownString: String): Indexed<Int> {
         val bitmap = parseToBitmap(markdownString)
         val boundaries = mutableListOf<Int>()
-        
+
         bitmap.play.forEachIndexed { index, pixel ->
             val markdownState = pixel.toInt() and 0b11
             if (markdownState != MarkdownBitmapProcessor.MarkdownStateEvent.Unchanged.ordinal) {
                 boundaries.add(index)
             }
         }
-        
+
         return boundaries.toList().toIdx()
     }
-    
+
     /**
      * Extract code blocks using Indexed<T> operations - pure TrikeShed style.
      */
     fun extractCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val boundaries = findCodeBlockBoundaries(markdownString)
         val markdownChars = markdownString.toIdx()
-        
+
         val codeBlocks = mutableListOf<MarkdownCodeBlock>()
         var currentStart = -1
         var currentLanguage: String? = null
-        
+
         boundaries.play.forEachIndexed { index, boundary ->
             val char = markdownChars[boundary]
-            
+
             when {
                 char == '`' && currentStart == -1 -> {
                     // Start of code block
@@ -163,15 +171,16 @@ object LightningMarkdown {
                     val startIndex = currentStart + 1
                     val endIndex = boundary - 1
                     val rangeSize = endIndex - startIndex + 1
-                    
-                    val contentSlice = if (rangeSize > 0) {
-                        rangeSize j { i -> markdownChars[startIndex + i] }
-                    } else {
-                        emptyIndex<Char>()
-                    }
-                    
+
+                    val contentSlice =
+                        if (rangeSize > 0) {
+                            rangeSize j { i -> markdownChars[startIndex + i] }
+                        } else {
+                            emptyIndex<Char>()
+                        }
+
                     val contentString = contentSlice.play.joinToString("").trim()
-                    
+
                     // Extract language if present
                     val lines = contentString.lines()
                     if (lines.isNotEmpty()) {
@@ -180,36 +189,39 @@ object LightningMarkdown {
                             currentLanguage = firstLine
                         }
                     }
-                    
-                    codeBlocks.add(MarkdownCodeBlock(
-                        language = currentLanguage,
-                        content = contentString,
-                        startLine = currentStart,
-                        endLine = boundary,
-                        isStart = true,
-                        isEnd = true
-                    ))
-                    
+
+                    codeBlocks.add(
+                        MarkdownCodeBlock(
+                            language = currentLanguage,
+                            content = contentString,
+                            startLine = currentStart,
+                            endLine = boundary,
+                            isStart = true,
+                            isEnd = true,
+                        ),
+                    )
+
                     currentStart = -1
                     currentLanguage = null
                 }
             }
         }
-        
+
         return codeBlocks.toList().toIdx()
     }
-    
+
     /**
      * Extract only Kotlin code blocks from markdown.
      */
     fun extractKotlinCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val allBlocks = extractCodeBlocks(markdownString)
-        val kotlinBlocks = allBlocks.play.filter { block ->
-            block.language?.equals("kotlin", ignoreCase = true) == true
-        }.toList()
+        val kotlinBlocks =
+            allBlocks.play.filter { block ->
+                block.language?.equals("kotlin", ignoreCase = true) == true
+            }.toList()
         return kotlinBlocks.toIdx()
     }
-    
+
     /**
      * Extract code block content as Indexed<String>.
      */
@@ -218,7 +230,7 @@ object LightningMarkdown {
         val content = blocks.play.map { it.content }.toList()
         return content.toIdx()
     }
-    
+
     /**
      * Extract Kotlin code block content as Indexed<String>.
      */
@@ -247,7 +259,7 @@ fun createBitmapAsSeries(input: UByteArray): Indexed<UByte> {
     return inputSize j { i ->
         val ulongIndex = i / 16
         val bitPosition = (i % 16) * 4
-        
+
         // The accessor's logic is to simply read the pre-computed pixel.
         ((bitmapArray[ulongIndex] shr bitPosition) and 0b1111uL).toUByte()
     }
@@ -268,11 +280,11 @@ data class MarkdownCodeBlock(
     val startLine: Int = 0,
     val endLine: Int = 0,
     val isStart: Boolean = false,
-    val isEnd: Boolean = false
+    val isEnd: Boolean = false,
 ) {
     val isComplete: Boolean
         get() = startLine > 0 && endLine > 0 && endLine >= startLine
-    
+
     val lineCount: Int
         get() = if (isComplete) endLine - startLine + 1 else 0
 }
@@ -284,7 +296,7 @@ data class MarkdownCodeBlockStats(
     val totalBlocks: Int,
     val totalLines: Int,
     val languageCounts: Map<String, Int>,
-    val averageLinesPerBlock: Double
+    val averageLinesPerBlock: Double,
 )
 
 // Extension function for String to Indexed<Char>

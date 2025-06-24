@@ -8,7 +8,7 @@ kotlin {
     jvm {
         // jvmToolchain(21) removed from here
     }
-    
+
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     when {
@@ -27,7 +27,7 @@ kotlin {
             }
         }
     }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -37,13 +37,12 @@ kotlin {
         }
     }
 }
-//re-add wasm
+// re-add wasm
 tasks {
     register("buildAll") {
         dependsOn("build")
     }
-    
-    
+
     register("cleanAll") {
         dependsOn("clean")
         doLast {
@@ -53,4 +52,4 @@ tasks {
             delete("${project.projectDir}/node_modules")
         }
     }
-} 
+}

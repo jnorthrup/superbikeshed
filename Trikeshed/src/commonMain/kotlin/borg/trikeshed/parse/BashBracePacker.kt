@@ -18,12 +18,12 @@ object BashBracePacker {
     fun pack(strings: Indexed<String>): String {
         if (strings.size == 0) return ""
         if (strings.size == 1) return strings[0]
-        
+
         // Convert to list for processing
         val stringList = strings.play.toList()
         return packList(stringList)
     }
-    
+
     /**
      * Compress a list of strings into a brace expression.
      * Returns a string that, when expanded, yields the original list in order.
@@ -31,17 +31,17 @@ object BashBracePacker {
     fun packList(strings: List<String>): String {
         if (strings.isEmpty()) return ""
         if (strings.size == 1) return strings[0]
-        
+
         // Try to find common prefix and suffix
         val prefix = longestCommonPrefix(strings)
         val suffix = longestCommonSuffix(strings)
         val middles = strings.map { it.removePrefix(prefix).removeSuffix(suffix) }
-        
+
         // If all middles are single characters or numbers, try to use range
         val rangeExpr = tryRange(middles)
         val bagExpr = tryBag(middles)
         val middleExpr = rangeExpr ?: bagExpr
-        
+
         return buildString {
             append(prefix)
             append(middleExpr)
@@ -80,7 +80,7 @@ object BashBracePacker {
     // Try to compress a list of strings as a range (a..z, 1..n)
     private fun tryRange(middles: List<String>): String? {
         if (middles.any { it.isEmpty() }) return null
-        
+
         // Numeric range
         val nums = middles.mapNotNull { it.toIntOrNull() }
         if (nums.size == middles.size) {
@@ -89,7 +89,7 @@ object BashBracePacker {
                 return "{${sorted.first()}..${sorted.last()}}"
             }
         }
-        
+
         // Char range
         if (middles.all { it.length == 1 }) {
             val chars = middles.map { it[0] }.sorted()
@@ -97,7 +97,7 @@ object BashBracePacker {
                 return "{${chars.first()}..${chars.last()}}"
             }
         }
-        
+
         return null
     }
 
@@ -112,9 +112,9 @@ object BashBracePacker {
             append("}")
         }
     }
-    
-    /**
-     * Extension function for convenient packing of Indexed<String>
-     */
-    fun Indexed<String>.packToBrace(): String = pack(this)
-} 
+}
+
+/**
+ * Extension function for convenient packing of Indexed<String>
+ */
+fun Indexed<String>.packToBrace(): String = BashBracePacker.pack(this) 

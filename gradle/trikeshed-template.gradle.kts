@@ -17,25 +17,25 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
-    
+
     // === CORE PLATFORMS ===
-    
+
     // JVM - Primary development and server platform
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
-    
+
     // WASM - Modern web deployment (replaces JS for better performance)
     wasmJs {
         browser()
         binaries.executable()
     }
-    
+
     // === NATIVE PLATFORMS ===
     // High-performance native execution for computational workloads
-    
+
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
     val isMac = hostOs.startsWith("Mac OS")
@@ -52,26 +52,26 @@ kotlin {
     }
 
     // === SOURCE SETS CONFIGURATION ===
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 // Core TrikeShed dependencies
                 implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime) 
+                implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.collections.immutable)
                 implementation(libs.kotlinx.atomicfu)
                 implementation(libs.kotlinx.serialization.core)
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
@@ -79,7 +79,7 @@ kotlin {
                 implementation(kotlin("reflect"))
             }
         }
-        
+
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
@@ -93,7 +93,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
-        
+
         // Native source sets configured automatically by platform detection above
     }
 }
@@ -105,7 +105,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
-            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
+            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
         )
     }
 }
@@ -118,14 +118,14 @@ publishing {
             groupId = project.group.toString()
             artifactId = project.name
             version = project.version.toString()
-            
+
             from(components["kotlin"])
-            
+
             pom {
                 name.set(project.name)
                 description.set("${project.name} - Part of the TrikeShed ecosystem")
                 url.set("https://github.com/superbikeshed/superbikeshed")
-                
+
                 licenses {
                     license {
                         name.set("MIT License")
@@ -147,13 +147,13 @@ publishing {
             }
         }
     }
-    
+
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-            
+
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")

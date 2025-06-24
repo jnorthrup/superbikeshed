@@ -1,7 +1,4 @@
 import java.util.Locale // Added for toLowerCase
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -55,7 +52,7 @@ kotlin {
                 // implementation(project(":Trikeshed")) // Temporarily disabled due to compilation issues
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -63,7 +60,7 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation("commons-cli:commons-cli:1.5.0")
@@ -92,7 +89,7 @@ kotlin {
                 // implementation(project(":kotlin-entity-scanner")) // Temporarily disabled
             }
         }
-        
+
         val jvmTest by getting {
             dependencies {
                 implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
@@ -102,13 +99,13 @@ kotlin {
                 implementation(kotlin("script-runtime"))
             }
         }
-        
+
         val wasmJsMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
             }
         }
-        
+
         val wasmJsTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -129,7 +126,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xno-source-roots-assertions",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
             "-Xopt-in=kotlin.RequiresOptIn",
-            "-Xopt-in=kotlin.ExperimentalStdlibApi"
+            "-Xopt-in=kotlin.ExperimentalStdlibApi",
         )
     }
 }
@@ -202,14 +199,14 @@ publishing {
             groupId = project.group.toString()
             artifactId = project.name
             version = adjustVersion(project.version.toString())
-            
+
             artifact(tasks.named("jvmJar"))
-            
+
             pom {
                 name.set("kscript")
                 description.set("KScript - easy scripting with Kotlin")
                 url.set("https://github.com/kscripting/kscript")
-                
+
                 licenses {
                     license {
                         name.set("MIT License")
@@ -236,14 +233,14 @@ publishing {
             }
         }
     }
-    
+
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             val adjustedVersion = adjustVersion(project.version.toString())
             url = uri(if (adjustedVersion.endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-            
+
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
@@ -259,12 +256,12 @@ publishing {
 fun adjustVersion(archiveVersion: String): String {
     var newVersion = archiveVersion.lowercase(Locale.ROOT)
     val temporaryVersion = newVersion.substringBeforeLast(".")
-    
+
     if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
         temporaryVersion.endsWith("-SNAPSHOT", true)
     ) {
         newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"
     }
-    
+
     return newVersion
 }

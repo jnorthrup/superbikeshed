@@ -25,7 +25,27 @@ typealias PackingEither<A, B, P_A, P_B> = Either<Spill<A, B>, PackedResult<P_A, 
  */
 interface PackedView {
     fun getAsLong(index: Int): Long
+
     val elementCount: Int
+}
+
+/**
+ * Interface for a compositional packing strategy.
+ * Each strategy can determine if it applies and then perform the packing.
+ */
+interface PackerStrategy<A, B> {
+    /** Determines if this strategy can be applied to the given data. */
+    fun canPack(
+        a: A,
+        b: B,
+        context: PackingContext,
+    ): Boolean
+
+    /** Executes the packing operation. */
+    fun pack(
+        a: A,
+        b: B,
+    ): PackingEither<A, B, *, *>
 }
 
 // === CONCRETE PACKING STRATEGY DATA CLASSES ===
@@ -69,10 +89,14 @@ data class MultiClusterPacked(val regs: LongArray, val clusters: Array<ClusterIn
 /**
  * Fold operation for Either - needed for packing waterfall
  */
-inline fun <L, R, T> Either<L, R>.fold(onLeft: (L) -> T, onRight: (R) -> T): T = when (this) {
-    is Either.Left -> onLeft(value)
-    is Either.Right -> onRight(value)
-}
+inline fun <L, R, T> Either<L, R>.fold(
+    onLeft: (L) -> T,
+    onRight: (R) -> T,
+): T =
+    when (this) {
+        is Either.Left -> onLeft(value)
+        is Either.Right -> onRight(value)
+    }
 
 // === DUAL-DISPATCH PACKING ENGINE ===
 
@@ -80,139 +104,126 @@ inline fun <L, R, T> Either<L, R>.fold(onLeft: (L) -> T, onRight: (R) -> T): T =
  * Core packing strategies with Either waterfall
  */
 object Packer {
-    
-    // Heuristic waterfall - tries strategies in order of efficiency
-    fun <A, B> tryDiagonalPack(a: A, b: B): PackingEither<A, B, Long, Nothing?> {
-        // Implementation for diagonal packing strategy
-        return if (canDiagonalPack(a, b)) {
-            Either.right(DiagonalPacked(packDiagonal(a, b)))
-        } else {
-            Either.left(a j b)
-        }
-    }
-    
-    fun <A, B> tryPrefixedPack(a: A, b: B): PackingEither<A, B, Long, Byte> {
-        return if (canPrefixedPack(a, b)) {
-            val (packed, prefix) = packPrefixed(a, b)
-            Either.right(PrefixedPacked(packed, prefix))
-        } else {
-            Either.left(a j b)
-        }
-    }
-    
-    fun <A, B> tryRangeOffsetPack(a: A, b: B): PackingEither<A, B, LongArray, Long> {
-        return if (canRangeOffsetPack(a, b)) {
-            val (regs, base) = packRangeOffset(a, b)
-            Either.right(RangeOffsetPacked(regs, base))
-        } else {
-            Either.left(a j b)
-        }
-    }
-    
-    fun <A, B> tryRelativeIncrementPack(a: A, b: B): PackingEither<A, B, LongArray, Long> {
-        return if (canRelativeIncrementPack(a, b)) {
-            val (regs, base) = packRelativeIncrement(a, b)
-            Either.right(RelativeIncrementPacked(regs, base))
-        } else {
-            Either.left(a j b)
-        }
-    }
-    
-    fun <A, B> tryPalettePack(a: A, b: B): PackingEither<A, B, LongArray, Array<*>> {
-        return if (canPalettePack(a, b)) {
-            val (regs, palette) = packPalette(a, b)
-            Either.right(PalettePacked(regs, palette))
-        } else {
-            Either.left(a j b)
-        }
-    }
-    
-    fun <A, B> tryMultiClusterPack(a: A, b: B): PackingEither<A, B, LongArray, Array<ClusterInfo>> {
-        return if (canMultiClusterPack(a, b)) {
-            val (regs, clusters) = packMultiCluster(a, b)
-            Either.right(MultiClusterPacked(regs, clusters))
-        } else {
-            Either.left(a j b)
-        }
-    }
-    
+    // A declarative, compositional list of strategies. Extensible.
+    private val strategies: List<PackerStrategy<Any?, Any?>> =
+        listOf(
+            object : PackerStrategy<Any?, Any?> {
+                override fun canPack(
+                    a: Any?,
+                    b: Any?,
+                    context: PackingContext,
+                ) = canDiagonalPack(a, b)
+
+                override fun pack(
+                    a: Any?,
+                    b: Any?,
+                ) = Either.right(DiagonalPacked(packDiagonal(a, b)))
+            },
+            object : PackerStrategy<Any?, Any?> {
+                override fun canPack(
+                    a: Any?,
+                    b: Any?,
+                    context: PackingContext,
+                ) = canPrefixedPack(a, b)
+
+                override fun pack(
+                    a: Any?,
+                    b: Any?,
+                ) = packPrefixed(a, b).let { Either.right(PrefixedPacked(it.first, it.second)) }
+            },
+            object : PackerStrategy<Any?, Any?> {
+                override fun canPack(
+                    a: Any?,
+                    b: Any?,
+                    context: PackingContext,
+                ) = context.strategy >= PackingStrategy.STANDARD && canRangeOffsetPack(a, b)
+
+                override fun pack(
+                    a: Any?,
+                    b: Any?,
+                ) = packRangeOffset(a, b).let { Either.right(RangeOffsetPacked(it.first, it.second)) }
+            },
+            object : PackerStrategy<Any?, Any?> {
+                override fun canPack(
+                    a: Any?,
+                    b: Any?,
+                    context: PackingContext,
+                ) = context.strategy >= PackingStrategy.STANDARD && canRelativeIncrementPack(a, b)
+
+                override fun pack(
+                    a: Any?,
+                    b: Any?,
+                ) = packRelativeIncrement(
+                    a,
+                    b,
+                ).let { Either.right(RelativeIncrementPacked(it.first, it.second)) }
+            },
+            object : PackerStrategy<Any?, Any?> {
+                override fun canPack(
+                    a: Any?,
+                    b: Any?,
+                    context: PackingContext,
+                ) = context.strategy >= PackingStrategy.AGGRESSIVE && canPalettePack(a, b)
+
+                override fun pack(
+                    a: Any?,
+                    b: Any?,
+                ) = packPalette(a, b).let { Either.right(PalettePacked(it.first, it.second)) }
+            },
+            object : PackerStrategy<Any?, Any?> {
+                override fun canPack(
+                    a: Any?,
+                    b: Any?,
+                    context: PackingContext,
+                ) = context.strategy >= PackingStrategy.AGGRESSIVE && canMultiClusterPack(a, b)
+
+                override fun pack(
+                    a: Any?,
+                    b: Any?,
+                ) = packMultiCluster(a, b).let { Either.right(MultiClusterPacked(it.first, it.second)) }
+            },
+        )
+
     // Context-aware dual-dispatch mechanism with jk/kj pattern
-    fun <A, B> pack(a: A, b: B, context: PackingContext = PackingContext.DEFAULT): Join<A, B> {
+    fun <A, B> pack(
+        a: A,
+        b: B,
+        context: PackingContext = PackingContext.DEFAULT,
+    ): Join<A, B> {
         // Register fastlane - try primitive packing first (0-1 cycles)
         if (context.shouldAttempt(PackingStrategy.MINIMAL, 1, 1)) {
-            when {
-                a is borg.trikeshed.parse.Token && b is borg.trikeshed.parse.Token -> {
-                    RegisterFastlane.tryTokenPack(a, b)?.let { return it as Join<A, B> }
-                }
-                a is Int && b is Int -> {
-                    val packed = (a.toLong() shl 32) or (b.toLong() and 0xFFFFFFFF)
-                    return DiagonalPacked(packed) as Join<A, B>
-                }
-                a is Boolean && b is Boolean -> {
-                    val packed = (if (a) 1L else 0L) or (if (b) 2L else 0L)
-                    return DiagonalPacked(packed) as Join<A, B>
-                }
-                a is Byte && b is Byte -> {
-                    val packed = (a.toLong() shl 8) or (b.toLong() and 0xFF)
-                    return DiagonalPacked(packed) as Join<A, B>
-                }
+            // Try generic primitive packing first
+            RegisterFastlane.tryPrimitivePack(a, b)?.let { return it as Join<A, B> }
+
+            // Try specialized token packing if we have tokens
+            if (a is borg.trikeshed.parse.Token && b is borg.trikeshed.parse.Token) {
+                RegisterFastlane.tryTokenPack(a, b)?.let { return it as Join<A, B> }
             }
         }
-        
-        // Estimate data size for context decisions
-        val dataSize = estimateDataSize(a, b)
-        
-        // Try diagonal packing (always allowed - zero cost)
-        if (context.shouldAttempt(PackingStrategy.MINIMAL, dataSize, 1)) {
-            tryDiagonalPack(a, b).fold(
-                onLeft = { },
-                onRight = { return it as Join<A, B> }
-            )
+
+        // Iterate through the compositional strategies
+        for (strategy in strategies) {
+            try {
+                if (strategy.canPack(a, b, context)) {
+                    val result = strategy.pack(a, b)
+                    if (result is Either.Right) {
+                        return result.value as Join<A, B>
+                    }
+                }
+            } catch (e: ClassCastException) {
+                // This strategy doesn't apply to these types, continue to the next one.
+            }
         }
-        
-        // Try prefix packing if context allows
-        if (context.shouldAttempt(PackingStrategy.STANDARD, dataSize, context.estimateCost(PackingStrategy.STANDARD, dataSize))) {
-            tryPrefixedPack(a, b).fold(
-                onLeft = { },
-                onRight = { return it as Join<A, B> }
-            )
-        }
-        
-        // Try range offset packing if context allows
-        if (context.shouldAttempt(PackingStrategy.STANDARD, dataSize, context.estimateCost(PackingStrategy.STANDARD, dataSize))) {
-            tryRangeOffsetPack(a, b).fold(
-                onLeft = { },
-                onRight = { return it as Join<A, B> }
-            )
-        }
-        
-        // Try relative increment packing if context allows
-        if (context.shouldAttempt(PackingStrategy.STANDARD, dataSize, context.estimateCost(PackingStrategy.STANDARD, dataSize))) {
-            tryRelativeIncrementPack(a, b).fold(
-                onLeft = { },
-                onRight = { return it as Join<A, B> }
-            )
-        }
-        
-        // Try expensive strategies only if context allows
-        if (context.shouldAttempt(PackingStrategy.AGGRESSIVE, dataSize, context.estimateCost(PackingStrategy.AGGRESSIVE, dataSize))) {
-            tryPalettePack(a, b).fold(
-                onLeft = { },
-                onRight = { return it as Join<A, B> }
-            )
-            
-            tryMultiClusterPack(a, b).fold(
-                onLeft = { },
-                onRight = { return it as Join<A, B> }
-            )
-        }
-        
+
         // Fall back to simple Join if no packing strategy worked
         return a j b
     }
-    
+
     // Data size estimation for context decisions
-    private fun <A, B> estimateDataSize(a: A, b: B): Int {
+    private fun <A, B> estimateDataSize(
+        a: A,
+        b: B,
+    ): Int {
         return when {
             a is Collection<*> -> a.size
             b is Collection<*> -> b.size
@@ -223,65 +234,101 @@ object Packer {
             else -> 1 // Single primitive values
         }
     }
-    
+
     // Strategy detection methods
-    private fun <A, B> canDiagonalPack(a: A, b: B): Boolean {
+    private fun <A, B> canDiagonalPack(
+        a: A,
+        b: B,
+    ): Boolean {
         // Placeholder - implement actual heuristics
         return false
     }
-    
-    private fun <A, B> canPrefixedPack(a: A, b: B): Boolean {
-        // Placeholder - implement actual heuristics  
-        return false
-    }
-    
-    private fun <A, B> canRangeOffsetPack(a: A, b: B): Boolean {
+
+    private fun <A, B> canPrefixedPack(
+        a: A,
+        b: B,
+    ): Boolean {
         // Placeholder - implement actual heuristics
         return false
     }
-    
-    private fun <A, B> canRelativeIncrementPack(a: A, b: B): Boolean {
+
+    private fun <A, B> canRangeOffsetPack(
+        a: A,
+        b: B,
+    ): Boolean {
         // Placeholder - implement actual heuristics
         return false
     }
-    
-    private fun <A, B> canPalettePack(a: A, b: B): Boolean {
+
+    private fun <A, B> canRelativeIncrementPack(
+        a: A,
+        b: B,
+    ): Boolean {
         // Placeholder - implement actual heuristics
         return false
     }
-    
-    private fun <A, B> canMultiClusterPack(a: A, b: B): Boolean {
+
+    private fun <A, B> canPalettePack(
+        a: A,
+        b: B,
+    ): Boolean {
         // Placeholder - implement actual heuristics
         return false
     }
-    
+
+    private fun <A, B> canMultiClusterPack(
+        a: A,
+        b: B,
+    ): Boolean {
+        // Placeholder - implement actual heuristics
+        return false
+    }
+
     // Packing implementation methods
-    private fun <A, B> packDiagonal(a: A, b: B): Long {
+    private fun <A, B> packDiagonal(
+        a: A,
+        b: B,
+    ): Long {
         // Placeholder - implement actual packing
         return 0L
     }
-    
-    private fun <A, B> packPrefixed(a: A, b: B): Pair<Long, Byte> {
+
+    private fun <A, B> packPrefixed(
+        a: A,
+        b: B,
+    ): Pair<Long, Byte> {
         // Placeholder - implement actual packing
         return Pair(0L, 0.toByte())
     }
-    
-    private fun <A, B> packRangeOffset(a: A, b: B): Pair<LongArray, Long> {
+
+    private fun <A, B> packRangeOffset(
+        a: A,
+        b: B,
+    ): Pair<LongArray, Long> {
         // Placeholder - implement actual packing
         return Pair(longArrayOf(), 0L)
     }
-    
-    private fun <A, B> packRelativeIncrement(a: A, b: B): Pair<LongArray, Long> {
+
+    private fun <A, B> packRelativeIncrement(
+        a: A,
+        b: B,
+    ): Pair<LongArray, Long> {
         // Placeholder - implement actual packing
         return Pair(longArrayOf(), 0L)
     }
-    
-    private fun <A, B> packPalette(a: A, b: B): Pair<LongArray, Array<*>> {
+
+    private fun <A, B> packPalette(
+        a: A,
+        b: B,
+    ): Pair<LongArray, Array<*>> {
         // Placeholder - implement actual packing
         return Pair(longArrayOf(), arrayOf<Any>())
     }
-    
-    private fun <A, B> packMultiCluster(a: A, b: B): Pair<LongArray, Array<ClusterInfo>> {
+
+    private fun <A, B> packMultiCluster(
+        a: A,
+        b: B,
+    ): Pair<LongArray, Array<ClusterInfo>> {
         // Placeholder - implement actual packing
         return Pair(longArrayOf(), arrayOf<ClusterInfo>())
     }
@@ -292,7 +339,7 @@ object Packer {
 /**
  * Enhanced j operator that triggers automatic packing with default context
  */
-infix fun <A, B> A.jj(b: B): Join<A, B> = Packer.pack(this, b)
+inline infix fun <A, B> A.jj(b: B): Join<A, B> = Packer.pack(this, b)
 
 /**
  * Context-aware packing operator - uses PackingContext from coroutine context if available
@@ -305,7 +352,10 @@ suspend fun <A, B> A.jc(b: B): Join<A, B> {
 /**
  * Explicit context packing operator
  */
-fun <A, B> A.jp(b: B, context: PackingContext): Join<A, B> = Packer.pack(this, b, context)
+fun <A, B> A.jp(
+    b: B,
+    context: PackingContext,
+): Join<A, B> = Packer.pack(this, b, context)
 
 /**
  * Forced non-packing j operator for when you want raw Join

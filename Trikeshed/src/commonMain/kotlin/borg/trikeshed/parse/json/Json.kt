@@ -19,7 +19,7 @@ object Json {
         // Use existing bitmap creation from JsonTensorFactory
         return createBitmapAsSeries(jsonString.encodeToByteArray().toUByteArray())
     }
-    
+
     fun stringify(value: Any?): String {
         // Simple JSON stringify - basic implementation
         return when (value) {
@@ -32,12 +32,12 @@ object Json {
             else -> "\"$value\""
         }
     }
-    
+
     fun extractValues(jsonString: String): Indexed<String> {
         // Use existing parser from JsonTensorFactory
         return parseJsonToTensor(jsonString)
     }
-    
+
     fun findStructuralIndices(jsonString: String): Indexed<Int> {
         // Simple structural character detection
         val indices = mutableListOf<Int>()
@@ -48,7 +48,7 @@ object Json {
         }
         return indices.toIdx()
     }
-    
+
     // Simple reify implementation
     fun reify(jsonString: String): Any? {
         return try {
@@ -56,7 +56,7 @@ object Json {
                 jsonString == "null" -> null
                 jsonString == "true" -> true
                 jsonString == "false" -> false
-                jsonString.startsWith("\"") && jsonString.endsWith("\"") -> 
+                jsonString.startsWith("\"") && jsonString.endsWith("\"") ->
                     jsonString.substring(1, jsonString.length - 1)
                 jsonString.toDoubleOrNull() != null -> jsonString.toDouble()
                 else -> jsonString
@@ -65,7 +65,7 @@ object Json {
             null
         }
     }
-    
+
     // Simple index implementation
     fun index(jsonString: String): JsonStructuralIndices {
         val indices = findStructuralIndices(jsonString)
@@ -73,9 +73,13 @@ object Json {
         val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toIdx()
         return bounds j commaIndices
     }
-    
+
     // Simple jsPath implementation
-    fun jsPath(context: JsonParseContext, path: JsPath, reifyResult: Boolean = true): Any? {
+    fun jsPath(
+        context: JsonParseContext,
+        path: JsPath,
+        reifyResult: Boolean = true,
+    ): Any? {
         // Placeholder implementation
         return null
     }
@@ -83,21 +87,25 @@ object Json {
 
 // JSON extension functions
 fun String.parseJson(): Indexed<UByte> = Json.parse(this)
+
 fun Any.toJsonString(): String = Json.stringify(this)
+
 fun String.reifyJson(): Any? = Json.reify(this)
+
 fun String.indexJson(): JsonStructuralIndices = Json.index(this)
 
 // Helper functions for compatibility with main branch
 fun createBitmapAsSeries(data: UByteArray): Indexed<UByte> = data.toIdx()
+
 fun parseJsonToTensor(jsonString: String): Indexed<String> {
     // Simple extraction - returns string values found in JSON
     val values = mutableListOf<String>()
     var inString = false
     var start = -1
-    
+
     for (i in jsonString.indices) {
         val char = jsonString[i]
-        if (char == '"' && (i == 0 || jsonString[i-1] != '\\')) {
+        if (char == '"' && (i == 0 || jsonString[i - 1] != '\\')) {
             if (inString) {
                 if (start >= 0) {
                     values.add(jsonString.substring(start, i))
@@ -109,7 +117,7 @@ fun parseJsonToTensor(jsonString: String): Indexed<String> {
             }
         }
     }
-    
+
     return values.toIdx()
 }
 

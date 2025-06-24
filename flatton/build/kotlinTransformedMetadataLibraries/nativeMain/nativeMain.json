@@ -1,20 +1,5 @@
 [
   {
-    "moduleId": "project ::Trikeshed",
-    "file": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/macosMain/klib/Trikeshed_macosMain",
-    "sourceSetName": "macosMain"
-  },
-  {
-    "moduleId": "project ::Trikeshed",
-    "file": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/appleMain/klib/Trikeshed_appleMain",
-    "sourceSetName": "appleMain"
-  },
-  {
-    "moduleId": "project ::Trikeshed",
-    "file": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/nativeMain/klib/Trikeshed_nativeMain",
-    "sourceSetName": "nativeMain"
-  },
-  {
     "moduleId": "project ::kotlinx-serialization-scanner",
     "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/classes/kotlin/metadata/macosMain/klib/kotlinx-serialization-scanner_macosMain",
     "sourceSetName": "macosMain"

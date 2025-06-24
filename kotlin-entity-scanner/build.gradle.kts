@@ -15,10 +15,10 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":Trikeshed"))
+                // No dependencies needed
             }
         }
-        
+
         commonTest {
             dependencies {
                 implementation(kotlin("test"))

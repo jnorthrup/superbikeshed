@@ -7,7 +7,7 @@ plugins {
 
 kotlin {
     jvm()
- //re-add wasm
+    // re-add wasm
     // Platform detection for native targets
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -23,11 +23,10 @@ kotlin {
         isLinux -> linuxX64()
         isWindows -> mingwX64()
     }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":Trikeshed"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
@@ -37,7 +36,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -51,17 +50,17 @@ tasks {
         dependsOn("build")
         dependsOn("wasmJsBrowserProductionWebpack")
     }
-    
+
     register("runJvm", JavaExec::class) {
         classpath = configurations["jvmRuntimeClasspath"] + files("${layout.buildDirectory.get()}/classes/kotlin/jvm/main")
         mainClass.set("rtsgame.MainJvmKt")
         dependsOn("jvmMainClasses")
     }
-    
+
     register("runWasm") {
         dependsOn("wasmJsBrowserDevelopmentRun")
     }
-    
+
     // Clean task to remove all build artifacts
     register("cleanAll") {
         dependsOn("clean")
@@ -73,4 +72,4 @@ tasks {
             delete("${project.projectDir}/node_modules")
         }
     }
-} 
+}

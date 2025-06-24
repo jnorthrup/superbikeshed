@@ -5,11 +5,6 @@
     "sourceSetName": "commonMain"
   },
   {
-    "moduleId": "project ::Trikeshed",
-    "file": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/commonMain",
-    "sourceSetName": "commonMain"
-  },
-  {
     "moduleId": "module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2",
     "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.6.2-commonMain-0z2eOA.klib",
     "sourceSetName": "commonMain"
@@ -27,16 +22,6 @@
   {
     "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.5.0",
     "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-datetime-0.5.0-commonMain-iqDvsQ.klib",
-    "sourceSetName": "commonMain"
-  },
-  {
-    "moduleId": "module org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0",
-    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-collections-immutable-0.4.0-nativeMain-TGfXiA.klib",
-    "sourceSetName": "nativeMain"
-  },
-  {
-    "moduleId": "module org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0",
-    "file": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-collections-immutable-0.4.0-commonMain-TGfXiA.klib",
     "sourceSetName": "commonMain"
   }
 ]

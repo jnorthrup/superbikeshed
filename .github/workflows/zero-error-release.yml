@@ -1,0 +1,122 @@
+name: Zero Error Release
+
+on:
+  push:
+    branches: [ dev ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    outputs:
+      build_status: ${{ steps.build_check.outputs.status }}
+      test_status: ${{ steps.test_check.outputs.status }}
+      
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      
+    - name: Build with Gradle
+      id: build_check
+      run: |
+        set +e
+        ./gradlew build --console=plain --no-daemon -x test
+        BUILD_STATUS=$?
+        echo "status=$BUILD_STATUS" >> $GITHUB_OUTPUT
+        exit 0
+        
+    - name: Run tests
+      id: test_check
+      run: |
+        set +e
+        ./gradlew test --console=plain --no-daemon
+        TEST_STATUS=$?
+        echo "status=$TEST_STATUS" >> $GITHUB_OUTPUT
+        exit 0
+        
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports
+        path: |
+          **/build/reports/tests/
+          **/build/test-results/
+          
+  release:
+    needs: build-and-test
+    if: needs.build-and-test.outputs.build_status == '0' && needs.build-and-test.outputs.test_status == '0'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Configure Git
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        
+    - name: Generate version tag
+      id: version
+      run: |
+        DATE=$(date -u +%Y.%m.%d)
+        SHORT_SHA=$(git rev-parse --short HEAD)
+        VERSION="v${DATE}-${SHORT_SHA}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+        
+    - name: Create and push tag
+      run: |
+        git tag -a "${{ steps.version.outputs.version }}" -m "Zero-error release ${{ steps.version.outputs.version }}"
+        git push origin "${{ steps.version.outputs.version }}"
+        
+    - name: Merge to release branch
+      run: |
+        git fetch origin
+        git checkout -B release origin/release || git checkout -b release
+        git merge --ff-only origin/dev
+        git push origin release
+        
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: Release ${{ steps.version.outputs.version }}
+        body: |
+          Zero-error automated release
+          
+          Build Status: ✅ Success
+          Test Status: ✅ Success
+          
+          Commit: ${{ github.sha }}
+        draft: false
+        prerelease: false
+        
+  notify-failure:
+    needs: build-and-test
+    if: needs.build-and-test.outputs.build_status != '0' || needs.build-and-test.outputs.test_status != '0'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Report build/test failures
+      run: |
+        echo "❌ Build or tests failed - no release created"
+        echo "Build status: ${{ needs.build-and-test.outputs.build_status }}"
+        echo "Test status: ${{ needs.build-and-test.outputs.test_status }}"
+        exit 1
