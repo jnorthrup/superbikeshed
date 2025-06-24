@@ -1,0 +1,8 @@
+{
+  "locationBySourceSetName": {
+    "appleMain": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/appleMain/klib/Trikeshed_appleMain",
+    "commonMain": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/commonMain",
+    "macosMain": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/macosMain/klib/Trikeshed_macosMain",
+    "nativeMain": "/Users/jim/work/v2superbikeshed/Trikeshed/build/classes/kotlin/metadata/nativeMain/klib/Trikeshed_nativeMain"
+  }
+}

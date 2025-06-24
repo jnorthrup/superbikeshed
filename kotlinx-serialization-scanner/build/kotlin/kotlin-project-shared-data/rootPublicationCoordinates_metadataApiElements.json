@@ -1,0 +1,8 @@
+{
+  "buildPath": ":",
+  "projectPath": ":kotlinx-serialization-scanner",
+  "moduleId": {
+    "groupId": "borg.trikeshed",
+    "moduleId": "kotlinx-serialization-scanner"
+  }
+}

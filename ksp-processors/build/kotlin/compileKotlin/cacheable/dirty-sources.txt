@@ -1,0 +1,4 @@
+/Users/jim/work/v2superbikeshed/ksp-processors/src/main/kotlin/borg/trikeshed/ksp/RegisterPackingProcessor.kt
+/Users/jim/work/v2superbikeshed/ksp-processors/src/main/kotlin/borg/trikeshed/ksp/Annotations.kt
+/Users/jim/work/v2superbikeshed/ksp-processors/src/main/kotlin/borg/ksp/processors/LoopOptimizerProcessor.kt
+/Users/jim/work/v2superbikeshed/ksp-processors/src/main/kotlin/borg/trikeshed/ksp/TrikeShedProcessor.kt
