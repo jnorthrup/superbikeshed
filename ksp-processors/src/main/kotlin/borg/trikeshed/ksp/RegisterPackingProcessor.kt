@@ -2,7 +2,6 @@ package borg.trikeshed.ksp
 
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
-import com.google.devtools.ksp.visitor.KSVisitorVoid
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -69,8 +68,8 @@ class RegisterPackingProcessor(
             .addParameter("key", keyTypeParam.toTypeVariableName())
             .addParameter("value", valueTypeParam.toTypeVariableName())
             .addParameter(
-                ParameterSpec.builder("context", CoroutineContext::class)
-                    .defaultValue("CoroutineContext.Empty")
+                ParameterSpec.builder("context", ClassName("kotlin.coroutines", "CoroutineContext"))
+                    .defaultValue("kotlin.coroutines.EmptyCoroutineContext")
                     .build()
             )
             .returns(Any::class)
