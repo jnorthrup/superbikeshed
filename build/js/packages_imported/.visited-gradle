@@ -1,0 +1,155 @@
+{
+  "version": "9",
+  "items": {
+    "56acc011497d851393cdaa5c9db5d99b": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-wasm-js/2.1.21/d20901efd2e8efcc4ae2e845e359d896b39bddd2/kotlin-stdlib-wasm-js-2.1.21.klib"
+    },
+    "61108da20006a4cceb8e0b4753db9320": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-wasm-js/1.8.0/6fa5af0c703e4957c811aef817336eb6f6572e72/kotlinx-coroutines-core-wasm-js-1.8.0.klib"
+    },
+    "1c6fc0b4d51e510c7517b56b13805943": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/atomicfu-wasm-js/0.23.1/f7046e9f5ce6014c3471098284bd654831bb1f41/atomicfu-wasm-js-0.23.1.klib"
+    },
+    "917d068aed8948d06b047436e082f9d2": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-collections-immutable-wasm-js/0.4.0/a1c64aa9b13f9f54b1d807c5368c8e21af997518/kotlinx-collections-immutable-wasm-js-0.4.0.klib"
+    },
+    "48316275c8d9cbfa355aa16f3de86bb6": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-core-wasm-js/1.6.2/6f54ca1a4477e773a63266210cb8ca229e366ced/kotlinx-serialization-core-wasm-js-1.6.2.klib"
+    },
+    "2c30f1a82bc1d4196332360ab708a600": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-wasm-js/1.6.2/c8f3943297f9553e3e797579499d5256261a148c/kotlinx-serialization-json-wasm-js-1.6.2.klib"
+    },
+    "7ecf9d88842e7ca74b2a67c72f3c5b60": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-datetime-wasm-js/0.5.0/629555641f7616da6dd028fae163a288a0e28264/kotlinx-datetime-wasm-js-0.5.0.klib",
+      "target": "Kotlin-DateTime-library-kotlinx-datetime-wasm-js/0.5.0"
+    },
+    "951869171601357e019b55c1a73b68b8": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-test-wasm-js/2.1.21/c19f71e6a61d59102dcb23496c2bd47f855cd1c3/kotlin-test-wasm-js-2.1.21.klib"
+    },
+    "ed257928580acdac178f235bdd94f85e": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-test-wasm-js/1.8.0/708461cb13ceddbd1d38849b4b7f74d8f20d1767/kotlinx-coroutines-test-wasm-js-1.8.0.klib"
+    },
+    "7cbde715a5e813455c28a9407af6a19d": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/commons-cli/commons-cli/1.5.0/dc98be5d5390230684a092589d70ea76a147925c/commons-cli-1.5.0.jar"
+    },
+    "819d20fa2e260687244a0a7a890d6438": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.12.0/c6842c86792ff03b9f1d1fe2aab8dc23aa6c6f0e/commons-lang3-3.12.0.jar"
+    },
+    "073dc9a145c34d5e7fcd73c73e2804b5": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.11.0/a2503f302b11ebde7ebc3df41daebe0e4eea3689/commons-io-2.11.0.jar"
+    },
+    "e564b7634c42be6ca27785047bde5c78": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/commons-codec/commons-codec/1.15/49d94806b6e3dc933dacbd8acb0fdbab8ebd1e5d/commons-codec-1.15.jar"
+    },
+    "6e46185de807dd766b10be8a6c24eb60": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.konghq/unirest-java/3.14.2/e7693bc22f364014d9164519fb057a7d86af9a7/unirest-java-3.14.2.jar"
+    },
+    "db82205ca10536d909e459d7011e2bc8": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpmime/4.5.13/efc110bad4a0d45cda7858e6beee1d8a8313da5a/httpmime-4.5.13.jar"
+    },
+    "9a6261edf9bcbc077464b892e0652bbd": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpclient/4.5.13/e5f6cae5ca7ecaac1ec2827a9e2d65ae2869cada/httpclient-4.5.13.jar"
+    },
+    "d09d8996363fd1c490c9222ebf3124e6": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpcore/4.4.13/853b96d3afbb7bf8cc303fe27ee96836a10c1834/httpcore-4.4.13.jar"
+    },
+    "6f0c81203172ad5b896ee6fd036ca4ee": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/commons-logging/commons-logging/1.2/4bfc12adfe4842bf07b657f0369c4cb522955686/commons-logging-1.2.jar"
+    },
+    "fb34b6d11040de6a7e05d5344d1eb9ff": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpcore-nio/4.4.13/3f897ace4d7f10f0ea6a58f524a3b105dd483653/httpcore-nio-4.4.13.jar"
+    },
+    "ed43c3a733c19e9b6673530bf81234ee": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.httpcomponents/httpasyncclient/4.1.5/cd18227f1eb8e9a263286c1d7362ceb24f6f9b32/httpasyncclient-4.1.5.jar"
+    },
+    "1171a7a4157c3beccf10884eb68d853e": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.10/dd9b193aef96e973d5a11ab13cd17430c2e4306b/gson-2.10.jar"
+    },
+    "e233022c9a3b8bbc68e37dff52c52d5e": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.semver4j/semver4j/4.3.0/71760ca3e4136264c17107659d9df540594340a6/semver4j-4.3.0.jar"
+    },
+    "e0f4d4259bd5d41accdc781570560972": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-io-core-wasm-js/0.6.0/c78a53fcb18cdee3d2c7fc2e2c93200452ce4ec3/kotlinx-io-core-wasm-js-0.6.0.klib"
+    },
+    "9b6229dffc148ae80feee49ddc5143eb": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-io-bytestring-wasm-js/0.6.0/21a23ca21562e1eceaad4f06fc44d7f1a855d89e/kotlinx-io-bytestring-wasm-js-0.6.0.klib"
+    },
+    "a4217dae6633a84e5d55b06f29404f23": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-datetime-wasm-js/0.6.0/ef7a9f6a2d3d743418db62508be4ca96760bf85b/kotlinx-datetime-wasm-js-0.6.0.klib",
+      "target": "Kotlin-DateTime-library-kotlinx-datetime-wasm-js/0.6.0"
+    },
+    "c9a128ee101287cebe57035c8162a868": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-core-wasm-js/1.6.3/3adaf6fc8910715fe3a9fe5f5ecddcf69c50868d/kotlinx-serialization-core-wasm-js-1.6.3.klib"
+    },
+    "ede6c03a8a79e461d4aafbbb75e9f5de": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.knowm.xchange/xchange-core/5.2.0/650243b9f5f6c353832198b9cc4f0067a2b753f6/xchange-core-5.2.0.jar"
+    },
+    "61c9a13fa42303c39b214cb465680d75": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.github.mmazi/rescu/3.0/9ec9f2e9a859092edcbb2b9573421723a553bd38/rescu-3.0.jar"
+    },
+    "337230751a7a3127f7faa04186ae5c28": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/2.0.13/80229737f704b121a318bba5d5deacbcf395bc77/slf4j-api-2.0.13.jar"
+    },
+    "0eb0172ddec5b0675590745c09f46143": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.14.2/1e71fddbc80bb86f71a6345ac1e8ab8a00e7134/jackson-databind-2.14.2.jar"
+    },
+    "d084231f8bcd9ce52782d81d12328274": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-annotations/2.14.2/a7aae9525864930723e3453ab799521fdfd9d873/jackson-annotations-2.14.2.jar"
+    },
+    "5f85a70dc2fbf6ce67ae36bb123091f0": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.14.2/f804090e6399ce0cf78242db086017512dd71fcc/jackson-core-2.14.2.jar"
+    },
+    "4cb68f48fe21fb54cb147103d08220bf": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/15ce10d249a38865b58fc39521f10f29ab0e3363/jakarta.ws.rs-api-3.1.0.jar"
+    },
+    "b1e25afa69ea9d4c1708dbf469630159": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar"
+    },
+    "493057867887103cb66dfb5cddec03bc": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/oauth.signpost/signpost-core/2.1.1/e307e72ff918b775f797f364b1fd442f23b5408a/signpost-core-2.1.1.jar"
+    },
+    "7c047e80d63eab8033ec6014d2d6f309": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/io.github.resilience4j/resilience4j-ratelimiter/1.7.1/50c04e0b876c788654ef5e134d930a2dd58dfd38/resilience4j-ratelimiter-1.7.1.jar"
+    },
+    "5ac6431194a0d70b3f9cfadf7d54f76e": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/io.github.resilience4j/resilience4j-core/1.7.1/a047bb3aa97387172c88404919313dd8abacdf9/resilience4j-core-1.7.1.jar"
+    },
+    "9914b16331f8b1b8a332b3a365a4a90c": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/io.vavr/vavr/0.10.2/dfd5101b17da36c32ae024b984e0b72712f01a35/vavr-0.10.2.jar"
+    },
+    "44454c591df37a7737676fd1bdcecce0": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/io.vavr/vavr-match/0.10.2/68f1af10052713fda01bfb1e5b831dcf6d826ab2/vavr-match-0.10.2.jar"
+    },
+    "a7293ec8daf71f323541ddfbb761eb5f": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/io.github.resilience4j/resilience4j-retry/1.7.1/f2baf42d57645ff2673bbe208b85c6dd2ab050a/resilience4j-retry-1.7.1.jar"
+    },
+    "c9e4ee97dc81c30ae4181a291e687096": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.14.0/1ed471194b02f2c6cb734a0cd6f6f107c673afae/commons-lang3-3.14.0.jar"
+    },
+    "1d8e71660fd12a0e43971761872fdf76": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/33.2.1-jre/818e780da2c66c63bbb6480fef1f3855eeafa3e4/guava-33.2.1-jre.jar"
+    },
+    "dc0df66f9b299c2b142174c84cfb9a3f": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.2/c4a06a64e650562f30b7bf9aaec1bfed43aca12b/failureaccess-1.0.2.jar"
+    },
+    "e85d9fcab48c352cd085122eddff6758": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/b421526c5f297295adef1c886e5246c39d4ac629/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"
+    },
+    "18d78cdf548a47b5b2a8c4ae38dceb8d": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.checkerframework/checker-qual/3.42.0/638ec33f363a94d41a4f03c3e7d3dcfba64e402d/checker-qual-3.42.0.jar"
+    },
+    "6c3c0559196f0d9a3656aecaf7ebf5c7": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_annotations/2.26.1/c1fde57694bdc14e8618899aaa6e857d9465d7de/error_prone_annotations-2.26.1.jar"
+    },
+    "3f43580d82c9d33da5e6c80cb7ac1676": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/javax.annotation/javax.annotation-api/1.3.2/934c04d3cfef185a8008e7bf34331b79730a9d43/javax.annotation-api-1.3.2.jar",
+      "target": "javax.annotation-api/1.3.2"
+    },
+    "fd929bc9ae1bdf4a718c8d55c0a627d4": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-wasm-js/1.6.3/e59617b814028a67ed273c9bf753979da08f2fd5/kotlinx-serialization-json-wasm-js-1.6.3.klib"
+    },
+    "a5a00c772fd90698c3f05c2bd662b18a": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.ionspin.kotlin/bignum-wasm-js/0.3.9/8b5408202a094108bba2f42ee2c513fc8fac74d5/bignum-wasm-js-0.3.9.klib"
+    }
+  }
+}
