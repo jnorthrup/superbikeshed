@@ -1,29 +1,0 @@
-/=== Testing Double Dispatch Packing Engine ===
-
-1. Basic operators:
-42 j "hello" = Join(42, hello)
- 42 jj "hello" = Join(42, hello)
- 42 jn "hello" = Join(42, hello)
-
-2. Context-driven packing:
--Hot path packing: preserved list size = 1000
-*Batch packing: preserved list size = 1000
-
-3. Strategy selection logic:
-Hot path allows minimal: true
- Hot path allows standard: false
-"Hot path allows aggressive: false
-Batch allows minimal: true
-Batch allows standard: true
-Batch allows aggressive: true
-
-4. Cost estimation:
-Minimal cost for size 100: 1
- Standard cost for size 100: 500
-"Aggressive cost for size 100: 100
-
-5. Either waterfall behavior:
-+Packer.pack("test", 123) = Join(test, 123)
-6Falls back to spill since all heuristics return false
-
-!=== Double Dispatch Working! ===
