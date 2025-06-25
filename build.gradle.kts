@@ -15,14 +15,18 @@ allprojects {
 
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    
+
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         version.set("1.0.1")
         android.set(false)
         ignoreFailures.set(false)
+        filter {
+            exclude { element -> element.file.path.contains("build/") }
+            exclude { element -> element.file.path.contains(".gradle/") }
+        }
         reporters {
             reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
             reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
         }
     }
-} 
+}

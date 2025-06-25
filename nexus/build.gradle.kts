@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform") version "2.1.21"
+    id("com.google.devtools.ksp") version "2.1.21-2.0.2"
     `maven-publish`
     signing
 }
@@ -35,12 +36,14 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+                implementation(project(":Trikeshed"))
             }
         }
 
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
             }
         }
 
@@ -54,10 +57,18 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                implementation(kotlin("test-junit"))
             }
         }
     }
+}
+
+// Configure KSP for all targets
+dependencies {
+    add("kspJvm", project(":ksp-processors"))
+    add("kspMacosArm64", project(":ksp-processors"))
+    // Add other targets as needed, e.g.:
+    // add("kspLinuxX64", project(":ksp-processors"))
+    // add("kspJs", project(":ksp-processors"))
 }
 
 tasks.withType<Test> {
@@ -141,6 +152,11 @@ tasks.register<JavaExec>("runNexus") {
     group = "application"
     description = "Run Nexus"
     mainClass.set("nexus.MainKt")
-    classpath = files(tasks.named("jvmJar").get().outputs.files) + kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles
+    classpath = files(
+        tasks
+            .named("jvmJar")
+            .get()
+            .outputs.files,
+    ) + (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
     args = if (project.hasProperty("args")) project.property("args").toString().split(" ") else emptyList()
 }

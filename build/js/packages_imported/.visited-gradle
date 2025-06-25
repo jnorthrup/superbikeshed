@@ -4,20 +4,17 @@
     "56acc011497d851393cdaa5c9db5d99b": {
       "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-wasm-js/2.1.21/d20901efd2e8efcc4ae2e845e359d896b39bddd2/kotlin-stdlib-wasm-js-2.1.21.klib"
     },
-    "61108da20006a4cceb8e0b4753db9320": {
-      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-wasm-js/1.8.0/6fa5af0c703e4957c811aef817336eb6f6572e72/kotlinx-coroutines-core-wasm-js-1.8.0.klib"
-    },
-    "1c6fc0b4d51e510c7517b56b13805943": {
-      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/atomicfu-wasm-js/0.23.1/f7046e9f5ce6014c3471098284bd654831bb1f41/atomicfu-wasm-js-0.23.1.klib"
-    },
-    "917d068aed8948d06b047436e082f9d2": {
-      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-collections-immutable-wasm-js/0.4.0/a1c64aa9b13f9f54b1d807c5368c8e21af997518/kotlinx-collections-immutable-wasm-js-0.4.0.klib"
-    },
     "48316275c8d9cbfa355aa16f3de86bb6": {
       "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-core-wasm-js/1.6.2/6f54ca1a4477e773a63266210cb8ca229e366ced/kotlinx-serialization-core-wasm-js-1.6.2.klib"
     },
     "2c30f1a82bc1d4196332360ab708a600": {
       "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-json-wasm-js/1.6.2/c8f3943297f9553e3e797579499d5256261a148c/kotlinx-serialization-json-wasm-js-1.6.2.klib"
+    },
+    "61108da20006a4cceb8e0b4753db9320": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-wasm-js/1.8.0/6fa5af0c703e4957c811aef817336eb6f6572e72/kotlinx-coroutines-core-wasm-js-1.8.0.klib"
+    },
+    "1c6fc0b4d51e510c7517b56b13805943": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/atomicfu-wasm-js/0.23.1/f7046e9f5ce6014c3471098284bd654831bb1f41/atomicfu-wasm-js-0.23.1.klib"
     },
     "7ecf9d88842e7ca74b2a67c72f3c5b60": {
       "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-datetime-wasm-js/0.5.0/629555641f7616da6dd028fae163a288a0e28264/kotlinx-datetime-wasm-js-0.5.0.klib",
@@ -150,6 +147,9 @@
     },
     "a5a00c772fd90698c3f05c2bd662b18a": {
       "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/com.ionspin.kotlin/bignum-wasm-js/0.3.9/8b5408202a094108bba2f42ee2c513fc8fac74d5/bignum-wasm-js-0.3.9.klib"
+    },
+    "917d068aed8948d06b047436e082f9d2": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-collections-immutable-wasm-js/0.4.0/a1c64aa9b13f9f54b1d807c5368c8e21af997518/kotlinx-collections-immutable-wasm-js-0.4.0.klib"
     }
   }
 }

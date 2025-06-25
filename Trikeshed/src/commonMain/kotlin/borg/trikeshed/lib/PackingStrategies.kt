@@ -51,35 +51,55 @@ interface PackerStrategy<A, B> {
 // === CONCRETE PACKING STRATEGY DATA CLASSES ===
 
 // Holds cluster definitions for advanced strategies
-data class ClusterInfo(val base: Long, val bitsPerOffset: Int)
+data class ClusterInfo(
+    val base: Long,
+    val bitsPerOffset: Int,
+)
 
 // The concrete packing strategy classes - all implement PackedResult<A,B>
-data class DiagonalPacked(val reg: Long) : PackedResult<Long, Nothing?> {
+data class DiagonalPacked(
+    val reg: Long,
+) : PackedResult<Long, Nothing?> {
     override val a = reg
     override val b = null
 }
 
-data class PrefixedPacked(val reg: Long, val prefix: Byte) : PackedResult<Long, Byte> {
+data class PrefixedPacked(
+    val reg: Long,
+    val prefix: Byte,
+) : PackedResult<Long, Byte> {
     override val a = reg
     override val b = prefix
 }
 
-data class RangeOffsetPacked(val regs: LongArray, val base: Long) : PackedResult<LongArray, Long> {
+data class RangeOffsetPacked(
+    val regs: LongArray,
+    val base: Long,
+) : PackedResult<LongArray, Long> {
     override val a = regs
     override val b = base
 }
 
-data class RelativeIncrementPacked(val regs: LongArray, val base: Long) : PackedResult<LongArray, Long> {
+data class RelativeIncrementPacked(
+    val regs: LongArray,
+    val base: Long,
+) : PackedResult<LongArray, Long> {
     override val a = regs
     override val b = base
 }
 
-data class PalettePacked(val regs: LongArray, val palette: Array<*>) : PackedResult<LongArray, Array<*>> {
+data class PalettePacked(
+    val regs: LongArray,
+    val palette: Array<*>,
+) : PackedResult<LongArray, Array<*>> {
     override val a = regs
     override val b = palette
 }
 
-data class MultiClusterPacked(val regs: LongArray, val clusters: Array<ClusterInfo>) : PackedResult<LongArray, Array<ClusterInfo>> {
+data class MultiClusterPacked(
+    val regs: LongArray,
+    val clusters: Array<ClusterInfo>,
+) : PackedResult<LongArray, Array<ClusterInfo>> {
     override val a = regs
     override val b = clusters
 }
@@ -223,8 +243,8 @@ object Packer {
     private fun <A, B> estimateDataSize(
         a: A,
         b: B,
-    ): Int {
-        return when {
+    ): Int =
+        when {
             a is Collection<*> -> a.size
             b is Collection<*> -> b.size
             a is Array<*> -> a.size
@@ -233,55 +253,160 @@ object Packer {
             b is String -> b.length
             else -> 1 // Single primitive values
         }
-    }
 
     // Strategy detection methods
     private fun <A, B> canDiagonalPack(
         a: A,
         b: B,
     ): Boolean {
-        // Placeholder - implement actual heuristics
-        return false
+        // Diagonal packing works when both values can fit in a single Long
+        // and they have a simple mathematical relationship
+        return when {
+            a is Int && b is Int -> {
+                val aLong = a.toLong()
+                val bLong = b.toLong()
+                // Check if we can pack them into 32 bits each
+                aLong >= 0 && aLong <= 0xFFFFFFFFL && 
+                bLong >= 0 && bLong <= 0xFFFFFFFFL
+            }
+            a is Long && b is Long -> {
+                // For Longs, check if they can be combined meaningfully
+                // This is a simple heuristic - could be enhanced
+                a >= 0 && b >= 0 && a <= 0x7FFFFFFFL && b <= 0x7FFFFFFFL
+            }
+            a is String && b is String -> {
+                // For strings, check if they're short enough to pack
+                a.length <= 4 && b.length <= 4
+            }
+            else -> false
+        }
     }
 
     private fun <A, B> canPrefixedPack(
         a: A,
         b: B,
     ): Boolean {
-        // Placeholder - implement actual heuristics
-        return false
+        // Prefixed packing works when one value is small and can be used as a prefix
+        return when {
+            a is Byte && b is Long -> true
+            a is Short && b is Long -> true
+            a is Int && b is Long -> a >= 0 && a <= 0xFF
+            a is String && b is String -> {
+                // One string is very short (prefix) and the other is longer
+                (a.length <= 2 && b.length > 2) || (b.length <= 2 && a.length > 2)
+            }
+            else -> false
+        }
     }
 
     private fun <A, B> canRangeOffsetPack(
         a: A,
         b: B,
     ): Boolean {
-        // Placeholder - implement actual heuristics
-        return false
+        // Range offset works when we have arrays/lists with values in a known range
+        return when {
+            a is Array<*> && b is Long -> {
+                isArray(a) && (a.all { it is Int } || a.all { it is Long } || a.all { it is Short })
+            }
+            a is List<*> && b is Long -> {
+                a.isNotEmpty() && (a.first() is Int || a.first() is Long || a.first() is Short)
+            }
+            a is Long && b is Array<*> -> {
+                isArray(b) && (b.all { it is Int } || b.all { it is Long } || b.all { it is Short })
+            }
+            a is Long && b is List<*> -> {
+                b.isNotEmpty() && (b.first() is Int || b.first() is Long || b.first() is Short)
+            }
+            else -> false
+        }
     }
 
     private fun <A, B> canRelativeIncrementPack(
         a: A,
         b: B,
     ): Boolean {
-        // Placeholder - implement actual heuristics
-        return false
+        // Relative increment works when we have sequences with small differences
+        return when {
+            a is Array<*> && b is Long -> {
+                isArray(a) && a.all { it is Int } && a.size > 1 && hasSmallIncrements(a as Array<Int>)
+            }
+            a is List<*> && b is Long -> {
+                a.isNotEmpty() && a.all { it is Int } && hasSmallIncrements(a as List<Int>)
+            }
+            else -> false
+        }
     }
 
     private fun <A, B> canPalettePack(
         a: A,
         b: B,
     ): Boolean {
-        // Placeholder - implement actual heuristics
-        return false
+        // Palette packing works when we have repeated values
+        return when {
+            a is Array<*> && b is Array<*> -> {
+                a.size > 4 && hasRepeatedValues(a)
+            }
+            a is List<*> && b is Array<*> -> {
+                a.size > 4 && hasRepeatedValues(a)
+            }
+            else -> false
+        }
     }
 
     private fun <A, B> canMultiClusterPack(
         a: A,
         b: B,
     ): Boolean {
-        // Placeholder - implement actual heuristics
-        return false
+        // Multi-cluster works when we have multiple distinct ranges
+        return when {
+            a is Array<*> && b is Array<*> -> {
+                a.size > 8 && hasMultipleClusters(a)
+            }
+            a is List<*> && b is Array<*> -> {
+                a.size > 8 && hasMultipleClusters(a)
+            }
+            else -> false
+        }
+    }
+
+    // Helper methods for strategy detection
+    private fun hasSmallIncrements(array: Array<Int>): Boolean {
+        if (array.size < 2) return false
+        for (i in 1 until array.size) {
+            val diff = kotlin.math.abs(array[i] - array[i-1])
+            if (diff > 255) return false // Too large for efficient packing
+        }
+        return true
+    }
+
+    private fun hasSmallIncrements(list: List<Int>): Boolean {
+        if (list.size < 2) return false
+        for (i in 1 until list.size) {
+            val diff = kotlin.math.abs(list[i] - list[i-1])
+            if (diff > 255) return false
+        }
+        return true
+    }
+
+    private fun hasRepeatedValues(array: Array<*>): Boolean {
+        val uniqueCount = array.toSet().size
+        return uniqueCount < array.size * 0.7 // At least 30% repetition
+    }
+
+    private fun hasRepeatedValues(list: List<*>): Boolean {
+        val uniqueCount = list.toSet().size
+        return uniqueCount < list.size * 0.7
+    }
+
+    private fun hasMultipleClusters(array: Array<*>): Boolean {
+        // Simplified heuristic - could be enhanced with actual clustering
+        val uniqueCount = array.toSet().size
+        return uniqueCount > 2 && uniqueCount < array.size * 0.5
+    }
+
+    private fun hasMultipleClusters(list: List<*>): Boolean {
+        val uniqueCount = list.toSet().size
+        return uniqueCount > 2 && uniqueCount < list.size * 0.5
     }
 
     // Packing implementation methods
@@ -289,48 +414,189 @@ object Packer {
         a: A,
         b: B,
     ): Long {
-        // Placeholder - implement actual packing
-        return 0L
+        return when {
+            a is Int && b is Int -> {
+                val aLong = a.toLong()
+                val bLong = b.toLong()
+                (aLong shl 32) or (bLong and 0xFFFFFFFFL)
+            }
+            a is Long && b is Long -> {
+                // For Longs, we need to be more careful about bit manipulation
+                val aUpper = (a shr 32) and 0x7FFFFFFFL
+                val bUpper = (b shr 32) and 0x7FFFFFFFL
+                (aUpper shl 32) or bUpper
+            }
+            a is String && b is String -> {
+                // Pack short strings into a Long - direct character access
+                var result = 0L
+                for (i in 0 until 4) {
+                    val aByte = if (i < a.length) a[i].code.toLong() else 0L
+                    val bByte = if (i < b.length) b[i].code.toLong() else 0L
+                    result = result or (aByte shl (i * 8)) or (bByte shl (i * 8 + 32))
+                }
+                result
+            }
+            else -> 0L
+        }
     }
 
     private fun <A, B> packPrefixed(
         a: A,
         b: B,
     ): Pair<Long, Byte> {
-        // Placeholder - implement actual packing
-        return Pair(0L, 0.toByte())
+        return when {
+            a is Byte && b is Long -> Pair(b, a)
+            a is Short && b is Long -> Pair(b, a.toByte())
+            a is Int && b is Long -> Pair(b, a.toByte())
+            a is String && b is String -> {
+                val (prefix, main) = if (a.length <= 2) Pair(a, b) else Pair(b, a)
+                var result = 0L
+                for (i in 0 until 6) {
+                    val byte = if (i < main.length) main[i].code.toLong() else 0L
+                    result = result or (byte shl (i * 8))
+                }
+                val prefixByte = if (prefix.isNotEmpty()) prefix[0].code.toByte() else 0.toByte()
+                Pair(result, prefixByte)
+            }
+            else -> Pair(0L, 0.toByte())
+        }
     }
 
     private fun <A, B> packRangeOffset(
         a: A,
         b: B,
     ): Pair<LongArray, Long> {
-        // Placeholder - implement actual packing
-        return Pair(longArrayOf(), 0L)
+        return when {
+            a is Array<*> && b is Long -> {
+                when {
+                    a.all { it is Int } -> {
+                        val intArray = a as Array<Int>
+                        val base = intArray.minOrNull()?.toLong() ?: 0L
+                        val regs = intArray.map { (it - base).toLong() }.toLongArray()
+                        Pair(regs, base)
+                    }
+                    a.all { it is Long } -> {
+                        val longArray = a as Array<Long>
+                        val base = longArray.minOrNull() ?: 0L
+                        val regs = longArray.map { it - base }.toLongArray()
+                        Pair(regs, base)
+                    }
+                    else -> Pair(longArrayOf(), 0L)
+                }
+            }
+            a is List<*> && b is Long -> {
+                when {
+                    a.all { it is Int } -> {
+                        val intList = a as List<Int>
+                        val base = intList.minOrNull()?.toLong() ?: 0L
+                        val regs = intList.map { (it - base).toLong() }.toLongArray()
+                        Pair(regs, base)
+                    }
+                    a.all { it is Long } -> {
+                        val longList = a as List<Long>
+                        val base = longList.minOrNull() ?: 0L
+                        val regs = longList.map { it - base }.toLongArray()
+                        Pair(regs, base)
+                    }
+                    else -> Pair(longArrayOf(), 0L)
+                }
+            }
+            else -> Pair(longArrayOf(), 0L)
+        }
     }
 
     private fun <A, B> packRelativeIncrement(
         a: A,
         b: B,
     ): Pair<LongArray, Long> {
-        // Placeholder - implement actual packing
-        return Pair(longArrayOf(), 0L)
+        return when {
+            a is Array<*> && b is Long -> {
+                when {
+                    a.all { it is Int } -> {
+                        val intArray = a as Array<Int>
+                        val base = intArray[0].toLong()
+                        val regs = LongArray(intArray.size - 1) { i ->
+                            (intArray[i + 1] - intArray[i]).toLong()
+                        }
+                        Pair(regs, base)
+                    }
+                    else -> Pair(longArrayOf(), 0L)
+                }
+            }
+            a is List<*> && b is Long -> {
+                when {
+                    a.all { it is Int } -> {
+                        val intList = a as List<Int>
+                        val base = intList[0].toLong()
+                        val regs = LongArray(intList.size - 1) { i ->
+                            (intList[i + 1] - intList[i]).toLong()
+                        }
+                        Pair(regs, base)
+                    }
+                    else -> Pair(longArrayOf(), 0L)
+                }
+            }
+            else -> Pair(longArrayOf(), 0L)
+        }
     }
 
     private fun <A, B> packPalette(
         a: A,
         b: B,
     ): Pair<LongArray, Array<*>> {
-        // Placeholder - implement actual packing
-        return Pair(longArrayOf(), arrayOf<Any>())
+        return when {
+            a is Array<*> && b is Array<*> -> {
+                val values = a.toList()
+                val palette = values.toSet().toTypedArray()
+                val regs = LongArray(values.size) { i ->
+                    palette.indexOf(values[i]).toLong()
+                }
+                Pair(regs, palette)
+            }
+            a is List<*> && b is Array<*> -> {
+                val values = a.toList()
+                val palette = values.toSet().toTypedArray()
+                val regs = LongArray(values.size) { i ->
+                    palette.indexOf(values[i]).toLong()
+                }
+                Pair(regs, palette)
+            }
+            else -> Pair(longArrayOf(), arrayOf<Any>())
+        }
     }
 
     private fun <A, B> packMultiCluster(
         a: A,
         b: B,
     ): Pair<LongArray, Array<ClusterInfo>> {
-        // Placeholder - implement actual packing
-        return Pair(longArrayOf(), arrayOf<ClusterInfo>())
+        // Simplified multi-cluster implementation
+        return when {
+            a is Array<*> && b is Array<*> -> {
+                val values = a.toList()
+                val clusters = arrayOf(
+                    ClusterInfo(0L, 8),
+                    ClusterInfo(256L, 8)
+                )
+                val regs = LongArray(values.size) { i ->
+                    val value = values[i] as? Int ?: 0
+                    if (value < 256) value.toLong() else (value - 256).toLong()
+                }
+                Pair(regs, clusters)
+            }
+            a is List<*> && b is Array<*> -> {
+                val values = a.toList()
+                val clusters = arrayOf(
+                    ClusterInfo(0L, 8),
+                    ClusterInfo(256L, 8)
+                )
+                val regs = LongArray(values.size) { i ->
+                    val value = values[i] as? Int ?: 0
+                    if (value < 256) value.toLong() else (value - 256).toLong()
+                }
+                Pair(regs, clusters)
+            }
+            else -> Pair(longArrayOf(), arrayOf<ClusterInfo>())
+        }
     }
 }
 

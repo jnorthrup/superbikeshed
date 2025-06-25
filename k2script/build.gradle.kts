@@ -149,7 +149,11 @@ val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     }
     from("setup.py")
     from("package.json")
-    destinationDir = layout.buildDirectory.dir("kscript").get().asFile
+    destinationDir =
+        layout.buildDirectory
+            .dir("kscript")
+            .get()
+            .asFile
 }
 
 val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
@@ -170,7 +174,11 @@ val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
     }
     from("setup.py")
     from("package.json")
-    destinationDir = layout.buildDirectory.dir("k2script").get().asFile
+    destinationDir =
+        layout.buildDirectory
+            .dir("k2script")
+            .get()
+            .asFile
 }
 
 val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribution") {
@@ -257,7 +265,9 @@ fun adjustVersion(archiveVersion: String): String {
     var newVersion = archiveVersion.lowercase(Locale.ROOT)
     val temporaryVersion = newVersion.substringBeforeLast(".")
 
-    if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
+    if (temporaryVersion.endsWith("-RC", true) ||
+        temporaryVersion.endsWith("-BETA", true) ||
+        temporaryVersion.endsWith("-ALPHA", true) ||
         temporaryVersion.endsWith("-SNAPSHOT", true)
     ) {
         newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"

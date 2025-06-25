@@ -8,13 +8,13 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
-    
+
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
         }
     }
-    
+
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
     val isMac = hostOs.startsWith("Mac OS")
@@ -69,14 +69,14 @@ kotlin {
             val macosArm64Test by getting { dependsOn(nativeTest) }
             val macosX64Test by getting { dependsOn(nativeTest) }
         }
-        
+
         if (isLinux) {
             val linuxX64Main by getting { dependsOn(nativeMain) }
             val linuxArm64Main by getting { dependsOn(nativeMain) }
             val linuxX64Test by getting { dependsOn(nativeTest) }
             val linuxArm64Test by getting { dependsOn(nativeTest) }
         }
-        
+
         if (isMingwX64) {
             val mingwX64Main by getting { dependsOn(nativeMain) }
             val mingwX64Test by getting { dependsOn(nativeTest) }

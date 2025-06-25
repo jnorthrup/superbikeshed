@@ -14,6 +14,7 @@ dependencies {
     implementation("com.squareup:kotlinpoet:1.14.2")
     implementation("com.squareup:kotlinpoet-ksp:1.14.2")
     implementation(kotlin("stdlib"))
+    implementation(project(":Trikeshed"))
 }
 
 // Configure META-INF/services for processor registration
@@ -23,7 +24,7 @@ tasks.register("generateProcessorService") {
         servicesDir.mkdirs()
 
         val serviceFile = file("$servicesDir/com.google.devtools.ksp.processing.SymbolProcessorProvider")
-        serviceFile.writeText("borg.trikeshed.ksp.TrikeShedProcessorProvider")
+        serviceFile.writeText("borg.trikeshed.ksp.TrikeShedDslProcessorProvider")
     }
 }
 

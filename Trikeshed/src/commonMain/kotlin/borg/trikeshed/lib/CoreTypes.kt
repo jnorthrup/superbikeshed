@@ -79,9 +79,13 @@ package borg.trikeshed.lib
  * Moved to CoreTypes as a foundational data structure.
  */
 sealed interface Either<out L, out R> {
-    data class Left<L>(val value: L) : Either<L, Nothing>
+    data class Left<L>(
+        val value: L,
+    ) : Either<L, Nothing>
 
-    data class Right<R>(val value: R) : Either<Nothing, R>
+    data class Right<R>(
+        val value: R,
+    ) : Either<Nothing, R>
 
     companion object {
         fun <L> left(value: L): Either<L, Nothing> = Left(value)
@@ -583,7 +587,9 @@ inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Index
 val <T> Indexed<T>.play: IterableSeries<T> get() = this as? IterableSeries<T> ?: IterableSeries(this)
 
 @kotlin.jvm.JvmInline
-value class IterableSeries<A>(val s: Indexed<A>) : Iterable<A> {
+value class IterableSeries<A>(
+    val s: Indexed<A>,
+) : Iterable<A> {
     override operator fun iterator(): Iterator<A> = s.iterator()
 
     val size: Int get() = s.size
@@ -620,7 +626,10 @@ fun Indexed<Byte>.toArray(): ByteArray = ByteArray(this.size) { this[it] }
  * ColumnMeta - Database column metadata
  * Represents the metadata for a database column including name and type information
  */
-data class ColumnMeta(val a: String, val b: kotlin.reflect.KClass<*>) {
+data class ColumnMeta(
+    val a: String,
+    val b: kotlin.reflect.KClass<*>,
+) {
     companion object {
         fun create(
             name: String,
@@ -866,3 +875,63 @@ fun <T> Indexed<T>.selectTop(ratio: Double): Indexed<T> {
     val count = (this.a * ratio).toInt()
     return this.take(count)
 }
+
+// === OPERATOR EXTENSIONS ===
+
+/**
+ * Division operator for Int
+ */
+operator fun Int.div(other: Int): Int = this / other
+
+/**
+ * Remainder operator for Int  
+ */
+operator fun Int.rem(other: Int): Int = this % other
+
+/**
+ * Division operator for Long
+ */
+operator fun Long.div(other: Long): Long = this / other
+
+/**
+ * Remainder operator for Long
+ */
+operator fun Long.rem(other: Long): Long = this % other
+
+/**
+ * Division operator for Double
+ */
+operator fun Double.div(other: Double): Double = this / other
+
+/**
+ * Remainder operator for Double
+ */
+operator fun Double.rem(other: Double): Double = this % other
+
+/**
+ * Division operator for Float
+ */
+operator fun Float.div(other: Float): Float = this / other
+
+/**
+ * Remainder operator for Float
+ */
+operator fun Float.rem(other: Float): Float = this % other
+
+// === UTILITY FUNCTIONS ===
+
+/**
+ * Check if an object is an array
+ */
+fun isArray(obj: Any?): Boolean = obj is Array<*>
+
+/**
+ * Check if an object is an array with specific size
+ */
+fun isArray(obj: Any?, size: Int): Boolean = obj is Array<*> && obj.size == size
+
+/**
+ * Check if an object is an array with size range
+ */
+fun isArray(obj: Any?, minSize: Int, maxSize: Int): Boolean = 
+    obj is Array<*> && obj.size in minSize..maxSize

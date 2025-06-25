@@ -2,8 +2,7 @@
 
 package borg.trikeshed.parse.json
 
-import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
 
 /**
@@ -45,7 +44,9 @@ typealias JsonValueSeries = Indexed<JsonValue>
 
 // Error Handling Types
 @JvmInline
-value class JsonError(val message: String)
+value class JsonError(
+    val message: String,
+)
 typealias JsonResult<T> = Result<T>
 
 /**
@@ -225,8 +226,8 @@ object TrikeShedJsonScanner {
     /**
      * Extract structural characters using α transform
      */
-    fun extractStructuralChars(tokens: JsonTokenSeries): JsonStructuralSeries {
-        return tokens.α { token ->
+    fun extractStructuralChars(tokens: JsonTokenSeries): JsonStructuralSeries =
+        tokens.α { token ->
             val (type, bounds) = token
             val char =
                 when (type) {
@@ -240,7 +241,6 @@ object TrikeShedJsonScanner {
                 }
             char j bounds.a
         }
-    }
 
     /**
      * Analyze nesting levels using α transforms
@@ -269,8 +269,8 @@ object TrikeShedJsonScanner {
     fun extractValues(
         tokens: JsonTokenSeries,
         jsonString: JsonStringValue,
-    ): JsonValueSeries {
-        return tokens.α { token ->
+    ): JsonValueSeries =
+        tokens.α { token ->
             val (type, bounds) = token
             val valueType =
                 when (type) {
@@ -286,7 +286,6 @@ object TrikeShedJsonScanner {
             val endPos = startPos + bounds.b
             valueType j (startPos j endPos)
         }
-    }
 
     /**
      * Get string value from bounds using zero-cost abstraction
@@ -305,14 +304,13 @@ object TrikeShedJsonScanner {
     fun parseNumberValue(
         jsonString: JsonStringValue,
         bounds: JsonValueBounds,
-    ): JsonResult<JsonNumberValue> {
-        return try {
+    ): JsonResult<JsonNumberValue> =
+        try {
             val str = getStringValue(jsonString, bounds)
             Result.success(str.toDouble())
         } catch (e: NumberFormatException) {
             Result.failure(Exception("Invalid number format"))
         }
-    }
 
     /**
      * Parse boolean value
@@ -328,9 +326,7 @@ object TrikeShedJsonScanner {
     /**
      * Materialize tokens to List using play operator - gateway to AbstractList
      */
-    fun materializeTokens(tokens: JsonTokenSeries): List<JsonToken> {
-        return tokens.play.toList()
-    }
+    fun materializeTokens(tokens: JsonTokenSeries): List<JsonToken> = tokens.play.toList()
 
     /**
      * Filter tokens by type using α transform
@@ -338,9 +334,7 @@ object TrikeShedJsonScanner {
     fun filterTokensByType(
         tokens: JsonTokenSeries,
         targetType: JsonTokenType,
-    ): JsonTokenSeries {
-        return tokens.play.filter { it.a == targetType }.toIdx()
-    }
+    ): JsonTokenSeries = tokens.play.filter { it.a == targetType }.toIdx()
 }
 
 /**

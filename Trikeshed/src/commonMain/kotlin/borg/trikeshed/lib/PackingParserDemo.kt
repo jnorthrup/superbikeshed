@@ -121,8 +121,8 @@ object PackingParserDemo {
         return PackingStep(original, packed, strategy, spaceSaved, cuttingLine)
     }
 
-    private fun estimateTokenSize(token: Token): Int {
-        return when (token.type) {
+    private fun estimateTokenSize(token: Token): Int =
+        when (token.type) {
             TokenType.LITERAL -> token.literal.length + 4 // String overhead
             TokenType.LBRACE, TokenType.RBRACE -> 1
             TokenType.COMMA, TokenType.DOT -> 1
@@ -130,15 +130,10 @@ object PackingParserDemo {
             TokenType.ERROR -> 8
             TokenType.EOF -> 0
         }
-    }
 
-    private fun generateCuttingLineHeader(): String {
-        return "┌─────────────────────────────────────────────────────────────────────┐"
-    }
+    private fun generateCuttingLineHeader(): String = "┌─────────────────────────────────────────────────────────────────────┐"
 
-    private fun generateCuttingLineFooter(): String {
-        return "└─────────────────────────────────────────────────────────────────────┘"
-    }
+    private fun generateCuttingLineFooter(): String = "└─────────────────────────────────────────────────────────────────────┘"
 
     private fun generateCuttingLine(
         strategy: String,

@@ -1,6 +1,10 @@
 package borg.trikeshed.parse
 
-data class Token(val type: TokenType, val literal: String, val pos: Int)
+data class Token(
+    val type: TokenType,
+    val literal: String,
+    val pos: Int,
+)
 
 enum class TokenType {
     EOF,
@@ -13,7 +17,9 @@ enum class TokenType {
     SEQUENCE,
 }
 
-class BashScanner(val input: String) {
+class BashScanner(
+    val input: String,
+) {
     private var pos: Int = 0
     private var start: Int = 0
     private var width: Int = 0
@@ -99,7 +105,9 @@ class BashScanner(val input: String) {
 }
 
 @kotlin.jvm.JvmInline
-value class BashBrace(val scanner: BashScanner) {
+value class BashBrace(
+    val scanner: BashScanner,
+) {
     fun scanTokens(): List<Token> {
         val tokens = mutableListOf<Token>()
         while (true) {

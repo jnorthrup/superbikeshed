@@ -13,9 +13,7 @@ object RegisterFastlane {
     fun packInts(
         a: Int,
         b: Int,
-    ): Long {
-        return (a.toLong() shl 32) or (b.toLong() and 0xFFFFFFFF)
-    }
+    ): Long = (a.toLong() shl 32) or (b.toLong() and 0xFFFFFFFF)
 
     /**
      * Pack two Booleans into a single Long using bit flags
@@ -23,9 +21,7 @@ object RegisterFastlane {
     fun packBooleans(
         a: Boolean,
         b: Boolean,
-    ): Long {
-        return (if (a) 1L else 0L) or (if (b) 2L else 0L)
-    }
+    ): Long = (if (a) 1L else 0L) or (if (b) 2L else 0L)
 
     /**
      * Pack two Bytes into a single Long
@@ -33,9 +29,7 @@ object RegisterFastlane {
     fun packBytes(
         a: Byte,
         b: Byte,
-    ): Long {
-        return (a.toLong() shl 8) or (b.toLong() and 0xFF)
-    }
+    ): Long = (a.toLong() shl 8) or (b.toLong() and 0xFF)
 
     /**
      * Pack two Shorts into a single Long
@@ -43,9 +37,7 @@ object RegisterFastlane {
     fun packShorts(
         a: Short,
         b: Short,
-    ): Long {
-        return (a.toLong() shl 16) or (b.toLong() and 0xFFFF)
-    }
+    ): Long = (a.toLong() shl 16) or (b.toLong() and 0xFFFF)
 
     /**
      * Pack four Bytes into a single Long
@@ -55,12 +47,11 @@ object RegisterFastlane {
         b: Byte,
         c: Byte,
         d: Byte,
-    ): Long {
-        return (a.toLong() shl 24) or
+    ): Long =
+        (a.toLong() shl 24) or
             ((b.toLong() and 0xFF) shl 16) or
             ((c.toLong() and 0xFF) shl 8) or
             (d.toLong() and 0xFF)
-    }
 
     /**
      * Pack two Chars into a single Long
@@ -68,9 +59,7 @@ object RegisterFastlane {
     fun packChars(
         a: Char,
         b: Char,
-    ): Long {
-        return (a.code.toLong() shl 32) or b.code.toLong()
-    }
+    ): Long = (a.code.toLong() shl 32) or b.code.toLong()
 
     /**
      * Pack a Byte and an Int into a single Long
@@ -78,9 +67,7 @@ object RegisterFastlane {
     fun packByteInt(
         a: Byte,
         b: Int,
-    ): Long {
-        return (a.toLong() shl 32) or (b.toLong() and 0xFFFFFFFF)
-    }
+    ): Long = (a.toLong() shl 32) or (b.toLong() and 0xFFFFFFFF)
 
     /**
      * Pack a Boolean and an Int into a single Long
@@ -88,81 +75,59 @@ object RegisterFastlane {
     fun packBooleanInt(
         a: Boolean,
         b: Int,
-    ): Long {
-        return ((if (a) 1L else 0L) shl 32) or (b.toLong() and 0xFFFFFFFF)
-    }
+    ): Long = ((if (a) 1L else 0L) shl 32) or (b.toLong() and 0xFFFFFFFF)
 
     // === UNPACKING METHODS ===
 
     /**
      * Extract first Int from packed Long
      */
-    fun unpackInt1(packed: Long): Int {
-        return (packed shr 32).toInt()
-    }
+    fun unpackInt1(packed: Long): Int = (packed shr 32).toInt()
 
     /**
      * Extract second Int from packed Long
      */
-    fun unpackInt2(packed: Long): Int {
-        return (packed and 0xFFFFFFFF).toInt()
-    }
+    fun unpackInt2(packed: Long): Int = (packed and 0xFFFFFFFF).toInt()
 
     /**
      * Extract first Boolean from packed Long
      */
-    fun unpackBoolean1(packed: Long): Boolean {
-        return (packed and 1L) != 0L
-    }
+    fun unpackBoolean1(packed: Long): Boolean = (packed and 1L) != 0L
 
     /**
      * Extract second Boolean from packed Long
      */
-    fun unpackBoolean2(packed: Long): Boolean {
-        return (packed and 2L) != 0L
-    }
+    fun unpackBoolean2(packed: Long): Boolean = (packed and 2L) != 0L
 
     /**
      * Extract first Byte from packed Long
      */
-    fun unpackByte1(packed: Long): Byte {
-        return (packed shr 8).toByte()
-    }
+    fun unpackByte1(packed: Long): Byte = (packed shr 8).toByte()
 
     /**
      * Extract second Byte from packed Long
      */
-    fun unpackByte2(packed: Long): Byte {
-        return (packed and 0xFF).toByte()
-    }
+    fun unpackByte2(packed: Long): Byte = (packed and 0xFF).toByte()
 
     /**
      * Extract first Short from packed Long
      */
-    fun unpackShort1(packed: Long): Short {
-        return (packed shr 16).toShort()
-    }
+    fun unpackShort1(packed: Long): Short = (packed shr 16).toShort()
 
     /**
      * Extract second Short from packed Long
      */
-    fun unpackShort2(packed: Long): Short {
-        return (packed and 0xFFFF).toShort()
-    }
+    fun unpackShort2(packed: Long): Short = (packed and 0xFFFF).toShort()
 
     /**
      * Extract first Char from packed Long
      */
-    fun unpackChar1(packed: Long): Char {
-        return (packed shr 32).toInt().toChar()
-    }
+    fun unpackChar1(packed: Long): Char = (packed shr 32).toInt().toChar()
 
     /**
      * Extract second Char from packed Long
      */
-    fun unpackChar2(packed: Long): Char {
-        return (packed and 0xFFFFFFFF).toInt().toChar()
-    }
+    fun unpackChar2(packed: Long): Char = (packed and 0xFFFFFFFF).toInt().toChar()
 
     // === GENERIC TRY-PACK INTERFACE ===
 
@@ -173,8 +138,8 @@ object RegisterFastlane {
     fun <A, B> tryPrimitivePack(
         a: A,
         b: B,
-    ): DiagonalPacked? {
-        return when {
+    ): DiagonalPacked? =
+        when {
             a is Int && b is Int -> DiagonalPacked(packInts(a, b))
             a is Boolean && b is Boolean -> DiagonalPacked(packBooleans(a, b))
             a is Byte && b is Byte -> DiagonalPacked(packBytes(a, b))
@@ -184,7 +149,6 @@ object RegisterFastlane {
             a is Boolean && b is Int -> DiagonalPacked(packBooleanInt(a, b))
             else -> null
         }
-    }
 
     // === TOKEN-SPECIFIC PACKING ===
 
@@ -194,12 +158,13 @@ object RegisterFastlane {
     fun tryTokenPack(
         a: borg.trikeshed.parse.Token,
         b: borg.trikeshed.parse.Token,
-    ): DiagonalPacked? {
-        return when {
+    ): DiagonalPacked? =
+        when {
             // Pack two small literals
             a.type == borg.trikeshed.parse.TokenType.LITERAL &&
                 b.type == borg.trikeshed.parse.TokenType.LITERAL &&
-                a.literal.length <= 4 && b.literal.length <= 4 -> {
+                a.literal.length <= 4 &&
+                b.literal.length <= 4 -> {
                 val packed = packTwoStrings(a.literal, b.literal)
                 DiagonalPacked(packed)
             }
@@ -221,7 +186,6 @@ object RegisterFastlane {
 
             else -> null
         }
-    }
 
     private fun packTwoStrings(
         a: String,

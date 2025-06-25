@@ -5,13 +5,13 @@ import borg.trikeshed.parse.json.*
 
 fun main() {
     println("Testing TrikeShed Parse Package...")
-    
+
     // Test JSON scanning
     try {
         val jsonText = """{"name":"TrikeShed","version":1.0,"active":true}"""
         val scanResult = jsonText.scanJson()
         println("✓ JSON scanning works: ${scanResult.isSuccess}")
-        
+
         if (scanResult.isSuccess) {
             val tokens = scanResult.getOrThrow()
             println("  Found ${tokens.size} tokens")
@@ -19,7 +19,7 @@ fun main() {
     } catch (e: Exception) {
         println("✗ JSON scanning failed: ${e.message}")
     }
-    
+
     // Test JSON operations
     try {
         val structural = Json.index("""{"test": "value"}""")
@@ -29,7 +29,7 @@ fun main() {
     } catch (e: Exception) {
         println("✗ JSON indexing failed: ${e.message}")
     }
-    
+
     // Test bash brace scanning
     try {
         val tokens = BashBrace.of("file{1,2,3}.txt").scanTokens()
@@ -37,7 +37,7 @@ fun main() {
     } catch (e: Exception) {
         println("✗ Bash brace scanning failed: ${e.message}")
     }
-    
+
     // Test markdown parsing
     try {
         val markdown = "```kotlin\nfun test() = \"hello\"\n```"
@@ -46,6 +46,6 @@ fun main() {
     } catch (e: Exception) {
         println("✗ Markdown parsing failed: ${e.message}")
     }
-    
+
     println("Parse package testing complete!")
 }

@@ -102,7 +102,9 @@ tasks.register<JavaExec>("runJvm") {
     dependsOn("jvmMainClasses")
     group = "application"
     description = "Run Moneyfan interactive trading demo on JVM"
-    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs +
+    classpath = kotlin.targets["jvm"]
+        .compilations["main"]
+        .output.allOutputs +
         (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
     mainClass.set("moneyfan.MainJvmKt")
     jvmArgs("--enable-native-access=ALL-UNNAMED")
