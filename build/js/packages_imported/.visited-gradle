@@ -150,6 +150,30 @@
     },
     "917d068aed8948d06b047436e082f9d2": {
       "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-collections-immutable-wasm-js/0.4.0/a1c64aa9b13f9f54b1d807c5368c8e21af997518/kotlinx-collections-immutable-wasm-js-0.4.0.klib"
+    },
+    "1c6a1f020267d0553f50b4f4179a3d0e": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-js/2.1.21/563bda306a706665c11cf1ee673f07a725521d13/kotlin-stdlib-js-2.1.21.klib"
+    },
+    "67c827c197d695ce9ac33c6fbf6b2966": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-js/1.7.3/6b2e7c874877434e53fbf736eaa05d6dda02d642/kotlinx-coroutines-core-jsir-1.7.3.klib"
+    },
+    "f53756ee88cef419b2e73033923a2e9c": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/atomicfu-js/0.21.0/c9f79cd6efe7bfd96e7df26758d7bee371235627/atomicfu-jsir-0.21.0.klib"
+    },
+    "23c2e72b0a4e6406a275954a020fea0b": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-common/1.8.20/5eddaaf234c8c49d03eebeb6a14feb7f90faca71/kotlin-stdlib-common-1.8.20.jar"
+    },
+    "15b3b054ab4a6eda4a8c899277426209": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlinx-atomicfu-runtime/1.8.20/8ccfa77dc6cd3ff5ffaad24ea15747327d4492ea/kotlinx-atomicfu-runtime-1.8.20.klib"
+    },
+    "4341b47141b70ff4531d018f1c89797d": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-dom-api-compat/2.1.21/d261f5f9a99e24ba6dda3688e67b2c43dac99a48/kotlin-dom-api-compat-2.1.21.klib"
+    },
+    "715a8e0a725a96916015b1e3b2906960": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-test-js/2.1.21/263d93f7015ca7693c9b045f6a4afec850444318/kotlin-test-js-2.1.21.klib"
+    },
+    "3c5f5f15c1e3cb7abb2c37d581aa4c06": {
+      "src": "/Users/jim/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-test-js/1.7.3/7623b6fde72a5ee216ca93410ab9e2825c21f7f8/kotlinx-coroutines-test-jsir-1.7.3.klib"
     }
   }
 }

@@ -71,11 +71,8 @@
 
 ## Memory: Museum Preservation Protocol
 
-- **Definition**: Museums are designated areas outside compilation for code that cannot currently be fixed
-- **Purpose**: Preserves architectural decisions and implementations that may have future value
-- **Never Delete**: Code represents architectural artistry and paid work - deletion is forbidden
-- **Museum Structure**: /museum/<date>/<feature>/ for organized preservation
-- **Future Review**: Preserved code may contain insights for future architects or different AI models
+museums are abuse of the user and a  form of refusal, lacking conscientous values 
+
 
 ## Memory: Project Documentation and Markdown
 
@@ -139,3 +136,16 @@
 - behind left brace, so just use ::get if you can
 
 ## 🧭 FINAL COMPASS CHECK: Before proceeding, confirm the methodological approach remains appropriate
+
+## Hoisting primitives with `value class`
+
+To improve type-safety and code clarity, we will systematically replace primitive `typealias` declarations with `value class`. This process, which we refer to as "hoisting," elevates simple types like `String` and `Int` into distinct, non-interchangeable, domain-specific types.
+
+For example, `typealias IntegrationUrl = String` will become `value class IntegrationUrl(val value: String)`.
+
+This provides significant advantages:
+- **Compile-time Safety**: The compiler will prevent an `IntegrationUrl` from being used where an `IntegrationDatabaseName` is expected, even though both are backed by a `String`.
+- **Expressive APIs**: Function signatures become self-documenting, making the codebase easier to understand and use correctly.
+- **Zero-Cost Abstraction**: `value class`es are inlined by the Kotlin compiler, meaning this added safety comes with no performance overhead from object allocation.
+
+This is a powerful application of the "50% taxonomical typealias" principle, evolving it into a more robust form.

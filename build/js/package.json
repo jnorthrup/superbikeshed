@@ -13,6 +13,8 @@
     "packages/Trikeshed-Monorepo-kotlinx-serialization-wireproto-wasm-js-test",
     "packages/Trikeshed-Monorepo-moneyfan-wasm-js",
     "packages/Trikeshed-Monorepo-moneyfan-wasm-js-test",
+    "packages/Trikeshed-Monorepo-rtsgame",
+    "packages/Trikeshed-Monorepo-rtsgame-test",
     "packages/Trikeshed-Monorepo-ta4k-wasm-js",
     "packages/Trikeshed-Monorepo-ta4k-wasm-js-test",
     "packages/Trikeshed-Monorepo-ta4k-spacegraph-moneyfan-demo-wasm-js",

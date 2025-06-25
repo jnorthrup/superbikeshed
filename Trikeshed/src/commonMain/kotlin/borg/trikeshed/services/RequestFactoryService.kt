@@ -1,7 +1,8 @@
 package borg.trikeshed.services
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series as Indexed
+import borg.trikeshed.lib.j
+import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
 
 /**
@@ -82,8 +83,12 @@ object RequestFactoryRegistry {
 /**
  * DealService interface for integration with reactor HTTP server
  */
-interface DealService {
+interface DealService : CoroutineContext.Element {
     suspend fun process(data: Indexed<Byte>): Indexed<Byte>
     fun getDealInfo(dealId: String): String
     fun createDeal(dealData: Indexed<Byte>): String
+
+    override val key: CoroutineContext.Key<*> get() = Key
+
+    companion object Key : CoroutineContext.Key<DealService>
 }

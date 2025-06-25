@@ -8,7 +8,8 @@ import borg.trikeshed.lib.*
 class IpfsClient(
     val localPeerId: PeerId,
     val quicEngine: Any?,
-    val storage: IpfsStorage
+    val storage: IpfsStorage,
+    val config: IpfsConfig = IpfsConfig()
 ) {
     suspend fun add(data: Indexed<Byte>): CID {
         // Placeholder implementation
@@ -21,6 +22,21 @@ class IpfsClient(
         storage.putBlock(block)
         
         return cid
+    }
+    
+    suspend fun store(data: Indexed<Byte>): IpfsStoreResult {
+        val cid = add(data)
+        return IpfsStoreResult(hash = cid.toString())
+    }
+    
+    suspend fun retrieve(hash: String): IpfsRetrieveResult? {
+        // Simple hash-based lookup for demo
+        val foundBlock = storage.blocks.values.find { it.cid.toString() == hash }
+        return if (foundBlock != null) {
+            IpfsRetrieveResult(content = foundBlock.data)
+        } else {
+            null
+        }
     }
     
     private fun computeSimpleHash(data: Indexed<Byte>): Indexed<Byte> {
@@ -38,7 +54,7 @@ class IpfsClient(
 data class PeerId(val id: Indexed<Byte>)
 
 class IpfsStorage {
-    private val blocks = mutableMapOf<CID, IpfsBlock>()
+    internal val blocks = mutableMapOf<CID, IpfsBlock>()
     
     fun putBlock(block: IpfsBlock) {
         blocks[block.cid] = block
@@ -78,4 +94,11 @@ data class IpfsLink(
     val name: String,
     val cid: CID,
     val size: Long
-) 
+)
+
+// Result types for IPFS operations
+data class IpfsStoreResult(val hash: String)
+data class IpfsRetrieveResult(val content: Indexed<Byte>)
+
+// Configuration
+class IpfsConfig 

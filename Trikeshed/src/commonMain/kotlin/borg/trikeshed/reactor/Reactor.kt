@@ -1,9 +1,7 @@
 package borg.trikeshed.reactor
 
 import borg.trikeshed.lib.*
-
-// Platform-agnostic time function
-expect fun getCurrentTimeMillis(): Long
+import borg.trikeshed.integration.getCurrentTimeMillis
 
 /**
  * Reactor Pattern Implementation

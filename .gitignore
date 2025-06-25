@@ -120,3 +120,45 @@ docs/_build/
 
 # Deployment directories
 deploy/
+
+# Additional development turds with wildcards
+*_evolution.diff
+*_history.txt
+git_taxonomical_system.md
+docs_consolidation.sh
+realize_intention*.kts
+**/CONSOLIDATED_DOCS.md
+**/DOCS_FINAL.md
+**/DOCS_REUP.md
+**/DOCS_SUMMARY.md
+
+# Backup and temporary build files
+*.backup
+*.orig
+*.rej
+*.patch
+*.diff
+*~
+*.swp
+*.swo
+
+# JS/TS development artifacts
+closure-config.json
+gemini/
+nvidia_nim/
+processed_models/
+models/
+*.glb
+*.obj
+
+# Python development artifacts
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.coverage/
+.nyc_output

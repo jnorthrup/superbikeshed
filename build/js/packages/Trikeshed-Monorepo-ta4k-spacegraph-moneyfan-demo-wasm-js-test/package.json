@@ -3,6 +3,7 @@
   "version": "0.0.0-unspecified",
   "main": "kotlin/Trikeshed-Monorepo-ta4k-spacegraph-moneyfan-demo-wasm-js-test.mjs",
   "devDependencies": {
+    "typescript": "5.5.4",
     "karma": "6.4.4",
     "kotlin-web-helpers": "2.0.0",
     "karma-mocha": "2.0.1",
@@ -14,8 +15,7 @@
     "karma-sourcemap-loader": "0.4.0",
     "karma-chrome-launcher": "3.2.0",
     "css-loader": "7.1.2",
-    "style-loader": "4.0.0",
-    "typescript": "5.5.4"
+    "style-loader": "4.0.0"
   },
   "dependencies": {
     "three": "^0.162.0",
