@@ -6,6 +6,10 @@ plugins {
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 kotlin {
+    js(IR) {
+        browser()
+        binaries.executable()
+    }
     jvm()
     // re-add wasm
     // Platform detection for native targets
@@ -27,6 +31,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                // implementation(project(":Trikeshed"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
