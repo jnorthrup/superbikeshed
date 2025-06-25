@@ -1,0 +1,936 @@
+
+--- Commit: 26291b1ea8009c868ce544d35f33c9e52ecfdd4d | 2025-06-12 18:00:05 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index b52f8d21..3080929b 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,11 +1,17 @@
+ plugins {
+-    kotlin("jvm") version "1.9.0"
++    kotlin("jvm") version "1.9.22"
+ }
+ 
+ repositories {
+     mavenCentral()
+ }
+ 
++java {
++    toolchain {
++        languageVersion.set(JavaLanguageVersion.of(21))
++    }
++}
++
+ dependencies {
+     implementation(kotlin("stdlib"))
+     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+@@ -15,4 +21,10 @@ dependencies {
+ 
+ tasks.test {
+     useJUnitPlatform()
++}
++
++tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
++    kotlinOptions {
++        jvmTarget = "21"
++    }
+ } 
+\ No newline at end of file
+
+--- Commit: 5f1884ef671e3df633e027f7ea271532baa8ed6d | 2025-06-12 23:15:27 +0000 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 3080929b..6cb710bb 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,22 +1,67 @@
+ plugins {
+-    kotlin("jvm") version "1.9.22"
++    kotlin("multiplatform") version "1.9.23"
+ }
+ 
+ repositories {
+     mavenCentral()
+ }
+ 
+-java {
+-    toolchain {
+-        languageVersion.set(JavaLanguageVersion.of(21))
++kotlin {
++    jvm {
++        jvmToolchain(11)
++    }
++    wasmJs {
++        browser()
++    }
++    sourceSets {
++        val commonMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-common"))
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
++                implementation("com.ionspin.kotlin:bignum:0.3.9")
++            }
++        }
++        val commonTest by getting {
++            dependencies {
++                implementation(kotlin("test-common"))
++                implementation(kotlin("test-annotations-common"))
++                implementation("org.junit.jupiter:junit-jupiter:5.9.2")
++                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
++                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
++            }
++        }
++        val jvmMain by getting {
++            dependsOn(commonMain)
++            dependencies {
++                implementation(kotlin("stdlib-jvm"))
++            }
++        }
++        val jvmTest by getting {
++            dependsOn(commonTest)
++            dependencies {
++                implementation(kotlin("test-junit5"))
++            }
++        }
++        val wasmJsMain by getting {
++            dependsOn(commonMain)
++            dependencies {
++                implementation(kotlin("stdlib-js"))
++            }
++        }
++        val wasmJsTest by getting {
++            dependsOn(commonTest)
++            dependencies {
++                implementation(kotlin("test-js"))
++            }
++        }
+     }
+ }
+ 
+ dependencies {
+-    implementation(kotlin("stdlib"))
+-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
++    // implementation(kotlin("stdlib")) // Moved to source sets
++    // testImplementation("org.junit.jupiter:junit-jupiter:5.9.2") // Moved to commonTest
++    // testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Moved to commonTest
++    // testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Moved to commonTest
+ }
+ 
+ tasks.test {
+@@ -24,7 +69,7 @@ tasks.test {
+ }
+ 
+ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+-    kotlinOptions {
+-        jvmTarget = "21"
+-    }
+-} 
+\ No newline at end of file
++    // kotlinOptions {
++    //     jvmTarget = "21" // Handled by jvmToolchain
++    // }
++}
+\ No newline at end of file
+
+--- Commit: cb07abee2518ecefa70e0b2e56e1fcff66be60da | 2025-06-15 11:37:39 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 6cb710bb..522a4083 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,5 +1,5 @@
+ plugins {
+-    kotlin("multiplatform") version "1.9.23"
++    kotlin("multiplatform")
+ }
+ 
+ repositories {
+
+--- Commit: 0238f91a62008e5a8ddbb1cf2853f04b1b6d0e58 | 2025-06-15 12:49:30 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 522a4083..a6b99e8a 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,5 +1,5 @@
+ plugins {
+-    kotlin("multiplatform")
++    kotlin("multiplatform") version "2.1.21"
+ }
+ 
+ repositories {
+@@ -7,9 +7,7 @@ repositories {
+ }
+ 
+ kotlin {
+-    jvm {
+-        jvmToolchain(11)
+-    }
++    jvmToolchain(11)
+     wasmJs {
+         browser()
+     }
+@@ -18,7 +16,7 @@ kotlin {
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+-                implementation("com.ionspin.kotlin:bignum:0.3.9")
++                implementation("com.ionspin.kotlin:bignum:0.3.10")
+             }
+         }
+         val commonTest by getting {
+@@ -62,14 +60,4 @@ dependencies {
+     // testImplementation("org.junit.jupiter:junit-jupiter:5.9.2") // Moved to commonTest
+     // testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Moved to commonTest
+     // testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Moved to commonTest
+-}
+-
+-tasks.test {
+-    useJUnitPlatform()
+-}
+-
+-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+-    // kotlinOptions {
+-    //     jvmTarget = "21" // Handled by jvmToolchain
+-    // }
+ }
+\ No newline at end of file
+
+--- Commit: 6b5e5983b619ace99aa02168215811d573527061 | 2025-06-16 11:57:32 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index a6b99e8a..4adc10cc 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,63 +1,72 @@
+ plugins {
+     kotlin("multiplatform") version "2.1.21"
++    id("com.github.ben-manes.versions") version "0.51.0"
+ }
+ 
+ repositories {
+     mavenCentral()
+ }
+ 
++@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+ kotlin {
+-    jvmToolchain(11)
++    jvm()
+     wasmJs {
+         browser()
++        nodejs()
+     }
++    
++    // Example test for platform tuple
++    val hostOs = System.getProperty("os.name")
++    val hostArch = System.getProperty("os.arch")
++    val isMacOS = hostOs == "Mac OS X"
++    val isLinux = hostOs == "Linux"
++    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
++
++    when {
++        isMacOS && isArm64 -> macosArm64()
++        isMacOS -> macosX64()
++        isLinux && isArm64 -> linuxArm64()
++        isLinux -> linuxX64()
++    }
++    
+     sourceSets {
+         val commonMain by getting {
+             dependencies {
+-                implementation(kotlin("stdlib-common"))
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+-                implementation("com.ionspin.kotlin:bignum:0.3.10")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+             }
+         }
+         val commonTest by getting {
+             dependencies {
+-                implementation(kotlin("test-common"))
+-                implementation(kotlin("test-annotations-common"))
+-                implementation("org.junit.jupiter:junit-jupiter:5.9.2")
+-                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
++                implementation(kotlin("test"))
+             }
+         }
+         val jvmMain by getting {
+-            dependsOn(commonMain)
+             dependencies {
+-                implementation(kotlin("stdlib-jvm"))
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+             }
+         }
+         val jvmTest by getting {
+-            dependsOn(commonTest)
+             dependencies {
+                 implementation(kotlin("test-junit5"))
+-            }
+-        }
+-        val wasmJsMain by getting {
+-            dependsOn(commonMain)
+-            dependencies {
+-                implementation(kotlin("stdlib-js"))
+-            }
+-        }
+-        val wasmJsTest by getting {
+-            dependsOn(commonTest)
+-            dependencies {
+-                implementation(kotlin("test-js"))
++                implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+             }
+         }
+     }
+ }
+ 
+-dependencies {
+-    // implementation(kotlin("stdlib")) // Moved to source sets
+-    // testImplementation("org.junit.jupiter:junit-jupiter:5.9.2") // Moved to commonTest
+-    // testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Moved to commonTest
+-    // testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Moved to commonTest
++// Add JVM test task
++tasks.named<Test>("jvmTest") {
++    useJUnitPlatform()
++}
++
++// Custom JVM run task for interactive demo
++tasks.register<JavaExec>("runJvm") {
++    dependsOn("jvmMainClasses")
++    group = "application"
++    description = "Run Moneyfan interactive trading demo on JVM"
++    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
++                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
++    mainClass.set("moneyfan.MainJvmKt")
++    jvmArgs("--enable-native-access=ALL-UNNAMED")
+ }
+\ No newline at end of file
+
+--- Commit: 96a7abf6ccb370bacf9b2f484f529bff0b0716df | 2025-06-16 22:17:10 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 4adc10cc..1da01197 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -30,27 +30,20 @@ kotlin {
+     }
+     
+     sourceSets {
+-        val commonMain by getting {
+-            dependencies {
+-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+-            }
++        commonMain.dependencies {
++            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
++            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++            implementation("org.ta4j:ta4j-core:0.15")
+         }
+-        val commonTest by getting {
+-            dependencies {
+-                implementation(kotlin("test"))
+-            }
++        commonTest.dependencies {
++            implementation(kotlin("test"))
+         }
+-        val jvmMain by getting {
+-            dependencies {
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+-            }
++        jvmMain.dependencies {
++            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+         }
+-        val jvmTest by getting {
+-            dependencies {
+-                implementation(kotlin("test-junit5"))
+-                implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+-            }
++        jvmTest.dependencies {
++            implementation(kotlin("test-junit5"))
++            implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+         }
+     }
+ }
+
+--- Commit: 5e390b57f3ee36317b84112f2310b91f90025b66 | 2025-06-17 19:08:21 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 1da01197..3feb63b9 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,5 +1,5 @@
+ plugins {
+-    kotlin("multiplatform") version "2.1.21"
++    kotlin("multiplatform")
+     id("com.github.ben-manes.versions") version "0.51.0"
+ }
+ 
+@@ -7,7 +7,6 @@ repositories {
+     mavenCentral()
+ }
+ 
+-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+ kotlin {
+     jvm()
+     wasmJs {
+
+--- Commit: 26eaafb6352381a649983edb3305c87819093910 | 2025-06-18 11:41:06 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 3feb63b9..ed4fbf7f 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -3,6 +3,8 @@ plugins {
+     id("com.github.ben-manes.versions") version "0.51.0"
+ }
+ 
++@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
++
+ repositories {
+     mavenCentral()
+ }
+
+--- Commit: ccf166a7139b39493c05cf22b79ab7ef21f2cb89 | 2025-06-18 15:35:40 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index ed4fbf7f..feda8c1e 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -32,15 +32,16 @@ kotlin {
+     
+     sourceSets {
+         commonMain.dependencies {
+-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++            implementation(project(":Trikeshed"))
++            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
++            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+             implementation("org.ta4j:ta4j-core:0.15")
+         }
+         commonTest.dependencies {
+             implementation(kotlin("test"))
+         }
+         jvmMain.dependencies {
+-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
++            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+         }
+         jvmTest.dependencies {
+             implementation(kotlin("test-junit5"))
+
+--- Commit: a9bcc74bb8fc7cfca4b9b07a8d436f14a8376f23 | 2025-06-19 21:24:03 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index feda8c1e..cc773bfe 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -11,10 +11,10 @@ repositories {
+ 
+ kotlin {
+     jvm()
+-    wasmJs {
+-        browser()
+-        nodejs()
+-    }
++    // wasmJs {
++    //     browser()
++    //     nodejs()
++    // }
+     
+     // Example test for platform tuple
+     val hostOs = System.getProperty("os.name")
+
+--- Commit: 7c1b9b184ac955794b6d653f3a15cb97d62832c6 | 2025-06-19 23:04:25 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index cc773bfe..4177d290 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -35,7 +35,6 @@ kotlin {
+             implementation(project(":Trikeshed"))
+             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+-            implementation("org.ta4j:ta4j-core:0.15")
+         }
+         commonTest.dependencies {
+             implementation(kotlin("test"))
+
+--- Commit: 294a7e6a01c8eb92241d1c1269a3ec8f80df5534 | 2025-06-22 05:53:01 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 4177d290..969c2a56 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -1,51 +1,95 @@
+ plugins {
+-    kotlin("multiplatform")
+-    id("com.github.ben-manes.versions") version "0.51.0"
++    alias(libs.plugins.kotlin.multiplatform)
++    alias(libs.plugins.kotlin.serialization)
++    alias(libs.plugins.versions)
+ }
+ 
+-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
++group = "borg.trikeshed"
++version = "1.0-SNAPSHOT"
+ 
+ repositories {
+     mavenCentral()
+ }
+ 
+ kotlin {
+-    jvm()
+-    // wasmJs {
+-    //     browser()
+-    //     nodejs()
+-    // }
++    jvmToolchain(21)
+     
+-    // Example test for platform tuple
++    // JVM - Primary trading platform  
++    jvm {
++        testRuns["test"].executionTask.configure {
++            useJUnitPlatform()
++        }
++    }
++    
++    // WASM - Web-based trading dashboards
++    wasmJs {
++        browser()
++        binaries.executable()
++    }
++    
++    // Native - High-performance trading algorithms
+     val hostOs = System.getProperty("os.name")
+-    val hostArch = System.getProperty("os.arch")
+-    val isMacOS = hostOs == "Mac OS X"
+-    val isLinux = hostOs == "Linux"
+-    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
++    val isMac = hostOs.startsWith("Mac OS")
++    val isLinux = hostOs.startsWith("Linux")
+ 
+-    when {
+-        isMacOS && isArm64 -> macosArm64()
+-        isMacOS -> macosX64()
+-        isLinux && isArm64 -> linuxArm64()
+-        isLinux -> linuxX64()
++    if (isMac) {
++        macosArm64()
++        macosX64()
++    } else if (isLinux) {
++        linuxX64()
++        linuxArm64()
+     }
+     
+     sourceSets {
+-        commonMain.dependencies {
+-            implementation(project(":Trikeshed"))
+-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
++        val commonMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-common"))
++                implementation(project(":Trikeshed"))
++                implementation(libs.kotlinx.datetime)
++                implementation(libs.kotlinx.coroutines.core)
++                implementation(libs.kotlinx.serialization.core)
++            }
+         }
+-        commonTest.dependencies {
+-            implementation(kotlin("test"))
++        
++        val commonTest by getting {
++            dependencies {
++                implementation(kotlin("test"))
++            }
+         }
+-        jvmMain.dependencies {
+-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
++        
++        val jvmMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-jdk8"))
++                implementation(libs.kotlinx.coroutines.swing)
++                implementation(kotlin("reflect"))
++            }
+         }
+-        jvmTest.dependencies {
+-            implementation(kotlin("test-junit5"))
+-            implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
++        
++        val jvmTest by getting {
++            dependencies {
++                implementation(kotlin("test-junit5"))
++                implementation(libs.junit.jupiter.api)
++                runtimeOnly(libs.junit.jupiter.engine)
++            }
+         }
++
++        val wasmJsMain by getting {
++            dependencies {
++                implementation(libs.kotlinx.coroutines.core)
++            }
++        }
++    }
++}
++
++// === COMPILER CONFIGURATION ===
++
++tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
++    compilerOptions {
++        freeCompilerArgs.addAll(
++            "-Xskip-prerelease-check",
++            "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
++            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
++        )
+     }
+ }
+ 
+
+--- Commit: fa4a06a7597ac8830cf77b76ffdd3b74ddd06459 | 2025-06-22 21:21:09 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 969c2a56..ad33a96f 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -44,7 +44,7 @@ kotlin {
+         val commonMain by getting {
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
+-                implementation(project(":Trikeshed"))
++                // implementation(project(":Trikeshed"))  // Temporarily commented out due to compilation errors
+                 implementation(libs.kotlinx.datetime)
+                 implementation(libs.kotlinx.coroutines.core)
+                 implementation(libs.kotlinx.serialization.core)
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+deleted file mode 100644
+index ad33a96f..00000000
+--- a/moneyfan/build.gradle.kts
++++ /dev/null
+@@ -1,110 +0,0 @@
+-plugins {
+-    alias(libs.plugins.kotlin.multiplatform)
+-    alias(libs.plugins.kotlin.serialization)
+-    alias(libs.plugins.versions)
+-}
+-
+-group = "borg.trikeshed"
+-version = "1.0-SNAPSHOT"
+-
+-repositories {
+-    mavenCentral()
+-}
+-
+-kotlin {
+-    jvmToolchain(21)
+-    
+-    // JVM - Primary trading platform  
+-    jvm {
+-        testRuns["test"].executionTask.configure {
+-            useJUnitPlatform()
+-        }
+-    }
+-    
+-    // WASM - Web-based trading dashboards
+-    wasmJs {
+-        browser()
+-        binaries.executable()
+-    }
+-    
+-    // Native - High-performance trading algorithms
+-    val hostOs = System.getProperty("os.name")
+-    val isMac = hostOs.startsWith("Mac OS")
+-    val isLinux = hostOs.startsWith("Linux")
+-
+-    if (isMac) {
+-        macosArm64()
+-        macosX64()
+-    } else if (isLinux) {
+-        linuxX64()
+-        linuxArm64()
+-    }
+-    
+-    sourceSets {
+-        val commonMain by getting {
+-            dependencies {
+-                implementation(kotlin("stdlib-common"))
+-                // implementation(project(":Trikeshed"))  // Temporarily commented out due to compilation errors
+-                implementation(libs.kotlinx.datetime)
+-                implementation(libs.kotlinx.coroutines.core)
+-                implementation(libs.kotlinx.serialization.core)
+-            }
+-        }
+-        
+-        val commonTest by getting {
+-            dependencies {
+-                implementation(kotlin("test"))
+-            }
+-        }
+-        
+-        val jvmMain by getting {
+-            dependencies {
+-                implementation(kotlin("stdlib-jdk8"))
+-                implementation(libs.kotlinx.coroutines.swing)
+-                implementation(kotlin("reflect"))
+-            }
+-        }
+-        
+-        val jvmTest by getting {
+-            dependencies {
+-                implementation(kotlin("test-junit5"))
+-                implementation(libs.junit.jupiter.api)
+-                runtimeOnly(libs.junit.jupiter.engine)
+-            }
+-        }
+-
+-        val wasmJsMain by getting {
+-            dependencies {
+-                implementation(libs.kotlinx.coroutines.core)
+-            }
+-        }
+-    }
+-}
+-
+-// === COMPILER CONFIGURATION ===
+-
+-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+-    compilerOptions {
+-        freeCompilerArgs.addAll(
+-            "-Xskip-prerelease-check",
+-            "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
+-            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
+-        )
+-    }
+-}
+-
+-// Add JVM test task
+-tasks.named<Test>("jvmTest") {
+-    useJUnitPlatform()
+-}
+-
+-// Custom JVM run task for interactive demo
+-tasks.register<JavaExec>("runJvm") {
+-    dependsOn("jvmMainClasses")
+-    group = "application"
+-    description = "Run Moneyfan interactive trading demo on JVM"
+-    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
+-                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+-    mainClass.set("moneyfan.MainJvmKt")
+-    jvmArgs("--enable-native-access=ALL-UNNAMED")
+-}
+\ No newline at end of file
+
+--- Commit: 302093197cfe2f049a7733327bd4f1850a5d2598 | 2025-06-23 19:24:24 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+new file mode 100644
+index 00000000..969c2a56
+--- /dev/null
++++ b/moneyfan/build.gradle.kts
+@@ -0,0 +1,110 @@
++plugins {
++    alias(libs.plugins.kotlin.multiplatform)
++    alias(libs.plugins.kotlin.serialization)
++    alias(libs.plugins.versions)
++}
++
++group = "borg.trikeshed"
++version = "1.0-SNAPSHOT"
++
++repositories {
++    mavenCentral()
++}
++
++kotlin {
++    jvmToolchain(21)
++    
++    // JVM - Primary trading platform  
++    jvm {
++        testRuns["test"].executionTask.configure {
++            useJUnitPlatform()
++        }
++    }
++    
++    // WASM - Web-based trading dashboards
++    wasmJs {
++        browser()
++        binaries.executable()
++    }
++    
++    // Native - High-performance trading algorithms
++    val hostOs = System.getProperty("os.name")
++    val isMac = hostOs.startsWith("Mac OS")
++    val isLinux = hostOs.startsWith("Linux")
++
++    if (isMac) {
++        macosArm64()
++        macosX64()
++    } else if (isLinux) {
++        linuxX64()
++        linuxArm64()
++    }
++    
++    sourceSets {
++        val commonMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-common"))
++                implementation(project(":Trikeshed"))
++                implementation(libs.kotlinx.datetime)
++                implementation(libs.kotlinx.coroutines.core)
++                implementation(libs.kotlinx.serialization.core)
++            }
++        }
++        
++        val commonTest by getting {
++            dependencies {
++                implementation(kotlin("test"))
++            }
++        }
++        
++        val jvmMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-jdk8"))
++                implementation(libs.kotlinx.coroutines.swing)
++                implementation(kotlin("reflect"))
++            }
++        }
++        
++        val jvmTest by getting {
++            dependencies {
++                implementation(kotlin("test-junit5"))
++                implementation(libs.junit.jupiter.api)
++                runtimeOnly(libs.junit.jupiter.engine)
++            }
++        }
++
++        val wasmJsMain by getting {
++            dependencies {
++                implementation(libs.kotlinx.coroutines.core)
++            }
++        }
++    }
++}
++
++// === COMPILER CONFIGURATION ===
++
++tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
++    compilerOptions {
++        freeCompilerArgs.addAll(
++            "-Xskip-prerelease-check",
++            "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
++            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
++        )
++    }
++}
++
++// Add JVM test task
++tasks.named<Test>("jvmTest") {
++    useJUnitPlatform()
++}
++
++// Custom JVM run task for interactive demo
++tasks.register<JavaExec>("runJvm") {
++    dependsOn("jvmMainClasses")
++    group = "application"
++    description = "Run Moneyfan interactive trading demo on JVM"
++    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
++                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
++    mainClass.set("moneyfan.MainJvmKt")
++    jvmArgs("--enable-native-access=ALL-UNNAMED")
++}
+\ No newline at end of file
+
+--- Commit: b6ec620ba8aa76ad88b483023eeb479dc79d8b93 | 2025-06-24 16:17:41 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index 969c2a56..a3ed25fd 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -13,20 +13,20 @@ repositories {
+ 
+ kotlin {
+     jvmToolchain(21)
+-    
+-    // JVM - Primary trading platform  
++
++    // JVM - Primary trading platform
+     jvm {
+         testRuns["test"].executionTask.configure {
+             useJUnitPlatform()
+         }
+     }
+-    
++
+     // WASM - Web-based trading dashboards
+     wasmJs {
+         browser()
+         binaries.executable()
+     }
+-    
++
+     // Native - High-performance trading algorithms
+     val hostOs = System.getProperty("os.name")
+     val isMac = hostOs.startsWith("Mac OS")
+@@ -39,24 +39,23 @@ kotlin {
+         linuxX64()
+         linuxArm64()
+     }
+-    
++
+     sourceSets {
+         val commonMain by getting {
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
+-                implementation(project(":Trikeshed"))
+                 implementation(libs.kotlinx.datetime)
+                 implementation(libs.kotlinx.coroutines.core)
+                 implementation(libs.kotlinx.serialization.core)
+             }
+         }
+-        
++
+         val commonTest by getting {
+             dependencies {
+                 implementation(kotlin("test"))
+             }
+         }
+-        
++
+         val jvmMain by getting {
+             dependencies {
+                 implementation(kotlin("stdlib-jdk8"))
+@@ -64,7 +63,7 @@ kotlin {
+                 implementation(kotlin("reflect"))
+             }
+         }
+-        
++
+         val jvmTest by getting {
+             dependencies {
+                 implementation(kotlin("test-junit5"))
+@@ -88,7 +87,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach
+         freeCompilerArgs.addAll(
+             "-Xskip-prerelease-check",
+             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
+-            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
++            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
+         )
+     }
+ }
+@@ -103,8 +102,8 @@ tasks.register<JavaExec>("runJvm") {
+     dependsOn("jvmMainClasses")
+     group = "application"
+     description = "Run Moneyfan interactive trading demo on JVM"
+-    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
+-                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
++    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs +
++        (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+     mainClass.set("moneyfan.MainJvmKt")
+     jvmArgs("--enable-native-access=ALL-UNNAMED")
+-}
+\ No newline at end of file
++}
+
+--- Commit: 5d5e83c733bc1ec9981a80c07d03a14dbd6477f2 | 2025-06-24 20:59:40 -0400 ---
+diff --git a/moneyfan/build.gradle.kts b/moneyfan/build.gradle.kts
+index a3ed25fd..9ff2d131 100644
+--- a/moneyfan/build.gradle.kts
++++ b/moneyfan/build.gradle.kts
+@@ -102,7 +102,9 @@ tasks.register<JavaExec>("runJvm") {
+     dependsOn("jvmMainClasses")
+     group = "application"
+     description = "Run Moneyfan interactive trading demo on JVM"
+-    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs +
++    classpath = kotlin.targets["jvm"]
++        .compilations["main"]
++        .output.allOutputs +
+         (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+     mainClass.set("moneyfan.MainJvmKt")
+     jvmArgs("--enable-native-access=ALL-UNNAMED")

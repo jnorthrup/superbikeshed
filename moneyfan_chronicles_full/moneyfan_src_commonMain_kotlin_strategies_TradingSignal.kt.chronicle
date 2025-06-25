@@ -1,0 +1,18 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/strategies/TradingSignal.kt b/moneyfan/src/commonMain/kotlin/strategies/TradingSignal.kt
+deleted file mode 100644
+index 2e4b7be2..00000000
+--- a/moneyfan/src/commonMain/kotlin/strategies/TradingSignal.kt
++++ /dev/null
+@@ -1,10 +0,0 @@
+-package strategies
+-
+-/**
+- * Represents a trading signal.
+- */
+-enum class TradingSignal {
+-    BUY,
+-    SELL,
+-    HOLD
+-}

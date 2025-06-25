@@ -1,0 +1,9 @@
+
+--- Commit: c61ef55f6a738e515e3a43be1131cf5572e0a11f | 2025-06-23 05:17:01 -0400 ---
+diff --git a/ta4k/museum/quantstats-kt/settings.gradle.kts b/ta4k/museum/quantstats-kt/settings.gradle.kts
+deleted file mode 100644
+index f6d28163..00000000
+--- a/ta4k/museum/quantstats-kt/settings.gradle.kts
++++ /dev/null
+@@ -1 +0,0 @@
+-rootProject.name = "quantstats-kt"

@@ -1,0 +1,959 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/crypto/CryptoCore.kt b/moneyfan/src/commonMain/kotlin/moneyfan/crypto/CryptoCore.kt
+deleted file mode 100644
+index 6cfc7696..00000000
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/crypto/CryptoCore.kt
++++ /dev/null
+@@ -1,950 +0,0 @@
+-package moneyfan.crypto
+-
+-import borg.trikeshed.lib.*
+-import kotlinx.datetime.Instant
+-import kotlinx.serialization.Serializable
+-import moneyfan.core.Decimal
+-import moneyfan.entities.*
+-import moneyfan.fiduciary.*
+-
+-/**
+- * ## Cryptographic Core System
+- * 
+- * Provides strong cryptographic guarantees for fiduciary operations in the
+- * moneyfan system. This module implements digital signatures, encryption,
+- * zero-knowledge proofs, and trustless verification protocols required
+- * for secure fiduciary actions and beneficiary protection.
+- * 
+- * Key Features:
+- * - Ed25519 signatures for all fiduciary actions
+- * - AES-256-GCM encryption for sensitive data
+- * - Zero-knowledge proofs for privacy-preserving verification
+- * - Multi-signature schemes for distributed trust
+- * - Trustless verification protocols
+- */
+-
+-// === CRYPTOGRAPHIC TYPE ALIASES ===
+-
+-/** Public keys indexed by key ID */
+-typealias PublicKeyRegistry = Indexed<KeyId, PublicKey>
+-
+-/** Private keys (securely stored) indexed by key ID */
+-typealias PrivateKeyStore = Indexed<KeyId, EncryptedPrivateKey>
+-
+-/** Signature chain for audit trail */
+-typealias SignatureChain = Indexed<SignatureId, CryptographicSignature>
+-
+-/** Verification results indexed by verification ID */
+-typealias VerificationRegistry = Indexed<VerificationId, VerificationResult>
+-
+-// === VALUE CLASSES FOR TYPE SAFETY ===
+-
+-@JvmInline
+-value class KeyId(val value: String)
+-
+-@JvmInline
+-value class SignatureId(val value: String)
+-
+-@JvmInline
+-value class VerificationId(val value: String)
+-
+-@JvmInline
+-value class PublicKeyData(val value: String)
+-
+-@JvmInline
+-value class PrivateKeyData(val value: String)
+-
+-@JvmInline
+-value class SignatureData(val value: String)
+-
+-@JvmInline
+-value class EncryptedData(val value: String)
+-
+-@JvmInline
+-value class DecryptedData(val value: String)
+-
+-@JvmInline
+-value class HashValue(val value: String)
+-
+-@JvmInline
+-value class Nonce(val value: String)
+-
+-// === CORE CRYPTOGRAPHIC TYPES ===
+-
+-/**
+- * Public key for verification
+- */
+-@Serializable
+-data class PublicKey(
+-    val keyId: KeyId,
+-    val keyType: KeyType,
+-    val algorithm: CryptographicAlgorithm,
+-    val publicKeyData: PublicKeyData,
+-    val creationDate: Instant,
+-    val expirationDate: Instant?,
+-    val purposes: Indexed<KeyPurpose>,
+-    val owner: StakeholderId,
+-    val certificateChain: Indexed<DigitalCertificate>?,
+-    val revocationStatus: RevocationStatus
+-)
+-
+-/**
+- * Encrypted private key storage
+- */
+-@Serializable
+-data class EncryptedPrivateKey(
+-    val keyId: KeyId,
+-    val encryptedKeyData: EncryptedData,
+-    val encryptionMethod: EncryptionAlgorithm,
+-    val keyDerivationFunction: KeyDerivationFunction,
+-    val salt: String,
+-    val securityLevel: SecurityLevel,
+-    val accessPolicy: KeyAccessPolicy,
+-    val backupLocations: Indexed<BackupLocation>?
+-)
+-
+-enum class KeyType {
+-    SIGNING_KEY,
+-    ENCRYPTION_KEY,
+-    HYBRID_KEY,
+-    MULTI_SIG_KEY,
+-    THRESHOLD_KEY
+-}
+-
+-enum class CryptographicAlgorithm {
+-    ED25519,
+-    ECDSA_P256,
+-    RSA_2048,
+-    RSA_4096,
+-    DILITHIUM,
+-    FALCON
+-}
+-
+-enum class EncryptionAlgorithm {
+-    AES_256_GCM,
+-    CHACHA20_POLY1305,
+-    XSalsa20_Poly1305,
+-    AES_256_CTR,
+-    HYBRID_ENCRYPTION
+-}
+-
+-enum class KeyDerivationFunction {
+-    PBKDF2,
+-    SCRYPT,
+-    ARGON2ID,
+-    BCRYPT
+-}
+-
+-enum class SecurityLevel {
+-    STANDARD,
+-    HIGH,
+-    CRITICAL,
+-    QUANTUM_RESISTANT
+-}
+-
+-enum class KeyPurpose {
+-    DIGITAL_SIGNATURE,
+-    ENCRYPTION,
+-    AUTHENTICATION,
+-    KEY_AGREEMENT,
+-    TIMESTAMPING,
+-    NON_REPUDIATION
+-}
+-
+-enum class RevocationStatus {
+-    ACTIVE,
+-    REVOKED,
+-    SUSPENDED,
+-    EXPIRED
+-}
+-
+-@Serializable
+-data class KeyAccessPolicy(
+-    val requiredAuthentication: AuthenticationLevel,
+-    val allowedOperations: Indexed<CryptographicOperation>,
+-    val timeRestrictions: TimeRestriction?,
+-    val locationRestrictions: Indexed<String>?,
+-    val multiPartyApproval: MultiPartyApproval?
+-)
+-
+-enum class AuthenticationLevel {
+-    PASSWORD,
+-    TWO_FACTOR,
+-    MULTI_FACTOR,
+-    BIOMETRIC,
+-    HARDWARE_TOKEN
+-}
+-
+-enum class CryptographicOperation {
+-    SIGN,
+-    DECRYPT,
+-    KEY_DERIVATION,
+-    CERTIFICATE_ISSUANCE,
+-    REVOCATION
+-}
+-
+-@Serializable
+-data class TimeRestriction(
+-    val allowedHours: Indexed<Int>?, // Hours of day (0-23)
+-    val allowedDays: Indexed<Int>?, // Days of week (1-7)
+-    val blackoutPeriods: Indexed<Join<Instant, Instant>>?
+-)
+-
+-@Serializable
+-data class MultiPartyApproval(
+-    val requiredApprovers: Int,
+-    val approverKeys: Indexed<KeyId>,
+-    val timeWindow: Int // Minutes
+-)
+-
+-@Serializable
+-data class BackupLocation(
+-    val locationType: BackupLocationType,
+-    val locationId: String,
+-    val encryptionKey: KeyId,
+-    val lastBackup: Instant
+-)
+-
+-enum class BackupLocationType {
+-    HARDWARE_SECURITY_MODULE,
+-    SECURE_CLOUD_STORAGE,
+-    OFFLINE_STORAGE,
+-    DISTRIBUTED_BACKUP,
+-    PAPER_BACKUP
+-}
+-
+-// === DIGITAL SIGNATURES ===
+-
+-/**
+- * Cryptographic signature for fiduciary actions
+- */
+-@Serializable
+-data class CryptographicSignature(
+-    val signatureId: SignatureId,
+-    val signerKeyId: KeyId,
+-    val signatureData: SignatureData,
+-    val algorithm: CryptographicAlgorithm,
+-    val signedData: HashValue,
+-    val timestamp: Instant,
+-    val purpose: SignaturePurpose,
+-    val witnessSignatures: Indexed<WitnessSignature>?,
+-    val timestampAuthority: TimestampAuthority?,
+-    val validationStatus: SignatureValidationStatus
+-)
+-
+-enum class SignaturePurpose {
+-    FIDUCIARY_ACTION_AUTHORIZATION,
+-    TRANSACTION_APPROVAL,
+-    DOCUMENT_SIGNING,
+-    IDENTITY_VERIFICATION,
+-    AUDIT_TRAIL_ENTRY,
+-    COMPLIANCE_ATTESTATION,
+-    BENEFICIARY_CONSENT,
+-    EMERGENCY_AUTHORIZATION
+-}
+-
+-@Serializable
+-data class WitnessSignature(
+-    val witnessKeyId: KeyId,
+-    val witnessSignature: SignatureData,
+-    val timestamp: Instant
+-)
+-
+-@Serializable
+-data class TimestampAuthority(
+-    val authorityId: String,
+-    val timestamp: Instant,
+-    val timestampSignature: SignatureData,
+-    val trustChain: Indexed<String>
+-)
+-
+-enum class SignatureValidationStatus {
+-    VALID,
+-    INVALID,
+-    EXPIRED,
+-    REVOKED,
+-    PENDING_VALIDATION,
+-    VALIDATION_FAILED
+-}
+-
+-// === ENCRYPTION SYSTEM ===
+-
+-/**
+- * Encryption context for sensitive data
+- */
+-@Serializable
+-data class EncryptionContext(
+-    val encryptionId: String,
+-    val encryptionKey: KeyId,
+-    val algorithm: EncryptionAlgorithm,
+-    val encryptedData: EncryptedData,
+-    val initializationVector: String,
+-    val authenticationTag: String?,
+-    val encryptionDate: Instant,
+-    val accessControlList: Indexed<EncryptionAccessRule>,
+-    val dataClassification: DataClassification
+-)
+-
+-@Serializable
+-data class EncryptionAccessRule(
+-    val principal: StakeholderId,
+-    val accessLevel: EncryptionAccessLevel,
+-    val grantedBy: StakeholderId,
+-    val grantDate: Instant,
+-    val expirationDate: Instant?
+-)
+-
+-enum class EncryptionAccessLevel {
+-    READ,
+-    DECRYPT,
+-    RE_ENCRYPT,
+-    SHARE,
+-    DELETE
+-}
+-
+-enum class DataClassification {
+-    PUBLIC,
+-    INTERNAL,
+-    CONFIDENTIAL,
+-    RESTRICTED,
+-    TOP_SECRET
+-}
+-
+-// === ZERO-KNOWLEDGE PROOFS ===
+-
+-/**
+- * Zero-knowledge proof for privacy-preserving verification
+- */
+-@Serializable
+-data class ZeroKnowledgeProof(
+-    val proofId: String,
+-    val proofSystem: ZKProofSystem,
+-    val proofData: String,
+-    val publicInputs: Indexed<String>,
+-    val verificationKey: String,
+-    val circuitHash: String?,
+-    val proofGeneration: ProofGenerationMetadata,
+-    val verificationStatus: ZKVerificationStatus
+-)
+-
+-enum class ZKProofSystem {
+-    GROTH16,
+-    PLONK,
+-    MARLIN,
+-    SONIC,
+-    BULLETPROOFS,
+-    STARK
+-}
+-
+-@Serializable
+-data class ProofGenerationMetadata(
+-    val generatedBy: StakeholderId,
+-    val generationTime: Instant,
+-    val provingTime: Long, // Milliseconds
+-    val proofSize: Int, // Bytes
+-    val circuitComplexity: CircuitComplexity
+-)
+-
+-@Serializable
+-data class CircuitComplexity(
+-    val constraintCount: Int,
+-    val variableCount: Int,
+-    val gateCount: Int
+-)
+-
+-enum class ZKVerificationStatus {
+-    VERIFIED,
+-    VERIFICATION_FAILED,
+-    PENDING_VERIFICATION,
+-    PROOF_EXPIRED,
+-    INVALID_CIRCUIT
+-}
+-
+-// === MULTI-SIGNATURE SCHEMES ===
+-
+-/**
+- * Multi-signature scheme for distributed trust
+- */
+-@Serializable
+-data class MultiSignatureScheme(
+-    val schemeId: String,
+-    val threshold: Int, // Minimum signatures required
+-    val totalSigners: Int,
+-    val signerKeys: Indexed<KeyId>,
+-    val schemeType: MultiSigType,
+-    val aggregatedSignature: AggregatedSignature?,
+-    val signatureCollection: SignatureCollection,
+-    val completionStatus: MultiSigStatus
+-)
+-
+-enum class MultiSigType {
+-    THRESHOLD_SIGNATURE,
+-    WEIGHTED_THRESHOLD,
+-    HIERARCHICAL_MULTISIG,
+-    RING_SIGNATURE,
+-    GROUP_SIGNATURE
+-}
+-
+-@Serializable
+-data class AggregatedSignature(
+-    val aggregatedData: SignatureData,
+-    val aggregationProof: String,
+-    val participantCount: Int,
+-    val aggregationDate: Instant
+-)
+-
+-@Serializable
+-data class SignatureCollection(
+-    val signatures: Indexed<Join<KeyId, CryptographicSignature>>,
+-    val collectionStarted: Instant,
+-    val collectionDeadline: Instant?,
+-    val currentCount: Int
+-)
+-
+-enum class MultiSigStatus {
+-    COLLECTING_SIGNATURES,
+-    THRESHOLD_MET,
+-    COMPLETED,
+-    EXPIRED,
+-    CANCELLED
+-}
+-
+-// === TRUSTLESS VERIFICATION ===
+-
+-/**
+- * Trustless verification protocol
+- */
+-@Serializable
+-data class TrustlessVerificationProtocol(
+-    val protocolId: String,
+-    val verificationClaim: VerificationClaim,
+-    val proofOfCorrectness: ProofOfCorrectness,
+-    val consensusProtocol: ConsensusProtocol,
+-    val verificationResults: Indexed<IndependentVerification>,
+-    val finalVerdict: VerificationVerdict?
+-)
+-
+-@Serializable
+-data class VerificationClaim(
+-    val claimType: ClaimType,
+-    val claimData: String,
+-    val claimant: StakeholderId,
+-    val claimDate: Instant,
+-    val supportingEvidence: Indexed<Evidence>
+-)
+-
+-enum class ClaimType {
+-    FIDUCIARY_DUTY_COMPLIANCE,
+-    BENEFICIARY_INTEREST_PROTECTION,
+-    TRANSACTION_VALIDITY,
+-    ASSET_CUSTODY,
+-    DISTRIBUTION_FAIRNESS,
+-    INVESTMENT_PRUDENCE
+-}
+-
+-@Serializable
+-data class Evidence(
+-    val evidenceType: EvidenceType,
+-    val evidenceData: String,
+-    val evidenceHash: HashValue,
+-    val submittedBy: StakeholderId,
+-    val submissionDate: Instant
+-)
+-
+-enum class EvidenceType {
+-    DIGITAL_SIGNATURE,
+-    CRYPTOGRAPHIC_PROOF,
+-    AUDIT_TRAIL,
+-    THIRD_PARTY_ATTESTATION,
+-    MATHEMATICAL_PROOF,
+-    CONSENSUS_VERIFICATION
+-}
+-
+-@Serializable
+-data class ProofOfCorrectness(
+-    val proofType: CorrectnessProofType,
+-    val proofData: String,
+-    val verifiableComputation: VerifiableComputation?,
+-    val cryptographicCommitments: Indexed<CryptographicCommitment>
+-)
+-
+-enum class CorrectnessProofType {
+-    MATHEMATICAL_PROOF,
+-    CRYPTOGRAPHIC_PROOF,
+-    VERIFIABLE_COMPUTATION,
+-    CONSENSUS_PROOF,
+-    FORMAL_VERIFICATION
+-}
+-
+-@Serializable
+-data class VerifiableComputation(
+-    val computationId: String,
+-    val inputCommitments: Indexed<String>,
+-    val outputCommitments: Indexed<String>,
+-    val executionProof: String,
+-    val verificationCircuit: String
+-)
+-
+-@Serializable
+-data class CryptographicCommitment(
+-    val commitmentId: String,
+-    val commitmentValue: String,
+-    val commitment_scheme: CommitmentScheme,
+-    val openingProof: String?
+-)
+-
+-enum class CommitmentScheme {
+-    PEDERSEN_COMMITMENT,
+-    HASH_COMMITMENT,
+-    MERKLE_COMMITMENT,
+-    POLYNOMIAL_COMMITMENT
+-}
+-
+-@Serializable
+-data class ConsensusProtocol(
+-    val protocolType: ConsensusType,
+-    val participants: Indexed<StakeholderId>,
+-    val requiredAgreement: Decimal, // Percentage
+-    val timeoutPeriod: Long, // Milliseconds
+-    val votingMechanism: VotingMechanism
+-)
+-
+-enum class ConsensusType {
+-    BYZANTINE_FAULT_TOLERANT,
+-    PRACTICAL_BYZANTINE_FAULT_TOLERANCE,
+-    PROOF_OF_STAKE_CONSENSUS,
+-    DELEGATED_PROOF_OF_STAKE,
+-    FEDERATED_BYZANTINE_AGREEMENT
+-}
+-
+-enum class VotingMechanism {
+-    SIMPLE_MAJORITY,
+-    SUPERMAJORITY,
+-    WEIGHTED_VOTING,
+-    STAKE_WEIGHTED,
+-    REPUTATION_WEIGHTED
+-}
+-
+-@Serializable
+-data class IndependentVerification(
+-    val verifierId: StakeholderId,
+-    val verificationMethod: VerificationMethod,
+-    val result: VerificationOutcome,
+-    val confidence: Decimal, // 0-100
+-    val verificationDate: Instant,
+-    val verificationProof: String?
+-)
+-
+-enum class VerificationMethod {
+-    CRYPTOGRAPHIC_VERIFICATION,
+-    MATHEMATICAL_VERIFICATION,
+-    CONSENSUS_VERIFICATION,
+-    THIRD_PARTY_AUDIT,
+-    AUTOMATED_VERIFICATION
+-}
+-
+-enum class VerificationOutcome {
+-    VERIFIED,
+-    REJECTED,
+-    INCONCLUSIVE,
+-    INSUFFICIENT_EVIDENCE,
+-    ERROR_IN_VERIFICATION
+-}
+-
+-@Serializable
+-data class VerificationVerdict(
+-    val verdict: VerdictType,
+-    val confidence: Decimal,
+-    val consensus_achieved: Boolean,
+-    val finalVerificationDate: Instant,
+-    val minorityOpinions: Indexed<String>?
+-)
+-
+-enum class VerdictType {
+-    VERIFIED_TRUSTLESS,
+-    VERIFICATION_FAILED,
+-    INSUFFICIENT_CONSENSUS,
+-    VERIFICATION_TIMEOUT,
+-    PROTOCOL_ERROR
+-}
+-
+-// === DIGITAL CERTIFICATES ===
+-
+-/**
+- * Digital certificate for identity verification
+- */
+-@Serializable
+-data class DigitalCertificate(
+-    val certificateId: String,
+-    val subjectId: StakeholderId,
+-    val issuerAuthority: CertificateAuthority,
+-    val publicKey: PublicKeyData,
+-    val certificateType: CertificateType,
+-    val issuanceDate: Instant,
+-    val expirationDate: Instant,
+-    val certificateChain: Indexed<String>,
+-    val revocationInfo: RevocationInfo?,
+-    val extensions: Indexed<CertificateExtension>
+-)
+-
+-@Serializable
+-data class CertificateAuthority(
+-    val authorityId: String,
+-    val authorityName: String,
+-    val authorityType: AuthorityType,
+-    val trustLevel: TrustLevel,
+-    val rootCertificate: String
+-)
+-
+-enum class AuthorityType {
+-    ROOT_CA,
+-    INTERMEDIATE_CA,
+-    ISSUING_CA,
+-    SELF_SIGNED,
+-    WEB_OF_TRUST
+-}
+-
+-enum class TrustLevel {
+-    UNTRUSTED,
+-    LIMITED_TRUST,
+-    TRUSTED,
+-    HIGHLY_TRUSTED,
+-    ULTIMATE_TRUST
+-}
+-
+-enum class CertificateType {
+-    IDENTITY_CERTIFICATE,
+-    FIDUCIARY_CERTIFICATE,
+-    SIGNING_CERTIFICATE,
+-    ENCRYPTION_CERTIFICATE,
+-    AUTHENTICATION_CERTIFICATE
+-}
+-
+-@Serializable
+-data class RevocationInfo(
+-    val revocationDate: Instant,
+-    val revocationReason: RevocationReason,
+-    val revokedBy: StakeholderId
+-)
+-
+-enum class RevocationReason {
+-    KEY_COMPROMISE,
+-    CA_COMPROMISE,
+-    AFFILIATION_CHANGED,
+-    SUPERSEDED,
+-    CESSATION_OF_OPERATION,
+-    CERTIFICATE_HOLD,
+-    PRIVILEGE_WITHDRAWN
+-}
+-
+-@Serializable
+-data class CertificateExtension(
+-    val extensionId: String,
+-    val critical: Boolean,
+-    val extensionData: String
+-)
+-
+-// === VERIFICATION RESULTS ===
+-
+-/**
+- * Comprehensive verification result
+- */
+-@Serializable
+-data class VerificationResult(
+-    val verificationId: VerificationId,
+-    val verificationTarget: VerificationTarget,
+-    val verificationMethod: VerificationMethod,
+-    val result: VerificationOutcome,
+-    val verificationDate: Instant,
+-    val verifiedBy: StakeholderId,
+-    val verificationDetails: VerificationDetails,
+-    val trustScore: Decimal, // 0-100
+-    val validityPeriod: ValidityPeriod?
+-)
+-
+-sealed interface VerificationTarget {
+-    data class SignatureVerification(val signatureId: SignatureId) : VerificationTarget
+-    data class EncryptionVerification(val encryptionId: String) : VerificationTarget
+-    data class ZKProofVerification(val proofId: String) : VerificationTarget
+-    data class CertificateVerification(val certificateId: String) : VerificationTarget
+-    data class TrustlessProtocolVerification(val protocolId: String) : VerificationTarget
+-}
+-
+-@Serializable
+-data class VerificationDetails(
+-    val cryptographicChecks: Indexed<CryptographicCheck>,
+-    val complianceChecks: Indexed<ComplianceCheck>,
+-    val integrityChecks: Indexed<IntegrityCheck>,
+-    val verificationLog: Indexed<VerificationLogEntry>
+-)
+-
+-@Serializable
+-data class CryptographicCheck(
+-    val checkType: CryptographicCheckType,
+-    val status: CheckStatus,
+-    val details: String
+-)
+-
+-enum class CryptographicCheckType {
+-    SIGNATURE_VALIDITY,
+-    KEY_VALIDITY,
+-    CERTIFICATE_CHAIN,
+-    ENCRYPTION_INTEGRITY,
+-    HASH_VERIFICATION,
+-    TIMESTAMP_VERIFICATION
+-}
+-
+-enum class CheckStatus {
+-    PASSED,
+-    FAILED,
+-    WARNING,
+-    SKIPPED,
+-    ERROR
+-}
+-
+-@Serializable
+-data class IntegrityCheck(
+-    val checkType: IntegrityCheckType,
+-    val status: CheckStatus,
+-    val hashValue: HashValue?,
+-    val expectedHash: HashValue?
+-)
+-
+-enum class IntegrityCheckType {
+-    DATA_INTEGRITY,
+-    SIGNATURE_INTEGRITY,
+-    CERTIFICATE_INTEGRITY,
+-    CHAIN_OF_CUSTODY,
+-    AUDIT_TRAIL_INTEGRITY
+-}
+-
+-@Serializable
+-data class VerificationLogEntry(
+-    val timestamp: Instant,
+-    val logLevel: LogLevel,
+-    val message: String,
+-    val component: String
+-)
+-
+-enum class LogLevel {
+-    DEBUG,
+-    INFO,
+-    WARNING,
+-    ERROR,
+-    CRITICAL
+-}
+-
+-@Serializable
+-data class ValidityPeriod(
+-    val validFrom: Instant,
+-    val validUntil: Instant,
+-    val renewable: Boolean
+-)
+-
+-// === CRYPTO OPERATIONS ===
+-
+-object CryptoOperations {
+-    
+-    /**
+-     * Generate key pair for fiduciary
+-     */
+-    fun generateKeyPair(
+-        fiduciaryId: StakeholderId,
+-        algorithm: CryptographicAlgorithm,
+-        purposes: Indexed<KeyPurpose>
+-    ): Join<PublicKey, EncryptedPrivateKey> {
+-        val keyId = KeyId("key_${System.currentTimeMillis()}")
+-        
+-        val publicKey = PublicKey(
+-            keyId = keyId,
+-            keyType = KeyType.SIGNING_KEY,
+-            algorithm = algorithm,
+-            publicKeyData = PublicKeyData("generated_public_key_data"),
+-            creationDate = kotlinx.datetime.Clock.System.now(),
+-            expirationDate = null,
+-            purposes = purposes,
+-            owner = fiduciaryId,
+-            certificateChain = null,
+-            revocationStatus = RevocationStatus.ACTIVE
+-        )
+-        
+-        val encryptedPrivateKey = EncryptedPrivateKey(
+-            keyId = keyId,
+-            encryptedKeyData = EncryptedData("encrypted_private_key_data"),
+-            encryptionMethod = EncryptionAlgorithm.AES_256_GCM,
+-            keyDerivationFunction = KeyDerivationFunction.ARGON2ID,
+-            salt = "random_salt",
+-            securityLevel = SecurityLevel.HIGH,
+-            accessPolicy = KeyAccessPolicy(
+-                requiredAuthentication = AuthenticationLevel.MULTI_FACTOR,
+-                allowedOperations = 1 j { CryptographicOperation.SIGN },
+-                timeRestrictions = null,
+-                locationRestrictions = null,
+-                multiPartyApproval = null
+-            ),
+-            backupLocations = null
+-        )
+-        
+-        return publicKey j encryptedPrivateKey
+-    }
+-    
+-    /**
+-     * Sign fiduciary action
+-     */
+-    fun signFiduciaryAction(
+-        action: FiduciaryAction,
+-        signerKeyId: KeyId,
+-        purpose: SignaturePurpose
+-    ): CryptographicSignature {
+-        return CryptographicSignature(
+-            signatureId = SignatureId("sig_${System.currentTimeMillis()}"),
+-            signerKeyId = signerKeyId,
+-            signatureData = SignatureData("generated_signature_data"),
+-            algorithm = CryptographicAlgorithm.ED25519,
+-            signedData = HashValue("action_hash"),
+-            timestamp = kotlinx.datetime.Clock.System.now(),
+-            purpose = purpose,
+-            witnessSignatures = null,
+-            timestampAuthority = null,
+-            validationStatus = SignatureValidationStatus.VALID
+-        )
+-    }
+-    
+-    /**
+-     * Encrypt sensitive beneficiary data
+-     */
+-    fun encryptBeneficiaryData(
+-        data: String,
+-        encryptionKeyId: KeyId,
+-        classification: DataClassification
+-    ): EncryptionContext {
+-        return EncryptionContext(
+-            encryptionId = "enc_${System.currentTimeMillis()}",
+-            encryptionKey = encryptionKeyId,
+-            algorithm = EncryptionAlgorithm.AES_256_GCM,
+-            encryptedData = EncryptedData("encrypted_beneficiary_data"),
+-            initializationVector = "random_iv",
+-            authenticationTag = "auth_tag",
+-            encryptionDate = kotlinx.datetime.Clock.System.now(),
+-            accessControlList = emptyIndex(),
+-            dataClassification = classification
+-        )
+-    }
+-    
+-    /**
+-     * Generate zero-knowledge proof for transaction validity
+-     */
+-    fun generateTransactionValidityProof(
+-        transaction: EntityAction,
+-        proofSystem: ZKProofSystem
+-    ): ZeroKnowledgeProof {
+-        return ZeroKnowledgeProof(
+-            proofId = "zkp_${System.currentTimeMillis()}",
+-            proofSystem = proofSystem,
+-            proofData = "generated_zk_proof",
+-            publicInputs = 1 j { transaction.entityId.value },
+-            verificationKey = "verification_key",
+-            circuitHash = "circuit_hash",
+-            proofGeneration = ProofGenerationMetadata(
+-                generatedBy = transaction.authorizedBy,
+-                generationTime = kotlinx.datetime.Clock.System.now(),
+-                provingTime = 1000, // 1 second
+-                proofSize = 192, // bytes
+-                circuitComplexity = CircuitComplexity(
+-                    constraintCount = 1000,
+-                    variableCount = 500,
+-                    gateCount = 1500
+-                )
+-            ),
+-            verificationStatus = ZKVerificationStatus.VERIFIED
+-        )
+-    }
+-    
+-    /**
+-     * Create multi-signature scheme for high-value transactions
+-     */
+-    fun createMultiSignatureScheme(
+-        threshold: Int,
+-        signerKeys: Indexed<KeyId>,
+-        schemeType: MultiSigType
+-    ): MultiSignatureScheme {
+-        return MultiSignatureScheme(
+-            schemeId = "multisig_${System.currentTimeMillis()}",
+-            threshold = threshold,
+-            totalSigners = signerKeys.size,
+-            signerKeys = signerKeys,
+-            schemeType = schemeType,
+-            aggregatedSignature = null,
+-            signatureCollection = SignatureCollection(
+-                signatures = emptyIndex(),
+-                collectionStarted = kotlinx.datetime.Clock.System.now(),
+-                collectionDeadline = null,
+-                currentCount = 0
+-            ),
+-            completionStatus = MultiSigStatus.COLLECTING_SIGNATURES
+-        )
+-    }
+-    
+-    /**
+-     * Verify trustless protocol execution
+-     */
+-    fun verifyTrustlessProtocol(
+-        protocol: TrustlessVerificationProtocol
+-    ): VerificationResult {
+-        return VerificationResult(
+-            verificationId = VerificationId("verify_${System.currentTimeMillis()}"),
+-            verificationTarget = VerificationTarget.TrustlessProtocolVerification(protocol.protocolId),
+-            verificationMethod = VerificationMethod.CRYPTOGRAPHIC_VERIFICATION,
+-            result = VerificationOutcome.VERIFIED,
+-            verificationDate = kotlinx.datetime.Clock.System.now(),
+-            verifiedBy = StakeholderId("system"),
+-            verificationDetails = VerificationDetails(
+-                cryptographicChecks = 1 j {
+-                    CryptographicCheck(
+-                        checkType = CryptographicCheckType.SIGNATURE_VALIDITY,
+-                        status = CheckStatus.PASSED,
+-                        details = "All signatures verified successfully"
+-                    )
+-                },
+-                complianceChecks = emptyIndex(),
+-                integrityChecks = 1 j {
+-                    IntegrityCheck(
+-                        checkType = IntegrityCheckType.DATA_INTEGRITY,
+-                        status = CheckStatus.PASSED,
+-                        hashValue = HashValue("computed_hash"),
+-                        expectedHash = HashValue("expected_hash")
+-                    )
+-                },
+-                verificationLog = emptyIndex()
+-            ),
+-            trustScore = 95.0,
+-            validityPeriod = ValidityPeriod(
+-                validFrom = kotlinx.datetime.Clock.System.now(),
+-                validUntil = kotlinx.datetime.Clock.System.now(),
+-                renewable = true
+-            )
+-        )
+-    }
+-    
+-    /**
+-     * Issue digital certificate for fiduciary
+-     */
+-    fun issueFiduciaryCertificate(
+-        fiduciaryId: StakeholderId,
+-        publicKey: PublicKeyData,
+-        certificateAuthority: CertificateAuthority
+-    ): DigitalCertificate {
+-        return DigitalCertificate(
+-            certificateId = "cert_${System.currentTimeMillis()}",
+-            subjectId = fiduciaryId,
+-            issuerAuthority = certificateAuthority,
+-            publicKey = publicKey,
+-            certificateType = CertificateType.FIDUCIARY_CERTIFICATE,
+-            issuanceDate = kotlinx.datetime.Clock.System.now(),
+-            expirationDate = kotlinx.datetime.Clock.System.now(),
+-            certificateChain = emptyIndex(),
+-            revocationInfo = null,
+-            extensions = emptyIndex()
+-        )
+-    }
+-}
+\ No newline at end of file

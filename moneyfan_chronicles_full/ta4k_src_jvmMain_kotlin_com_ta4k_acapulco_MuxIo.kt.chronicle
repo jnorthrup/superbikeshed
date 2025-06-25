@@ -1,0 +1,161 @@
+
+--- Commit: 2038f3399bd254f0f876808eca5807a9d1d10397 | 2025-06-19 14:47:16 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+index 0786c404..8a045c9c 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+@@ -41,7 +41,7 @@ class MuxIo @JvmOverloads constructor(
+             val currentHistorySize = min(historyViewSize, cursHorizon.size)
+             if (currentHistorySize == 0) return emptySeries()
+             val indicesToFetch = (0 until currentHistorySize).map { x -> horizon(x, historyViewSize, cursHorizon.size) }
+-            return indicesToFetch.size j { i -> cursHorizon[indicesToFetch[i]] }
++            return indicesToFetch.size j { i:Int -> cursHorizon[indicesToFetch[i]] }
+         }
+ 
+     suspend fun publish(delayDuration: Duration = 30.seconds) {
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+index 8a045c9c..4efcd930 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+@@ -8,15 +8,10 @@ import borg.trikeshed.acapulco.model.AssetModel
+ import borg.trikeshed.acapulco.model.ITradingWallet
+ import borg.trikeshed.acapulco.node.config.Help
+ import borg.trikeshed.cursor.*
+-import borg.trikeshed.isam.meta.IOMemento
+ import borg.trikeshed.lib.*
+ import borg.trikeshed.common.collections.CirQlar
+-import borg.trikeshed.common.collections.s_
+ import borg.trikeshed.lib.logDebug
+-import borg.trikeshed.lib.debug
+-import com.binance.api.client.BinanceApiClientFactory
+ import kotlinx.coroutines.*
+-import kotlinx.coroutines.flow.MutableSharedFlow
+ import kotlin.time.Duration
+ 
+ class MuxIo @JvmOverloads constructor(
+@@ -30,16 +25,16 @@ class MuxIo @JvmOverloads constructor(
+     val timeWindow: Int = 14.days.inWholeMinutes.toInt(),
+     val hzWidth: Int = Help.horizonDepthMinutes.value.toInt(),
+ ) {
+-    val cursHorizon: CirQlar<Series<RowVec>> = CirQlar(historySize)
++    val cursHorizon: CirQlar<Indexed<RowVec>> = CirQlar(historySize)
+ 
+     init {
+         logDebug { "Horizon window examples (0-19): ${(0 until 20).map { horizon(it, hzWidth, timeWindow) }}" }
+     }
+ 
+-    val allTime: Series<Series<RowVec>>
++    val allTime: Indexed<Indexed<RowVec>>
+         get() {
+             val currentHistorySize = min(historyViewSize, cursHorizon.size)
+-            if (currentHistorySize == 0) return emptySeries()
++            if (currentHistorySize == 0) return emptyIndex()
+             val indicesToFetch = (0 until currentHistorySize).map { x -> horizon(x, historyViewSize, cursHorizon.size) }
+             return indicesToFetch.size j { i:Int -> cursHorizon[indicesToFetch[i]] }
+         }
+@@ -49,7 +44,7 @@ class MuxIo @JvmOverloads constructor(
+             val startTime = System.currentTimeMillis()
+             try {
+                 coroutineScope {
+-                    val rowsToOffer: Series<RowVec> = muxers.map { (assetKey, mux) ->
++                    val rowsToOffer: Indexed<RowVec> = muxers.map { (assetKey, mux) ->
+                         async {
+                             val (TC, CC) = assetKey
+                             val baseCost = coins.pathValue(TC, CC)
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+index 4efcd930..11ca0f00 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+@@ -51,7 +51,7 @@ class MuxIo @JvmOverloads constructor(
+                             val (cursorSnapshot, intraCount) = mux.realtime
+                             assembleRow(cursorSnapshot, assetKey, intraCount, baseCost, timeWindow, hzWidth, tradingWallet)
+                         }
+-                    }.awaitAll().toSeries()
++                    }.awaitAll().toIndexed()
+                     if (rowsToOffer.isNotEmpty()) {
+                         cursHorizon.offer(rowsToOffer)
+                     }
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
+deleted file mode 100644
+index 11ca0f00..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/MuxIo.kt
++++ /dev/null
+@@ -1,72 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/MuxIo.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco
+-
+-import borg.trikeshed.acapulco.model.AssetKey
+-import borg.trikeshed.acapulco.model.AssetModel
+-import borg.trikeshed.acapulco.model.ITradingWallet
+-import borg.trikeshed.acapulco.node.config.Help
+-import borg.trikeshed.cursor.*
+-import borg.trikeshed.lib.*
+-import borg.trikeshed.common.collections.CirQlar
+-import borg.trikeshed.lib.logDebug
+-import kotlinx.coroutines.*
+-import kotlin.time.Duration
+-
+-class MuxIo @JvmOverloads constructor(
+-    streamer: Streamer,
+-    val coins: CoinsAndPairings = CoinsAndPairings(streamer.bFac),
+-    val tradingWallet: ITradingWallet = streamer.tradingWallet,
+-    val muxers: Map<AssetKey, TradePairEventMuxer> = streamer.eventMuxers.filterKeys { it !in AssetModel.hidden },
+-    historySize: Int = 6.hours.inWholeMinutes.toInt(),
+-    val historyViewSize: Int = 25,
+-    var keepalive: () -> Boolean = { true },
+-    val timeWindow: Int = 14.days.inWholeMinutes.toInt(),
+-    val hzWidth: Int = Help.horizonDepthMinutes.value.toInt(),
+-) {
+-    val cursHorizon: CirQlar<Indexed<RowVec>> = CirQlar(historySize)
+-
+-    init {
+-        logDebug { "Horizon window examples (0-19): ${(0 until 20).map { horizon(it, hzWidth, timeWindow) }}" }
+-    }
+-
+-    val allTime: Indexed<Indexed<RowVec>>
+-        get() {
+-            val currentHistorySize = min(historyViewSize, cursHorizon.size)
+-            if (currentHistorySize == 0) return emptyIndex()
+-            val indicesToFetch = (0 until currentHistorySize).map { x -> horizon(x, historyViewSize, cursHorizon.size) }
+-            return indicesToFetch.size j { i:Int -> cursHorizon[indicesToFetch[i]] }
+-        }
+-
+-    suspend fun publish(delayDuration: Duration = 30.seconds) {
+-        while (keepalive()) {
+-            val startTime = System.currentTimeMillis()
+-            try {
+-                coroutineScope {
+-                    val rowsToOffer: Indexed<RowVec> = muxers.map { (assetKey, mux) ->
+-                        async {
+-                            val (TC, CC) = assetKey
+-                            val baseCost = coins.pathValue(TC, CC)
+-                            val (cursorSnapshot, intraCount) = mux.realtime
+-                            assembleRow(cursorSnapshot, assetKey, intraCount, baseCost, timeWindow, hzWidth, tradingWallet)
+-                        }
+-                    }.awaitAll().toIndexed()
+-                    if (rowsToOffer.isNotEmpty()) {
+-                        cursHorizon.offer(rowsToOffer)
+-                    }
+-                }
+-            } catch (t: Throwable) {
+-                System.err.println("Error in MuxIo publish loop: ${t.message}")
+-            } finally {
+-                val elapsed = System.currentTimeMillis() - startTime
+-                val waitTime = (delayDuration.inWholeMilliseconds - elapsed).coerceAtLeast(0)
+-                if (waitTime > 0) delay(waitTime)
+-            }
+-        }
+-    }
+-
+-    companion object {
+-        val normTime: Boolean = Help.NormalizeInstants.value.equals("true", ignoreCase = true)
+-    }
+-}

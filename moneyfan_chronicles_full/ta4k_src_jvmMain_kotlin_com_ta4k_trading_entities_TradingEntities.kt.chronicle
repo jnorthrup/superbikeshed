@@ -1,0 +1,106 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/trading/entities/TradingEntities.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/trading/entities/TradingEntities.kt
+deleted file mode 100644
+index 8bd680ad..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/trading/entities/TradingEntities.kt
++++ /dev/null
+@@ -1,98 +0,0 @@
+-package com.ta4k.trading.entities
+-
+-import java.math.BigDecimal
+-import java.util.UUID // For generating default order IDs
+-
+-/**
+- * Defines the type of an order.
+- */
+-enum class OrderType {
+-    BUY,  // An order to open or increase a long position, or close/decrease a short position.
+-    SELL  // An order to open or increase a short position, or close/decrease a long position.
+-}
+-
+-/**
+- * Represents a trading order.
+- *
+- * @property klineIndex The index of the kline in the series when this order was generated/placed.
+- * @property type The type of the order (BUY or SELL).
+- * @property price The target or fill price of the order. For market orders in backtesting,
+- *                 this might be set to the execution price (e.g., next bar's open or current bar's close).
+- * @property amount The quantity of the asset to be traded.
+- * @property id A unique identifier for the order, defaults to a random UUID.
+- * @property filledPrice The actual price at which the order was filled (can be set during backtesting). Null if not filled.
+- * @property filledAmount The actual amount filled (can be set during backtesting, for partial fills). Null if not filled.
+- * @property status The current status of the order.
+- */
+-data class Order(
+-    val klineIndex: Int,
+-    val type: OrderType,
+-    val price: BigDecimal, // Target price or estimated execution price
+-    val amount: BigDecimal,
+-    val id: String = UUID.randomUUID().toString(),
+-    var filledPrice: BigDecimal? = null, // Actual execution price
+-    var filledAmount: BigDecimal? = null, // Actual executed amount
+-    var status: OrderStatus = OrderStatus.PENDING // Initial status
+-)
+-
+-/**
+- * Represents the status of an order.
+- */
+-enum class OrderStatus {
+-    PENDING,    // Order created but not yet processed or submitted.
+-    SUBMITTED,  // Order submitted to the exchange (conceptual in backtesting).
+-    FILLED,     // Order completely filled.
+-    PARTIALLY_FILLED, // Order partially filled.
+-    CANCELLED,  // Order cancelled before filling.
+-    REJECTED    // Order rejected by the exchange or processing logic.
+-}
+-
+-
+-/**
+- * Represents an open position in the market.
+- * For simplicity in initial backtesting, a position is defined by its entry.
+- *
+- * @property entryOrder The order that opened this position.
+- * @property currentKlineIndex The index of the most recent kline evaluated while this position is open.
+- * @property currentPrice The current market price (e.g., close price of currentKlineIndex) for valuation.
+- */
+-data class Position(
+-    val entryOrder: Order, // Should be a filled order
+-    var currentKlineIndex: Int,
+-    var currentPrice: BigDecimal
+-    // 'amount' is derived from entryOrder.filledAmount
+-) {
+-    val amount: BigDecimal
+-        get() = entryOrder.filledAmount ?: BigDecimal.ZERO
+-
+-    val type: OrderType // Position type is same as entry order type
+-        get() = entryOrder.type
+-
+-    val entryPrice: BigDecimal
+-        get() = entryOrder.filledPrice ?: BigDecimal.ZERO // Should always be non-null for an open position's entry.
+-
+-    val unrealizedProfitLoss: BigDecimal
+-        get() {
+-            if (entryOrder.filledAmount == null || entryOrder.filledAmount?.compareTo(BigDecimal.ZERO) == 0 || entryOrder.filledPrice == null) return BigDecimal.ZERO
+-            return when (entryOrder.type) {
+-                OrderType.BUY -> (currentPrice.subtract(entryPrice)).multiply(amount)
+-                OrderType.SELL -> (entryPrice.subtract(currentPrice)).multiply(amount)
+-            }
+-        }
+-}
+-
+-/**
+- * Represents a completed trade, consisting of an entry and an exit order.
+- *
+- * @property entryOrder The (filled) order that opened the trade.
+- * @property exitOrder The (filled) order that closed the trade.
+- * @property profitLoss The realized profit or loss from this trade.
+- *                      Calculated as (exitPrice - entryPrice) * amount for BUY trades,
+- *                      and (entryPrice - exitPrice) * amount for SELL trades (short selling).
+- *                      This does not include commissions or slippage by default.
+- */
+-data class Trade(
+-    val entryOrder: Order, // Should be a filled order
+-    val exitOrder: Order,  // Should be a filled order
+-    val profitLoss: BigDecimal
+-)

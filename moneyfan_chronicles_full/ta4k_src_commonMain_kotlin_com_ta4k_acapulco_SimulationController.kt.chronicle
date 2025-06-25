@@ -1,0 +1,35 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SimulationController.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SimulationController.kt
+deleted file mode 100644
+index 50cb6ca4..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SimulationController.kt
++++ /dev/null
+@@ -1,26 +0,0 @@
+-package borg.trikeshed.acapulco
+-
+-class SimulationController(
+-    private val dataSource: MarketDataSource,
+-    private val observationBuilder: ObservationBuilder,
+-    private val agent: AgentInterface,
+-    private val executionEngine: ExecutionEngine,
+-    private val historyProvider: MarketHistoryProvider,
+-    private val priceOracle: PriceOracle
+-) {
+-    suspend fun runSimulation(initialWalletState: WalletState) {
+-        executionEngine.initialize(initialWalletState)
+-        while (true) {
+-            val tick = dataSource.nextTick() ?: break
+-            historyProvider.addTick(tick)  // Placeholder; implement as needed
+-            val observation = observationBuilder.buildObservation(tick, historyProvider)
+-            val action = agent.decideAction(observation)
+-            val result = executionEngine.processTick(tick, action)
+-            // Process or log result here, e.g., update metrics
+-        }
+-    }
+-}
+-
+-interface PriceOracle {
+-    fun getReferencePrice(asset: String, currentTick: MarketTick): Double
+-}
+\ No newline at end of file

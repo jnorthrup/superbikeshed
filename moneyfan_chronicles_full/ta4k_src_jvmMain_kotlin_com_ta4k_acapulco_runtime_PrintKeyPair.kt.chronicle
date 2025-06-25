@@ -1,0 +1,29 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/PrintKeyPair.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/PrintKeyPair.kt
+deleted file mode 100644
+index 988af496..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/PrintKeyPair.kt
++++ /dev/null
+@@ -1,21 +0,0 @@
+-package borg.trikeshed.acapulco.runtime
+-
+-import org.bereft.runtime.PrintKeyPair.printEncoded
+-
+-object PrintKeyPair {
+-
+-    fun printEncoded(encoded: ByteArray): String =
+-        String(java.util.Base64.getEncoder().encode(encoded)).apply { System.out.println(this) }
+-
+-}
+-
+-fun main(args: Array<String>) {
+-    val keyHandle = KeyHandle()
+-
+-    keyHandle.pair.private.encoded
+-
+-    printEncoded(keyHandle.pair.private.encoded)
+-    printEncoded(
+-        keyHandle.pair.public.encoded)
+-
+-}

@@ -1,0 +1,256 @@
+
+--- Commit: 26291b1ea8009c868ce544d35f33c9e52ecfdd4d | 2025-06-12 18:00:05 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt b/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
+index 5a8a51d8..2fe66694 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
+@@ -1,62 +1,63 @@
+ package com.ta4k.trikeshedutils
+ 
+-import borg.trikeshed.core.Series // Import from the correct, new package
+-import borg.trikeshed.core.j      // Import the infix constructor
+-import borg.trikeshed.core.size   // Import Series.size extension
+-import borg.trikeshed.core.get    // Import Series.get() operator extension
+-import borg.trikeshed.core.emptySeries // Import emptySeries from borg.trikeshed.core
++import kotlin.jvm.JvmInline
+ 
+ /**
+- * Helper function to easily create a [Series] from a [List].
+- * The resulting Series will have the same size and elements as the list.
+- *
+- * @param T The type of elements in the list and the resulting series.
+- * @return A [borg.trikeshed.core.Series<T>] wrapping the given list.
++ * Simple data series implementation without external dependencies.
++ * Following TrikeShed patterns with @JvmInline value classes and typealiases.
+  */
+-fun <T> List<T>.toSeries(): Series<T> {
+-    if (this.isEmpty()) return emptySeries() // Use the TrikeShedCore emptySeries
+-    return this.size j { index ->
+-        // The accessor function should handle its own bounds checks if necessary,
+-        // but typically it's called for 0 until size-1.
+-        // The original TrikeShed Series typealias implies the accessor is called with valid indices.
+-        // Adding a check here can make the helper more robust if used carelessly,
+-        // but strictly speaking, the Series contract is size + accessor.
+-        // The 'j' infix creates a Join, and Series is Join<Int, (Int)->T>.
+-        // The accessor here is { index -> this[index] }
+-        if (index < 0 || index >= this.size) { // Defensive check
+-            throw IndexOutOfBoundsException("Index $index out of bounds for list of size ${this.size} when creating Series via toSeries()")
+-        }
+-        this[index]
+-    }
++
++interface Series<T> {
++    val size: Int
++    operator fun get(index: Int): T
++}
++
++@JvmInline
++value class ArraySeries<T>(private val data: Array<T>) : Series<T> {
++    override val size: Int get() = data.size
++    override fun get(index: Int): T = data[index]
++}
++
++@JvmInline
++value class ListSeries<T>(private val data: List<T>) : Series<T> {
++    override val size: Int get() = data.size
++    override fun get(index: Int): T = data[index]
+ }
+ 
+ /**
+- * Helper function to create a [Series] from a [List] of nullable elements.
+- *
+- * @param T The type of elements in the list and the resulting series.
+- * @return A [borg.trikeshed.core.Series<T?>] wrapping the given list.
++ * Helper function to easily create a [Series] from a [List].
+  */
+-fun <T> List<T?>.toNullableSeries(): Series<T?> {
+-    if (this.isEmpty()) return emptySeries() // Use the TrikeShedCore emptySeries
+-    return this.size j { index ->
+-        if (index < 0 || index >= this.size) { // Defensive check
+-            throw IndexOutOfBoundsException("Index $index out of bounds for list of size ${this.size} when creating Series via toNullableSeries()")
+-        }
+-        this[index]
+-    }
+-}
++fun <T> List<T>.toSeries(): Series<T> = ListSeries(this)
++
++/**
++ * Helper function to create a [Series] from an [Array].
++ */
++fun <T> Array<T>.toSeries(): Series<T> = ArraySeries(this)
+ 
+ /**
+  * Helper function to collect all elements of a [Series] into a [List].
+- * Useful for inspections, debugging, or when a concrete collection is needed (e.g., in tests).
+- *
+- * @param T The type of elements in the series.
+- * @return A [List<T>] containing all elements from the series.
+  */
+-fun <T> Series<T>.toList(): List<T> {
+-    // The Series.size extension and Series.get() operator are from borg.trikeshed.core
+-    if (this.size == 0) return emptyList()
+-    // Consider using this.`▶`.toList() if IterableSeries is preferred and fully functional.
+-    // For now, direct construction:
+-    return List(this.size) { index -> this[index] }
++fun <T> Series<T>.toList(): List<T> = List(size) { index -> this[index] }
++
++/**
++ * Maps each element of the series to a new type.
++ */
++fun <T, R> Series<T>.map(transform: (T) -> R): Series<R> {
++    val result = Array<Any?>(size) { transform(this[it]) }
++    @Suppress("UNCHECKED_CAST")
++    return ArraySeries(result as Array<R>)
+ }
++
++/**
++ * Filters elements of the series based on a predicate.
++ */
++inline fun <T> Series<T>.filter(predicate: (T) -> Boolean): Series<T> {
++    val filtered = mutableListOf<T>()
++    for (i in 0 until size) {
++        val element = this[i]
++        if (predicate(element)) {
++            filtered.add(element)
++        }
++    }
++    return ListSeries(filtered)
++}
+\ No newline at end of file
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt b/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
+index 2fe66694..a4858f58 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
+@@ -7,19 +7,19 @@ import kotlin.jvm.JvmInline
+  * Following TrikeShed patterns with @JvmInline value classes and typealiases.
+  */
+ 
+-interface Series<T> {
++interface Indexed<T> {
+     val size: Int
+     operator fun get(index: Int): T
+ }
+ 
+ @JvmInline
+-value class ArraySeries<T>(private val data: Array<T>) : Series<T> {
++value class ArraySeries<T>(private val data: Array<T>) : Indexed<T> {
+     override val size: Int get() = data.size
+     override fun get(index: Int): T = data[index]
+ }
+ 
+ @JvmInline
+-value class ListSeries<T>(private val data: List<T>) : Series<T> {
++value class ListSeries<T>(private val data: List<T>) : Indexed<T> {
+     override val size: Int get() = data.size
+     override fun get(index: Int): T = data[index]
+ }
+@@ -27,22 +27,22 @@ value class ListSeries<T>(private val data: List<T>) : Series<T> {
+ /**
+  * Helper function to easily create a [Series] from a [List].
+  */
+-fun <T> List<T>.toSeries(): Series<T> = ListSeries(this)
++fun <T> List<T>.toIndexed(): Indexed<T> = ListSeries(this)
+ 
+ /**
+  * Helper function to create a [Series] from an [Array].
+  */
+-fun <T> Array<T>.toSeries(): Series<T> = ArraySeries(this)
++fun <T> Array<T>.toIndexed(): Indexed<T> = ArraySeries(this)
+ 
+ /**
+  * Helper function to collect all elements of a [Series] into a [List].
+  */
+-fun <T> Series<T>.toList(): List<T> = List(size) { index -> this[index] }
++fun <T> Indexed<T>.toList(): List<T> = List(size) { index -> this[index] }
+ 
+ /**
+  * Maps each element of the series to a new type.
+  */
+-fun <T, R> Series<T>.map(transform: (T) -> R): Series<R> {
++fun <T, R> Indexed<T>.map(transform: (T) -> R): Indexed<R> {
+     val result = Array<Any?>(size) { transform(this[it]) }
+     @Suppress("UNCHECKED_CAST")
+     return ArraySeries(result as Array<R>)
+@@ -51,7 +51,7 @@ fun <T, R> Series<T>.map(transform: (T) -> R): Series<R> {
+ /**
+  * Filters elements of the series based on a predicate.
+  */
+-inline fun <T> Series<T>.filter(predicate: (T) -> Boolean): Series<T> {
++inline fun <T> Indexed<T>.filter(predicate: (T) -> Boolean): Indexed<T> {
+     val filtered = mutableListOf<T>()
+     for (i in 0 until size) {
+         val element = this[i]
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt b/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
+deleted file mode 100644
+index a4858f58..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/trikeshedutils/SeriesExtensions.kt
++++ /dev/null
+@@ -1,63 +0,0 @@
+-package com.ta4k.trikeshedutils
+-
+-import kotlin.jvm.JvmInline
+-
+-/**
+- * Simple data series implementation without external dependencies.
+- * Following TrikeShed patterns with @JvmInline value classes and typealiases.
+- */
+-
+-interface Indexed<T> {
+-    val size: Int
+-    operator fun get(index: Int): T
+-}
+-
+-@JvmInline
+-value class ArraySeries<T>(private val data: Array<T>) : Indexed<T> {
+-    override val size: Int get() = data.size
+-    override fun get(index: Int): T = data[index]
+-}
+-
+-@JvmInline
+-value class ListSeries<T>(private val data: List<T>) : Indexed<T> {
+-    override val size: Int get() = data.size
+-    override fun get(index: Int): T = data[index]
+-}
+-
+-/**
+- * Helper function to easily create a [Series] from a [List].
+- */
+-fun <T> List<T>.toIndexed(): Indexed<T> = ListSeries(this)
+-
+-/**
+- * Helper function to create a [Series] from an [Array].
+- */
+-fun <T> Array<T>.toIndexed(): Indexed<T> = ArraySeries(this)
+-
+-/**
+- * Helper function to collect all elements of a [Series] into a [List].
+- */
+-fun <T> Indexed<T>.toList(): List<T> = List(size) { index -> this[index] }
+-
+-/**
+- * Maps each element of the series to a new type.
+- */
+-fun <T, R> Indexed<T>.map(transform: (T) -> R): Indexed<R> {
+-    val result = Array<Any?>(size) { transform(this[it]) }
+-    @Suppress("UNCHECKED_CAST")
+-    return ArraySeries(result as Array<R>)
+-}
+-
+-/**
+- * Filters elements of the series based on a predicate.
+- */
+-inline fun <T> Indexed<T>.filter(predicate: (T) -> Boolean): Indexed<T> {
+-    val filtered = mutableListOf<T>()
+-    for (i in 0 until size) {
+-        val element = this[i]
+-        if (predicate(element)) {
+-            filtered.add(element)
+-        }
+-    }
+-    return ListSeries(filtered)
+-}
+\ No newline at end of file

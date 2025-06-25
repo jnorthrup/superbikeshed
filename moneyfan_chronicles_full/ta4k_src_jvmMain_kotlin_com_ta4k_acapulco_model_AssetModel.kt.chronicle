@@ -1,0 +1,66 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/AssetModel.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/AssetModel.kt
+deleted file mode 100644
+index 93284932..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/AssetModel.kt
++++ /dev/null
+@@ -1,58 +0,0 @@
+-package borg.trikeshed.acapulco.model
+-
+-
+-import com.binance.api.client.domain.event.BookTickerEvent
+-import cursors.Cursor
+-import vec.macros.combine
+-import vec.macros.t2
+-import vec.macros.toVect0r
+-import java.nio.channels.FileChannel
+-import java.time.Instant
+-import java.util.*
+-
+-class AssetModel(
+-    val tradeSymbol: AssetKey,
+-    /**
+-     * trade asset/counter asset  pair
+-     */
+-    vararg slabs: Cursor,
+-) {
+-    operator fun component1() = tradeSymbol
+-    operator fun component2() = episodes
+-
+-    //    lateinit var depth: DepthEvent
+-    var book: BookTickerEvent = BookTickerEvent()
+-
+-    /*stored in order acquired */
+-    val episodes: MutableList<Cursor>
+-
+-    init {
+-        this.episodes = slabs.toMutableList()
+-    }
+-
+-    fun view(): Cursor = combine(episodes.toVect0r())
+-    fun viewLatest(lastCount: Int = -1) =
+-        if (episodes.size == lastCount)
+-            null else
+-            episodes.size t2 view()
+-
+-    companion object {
+-        var hidden: MutableSet<AssetKey> = linkedSetOf()
+-        val assetOracle: MutableMap<AssetKey, AssetModel> by lazy { sortedMapOf() }
+-        fun push(key: AssetKey, vararg m: Cursor) {
+-            if (assetOracle.containsKey(key))
+-                assetOracle[key]!!.episodes.addAll(m)
+-            else
+-                assetOracle[key] = AssetModel(key).also { it.episodes.addAll(m) }
+-        }
+-
+-        @JvmStatic
+-        public operator fun get(key: AssetKey) = assetOracle[key]
+-        val leakThese: LinkedList<FileChannel?> = LinkedList()
+-    }
+-}
+-
+-interface TimeProvider {
+-    fun next(): Instant
+-    fun current(): Instant
+-}

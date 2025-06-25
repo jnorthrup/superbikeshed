@@ -1,0 +1,38 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/FloatSimdSupport.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/FloatSimdSupport.kt
+deleted file mode 100644
+index 39c0e751..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/FloatSimdSupport.kt
++++ /dev/null
+@@ -1,29 +0,0 @@
+-package borg.trikeshed.acapulco
+-
+-import jdk.incubator.vector.DoubleVector
+-import jdk.incubator.vector.FloatVector
+-import vec.macros.Pai2
+-
+-object FloatSimdSupport {
+-
+-    @JvmStatic
+-    var threadLocalFMAChunkCache  = ThreadLocal.withInitial {
+-        val size = DoubleVector.SPECIES_PREFERRED.zero().length()
+-        val chunkCache: Array<DoubleArray> = Array(3) { DoubleArray(size) }
+-
+-        let {
+-            val let = chunkCache.let { chunkCache ->
+-                val clen = chunkCache[0].size
+-                val booleanArray = BooleanArray(clen)
+-                (0 until clen).map { x ->
+-                    booleanArray.fill(true, 0, x)
+-                   DoubleVector.SPECIES_PREFERRED.loadMask(booleanArray, 0)
+-                }.toTypedArray()
+-            }
+-            val dArrays = Pai2( chunkCache   ,let)
+-            dArrays
+-        }
+-    }
+-
+-
+-}
+\ No newline at end of file

@@ -1,0 +1,521 @@
+
+--- Commit: ff7859c065801459e57609c13f19fd55062e0f11 | 2025-06-07 23:26:23 +0000 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+index 0a4fbfd5..2e629875 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+@@ -2,6 +2,7 @@ package com.ta4k.indicators
+ 
+ import com.ta4k.core.model.Kline // Assuming this path
+ import borg.trikeshed.core.Series // Import new Series
++import borg.trikeshed.core.j      // Import infix j for creating Series
+ // ConcreteJoin is not directly used for a primary 'values' property here
+ import borg.trikeshed.core.size // Import Series extensions
+ import borg.trikeshed.core.get  // Import Series extensions
+@@ -44,6 +45,8 @@ class BollingerBandsIndicator(
+         if (price.scale() > 0) price.scale() else 2
+     } ?: 2
+ 
++    // Helper to get the first Kline from the series, returns null if series is empty.
++    private fun Series<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
+ 
+     private fun ensureCalculatedUpTo(targetIndex: Int) {
+         if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
+@@ -131,4 +134,41 @@ class BollingerBandsIndicator(
+         // Return with internal calculationScale as this is not usually scaled to price output scale
+         return rawVal?.setScale(calculationScale, RoundingMode.HALF_UP)
+     }
++
++    val upperBandValues: Series<BigDecimal?> // Renamed to avoid conflict with upperBandResults list
++        get() {
++            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
++                ensureCalculatedUpTo(klineSeries.size - 1)
++            }
++            return klineSeries.size j { idx -> this.getUpperBand(idx) }
++        }
++
++    val lowerBandValues: Series<BigDecimal?> // Renamed to avoid conflict with lowerBandResults list
++        get() {
++            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
++                ensureCalculatedUpTo(klineSeries.size - 1)
++            }
++            return klineSeries.size j { idx -> this.getLowerBand(idx) }
++        }
++
++    val middleBandValues: Series<BigDecimal?> // Renamed for consistency
++        get() {
++            // SMAIndicator's 'values' property already returns a Series<BigDecimal?>
++            // and handles scaling. We just need to ensure it's calculated.
++            if (klineSeries.size > 0) { // Ensure SMA is calculated if klines exist
++                 middleBandIndicator.getValue(klineSeries.size -1) // Trigger calculation up to the end
++            }
++            // Access the SMA's values Series, then re-scale if necessary for BBands context.
++            // However, SMAIndicator's getValue already scales. If middleBandIndicator.values uses getValue, it's fine.
++            // Let's assume middleBandIndicator.values is correctly scaled or use getMiddleBandValue
++            return klineSeries.size j { idx -> this.getMiddleBandValue(idx) }
++        }
++
++    val standardDeviationValues: Series<BigDecimal?> // Renamed for consistency
++        get() {
++            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
++                ensureCalculatedUpTo(klineSeries.size - 1)
++            }
++            return klineSeries.size j { idx -> this.getStandardDeviation(idx) }
++        }
+ }
+
+--- Commit: 640460c9f5e7ee5d1f65b210be9520dfecedf83b | 2025-06-13 21:54:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+index 2e629875..1bfedeec 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+@@ -1,11 +1,7 @@
+ package com.ta4k.indicators
+ 
+ import com.ta4k.core.model.Kline // Assuming this path
+-import borg.trikeshed.core.Series // Import new Series
+ import borg.trikeshed.core.j      // Import infix j for creating Series
+-// ConcreteJoin is not directly used for a primary 'values' property here
+-import borg.trikeshed.core.size // Import Series extensions
+-import borg.trikeshed.core.get  // Import Series extensions
+ import java.math.BigDecimal
+ import java.math.MathContext // Required for BigDecimal sqrt
+ import java.math.RoundingMode
+
+--- Commit: 4f47c7612cc2cf60961e02d1da4ecebf7ab09280 | 2025-06-16 07:33:24 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+index 1bfedeec..357cbeff 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+@@ -1,7 +1,8 @@
+ package com.ta4k.indicators
+ 
+ import com.ta4k.core.model.Kline // Assuming this path
+-import borg.trikeshed.core.j      // Import infix j for creating Series
++import borg.trikeshed.lib.j      // Import infix j for creating Series
++import borg.trikeshed.lib.Series
+ import java.math.BigDecimal
+ import java.math.MathContext // Required for BigDecimal sqrt
+ import java.math.RoundingMode
+
+--- Commit: 2038f3399bd254f0f876808eca5807a9d1d10397 | 2025-06-19 14:47:16 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+index 357cbeff..c9a0bf88 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+@@ -137,7 +137,7 @@ class BollingerBandsIndicator(
+             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                 ensureCalculatedUpTo(klineSeries.size - 1)
+             }
+-            return klineSeries.size j { idx -> this.getUpperBand(idx) }
++            return klineSeries.size j { idx:Int -> this.getUpperBand(idx) }
+         }
+ 
+     val lowerBandValues: Series<BigDecimal?> // Renamed to avoid conflict with lowerBandResults list
+@@ -145,7 +145,7 @@ class BollingerBandsIndicator(
+             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                 ensureCalculatedUpTo(klineSeries.size - 1)
+             }
+-            return klineSeries.size j { idx -> this.getLowerBand(idx) }
++            return klineSeries.size j { idx:Int -> this.getLowerBand(idx) }
+         }
+ 
+     val middleBandValues: Series<BigDecimal?> // Renamed for consistency
+@@ -158,7 +158,7 @@ class BollingerBandsIndicator(
+             // Access the SMA's values Series, then re-scale if necessary for BBands context.
+             // However, SMAIndicator's getValue already scales. If middleBandIndicator.values uses getValue, it's fine.
+             // Let's assume middleBandIndicator.values is correctly scaled or use getMiddleBandValue
+-            return klineSeries.size j { idx -> this.getMiddleBandValue(idx) }
++            return klineSeries.size j { idx:Int -> this.getMiddleBandValue(idx) }
+         }
+ 
+     val standardDeviationValues: Series<BigDecimal?> // Renamed for consistency
+@@ -166,6 +166,6 @@ class BollingerBandsIndicator(
+             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+                 ensureCalculatedUpTo(klineSeries.size - 1)
+             }
+-            return klineSeries.size j { idx -> this.getStandardDeviation(idx) }
++            return klineSeries.size j { idx:Int -> this.getStandardDeviation(idx) }
+         }
+ }
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+index c9a0bf88..e38a515f 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+@@ -2,7 +2,7 @@ package com.ta4k.indicators
+ 
+ import com.ta4k.core.model.Kline // Assuming this path
+ import borg.trikeshed.lib.j      // Import infix j for creating Series
+-import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.Indexed
+ import java.math.BigDecimal
+ import java.math.MathContext // Required for BigDecimal sqrt
+ import java.math.RoundingMode
+@@ -11,10 +11,10 @@ import kotlin.math.sqrt
+ /**
+  * Bollinger Bands indicator.
+  * Consists of a middle band (SMA) and upper/lower bands based on standard deviation.
+- * Operates on a Trikethed [Series] of [Kline].
++ * Operates on a Trikethed [Indexed] of [Kline].
+  */
+ class BollingerBandsIndicator(
+-    private val klineSeries: Series<Kline>, // Changed
++    private val klineIndexed: Indexed<Kline>, // Changed
+     private val period: Int,
+     private val standardDeviationMultiplier: BigDecimal = BigDecimal("2.0"),
+     private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
+@@ -25,7 +25,7 @@ class BollingerBandsIndicator(
+     }
+ 
+     // SMAIndicator has been refactored to accept Series<Kline>.
+-    val middleBandIndicator: SMAIndicator = SMAIndicator(klineSeries, period, klinePropertySelector)
++    val middleBandIndicator: SMAIndicator = SMAIndicator(klineIndexed, period, klinePropertySelector)
+ 
+     // Internal caches
+     private val upperBandResults = mutableListOf<BigDecimal?>()
+@@ -35,7 +35,7 @@ class BollingerBandsIndicator(
+ 
+     private val calculationScale = 8
+     // Result scale for bands usually matches price scale. Default to 2 if series is empty or first kline has no scale.
+-    private val resultScale = klineSeries.firstOrNull()?.let { kline ->
++    private val resultScale = klineIndexed.firstOrNull()?.let { kline ->
+         // Access kline safely as klineSeries might be empty, though firstOrNull handles that.
+         // klinePropertySelector might return BigDecimal with default scale if underlying is Int.
+         val price = klinePropertySelector(kline)
+@@ -43,24 +43,24 @@ class BollingerBandsIndicator(
+     } ?: 2
+ 
+     // Helper to get the first Kline from the series, returns null if series is empty.
+-    private fun Series<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
++    private fun Indexed<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
+ 
+     private fun ensureCalculatedUpTo(targetIndex: Int) {
+-        if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
++        if (targetIndex < 0 || targetIndex >= klineIndexed.size || targetIndex <= calculatedUpToIndex) {
+             return
+         }
+ 
+         // Pre-allocate lists if this is the first major calculation run or if lists are too small.
+         if (calculatedUpToIndex == -1) {
+-            for (k in 0 until klineSeries.size) {
++            for (k in 0 until klineIndexed.size) {
+                 upperBandResults.add(null)
+                 lowerBandResults.add(null)
+                 stdDevResults.add(null)
+             }
+         } else {
+-            while (upperBandResults.size < klineSeries.size) upperBandResults.add(null)
+-            while (lowerBandResults.size < klineSeries.size) lowerBandResults.add(null)
+-            while (stdDevResults.size < klineSeries.size) stdDevResults.add(null)
++            while (upperBandResults.size < klineIndexed.size) upperBandResults.add(null)
++            while (lowerBandResults.size < klineIndexed.size) lowerBandResults.add(null)
++            while (stdDevResults.size < klineIndexed.size) stdDevResults.add(null)
+         }
+ 
+         // Ensure middle band (SMA) is calculated up to the target index.
+@@ -78,7 +78,7 @@ class BollingerBandsIndicator(
+ 
+             var sumOfSquares = BigDecimal.ZERO
+             for (j in 0 until period) {
+-                val price = klinePropertySelector(klineSeries[i - j])
++                val price = klinePropertySelector(klineIndexed[i - j])
+                 val deviation = price.subtract(smaValue)
+                 sumOfSquares += deviation.pow(2)
+             }
+@@ -99,7 +99,7 @@ class BollingerBandsIndicator(
+ 
+     /** Gets the value of the upper band for the given index. */
+     fun getUpperBand(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineSeries.size) return null
++        if (index < 0 || index >= klineIndexed.size) return null
+         ensureCalculatedUpTo(index)
+         val rawVal = if (index < upperBandResults.size) upperBandResults[index] else null
+         return rawVal?.setScale(resultScale, RoundingMode.HALF_UP)
+@@ -107,7 +107,7 @@ class BollingerBandsIndicator(
+ 
+     /** Gets the value of the lower band for the given index. */
+     fun getLowerBand(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineSeries.size) return null
++        if (index < 0 || index >= klineIndexed.size) return null
+         ensureCalculatedUpTo(index)
+         val rawVal = if (index < lowerBandResults.size) lowerBandResults[index] else null
+         return rawVal?.setScale(resultScale, RoundingMode.HALF_UP)
+@@ -115,7 +115,7 @@ class BollingerBandsIndicator(
+ 
+     /** Gets the value of the middle band (SMA) for the given index. */
+     fun getMiddleBandValue(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineSeries.size) return null
++        if (index < 0 || index >= klineIndexed.size) return null
+         // SMAIndicator's getValue will handle its own Series interaction and caching.
+         val smaVal = middleBandIndicator.getValue(index)
+         // The SMAIndicator's getValue now returns values at calculationScale + 4.
+@@ -125,47 +125,47 @@ class BollingerBandsIndicator(
+ 
+     /** Gets the calculated standard deviation for the given index (used to compute bands). */
+     fun getStandardDeviation(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineSeries.size) return null
++        if (index < 0 || index >= klineIndexed.size) return null
+         ensureCalculatedUpTo(index)
+         val rawVal = if (index < stdDevResults.size) stdDevResults[index] else null
+         // Return with internal calculationScale as this is not usually scaled to price output scale
+         return rawVal?.setScale(calculationScale, RoundingMode.HALF_UP)
+     }
+ 
+-    val upperBandValues: Series<BigDecimal?> // Renamed to avoid conflict with upperBandResults list
++    val upperBandValues: Indexed<BigDecimal?> // Renamed to avoid conflict with upperBandResults list
+         get() {
+-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+-                ensureCalculatedUpTo(klineSeries.size - 1)
++            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
++                ensureCalculatedUpTo(klineIndexed.size - 1)
+             }
+-            return klineSeries.size j { idx:Int -> this.getUpperBand(idx) }
++            return klineIndexed.size j { idx:Int -> this.getUpperBand(idx) }
+         }
+ 
+-    val lowerBandValues: Series<BigDecimal?> // Renamed to avoid conflict with lowerBandResults list
++    val lowerBandValues: Indexed<BigDecimal?> // Renamed to avoid conflict with lowerBandResults list
+         get() {
+-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+-                ensureCalculatedUpTo(klineSeries.size - 1)
++            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
++                ensureCalculatedUpTo(klineIndexed.size - 1)
+             }
+-            return klineSeries.size j { idx:Int -> this.getLowerBand(idx) }
++            return klineIndexed.size j { idx:Int -> this.getLowerBand(idx) }
+         }
+ 
+-    val middleBandValues: Series<BigDecimal?> // Renamed for consistency
++    val middleBandValues: Indexed<BigDecimal?> // Renamed for consistency
+         get() {
+             // SMAIndicator's 'values' property already returns a Series<BigDecimal?>
+             // and handles scaling. We just need to ensure it's calculated.
+-            if (klineSeries.size > 0) { // Ensure SMA is calculated if klines exist
+-                 middleBandIndicator.getValue(klineSeries.size -1) // Trigger calculation up to the end
++            if (klineIndexed.size > 0) { // Ensure SMA is calculated if klines exist
++                 middleBandIndicator.getValue(klineIndexed.size -1) // Trigger calculation up to the end
+             }
+             // Access the SMA's values Series, then re-scale if necessary for BBands context.
+             // However, SMAIndicator's getValue already scales. If middleBandIndicator.values uses getValue, it's fine.
+             // Let's assume middleBandIndicator.values is correctly scaled or use getMiddleBandValue
+-            return klineSeries.size j { idx:Int -> this.getMiddleBandValue(idx) }
++            return klineIndexed.size j { idx:Int -> this.getMiddleBandValue(idx) }
+         }
+ 
+-    val standardDeviationValues: Series<BigDecimal?> // Renamed for consistency
++    val standardDeviationValues: Indexed<BigDecimal?> // Renamed for consistency
+         get() {
+-            if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
+-                ensureCalculatedUpTo(klineSeries.size - 1)
++            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
++                ensureCalculatedUpTo(klineIndexed.size - 1)
+             }
+-            return klineSeries.size j { idx:Int -> this.getStandardDeviation(idx) }
++            return klineIndexed.size j { idx:Int -> this.getStandardDeviation(idx) }
+         }
+ }
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+index e38a515f..2833b3ef 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+@@ -24,7 +24,7 @@ class BollingerBandsIndicator(
+         require(standardDeviationMultiplier > BigDecimal.ZERO) { "Standard deviation multiplier must be positive" }
+     }
+ 
+-    // SMAIndicator has been refactored to accept Series<Kline>.
++    // SMAIndicator has been refactored to accept Indexed<Kline>.
+     val middleBandIndicator: SMAIndicator = SMAIndicator(klineIndexed, period, klinePropertySelector)
+ 
+     // Internal caches
+@@ -150,7 +150,7 @@ class BollingerBandsIndicator(
+ 
+     val middleBandValues: Indexed<BigDecimal?> // Renamed for consistency
+         get() {
+-            // SMAIndicator's 'values' property already returns a Series<BigDecimal?>
++            // SMAIndicator's 'values' property already returns a Indexed<BigDecimal?>
+             // and handles scaling. We just need to ensure it's calculated.
+             if (klineIndexed.size > 0) { // Ensure SMA is calculated if klines exist
+                  middleBandIndicator.getValue(klineIndexed.size -1) // Trigger calculation up to the end
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
+deleted file mode 100644
+index 2833b3ef..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/indicators/BollingerBandsIndicator.kt
++++ /dev/null
+@@ -1,171 +0,0 @@
+-package com.ta4k.indicators
+-
+-import com.ta4k.core.model.Kline // Assuming this path
+-import borg.trikeshed.lib.j      // Import infix j for creating Series
+-import borg.trikeshed.lib.Indexed
+-import java.math.BigDecimal
+-import java.math.MathContext // Required for BigDecimal sqrt
+-import java.math.RoundingMode
+-import kotlin.math.sqrt
+-
+-/**
+- * Bollinger Bands indicator.
+- * Consists of a middle band (SMA) and upper/lower bands based on standard deviation.
+- * Operates on a Trikethed [Indexed] of [Kline].
+- */
+-class BollingerBandsIndicator(
+-    private val klineIndexed: Indexed<Kline>, // Changed
+-    private val period: Int,
+-    private val standardDeviationMultiplier: BigDecimal = BigDecimal("2.0"),
+-    private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
+-) {
+-    init {
+-        require(period > 0) { "Period must be positive" }
+-        require(standardDeviationMultiplier > BigDecimal.ZERO) { "Standard deviation multiplier must be positive" }
+-    }
+-
+-    // SMAIndicator has been refactored to accept Indexed<Kline>.
+-    val middleBandIndicator: SMAIndicator = SMAIndicator(klineIndexed, period, klinePropertySelector)
+-
+-    // Internal caches
+-    private val upperBandResults = mutableListOf<BigDecimal?>()
+-    private val lowerBandResults = mutableListOf<BigDecimal?>()
+-    private val stdDevResults = mutableListOf<BigDecimal?>()
+-    private var calculatedUpToIndex = -1
+-
+-    private val calculationScale = 8
+-    // Result scale for bands usually matches price scale. Default to 2 if series is empty or first kline has no scale.
+-    private val resultScale = klineIndexed.firstOrNull()?.let { kline ->
+-        // Access kline safely as klineSeries might be empty, though firstOrNull handles that.
+-        // klinePropertySelector might return BigDecimal with default scale if underlying is Int.
+-        val price = klinePropertySelector(kline)
+-        if (price.scale() > 0) price.scale() else 2
+-    } ?: 2
+-
+-    // Helper to get the first Kline from the series, returns null if series is empty.
+-    private fun Indexed<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
+-
+-    private fun ensureCalculatedUpTo(targetIndex: Int) {
+-        if (targetIndex < 0 || targetIndex >= klineIndexed.size || targetIndex <= calculatedUpToIndex) {
+-            return
+-        }
+-
+-        // Pre-allocate lists if this is the first major calculation run or if lists are too small.
+-        if (calculatedUpToIndex == -1) {
+-            for (k in 0 until klineIndexed.size) {
+-                upperBandResults.add(null)
+-                lowerBandResults.add(null)
+-                stdDevResults.add(null)
+-            }
+-        } else {
+-            while (upperBandResults.size < klineIndexed.size) upperBandResults.add(null)
+-            while (lowerBandResults.size < klineIndexed.size) lowerBandResults.add(null)
+-            while (stdDevResults.size < klineIndexed.size) stdDevResults.add(null)
+-        }
+-
+-        // Ensure middle band (SMA) is calculated up to the target index.
+-        // SMAIndicator's getValue will handle its own Series interaction and caching.
+-        middleBandIndicator.getValue(targetIndex)
+-
+-        val startIndex = if (calculatedUpToIndex == -1) 0 else calculatedUpToIndex + 1
+-        for (i in startIndex..targetIndex) {
+-            val smaValue = middleBandIndicator.getValue(i) // Get already calculated SMA for index i
+-
+-            if (smaValue == null || i < period - 1) {
+-                // upperBandResults[i], lowerBandResults[i], stdDevResults[i] remain null (from pre-allocation)
+-                continue
+-            }
+-
+-            var sumOfSquares = BigDecimal.ZERO
+-            for (j in 0 until period) {
+-                val price = klinePropertySelector(klineIndexed[i - j])
+-                val deviation = price.subtract(smaValue)
+-                sumOfSquares += deviation.pow(2)
+-            }
+-
+-            val variance = sumOfSquares.divide(BigDecimal(period), calculationScale, RoundingMode.HALF_UP)
+-            // Standard deviation using double conversion. For higher precision, a BigDecimal sqrt is needed.
+-            val standardDeviation = BigDecimal(sqrt(variance.toDouble()), MathContext(calculationScale))
+-                                    .setScale(calculationScale, RoundingMode.HALF_UP)
+-            stdDevResults[i] = standardDeviation // Store with calculationScale
+-
+-            val bandOffset = standardDeviation.multiply(standardDeviationMultiplier)
+-
+-            upperBandResults[i] = smaValue.add(bandOffset)
+-            lowerBandResults[i] = smaValue.subtract(bandOffset)
+-        }
+-        calculatedUpToIndex = targetIndex
+-    }
+-
+-    /** Gets the value of the upper band for the given index. */
+-    fun getUpperBand(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineIndexed.size) return null
+-        ensureCalculatedUpTo(index)
+-        val rawVal = if (index < upperBandResults.size) upperBandResults[index] else null
+-        return rawVal?.setScale(resultScale, RoundingMode.HALF_UP)
+-    }
+-
+-    /** Gets the value of the lower band for the given index. */
+-    fun getLowerBand(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineIndexed.size) return null
+-        ensureCalculatedUpTo(index)
+-        val rawVal = if (index < lowerBandResults.size) lowerBandResults[index] else null
+-        return rawVal?.setScale(resultScale, RoundingMode.HALF_UP)
+-    }
+-
+-    /** Gets the value of the middle band (SMA) for the given index. */
+-    fun getMiddleBandValue(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineIndexed.size) return null
+-        // SMAIndicator's getValue will handle its own Series interaction and caching.
+-        val smaVal = middleBandIndicator.getValue(index)
+-        // The SMAIndicator's getValue now returns values at calculationScale + 4.
+-        // We need to scale it to the common resultScale for BBands.
+-        return smaVal?.setScale(resultScale, RoundingMode.HALF_UP)
+-    }
+-
+-    /** Gets the calculated standard deviation for the given index (used to compute bands). */
+-    fun getStandardDeviation(index: Int): BigDecimal? {
+-        if (index < 0 || index >= klineIndexed.size) return null
+-        ensureCalculatedUpTo(index)
+-        val rawVal = if (index < stdDevResults.size) stdDevResults[index] else null
+-        // Return with internal calculationScale as this is not usually scaled to price output scale
+-        return rawVal?.setScale(calculationScale, RoundingMode.HALF_UP)
+-    }
+-
+-    val upperBandValues: Indexed<BigDecimal?> // Renamed to avoid conflict with upperBandResults list
+-        get() {
+-            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+-                ensureCalculatedUpTo(klineIndexed.size - 1)
+-            }
+-            return klineIndexed.size j { idx:Int -> this.getUpperBand(idx) }
+-        }
+-
+-    val lowerBandValues: Indexed<BigDecimal?> // Renamed to avoid conflict with lowerBandResults list
+-        get() {
+-            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+-                ensureCalculatedUpTo(klineIndexed.size - 1)
+-            }
+-            return klineIndexed.size j { idx:Int -> this.getLowerBand(idx) }
+-        }
+-
+-    val middleBandValues: Indexed<BigDecimal?> // Renamed for consistency
+-        get() {
+-            // SMAIndicator's 'values' property already returns a Indexed<BigDecimal?>
+-            // and handles scaling. We just need to ensure it's calculated.
+-            if (klineIndexed.size > 0) { // Ensure SMA is calculated if klines exist
+-                 middleBandIndicator.getValue(klineIndexed.size -1) // Trigger calculation up to the end
+-            }
+-            // Access the SMA's values Series, then re-scale if necessary for BBands context.
+-            // However, SMAIndicator's getValue already scales. If middleBandIndicator.values uses getValue, it's fine.
+-            // Let's assume middleBandIndicator.values is correctly scaled or use getMiddleBandValue
+-            return klineIndexed.size j { idx:Int -> this.getMiddleBandValue(idx) }
+-        }
+-
+-    val standardDeviationValues: Indexed<BigDecimal?> // Renamed for consistency
+-        get() {
+-            if (klineIndexed.size > 0 && calculatedUpToIndex < klineIndexed.size - 1) {
+-                ensureCalculatedUpTo(klineIndexed.size - 1)
+-            }
+-            return klineIndexed.size j { idx:Int -> this.getStandardDeviation(idx) }
+-        }
+-}

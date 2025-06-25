@@ -1,0 +1,98 @@
+
+--- Commit: 7c1b9b184ac955794b6d653f3a15cb97d62832c6 | 2025-06-19 23:04:25 -0400 ---
+diff --git a/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt b/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
+index 81f8bd20..af64fb34 100644
+--- a/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
++++ b/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
+@@ -1,12 +1,5 @@
+ package moneyfan.strategy
+ 
+-import org.ta4j.core.BarSeries
+-import org.ta4j.core.BaseBarSeries
+-import org.ta4j.core.indicators.SMAIndicator
+-import org.ta4j.core.indicators.helpers.ClosePriceIndicator
+-import org.ta4j.core.trading.rules.CrossedDownIndicatorRule
+-import org.ta4j.core.trading.rules.CrossedUpIndicatorRule
+-import org.ta4j.core.trading.rules.OrRule
+ import moneyfan.model.TradeSignal
+ import borg.trikeshed.lib.Series
+ import com.ta4k.core.model.Kline
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt b/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
+index af64fb34..c95f73c1 100644
+--- a/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
++++ b/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
+@@ -12,8 +12,8 @@ class SimpleMovingAverageStrategy(
+     private val fastPeriod: Int,
+     private val slowPeriod: Int
+ ) {
+-    fun generateSignals(klines: Series<Kline>): Series<TradeSignal> {
+-        // Convert Series<Kline> to ta4j BarSeries
++    fun generateSignals(klines: Indexed<Kline>): Indexed<TradeSignal> {
++        // Convert Indexed<Kline> to ta4j BarSeries
+         val barSeries = BaseBarSeries()
+         for (i in 0 until klines.size) {
+             val kline = klines.get(i)
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt b/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
+deleted file mode 100644
+index c95f73c1..00000000
+--- a/moneyfan/src/main/kotlin/moneyfan/strategy/SimpleMovingAverageStrategy.kt
++++ /dev/null
+@@ -1,53 +0,0 @@
+-package moneyfan.strategy
+-
+-import moneyfan.model.TradeSignal
+-import borg.trikeshed.lib.Series
+-import com.ta4k.core.model.Kline
+-import java.math.BigDecimal
+-
+-/**
+- * Simple Moving Average Strategy using ta4j indicators and rules.
+- */
+-class SimpleMovingAverageStrategy(
+-    private val fastPeriod: Int,
+-    private val slowPeriod: Int
+-) {
+-    fun generateSignals(klines: Indexed<Kline>): Indexed<TradeSignal> {
+-        // Convert Indexed<Kline> to ta4j BarSeries
+-        val barSeries = BaseBarSeries()
+-        for (i in 0 until klines.size) {
+-            val kline = klines.get(i)
+-            barSeries.addBar(
+-                kline.openTime,
+-                kline.openPrice.toDouble(),
+-                kline.highPrice.toDouble(),
+-                kline.lowPrice.toDouble(),
+-                kline.closePrice.toDouble(),
+-                kline.volume.toDouble()
+-            )
+-        }
+-
+-        // Create indicators
+-        val closePrice = ClosePriceIndicator(barSeries)
+-        val fastMA = SMAIndicator(closePrice, fastPeriod)
+-        val slowMA = SMAIndicator(closePrice, slowPeriod)
+-
+-        // Create trading rules
+-        val entryRule = CrossedUpIndicatorRule(fastMA, slowMA)
+-        val exitRule = CrossedDownIndicatorRule(fastMA, slowMA)
+-        val tradingRule = OrRule(entryRule, exitRule)
+-
+-        // Generate signals
+-        return Series.of(barSeries.barCount) { i ->
+-            if (i < slowPeriod) {
+-                TradeSignal.NONE
+-            } else {
+-                when {
+-                    entryRule.isSatisfied(i) -> TradeSignal.BUY
+-                    exitRule.isSatisfied(i) -> TradeSignal.SELL
+-                    else -> TradeSignal.NONE
+-                }
+-            }
+-        }
+-    }
+-} 
+\ No newline at end of file

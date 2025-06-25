@@ -1,15 +1,12 @@
 plugins {
     kotlin("multiplatform") version "2.1.21"
+    kotlin("plugin.serialization") version "2.1.21"
     id("com.github.ben-manes.versions") version "0.51.0"
 }
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 kotlin {
-    js(IR) {
-        browser()
-        binaries.executable()
-    }
     jvm()
     // re-add wasm
     // Platform detection for native targets
@@ -31,8 +28,11 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // implementation(project(":Trikeshed"))
+                implementation(project(":Trikeshed"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
             }
         }
         val commonTest by getting {

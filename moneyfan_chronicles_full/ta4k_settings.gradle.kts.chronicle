@@ -1,0 +1,76 @@
+
+--- Commit: ff7859c065801459e57609c13f19fd55062e0f11 | 2025-06-07 23:26:23 +0000 ---
+diff --git a/ta4k/settings.gradle.kts b/ta4k/settings.gradle.kts
+index 7dd3845d..d26a4fd2 100644
+--- a/ta4k/settings.gradle.kts
++++ b/ta4k/settings.gradle.kts
+@@ -1,3 +1,5 @@
+ 
+ rootProject.name = "ta4k"
+ 
++include(":Review:trikeshed-core")
++project(":Review:trikeshed-core").projectDir = file("../Review/trikeshed-core")
+
+--- Commit: 938de07c06c574c7644a8d9bf4617678567d637e | 2025-06-11 23:47:10 -0400 ---
+diff --git a/ta4k/settings.gradle.kts b/ta4k/settings.gradle.kts
+index d26a4fd2..1cfbbc1a 100644
+--- a/ta4k/settings.gradle.kts
++++ b/ta4k/settings.gradle.kts
+@@ -1,5 +1,4 @@
+-
+ rootProject.name = "ta4k"
+ 
+-include(":Review:trikeshed-core")
+-project(":Review:trikeshed-core").projectDir = file("../Review/trikeshed-core")
++include(":Trikeshed")
++project(":Trikeshed").projectDir = file("../Trikeshed")
+
+--- Commit: 96a7abf6ccb370bacf9b2f484f529bff0b0716df | 2025-06-16 22:17:10 -0400 ---
+diff --git a/ta4k/settings.gradle.kts b/ta4k/settings.gradle.kts
+index 1cfbbc1a..389d3eef 100644
+--- a/ta4k/settings.gradle.kts
++++ b/ta4k/settings.gradle.kts
+@@ -2,3 +2,9 @@ rootProject.name = "ta4k"
+ 
+ include(":Trikeshed")
+ project(":Trikeshed").projectDir = file("../Trikeshed")
++
++include(":Trikeshed:cursors")
++project(":Trikeshed:cursors").projectDir = file("../Trikeshed/cursors")
++
++include(":Trikeshed:vec")
++project(":Trikeshed:vec").projectDir = file("../Trikeshed/vec")
+
+--- Commit: bfa15ab337c9c39e42ca7c49860b9d834df16143 | 2025-06-17 10:27:55 +0000 ---
+diff --git a/ta4k/settings.gradle.kts b/ta4k/settings.gradle.kts
+index 1cfbbc1a..041db85d 100644
+--- a/ta4k/settings.gradle.kts
++++ b/ta4k/settings.gradle.kts
+@@ -2,3 +2,6 @@ rootProject.name = "ta4k"
+ 
+ include(":Trikeshed")
+ project(":Trikeshed").projectDir = file("../Trikeshed")
++
++include(":quantstats-core")
++project(":quantstats-core").projectDir = file("./quantstats-core")
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/settings.gradle.kts b/ta4k/settings.gradle.kts
+deleted file mode 100644
+index 57ddc57e..00000000
+--- a/ta4k/settings.gradle.kts
++++ /dev/null
+@@ -1,13 +0,0 @@
+-rootProject.name = "ta4k"
+-
+-include(":Trikeshed")
+-project(":Trikeshed").projectDir = file("../Trikeshed")
+-
+-include(":Trikeshed:cursors")
+-project(":Trikeshed:cursors").projectDir = file("../Trikeshed/cursors")
+-
+-include(":Trikeshed:vec")
+-project(":Trikeshed:vec").projectDir = file("../Trikeshed/vec")
+-
+-include(":quantstats-core")
+-project(":quantstats-core").projectDir = file("./quantstats-core")

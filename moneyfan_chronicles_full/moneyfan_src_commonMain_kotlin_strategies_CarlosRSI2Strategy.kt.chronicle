@@ -1,0 +1,232 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt b/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt
+index 611cd5ce..c02e09f9 100644
+--- a/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt
++++ b/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt
+@@ -20,13 +20,13 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
+      * This method adapts the original `generateSignal` logic to fit the [TradingStrategyInterface].
+      *
+      * @param currentPrice The current price for decision-making (e.g., the latest close price).
+-     * @param historicalPrices A [Series<Double>] of historical prices up to (but not including) the current point.
++     * @param historicalPrices A [Indexed<Double>] of historical prices up to (but not including) the current point.
+      * @param historicalDataPoint The full [RowVec] for the current data point, providing broader context if needed.
+      * @return [TradingSignal] (BUY, SELL, or HOLD).
+      */
+     override fun getSignal(
+         currentPrice: Double,
+-        historicalPrices: Series<Double>,
++        historicalPrices: Indexed<Double>,
+         historicalDataPoint: RowVec // Currently unused, but available for future enhancements (e.g., volume data)
+     ): TradingSignal {
+         // For indicator calculation, the current price is appended to the historical prices
+@@ -75,13 +75,13 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
+      * However, standard [Series] definitions may not directly support complex windowed
+      * calculations like RSI's Wilder smoothing without iteration.
+      * This implementation uses `.values.toList()` for pragmatic access to underlying data,
+-     * performing calculations, and then wrapping the result in a new [Series<Double>].
++     * performing calculations, and then wrapping the result in a new [Indexed<Double>].
+      * The primary API interaction remains with [Series] types.
+      *
+-     * @param priceSeries The input [Series<Double>] of prices.
+-     * @return A [Series<Double>] containing the calculated RSI values.
++     * @param priceSeries The input [Indexed<Double>] of prices.
++     * @return A [Indexed<Double>] containing the calculated RSI values.
+      */
+-    internal fun calculateRSI2(priceSeries: Series<Double>): Series<Double> {
++    internal fun calculateRSI2(priceSeries: Indexed<Double>): Indexed<Double> {
+         val prices = priceSeries.values.toList()
+         val period = 2 // RSI period for this strategy
+ 
+@@ -137,15 +137,15 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
+      *
+      * CLAUDE.md suggests Series-native operations. Similar to RSI, complex windowing
+      * for SMA on a generic [Series] might require iteration. This implementation uses
+-     * `.values.toList()` for direct data access and constructs a new [Series<Double>] for the result.
++     * `.values.toList()` for direct data access and constructs a new [Indexed<Double>] for the result.
+      * The function signature and return type adhere to using [Series].
+      *
+-     * @param priceSeries The input [Series<Double>] of prices.
++     * @param priceSeries The input [Indexed<Double>] of prices.
+      * @param period The period for SMA calculation.
+-     * @return A [Series<Double>] of SMA values. The resulting series is shorter than the input
++     * @return A [Indexed<Double>] of SMA values. The resulting series is shorter than the input
+      *         by `period - 1` elements.
+      */
+-    internal fun calculateSMA(priceSeries: Series<Double>, period: Int): Series<Double> {
++    internal fun calculateSMA(priceSeries: Indexed<Double>, period: Int): Indexed<Double> {
+         val prices = priceSeries.values.toList()
+         if (prices.size < period) {
+             return MemSeries.empty(priceSeries.schema()) // Not enough data for even one SMA value
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt b/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt
+deleted file mode 100644
+index c02e09f9..00000000
+--- a/moneyfan/src/commonMain/kotlin/strategies/CarlosRSI2Strategy.kt
++++ /dev/null
+@@ -1,164 +0,0 @@
+-package strategies
+-
+-import com.google.trike.series.* // Star import for Series, RowVec, etc.
+-import com.google.trike.series.memseries.* // Star import for MemSeries
+-import kotlin.math.max // Standard Kotlin math function, specific import is fine
+-import backtesting.TradingStrategyInterface // Specific import for the interface
+-
+-/**
+- * Implements the CarlosRSI2 trading strategy.
+- * This strategy uses RSI2 (Relative Strength Index over 2 periods),
+- * SMA2 (Simple Moving Average over 2 periods), and SMA15 (Simple Moving Average over 15 periods)
+- * to generate trading signals.
+- *
+- * Adheres to CLAUDE.md by using [Series] for data manipulation and in interfaces.
+- */
+-class CarlosRSI2Strategy : TradingStrategyInterface {
+-
+-    /**
+-     * Generates a trading signal based on the current price and historical data.
+-     * This method adapts the original `generateSignal` logic to fit the [TradingStrategyInterface].
+-     *
+-     * @param currentPrice The current price for decision-making (e.g., the latest close price).
+-     * @param historicalPrices A [Indexed<Double>] of historical prices up to (but not including) the current point.
+-     * @param historicalDataPoint The full [RowVec] for the current data point, providing broader context if needed.
+-     * @return [TradingSignal] (BUY, SELL, or HOLD).
+-     */
+-    override fun getSignal(
+-        currentPrice: Double,
+-        historicalPrices: Indexed<Double>,
+-        historicalDataPoint: RowVec // Currently unused, but available for future enhancements (e.g., volume data)
+-    ): TradingSignal {
+-        // For indicator calculation, the current price is appended to the historical prices
+-        // to form a complete series up to the moment of decision.
+-        val pricesForIndicators = MemSeries.ofDoubles(historicalPrices.values.toList() + currentPrice)
+-
+-        // Ensure enough data for the longest period indicator (SMA15) plus one for RSI calculation.
+-        // SMA15 needs 15 points. RSI2 needs 3 points for its first value.
+-        // The resulting indicator series will be shorter than pricesForIndicators.
+-        if (pricesForIndicators.size < 15 + 1) { // Minimum for SMA15 and one subsequent change for RSI.
+-            return TradingSignal.HOLD // Not enough data to compute all indicators
+-        }
+-
+-        val rsi2Series = calculateRSI2(pricesForIndicators)
+-        val sma2Series = calculateSMA(pricesForIndicators, 2)
+-        val sma15Series = calculateSMA(pricesForIndicators, 15)
+-
+-        // Check if any indicator series is empty (e.g., if price series was too short for calculation period)
+-        if (rsi2Series.isEmpty || sma2Series.isEmpty || sma15Series.isEmpty) {
+-            return TradingSignal.HOLD // Indicator calculation failed or yielded no results
+-        }
+-
+-        // Retrieve the latest values from the calculated indicator series
+-        val latestRsi2 = rsi2Series.values.lastOrNull() ?: return TradingSignal.HOLD
+-        val latestSma2 = sma2Series.values.lastOrNull() ?: return TradingSignal.HOLD
+-        val latestSma15 = sma15Series.values.lastOrNull() ?: return TradingSignal.HOLD
+-
+-        // Entry Condition: RSI2 is very low (oversold) and short-term trend (SMA2) is above long-term trend (SMA15).
+-        if (latestRsi2 < 5.0 && latestSma2 > latestSma15) {
+-            return TradingSignal.BUY
+-        }
+-
+-        // Exit Condition: RSI2 is very high (overbought) or short-term trend crosses below long-term trend.
+-        if (latestRsi2 > 95.0 || latestSma2 < latestSma15) {
+-            return TradingSignal.SELL
+-        }
+-
+-        return TradingSignal.HOLD // Default action if no other conditions are met
+-    }
+-
+-    /**
+-     * Calculates RSI (Relative Strength Index) over a specified period.
+-     * For this strategy, period is 2 (RSI2).
+-     *
+-     * CLAUDE.md suggests Series-native operations (e.g., `priceSeries.α(period)`).
+-     * However, standard [Series] definitions may not directly support complex windowed
+-     * calculations like RSI's Wilder smoothing without iteration.
+-     * This implementation uses `.values.toList()` for pragmatic access to underlying data,
+-     * performing calculations, and then wrapping the result in a new [Indexed<Double>].
+-     * The primary API interaction remains with [Series] types.
+-     *
+-     * @param priceSeries The input [Indexed<Double>] of prices.
+-     * @return A [Indexed<Double>] containing the calculated RSI values.
+-     */
+-    internal fun calculateRSI2(priceSeries: Indexed<Double>): Indexed<Double> {
+-        val prices = priceSeries.values.toList()
+-        val period = 2 // RSI period for this strategy
+-
+-        // Need at least 'period + 1' prices to calculate 'period' changes for the first RSI value.
+-        if (prices.size < period + 1) {
+-            return MemSeries.empty(priceSeries.schema()) // Not enough data
+-        }
+-
+-        val changes = List(prices.size - 1) { i -> prices[i+1] - prices[i] }
+-
+-        val rsiValues = mutableListOf<Double>()
+-        var avgGain = 0.0
+-        var avgLoss = 0.0
+-
+-        // Calculate initial average gain and loss over the first 'period' changes.
+-        var sumGains = 0.0
+-        var sumLosses = 0.0
+-        for (i in 0 until period) {
+-            val change = changes[i]
+-            if (change > 0) sumGains += change
+-            else sumLosses += -change // Losses are stored as positive values
+-        }
+-        avgGain = sumGains / period
+-        avgLoss = sumLosses / period
+-
+-        // Calculate first RSI value
+-        val rsInitial = if (avgLoss == 0.0) Double.MAX_VALUE else avgGain / avgLoss
+-        val initialRsi = 100.0 - (100.0 / (1.0 + rsInitial))
+-        rsiValues.add(if (initialRsi.isInfinite() && rsInitial > 0) 100.0 else if (initialRsi.isInfinite()) 0.0 else initialRsi)
+-
+-
+-        // Calculate subsequent RSI values using Wilder's smoothing method
+-        for (i in period until changes.size) {
+-            val currentChange = changes[i]
+-            val currentGain = if (currentChange > 0) currentChange else 0.0
+-            val currentLoss = if (currentChange < 0) -currentChange else 0.0
+-
+-            avgGain = (avgGain * (period - 1) + currentGain) / period
+-            avgLoss = (avgLoss * (period - 1) + currentLoss) / period
+-
+-            val rs = if (avgLoss == 0.0) Double.MAX_VALUE else avgGain / avgLoss
+-            val rsi = 100.0 - (100.0 / (1.0 + rs))
+-            // Handle cases where RSI might be infinite due to rs being MAX_VALUE or 0.
+-            rsiValues.add(if (rsi.isInfinite() && rs > 0) 100.0 else if (rsi.isInfinite()) 0.0 else rsi)
+-        }
+-
+-        return if (rsiValues.isNotEmpty()) MemSeries.ofDoubles(rsiValues) else MemSeries.empty(priceSeries.schema())
+-    }
+-
+-
+-    /**
+-     * Calculates Simple Moving Average (SMA).
+-     *
+-     * CLAUDE.md suggests Series-native operations. Similar to RSI, complex windowing
+-     * for SMA on a generic [Series] might require iteration. This implementation uses
+-     * `.values.toList()` for direct data access and constructs a new [Indexed<Double>] for the result.
+-     * The function signature and return type adhere to using [Series].
+-     *
+-     * @param priceSeries The input [Indexed<Double>] of prices.
+-     * @param period The period for SMA calculation.
+-     * @return A [Indexed<Double>] of SMA values. The resulting series is shorter than the input
+-     *         by `period - 1` elements.
+-     */
+-    internal fun calculateSMA(priceSeries: Indexed<Double>, period: Int): Indexed<Double> {
+-        val prices = priceSeries.values.toList()
+-        if (prices.size < period) {
+-            return MemSeries.empty(priceSeries.schema()) // Not enough data for even one SMA value
+-        }
+-
+-        val smaValues = mutableListOf<Double>()
+-        // Calculate SMA for each window of size 'period'
+-        for (i in 0 .. prices.size - period) {
+-            val window = prices.subList(i, i + period)
+-            val sum = window.sum()
+-            smaValues.add(sum / period)
+-        }
+-
+-        return if (smaValues.isNotEmpty()) MemSeries.ofDoubles(smaValues) else MemSeries.empty(priceSeries.schema())
+-    }
+-}

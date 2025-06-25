@@ -1,0 +1,125 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/trikeshed/provider/SuspendableDataProvider.kt b/moneyfan/src/commonMain/kotlin/moneyfan/trikeshed/provider/SuspendableDataProvider.kt
+deleted file mode 100644
+index 15c93fb4..00000000
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/trikeshed/provider/SuspendableDataProvider.kt
++++ /dev/null
+@@ -1,117 +0,0 @@
+-package moneyfan.trikeshed.provider
+-
+-import moneyfan.trikeshed.context.LatencyProvider
+-import moneyfan.trikeshed.context.LatencyProviderKey
+-import kotlin.coroutines.coroutineContext
+-import kotlin.time.Duration
+-import kotlin.time.measureTime
+-// No need for kotlinx.coroutines.currentCoroutineContext explicitly if kotlin.coroutines.coroutineContext works.
+-
+-/**
+- * A marker interface for data query objects.
+- * Implementations of this interface encapsulate the parameters needed to request specific data.
+- */
+-interface DataQuery
+-
+-/**
+- * A marker interface for data result objects.
+- * Implementations of this interface encapsulate the data returned from a query.
+- */
+-interface DataResult
+-
+-/**
+- * Defines a generic contract for a data provider that fetches data asynchronously.
+- * This interface is designed to be aware of potential latencies, typically managed
+- * via a [LatencyProvider] available in the [kotlin.coroutines.CoroutineContext].
+- *
+- * This promotes a consistent pattern for data retrieval operations that might involve
+- * I/O, network requests, or other potentially time-consuming tasks.
+- *
+- * @param Q The type of the query object, which must implement [DataQuery].
+- *          This specifies what data is being requested.
+- * @param R The type of the result object, which must implement [DataResult].
+- *          This represents the data returned by the provider.
+- */
+-interface SuspendableDataProvider<in Q : DataQuery, out R : DataResult> {
+-    /**
+-     * Asynchronously fetches data based on the provided [query].
+-     *
+-     * Implementations are encouraged to check the [kotlin.coroutines.CoroutineContext]
+-     * for a [LatencyProvider] (using [LatencyProviderKey]) and use its `simulateDelay`
+-     * method to incorporate simulated latencies for the given `operationIdentifier`.
+-     *
+-     * @param query The query object specifying the data to be fetched.
+-     * @param operationIdentifier A unique string identifying the data fetching operation
+-     *                            (e.g., "FETCH_USER_PROFILE", "QUERY_PRODUCT_CATALOG"). This identifier
+-     *                            is primarily used for latency simulation and potentially for metrics.
+-     * @return The result object of type [R] containing the fetched data.
+-     * @throws Exception if data fetching fails for any reason (e.g., network error, data not found).
+-     */
+-    suspend fun fetchData(query: Q, operationIdentifier: String): R
+-}
+-
+-/**
+- * An abstract base class providing a skeletal implementation of [SuspendableDataProvider].
+- *
+- * This class simplifies the creation of new data providers by handling the interaction
+- * with the [LatencyProvider] from the coroutine context. Subclasses only need to
+- * implement the [fetchDataInternal] method, which contains the actual data retrieval logic.
+- *
+- * @param Q The type of the query object, implementing [DataQuery].
+- * @param R The type of the result object, implementing [DataResult].
+- */
+-abstract class AbstractSuspendableDataProvider<in Q : DataQuery, R : DataResult> : SuspendableDataProvider<Q, R> {
+-
+-    /**
+-     * The core, protected abstract method that concrete subclasses must implement.
+-     * This method should encapsulate the actual logic for retrieving data from a
+-     * specific source (e.g., database, network API, in-memory store).
+-     * It is called by the public [fetchData] method after any simulated latency.
+-     *
+-     * @param query The [DataQuery] object specifying the data to fetch.
+-     * @return The [DataResult] containing the fetched data.
+-     * @throws Exception if the data retrieval process encounters an error.
+-     */
+-    protected abstract suspend fun fetchDataInternal(query: Q): R
+-
+-    /**
+-     * Fetches data based on the given [query] and `operationIdentifier`.
+-     *
+-     * This implementation performs the following steps:
+-     * 1. Retrieves an optional [LatencyProvider] from the current [coroutineContext] using [LatencyProviderKey].
+-     * 2. If a [LatencyProvider] is found, its `simulateDelay` method is called with the `operationIdentifier`.
+-     * 3. The [fetchDataInternal] method (implemented by subclasses) is called to retrieve the actual data.
+-     * 4. The execution time of [fetchDataInternal] is measured.
+-     * 5. A message is printed (for demonstration) indicating the duration of the internal fetch and whether a
+-     *    [LatencyProvider] was active. In a production system, this would likely be a structured log entry
+-     *    or a call to a metrics collection service.
+-     *
+-     * Note: The measured duration is for the `fetchDataInternal` call only and does not include
+-     * any delay introduced by the `LatencyProvider`.
+-     *
+-     * @param query The [DataQuery] object specifying what data to fetch.
+-     * @param operationIdentifier A string identifying the data fetching operation, used for latency simulation.
+-     * @return The [DataResult] object of type [R] containing the fetched data.
+-     */
+-    override suspend fun fetchData(query: Q, operationIdentifier: String): R {
+-        val latencyProvider = coroutineContext[LatencyProviderKey]
+-
+-        latencyProvider?.simulateDelay(operationIdentifier)
+-
+-        val result: R // Ensure result is declared before measureTime block if its assignment is complex
+-        val duration = measureTime {
+-            result = fetchDataInternal(query)
+-        }
+-
+-        // In a real application, use a proper logger or metrics system.
+-        val latencyMessage = if (latencyProvider != null) {
+-            "(Simulated delay potentially applied by LatencyProvider: $latencyProvider)"
+-        } else {
+-            "(No LatencyProvider in context)"
+-        }
+-        // Using println for this exercise as proper logging is out of scope.
+-        println("Trace: Operation '$operationIdentifier' internal fetch took $duration. $latencyMessage")
+-
+-        return result
+-    }
+-}
