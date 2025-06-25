@@ -64,18 +64,18 @@ class JvmNioProvider(
     }
     
     override fun createDatagramSocket(address: PlatformInetSocketAddress): PlatformDatagramSocket {
-        attentionDelegate.beforeOperation("createDatagramSocket", "address=${address.hostString}:${address.port}")
+        attentionDelegate.beforeOperation("createDatagramSocket", "address=${address.hostName}:${address.port}")
         val startTime = System.currentTimeMillis()
         
         return try {
             val socket = PlatformDatagramSocket.create(address)
             val duration = System.currentTimeMillis() - startTime
-            attentionDelegate.afterOperation("createDatagramSocket", duration, true, "address=${address.hostString}:${address.port}")
+            attentionDelegate.afterOperation("createDatagramSocket", duration, true, "address=${address.hostName}:${address.port}")
             socket
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            attentionDelegate.onOperationError("createDatagramSocket", e, "address=${address.hostString}:${address.port}")
-            attentionDelegate.afterOperation("createDatagramSocket", duration, false, "address=${address.hostString}:${address.port}")
+            attentionDelegate.onOperationError("createDatagramSocket", e, "address=${address.hostName}:${address.port}")
+            attentionDelegate.afterOperation("createDatagramSocket", duration, false, "address=${address.hostName}:${address.port}")
             throw e
         }
     }
