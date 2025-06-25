@@ -1,5 +1,5 @@
 package borg.trikeshed.integration
 
-import kotlin.system.getTimeMillis
+import kotlinx.datetime.Clock
 
-actual fun getCurrentTimeMillis(): Long = getTimeMillis()
+actual fun getCurrentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()

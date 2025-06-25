@@ -231,9 +231,9 @@ class HttpQuicServer(
         val headerData = mutableListOf<Byte>()
         for ((name, value) in headers) {
             headerData.add(name.length.toByte())
-            headerData.addAll(name.toByteArray().toList())
+            headerData.addAll(name.encodeToByteArray().toList())
             headerData.add(value.length.toByte())
-            headerData.addAll(value.toByteArray().toList())
+            headerData.addAll(value.encodeToByteArray().toList())
         }
         
         val frameData = mutableListOf<Byte>()
@@ -248,7 +248,7 @@ class HttpQuicServer(
      * Create data frame
      */
     private fun createDataFrame(body: String): Indexed<Byte> {
-        val bodyBytes = body.toByteArray()
+        val bodyBytes = body.encodeToByteArray()
         val frameData = mutableListOf<Byte>()
         frameData.add(0x00) // DATA frame type
         frameData.addAll(encodeVarInt(bodyBytes.size.toLong()))

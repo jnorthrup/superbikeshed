@@ -1,6 +1,7 @@
 package borg.trikeshed.dsl
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.reactor.getCurrentTimeMillis
 
 /**
  * Stackable Bubbling Router DSL
@@ -100,7 +101,7 @@ class AttentionContext {
     suspend fun uringAccept(serverFd: Int): Int {
         frame("uring", "accept")
         // Placeholder for io-uring accept operation
-        return System.currentTimeMillis().toInt()
+        return getCurrentTimeMillis().toInt()
     }
     
     // IPC operations with context bubbling

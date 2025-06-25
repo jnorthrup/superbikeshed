@@ -71,9 +71,7 @@ class TrikeshedIntegration(
                 initialState = QuicConnectionState(
                     localConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() }),
                     remoteConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() })
-                ),
-                port = quicPort,
-                privateKey = 32 j { _: Int -> 0.toByte() }
+                )
             )
             
             // Initialize CouchDB client

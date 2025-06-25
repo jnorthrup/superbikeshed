@@ -1,6 +1,7 @@
 package borg.trikeshed.net.quic
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.reactor.getCurrentTimeMillis
 
 /**
  * Build actual QUIC packets for HTTP/3 responses
@@ -29,7 +30,7 @@ object QuicPacketBuilder {
                         0x54, 0x72, 0x69, 0x6B, 0x65, 0x53, 0x68, 0x64  // "TrikeSHd"
                     ).let { it.size j { i -> it[i] } }
                 ),
-                packetNumber = System.currentTimeMillis() and 0xFFFFFF
+                packetNumber = getCurrentTimeMillis() and 0xFFFFFF
             ),
             frames = 1 j {
                 StreamFrame(
@@ -58,23 +59,23 @@ object QuicPacketBuilder {
         buffer.add(0x00) // Literal with name reference
         buffer.add(0x05) // Name index 5 (content-type)
         buffer.add(0x09) // Value length 9
-        buffer.addAll("text/html".toByteArray().toList())
+        buffer.addAll("text/html".encodeToByteArray().toList())
         
         // server: TrikeShed-QUIC
         buffer.add(0x00) // Literal with name reference  
         buffer.add(0x54) // Name index 84 (server)
         buffer.add(0x0E) // Value length 14
-        buffer.addAll("TrikeShed-QUIC".toByteArray().toList())
+        buffer.addAll("TrikeShed-QUIC".encodeToByteArray().toList())
         
         // date: [current date]
         val dateStr = "Sat, 22 Dec 2024 00:00:00 GMT"
         buffer.add(0x00) // Literal
         buffer.add(0x21) // Name index 33 (date)
         buffer.add(dateStr.length.toByte())
-        buffer.addAll(dateStr.toByteArray().toList())
+        buffer.addAll(dateStr.encodeToByteArray().toList())
         
         // Body separator and content
-        buffer.addAll("\r\n\r\n<h1>McDonald's WiFi Portal</h1>".toByteArray().toList())
+        buffer.addAll("\r\n\r\n<h1>McDonald's WiFi Portal</h1>".encodeToByteArray().toList())
         
         return buffer.size j { buffer[it] }
     }
@@ -112,13 +113,13 @@ object QuicPacketBuilder {
                 buffer.add(pn.toByte())
             }
             pn < 0x4000 -> {
-                buffer.add((0x40 or (pn shr 8)).toByte())
-                buffer.add((pn and 0xFF).toByte())
+                buffer.add((0x40 or (pn shr 8)).toInt().toByte())
+                buffer.add((pn and 0xFF).toInt().toByte())
             }
             else -> {
-                buffer.add((0x80 or (pn shr 16)).toByte())
-                buffer.add(((pn shr 8) and 0xFF).toByte())
-                buffer.add((pn and 0xFF).toByte())
+                buffer.add((0x80 or (pn shr 16)).toInt().toByte())
+                buffer.add(((pn shr 8) and 0xFF).toInt().toByte())
+                buffer.add((pn and 0xFF).toInt().toByte())
             }
         }
         

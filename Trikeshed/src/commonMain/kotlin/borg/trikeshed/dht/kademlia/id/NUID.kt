@@ -1,0 +1,158 @@
+package borg.trikeshed.dht.kademlia.id
+
+import borg.trikeshed.lib.*
+import kotlin.random.Random
+
+/**
+ * Node Unique Identifier (NUID) for Kademlia DHT
+ * Supports variable key lengths and cryptographic hashes
+ * Uses TrikeShed Indexed<Byte> for efficient storage
+ */
+data class NUID(
+    val bytes: Indexed<Byte>
+) {
+    /**
+     * Size in bytes
+     */
+    val size: Int get() = bytes.a
+
+    /**
+     * Calculate XOR distance to another NUID (fundamental to Kademlia routing)
+     */
+    fun distanceTo(other: NUID): NUID {
+        val maxSize = maxOf(this.size, other.size)
+        return NUID(maxSize j { i ->
+            val thisByte = if (i < this.size) this.bytes[i] else 0.toByte()
+            val otherByte = if (i < other.size) other.bytes[i] else 0.toByte()
+            (thisByte.toInt() xor otherByte.toInt()).toByte()
+        })
+    }
+
+    /**
+     * Get common prefix length (number of identical leading bits)
+     * Used for k-bucket organization
+     */
+    fun commonPrefixLength(other: NUID): Int {
+        var prefixBits = 0
+        val minSize = minOf(this.size, other.size)
+        
+        for (i in 0 until minSize) {
+            val thisByte = this.bytes[i].toInt() and 0xFF
+            val otherByte = other.bytes[i].toInt() and 0xFF
+            val xor = thisByte xor otherByte
+            
+            if (xor == 0) {
+                prefixBits += 8
+            } else {
+                // Count leading zeros in XOR result
+                prefixBits += when {
+                    xor and 0x80 != 0 -> 0
+                    xor and 0x40 != 0 -> 1
+                    xor and 0x20 != 0 -> 2
+                    xor and 0x10 != 0 -> 3
+                    xor and 0x08 != 0 -> 4
+                    xor and 0x04 != 0 -> 5
+                    xor and 0x02 != 0 -> 6
+                    else -> 7
+                }
+                break
+            }
+        }
+        
+        return prefixBits
+    }
+
+    /**
+     * Convert to hex string for debugging
+     */
+    fun toHex(): String {
+        return bytes.play.joinToString("") { 
+            (it.toInt() and 0xFF).toString(16).padStart(2, '0') 
+        }
+    }
+
+    /**
+     * Convert to Base58 string (Bitcoin-style)
+     */
+    fun toBase58(): String {
+        val alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+        val bytes = this.bytes.play.toByteArray()
+        
+        // Count leading zeros
+        var leadingZeros = 0
+        for (b in bytes) {
+            if (b == 0.toByte()) leadingZeros++
+            else break
+        }
+        
+        // Convert to base 58
+        var num = java.math.BigInteger(1, bytes)
+        val result = mutableListOf<Char>()
+        
+        while (num > java.math.BigInteger.ZERO) {
+            val remainder = num.remainder(java.math.BigInteger.valueOf(58))
+            num = num.divide(java.math.BigInteger.valueOf(58))
+            result.add(alphabet[remainder.toInt()])
+        }
+        
+        // Add leading '1's for leading zeros
+        repeat(leadingZeros) { result.add('1') }
+        
+        return result.reversed().joinToString("")
+    }
+
+    override fun toString(): String = toBase58()
+
+    companion object {
+        /**
+         * Generate random NUID with specified byte length
+         */
+        fun random(bytes: Int = 32): NUID {
+            return NUID(bytes j { Random.nextBytes(1)[0] })
+        }
+
+        /**
+         * Create NUID from SHA-256 hash
+         */
+        fun fromSHA256(data: ByteArray): NUID {
+            // Placeholder - in real implementation would use platform crypto
+            val hash = data.fold(0L) { acc, byte -> 
+                ((acc shl 8) + (byte.toInt() and 0xFF)) and 0xFFFFFFFFL 
+            }
+            return NUID(32 j { i -> 
+                ((hash shr (i * 8)) and 0xFF).toByte()
+            })
+        }
+
+        /**
+         * Create NUID from hex string
+         */
+        fun fromHex(hex: String): NUID {
+            val cleanHex = hex.replace("\\s".toRegex(), "")
+            require(cleanHex.length % 2 == 0) { "Hex string must have even length" }
+            
+            val bytes = cleanHex.chunked(2).map { 
+                it.toInt(16).toByte() 
+            }
+            
+            return NUID(bytes.size j { i -> bytes[i] })
+        }
+
+        /**
+         * Create NUID from raw byte array
+         */
+        fun fromBytes(bytes: ByteArray): NUID {
+            return NUID(bytes.size j { i -> bytes[i] })
+        }
+
+        /**
+         * Zero NUID for testing
+         */
+        val ZERO = NUID(32 j { 0.toByte() })
+        
+        /**
+         * Max NUID (all 0xFF bytes)
+         */
+        val MAX = NUID(32 j { 0xFF.toByte() })
+    }
+}
