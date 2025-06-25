@@ -11,7 +11,9 @@ import kotlin.coroutines.CoroutineContext
  * CPU budget for packing operations - controls how much analysis we're willing to do
  */
 @kotlin.jvm.JvmInline
-value class CpuBudget(val cycles: Long) {
+value class CpuBudget(
+    val cycles: Long,
+) {
     companion object {
         val MINIMAL = CpuBudget(10) // Hot path - diagonal only
         val STANDARD = CpuBudget(100) // Warm path - basic strategies
@@ -122,12 +124,11 @@ data class PackingContext(
     fun estimateCost(
         strategy: PackingStrategy,
         dataSize: Int,
-    ): Long {
-        return when (strategy) {
+    ): Long =
+        when (strategy) {
             PackingStrategy.MINIMAL -> 1L // Diagonal packing - essentially free
             PackingStrategy.STANDARD -> dataSize.toLong() * 5 // Linear scan with basic analysis
             PackingStrategy.AGGRESSIVE -> dataSize.toLong() * dataSize / 100 // Quadratic analysis
             PackingStrategy.ADAPTIVE -> dataSize.toLong() * 10 // Adaptive overhead
         }
-    }
 }

@@ -7,7 +7,7 @@ kotlin {
     jvm {
         jvmToolchain(21)
     }
-    //re-add wasm
+    // re-add wasm
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     when {
@@ -26,7 +26,7 @@ kotlin {
             }
         }
     }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -36,11 +36,11 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
             }
         }
-        
+
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
             }
         }
     }
-} 
+}

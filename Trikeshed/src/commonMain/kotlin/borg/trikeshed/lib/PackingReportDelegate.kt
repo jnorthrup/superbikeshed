@@ -13,9 +13,7 @@ class PackingReportDelegate(
     /**
      * Execute a packing operation with automatic fibonacci interval reporting
      */
-    fun <T> pack(operation: (Int) -> T): PackingResult<T> {
-        return PackingResult(operation, fibReporter)
-    }
+    fun <T> pack(operation: (Int) -> T): PackingResult<T> = PackingResult(operation, fibReporter)
 
     /**
      * Result wrapper that provides both the operation result and optional progress reports

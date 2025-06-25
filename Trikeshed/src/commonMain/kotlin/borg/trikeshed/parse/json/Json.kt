@@ -2,10 +2,10 @@
 
 package borg.trikeshed.parse.json
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Twin
-import borg.trikeshed.lib.createBitmapAsSeries
 
 // JSON Bridge - Simple implementation using existing parsers
 
@@ -53,8 +53,8 @@ object Json {
     }
 
     // Simple reify implementation
-    fun reify(jsonString: String): Any? {
-        return try {
+    fun reify(jsonString: String): Any? =
+        try {
             when {
                 jsonString == "null" -> null
                 jsonString == "true" -> true
@@ -67,7 +67,6 @@ object Json {
         } catch (e: Exception) {
             null
         }
-    }
 
     // Simple index implementation
     fun index(jsonString: String): JsonStructuralIndices {
@@ -128,4 +127,6 @@ fun UByteArray.toIdx(): Indexed<UByte> = size j { this[it] }
 
 // JsPath support
 @kotlin.jvm.JvmInline
-value class JsPath(val path: String)
+value class JsPath(
+    val path: String,
+)

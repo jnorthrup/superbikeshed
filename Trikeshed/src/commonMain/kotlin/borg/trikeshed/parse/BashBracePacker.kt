@@ -105,8 +105,8 @@ object BashBracePacker {
     }
 
     // Compress as a bag (preserving order and duplicates, including empty strings)
-    private fun tryBag(middles: List<String>): String {
-        return buildString {
+    private fun tryBag(middles: List<String>): String =
+        buildString {
             append("{")
             middles.forEachIndexed { i, s ->
                 if (i > 0) append(",")
@@ -114,7 +114,6 @@ object BashBracePacker {
             }
             append("}")
         }
-    }
 }
 
 /**

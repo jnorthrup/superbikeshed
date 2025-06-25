@@ -5,7 +5,6 @@ plugins {
 group = "com.example"
 version = "1.0-SNAPSHOT"
 
-
 kotlin {
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -57,4 +56,3 @@ kotlin {
 tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask> {
     args += "--ignore-scripts"
 }
-

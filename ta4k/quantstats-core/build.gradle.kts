@@ -15,7 +15,6 @@ kotlin {
         linuxX64("nativeLinux") // Example native target
     }
 
-
     sourceSets {
         val commonMain by getting {
             dependencies {

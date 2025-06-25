@@ -1,6 +1,6 @@
 package borg.trikeshed.parse.markdown
 
-import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.*
 import kotlin.math.ceil
 
 /**
@@ -216,9 +216,10 @@ object LightningMarkdown {
     fun extractKotlinCodeBlocks(markdownString: String): Indexed<MarkdownCodeBlock> {
         val allBlocks = extractCodeBlocks(markdownString)
         val kotlinBlocks =
-            allBlocks.play.filter { block ->
-                block.language?.equals("kotlin", ignoreCase = true) == true
-            }.toList()
+            allBlocks.play
+                .filter { block ->
+                    block.language?.equals("kotlin", ignoreCase = true) == true
+                }.toList()
         return kotlinBlocks.toIdx()
     }
 

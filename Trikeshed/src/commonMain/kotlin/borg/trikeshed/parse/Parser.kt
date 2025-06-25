@@ -1,5 +1,6 @@
 package borg.trikeshed.parse
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Indexed
 
 data class ParseResult<out T>(
@@ -8,7 +9,9 @@ data class ParseResult<out T>(
 )
 
 @kotlin.jvm.JvmInline
-value class Parser<T>(val parse: (Indexed<Token>) -> ParseResult<T>?) {
+value class Parser<T>(
+    val parse: (Indexed<Token>) -> ParseResult<T>?,
+) {
     companion object {
         fun <T> pure(value: T): Parser<T> = Parser { tokens -> ParseResult(value, tokens) }
 
@@ -173,7 +176,9 @@ object BashParsers {
 
 // Public API
 @kotlin.jvm.JvmInline
-value class BashBraceParser(val input: String) {
+value class BashBraceParser(
+    val input: String,
+) {
     fun parse(): Indexed<String> {
         val tokens = BashBrace.of(input).scanTokens().toIdx()
         return BashParsers.fullExpr.parse(tokens)?.value
