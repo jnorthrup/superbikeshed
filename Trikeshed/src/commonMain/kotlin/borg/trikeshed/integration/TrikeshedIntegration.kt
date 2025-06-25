@@ -7,6 +7,8 @@ import borg.trikeshed.net.http.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
 import kotlinx.serialization.json.*
+import borg.trikeshed.lib.Either.Left
+import borg.trikeshed.lib.Either.Right
 
 // Platform-agnostic time function
 expect fun getCurrentTimeMillis(): Long
@@ -43,7 +45,7 @@ typealias IntegrationDocumentResult = Either<IntegrationError, IntegrationDocume
 // === TRIKESHED INTEGRATION IMPLEMENTATION ===
 
 class TrikeshedIntegration(
-    private val config: IntegrationConfig = emptyMap()
+    private val config: Map<String, Any> = emptyMap()
 ) {
     private val couchUrl: IntegrationUrl = config["couch_url"] as? String ?: "http://localhost:5984"
     private val quicPort: IntegrationPort = config["quic_port"] as? Int ?: 4433
@@ -72,11 +74,11 @@ class TrikeshedIntegration(
             quicEngine = QuicEngine(
                 role = QuicEngine.Role.SERVER,
                 initialState = QuicConnectionState(
-                    localConnectionId = ConnectionId(8 j { 0.toByte() }),
-                    remoteConnectionId = ConnectionId(8 j { 0.toByte() })
+                    localConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() }),
+                    remoteConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() })
                 ),
                 port = quicPort,
-                privateKey = 32 j { 0.toByte() }
+                privateKey = 32 j { _: Int -> 0.toByte() }
             )
             
             // Initialize CouchDB client
@@ -93,7 +95,7 @@ class TrikeshedIntegration(
             }
             
             // Initialize IPFS client
-            val peerId = PeerId(32 j { (it % 256).toByte() })
+            val peerId = PeerId(32 j { it: Int -> (it % 256).toByte() })
             val ipfsConfig = IpfsConfig()
             ipfsClient = IpfsClient(peerId, quicEngine, ipfsStorage, ipfsConfig)
             
@@ -503,15 +505,15 @@ data class IntegrationDocument(
     val metadata: Map<String, Any> = emptyMap()
 ) {
     fun toJson(): String {
-        return """{"id":"$id","content":"$content","ipfs_hash":"${ipfsHash ?: ""}","metadata":${metadata.toJson()}}"""
+        return """{"id":"$id","content":"$content","ipfs_hash":"${ipfsHash ?: ""}","metadata":${(metadata as Map<String, Any?>).toJson()}}"""
     }
 }
 
 data class IntegrationEvent(
-    val type: IntegrationEventType,
-    val data: IntegrationEventData,
-    val id: IntegrationEventId = generateEventId(),
-    val timestamp: IntegrationEventTimestamp = getCurrentTimeMillis()
+    val type: EventType,
+    val data: EventData,
+    val id: EventId = generateEventId(),
+    val timestamp: EventTimestamp = getCurrentTimeMillis()
 )
 
 data class IntegrationError(val message: String)
@@ -524,11 +526,7 @@ data class IntegrationSuccess(
 
 // === UTILITY FUNCTIONS ===
 
-private fun generateEventId(): IntegrationEventId = "event_${getCurrentTimeMillis()}_${(Math.random() * 1000).toInt()}"
-
-private fun Map<String, Any>.toJson(): String {
-    return toString() // Simplified JSON conversion
-}
+private fun generateEventId(): EventId = "event_${getCurrentTimeMillis()}_${(Math.random() * 1000).toInt()}"
 
 private fun Map<String, Any>.toJson(): String {
     return toString() // Simplified JSON conversion
