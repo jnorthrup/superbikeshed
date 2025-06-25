@@ -1,0 +1,275 @@
+
+--- Commit: ff7859c065801459e57609c13f19fd55062e0f11 | 2025-06-07 23:26:23 +0000 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+index e86264f4..db4cd3d5 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+@@ -24,7 +24,7 @@ object KlineCsvParser {
+      * or a [Failure] containing a list of error messages.
+      */
+     sealed class ParseResult {
+-        data class Success(val klines: KlineSeries) : ParseResult()
++        data class Success(val klines: KlineSeries) : ParseResult() // KlineSeries is now Series<Kline>
+         data class Failure(val errors: List<String>) : ParseResult()
+     }
+ 
+@@ -113,27 +113,27 @@ object KlineCsvParser {
+         }
+ 
+         // Determine final result
++        // Convert the mutableList to Series<Kline> using the extension from SeriesExtensions.kt
++        val finalKlineSeries = com.ta4k.trikeshedutils.toSeries(klines) // Explicit call to toSeries
++
+         return if (errors.isNotEmpty()) {
+-            if (strict || klines.isEmpty()) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
++            if (strict || finalKlineSeries.size == 0) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
+                 ParseResult.Failure(errors)
+             } else {
+                 // Not strict, and some klines were parsed despite errors. Return success with klines, errors are available.
+-                // The calling code can decide what to do with partial data + errors.
+-                // For now, we'll consider this a success, and errors are informational.
+-                // Alternatively, could add errors to the Success object: Success(klines, errors)
+-                ParseResult.Success(klines)
++                ParseResult.Success(finalKlineSeries)
+             }
+-        } else if (klines.isEmpty() && lineCount <=1 && actualHeaders != EXPECTED_HEADER_COLUMNS && actualHeaders.isNotEmpty()) {
++        } else if (finalKlineSeries.size == 0 && lineCount <=1 && actualHeaders != EXPECTED_HEADER_COLUMNS && actualHeaders.isNotEmpty()) {
+             // Special case: only a header line was present AND it was incorrect, and no data lines.
+             // Errors list would already contain the header error.
+              ParseResult.Failure(errors)
+         }
+-         else if (klines.isEmpty() && lineCount <=1 ) {
++         else if (finalKlineSeries.size == 0 && lineCount <=1 ) {
+             // Only header line was present (and it was valid), or file was empty after header check.
+-            ParseResult.Success(klines) // No data, but no parsing errors for data lines.
++            ParseResult.Success(finalKlineSeries) // No data, but no parsing errors for data lines.
+         }
+         else {
+-            ParseResult.Success(klines)
++            ParseResult.Success(finalKlineSeries)
+         }
+     }
+ 
+
+--- Commit: 640460c9f5e7ee5d1f65b210be9520dfecedf83b | 2025-06-13 21:54:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+index db4cd3d5..4e1a2fc8 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+@@ -1,7 +1,6 @@
+ package com.ta4k.parsing
+ 
+ import com.ta4k.core.model.Kline
+-import com.ta4k.core.model.KlineSeries
+ import java.io.File
+ import java.io.Reader
+ import java.math.BigDecimal
+@@ -24,7 +23,7 @@ object KlineCsvParser {
+      * or a [Failure] containing a list of error messages.
+      */
+     sealed class ParseResult {
+-        data class Success(val klines: KlineSeries) : ParseResult() // KlineSeries is now Series<Kline>
++        data class Success(val klines: Series<Kline>) : ParseResult() // KlineSeries is now Series<Kline>
+         data class Failure(val errors: List<String>) : ParseResult()
+     }
+ 
+@@ -113,8 +112,8 @@ object KlineCsvParser {
+         }
+ 
+         // Determine final result
+-        // Convert the mutableList to Series<Kline> using the extension from SeriesExtensions.kt
+-        val finalKlineSeries = com.ta4k.trikeshedutils.toSeries(klines) // Explicit call to toSeries
++        // Convert the mutableList to Series<Kline>
++        val finalKlineSeries = klines.toSeries() // Explicit call to toSeries
+ 
+         return if (errors.isNotEmpty()) {
+             if (strict || finalKlineSeries.size == 0) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+index 4e1a2fc8..c1d273b0 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+@@ -23,7 +23,7 @@ object KlineCsvParser {
+      * or a [Failure] containing a list of error messages.
+      */
+     sealed class ParseResult {
+-        data class Success(val klines: Series<Kline>) : ParseResult() // KlineSeries is now Series<Kline>
++        data class Success(val klines: Indexed<Kline>) : ParseResult() // KlineSeries is now Indexed<Kline>
+         data class Failure(val errors: List<String>) : ParseResult()
+     }
+ 
+@@ -112,8 +112,8 @@ object KlineCsvParser {
+         }
+ 
+         // Determine final result
+-        // Convert the mutableList to Series<Kline>
+-        val finalKlineSeries = klines.toSeries() // Explicit call to toSeries
++        // Convert the mutableList to Indexed<Kline>
++        val finalKlineSeries = klines.toIndexed() // Explicit call to toSeries
+ 
+         return if (errors.isNotEmpty()) {
+             if (strict || finalKlineSeries.size == 0) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
+deleted file mode 100644
+index c1d273b0..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/parsing/KlineCsvParser.kt
++++ /dev/null
+@@ -1,155 +0,0 @@
+-package com.ta4k.parsing
+-
+-import com.ta4k.core.model.Kline
+-import java.io.File
+-import java.io.Reader
+-import java.math.BigDecimal
+-
+-/**
+- * Object responsible for parsing Kline data from CSV formatted input.
+- */
+-object KlineCsvParser {
+-
+-    // Expected header columns for validation
+-    private val EXPECTED_HEADER_COLUMNS = listOf(
+-        "Open_time", "Open", "High", "Low", "Close", "Volume",
+-        "Close_time", "Quote_asset_volume", "Number_of_trades",
+-        "Taker_buy_base_asset_volume", "Taker_buy_quote_asset_volume", "Ignore"
+-    )
+-
+-    /**
+-     * Represents the result of a parsing operation.
+-     * It can either be a [Success] containing the list of klines,
+-     * or a [Failure] containing a list of error messages.
+-     */
+-    sealed class ParseResult {
+-        data class Success(val klines: Indexed<Kline>) : ParseResult() // KlineSeries is now Indexed<Kline>
+-        data class Failure(val errors: List<String>) : ParseResult()
+-    }
+-
+-    /**
+-     * Parses Kline data from the given [Reader].
+-     *
+-     * @param reader The reader to source CSV data from.
+-     * @param strict If true, parsing will fail on the first error encountered.
+-     *               If false, errors will be collected, and parsing will attempt to continue.
+-     * @return A [ParseResult]แตก [ParseResult.Success] with the parsed klines or [ParseResult.Failure] with error messages.
+-     */
+-    fun parse(reader: Reader, strict: Boolean = false): ParseResult {
+-        val klines = mutableListOf<Kline>()
+-        val errors = mutableListOf<String>()
+-        var lineCount = 0
+-        var actualHeaders: List<String> = emptyList()
+-
+-
+-        reader.useLines { lines ->
+-            val lineIterator = lines.iterator()
+-
+-            // 1. Validate Header
+-            if (!lineIterator.hasNext()) {
+-                errors.add("CSV is empty or could not be read.")
+-                return ParseResult.Failure(errors)
+-            }
+-            lineCount++
+-            val headerLine = lineIterator.next()
+-            actualHeaders = headerLine.split(',').map { it.trim() }
+-
+-            if (actualHeaders != EXPECTED_HEADER_COLUMNS) {
+-                val errorMsg = "CSV header does not match expected. Expected: '$EXPECTED_HEADER_COLUMNS', Got: '$actualHeaders'"
+-                errors.add(errorMsg)
+-                if (strict) return ParseResult.Failure(errors)
+-                // If not strict, we log the error and attempt to parse anyway, assuming column order.
+-            }
+-
+-            // 2. Parse Data Lines
+-            while (lineIterator.hasNext()) {
+-                lineCount++
+-                val line = lineIterator.next()
+-                if (line.isBlank()) { // Skip blank lines
+-                    continue
+-                }
+-
+-                val fields = line.split(',').map { it.trim() }
+-
+-                if (fields.size < 11) { // Minimum fields needed for Kline, 12th is 'Ignore'
+-                    val errorMsg = "Line $lineCount: Malformed - Incorrect number of fields (${fields.size}). Expected at least 11. Content: $line"
+-                    errors.add(errorMsg)
+-                    if (strict) return ParseResult.Failure(errors)
+-                    continue // Skip this line and try next
+-                }
+-
+-                try {
+-                    val kline = Kline(
+-                        openTimeMillis = fields[0].toLong(),
+-                        openPrice = BigDecimal(fields[1]),
+-                        highPrice = BigDecimal(fields[2]),
+-                        lowPrice = BigDecimal(fields[3]),
+-                        closePrice = BigDecimal(fields[4]),
+-                        volume = BigDecimal(fields[5]),
+-                        closeTimeMillis = fields[6].toLong(),
+-                        quoteAssetVolume = BigDecimal(fields[7]),
+-                        numberOfTrades = fields[8].toInt(),
+-                        takerBuyBaseAssetVolume = BigDecimal(fields[9]),
+-                        takerBuyQuoteAssetVolume = BigDecimal(fields[10])
+-                        // fields[11] (Ignore) is deliberately ignored
+-                    )
+-                    klines.add(kline)
+-                } catch (e: NumberFormatException) {
+-                    val errorMsg = "Line $lineCount: Malformed - Error parsing number. Content: $line. Error: ${e.message}"
+-                    errors.add(errorMsg)
+-                    if (strict) return ParseResult.Failure(errors)
+-                } catch (e: IndexOutOfBoundsException) {
+-                    // Should be caught by fields.size check, but as a safeguard
+-                    val errorMsg = "Line $lineCount: Malformed - Not enough fields. Content: $line. Error: ${e.message}"
+-                    errors.add(errorMsg)
+-                    if (strict) return ParseResult.Failure(errors)
+-                } catch (e: Exception) {
+-                    val errorMsg = "Line $lineCount: Malformed - Unexpected error. Content: $line. Error: ${e.message}"
+-                    errors.add(errorMsg)
+-                    if (strict) return ParseResult.Failure(errors)
+-                }
+-            }
+-        }
+-
+-        // Determine final result
+-        // Convert the mutableList to Indexed<Kline>
+-        val finalKlineSeries = klines.toIndexed() // Explicit call to toSeries
+-
+-        return if (errors.isNotEmpty()) {
+-            if (strict || finalKlineSeries.size == 0) { // If strict, any error is failure. If not strict but no klines parsed, also failure.
+-                ParseResult.Failure(errors)
+-            } else {
+-                // Not strict, and some klines were parsed despite errors. Return success with klines, errors are available.
+-                ParseResult.Success(finalKlineSeries)
+-            }
+-        } else if (finalKlineSeries.size == 0 && lineCount <=1 && actualHeaders != EXPECTED_HEADER_COLUMNS && actualHeaders.isNotEmpty()) {
+-            // Special case: only a header line was present AND it was incorrect, and no data lines.
+-            // Errors list would already contain the header error.
+-             ParseResult.Failure(errors)
+-        }
+-         else if (finalKlineSeries.size == 0 && lineCount <=1 ) {
+-            // Only header line was present (and it was valid), or file was empty after header check.
+-            ParseResult.Success(finalKlineSeries) // No data, but no parsing errors for data lines.
+-        }
+-        else {
+-            ParseResult.Success(finalKlineSeries)
+-        }
+-    }
+-
+-    /**
+-     * Convenience overload to parse Kline data directly from a [File].
+-     *
+-     * @param file The CSV file to parse.
+-     * @param strict If true, parsing will fail on the first error encountered.
+-     * @return A [ParseResult].
+-     */
+-    fun parse(file: File, strict: Boolean = false): ParseResult {
+-        return try {
+-            file.bufferedReader().use { reader ->
+-                parse(reader, strict)
+-            }
+-        } catch (e: Exception) {
+-            ParseResult.Failure(listOf("Failed to read file ${file.path}: ${e.message}"))
+-        }
+-    }
+-}

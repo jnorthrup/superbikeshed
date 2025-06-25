@@ -1,0 +1,57 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/SupportUtils.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/SupportUtils.kt
+deleted file mode 100644
+index 3115bf83..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/SupportUtils.kt
++++ /dev/null
+@@ -1,49 +0,0 @@
+-package borg.trikeshed.acapulco.runtime
+-
+-import java.util.*
+-
+-val RANDOM = Random(System.currentTimeMillis())
+-
+-var counter = 0
+-/*
+-
+-fun randomUsers(usercount: Int) = (0..usercount).map {
+-    Avatar(
+-            pairOf(
+-                    arrayOf(FirstNames.values(), Surnames.values()).map {
+-                        it[RANDOM.nextInt(it.size)].name
+-                    }.toTypedArray())
+-    )
+-}
+-*/
+-
+-/**
+- * arg0 is the marketplace region/site
+- * arg1 is the subtopic name or sectionname
+- */
+-typealias marketArgTuple = Array<out String>
+-/*
+-fun main(args: marketArgTuple) {
+-    val chomskyBot = chomskyBot(randomUsers(3),
+-                                Corpus.chomsky,
+-                                Topic("any and all"), 10)
+-    chomskyBot.forEach(::println)
+-}*/
+-
+-fun marketName(args: marketArgTuple) = when {
+-    args.isNotEmpty() -> args[0]
+-    else -> "marketplace"
+-}
+-
+-fun sectionName(args: marketArgTuple) = marketName(args) + "." + when {
+-    args.size > 1 -> args[1]
+-    else -> "fleamarket"
+-}
+-
+-/** a logger
+- *
+- */
+-fun info(msg: String) = System.err.println("INFO: " + System.currentTimeMillis() + ":" + msg)
+-
+-
+-

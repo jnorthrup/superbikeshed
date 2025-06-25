@@ -1,0 +1,73 @@
+
+--- Commit: 640460c9f5e7ee5d1f65b210be9520dfecedf83b | 2025-06-13 21:54:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
+index 7abec2f6..c6c9f75f 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
+@@ -1,7 +1,6 @@
+ package com.ta4k.strategy
+ 
+ import com.ta4k.core.model.Kline
+-import borg.trikeshed.core.Series // Using the new TrikeShed Series
+ import com.ta4k.trading.entities.Order
+ import com.ta4k.trading.entities.Position
+ 
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
+index c6c9f75f..7f1ad618 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
+@@ -12,7 +12,7 @@ interface Strategy {
+     /**
+      * The kline series on which this strategy operates.
+      */
+-    val klineSeries: Series<Kline>
++    val klineSeries: Indexed<Kline>
+ 
+     /**
+      * The number of klines required to warm up all indicators used by this strategy.
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
+deleted file mode 100644
+index 7f1ad618..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/strategy/Strategy.kt
++++ /dev/null
+@@ -1,36 +0,0 @@
+-package com.ta4k.strategy
+-
+-import com.ta4k.core.model.Kline
+-import com.ta4k.trading.entities.Order
+-import com.ta4k.trading.entities.Position
+-
+-/**
+- * Base interface for a trading strategy.
+- * A strategy defines the logic for generating entry and exit signals based on market data.
+- */
+-interface Strategy {
+-    /**
+-     * The kline series on which this strategy operates.
+-     */
+-    val klineSeries: Indexed<Kline>
+-
+-    /**
+-     * The number of klines required to warm up all indicators used by this strategy.
+-     * The backtester should start generating signals from this index onwards.
+-     * For strategies without indicators needing warm-up, this can be 0.
+-     */
+-    val warmUpPeriod: Int
+-        get() = 0 // Default to 0 if not overridden
+-
+-    /**
+-     * Generates a trading signal (an Order) based on the kline data at the given index
+-     * and the current open position (if any).
+-     *
+-     * @param index The current kline index in the [klineSeries].
+-     * @param currentPosition The currently open [Position], or null if no position is open.
+-     * @return An [Order] object if a trading signal (entry or exit) is generated, otherwise null.
+-     *         The order type (BUY/SELL) will determine if it's an entry or exit signal
+-     *         in conjunction with the [currentPosition] state.
+-     */
+-    fun generateSignal(index: Int, currentPosition: Position?): Order?
+-}

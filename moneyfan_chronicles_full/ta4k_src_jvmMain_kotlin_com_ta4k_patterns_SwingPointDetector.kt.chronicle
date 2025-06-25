@@ -1,0 +1,122 @@
+
+--- Commit: 640460c9f5e7ee5d1f65b210be9520dfecedf83b | 2025-06-13 21:54:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
+index 7e0b77d9..bdab9ee5 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
+@@ -1,9 +1,6 @@
+ package com.ta4k.patterns
+ 
+ import com.ta4k.core.model.Kline // Assuming this path
+-import borg.trikeshed.core.Series // Import new Series
+-import borg.trikeshed.core.size // Import Series extensions
+-import borg.trikeshed.core.get  // Import Series extensions
+ import java.math.BigDecimal
+ 
+ enum class SwingType {
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
+index bdab9ee5..dc3a10fa 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
+@@ -36,7 +36,7 @@ object SwingPointDetector {
+      *                 A higher strength means more significant (but fewer) swing points.
+      * @return A list of [SwingPoint]s, sorted by index.
+      */
+-    fun detectSwingPoints(klineSeries: Series<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
++    fun detectSwingPoints(klineSeries: Indexed<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
+         require(strength > 0) { "Strength must be positive." }
+         // Use klineSeries.size
+         if (klineSeries.size < (2 * strength + 1)) {
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
+deleted file mode 100644
+index dc3a10fa..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/patterns/SwingPointDetector.kt
++++ /dev/null
+@@ -1,83 +0,0 @@
+-package com.ta4k.patterns
+-
+-import com.ta4k.core.model.Kline // Assuming this path
+-import java.math.BigDecimal
+-
+-enum class SwingType {
+-    HIGH, LOW
+-}
+-
+-/**
+- * Represents a detected swing point in a KlineSeries.
+- * @property kline The kline at which the swing point occurs.
+- * @property index The index of the kline in the original series.
+- * @property price The price at the swing point (high for SwingHigh, low for SwingLow).
+- * @property type The type of swing point (HIGH or LOW).
+- */
+-data class SwingPoint(
+-    val kline: Kline,
+-    val index: Int,
+-    val price: BigDecimal,
+-    val type: SwingType
+-)
+-
+-/**
+- * Detects swing highs and lows in a given Trikethed [Series] of [Kline].
+- * A swing high is a kline whose high is higher than the highs of 'strength' klines to its left and right.
+- * A swing low is a kline whose low is lower than the lows of 'strength' klines to its left and right.
+- */
+-object SwingPointDetector {
+-
+-    /**
+-     * Detects all swing points (both highs and lows) in the series.
+-     *
+-     * @param klineSeries The Trikethed [Series] of klines to analyze. // Changed from List
+-     * @param strength The number of klines to the left and right to compare against.
+-     *                 A higher strength means more significant (but fewer) swing points.
+-     * @return A list of [SwingPoint]s, sorted by index.
+-     */
+-    fun detectSwingPoints(klineSeries: Indexed<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
+-        require(strength > 0) { "Strength must be positive." }
+-        // Use klineSeries.size
+-        if (klineSeries.size < (2 * strength + 1)) {
+-            return emptyList() // Not enough data to identify any swing points
+-        }
+-
+-        val swingPoints = mutableListOf<SwingPoint>()
+-
+-        // Iterate through klines where a full comparison window is possible
+-        // Index i is the candidate swing point
+-        // Use klineSeries.size and klineSeries[i]
+-        for (i in strength until klineSeries.size - strength) {
+-            val candidateKline = klineSeries[i] // Access using Series operator
+-
+-            // Check for Swing High
+-            var isSwingHigh = true
+-            for (j in 1..strength) {
+-                if (candidateKline.highPrice <= klineSeries[i - j].highPrice ||
+-                    candidateKline.highPrice <= klineSeries[i + j].highPrice) {
+-                    isSwingHigh = false
+-                    break
+-                }
+-            }
+-
+-            if (isSwingHigh) {
+-                swingPoints.add(SwingPoint(candidateKline, i, candidateKline.highPrice, SwingType.HIGH))
+-            } else { // Exclusive check: only if not a swing high, check for swing low
+-                var isSwingLow = true
+-                for (j in 1..strength) {
+-                    if (candidateKline.lowPrice >= klineSeries[i - j].lowPrice ||
+-                        candidateKline.lowPrice >= klineSeries[i + j].lowPrice) {
+-                        isSwingLow = false
+-                        break
+-                    }
+-                }
+-                if (isSwingLow) {
+-                    swingPoints.add(SwingPoint(candidateKline, i, candidateKline.lowPrice, SwingType.LOW))
+-                }
+-            }
+-        }
+-        // The list of SwingPoint objects is already sorted by index due to iteration order.
+-        return swingPoints
+-    }
+-}

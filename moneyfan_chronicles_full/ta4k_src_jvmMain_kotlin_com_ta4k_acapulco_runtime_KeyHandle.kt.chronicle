@@ -1,0 +1,25 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/KeyHandle.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/KeyHandle.kt
+deleted file mode 100644
+index 062ecb0e..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/runtime/KeyHandle.kt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-package borg.trikeshed.acapulco.runtime
+-
+-import java.security.KeyPair
+-import java.security.KeyPairGenerator
+-
+-class KeyHandle(
+-    algName: String = "RSA",
+-    keylength: Int = 512,
+-    val keyGen: KeyPairGenerator = KeyPairGenerator.getInstance(algName).apply {
+-        initialize(keylength)
+-    },
+-) {
+-
+-    var pair: KeyPair = keyGen.generateKeyPair()
+-
+-}
+-

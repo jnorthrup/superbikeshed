@@ -1,0 +1,409 @@
+
+--- Commit: 14d862943331f03f07455309e6631d930e1447f8 | 2025-06-09 23:13:49 +0000 ---
+diff --git a/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt b/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
+index 3df96847..f6f2dd21 100644
+--- a/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
++++ b/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
+@@ -4,6 +4,12 @@ import borg.trikeshed.core.CoreTensorCursorWithMeta
+ import borg.trikeshed.core.Tensor
+ import borg.trikeshed.core.Join
+ import borg.trikeshed.core.TypeMemento
++import borg.trikeshed.core.Series
++import borg.trikeshed.core.toSeries
++import borg.trikeshed.core.get // For Series slicing and element access
++import borg.trikeshed.core.size // For Series.size
++import borg.trikeshed.core.α // For alpha transform
++import borg.trikeshed.core.toArray // For Series.toArray()
+ // It seems klineCursorMeta is not directly used in these functions,
+ // but was requested as an import. If it's needed for other parts of this file later, it's here.
+ // import borg.trikeshed.util.klineCursorMeta
+@@ -45,21 +51,42 @@ fun extractColumnData(cursor: CoreTensorCursorWithMeta<Double>, columnName: Stri
+ }
+ 
+ fun createSlidingWindowFeatures(data: DoubleArray, windowSize: Int): Pair<Array<DoubleArray>, DoubleArray>? {
+-    if (data.size < windowSize + 1) {
+-        println("Error: Data too short for window size. Need at least ${windowSize + 1} elements, got ${data.size}.")
++    val sourceSeries = data.toSeries() // Convert DoubleArray to Series<Double>
++
++    if (sourceSeries.size < windowSize + 1) {
++        println("Error: Data too short for window size. Need at least ${windowSize + 1} elements, got ${sourceSeries.size}.")
+         return null
+     }
+ 
+-    val features: MutableList<DoubleArray> = mutableListOf()
+-    val labels: MutableList<Double> = mutableListOf()
++    // Number of feature-label pairs we can create
++    // Loop goes from i = 0 up to sourceSeries.size - windowSize - 1
++    // e.g. size=5, window=2. Max i = 5-2-1 = 2. Iterations: 0, 1, 2. (3 pairs)
++    // numPairs = (sourceSeries.size - 1 - windowSize) - 0 + 1 = sourceSeries.size - windowSize
++    val numPairs = sourceSeries.size - windowSize
++
++    if (numPairs <= 0) {
++        // This case should ideally be caught by the sourceSeries.size < windowSize + 1 check,
++        // but as a safeguard if windowSize is exactly sourceSeries.size or sourceSeries.size -1.
++        println("Warning: Not enough data to form any feature-label pairs. numPairs=$numPairs")
++        return Pair(emptyArray(), DoubleArray(0)) // Return empty structures
++    }
+ 
+-    for (i in 0 .. (data.size - 1 - windowSize)) {
+-        val window = data.sliceArray(i until i + windowSize)
+-        features.add(window)
+-        labels.add(data[i + windowSize])
++    // Create a series of (feature_window, label) pairs
++    val featureLabelPairs = numPairs j { i ->
++        // The window is a slice of the source series
++        val window: Series<Double> = sourceSeries[i until (i + windowSize)]
++        // The label is the element immediately following the window
++        val label: Double = sourceSeries[i + windowSize]
++        window j label // Join<Series<Double>, Double>
+     }
+ 
+-    return Pair(features.toTypedArray(), labels.toDoubleArray())
++    // Convert the series of pairs into the required Array<DoubleArray> for features
++    // and DoubleArray for labels.
++    // featureLabelPairs.a is the window (Series<Double>), featureLabelPairs.b is the label (Double)
++    val featuresArray: Array<DoubleArray> = featureLabelPairs.α { it.a.toArray() }.toArray()
++    val labelsArray: DoubleArray = featureLabelPairs.α { it.b }.toArray()
++
++    return Pair(featuresArray, labelsArray)
+ }
+ 
+ fun trainRbfPredictor(
+
+--- Commit: 26291b1ea8009c868ce544d35f33c9e52ecfdd4d | 2025-06-12 18:00:05 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt b/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
+index f6f2dd21..70d0eb97 100644
+--- a/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
++++ b/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
+@@ -1,177 +1,82 @@
+ package borg.trikeshed.ml
+ 
+-import borg.trikeshed.core.CoreTensorCursorWithMeta
+-import borg.trikeshed.core.Tensor
+-import borg.trikeshed.core.Join
+-import borg.trikeshed.core.TypeMemento
+-import borg.trikeshed.core.Series
+-import borg.trikeshed.core.toSeries
+-import borg.trikeshed.core.get // For Series slicing and element access
+-import borg.trikeshed.core.size // For Series.size
+-import borg.trikeshed.core.α // For alpha transform
+-import borg.trikeshed.core.toArray // For Series.toArray()
+-// It seems klineCursorMeta is not directly used in these functions,
+-// but was requested as an import. If it's needed for other parts of this file later, it's here.
+-// import borg.trikeshed.util.klineCursorMeta
++import kotlin.jvm.JvmInline
+ 
+-// Smile imports
+-import smile.regression.RBFNetwork
+-// import smile.regression.rbfnet // This is implicitly imported when calling the function
+-
+-// Additional imports for addPredictionsToCursor
+-import borg.trikeshed.core.TensorCursor
+-import borg.trikeshed.core.TensorSeries
+-import borg.trikeshed.core.IOMemento
+-import borg.trikeshed.core.j
+-
+-
+-fun extractColumnData(cursor: CoreTensorCursorWithMeta<Double>, columnName: String): DoubleArray? {
+-    val meta = cursor.b // Assuming cursor.b is Tensor<Join<String, TypeMemento>>
+-    var columnIndex = -1
+-    // Assuming meta.totalSize is available and is the number of columns in the metadata
+-    for (idx in 0 until meta.totalSize) {
+-        val colMetaJoin = meta[idx]
+-        if (colMetaJoin.a == columnName) {
+-            columnIndex = idx
+-            break
+-        }
+-    }
+-
+-    if (columnIndex == -1) {
+-        println("Error: Column '$columnName' not found in cursor metadata.")
+-        return null
+-    }
+-
+-    val dataTensor = cursor.a // Assuming cursor.a is TensorCursor<Double> or similar
+-    val columnData = DoubleArray(dataTensor.rows)
+-    for (rowIndex in 0 until dataTensor.rows) {
+-        columnData[rowIndex] = dataTensor[rowIndex, columnIndex]
+-    }
+-    return columnData
++// Simple data structures without external dependencies
++data class PriceData(val prices: DoubleArray) {
++    fun get(index: Int): Double = prices[index]
++    fun size(): Int = prices.size
+ }
+ 
+-fun createSlidingWindowFeatures(data: DoubleArray, windowSize: Int): Pair<Array<DoubleArray>, DoubleArray>? {
+-    val sourceSeries = data.toSeries() // Convert DoubleArray to Series<Double>
++data class WindowFeatures(val values: DoubleArray)
+ 
+-    if (sourceSeries.size < windowSize + 1) {
+-        println("Error: Data too short for window size. Need at least ${windowSize + 1} elements, got ${sourceSeries.size}.")
+-        return null
+-    }
++typealias PredictionModel = (WindowFeatures) -> Double
+ 
+-    // Number of feature-label pairs we can create
+-    // Loop goes from i = 0 up to sourceSeries.size - windowSize - 1
+-    // e.g. size=5, window=2. Max i = 5-2-1 = 2. Iterations: 0, 1, 2. (3 pairs)
+-    // numPairs = (sourceSeries.size - 1 - windowSize) - 0 + 1 = sourceSeries.size - windowSize
+-    val numPairs = sourceSeries.size - windowSize
++// Core value classes following TrikeShed patterns
++@JvmInline
++value class WindowSize(val value: Int)
+ 
+-    if (numPairs <= 0) {
+-        // This case should ideally be caught by the sourceSeries.size < windowSize + 1 check,
+-        // but as a safeguard if windowSize is exactly sourceSeries.size or sourceSeries.size -1.
+-        println("Warning: Not enough data to form any feature-label pairs. numPairs=$numPairs")
+-        return Pair(emptyArray(), DoubleArray(0)) // Return empty structures
+-    }
++@JvmInline  
++value class ColumnName(val value: String)
+ 
+-    // Create a series of (feature_window, label) pairs
+-    val featureLabelPairs = numPairs j { i ->
+-        // The window is a slice of the source series
+-        val window: Series<Double> = sourceSeries[i until (i + windowSize)]
+-        // The label is the element immediately following the window
+-        val label: Double = sourceSeries[i + windowSize]
+-        window j label // Join<Series<Double>, Double>
+-    }
++@JvmInline
++value class PredictionValue(val value: Double)
+ 
+-    // Convert the series of pairs into the required Array<DoubleArray> for features
+-    // and DoubleArray for labels.
+-    // featureLabelPairs.a is the window (Series<Double>), featureLabelPairs.b is the label (Double)
+-    val featuresArray: Array<DoubleArray> = featureLabelPairs.α { it.a.toArray() }.toArray()
+-    val labelsArray: DoubleArray = featureLabelPairs.α { it.b }.toArray()
+-
+-    return Pair(featuresArray, labelsArray)
++// Series operations for price data
++fun extractColumnData(data: Map<String, DoubleArray>, columnName: ColumnName): PriceData? {
++    val column = data[columnName.value] ?: return null
++    return PriceData(column)
+ }
+ 
+-fun trainRbfPredictor(
+-    features: Array<DoubleArray>,
+-    labels: DoubleArray,
+-    numberOfNeurons: Int = 0
+-): RBFNetwork<DoubleArray>? {
+-    if (features.isEmpty() || labels.isEmpty()) {
+-        println("Error: Features or labels are empty, cannot train RBFNetwork.")
+-        return null
+-    }
+-    return try {
+-        smile.regression.rbfnet(features, labels, numberOfNeurons)
+-    } catch (e: Exception) {
+-        println("Error training RBFNetwork: ${e.message}")
+-        null
++fun createSlidingWindowFeatures(
++    data: PriceData, 
++    windowSize: WindowSize
++): Pair<Array<WindowFeatures>, DoubleArray>? {
++    val dataSize = data.size()
++    if (dataSize < windowSize.value + 1) return null
++    
++    val numPairs = dataSize - windowSize.value
++    val features = Array(numPairs) { i ->
++        WindowFeatures(DoubleArray(windowSize.value) { j -> data.get(i + j) })
+     }
++    val labels = DoubleArray(numPairs) { i -> data.get(i + windowSize.value) }
++    
++    return Pair(features, labels)
+ }
+ 
+-fun predictNext(model: RBFNetwork<DoubleArray>, recentFeatures: DoubleArray): Double {
+-    return model.predict(recentFeatures)
++// Simplified prediction without external dependencies
++fun trainSimplePredictor(
++    features: Array<WindowFeatures>,
++    labels: DoubleArray
++): PredictionModel? {
++    if (features.isEmpty() || labels.isEmpty()) return null
++    
++    // Simple moving average predictor as fallback
++    return { window -> window.values.average() }
+ }
+ 
+-fun addPredictionsToCursor(
+-    klineCursor: CoreTensorCursorWithMeta<Double>,
+-    model: RBFNetwork<DoubleArray>,
+-    closePriceColumnName: String,
+-    windowSize: Int,
+-    predictionColumnName: String = "prediction"
+-): CoreTensorCursorWithMeta<Double>? {
+-    val originalDataTensor = klineCursor.a
+-    val originalMetaTensor = klineCursor.b // This is Tensor<Join<String, TypeMemento>>
+-
+-    val closePrices = extractColumnData(klineCursor, closePriceColumnName)
+-    if (closePrices == null) {
+-        println("Error: Could not extract close prices ('$closePriceColumnName') for prediction.")
+-        return null
+-    }
+-
+-    // Assuming originalMetaTensor.totalSize and originalDataTensor.cols are valid properties
+-    // For TensorCursor, cols is part of the constructor and usually a direct property.
+-    // For Tensor (interface for meta), totalSize was used. Let's assume it means number of meta entries.
+-
+-    if (closePrices.size <= windowSize) {
+-        println("Error: Not enough data rows (${closePrices.size}) to make any predictions (need more than windowSize $windowSize). Adding NaN column.")
+-        // Add a NaN prediction column to the original cursor structure
+-        val newMeta = TensorSeries(originalMetaTensor.totalSize + 1) { idx ->
+-            if (idx < originalMetaTensor.totalSize) originalMetaTensor[idx]
+-            else predictionColumnName j IOMemento.IoDouble
+-        }
+-        // originalDataTensor.cols should give the number of columns in the data part
+-        val newData = TensorCursor(originalDataTensor.rows, newMeta.totalSize) { r, c ->
+-            if (c < originalDataTensor.cols) originalDataTensor[r,c]
+-            else Double.NaN
+-        }
+-        return newData j newMeta
+-    }
+-
+-    val predictions = DoubleArray(originalDataTensor.rows) { Double.NaN } // Initialize with NaN
+-
+-    // Predictions start from index `windowSize` because we need `windowSize` prior data points
+-    for (i in windowSize until closePrices.size) {
+-        val currentWindow = closePrices.sliceArray((i - windowSize) until i)
+-        // The check currentWindow.size == windowSize is implicitly true due to sliceArray behavior and loop bounds
+-        predictions[i] = predictNext(model, currentWindow)
+-    }
+-
+-    // Create new meta (original + prediction column)
+-    val newMetaSize = originalMetaTensor.totalSize + 1
+-    val newMeta = TensorSeries(newMetaSize) { idx ->
+-        if (idx < originalMetaTensor.totalSize) {
+-            originalMetaTensor[idx]
++fun predictNext(model: PredictionModel, recentFeatures: WindowFeatures): PredictionValue =
++    PredictionValue(model(recentFeatures))
++
++// Pure approach without external cursor dependencies
++fun addPredictions(
++    priceData: PriceData,
++    windowSize: WindowSize,
++    predictionColumnName: ColumnName
++): List<Pair<Double, PredictionValue>>? {
++    val slidingData = createSlidingWindowFeatures(priceData, windowSize) ?: return null
++    val model = trainSimplePredictor(slidingData.first, slidingData.second) ?: return null
++    
++    return (0 until priceData.size()).map { i ->
++        val price = priceData.get(i)
++        val prediction = if (i >= windowSize.value) {
++            val window = WindowFeatures(DoubleArray(windowSize.value) { j -> 
++                priceData.get(i - windowSize.value + j) 
++            })
++            predictNext(model, window)
+         } else {
+-            predictionColumnName j IOMemento.IoDouble
++            PredictionValue(0.0)
+         }
++        price to prediction
+     }
+-
+-    // Create new data tensor (original data + prediction column)
+-    val newDataTensor = TensorCursor(originalDataTensor.rows, newMetaSize) { r, c ->
+-        // originalDataTensor.cols is the number of columns in the original data
+-        if (c < originalDataTensor.cols) {
+-            originalDataTensor[r, c]
+-        } else { // This is the new prediction column (the last one)
+-            predictions[r] // predictions array is same length as rows, with NaNs at start
+-        }
+-    }
+-    return newDataTensor j newMeta
+-}
++}
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt b/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
+deleted file mode 100644
+index 70d0eb97..00000000
+--- a/ta4k/src/commonMain/kotlin/borg/trikeshed/ml/RbfPricePredictor.kt
++++ /dev/null
+@@ -1,82 +0,0 @@
+-package borg.trikeshed.ml
+-
+-import kotlin.jvm.JvmInline
+-
+-// Simple data structures without external dependencies
+-data class PriceData(val prices: DoubleArray) {
+-    fun get(index: Int): Double = prices[index]
+-    fun size(): Int = prices.size
+-}
+-
+-data class WindowFeatures(val values: DoubleArray)
+-
+-typealias PredictionModel = (WindowFeatures) -> Double
+-
+-// Core value classes following TrikeShed patterns
+-@JvmInline
+-value class WindowSize(val value: Int)
+-
+-@JvmInline  
+-value class ColumnName(val value: String)
+-
+-@JvmInline
+-value class PredictionValue(val value: Double)
+-
+-// Series operations for price data
+-fun extractColumnData(data: Map<String, DoubleArray>, columnName: ColumnName): PriceData? {
+-    val column = data[columnName.value] ?: return null
+-    return PriceData(column)
+-}
+-
+-fun createSlidingWindowFeatures(
+-    data: PriceData, 
+-    windowSize: WindowSize
+-): Pair<Array<WindowFeatures>, DoubleArray>? {
+-    val dataSize = data.size()
+-    if (dataSize < windowSize.value + 1) return null
+-    
+-    val numPairs = dataSize - windowSize.value
+-    val features = Array(numPairs) { i ->
+-        WindowFeatures(DoubleArray(windowSize.value) { j -> data.get(i + j) })
+-    }
+-    val labels = DoubleArray(numPairs) { i -> data.get(i + windowSize.value) }
+-    
+-    return Pair(features, labels)
+-}
+-
+-// Simplified prediction without external dependencies
+-fun trainSimplePredictor(
+-    features: Array<WindowFeatures>,
+-    labels: DoubleArray
+-): PredictionModel? {
+-    if (features.isEmpty() || labels.isEmpty()) return null
+-    
+-    // Simple moving average predictor as fallback
+-    return { window -> window.values.average() }
+-}
+-
+-fun predictNext(model: PredictionModel, recentFeatures: WindowFeatures): PredictionValue =
+-    PredictionValue(model(recentFeatures))
+-
+-// Pure approach without external cursor dependencies
+-fun addPredictions(
+-    priceData: PriceData,
+-    windowSize: WindowSize,
+-    predictionColumnName: ColumnName
+-): List<Pair<Double, PredictionValue>>? {
+-    val slidingData = createSlidingWindowFeatures(priceData, windowSize) ?: return null
+-    val model = trainSimplePredictor(slidingData.first, slidingData.second) ?: return null
+-    
+-    return (0 until priceData.size()).map { i ->
+-        val price = priceData.get(i)
+-        val prediction = if (i >= windowSize.value) {
+-            val window = WindowFeatures(DoubleArray(windowSize.value) { j -> 
+-                priceData.get(i - windowSize.value + j) 
+-            })
+-            predictNext(model, window)
+-        } else {
+-            PredictionValue(0.0)
+-        }
+-        price to prediction
+-    }
+-}
+\ No newline at end of file

@@ -1,0 +1,25 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/Fail.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/Fail.kt
+deleted file mode 100644
+index f69de0ce..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/Fail.kt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/Fail.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco
+-
+-import com.binance.api.client.BinanceApiClientFactory
+-
+-class Fail {
+-    fun go() {
+-        val bFac = BinanceApiClientFactory.newInstance(true, true)
+-        val traderClient = bFac.newRestClient()
+-    }
+-}
+-
+-fun main() {
+-    Fail().go()
+-}

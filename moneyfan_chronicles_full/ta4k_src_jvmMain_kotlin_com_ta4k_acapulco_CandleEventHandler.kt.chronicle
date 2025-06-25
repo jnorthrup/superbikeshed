@@ -1,0 +1,35 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/CandleEventHandler.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/CandleEventHandler.kt
+deleted file mode 100644
+index f9f5679d..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/CandleEventHandler.kt
++++ /dev/null
+@@ -1,26 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/CandleEventHandler.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco
+-
+-import kotlinx.coroutines.flow.SharedFlow
+-import kotlinx.coroutines.flow.collect
+-import kotlinx.coroutines.launch
+-import kotlinx.coroutines.runBlocking
+-
+-/**
+- * for the purposes of RL, this would do the ordering, the doping, and the pancacke representation
+- */
+-open class CandleEventHandler<T>(
+-    evtSource: SharedFlow<T>,
+-    val onEvt: suspend (event: T) -> Unit,
+-) {
+-    init {
+-        // Consider if runBlocking is appropriate here. Maybe launch in a provided scope?
+-        runBlocking { launch { start(evtSource) } }
+-    }
+-
+-    suspend fun start(evtSource: SharedFlow<T>) {
+-        evtSource.collect { onEvt(it) }
+-    }
+-}
+\ No newline at end of file

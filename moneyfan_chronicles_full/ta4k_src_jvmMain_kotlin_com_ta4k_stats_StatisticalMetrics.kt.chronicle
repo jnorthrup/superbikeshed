@@ -1,0 +1,319 @@
+
+--- Commit: 4f47c7612cc2cf60961e02d1da4ecebf7ab09280 | 2025-06-16 07:33:24 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+index e687223c..b3aefdea 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+@@ -1,9 +1,9 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.core.Series
+-import borg.trikeshed.core.j
+-import borg.trikeshed.core.`▶`
+-import borg.trikeshed.core.size
++import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.j
++import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+ import kotlin.math.pow
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+index b3aefdea..2f3e2c8c 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+@@ -2,7 +2,7 @@ package com.ta4k.stats
+ 
+ import borg.trikeshed.lib.Series
+ import borg.trikeshed.lib.j
+-import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+@@ -23,12 +23,12 @@ class StatisticalMetrics {
+     fun skew(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val mean = returns.`▶`.average()
+-        val std = calculateStdDev(returns.`▶`.toList())
++        val mean = returns.`play`.average()
++        val std = calculateStdDev(returns.`play`.toList())
+         
+         if (std == BigDecimal.ZERO) return BigDecimal.ZERO
+         
+-        val cubedDeviations = returns.`▶`.map { 
++        val cubedDeviations = returns.`play`.map { 
+             it.subtract(mean).pow(3) 
+         }.toList()
+         
+@@ -44,12 +44,12 @@ class StatisticalMetrics {
+     fun kurtosis(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val mean = returns.`▶`.average()
+-        val std = calculateStdDev(returns.`▶`.toList())
++        val mean = returns.`play`.average()
++        val std = calculateStdDev(returns.`play`.toList())
+         
+         if (std == BigDecimal.ZERO) return BigDecimal.ZERO
+         
+-        val fourthPowerDeviations = returns.`▶`.map { 
++        val fourthPowerDeviations = returns.`play`.map { 
+             it.subtract(mean).pow(4) 
+         }.toList()
+         
+@@ -66,7 +66,7 @@ class StatisticalMetrics {
+     fun autocorrPenalty(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val returnsList = returns.`▶`.toList()
++        val returnsList = returns.`play`.toList()
+         val n = returnsList.size
+         
+         if (n < 2) return BigDecimal.ZERO
+@@ -92,7 +92,7 @@ class StatisticalMetrics {
+     ): BigDecimal {
+         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
+         
+-        val excessReturns = returns.`▶`.zip(benchmark.`▶`) { ret, bench ->
++        val excessReturns = returns.`play`.zip(benchmark.`play`) { ret, bench ->
+             ret.subtract(bench)
+         }.toList()
+         
+@@ -111,8 +111,8 @@ class StatisticalMetrics {
+     fun rSquared(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
+         
+-        val returnsList = returns.`▶`.toList()
+-        val benchmarkList = benchmark.`▶`.toList()
++        val returnsList = returns.`play`.toList()
++        val benchmarkList = benchmark.`play`.toList()
+         
+         val returnsMean = returnsList.average()
+         val benchmarkMean = benchmarkList.average()
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+index 2f3e2c8c..f8eb3bf6 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+@@ -1,12 +1,9 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.lib.Series
+-import borg.trikeshed.lib.j
++import borg.trikeshed.lib.Indexed
+ import borg.trikeshed.lib.`play`
+-import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+-import kotlin.math.pow
+ import kotlin.math.sqrt
+ 
+ /**
+@@ -20,7 +17,7 @@ class StatisticalMetrics {
+     /**
+      * Calculate the skewness of returns
+      */
+-    fun skew(returns: Series<BigDecimal>): BigDecimal {
++    fun skew(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val mean = returns.`play`.average()
+@@ -41,7 +38,7 @@ class StatisticalMetrics {
+     /**
+      * Calculate the kurtosis of returns
+      */
+-    fun kurtosis(returns: Series<BigDecimal>): BigDecimal {
++    fun kurtosis(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val mean = returns.`play`.average()
+@@ -63,7 +60,7 @@ class StatisticalMetrics {
+     /**
+      * Calculate the autocorrelation penalty
+      */
+-    fun autocorrPenalty(returns: Series<BigDecimal>): BigDecimal {
++    fun autocorrPenalty(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val returnsList = returns.`play`.toList()
+@@ -86,8 +83,8 @@ class StatisticalMetrics {
+      * Calculate the information ratio
+      */
+     fun informationRatio(
+-        returns: Series<BigDecimal>,
+-        benchmark: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
++        benchmark: Indexed<BigDecimal>,
+         periods: Int = 252
+     ): BigDecimal {
+         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
+@@ -108,7 +105,7 @@ class StatisticalMetrics {
+     /**
+      * Calculate the R-squared value
+      */
+-    fun rSquared(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
++    fun rSquared(returns: Indexed<BigDecimal>, benchmark: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
+         
+         val returnsList = returns.`play`.toList()
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
+deleted file mode 100644
+index f8eb3bf6..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatisticalMetrics.kt
++++ /dev/null
+@@ -1,148 +0,0 @@
+-package com.ta4k.stats
+-
+-import borg.trikeshed.lib.Indexed
+-import borg.trikeshed.lib.`play`
+-import java.math.BigDecimal
+-import java.math.RoundingMode
+-import kotlin.math.sqrt
+-
+-/**
+- * Statistical metrics implementation ported from quantstats
+- */
+-class StatisticalMetrics {
+-    companion object {
+-        private const val DEFAULT_SCALE = 8
+-    }
+-
+-    /**
+-     * Calculate the skewness of returns
+-     */
+-    fun skew(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val mean = returns.`play`.average()
+-        val std = calculateStdDev(returns.`play`.toList())
+-        
+-        if (std == BigDecimal.ZERO) return BigDecimal.ZERO
+-        
+-        val cubedDeviations = returns.`play`.map { 
+-            it.subtract(mean).pow(3) 
+-        }.toList()
+-        
+-        val skewness = cubedDeviations.average()
+-            .divide(std.pow(3), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            
+-        return skewness
+-    }
+-
+-    /**
+-     * Calculate the kurtosis of returns
+-     */
+-    fun kurtosis(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val mean = returns.`play`.average()
+-        val std = calculateStdDev(returns.`play`.toList())
+-        
+-        if (std == BigDecimal.ZERO) return BigDecimal.ZERO
+-        
+-        val fourthPowerDeviations = returns.`play`.map { 
+-            it.subtract(mean).pow(4) 
+-        }.toList()
+-        
+-        val kurtosis = fourthPowerDeviations.average()
+-            .divide(std.pow(4), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            .subtract(BigDecimal(3)) // Excess kurtosis
+-            
+-        return kurtosis
+-    }
+-
+-    /**
+-     * Calculate the autocorrelation penalty
+-     */
+-    fun autocorrPenalty(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val returnsList = returns.`play`.toList()
+-        val n = returnsList.size
+-        
+-        if (n < 2) return BigDecimal.ZERO
+-        
+-        var sum = BigDecimal.ZERO
+-        for (i in 0 until n - 1) {
+-            sum = sum.add(returnsList[i].multiply(returnsList[i + 1]))
+-        }
+-        
+-        val autocorr = sum.divide(BigDecimal(n - 1), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-        val penalty = BigDecimal.ONE.subtract(autocorr.abs())
+-        
+-        return penalty.max(BigDecimal.ZERO)
+-    }
+-
+-    /**
+-     * Calculate the information ratio
+-     */
+-    fun informationRatio(
+-        returns: Indexed<BigDecimal>,
+-        benchmark: Indexed<BigDecimal>,
+-        periods: Int = 252
+-    ): BigDecimal {
+-        if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
+-        
+-        val excessReturns = returns.`play`.zip(benchmark.`play`) { ret, bench ->
+-            ret.subtract(bench)
+-        }.toList()
+-        
+-        val mean = excessReturns.average()
+-        val std = calculateStdDev(excessReturns)
+-        
+-        if (std == BigDecimal.ZERO) return BigDecimal.ZERO
+-        
+-        return mean.multiply(BigDecimal(sqrt(periods.toDouble())))
+-            .divide(std, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Calculate the R-squared value
+-     */
+-    fun rSquared(returns: Indexed<BigDecimal>, benchmark: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
+-        
+-        val returnsList = returns.`play`.toList()
+-        val benchmarkList = benchmark.`play`.toList()
+-        
+-        val returnsMean = returnsList.average()
+-        val benchmarkMean = benchmarkList.average()
+-        
+-        var numerator = BigDecimal.ZERO
+-        var denominator = BigDecimal.ZERO
+-        
+-        for (i in returnsList.indices) {
+-            val returnsDiff = returnsList[i].subtract(returnsMean)
+-            val benchmarkDiff = benchmarkList[i].subtract(benchmarkMean)
+-            numerator = numerator.add(returnsDiff.multiply(benchmarkDiff))
+-            denominator = denominator.add(benchmarkDiff.pow(2))
+-        }
+-        
+-        if (denominator == BigDecimal.ZERO) return BigDecimal.ZERO
+-        
+-        val r = numerator.divide(denominator, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-        return r.pow(2)
+-    }
+-
+-    private fun List<BigDecimal>.average(): BigDecimal {
+-        if (isEmpty()) return BigDecimal.ZERO
+-        return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    private fun calculateStdDev(values: List<BigDecimal>): BigDecimal {
+-        if (values.isEmpty()) return BigDecimal.ZERO
+-        
+-        val mean = values.average()
+-        val variance = values.map { it.subtract(mean).pow(2) }
+-            .average()
+-            
+-        return BigDecimal(sqrt(variance.toDouble()))
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-}

@@ -1,0 +1,121 @@
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+index 42012d75..8e7fa422 100644
+--- a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
++++ b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+@@ -12,10 +12,10 @@ class Series<T>(private val data: List<T>) {
+     val size: Int get() = data.size
+     
+     /**
+-     * The PLAY BUTTON ▶ - materialization gateway to standard collections
++     * The PLAY BUTTON play - materialization gateway to standard collections
+      * DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX
+      */
+-    val `▶`: List<T> get() = data
++    val `play`: List<T> get() = data
+     
+     // Legacy alias for compatibility
+     val play: List<T> get() = data
+
+--- Commit: 6fa9785d838c141d298902ed80b81142dbe0669c | 2025-06-18 22:12:04 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+index 8e7fa422..f1c7765e 100644
+--- a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
++++ b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+@@ -52,4 +52,8 @@ data class Join<A, B>(val a: A, val b: B)
+ /**
+  * j operator - creates Join<A,B> - the ONLY composition operator  
+  */
+-infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
+\ No newline at end of file
++infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
++
++// Import alias for canonical j operator
++typealias MoneyFanJoin<A, B> = Join<A, B>
++infix fun <A, B> A.mj(other: B): MoneyFanJoin<A, B> = Join(this, other)
+\ No newline at end of file
+
+--- Commit: 21bd334718032cfaade70acefb30fcaf3f1f4a8c | 2025-06-18 22:30:51 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+index f1c7765e..5e1d2561 100644
+--- a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
++++ b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+@@ -49,11 +49,5 @@ class Series<T>(private val data: List<T>) {
+  */
+ data class Join<A, B>(val a: A, val b: B)
+ 
+-/**
+- * j operator - creates Join<A,B> - the ONLY composition operator  
+- */
+-infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
+-
+-// Import alias for canonical j operator
+-typealias MoneyFanJoin<A, B> = Join<A, B>
+-infix fun <A, B> A.mj(other: B): MoneyFanJoin<A, B> = Join(this, other)
+\ No newline at end of file
++// j operator imported from canonical borg.trikeshed.lib.Join
++// Use: import borg.trikeshed.lib.j
+\ No newline at end of file
+
+--- Commit: 2038f3399bd254f0f876808eca5807a9d1d10397 | 2025-06-19 14:47:16 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt b/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
+deleted file mode 100644
+index 5e1d2561..00000000
+--- a/moneyfan/src/commonMain/kotlin/borg/trikeshed/lib/Series.kt
++++ /dev/null
+@@ -1,53 +0,0 @@
+-package borg.trikeshed.lib
+-
+-/**
+- * Minimal TrikeShed compatibility layer for moneyfan
+- * Implements core Series<T> and Join<A,B> patterns
+- */
+-
+-/**
+- * Series<T> - Core data structure for TrikeShed
+- */
+-class Series<T>(private val data: List<T>) {
+-    val size: Int get() = data.size
+-    
+-    /**
+-     * The PLAY BUTTON play - materialization gateway to standard collections
+-     * DO NOT CHANGE THE BACKTICKS - THEY ARE KOTLIN IDENTIFIER SYNTAX
+-     */
+-    val `play`: List<T> get() = data
+-    
+-    // Legacy alias for compatibility
+-    val play: List<T> get() = data
+-    
+-    /**
+-     * α (alpha) transformation operator - the ONLY transformation operator
+-     */
+-    fun <R> α(transform: (T) -> R): Series<R> {
+-        return Series(data.map(transform))
+-    }
+-    
+-    operator fun get(index: Int): T = data[index]
+-    
+-    companion object {
+-        fun <T> of(size: Int, generator: (Int) -> T): Series<T> {
+-            return Series((0 until size).map(generator))
+-        }
+-        
+-        fun <T> of(vararg elements: T): Series<T> {
+-            return Series(elements.toList())
+-        }
+-        
+-        fun <T> empty(): Series<T> {
+-            return Series(emptyList())
+-        }
+-    }
+-}
+-
+-/**
+- * Join<A,B> - the ONLY composition operator
+- */
+-data class Join<A, B>(val a: A, val b: B)
+-
+-// j operator imported from canonical borg.trikeshed.lib.Join
+-// Use: import borg.trikeshed.lib.j
+\ No newline at end of file

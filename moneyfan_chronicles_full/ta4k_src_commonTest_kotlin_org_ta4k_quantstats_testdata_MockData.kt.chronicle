@@ -1,0 +1,65 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt b/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt
+index c3f27ab2..68d1f756 100644
+--- a/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt
++++ b/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt
+@@ -25,11 +25,11 @@ fun createMockKlines(): List<Kline> {
+ }
+ 
+ // Placeholder for creating a Trikeshed Series once its construction is clear
+-// fun createMockKlineSeries(): borg.trikeshed.Series<Kline> {
++// fun createMockKlineSeries(): borg.trikeshed.Indexed<Kline> {
+ //     val klines = createMockKlines()
+-//     // Actual construction of Series<Kline> will depend on Join's API
+-//     // and how Series<T> = Join<Int, (Int) -> T> is instantiated.
++//     // Actual construction of Indexed<Kline> will depend on Join's API
++//     // and how Indexed<T> = Join<Int, (Int) -> T> is instantiated.
+ //     // For example, if Join is data class Join<A,B>(val a: A, val b: B)
+ //     // return borg.trikeshed.Join(klines.size) { index -> klines[index] }
+-//     throw NotImplementedError("Series<Kline> construction depends on Join API details")
++//     throw NotImplementedError("Indexed<Kline> construction depends on Join API details")
+ // }
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt b/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt
+deleted file mode 100644
+index 68d1f756..00000000
+--- a/ta4k/src/commonTest/kotlin/org/ta4k/quantstats/testdata/MockData.kt
++++ /dev/null
+@@ -1,35 +0,0 @@
+-package org.ta4k.quantstats.testdata
+-
+-import org.ta4k.quantstats.domain.*
+-// import borg.trikeshed.Series // Import if Series construction is known
+-// import borg.trikeshed.Join   // Import if Join construction is known for Series
+-
+-fun createMockKlines(): List<Kline> {
+-    return listOf(
+-        Kline(
+-            timestamp = UnixTimestamp(1672531200000L), // 2023-01-01 00:00:00 GMT
+-            ohlc = OHLC(Price(100.0), Price(105.0), Price(99.0), Price(102.0)),
+-            volume = Volume(1000.0)
+-        ),
+-        Kline(
+-            timestamp = UnixTimestamp(1672617600000L), // 2023-01-02 00:00:00 GMT
+-            ohlc = OHLC(Price(102.0), Price(108.0), Price(101.0), Price(107.0)),
+-            volume = Volume(1200.0)
+-        ),
+-        Kline(
+-            timestamp = UnixTimestamp(1672704000000L), // 2023-01-03 00:00:00 GMT
+-            ohlc = OHLC(Price(107.0), Price(110.0), Price(105.0), Price(109.0)),
+-            volume = Volume(1100.0)
+-        )
+-    )
+-}
+-
+-// Placeholder for creating a Trikeshed Series once its construction is clear
+-// fun createMockKlineSeries(): borg.trikeshed.Indexed<Kline> {
+-//     val klines = createMockKlines()
+-//     // Actual construction of Indexed<Kline> will depend on Join's API
+-//     // and how Indexed<T> = Join<Int, (Int) -> T> is instantiated.
+-//     // For example, if Join is data class Join<A,B>(val a: A, val b: B)
+-//     // return borg.trikeshed.Join(klines.size) { index -> klines[index] }
+-//     throw NotImplementedError("Indexed<Kline> construction depends on Join API details")
+-// }

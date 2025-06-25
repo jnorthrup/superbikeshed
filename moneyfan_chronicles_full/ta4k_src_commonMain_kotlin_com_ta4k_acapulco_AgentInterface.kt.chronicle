@@ -1,0 +1,32 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt
+index cf3f6dea..256e1e11 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt
+@@ -5,5 +5,5 @@ interface AgentInterface {
+ }
+ 
+ // Placeholder for types based on task description
+-typealias AgentObservation = borg.trikeshed.common.Series<*>  // Adjust as per actual implementation
++typealias AgentObservation = borg.trikeshed.common.Indexed<*>  // Adjust as per actual implementation
+ typealias AgentAction = DoubleArray  // Represents AssetOutput
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt
+deleted file mode 100644
+index 256e1e11..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/AgentInterface.kt
++++ /dev/null
+@@ -1,9 +0,0 @@
+-package borg.trikeshed.acapulco
+-
+-interface AgentInterface {
+-    suspend fun decideAction(observation: AgentObservation): AgentAction
+-}
+-
+-// Placeholder for types based on task description
+-typealias AgentObservation = borg.trikeshed.common.Indexed<*>  // Adjust as per actual implementation
+-typealias AgentAction = DoubleArray  // Represents AssetOutput
+\ No newline at end of file
