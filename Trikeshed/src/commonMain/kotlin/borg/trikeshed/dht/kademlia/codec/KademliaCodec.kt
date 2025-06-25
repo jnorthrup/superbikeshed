@@ -52,94 +52,93 @@ object GraphBuilder {
         
         // Common fields for all events
         fields["timestamp"] = event.timestamp
-        fields["messageId"] = event.messageId.bytes.play.toByteArray()
-        fields["sourceNodeId"] = event.sourceNodeId.bytes.play.toByteArray()
+        fields["messageId"] = ByteArray(event.messageId.size) { i -> event.messageId.bytes[i] }
+        fields["sourceNodeId"] = ByteArray(event.sourceNodeId.size) { i -> event.sourceNodeId.bytes[i] }
         
         // Event-specific fields using when expression (visitor pattern)
         when (event) {
             is PingEvent -> {
-                fields["targetNodeId"] = event.targetNodeId.bytes.play.toByteArray()
+                fields["targetNodeId"] = ByteArray(event.targetNodeId.size) { i -> event.targetNodeId.bytes[i] }
                 fields["subnets"] = event.subnets.play.toList()
             }
             is PongEvent -> {
-                fields["respondingToMessageId"] = event.respondingToMessageId.bytes.play.toByteArray()
-                fields["respondingToNodeId"] = event.respondingToNodeId.bytes.play.toByteArray()
+                fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
+                fields["respondingToNodeId"] = ByteArray(event.respondingToNodeId.size) { i -> event.respondingToNodeId.bytes[i] }
                 fields["activeSubnets"] = event.activeSubnets.play.toList()
                 fields["routingTableSize"] = event.routingTableSize
             }
             is FindNodeEvent -> {
-                fields["targetNodeId"] = event.targetNodeId.bytes.play.toByteArray()
+                fields["targetNodeId"] = ByteArray(event.targetNodeId.size) { i -> event.targetNodeId.bytes[i] }
                 fields["maxResults"] = event.maxResults
                 fields["preferredSubnets"] = event.preferredSubnets.play.toList()
             }
             is FoundNodesEvent -> {
-                fields["respondingToMessageId"] = event.respondingToMessageId.bytes.play.toByteArray()
-                fields["targetNodeId"] = event.targetNodeId.bytes.play.toByteArray()
+                fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
+                fields["targetNodeId"] = ByteArray(event.targetNodeId.size) { i -> event.targetNodeId.bytes[i] }
                 fields["nodes"] = event.nodes.play.map { nodeInfo ->
                     mapOf(
-                        "nodeId" to nodeInfo.nodeId.bytes.play.toByteArray(),
+                        "nodeId" to ByteArray(nodeInfo.nodeId.size) { i -> nodeInfo.nodeId.bytes[i] },
                         "ipAddress" to nodeInfo.ipAddress,
                         "port" to nodeInfo.port,
                         "subnets" to nodeInfo.subnets.play.toList(),
-                        "publicKey" to nodeInfo.publicKey.play.toByteArray(),
+                        "publicKey" to ByteArray(nodeInfo.publicKey.a) { i -> nodeInfo.publicKey[i] },
                         "lastSeen" to nodeInfo.lastSeen,
                         "reliability" to nodeInfo.reliability
                     )
                 }.toList()
             }
             is StoreEvent -> {
-                fields["key"] = event.key.play.toByteArray()
-                fields["value"] = event.value.play.toByteArray()
+                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
+                fields["value"] = ByteArray(event.value.a) { i -> event.value[i] }
                 fields["ttl"] = event.ttl
                 fields["replicationFactor"] = event.replicationFactor
             }
             is StoreResponseEvent -> {
-                fields["respondingToMessageId"] = event.respondingToMessageId.bytes.play.toByteArray()
-                fields["key"] = event.key.play.toByteArray()
+                fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
+                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
                 fields["success"] = event.success
                 fields["errorCode"] = event.errorCode
             }
             is FindValueEvent -> {
-                fields["key"] = event.key.play.toByteArray()
+                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
                 fields["maxHops"] = event.maxHops
             }
             is FoundValueEvent -> {
-                fields["respondingToMessageId"] = event.respondingToMessageId.bytes.play.toByteArray()
-                fields["key"] = event.key.play.toByteArray()
-                fields["value"] = event.value.play.toByteArray()
+                fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
+                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
+                fields["value"] = ByteArray(event.value.a) { i -> event.value[i] }
                 fields["providingNodes"] = event.providingNodes.play.map { nodeInfo ->
                     mapOf(
-                        "nodeId" to nodeInfo.nodeId.bytes.play.toByteArray(),
+                        "nodeId" to ByteArray(nodeInfo.nodeId.size) { i -> nodeInfo.nodeId.bytes[i] },
                         "ipAddress" to nodeInfo.ipAddress,
                         "port" to nodeInfo.port,
                         "subnets" to nodeInfo.subnets.play.toList(),
-                        "publicKey" to nodeInfo.publicKey.play.toByteArray(),
+                        "publicKey" to ByteArray(nodeInfo.publicKey.a) { i -> nodeInfo.publicKey[i] },
                         "lastSeen" to nodeInfo.lastSeen,
                         "reliability" to nodeInfo.reliability
                     )
                 }.toList()
             }
-            is JoinSubnetEvent -> {
-                fields["subnetId"] = event.subnetId
-                fields["credentials"] = event.credentials.play.toByteArray()
-                fields["proofOfWork"] = event.proofOfWork
+            is JoinRequestEvent -> {
+                fields["proposedNodeId"] = ByteArray(event.proposedNodeId.size) { i -> event.proposedNodeId.bytes[i] }
+                fields["publicKey"] = ByteArray(event.publicKey.a) { i -> event.publicKey[i] }
+                fields["formerNodeId"] = event.formerNodeId?.let { ByteArray(it.size) { i -> it.bytes[i] } }
             }
-            is SubnetWelcomeEvent -> {
-                fields["respondingToMessageId"] = event.respondingToMessageId.bytes.play.toByteArray()
-                fields["subnetId"] = event.subnetId
+            is JoinResponseEvent -> {
+                fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
                 fields["accepted"] = event.accepted
-                fields["welcomePeers"] = event.welcomePeers.play.map { nodeInfo ->
+                fields["message"] = event.message
+                fields["knownNodes"] = event.knownNodes.play.map { nodeInfo ->
                     mapOf(
-                        "nodeId" to nodeInfo.nodeId.bytes.play.toByteArray(),
+                        "nodeId" to ByteArray(nodeInfo.nodeId.size) { i -> nodeInfo.nodeId.bytes[i] },
                         "ipAddress" to nodeInfo.ipAddress,
                         "port" to nodeInfo.port,
                         "subnets" to nodeInfo.subnets.play.toList(),
-                        "publicKey" to nodeInfo.publicKey.play.toByteArray(),
+                        "publicKey" to ByteArray(nodeInfo.publicKey.a) { i -> nodeInfo.publicKey[i] },
                         "lastSeen" to nodeInfo.lastSeen,
                         "reliability" to nodeInfo.reliability
                     )
                 }.toList()
-                fields["subnetRules"] = event.subnetRules.play.toByteArray()
             }
         }
         
@@ -194,12 +193,12 @@ object BinaryPacker {
                 buffer.add(0x03)
                 val strBytes = value.encodeToByteArray()
                 packInt(buffer, strBytes.size)
-                buffer.addAll(strBytes.toList())
+                strBytes.forEach { buffer.add(it) }
             }
             is ByteArray -> {
                 buffer.add(0x04)
                 packInt(buffer, value.size)
-                buffer.addAll(value.toList())
+                value.forEach { buffer.add(it) }
             }
             is Boolean -> {
                 buffer.add(0x05)
