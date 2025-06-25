@@ -76,7 +76,7 @@ data class NUID(
      */
     fun toBase58(): String {
         val alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-        val bytes = this.bytes.play.toByteArray()
+        val bytes = ByteArray(this.size) { i -> this.bytes[i] }
         
         // Count leading zeros
         var leadingZeros = 0
@@ -85,14 +85,20 @@ data class NUID(
             else break
         }
         
-        // Convert to base 58
-        var num = java.math.BigInteger(1, bytes)
-        val result = mutableListOf<Char>()
+        // Simple base58 encoding without BigInteger (common code)
+        if (bytes.all { it == 0.toByte() }) {
+            return "1".repeat(bytes.size)
+        }
         
-        while (num > java.math.BigInteger.ZERO) {
-            val remainder = num.remainder(java.math.BigInteger.valueOf(58))
-            num = num.divide(java.math.BigInteger.valueOf(58))
-            result.add(alphabet[remainder.toInt()])
+        val result = mutableListOf<Char>()
+        var value = 0L
+        for (byte in bytes) {
+            value = (value * 256) + (byte.toInt() and 0xFF)
+        }
+        
+        while (value > 0) {
+            result.add(alphabet[(value % 58).toInt()])
+            value /= 58
         }
         
         // Add leading '1's for leading zeros

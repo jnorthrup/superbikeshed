@@ -130,7 +130,7 @@ class QuicServer(
             val connectionId = ConnectionId(8 j { (connections.size % 256).toByte() })
             val connection = QuicConnection(
                 config = QuicConfig(),
-                sessionCache = QuicSessionCache(),
+                sessionCache = DefaultQuicSessionCache(),
                 coroutineScope = kotlinx.coroutines.GlobalScope
             )
             connections[connectionId] = connection

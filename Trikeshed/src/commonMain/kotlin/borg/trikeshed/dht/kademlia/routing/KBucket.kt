@@ -46,7 +46,7 @@ class KBucket(
      * Remove a node from the bucket
      */
     fun removeNode(nodeId: NUID): Boolean {
-        val removed = nodes.removeIf { it.nodeId == nodeId }
+        val removed = nodes.removeAll { it.nodeId == nodeId }
         
         // Promote from replacement cache if available
         if (removed && replacementCache.isNotEmpty()) {
