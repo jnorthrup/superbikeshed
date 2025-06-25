@@ -36,6 +36,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
                 implementation(project(":Trikeshed"))
             }
         }
@@ -150,8 +151,8 @@ signing {
 tasks.register<JavaExec>("runNexus") {
     dependsOn("jvmJar")
     group = "application"
-    description = "Run Nexus"
-    mainClass.set("nexus.MainKt")
+    description = "Run Nexus - Main()'s Pursuit of Happiness"
+    mainClass.set("borg.trikeshed.nexus.MainKt")
     classpath = files(
         tasks
             .named("jvmJar")
@@ -159,4 +160,25 @@ tasks.register<JavaExec>("runNexus") {
             .outputs.files,
     ) + (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
     args = if (project.hasProperty("args")) project.property("args").toString().split(" ") else emptyList()
+}
+
+tasks.register<JavaExec>("realizeIntention") {
+    dependsOn("jvmJar")
+    group = "application"
+    description = "Realize Main()'s Intention - Universal Development Autonomy"
+    mainClass.set("borg.trikeshed.nexus.MainKt")
+    classpath = files(
+        tasks
+            .named("jvmJar")
+            .get()
+            .outputs.files,
+    ) + (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+    
+    // Enable virtual machine optimizations for the pursuit of happiness
+    jvmArgs = listOf(
+        "--enable-native-access=ALL-UNNAMED",
+        "-Xmx2g",
+        "-XX:+UseG1GC",
+        "-XX:+UseStringDeduplication"
+    )
 }

@@ -1,6 +1,6 @@
 package borg.trikeshed.lib
 
-// import borg.trikeshed.io.Usable  // TODO: implement Usable interface
+import borg.trikeshed.io.Usable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -32,7 +32,7 @@ class FibonacciReporter(
     val size: Int? = null,
     /** what do we report? */
     val noun: String = "rows",
-) {
+) : Usable {
     var trigger: Int = 0
     var countdown: Int = 1
     val begin: TimeSource.Monotonic.ValueTimeMark = TimeSource.Monotonic.markNow()
@@ -41,9 +41,9 @@ class FibonacciReporter(
     override fun toString(): String =
         "FibonacciReporter(size=$size, noun='$noun', trigger=$trigger, countdown=$countdown, begin=$begin, count=$count)"
 
-    fun open() = println("debug: $noun FibonacciReporter opened @$begin")
+    override fun open() = println("debug: $noun FibonacciReporter opened @$begin")
 
-    fun close() {
+    override fun close() {
         count--
         countdown = 1
         println("debug:FibonacciReporter closed ${report()} @ ${TimeSource.Monotonic.markNow() - begin}")

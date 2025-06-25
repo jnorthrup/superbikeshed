@@ -1,6 +1,7 @@
 package borg.trikeshed.reactor.http
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.j
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -97,6 +98,8 @@ data class HttpServerContext(
     ): R {
         return mapReduceEngine.execute(data, mapper, reducer, identity)
     }
+
+    fun copy(traitGraph: Indexed<ContextTraitGraph> = this.traitGraph, ioModel: IoModel = this.ioModel): HttpServerContext = HttpServerContext(ioModel, packingStrategy, nativeAccess, packerRegisters, traitGraph, asyncHierarchy, mapReduceEngine)
 }
 
 /**

@@ -1,0 +1,30 @@
+# Trikeshed specific ignores
+
+# Development artifacts
+*.log
+*.tmp
+*.backup
+*~
+
+# Generated files
+*.generated.kt
+*.generated.kts
+
+# Test outputs
+test_results/
+coverage/
+
+# IDE temporary files
+.idea/workspace.xml
+
+# Debug and temporary files at any level
+**/debug_*.kt
+**/test_*.kt
+**/Debug*.kt
+**/Test*.kt
+**/demo_*.kt
+**/Demo*.kt
+
+# OS artifacts
+.DS_Store
+Thumbs.db

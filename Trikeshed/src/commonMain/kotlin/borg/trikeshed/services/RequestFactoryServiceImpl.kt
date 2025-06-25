@@ -1,8 +1,9 @@
 package borg.trikeshed.services
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.Series as Indexed
 import borg.trikeshed.reactor.http.HttpServerContext
+import borg.trikeshed.integration.getCurrentTimeMillis
+import kotlin.coroutines.CoroutineContext
 
 /**
  * KMP RequestFactory Service Implementation
@@ -21,10 +22,8 @@ internal class RequestFactoryServiceImpl(
     private var requestCounter = 0L
 
     override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
-        // Convert Indexed<Byte> to String using j patterns
-        val requestJson = requestPayload.a j { i: Int -> 
-            requestPayload.b(i).toInt().toChar() 
-        } j { chars -> chars.joinToString("") }
+        // Convert Indexed<Byte> directly to String
+        val requestJson = requestPayload.play.toList().toByteArray().decodeToString()
         
         return try {
             // Use context for statistical packing optimization
@@ -46,8 +45,14 @@ internal class RequestFactoryServiceImpl(
     override fun registerServiceLocator(serviceClass: String, locator: () -> Any) {
         serviceLocators[serviceClass] = locator
         // Register in context trait graph
-        val traitGraph = serviceClass j locator as CoroutineContext.Element
-        // TODO: Add to context.traitGraph
+        val service = getServiceInstance(serviceClass)
+        if (service is CoroutineContext.Element) {
+            val traitGraph = serviceClass j service
+            val newTraitGraph = (context.traitGraph.a + 1) j { i ->
+                if (i < context.traitGraph.a) context.traitGraph.b(i) else traitGraph
+            }
+            context.copy(traitGraph = newTraitGraph)
+        }
     }
 
     override fun registerMethodValidator(methodName: String, validator: (Any) -> Boolean) {
@@ -102,7 +107,7 @@ internal class RequestFactoryServiceImpl(
      * Create error response with reactor context info
      */
     private fun createErrorResponse(code: Int, message: String): String {
-        return """{"success":false,"error":"$message","code":$code,"ioModel":"${context.ioModel}","timestamp":${System.currentTimeMillis()}}"""
+        return """{"success":false,"error":"$message","code":$code,"ioModel":"${context.ioModel}","timestamp":${getCurrentTimeMillis()}}"""
     }
 
     /**
@@ -118,6 +123,9 @@ internal class ReactorDealService(
     private val context: HttpServerContext
 ) : DealService {
     
+    override val key: CoroutineContext.Key<*>
+        get() = DealService.Key
+
     override suspend fun process(data: Indexed<Byte>): Indexed<Byte> {
         // Use statistical packing for deal processing
         val sweetSpot = context.registerPacker(data.a)
@@ -141,7 +149,7 @@ internal class ReactorDealService(
     }
     
     override fun createDeal(dealData: Indexed<Byte>): String {
-        val dealId = "deal_${System.currentTimeMillis()}"
+        val dealId = "deal_${getCurrentTimeMillis()}"
         return """{"created":"$dealId","size":${dealData.a},"ioModel":"${context.ioModel}"}"""
     }
 }

@@ -7,11 +7,9 @@ import borg.trikeshed.net.http.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
 import kotlinx.serialization.json.*
-import borg.trikeshed.lib.Either.Left
-import borg.trikeshed.lib.Either.Right
+import kotlin.random.Random
 
-// Platform-agnostic time function
-expect fun getCurrentTimeMillis(): Long
+// Platform-agnostic time function - defined in IntegrationTypes.kt
 
 /**
  * Trikeshed Integration System
@@ -26,20 +24,17 @@ expect fun getCurrentTimeMillis(): Long
 
 // === TRIKESHED INTEGRATION TAXONOMICAL TYPEALIASES ===
 
-// Integration Configuration Types
+// Integration Configuration Types - use imported types from IntegrationTypes.kt
 typealias IntegrationConfig = Map<String, Any>
-typealias IntegrationUrl = String
-typealias IntegrationPort = Int
-typealias IntegrationDatabaseName = String
 
-// Integration Event Types
-typealias IntegrationEventType = String
-typealias IntegrationEventData = Any
-typealias IntegrationEventId = String
-typealias IntegrationEventTimestamp = Long
+// Integration Event Types - use imported types from IntegrationTypes.kt  
+typealias IntegrationEventType = EventType
+typealias IntegrationEventData = EventData
+typealias IntegrationEventId = EventId
+typealias IntegrationEventTimestamp = EventTimestamp
 
-// Integration Result Types
-typealias IntegrationResult = Either<IntegrationError, IntegrationSuccess>
+// Integration Result Types - use imported types from IntegrationTypes.kt  
+typealias TrikeshedIntegrationResult = Either<IntegrationError, IntegrationSuccess>
 typealias IntegrationDocumentResult = Either<IntegrationError, IntegrationDocument>
 
 // === TRIKESHED INTEGRATION IMPLEMENTATION ===
@@ -68,7 +63,7 @@ class TrikeshedIntegration(
     /**
      * Initialize the complete Trikeshed integration system
      */
-    suspend fun initialize(): IntegrationResult {
+    suspend fun initialize(): TrikeshedIntegrationResult {
         return try {
             // Initialize QUIC engine
             quicEngine = QuicEngine(
@@ -84,7 +79,7 @@ class TrikeshedIntegration(
             // Initialize CouchDB client
             couchClient = CouchClient(couchUrl)
             if (!couchClient.authenticate("admin", "password")) {
-                return IntegrationResult.Left(IntegrationError("Failed to authenticate with CouchDB"))
+                return Either.Left(IntegrationError("Failed to authenticate with CouchDB"))
             }
             
             // Create database
@@ -110,10 +105,10 @@ class TrikeshedIntegration(
             initializeReactor()
             
             println("Trikeshed Integration initialized successfully")
-            IntegrationResult.Right(IntegrationSuccess("Initialization completed"))
+            Either.Right(IntegrationSuccess("Initialization completed"))
             
         } catch (e: Exception) {
-            IntegrationResult.Left(IntegrationError("Initialization failed: ${e.message}"))
+            Either.Left(IntegrationError("Initialization failed: ${e.message}"))
         }
     }
     
@@ -176,12 +171,12 @@ class TrikeshedIntegration(
                 "POST" -> {
                     val result = createDocument(request.body)
                     when (result) {
-                        is IntegrationDocumentResult.Right -> HttpResponse(
+                        is Either.Right -> HttpResponse(
                             status = 201,
                             headers = mapOf("content-type" to "application/json"),
                             body = result.value.toJson()
                         )
-                        is IntegrationDocumentResult.Left -> HttpResponse(
+                        is Either.Left -> HttpResponse(
                             status = 500,
                             headers = mapOf("content-type" to "application/json"),
                             body = """{"error":"${result.value.message}"}"""
@@ -193,12 +188,12 @@ class TrikeshedIntegration(
                     if (id != null) {
                         val result = getDocument(id)
                         when (result) {
-                            is IntegrationDocumentResult.Right -> HttpResponse(
+                            is Either.Right -> HttpResponse(
                                 status = 200,
                                 headers = mapOf("content-type" to "application/json"),
                                 body = result.value.toJson()
                             )
-                            is IntegrationDocumentResult.Left -> HttpResponse(
+                            is Either.Left -> HttpResponse(
                                 status = 404,
                                 headers = mapOf("content-type" to "application/json"),
                                 body = """{"error":"${result.value.message}"}"""
@@ -218,12 +213,12 @@ class TrikeshedIntegration(
                 "POST" -> {
                     val result = storeInIpfs(request.body)
                     when (result) {
-                        is IntegrationResult.Right -> HttpResponse(
+                        is Either.Right -> HttpResponse(
                             status = 201,
                             headers = mapOf("content-type" to "application/json"),
                             body = """{"hash":"${result.value.hash}"}"""
                         )
-                        is IntegrationResult.Left -> HttpResponse(
+                        is Either.Left -> HttpResponse(
                             status = 500,
                             headers = mapOf("content-type" to "application/json"),
                             body = """{"error":"${result.value.message}"}"""
@@ -235,12 +230,12 @@ class TrikeshedIntegration(
                     if (hash != null) {
                         val result = retrieveFromIpfs(hash)
                         when (result) {
-                            is IntegrationResult.Right -> HttpResponse(
+                            is Either.Right -> HttpResponse(
                                 status = 200,
                                 headers = mapOf("content-type" to "application/json"),
-                                body = result.value.content
+                                body = result.value.content ?: ""
                             )
-                            is IntegrationResult.Left -> HttpResponse(
+                            is Either.Left -> HttpResponse(
                                 status = 404,
                                 headers = mapOf("content-type" to "application/json"),
                                 body = """{"error":"${result.value.message}"}"""
@@ -286,18 +281,21 @@ class TrikeshedIntegration(
             
             val couchResult = couchClient.createDocument(databaseName, document)
             when (couchResult) {
-                is CouchDocumentResult.Right -> {
-                    val doc = couchResult.data
-                    val docId = doc.id ?: return IntegrationDocumentResult.Left(IntegrationError("No document ID returned"))
+                is Either.Right -> {
+                    val doc = couchResult.value
+                    val docId = doc.id ?: return Either.Left(IntegrationError("No document ID returned"))
                     
                     // Store content in IPFS
-                    val contentBytes = content.toByteArray()
+                    val contentBytes = content.encodeToByteArray()
                     val indexedContent = contentBytes.size j { contentBytes[it] }
                     val ipfsResult = ipfsClient.store(indexedContent)
                     
                     // Update document with IPFS hash
                     val updatedDoc = doc.copy(
-                        data = doc.data + buildJsonObject { put("ipfs_hash", ipfsResult.hash) }
+                        data = buildJsonObject {
+                            doc.data.forEach { (key, value) -> put(key, value) }
+                            put("ipfs_hash", ipfsResult.hash)
+                        }
                     )
                     couchClient.updateDocument(databaseName, updatedDoc)
                     
@@ -312,7 +310,7 @@ class TrikeshedIntegration(
                     )
                     network.emit("integration", event)
                     
-                    IntegrationDocumentResult.Right(
+                    Either.Right(
                         IntegrationDocument(
                             id = docId,
                             content = content,
@@ -324,10 +322,10 @@ class TrikeshedIntegration(
                         )
                     )
                 }
-                is CouchDocumentResult.Left -> IntegrationDocumentResult.Left(IntegrationError(couchResult.message))
+                is Either.Left -> Either.Left(IntegrationError(couchResult.value))
             }
         } catch (e: Exception) {
-            IntegrationDocumentResult.Left(IntegrationError(e.message ?: "Unknown error"))
+            Either.Left(IntegrationError(e.message ?: "Unknown error"))
         }
     }
     
@@ -338,19 +336,19 @@ class TrikeshedIntegration(
         return try {
             val couchResult = couchClient.getDocument(databaseName, id)
             when (couchResult) {
-                is CouchDocumentResult.Right -> {
-                    val doc = couchResult.data
-                    val content = doc.data["content"]?.jsonPrimitive?.content ?: return IntegrationDocumentResult.Left(IntegrationError("No content found"))
+                is Either.Right -> {
+                    val doc = couchResult.value
+                    val content = doc.data["content"]?.jsonPrimitive?.content ?: return Either.Left(IntegrationError("No content found"))
                     val ipfsHash = doc.data["ipfs_hash"]?.jsonPrimitive?.content
                     
                     // Verify with IPFS if hash exists
                     if (ipfsHash != null) {
                         val ipfsContent = ipfsClient.retrieve(ipfsHash)
                         if (ipfsContent != null) {
-                            val contentBytes = content.toByteArray()
+                            val contentBytes = content.encodeToByteArray()
                             val ipfsBytes = ipfsContent.content.toByteArray()
                             if (contentBytes.contentEquals(ipfsBytes)) {
-                                IntegrationDocumentResult.Right(
+                                Either.Right(
                                     IntegrationDocument(
                                         id = id,
                                         content = content,
@@ -362,14 +360,14 @@ class TrikeshedIntegration(
                                     )
                                 )
                             } else {
-                                IntegrationDocumentResult.Left(IntegrationError("Content verification failed"))
+                                Either.Left(IntegrationError("Content verification failed"))
                             }
                         } else {
-                            IntegrationDocumentResult.Left(IntegrationError("IPFS content not found"))
+                            Either.Left(IntegrationError("IPFS content not found"))
                         }
                     } else {
                         // No IPFS hash, return content directly
-                        IntegrationDocumentResult.Right(
+                        Either.Right(
                             IntegrationDocument(
                                 id = id,
                                 content = content,
@@ -381,42 +379,42 @@ class TrikeshedIntegration(
                         )
                     }
                 }
-                is CouchDocumentResult.Left -> IntegrationDocumentResult.Left(IntegrationError(couchResult.message))
+                is Either.Left -> Either.Left(IntegrationError(couchResult.value))
             }
         } catch (e: Exception) {
-            IntegrationDocumentResult.Left(IntegrationError(e.message ?: "Unknown error"))
+            Either.Left(IntegrationError(e.message ?: "Unknown error"))
         }
     }
     
     /**
      * Store content directly in IPFS
      */
-    private suspend fun storeInIpfs(content: String): IntegrationResult {
+    private suspend fun storeInIpfs(content: String): TrikeshedIntegrationResult {
         return try {
-            val contentBytes = content.toByteArray()
+            val contentBytes = content.encodeToByteArray()
             val indexedContent = contentBytes.size j { contentBytes[it] }
             val result = ipfsClient.store(indexedContent)
             
-            IntegrationResult.Right(IntegrationSuccess(hash = result.hash))
+            Either.Right(IntegrationSuccess(hash = result.hash))
         } catch (e: Exception) {
-            IntegrationResult.Left(IntegrationError(e.message ?: "Unknown error"))
+            Either.Left(IntegrationError(e.message ?: "Unknown error"))
         }
     }
     
     /**
      * Retrieve content from IPFS
      */
-    private suspend fun retrieveFromIpfs(hash: String): IntegrationResult {
+    private suspend fun retrieveFromIpfs(hash: String): TrikeshedIntegrationResult {
         return try {
             val result = ipfsClient.retrieve(hash)
             if (result != null) {
-                val content = result.content.toByteArray().toString(Charsets.UTF_8)
-                IntegrationResult.Right(IntegrationSuccess(content = content))
+                val content = result.content.toByteArray().decodeToString()
+                Either.Right(IntegrationSuccess(content = content))
             } else {
-                IntegrationResult.Left(IntegrationError("Content not found"))
+                Either.Left(IntegrationError("Content not found"))
             }
         } catch (e: Exception) {
-            IntegrationResult.Left(IntegrationError(e.message ?: "Unknown error"))
+            Either.Left(IntegrationError(e.message ?: "Unknown error"))
         }
     }
     
@@ -468,30 +466,30 @@ class TrikeshedIntegration(
     /**
      * Start the integration system
      */
-    suspend fun start(): IntegrationResult {
+    suspend fun start(): TrikeshedIntegrationResult {
         return try {
             quicServer.start()
             httpServer.start()
             network.start()
             println("Trikeshed Integration started")
-            IntegrationResult.Right(IntegrationSuccess("System started"))
+            Either.Right(IntegrationSuccess("System started"))
         } catch (e: Exception) {
-            IntegrationResult.Left(IntegrationError("Failed to start: ${e.message}"))
+            Either.Left(IntegrationError("Failed to start: ${e.message}"))
         }
     }
     
     /**
      * Stop the integration system
      */
-    suspend fun stop(): IntegrationResult {
+    suspend fun stop(): TrikeshedIntegrationResult {
         return try {
             network.stop()
             httpServer.stop()
             quicServer.stop()
             println("Trikeshed Integration stopped")
-            IntegrationResult.Right(IntegrationSuccess("System stopped"))
+            Either.Right(IntegrationSuccess("System stopped"))
         } catch (e: Exception) {
-            IntegrationResult.Left(IntegrationError("Failed to stop: ${e.message}"))
+            Either.Left(IntegrationError("Failed to stop: ${e.message}"))
         }
     }
 }
@@ -516,7 +514,6 @@ data class IntegrationEvent(
     val timestamp: EventTimestamp = getCurrentTimeMillis()
 )
 
-data class IntegrationError(val message: String)
 
 data class IntegrationSuccess(
     val message: String? = null,
@@ -526,7 +523,7 @@ data class IntegrationSuccess(
 
 // === UTILITY FUNCTIONS ===
 
-private fun generateEventId(): EventId = "event_${getCurrentTimeMillis()}_${(Math.random() * 1000).toInt()}"
+private fun generateEventId(): EventId = "event_${getCurrentTimeMillis()}_${(Random.nextDouble() * 1000).toInt()}"
 
 private fun Map<String, Any>.toJson(): String {
     return toString() // Simplified JSON conversion

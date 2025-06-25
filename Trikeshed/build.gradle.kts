@@ -41,6 +41,8 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
+            kotlin.srcDir("src/commonMain/kotlin")
+            resources.srcDir("src/commonMain/resources")
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlinx.coroutines.core)

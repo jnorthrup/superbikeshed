@@ -8,8 +8,7 @@ import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
 import kotlinx.serialization.json.*
 
-// Platform-agnostic time function
-expect fun getCurrentTimeMillis(): Long
+// Platform-agnostic time function - defined in IntegrationTypes.kt
 
 /**
  * Reactor Integration System with Proper Indexed/Join Taxonomy
@@ -20,10 +19,7 @@ expect fun getCurrentTimeMillis(): Long
 
 // === REACTOR INTEGRATION TAXONOMICAL TYPEALIASES ===
 
-// Integration Configuration Types
-typealias IntegrationUrl = String
-typealias IntegrationPort = Int
-typealias IntegrationDatabaseName = String
+// Integration Configuration Types - using shared definitions from IntegrationTypes.kt
 typealias IntegrationReactorName = String
 
 // Reactor Event Types
@@ -50,6 +46,7 @@ data class StorageSuccess(
 typealias SystemStatName = String
 typealias SystemStatValue = Any
 typealias SystemStats = Map<SystemStatName, SystemStatValue>
+
 
 // === REACTOR INTEGRATION IMPLEMENTATION ===
 
@@ -139,15 +136,15 @@ class ReactorIntegration(
         
         // IPFS Reactor
         ipfsReactor = Reactor<IpfsEvent>("ipfs-reactor")
-        ipfsReactor.on(EventType.DATA) { event ->
+        ipfsReactor.on(borg.trikeshed.reactor.EventType.DATA) { event ->
             val ipfsEvent = event.data
             handleIpfsData(ipfsEvent)
         }
-        ipfsReactor.on(EventType.MESSAGE) { event ->
+        ipfsReactor.on(borg.trikeshed.reactor.EventType.MESSAGE) { event ->
             val ipfsEvent = event.data
             handleIpfsMessage(ipfsEvent)
         }
-        ipfsReactor.on(EventType.ERROR) { event ->
+        ipfsReactor.on(borg.trikeshed.reactor.EventType.ERROR) { event ->
             val ipfsEvent = event.data
             handleIpfsError(ipfsEvent)
         }
@@ -189,7 +186,7 @@ class ReactorIntegration(
             HttpResponse(
                 status = 200,
                 headers = mapOf("content-type" to "application/json"),
-                body = stats.toJson()
+                body = (stats as Map<String, Any>).toJsonString()
             )
         }
         
@@ -203,7 +200,7 @@ class ReactorIntegration(
                 }
                 "GET" -> {
                     val reactorStats = network.getStats()
-                    HttpResponse(200, mapOf("content-type" to "application/json"), reactorStats.toJson())
+                    HttpResponse(200, mapOf("content-type" to "application/json"), (reactorStats as Map<String, Any>).toJsonString())
                 }
                 else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
             }
@@ -219,7 +216,7 @@ class ReactorIntegration(
                     is ReactorStorageResult.Success -> HttpResponse(
                         status = 201,
                         headers = mapOf("content-type" to "application/json"),
-                        body = result.toJson()
+                        body = result.toJsonString()
                     )
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = 500,
@@ -242,7 +239,7 @@ class ReactorIntegration(
                     is ReactorStorageResult.Success -> HttpResponse(
                         status = 200,
                         headers = mapOf("content-type" to "application/json"),
-                        body = result.toJson()
+                        body = result.toJsonString()
                     )
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = 404,
@@ -266,8 +263,8 @@ class ReactorIntegration(
             val couchResult = couchClient.createDocument(databaseName, document)
             
             when (couchResult) {
-                is CouchResult.Success -> {
-                    val doc = couchResult.data
+                is Either.Right -> {
+                    val doc = couchResult.value
                     val storageId = doc.id ?: return ReactorStorageResult.Error("No document ID returned")
                     
                     // Store in IPFS
@@ -277,7 +274,10 @@ class ReactorIntegration(
                     val ipfsHash = ipfsResult.hash
                     
                     // Update document with IPFS hash
-                    val updatedDoc = doc.copy(data = doc.data + buildJsonObject { put("ipfs_hash", ipfsHash) })
+                    val updatedDoc = doc.copy(data = buildJsonObject { 
+                        doc.data.forEach { (key, value) -> put(key, value) }
+                        put("ipfs_hash", ipfsHash)
+                    })
                     couchClient.updateDocument(databaseName, updatedDoc)
                     
                     // Emit reactor event
@@ -301,7 +301,8 @@ class ReactorIntegration(
                         )
                     )
                 }
-                is CouchResult.Error -> return ReactorStorageResult.Error(couchResult.message)
+                is Either.Left -> return ReactorStorageResult.Error(couchResult.value)
+                else -> return ReactorStorageResult.Error("Unknown error")
             }
         } catch (e: Exception) {
             return ReactorStorageResult.Error(e.message ?: "Unknown error")
@@ -317,8 +318,8 @@ class ReactorIntegration(
             val couchResult = couchClient.getDocument(databaseName, id)
             
             when (couchResult) {
-                is CouchResult.Success -> {
-                    val doc = couchResult.data
+                is Either.Right -> {
+                    val doc = couchResult.value
                     val content = doc.data["content"]?.jsonPrimitive?.content ?: return ReactorStorageResult.Error("No content found")
                     val ipfsHash = doc.data["ipfs_hash"]?.jsonPrimitive?.content
                     
@@ -367,7 +368,8 @@ class ReactorIntegration(
                         )
                     }
                 }
-                is CouchResult.Error -> return ReactorStorageResult.Error(couchResult.message)
+                is Either.Left -> return ReactorStorageResult.Error(couchResult.value)
+                else -> return ReactorStorageResult.Error("Document not found")
             }
         } catch (e: Exception) {
             return ReactorStorageResult.Error(e.message ?: "Unknown error")
@@ -459,8 +461,8 @@ sealed class ReactorStorageResult {
         val ipfsHash: String? = null,
         val metadata: StorageMetadata = emptyMap()
     ) : ReactorStorageResult() {
-        fun toJson(): String {
-            return """{"id":"$id","content":"${content ?: ""}","ipfs_hash":"${ipfsHash ?: ""}","metadata":${metadata.toJson()}}"""
+        fun toJsonString(): String {
+            return """{"id":"$id","content":"${content ?: ""}","ipfs_hash":"${ipfsHash ?: ""}","metadata":${(metadata as Map<String, Any>).toJsonString()}}"""
         }
     }
     
@@ -478,14 +480,10 @@ data class ReactorEvent(
 
 // === UTILITY FUNCTIONS ===
 
-private fun generateEventId(): ReactorEventId = "event_${getCurrentTimeMillis()}_${(Math.random() * 1000).toInt()}"
+private fun generateEventId(): ReactorEventId = "event_${getCurrentTimeMillis()}_${(kotlin.random.Random.nextDouble() * 1000).toInt()}"
 
-private fun Map<String, Any>.toJson(): String {
+private fun Map<String, Any>.toJsonString(): String {
     return toString() // Simplified JSON conversion
-}
-
-private fun SystemStats.toJson(): String {
-    return this.toString()
 }
 
 // IPFS Event data
