@@ -101,9 +101,9 @@ actual class PlatformDatagramPacket(private val packet: DatagramPacket) {
     actual val address: PlatformInetSocketAddress get() = PlatformInetSocketAddress(packet.socketAddress as InetSocketAddress)
 }
 
-actual class PlatformDatagramSocket(private val socket: DatagramSocket) {
+actual class PlatformDatagramSocket(private val socket: DatagramSocket = DatagramSocket()) {
     actual companion object {
-        actual fun create(): PlatformDatagramSocket = PlatformDatagramSocket(DatagramSocket())
+        actual fun create(): PlatformDatagramSocket = PlatformDatagramSocket()
         
         actual fun create(port: Int): PlatformDatagramSocket = PlatformDatagramSocket(DatagramSocket(port))
         
@@ -130,9 +130,15 @@ actual class PlatformDatagramSocket(private val socket: DatagramSocket) {
     actual val isConnected: Boolean get() = socket.isConnected
     actual val isClosed: Boolean get() = socket.isClosed
     actual val localAddress: PlatformInetSocketAddress? get() = 
-        socket.localSocketAddress?.let { PlatformInetSocketAddress(it as InetSocketAddress) }
+        socket.localSocketAddress?.let { 
+            val addr = it as InetSocketAddress
+            PlatformInetSocketAddress(addr.hostString, addr.port)
+        }
     actual val remoteAddress: PlatformInetSocketAddress? get() = 
-        socket.remoteSocketAddress?.let { PlatformInetSocketAddress(it as InetSocketAddress) }
+        socket.remoteSocketAddress?.let { 
+            val addr = it as InetSocketAddress
+            PlatformInetSocketAddress(addr.hostString, addr.port)
+        }
 }
 
 actual class PlatformChannel(private val channel: DatagramChannel = DatagramChannel.open()) {

@@ -124,26 +124,32 @@ class AttentionContext {
             path.startsWith("/api/") -> handleApi(path, data)
             path.startsWith("/ipc/") -> handleIpc(path, data)
             path.startsWith("/uring/") -> handleUring(path, data)
-            else -> "404 Not Found".toByteArray().toIndexed()
+            else -> {
+                val result = "404 Not Found"
+                result.length j { result[it].code.toByte() }
+            }
         }
     }
     
     private suspend fun handleApi(path: String, data: Indexed<Byte>): Indexed<Byte> {
         frame("api", path)
-        return "API Response".toByteArray().toIndexed()
+        val result = "API Response"
+        return result.length j { result[it].code.toByte() }
     }
     
     private suspend fun handleIpc(path: String, data: Indexed<Byte>): Indexed<Byte> {
         frame("ipc", path)
         val target = path.removePrefix("/ipc/")
         sendIpc(target, data)
-        return "IPC Sent".toByteArray().toIndexed()
+        val result = "IPC Sent"
+        return result.length j { result[it].code.toByte() }
     }
     
     private suspend fun handleUring(path: String, data: Indexed<Byte>): Indexed<Byte> {
         frame("uring", path)
         // Simulate io-uring operation
-        return "URING Operation".toByteArray().toIndexed()
+        val result = "URING Operation"
+        return result.length j { result[it].code.toByte() }
     }
     
     // Get collected frames
@@ -223,7 +229,7 @@ class AttentionRouter {
         
         // Emit telemetry
         val event = TelemetryEvent(
-            timestamp = System.currentTimeMillis(),
+            timestamp = 0L, // TODO: platform time function
             component = "router",
             operation = "run",
             frames = attentionContext.getFrames()
@@ -262,5 +268,3 @@ fun attentionRouter(block: RouterConfig.() -> Unit): AttentionRouter {
     }
 }
 
-// Helper functions
-private fun ByteArray.toIndexed(): Indexed<Byte> = size j { this[it] }
