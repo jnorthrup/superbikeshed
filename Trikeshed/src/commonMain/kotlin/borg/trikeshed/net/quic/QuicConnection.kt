@@ -277,6 +277,20 @@ class QuicConnection(
     }
 
     /**
+     * Get stream by ID
+     */
+    fun getStream(streamId: Long): QuicStream? {
+        return activeStreams[streamId]
+    }
+
+    /**
+     * Get stream count
+     */
+    fun getStreamCount(): Int {
+        return activeStreams.size
+    }
+
+    /**
      * Closes the connection and all associated resources.
      */
     suspend fun close() {

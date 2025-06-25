@@ -98,18 +98,18 @@ class JvmNioProvider(
     }
     
     override fun createPacket(data: ByteArray, length: Int, address: PlatformInetSocketAddress): PlatformDatagramPacket {
-        attentionDelegate.beforeOperation("createPacket", "length=$length, address=${address.hostString}:${address.port}")
+        attentionDelegate.beforeOperation("createPacket", "length=$length, address=${address.hostName}:${address.port}")
         val startTime = System.currentTimeMillis()
         
         return try {
             val packet = PlatformDatagramPacket(data, length, address)
             val duration = System.currentTimeMillis() - startTime
-            attentionDelegate.afterOperation("createPacket", duration, true, "length=$length, address=${address.hostString}:${address.port}")
+            attentionDelegate.afterOperation("createPacket", duration, true, "length=$length, address=${address.hostName}:${address.port}")
             packet
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
-            attentionDelegate.onOperationError("createPacket", e, "length=$length, address=${address.hostString}:${address.port}")
-            attentionDelegate.afterOperation("createPacket", duration, false, "length=$length, address=${address.hostString}:${address.port}")
+            attentionDelegate.onOperationError("createPacket", e, "length=$length, address=${address.hostName}:${address.port}")
+            attentionDelegate.afterOperation("createPacket", duration, false, "length=$length, address=${address.hostName}:${address.port}")
             throw e
         }
     }

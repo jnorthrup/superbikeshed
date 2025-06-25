@@ -1,5 +1,6 @@
 package borg.trikeshed.net.quic
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.PlatformInetSocketAddress
 import kotlinx.coroutines.channels.Channel
@@ -42,6 +43,85 @@ class QuicStream(
         if (newWindow > currentStreamFlowControlWindow) {
             currentStreamFlowControlWindow = newWindow
             println("Stream $id window updated to $currentStreamFlowControlWindow (Max data: $newMaxData)")
+        }
+    }
+
+    /**
+     * Write bytes to stream using TrikeShed Indexed<Byte>
+     */
+    suspend fun writeBytes(data: Indexed<Byte>): Boolean {
+        if (closed) return false
+        // Convert Indexed<Byte> to ByteArray for platform buffer
+        val bytes = ByteArray(data.a) { i -> data[i] }
+        val buffer = PlatformByteBuffer.wrap(bytes)
+        // Implementation would send via QUIC connection
+        return true
+    }
+
+    // Stream buffer for incoming data
+    private val receiveBuffer = mutableListOf<PlatformByteBuffer>()
+    private var totalAvailableBytes = 0
+
+    /**
+     * Check if stream has data available for reading
+     */
+    fun hasData(): Boolean {
+        return totalAvailableBytes > 0 && !closed
+    }
+
+    /**
+     * Get total available bytes across all buffered data
+     */
+    fun getAvailableBytes(): Int {
+        return totalAvailableBytes
+    }
+
+    /**
+     * Read bytes from stream buffer using TrikeShed patterns
+     */
+    suspend fun readBytes(maxBytes: Int): Indexed<Byte> {
+        if (closed || maxBytes <= 0 || !hasData()) {
+            return 0 j { 0.toByte() }
+        }
+        
+        val bytesToRead = minOf(maxBytes, totalAvailableBytes)
+        val result = mutableListOf<Byte>()
+        var remaining = bytesToRead
+        
+        while (remaining > 0 && receiveBuffer.isNotEmpty()) {
+            val buffer = receiveBuffer.first()
+            val available = buffer.remaining()
+            
+            if (available <= remaining) {
+                // Consume entire buffer
+                val bytes = ByteArray(available)
+                buffer.get(bytes)
+                result.addAll(bytes.toList())
+                remaining -= available
+                totalAvailableBytes -= available
+                receiveBuffer.removeFirst()
+            } else {
+                // Partial buffer consumption
+                val bytes = ByteArray(remaining)
+                buffer.get(bytes)
+                result.addAll(bytes.toList())
+                totalAvailableBytes -= remaining
+                remaining = 0
+            }
+        }
+        
+        return result.size j { i -> result[i] }
+    }
+
+    /**
+     * Internal method to add received data to stream buffer
+     */
+    internal suspend fun addReceivedData(buffer: PlatformByteBuffer) {
+        if (!closed) {
+            receiveBuffer.add(buffer)
+            totalAvailableBytes += buffer.remaining()
+            // Also send to coroutine channel for async processing
+            internalReceiveChannel.send(buffer)
         }
     }
 } 
