@@ -29,6 +29,9 @@ class EnumFlotillaProcessor(
         // Generate master registry combining all flotillas
         generateMasterRegistry(handlers.size, services.size, plugins.size, workflows.size, capabilities.size)
         
+        // Generate CLI/DSL pathways
+        generateProcessorPathway()
+        
         return emptyList()
     }
     
@@ -248,6 +251,30 @@ class EnumFlotillaProcessor(
             |""".trimMargin()
         
         writeGeneratedFile("ComponentRegistry", registryContent)
+    }
+    
+    private fun generateProcessorPathway() {
+        val pathwayMermaid = """
+            |# Processor Execution Pathway
+            |
+            |```mermaid
+            |graph TD
+            |    n0["main()"]
+            |    n1["collectAnnotatedClasses()"]
+            |    n2["generateHandlerFlotilla()"]
+            |    n3["extractCapabilities()"]
+            |    n4["writeGeneratedFile()"]
+            |    n5["generateMasterRegistry()"]
+            |    
+            |    n0 --> n1
+            |    n1 --> n2
+            |    n2 --> n3
+            |    n3 --> n4
+            |    n4 --> n5
+            |```
+            |""".trimMargin()
+        
+        writeGeneratedFile("ProcessorPathway", pathwayMermaid)
     }
     
     private fun writeGeneratedFile(name: String, content: String) {
