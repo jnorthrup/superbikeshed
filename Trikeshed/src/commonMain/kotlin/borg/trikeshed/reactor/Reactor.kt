@@ -1,7 +1,9 @@
 package borg.trikeshed.reactor
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.integration.getCurrentTimeMillis
+
+// Platform-agnostic time function
+expect fun getCurrentTimeMillis(): Long
 
 /**
  * Reactor Pattern Implementation
@@ -448,4 +450,4 @@ fun <T> reactor(name: String, block: ReactorBuilder<T>.() -> Unit): Reactor<T> {
     val builder = ReactorBuilder<T>(name)
     block(builder)
     return builder.build()
-} 
+}
