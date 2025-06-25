@@ -54,8 +54,8 @@ typealias SystemStats = Map<SystemStatName, SystemStatValue>
 // === REACTOR INTEGRATION IMPLEMENTATION ===
 
 class ReactorIntegration(
-    private val couchUrl: IntegrationUrl = "http://localhost:5984",
-    private val quicPort: IntegrationPort = 4433,
+    private val couchUrl: String = "http://localhost:5984",
+    private val quicPort: Int = 4433,
     private val ipfsConfig: IpfsConfig = IpfsConfig()
 ) {
     private lateinit var couchClient: CouchClient
@@ -71,7 +71,7 @@ class ReactorIntegration(
     private lateinit var databaseReactor: DatabaseReactor
     private lateinit var ipfsReactor: Reactor<IpfsEvent>
     
-    private val databaseName: IntegrationDatabaseName = "reactor_integration"
+    private val databaseName: String = "reactor_integration"
     
     /**
      * Initialize the complete system
