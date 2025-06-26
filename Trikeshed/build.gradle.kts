@@ -17,26 +17,28 @@ kotlin {
         }
     }
 
-    // WASM for modern web deployment (replaces JS)
+    // WASM for modern web deployment
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         binaries.executable()
     }
 
-    // Native targets for high-performance execution
+    // Native targets - conditional based on current host
     val hostOs = System.getProperty("os.name")
-    val isMingwX64 = hostOs.startsWith("Windows")
-    val isMac = hostOs.startsWith("Mac OS")
-    val isLinux = hostOs.startsWith("Linux")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isWindows = hostOs.startsWith("Windows")
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
-    if (isMac) {
-        macosArm64()
-        macosX64()
-    } else if (isLinux) {
-        linuxX64()
-        linuxArm64()
-    } else if (isMingwX64) {
-        mingwX64()
+    // Only configure native for current host platform
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS && !isArm64 -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux && !isArm64 -> linuxX64()
+        isWindows -> mingwX64()
     }
 
     sourceSets {
@@ -60,6 +62,15 @@ kotlin {
             }
         }
 
+        val jvmMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-jdk8"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(kotlin("reflect"))
+                implementation(libs.kotlinx.serialization.json)
+            }
+        }
+
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
@@ -74,26 +85,20 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-jdk8"))
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(kotlin("reflect"))
-                implementation(libs.kotlinx.serialization.json)
-                implementation("edu.stanford.nlp:stanford-corenlp:4.5.6")
-                implementation("edu.stanford.nlp:stanford-corenlp:4.5.6:models")
-            }
-        }
+        // Native common source sets
+        val nativeMain by creating
+        val nativeTest by creating
     }
 }
 
-// Disable linting to keep code terse
+// Compiler options for all targets
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
             "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
+            "-Xskip-metadata-version-check"
         )
     }
 }
@@ -150,4 +155,39 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
+}
+
+// Useful tasks
+tasks {
+    register("buildAll") {
+        dependsOn("build")
+        description = "Build all targets"
+    }
+
+    register("cleanAll") {
+        dependsOn("clean")
+        doLast {
+            delete("${layout.buildDirectory.get()}")
+            delete("${project.projectDir}/build")
+            delete("${project.projectDir}/.gradle")
+        }
+        description = "Clean all build artifacts"
+    }
+
+    register("runJvmTests") {
+        dependsOn("jvmTest")
+        description = "Run JVM tests"
+    }
+
+    register("runNativeTests") {
+        // Depend on whichever native test task exists for current platform
+        when {
+            project.tasks.findByName("macosArm64Test") != null -> dependsOn("macosArm64Test")
+            project.tasks.findByName("macosX64Test") != null -> dependsOn("macosX64Test")
+            project.tasks.findByName("linuxX64Test") != null -> dependsOn("linuxX64Test")
+            project.tasks.findByName("linuxArm64Test") != null -> dependsOn("linuxArm64Test")
+            project.tasks.findByName("mingwX64Test") != null -> dependsOn("mingwX64Test")
+        }
+        description = "Run native tests for current platform"
+    }
 }
