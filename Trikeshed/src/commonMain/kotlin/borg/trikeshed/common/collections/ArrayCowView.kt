@@ -1,9 +1,5 @@
 package borg.trikeshed.common.collections
 
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-
 /**
  * A mutable view of an Array which performs a copy-on-write on the first mutation.
  * This is ideal for safely handling arrays received from external sources where ownership
@@ -16,18 +12,11 @@ import kotlinx.coroutines.sync.withLock
 class ArrayCowView<T>(private var array: Array<T>) {
 
     private var isCopied = false
-    private val copyMutex = Mutex()
 
     private fun ensureCopied() {
         if (!isCopied) {
-            runBlocking {
-                copyMutex.withLock {
-                    if (!isCopied) {
-                        array = array.copyOf()
-                        isCopied = true
-                    }
-                }
-            }
+            array = array.copyOf()
+            isCopied = true
         }
     }
 

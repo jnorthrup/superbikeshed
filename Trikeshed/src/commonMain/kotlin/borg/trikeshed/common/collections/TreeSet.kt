@@ -1,5 +1,6 @@
 package borg.trikeshed.common.collections
 
+import borg.trikeshed.reactor.currentTimeMillis
 import kotlin.math.max
 
 class TreeSet<E : Comparable<E>> : NavigableSet<E> {

@@ -1,5 +1,6 @@
 package borg.trikeshed.integration
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Either
 import borg.trikeshed.lib.Indexed
 

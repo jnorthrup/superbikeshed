@@ -1,5 +1,6 @@
 package borg.trikeshed.lib
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.parse.BashScanner
 import borg.trikeshed.parse.Token
 import borg.trikeshed.parse.TokenType

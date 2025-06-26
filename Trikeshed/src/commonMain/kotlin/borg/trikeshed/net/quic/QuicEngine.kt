@@ -1,5 +1,6 @@
 package borg.trikeshed.net.quic
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.CZero.z
 import borg.trikeshed.lib.CZero.nz
@@ -204,14 +205,14 @@ class QuicEngine(
     
     private fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
         val newSize = indexed.a + 1
-        return newSize j { i ->
+        return newSize j { i: Int ->
             if (i < indexed.a) indexed.b(i) else item
         }
     }
     
     private fun <T> appendToIndexed(indexed: Indexed<T>, items: Indexed<T>): Indexed<T> {
         val newSize = indexed.a + items.a
-        return newSize j { i ->
+        return newSize j { i: Int ->
             if (i < indexed.a) indexed.b(i) else items.b(i - indexed.a)
         }
     }

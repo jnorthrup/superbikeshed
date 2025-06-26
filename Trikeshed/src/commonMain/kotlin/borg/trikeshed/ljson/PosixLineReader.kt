@@ -1,5 +1,6 @@
 package borg.trikeshed.ljson
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.flow.*
 
@@ -72,7 +73,7 @@ object PosixLineReader {
                 
                 if (lineLength > 0) {
                     // Create indexed view of the line
-                    val line = lineLength j { j -> data[lineStart + j] }
+                    val line = lineLength j { j: Int -> data[lineStart + j] }
                     emit(line)
                 }
                 
@@ -83,7 +84,7 @@ object PosixLineReader {
         // Handle last line without newline
         if (lineStart < data.a) {
             val lineLength = data.a - lineStart
-            val line = lineLength j { j -> data[lineStart + j] }
+            val line = lineLength j { j: Int -> data[lineStart + j] }
             emit(line)
         }
     }

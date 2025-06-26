@@ -1,5 +1,6 @@
 package borg.trikeshed.dht.kademlia.subnet
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.id.NUID
 import borg.trikeshed.dht.kademlia.events.NodeInfo
@@ -250,7 +251,7 @@ class SubnetManager(
             }
         }
         
-        return RoutingDecision(paths.size j { i -> paths[i] })
+        return RoutingDecision(paths.size j { i: Int -> paths[i] })
     }
 }
 

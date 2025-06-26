@@ -1,5 +1,6 @@
 package borg.trikeshed.net.http
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*

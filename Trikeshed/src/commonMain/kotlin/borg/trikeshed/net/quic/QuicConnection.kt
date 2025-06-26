@@ -1,5 +1,6 @@
 package borg.trikeshed.net.quic
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.net.quic.QuicConfig.Companion.DEFAULT_STREAM_BUFFER_SIZE
 import borg.trikeshed.net.quic.QuicConfig.Companion.STREAM_ID_HEADER_SIZE
 import kotlinx.coroutines.CoroutineScope

@@ -1,5 +1,6 @@
 package borg.trikeshed.dht.kademlia.codec
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.events.*
 import borg.trikeshed.dht.kademlia.id.NUID
@@ -169,7 +170,7 @@ object BinaryPacker {
             packField(buffer, key, value)
         }
         
-        return buffer.size j { i -> buffer[i] }
+        return buffer.size j { i: Int -> buffer[i] }
     }
     
     private fun packField(buffer: MutableList<Byte>, key: String, value: Any?) {
@@ -366,7 +367,7 @@ object GraphToObjectMapper {
                 sourceNodeId = sourceNodeId,
                 targetNodeId = NUID.fromBytes(fields["targetNodeId"] as ByteArray),
                 subnets = (fields["subnets"] as List<String>).let { list ->
-                    list.size j { i -> list[i] }
+                    list.size j { i: Int -> list[i] }
                 }
             )
             "PongEvent" -> PongEvent(
@@ -376,7 +377,7 @@ object GraphToObjectMapper {
                 respondingToMessageId = NUID.fromBytes(fields["respondingToMessageId"] as ByteArray),
                 respondingToNodeId = NUID.fromBytes(fields["respondingToNodeId"] as ByteArray),
                 activeSubnets = (fields["activeSubnets"] as List<String>).let { list ->
-                    list.size j { i -> list[i] }
+                    list.size j { i: Int -> list[i] }
                 },
                 routingTableSize = fields["routingTableSize"] as Int
             )

@@ -44,5 +44,4 @@
 **EXECUTION GOAL**:
    Maintain precise execution where Claude's only role is exact reproduction of Architect's specifications. No creative input, no architectural opinions, no "improvements."
 
-** Process Improvement **: 
-  at the end of turns more often than not the agent shall exhorte a socratic witicism about ${the character of the gap from goal relating to the code expressed as Non-axiomatic-reasoning NARS notation  }
+ 

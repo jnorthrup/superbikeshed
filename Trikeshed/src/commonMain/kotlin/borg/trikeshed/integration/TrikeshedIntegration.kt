@@ -1,5 +1,6 @@
 package borg.trikeshed.integration
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.ipfs.*
@@ -157,7 +158,7 @@ class TrikeshedIntegration(
                 "timestamp" to getCurrentTimeMillis()
             )
             HttpResponse(
-                status = 200,
+                status = HttpStatusCode(200),
                 headers = mapOf("content-type" to "application/json"),
                 body = health.toJson()
             )
@@ -170,12 +171,12 @@ class TrikeshedIntegration(
                     val result = createDocument(request.body)
                     when (result) {
                         is Either.Right -> HttpResponse(
-                            status = 201,
+                            status = HttpStatusCode(201),
                             headers = mapOf("content-type" to "application/json"),
                             body = result.value.toJson()
                         )
                         is Either.Left -> HttpResponse(
-                            status = 500,
+                            status = HttpStatusCode(500),
                             headers = mapOf("content-type" to "application/json"),
                             body = """{"error":"${result.value.message}"}"""
                         )
@@ -187,12 +188,12 @@ class TrikeshedIntegration(
                         val result = getDocument(id)
                         when (result) {
                             is Either.Right -> HttpResponse(
-                                status = 200,
+                                status = HttpStatusCode(200),
                                 headers = mapOf("content-type" to "application/json"),
                                 body = result.value.toJson()
                             )
                             is Either.Left -> HttpResponse(
-                                status = 404,
+                                status = HttpStatusCode(404),
                                 headers = mapOf("content-type" to "application/json"),
                                 body = """{"error":"${result.value.message}"}"""
                             )
@@ -212,12 +213,12 @@ class TrikeshedIntegration(
                     val result = storeInIpfs(request.body)
                     when (result) {
                         is Either.Right -> HttpResponse(
-                            status = 201,
+                            status = HttpStatusCode(201),
                             headers = mapOf("content-type" to "application/json"),
                             body = """{"hash":"${result.value.hash}"}"""
                         )
                         is Either.Left -> HttpResponse(
-                            status = 500,
+                            status = HttpStatusCode(500),
                             headers = mapOf("content-type" to "application/json"),
                             body = """{"error":"${result.value.message}"}"""
                         )
@@ -229,12 +230,12 @@ class TrikeshedIntegration(
                         val result = retrieveFromIpfs(hash)
                         when (result) {
                             is Either.Right -> HttpResponse(
-                                status = 200,
+                                status = HttpStatusCode(200),
                                 headers = mapOf("content-type" to "application/json"),
                                 body = result.value.content ?: ""
                             )
                             is Either.Left -> HttpResponse(
-                                status = 404,
+                                status = HttpStatusCode(404),
                                 headers = mapOf("content-type" to "application/json"),
                                 body = """{"error":"${result.value.message}"}"""
                             )

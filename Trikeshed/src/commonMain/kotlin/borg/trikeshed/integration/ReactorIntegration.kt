@@ -1,5 +1,6 @@
 package borg.trikeshed.integration
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.ipfs.*
@@ -93,7 +94,7 @@ class ReactorIntegration(
             couchClient.createDatabase(databaseName)
             
             // Initialize IPFS client
-            val peerId = PeerId(32 j { (it % 256).toByte() })
+            val peerId = PeerId(32 j { it: Int -> (it % 256).toByte() })
             val storage = IpfsStorage()
             ipfsClient = IpfsClient(peerId, quicEngine, storage, ipfsConfig)
             
@@ -192,7 +193,7 @@ class ReactorIntegration(
         httpServer.route("/reactor/events") { request ->
             when (request.method) {
                 HttpMethod.POST -> {
-                    val eventData = parseEventData(request.body.toString(Charsets.UTF_8))
+                    val eventData = parseEventData(request.body.decodeToString())
                     emitReactorEvent(eventData)
                     HttpResponse(
                         status = HttpStatus.OK, 
@@ -217,7 +218,7 @@ class ReactorIntegration(
         // Integrated storage endpoint
         httpServer.route("/store") { request ->
             try {
-                val content = request.body.toString(Charsets.UTF_8)
+                val content = request.body.decodeToString()
                 val result = storeWithReactor(content)
                 
                 when (result) {
@@ -229,14 +230,14 @@ class ReactorIntegration(
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = HttpStatus.INTERNAL_SERVER_ERROR,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = """{"error":"${result.message}"}""".encodeToByteArray()
+                        body = "{"error":"${result.message}"}".encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
                 HttpResponse(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = """{"error":"${e.message}"}""".encodeToByteArray())
+                    body = "{"error":"${e.message}"}".encodeToByteArray())
             }
         }
         
@@ -247,7 +248,7 @@ class ReactorIntegration(
                 if (id.isBlank()) return@route HttpResponse(
                     status = HttpStatus.BAD_REQUEST,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = """{"error":"Missing id parameter"}""".encodeToByteArray()
+                    body = "{"error":"Missing id parameter"}".encodeToByteArray()
                 )
 
                 val result = retrieveWithReactor(id)
@@ -261,14 +262,14 @@ class ReactorIntegration(
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = HttpStatus.NOT_FOUND,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = """{"error":"${result.message}"}""".encodeToByteArray()
+                        body = "{"error":"${result.message}"}".encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
                 HttpResponse(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = """{"error":"${e.message}"}""".encodeToByteArray()
+                    body = "{"error":"${e.message}"}".encodeToByteArray()
                 )
             }
         }
@@ -290,7 +291,7 @@ class ReactorIntegration(
                     
                     // Store in IPFS
                     val contentBytes = content.toByteArray()
-                    val indexedContent = contentBytes.size j { contentBytes[it] }
+                    val indexedContent = contentBytes.size j { it: Int -> contentBytes[it] }
                     val ipfsResult = ipfsClient.store(indexedContent)
                     val ipfsHash = ipfsResult.hash
                     

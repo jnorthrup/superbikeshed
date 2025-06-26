@@ -1,6 +1,8 @@
 package borg.trikeshed.reactor.http
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
+import borg.trikeshed.reactor.currentTimeMillis
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -69,7 +71,7 @@ data class HttpServerContext(
      */
     fun registerPacker(sweetSpot: Int): PackerRegister {
         val size = packerRegisters.a
-        return (size + 1) j { i ->
+        return (size + 1) j { i: Int ->
             if (i < size) packerRegisters.b(i) else sweetSpot
         }
     }
@@ -165,7 +167,7 @@ class ConcurrentMapReduceEngine {
         }
         
         // Final reduction
-        return results.a j { i -> results.b(i) } j reducer
+        return results.a j { i: Int -> results.b(i) } j reducer
     }
     
     private fun calculateOptimalChunkSize(dataSize: Int): Int {
@@ -179,11 +181,11 @@ class ConcurrentMapReduceEngine {
     
     private fun <T> partitionData(data: Indexed<T>, chunkSize: Int): Indexed<Indexed<T>> {
         val chunkCount = (data.a + chunkSize - 1) / chunkSize
-        return chunkCount j { chunkIndex ->
+        return chunkCount j { chunkIndex: Int ->
             val start = chunkIndex * chunkSize
             val end = (start + chunkSize).coerceAtMost(data.a)
             val size = end - start
-            size j { i -> data.b(start + i) }
+            size j { i: Int -> data.b(start + i) }
         }
     }
     
@@ -193,7 +195,7 @@ class ConcurrentMapReduceEngine {
         reducer: (R, R) -> R,
         identity: R
     ): R {
-        return chunk.a j { i -> mapper(chunk.b(i)) } j reducer
+        return chunk.a j { i: Int -> mapper(chunk.b(i)) } j reducer
     }
 }
 
@@ -296,8 +298,8 @@ class UnifiedServerImpl(private val context: HttpServerContext) : ServerSpi {
         return true
     }
     
-    private fun acceptNioBlocking(): ConnectionId = System.currentTimeMillis()
-    private fun acceptNioNonBlocking(): ConnectionId = System.currentTimeMillis()
+    private fun acceptNioBlocking(): ConnectionId = currentTimeMillis()
+    private fun acceptNioNonBlocking(): ConnectionId = currentTimeMillis()
     
     private fun readNioBlocking(connectionId: ConnectionId, sweetSpot: PackerRegister): ChannelBuffer =
         sweetSpot.b(0) j { 0.toByte() }
@@ -320,7 +322,7 @@ class UnifiedServerImpl(private val context: HttpServerContext) : ServerSpi {
     }
     
     private fun acceptUring(): ConnectionId = 
-        if (context.nativeAccessPermitted()) System.currentTimeMillis() else acceptNioNonBlocking()
+        if (context.nativeAccessPermitted()) currentTimeMillis() else acceptNioNonBlocking()
     
     private fun readUring(connectionId: ConnectionId, sweetSpot: PackerRegister): ChannelBuffer =
         if (context.nativeAccessPermitted()) sweetSpot.b(0) j { 0.toByte() } 
@@ -340,7 +342,7 @@ class UnifiedServerImpl(private val context: HttpServerContext) : ServerSpi {
         return true
     }
     
-    private fun acceptUnixSocket(): ConnectionId = System.currentTimeMillis()
+    private fun acceptUnixSocket(): ConnectionId = currentTimeMillis()
     
     private fun readUnixSocket(connectionId: ConnectionId, sweetSpot: PackerRegister): ChannelBuffer =
         sweetSpot.b(0) j { 0.toByte() }

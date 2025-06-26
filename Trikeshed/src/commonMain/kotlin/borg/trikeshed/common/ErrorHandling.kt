@@ -1,6 +1,7 @@
 @file:Suppress("NOTHING_TO_INLINE", "FunctionName")
 package borg.trikeshed.common
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
 

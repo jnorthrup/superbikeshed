@@ -1,5 +1,6 @@
 package borg.trikeshed.services
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.http.HttpServerContext
 import borg.trikeshed.integration.getCurrentTimeMillis
@@ -48,7 +49,7 @@ internal class RequestFactoryServiceImpl(
         val service = getServiceInstance(serviceClass)
         if (service is CoroutineContext.Element) {
             val traitGraph = serviceClass j service
-            val newTraitGraph = (context.traitGraph.a + 1) j { i ->
+            val newTraitGraph = (context.traitGraph.a + 1) j { i: Int ->
                 if (i < context.traitGraph.a) context.traitGraph.b(i) else traitGraph
             }
             context.copy(traitGraph = newTraitGraph)

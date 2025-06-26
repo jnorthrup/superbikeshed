@@ -1,5 +1,6 @@
 package borg.trikeshed.dsl
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.getCurrentTimeMillis
 

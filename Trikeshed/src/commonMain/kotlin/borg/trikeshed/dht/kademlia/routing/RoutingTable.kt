@@ -1,5 +1,6 @@
 package borg.trikeshed.dht.kademlia.routing
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.id.NUID
 import borg.trikeshed.dht.kademlia.events.NodeInfo
@@ -108,7 +109,7 @@ class RoutingTable(
         }
         
         val resultCount = minOf(count, sorted.size)
-        return resultCount j { i -> sorted[i] }
+        return resultCount j { i: Int -> sorted[i] }
     }
     
     /**
@@ -119,7 +120,7 @@ class RoutingTable(
         for (bucket in buckets) {
             allNodes.addAll(bucket.getNodes().play)
         }
-        return allNodes.size j { i -> allNodes[i] }
+        return allNodes.size j { i: Int -> allNodes[i] }
     }
     
     /**

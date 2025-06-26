@@ -1,5 +1,6 @@
 package borg.trikeshed.dht.kademlia.events
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.id.NUID
 
