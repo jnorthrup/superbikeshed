@@ -2,8 +2,9 @@
 
 package borg.trikeshed.lib
 
-import kotlin.math.minOf
+// import kotlin.math.minOf
 import kotlin.properties.Delegates
+import kotlin.coroutines.coroutineContext
 
 // import kotlinx.datetime.Clock // Removed dependency
 
@@ -632,3 +633,24 @@ fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
 fun BooleanArray.toIdx(): Indexed<Boolean> = size j { this[it] }
 fun CharArray.toIdx(): Indexed<Char> = size j { this[it] }
 fun String.toIdx(): Indexed<Char> = length j { this[it] }
+
+/**
+ * Checks the PackingMode in the current coroutine context and applies the
+ * appropriate memory strategy.
+ *
+ * - If the mode is `Register` (or absent), it returns `this` (a no-op),
+ *   preserving the lazy, function-based structure.
+ * - If the mode is `Pointer`, it materializes the series into a new,
+ *   concrete Indexed backed by a List, effectively memoizing the results
+ *   and preventing re-computation.
+ *
+ * This should be called before entering a critical loop with a complex Indexed.
+ */
+suspend fun <T> Indexed<T>.memoize(): Indexed<T> {
+    // Default to Register mode if not specified
+    val mode = coroutineContext[PackingMode] ?: PackingMode.Register
+    return when (mode) {
+        PackingMode.Register -> this
+        PackingMode.Pointer -> this.play.toIndexed() // Materialize and wrap
+    }
+}
