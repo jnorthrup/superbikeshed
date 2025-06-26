@@ -4,6 +4,7 @@ package borg.trikeshed.autovec
 import borg.trikeshed.lib.*
 import borg.trikeshed.crypto.*
 import kotlin.jvm.JvmInline
+import kotlin.random.Random
 
 // === CRYPTO AUTOVEC TYPES ===
 
@@ -76,18 +77,18 @@ inline fun crypto_random_bytes(
     // Generate random bytes
     for (i in 0 until length) {
         if (i < output.a) {
-            output.play[i] = (System.nanoTime() and 0xFF).toByte()
+            output[i] = Random.nextInt(256).toByte()
         }
     }
     return CryptoErrors.SUCCESS
 }
 
 inline fun crypto_random_u32(): UInt {
-    return System.nanoTime().toUInt()
+    return Random.nextInt().toUInt()
 }
 
 inline fun crypto_random_u64(): ULong {
-    return System.nanoTime().toULong()
+    return Random.nextLong().toULong()
 }
 
 // === HASH FUNCTIONS ===
@@ -101,7 +102,7 @@ inline fun crypto_hash_sha256(
     
     // Simplified SHA-256 placeholder
     for (i in 0 until 32) {
-        output.play[i] = if (i < inputLen && i < input.a) 
+        output[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x5A).toByte()
         else 
             (i xor 0xA5).toByte()
@@ -118,7 +119,7 @@ inline fun crypto_hash_sha384(
     
     // Simplified SHA-384 placeholder
     for (i in 0 until 48) {
-        output.play[i] = if (i < inputLen && i < input.a) 
+        output[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x3C).toByte()
         else 
             (i xor 0xC3).toByte()
@@ -135,7 +136,7 @@ inline fun crypto_hash_sha512(
     
     // Simplified SHA-512 placeholder
     for (i in 0 until 64) {
-        output.play[i] = if (i < inputLen && i < input.a) 
+        output[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x7E).toByte()
         else 
             (i xor 0xE7).toByte()
@@ -156,7 +157,7 @@ inline fun crypto_hmac_sha256(
     for (i in 0 until 32) {
         val k = if (i < keyLen && i < key.a) key[i].toInt() else 0
         val d = if (i < inputLen && i < input.a) input[i].toInt() else 0
-        output.play[i] = ((k xor d xor 0x36) and 0xFF).toByte()
+        output[i] = ((k xor d xor 0x36) and 0xFF).toByte()
     }
     return CryptoErrors.SUCCESS
 }
@@ -183,13 +184,13 @@ inline fun crypto_aead_aes128gcm_encrypt(
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertext.play[i] = ((plaintext[i].toInt() xor k xor n) and 0xFF).toByte()
+            ciphertext[i] = ((plaintext[i].toInt() xor k xor n) and 0xFF).toByte()
         }
     }
     
     // Generate tag
     for (i in 0 until 16) {
-        tag.play[i] = ((i xor 0xAE) and 0xFF).toByte()
+        tag[i] = ((i xor 0xAE) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -222,7 +223,7 @@ inline fun crypto_aead_aes128gcm_decrypt(
         if (i < ciphertext.a && i < plaintext.a) {
             val k = if (i < key.a) key[i].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            plaintext.play[i] = ((ciphertext[i].toInt() xor k xor n) and 0xFF).toByte()
+            plaintext[i] = ((ciphertext[i].toInt() xor k xor n) and 0xFF).toByte()
         }
     }
     
@@ -249,13 +250,13 @@ inline fun crypto_aead_aes256gcm_encrypt(
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i % 32].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertext.play[i] = ((plaintext[i].toInt() xor k xor n xor 0x25) and 0xFF).toByte()
+            ciphertext[i] = ((plaintext[i].toInt() xor k xor n xor 0x25) and 0xFF).toByte()
         }
     }
     
     // Generate tag
     for (i in 0 until 16) {
-        tag.play[i] = ((i xor 0xBE) and 0xFF).toByte()
+        tag[i] = ((i xor 0xBE) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -281,13 +282,13 @@ inline fun crypto_aead_chacha20poly1305_encrypt(
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i % 32].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertext.play[i] = ((plaintext[i].toInt() xor k xor n xor 0x20) and 0xFF).toByte()
+            ciphertext[i] = ((plaintext[i].toInt() xor k xor n xor 0x20) and 0xFF).toByte()
         }
     }
     
     // Generate tag
     for (i in 0 until 16) {
-        tag.play[i] = ((i xor 0xCC) and 0xFF).toByte()
+        tag[i] = ((i xor 0xCC) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -306,12 +307,12 @@ inline fun crypto_kx_x25519_keypair(
     crypto_random_bytes(privateKey, 32)
     
     // Clamp private key
-    privateKey.play[0] = (privateKey[0].toInt() and 248).toByte()
-    privateKey.play[31] = ((privateKey[31].toInt() and 127) or 64).toByte()
+    privateKey[0] = (privateKey[0].toInt() and 248).toByte()
+    privateKey[31] = ((privateKey[31].toInt() and 127) or 64).toByte()
     
     // Derive public key (simplified)
     for (i in 0 until 32) {
-        publicKey.play[i] = (privateKey[i].toInt() xor 0x25).toByte()
+        publicKey[i] = (privateKey[i].toInt() xor 0x25).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -330,7 +331,7 @@ inline fun crypto_kx_x25519_shared_secret(
     for (i in 0 until 32) {
         val priv = privateKey[i].toInt() and 0xFF
         val pub = publicKey[i].toInt() and 0xFF
-        sharedSecret.play[i] = ((priv * pub) and 0xFF).toByte()
+        sharedSecret[i] = ((priv * pub) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -350,8 +351,8 @@ inline fun crypto_sign_ed25519_keypair(
     
     // Derive public key (simplified)
     for (i in 0 until 32) {
-        publicKey.play[i] = (privateKey[i].toInt() xor 0xED).toByte()
-        privateKey.play[32 + i] = publicKey[i] // Copy public key to second half
+        publicKey[i] = (privateKey[i].toInt() xor 0xED).toByte()
+        privateKey[32 + i] = publicKey[i] // Copy public key to second half
     }
     
     return CryptoErrors.SUCCESS
@@ -370,7 +371,7 @@ inline fun crypto_sign_ed25519(
     for (i in 0 until 64) {
         val m = if (i < messageLen && i < message.a) message[i].toInt() else 0
         val k = privateKey[i % 64].toInt()
-        signature.play[i] = ((m xor k xor i) and 0xFF).toByte()
+        signature[i] = ((m xor k xor i) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -417,7 +418,7 @@ inline fun crypto_kdf_hkdf_sha256(
         val inp = if (i < inputLen && i < input.a) input[i].toInt() else 0
         val slt = if (i < saltLen && i < salt.a) salt[i % saltLen].toInt() else 0
         val inf = if (i < infoLen && i < info.a) info[i % infoLen].toInt() else 0
-        output.play[i] = ((inp xor slt xor inf xor 0xDF) and 0xFF).toByte()
+        output[i] = ((inp xor slt xor inf xor 0xDF) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -443,7 +444,7 @@ inline fun crypto_kdf_hkdf_expand_label(
         val l = if (i < labelLen && i < label.a) label[i % labelLen].toInt() else 0
         val c = if (i < contextLen && i < context.a) context[i % contextLen].toInt() else 0
         val t = tls13Label[i % tls13Label.size].toInt()
-        output.play[i] = ((s xor l xor c xor t) and 0xFF).toByte()
+        output[i] = ((s xor l xor c xor t) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -475,7 +476,7 @@ inline fun crypto_ct_select(
     val mask = if (selector == 0) 0 else -1
     for (i in 0 until len) {
         if (i < output.a && i < a.a && i < b.a) {
-            output.play[i] = ((a[i].toInt() and mask.inv()) or (b[i].toInt() and mask)).toByte()
+            output[i] = ((a[i].toInt() and mask.inv()) or (b[i].toInt() and mask)).toByte()
         }
     }
 }
@@ -488,7 +489,7 @@ inline fun crypto_wipe(
 ): Unit {
     for (i in 0 until len) {
         if (i < buffer.a) {
-            buffer.play[i] = 0
+            buffer[i] = 0
         }
     }
 }
@@ -501,7 +502,7 @@ inline fun crypto_increment_nonce(
     for (i in (nonceLen - 1) downTo 0) {
         if (i < nonce.a) {
             val v = (nonce[i].toInt() and 0xFF) + 1
-            nonce.play[i] = (v and 0xFF).toByte()
+            nonce[i] = (v and 0xFF).toByte()
             if (v <= 0xFF) break // No carry
         }
     }
@@ -515,7 +516,7 @@ inline fun crypto_xor(
 ): Unit {
     for (i in 0 until len) {
         if (i < output.a && i < a.a && i < b.a) {
-            output.play[i] = (a[i].toInt() xor b[i].toInt()).toByte()
+            output[i] = (a[i].toInt() xor b[i].toInt()).toByte()
         }
     }
 }
@@ -538,7 +539,7 @@ inline fun crypto_stream_chacha20(
         val k = key[i % 32].toInt()
         val n = nonce[i % 12].toInt()
         val c = ((counter + i.toULong()) and 0xFFUL).toInt()
-        output.play[i] = ((k xor n xor c xor 0x20) and 0xFF).toByte()
+        output[i] = ((k xor n xor c xor 0x20) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -560,7 +561,7 @@ inline fun crypto_mac_poly1305(
         val m = if (i < messageLen && i < message.a) message[i].toInt() else 0
         val k1 = key[i].toInt()
         val k2 = key[i + 16].toInt()
-        output.play[i] = ((m xor k1 xor k2 xor 0x13) and 0xFF).toByte()
+        output[i] = ((m xor k1 xor k2 xor 0x13) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -586,7 +587,7 @@ inline fun crypto_pwhash_argon2id(
         val s = salt[i % salt.a].toInt()
         val ops = (opsLimit and 0xFFUL).toInt()
         val mem = (memLimit and 0xFFUL).toInt()
-        output.play[i] = ((p xor s xor ops xor mem) and 0xFF).toByte()
+        output[i] = ((p xor s xor ops xor mem) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -608,7 +609,7 @@ inline fun crypto_hash_blake2b(
     for (i in 0 until outputLen) {
         val inp = if (i < inputLen && i < input.a) input[i].toInt() else 0
         val k = if (key != null && i < keyLen && i < key.a) key[i].toInt() else 0
-        output.play[i] = ((inp xor k xor 0xB2) and 0xFF).toByte()
+        output[i] = ((inp xor k xor 0xB2) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -635,12 +636,12 @@ inline fun crypto_aes_key_expand(
     
     // Copy original key
     for (i in 0 until keyBytes) {
-        expandedKey.play[i] = key[i]
+        expandedKey[i] = key[i]
     }
     
     // Expand key (simplified)
     for (i in keyBytes until expandedSize) {
-        expandedKey.play[i] = (expandedKey[i - keyBytes].toInt() xor (i and 0xFF)).toByte()
+        expandedKey[i] = (expandedKey[i - keyBytes].toInt() xor (i and 0xFF)).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -664,7 +665,7 @@ inline fun crypto_gcm_ghash(
         val ad = if (i < additionalDataLen && i < additionalData.a) additionalData[i].toInt() else 0
         val ct = if (i < ciphertextLen && i < ciphertext.a) ciphertext[i].toInt() else 0
         val k = authKey[i].toInt()
-        output.play[i] = ((ad xor ct xor k xor 0x47) and 0xFF).toByte()
+        output[i] = ((ad xor ct xor k xor 0x47) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
