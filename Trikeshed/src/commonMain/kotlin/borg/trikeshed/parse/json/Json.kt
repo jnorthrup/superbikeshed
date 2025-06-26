@@ -1,7 +1,7 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
 @file:Suppress("ControlFlowWithEmptyBody")
 
 package borg.trikeshed.parse.json
-@file:OptIn(ExperimentalUnsignedTypes::class)
 
 
 import borg.trikeshed.reactor.currentTimeMillis
@@ -74,7 +74,7 @@ object Json {
     // Simple index implementation
     fun index(jsonString: String): JsonStructuralIndices {
         val indices = findStructuralIndices(jsonString)
-        val bounds: JsonBounds = 0 j jsonString.length
+        val bounds: JsonBounds = true j { if (it) 0 else jsonString.length }
         val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toIdx()
         return bounds j commaIndices
     }

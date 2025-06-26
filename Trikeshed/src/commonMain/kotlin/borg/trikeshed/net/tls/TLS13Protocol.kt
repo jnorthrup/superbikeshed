@@ -1,6 +1,6 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.tls
-@file:OptIn(ExperimentalUnsignedTypes::class)
 
 
 import borg.trikeshed.reactor.currentTimeMillis
@@ -704,8 +704,8 @@ class TLS13Connection(
                 TLS13Protocol.ExtensionTypes.KEY_SHARE -> {
                     // Parse server's key share
                     val group = NamedGroup(
-                        ((body[offset].toInt() and 0xFF) shl 8) or 
-                        (body[offset + 1].toInt() and 0xFF)
+                        (((body[offset].toInt() and 0xFF) shl 8) or 
+                        (body[offset + 1].toInt() and 0xFF)).toShort()
                     )
                     offset += 2
                     

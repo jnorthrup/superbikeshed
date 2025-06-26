@@ -1,5 +1,5 @@
-package borg.trikeshed.reactor
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.reactor
 
 
 typealias Interest = Int

@@ -1,6 +1,6 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.functional
-@file:OptIn(ExperimentalUnsignedTypes::class)
 
 
 import borg.trikeshed.reactor.currentTimeMillis

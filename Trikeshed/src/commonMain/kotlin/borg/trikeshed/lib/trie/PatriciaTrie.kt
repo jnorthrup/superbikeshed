@@ -1,5 +1,5 @@
-package borg.trikeshed.lib.trie
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.lib.trie
 
 
 /**

@@ -1,5 +1,5 @@
-package borg.trikeshed.common.collections.associative.trie
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.common.collections.associative.trie
 
 
 /**

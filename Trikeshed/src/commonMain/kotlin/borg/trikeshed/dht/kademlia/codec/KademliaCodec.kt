@@ -1,5 +1,5 @@
-package borg.trikeshed.dht.kademlia.codec
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.dht.kademlia.codec
 
 
 import borg.trikeshed.reactor.currentTimeMillis

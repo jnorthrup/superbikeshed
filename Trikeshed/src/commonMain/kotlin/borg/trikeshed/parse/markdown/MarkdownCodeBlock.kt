@@ -1,5 +1,5 @@
-package borg.trikeshed.parse.markdown
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.parse.markdown
 
 
 import borg.trikeshed.reactor.currentTimeMillis
@@ -179,7 +179,7 @@ object LightningMarkdown {
                         if (rangeSize > 0) {
                             rangeSize j { i: Int -> markdownChars[startIndex + i] }
                         } else {
-                            emptyIndex<Char>()
+                            emptyIndexed<Char>()
                         }
 
                     val contentString = contentSlice.play.joinToString("").trim()
