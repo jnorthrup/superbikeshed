@@ -1,4 +1,6 @@
 package borg.trikeshed.lib
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * Empty Indexed singleton - represents an empty indexed sequence

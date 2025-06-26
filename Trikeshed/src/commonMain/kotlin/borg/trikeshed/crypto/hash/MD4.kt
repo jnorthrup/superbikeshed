@@ -1,6 +1,8 @@
 @file:Suppress("FunctionName")
 
 package borg.trikeshed.crypto.hash
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Indexed

@@ -1,4 +1,6 @@
 package borg.trikeshed.net.quic
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 data class QuicConfig(
     // Existing parameters

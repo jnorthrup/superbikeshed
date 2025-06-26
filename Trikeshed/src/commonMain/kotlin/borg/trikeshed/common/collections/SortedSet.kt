@@ -1,6 +1,8 @@
 @file:Suppress("UNCHECKED_CAST")
 
 package borg.trikeshed.common.collections
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * A [Set] that further provides a *total ordering* on its elements.

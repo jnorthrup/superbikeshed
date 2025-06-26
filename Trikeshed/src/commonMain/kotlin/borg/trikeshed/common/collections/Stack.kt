@@ -1,4 +1,6 @@
 package borg.trikeshed.common.collections
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 
 class Stack<T>(src: List<T> = listOf()) {

@@ -1,4 +1,6 @@
 package borg.trikeshed.common.collections
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * A [SortedSet] extended with navigation methods reporting

@@ -1,4 +1,6 @@
 package borg.trikeshed.ljson
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * JSON Bitmap Processor

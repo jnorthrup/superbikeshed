@@ -1,4 +1,6 @@
 package borg.trikeshed.common.collections
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 class HashSet<T> : Set<T> {
     private var buckets: Array<Any?> = arrayOfNulls(16)

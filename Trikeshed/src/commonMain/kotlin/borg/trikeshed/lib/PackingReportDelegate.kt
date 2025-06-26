@@ -1,4 +1,6 @@
 package borg.trikeshed.lib
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * Delegate that wires FibonacciReporter to automatically trace packing decisions
