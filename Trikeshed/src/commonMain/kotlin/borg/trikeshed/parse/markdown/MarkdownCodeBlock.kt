@@ -167,7 +167,7 @@ object LightningMarkdown {
                     currentStart = boundary
                 }
                 char == '`' && currentStart != -1 -> {
-                    // End of code block - extract content using Series range
+                    // End of code block - extract content using Indexed range
                     val startIndex = currentStart + 1
                     val endIndex = boundary - 1
                     val rangeSize = endIndex - startIndex + 1

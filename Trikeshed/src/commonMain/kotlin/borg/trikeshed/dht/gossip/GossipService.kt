@@ -6,7 +6,6 @@ import borg.trikeshed.dht.kademlia.events.NodeInfo
 import borg.trikeshed.dht.kademlia.subnet.SubnetManager
 import borg.trikeshed.dht.agent.GossipMessage
 import borg.trikeshed.dht.agent.SubscriptionHandle
-import borg.trikeshed.reactor.getCurrentTimeMillis
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -49,7 +48,7 @@ class GossipService(
             publisherId = localNodeId,
             targetSubnets = targetSubnets,
             payload = payload,
-            timestamp = getCurrentTimeMillis(),
+            timestamp = borg.trikeshed.reactor.getCurrentTimeMillis(),
             signature = 0 j { 0.toByte() } // TODO: Implement signing
         )
         
@@ -234,7 +233,7 @@ private class MessageCache(
     
     fun markAsSeen(messageId: NUID) {
         cleanExpired()
-        cache[messageId] = getCurrentTimeMillis()
+        cache[messageId] = borg.trikeshed.reactor.getCurrentTimeMillis()
         
         // Evict oldest if over capacity
         if (cache.size > maxSize) {
@@ -244,7 +243,13 @@ private class MessageCache(
     }
     
     private fun cleanExpired() {
-        val now = getCurrentTimeMillis()
-        cache.entries.removeIf { now - it.value > ttlMillis }
+        val now = borg.trikeshed.reactor.getCurrentTimeMillis()
+        val iterator = cache.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (now - entry.value > ttlMillis) {
+                iterator.remove()
+            }
+        }
     }
 }

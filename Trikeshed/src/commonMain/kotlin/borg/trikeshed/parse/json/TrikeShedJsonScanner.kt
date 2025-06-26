@@ -88,7 +88,7 @@ object TrikeShedJsonScanner {
      * Scan JSON string into token series using α transforms
      */
     fun scan(jsonString: JsonStringValue): JsonResult<JsonTokenSeries> {
-        if (jsonString.isEmpty()) return Result.success(emptySeries())
+        if (jsonString.isEmpty()) return Result.success(emptyIndexed())
 
         val chars = jsonString.toList().toIdx()
         return Result.success(tokenize(chars))
@@ -349,13 +349,13 @@ fun JsonStructuralSeries.analyzeNesting(): JsonNestingSeries = TrikeShedJsonScan
 fun JsonTokenSeries.extractValues(jsonString: JsonStringValue): JsonValueSeries = TrikeShedJsonScanner.extractValues(this, jsonString)
 
 /**
- * Utility functions for Series operations
+ * Utility functions for Indexed operations
  */
 private fun <T> Array<T>.toIdx(): Indexed<T> = size j ::get
 
 private fun <T> List<T>.toIdx(): Indexed<T> = size j ::get
 
-private fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+private fun <T> emptyIndexed(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /**
  * Example usage demonstrating TrikeShed patterns

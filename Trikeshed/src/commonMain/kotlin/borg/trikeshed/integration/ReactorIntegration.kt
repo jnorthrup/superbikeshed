@@ -182,71 +182,94 @@ class ReactorIntegration(
         httpServer.route("/health") { request ->
             val stats = getSystemStats()
             HttpResponse(
-                status = 200,
-                headers = mapOf("content-type" to "application/json"),
-                body = (stats as Map<String, Any>).toJsonString()
+                status = HttpStatus.OK,
+                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                body = (stats as Map<String, Any>).toJsonString().encodeToByteArray()
             )
         }
         
         // Reactor events endpoint
         httpServer.route("/reactor/events") { request ->
             when (request.method) {
-                "POST" -> {
-                    val eventData = parseEventData(request.body)
+                HttpMethod.POST -> {
+                    val eventData = parseEventData(request.body.toString(Charsets.UTF_8))
                     emitReactorEvent(eventData)
-                    HttpResponse(200, mapOf("content-type" to "application/json"), """{"status":"emitted"}""")
+                    HttpResponse(
+                        status = HttpStatus.OK, 
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = """{"status":"emitted"}""".encodeToByteArray()
+                    )
                 }
-                "GET" -> {
+                HttpMethod.GET -> {
                     val reactorStats = network.getStats()
-                    HttpResponse(200, mapOf("content-type" to "application/json"), (reactorStats as Map<String, Any>).toJsonString())
+                    HttpResponse(
+                        status = HttpStatus.OK,
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(), 
+                        body = (reactorStats as Map<String, Any>).toJsonString().encodeToByteArray())
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatus.METHOD_NOT_ALLOWED, 
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray())
             }
         }
         
         // Integrated storage endpoint
         httpServer.route("/store") { request ->
             try {
-                val content = request.body
+                val content = request.body.toString(Charsets.UTF_8)
                 val result = storeWithReactor(content)
                 
                 when (result) {
                     is ReactorStorageResult.Success -> HttpResponse(
-                        status = 201,
-                        headers = mapOf("content-type" to "application/json"),
-                        body = result.toJsonString()
+                        status = HttpStatus.CREATED,
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = result.toJsonString().encodeToByteArray()
                     )
                     is ReactorStorageResult.Error -> HttpResponse(
-                        status = 500,
-                        headers = mapOf("content-type" to "application/json"),
-                        body = """{"error":"${result.message}"}"""
+                        status = HttpStatus.INTERNAL_SERVER_ERROR,
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = """{"error":"${result.message}"}""".encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
-                HttpResponse(500, mapOf("content-type" to "application/json"), """{"error":"${e.message}"}""")
+                HttpResponse(
+                    status = HttpStatus.INTERNAL_SERVER_ERROR,
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"${e.message}"}""".encodeToByteArray())
             }
         }
         
         // Retrieve endpoint
         httpServer.route("/retrieve") { request ->
             try {
-                val id = request.queryParams["id"] ?: return@route HttpResponse(400, mapOf("content-type" to "application/json"), """{"error":"Missing id parameter"}""")
+                val id = request.path.value.substringAfter("id=", "")
+                if (id.isBlank()) return@route HttpResponse(
+                    status = HttpStatus.BAD_REQUEST,
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Missing id parameter"}""".encodeToByteArray()
+                )
+
                 val result = retrieveWithReactor(id)
                 
                 when (result) {
                     is ReactorStorageResult.Success -> HttpResponse(
-                        status = 200,
-                        headers = mapOf("content-type" to "application/json"),
-                        body = result.toJsonString()
+                        status = HttpStatus.OK,
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = result.toJsonString().encodeToByteArray()
                     )
                     is ReactorStorageResult.Error -> HttpResponse(
-                        status = 404,
-                        headers = mapOf("content-type" to "application/json"),
-                        body = """{"error":"${result.message}"}"""
+                        status = HttpStatus.NOT_FOUND,
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = """{"error":"${result.message}"}""".encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
-                HttpResponse(500, mapOf("content-type" to "application/json"), """{"error":"${e.message}"}""")
+                HttpResponse(
+                    status = HttpStatus.INTERNAL_SERVER_ERROR,
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"${e.message}"}""".encodeToByteArray()
+                )
             }
         }
     }
