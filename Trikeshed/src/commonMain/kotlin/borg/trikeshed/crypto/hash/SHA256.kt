@@ -1,5 +1,5 @@
-package borg.trikeshed.crypto.hash
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.crypto.hash
 
 
 import borg.trikeshed.reactor.currentTimeMillis
@@ -87,18 +87,22 @@ object SHA256Hasher {
     
     private fun processSHA256Block(block: ByteArray, h: IntArray, k: IntArray) {
         // SIMD-friendly message schedule preparation
-        val w = IntArray(64) { i ->
-            if (i < 16) {
-                val offset = i * 4
-                (block[offset].toInt() and 0xFF shl 24) or
-                (block[offset + 1].toInt() and 0xFF shl 16) or
-                (block[offset + 2].toInt() and 0xFF shl 8) or
-                (block[offset + 3].toInt() and 0xFF)
-            } else {
-                val s0 = rotateRight(w[i - 15], 7) xor rotateRight(w[i - 15], 18) xor (w[i - 15] ushr 3)
-                val s1 = rotateRight(w[i - 2], 17) xor rotateRight(w[i - 2], 19) xor (w[i - 2] ushr 10)
-                w[i - 16] + s0 + w[i - 7] + s1
-            }
+        val w = IntArray(64)
+        
+        // Initialize first 16 words from block data
+        for (i in 0 until 16) {
+            val offset = i * 4
+            w[i] = (block[offset].toInt() and 0xFF shl 24) or
+                   (block[offset + 1].toInt() and 0xFF shl 16) or
+                   (block[offset + 2].toInt() and 0xFF shl 8) or
+                   (block[offset + 3].toInt() and 0xFF)
+        }
+        
+        // Extend the first 16 words into the remaining 48 words
+        for (i in 16 until 64) {
+            val s0 = rotateRight(w[i - 15], 7) xor rotateRight(w[i - 15], 18) xor (w[i - 15] ushr 3)
+            val s1 = rotateRight(w[i - 2], 17) xor rotateRight(w[i - 2], 19) xor (w[i - 2] ushr 10)
+            w[i] = w[i - 16] + s0 + w[i - 7] + s1
         }
         
         var a = h[0]

@@ -1,7 +1,7 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 package borg.trikeshed.lib
-@file:OptIn(ExperimentalUnsignedTypes::class)
 
 
 // import kotlin.math.minOf
@@ -393,7 +393,7 @@ inline infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  * val scaled = matrix α { it * 2.0f }
  * ```
  */
-inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> = a j { index: Int -> transform(b(index)) }
+inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> = a j { index: A -> transform(b(index)) }
 
 /**
  * ## ▶ - The Universal Materialization Operator

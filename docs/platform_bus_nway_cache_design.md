@@ -91,4 +91,25 @@ graph TD
 
 10. **End-Game Optimization Planning**
     - Identify and reserve architectural seams for late-stage, high-impact optimizations (e.g., zero-copy, async pipelines, protocol-specific accelerations).
-    - Reserve: Explicit TODO markers in code and docs for all known future optimization targets. 
+    - Reserve: Explicit TODO markers in code and docs for all known future optimization targets.
+
+## TODOs: Type Check and Test Coverage (Continuation)
+
+1. **Lambda Parameter Type Inference in Functional Operators**
+   - Identify all functional operators with ambiguous or failing lambda parameter type inference.
+   - Write unit tests that explicitly specify lambda parameter types and verify correct type inference.
+   - Reserve: Test harness for future functional operator extensions and inference edge cases.
+
+2. **Generic Type Bounds in Collection Operations**
+   - Audit all collection operations using generics for type bound violations or inference errors.
+   - Write unit tests for collections with explicit and implicit generic bounds, including edge cases.
+   - Reserve: Mechanism for generic bound validation in future protocol/agent extensions.
+
+3. **Platform-Specific Type Abstractions**
+   - Catalog all unresolved references related to platform-specific types (e.g., JVM, WASM, native abstractions).
+   - Write cross-platform unit tests to validate abstraction layers and ensure compatibility.
+   - Reserve: Platform abstraction test harness for rapid validation as new platforms/protocols are integrated.
+
+4. **Progress Tracking**
+   - Maintain a running tally of type check errors and resolved issues in the main TODO or progress tracking file.
+   - Reserve: Automated reporting for type check/test coverage as part of CI/CD pipeline. 

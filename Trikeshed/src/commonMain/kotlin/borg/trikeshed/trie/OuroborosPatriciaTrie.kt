@@ -1,5 +1,5 @@
-package borg.trikeshed.trie
 @file:OptIn(ExperimentalUnsignedTypes::class)
+package borg.trikeshed.trie
 
 
 import borg.trikeshed.reactor.currentTimeMillis

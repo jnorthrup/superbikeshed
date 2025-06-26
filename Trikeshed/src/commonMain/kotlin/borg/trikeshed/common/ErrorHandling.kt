@@ -1,6 +1,6 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
 @file:Suppress("NOTHING_TO_INLINE", "FunctionName")
 package borg.trikeshed.common
-@file:OptIn(ExperimentalUnsignedTypes::class)
 
 
 import borg.trikeshed.reactor.currentTimeMillis

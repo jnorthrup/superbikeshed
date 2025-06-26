@@ -1,7 +1,7 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
 @file:Suppress("UNCHECKED_CAST")
 
 package borg.trikeshed.common.collections.associative
-@file:OptIn(ExperimentalUnsignedTypes::class)
 
 
 
