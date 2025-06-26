@@ -1,5 +1,6 @@
 package borg.trikeshed.ljson
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.http.*
 import kotlinx.coroutines.*
@@ -299,7 +300,7 @@ class SpanshGalaxyMapReader(
             )
         }
         
-        return decompressed.size j { i -> decompressed[i] }
+        return decompressed.size j { i: Int -> decompressed[i] }
     }
     
     /**

@@ -1,5 +1,6 @@
 package borg.trikeshed.crypto.hash
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 
@@ -8,22 +9,12 @@ import borg.trikeshed.lib.j
  * 
  * Provides multiplatform SHA256 hashing following the CCEK pattern.
  * SHA256 is a cryptographically secure hash function.
- */
-expect object SHA256Hasher {
-    /**
-     * Computes the SHA256 hash of the input data.
-     * @param data The input byte array.
-     * @return A byte array representing the SHA256 hash (32 bytes).
-     */
-    fun hash(data: Indexed<Byte>): Indexed<Byte>
-}
-
-/**
+ * 
  * SIMD-Optimized SHA256 Implementation
  * Uses big arrays and vectorization-friendly loops for autovec
  */
-actual object SHA256Hasher {
-    actual fun hash(data: Indexed<Byte>): Indexed<Byte> {
+object SHA256Hasher {
+    fun hash(data: Indexed<Byte>): Indexed<Byte> {
         // Convert Indexed to big array for SIMD optimization
         val inputArray = ByteArray(data.size) { data[it] }
         val result = sha256Hash(inputArray)

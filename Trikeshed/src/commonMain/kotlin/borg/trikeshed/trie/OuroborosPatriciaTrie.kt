@@ -1,5 +1,6 @@
 package borg.trikeshed.trie
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 
 // Key type for the trie (can be String, ByteArray, etc.)
@@ -89,14 +90,14 @@ fun <V, M> CompressedPatriciaNode<V, M>.insert(key: String, value: V, meta: M = 
             val childIdx = children.play.indexOfFirst { it.keyFragment.isNotEmpty() && it.keyFragment[0] == nextChar }
             val updatedChildren = if (childIdx >= 0) {
                 // Update existing child
-                children.a j { i ->
+                children.a j { i: Int ->
                     if (i == childIdx) children[i].insert(suffix, value, meta) else children[i]
                 }
             } else {
                 // Add new child
                 val newChild = CompressedPatriciaNode(suffix, value, meta, 0 j { error("No children") })
                 val newSize = children.a + 1
-                newSize j { i -> if (i < children.a) children[i] else newChild }
+                newSize j { i: Int -> if (i < children.a) children[i] else newChild }
             }
             return copy(children = updatedChildren)
         }

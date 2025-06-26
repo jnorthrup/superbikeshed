@@ -1,5 +1,6 @@
 package borg.trikeshed.crypto.hash
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 

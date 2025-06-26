@@ -1,0 +1,666 @@
+> Task :assemble UP-TO-DATE
+> Task :check UP-TO-DATE
+> Task :build UP-TO-DATE
+> Task :flatton:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :kotlinx-serialization-scanner:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :kotlinx-serialization-scanner:transformCommonMainDependenciesMetadata
+> Task :kotlinx-serialization-scanner:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-scanner:generateProjectStructureMetadata
+> Task :kotlinx-serialization-scanner:metadataCommonMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataCommonMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:allMetadataJar
+> Task :kotlinx-serialization-scanner:commonizeNativeDistribution
+> Task :kotlinx-serialization-scanner:transformNativeMainDependenciesMetadata
+> Task :kotlinx-serialization-scanner:compileNativeMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataNativeMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataNativeMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:transformAppleMainDependenciesMetadata
+> Task :kotlinx-serialization-scanner:compileAppleMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataAppleMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataAppleMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:transformMacosMainDependenciesMetadata
+> Task :kotlinx-serialization-scanner:compileMacosMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataMacosMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:metadataMacosMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:exportCommonSourceSetsMetadataLocationsForMetadataApiElements
+> Task :kotlinx-serialization-scanner:macosArm64MetadataElements
+> Task :kotlinx-serialization-scanner:macosX64MetadataElements
+> Task :flatton:transformCommonMainDependenciesMetadata
+> Task :flatton:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-scanner:exportRootPublicationCoordinatesForMetadataApiElements
+> Task :flatton:generateProjectStructureMetadata
+> Task :flatton:metadataCommonMainProcessResources NO-SOURCE
+> Task :flatton:metadataCommonMainClasses UP-TO-DATE
+> Task :flatton:allMetadataJar
+> Task :flatton:commonizeNativeDistribution
+> Task :flatton:transformNativeMainDependenciesMetadata
+> Task :flatton:compileNativeMainKotlinMetadata NO-SOURCE
+> Task :flatton:metadataNativeMainProcessResources NO-SOURCE
+> Task :flatton:metadataNativeMainClasses UP-TO-DATE
+> Task :flatton:transformAppleMainDependenciesMetadata
+> Task :flatton:compileAppleMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-scanner:compileKotlinMacosArm64 NO-SOURCE
+> Task :flatton:compileKotlinMacosArm64 NO-SOURCE
+> Task :kotlinx-serialization-scanner:compileKotlinMacosX64 NO-SOURCE
+> Task :flatton:compileKotlinMacosX64 NO-SOURCE
+> Task :flatton:metadataAppleMainProcessResources NO-SOURCE
+> Task :flatton:metadataAppleMainClasses UP-TO-DATE
+> Task :flatton:transformMacosMainDependenciesMetadata
+> Task :flatton:compileMacosMainKotlinMetadata NO-SOURCE
+> Task :kotlinBinaryenSetup UP-TO-DATE
+> Task :kotlinx-serialization-scanner:compileKotlinWasmJs NO-SOURCE
+> Task :flatton:compileKotlinWasmJs NO-SOURCE
+> Task :flatton:wasmJsProcessResources NO-SOURCE
+> Task :flatton:wasmJsMainClasses UP-TO-DATE
+> Task :flatton:compileProductionExecutableKotlinWasmJs NO-SOURCE
+> Task :flatton:compileProductionExecutableKotlinWasmJsOptimize SKIPPED
+> Task :flatton:wasmJsProductionExecutableCompileSync NO-SOURCE
+> Task :flatton:macosArm64ProcessResources NO-SOURCE
+> Task :flatton:macosArm64MainKlibrary UP-TO-DATE
+> Task :flatton:compileTestKotlinMacosArm64 NO-SOURCE
+> Task :flatton:macosX64ProcessResources NO-SOURCE
+> Task :flatton:macosX64MainKlibrary UP-TO-DATE
+> Task :flatton:compileTestKotlinMacosX64 NO-SOURCE
+> Task :kotlinx-serialization-scanner:compileKotlinJvm NO-SOURCE
+> Task :kotlinx-serialization-scanner:compileJvmMainJava NO-SOURCE
+> Task :kotlinx-serialization-scanner:jvmProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:processJvmMainResources SKIPPED
+> Task :kotlinx-serialization-scanner:jvmMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:jvmJar
+> Task :flatton:compileKotlinJvm NO-SOURCE
+> Task :flatton:compileJvmMainJava NO-SOURCE
+> Task :flatton:jvmProcessResources NO-SOURCE
+> Task :flatton:processJvmMainResources SKIPPED
+> Task :flatton:jvmMainClasses UP-TO-DATE
+> Task :flatton:jvmJar
+> Task :flatton:metadataMacosMainProcessResources NO-SOURCE
+> Task :flatton:metadataMacosMainClasses UP-TO-DATE
+> Task :flatton:macosArm64MetadataElements
+> Task :flatton:macosX64MetadataElements
+> Task :kotlinNodeJsSetup UP-TO-DATE
+> Task :kotlinNpmCachesSetup
+> Task :kotlinRestoreYarnLock
+> Task :kotlinYarnSetup UP-TO-DATE
+> Task :kotlinx-serialization-scanner:wasmJsPackageJson
+> Task :flatton:wasmJsPackageJson
+> Task :flatton:wasmJsTestPackageJson
+> Task :k2script:wasmJsPackageJson
+> Task :k2script:wasmJsTestPackageJson
+> Task :kotlinx-serialization-scanner:wasmJsTestPackageJson
+> Task :kotlinx-serialization-wireproto:wasmJsPackageJson
+> Task :kotlinx-serialization-wireproto:wasmJsTestPackageJson
+> Task :moneyfan:wasmJsPackageJson
+> Task :moneyfan:wasmJsTestPackageJson
+> Task :Trikeshed:wasmJsPackageJson
+> Task :rtsgame:wasmJsPackageJson
+> Task :rtsgame:wasmJsTestPackageJson
+> Task :spacegraph:wasmJsPackageJson
+> Task :spacegraph:wasmJsTestPackageJson
+> Task :ta4k:wasmJsPackageJson
+> Task :ta4k:wasmJsTestPackageJson
+> Task :ta4k-spacegraph-moneyfan-demo:wasmJsPackageJson
+> Task :ta4k-spacegraph-moneyfan-demo:wasmJsTestPackageJson
+> Task :Trikeshed:wasmJsTestPackageJson
+> Task :flatton:wasmJsPublicPackageJson
+> Task :flatton:wasmJsTestPublicPackageJson
+> Task :k2script:wasmJsPublicPackageJson
+> Task :k2script:wasmJsTestPublicPackageJson
+> Task :kotlinx-serialization-scanner:wasmJsPublicPackageJson
+> Task :kotlinx-serialization-scanner:wasmJsTestPublicPackageJson
+> Task :kotlinx-serialization-wireproto:wasmJsPublicPackageJson
+> Task :kotlinx-serialization-wireproto:wasmJsTestPublicPackageJson
+> Task :moneyfan:wasmJsPublicPackageJson
+> Task :moneyfan:wasmJsTestPublicPackageJson
+> Task :rtsgame:wasmJsPublicPackageJson
+> Task :rtsgame:wasmJsTestPublicPackageJson
+> Task :spacegraph:wasmJsPublicPackageJson
+> Task :spacegraph:wasmJsTestPublicPackageJson
+> Task :ta4k:wasmJsPublicPackageJson
+> Task :ta4k:wasmJsTestPublicPackageJson
+> Task :ta4k-spacegraph-moneyfan-demo:wasmJsPublicPackageJson
+> Task :ta4k-spacegraph-moneyfan-demo:wasmJsTestPublicPackageJson
+> Task :Trikeshed:wasmJsPublicPackageJson
+> Task :Trikeshed:wasmJsTestPublicPackageJson
+> Task :packageJsonUmbrella
+> Task :rootPackageJson
+> Task :kotlinNpmInstall UP-TO-DATE
+> Task :kotlinStoreYarnLock UP-TO-DATE
+> Task :flatton:wasmJsBrowserProductionWebpack SKIPPED
+> Task :flatton:wasmJsBrowserDistribution NO-SOURCE
+> Task :flatton:wasmJsJar
+> Task :flatton:assemble
+> Task :flatton:compileTestKotlinJvm NO-SOURCE
+> Task :flatton:compileJvmTestJava NO-SOURCE
+> Task :flatton:jvmTestProcessResources NO-SOURCE
+> Task :flatton:processJvmTestResources SKIPPED
+> Task :flatton:jvmTestClasses UP-TO-DATE
+> Task :flatton:jvmTest NO-SOURCE
+> Task :flatton:linkDebugTestMacosArm64 NO-SOURCE
+> Task :flatton:macosArm64Test SKIPPED
+> Task :flatton:linkDebugTestMacosX64 NO-SOURCE
+> Task :flatton:macosX64Test SKIPPED
+> Task :flatton:compileTestKotlinWasmJs NO-SOURCE
+> Task :flatton:kotlinNodeJsSetup UP-TO-DATE
+> Task :flatton:wasmJsTestProcessResources NO-SOURCE
+> Task :flatton:wasmJsTestClasses UP-TO-DATE
+> Task :flatton:compileTestDevelopmentExecutableKotlinWasmJs NO-SOURCE
+> Task :flatton:wasmJsTestTestDevelopmentExecutableCompileSync NO-SOURCE
+> Task :flatton:wasmJsBrowserTest SKIPPED
+> Task :flatton:wasmJsTest NO-SOURCE
+> Task :flatton:allTests NO-SOURCE
+> Task :flatton:check UP-TO-DATE
+> Task :flatton:build
+> Task :k2script:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :k2script:transformCommonMainDependenciesMetadata
+> Task :k2script:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :k2script:generateProjectStructureMetadata
+> Task :k2script:metadataCommonMainProcessResources NO-SOURCE
+> Task :k2script:metadataCommonMainClasses UP-TO-DATE
+> Task :k2script:allMetadataJar SKIPPED
+> Task :k2script:compileKotlinMacosArm64 NO-SOURCE
+> Task :k2script:compileKotlinWasmJs NO-SOURCE
+> Task :k2script:wasmJsProcessResources NO-SOURCE
+> Task :k2script:wasmJsMainClasses UP-TO-DATE
+> Task :k2script:compileProductionExecutableKotlinWasmJs NO-SOURCE
+> Task :k2script:compileProductionExecutableKotlinWasmJsOptimize SKIPPED
+> Task :k2script:wasmJsProductionExecutableCompileSync NO-SOURCE
+> Task :k2script:macosArm64ProcessResources NO-SOURCE
+> Task :k2script:macosArm64MainKlibrary UP-TO-DATE
+> Task :k2script:compileTestKotlinMacosArm64 NO-SOURCE
+> Task :k2script:compileKotlinJvm NO-SOURCE
+> Task :k2script:compileJvmMainJava NO-SOURCE
+> Task :k2script:jvmProcessResources NO-SOURCE
+> Task :k2script:processJvmMainResources SKIPPED
+> Task :k2script:jvmMainClasses UP-TO-DATE
+> Task :k2script:jvmJar SKIPPED
+> Task :k2script:macosArm64MetadataElements SKIPPED
+> Task :k2script:wasmJsBrowserProductionWebpack SKIPPED
+> Task :k2script:wasmJsBrowserDistribution NO-SOURCE
+> Task :k2script:wasmJsJar SKIPPED
+> Task :k2script:assemble UP-TO-DATE
+> Task :k2script:compileTestKotlinJvm NO-SOURCE
+> Task :k2script:compileJvmTestJava NO-SOURCE
+> Task :k2script:jvmTestProcessResources NO-SOURCE
+> Task :k2script:processJvmTestResources SKIPPED
+> Task :k2script:jvmTestClasses UP-TO-DATE
+> Task :k2script:jvmTest NO-SOURCE
+> Task :k2script:linkDebugTestMacosArm64 NO-SOURCE
+> Task :k2script:macosArm64Test SKIPPED
+> Task :k2script:compileTestKotlinWasmJs NO-SOURCE
+> Task :k2script:kotlinNodeJsSetup UP-TO-DATE
+> Task :k2script:wasmJsTestProcessResources NO-SOURCE
+> Task :k2script:wasmJsTestClasses UP-TO-DATE
+> Task :k2script:compileTestDevelopmentExecutableKotlinWasmJs NO-SOURCE
+> Task :k2script:wasmJsTestTestDevelopmentExecutableCompileSync NO-SOURCE
+> Task :k2script:wasmJsBrowserTest SKIPPED
+> Task :k2script:wasmJsTest NO-SOURCE
+> Task :k2script:allTests NO-SOURCE
+> Task :k2script:check UP-TO-DATE
+> Task :k2script:build UP-TO-DATE
+> Task :kotlin-entity-scanner:generateProjectStructureMetadata
+> Task :kotlin-entity-scanner:allMetadataJar
+> Task :kotlin-entity-scanner:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :kotlin-entity-scanner:compileKotlinJvm NO-SOURCE
+> Task :kotlin-entity-scanner:compileJvmMainJava NO-SOURCE
+> Task :kotlin-entity-scanner:jvmProcessResources NO-SOURCE
+> Task :kotlin-entity-scanner:processJvmMainResources SKIPPED
+> Task :kotlin-entity-scanner:jvmMainClasses UP-TO-DATE
+> Task :kotlin-entity-scanner:jvmJar
+> Task :kotlin-entity-scanner:assemble
+> Task :kotlin-entity-scanner:compileTestKotlinJvm NO-SOURCE
+> Task :kotlin-entity-scanner:compileJvmTestJava NO-SOURCE
+> Task :kotlin-entity-scanner:jvmTestProcessResources NO-SOURCE
+> Task :kotlin-entity-scanner:processJvmTestResources SKIPPED
+> Task :kotlin-entity-scanner:jvmTestClasses UP-TO-DATE
+> Task :kotlin-entity-scanner:jvmTest NO-SOURCE
+> Task :kotlin-entity-scanner:allTests NO-SOURCE
+> Task :kotlin-entity-scanner:check UP-TO-DATE
+> Task :kotlin-entity-scanner:build
+> Task :kotlinx-serialization-scanner:wasmJsProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:wasmJsMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:compileProductionExecutableKotlinWasmJs NO-SOURCE
+> Task :kotlinx-serialization-scanner:compileProductionExecutableKotlinWasmJsOptimize SKIPPED
+> Task :kotlinx-serialization-scanner:wasmJsProductionExecutableCompileSync NO-SOURCE
+> Task :kotlinx-serialization-scanner:macosArm64ProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:macosArm64MainKlibrary UP-TO-DATE
+> Task :kotlinx-serialization-scanner:compileTestKotlinMacosArm64 NO-SOURCE
+> Task :kotlinx-serialization-scanner:macosX64ProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:macosX64MainKlibrary UP-TO-DATE
+> Task :kotlinx-serialization-scanner:compileTestKotlinMacosX64 NO-SOURCE
+> Task :kotlinx-serialization-scanner:wasmJsBrowserProductionWebpack SKIPPED
+> Task :kotlinx-serialization-scanner:wasmJsBrowserDistribution NO-SOURCE
+> Task :kotlinx-serialization-scanner:wasmJsJar
+> Task :kotlinx-serialization-scanner:assemble
+> Task :kotlinx-serialization-scanner:compileTestKotlinJvm NO-SOURCE
+> Task :kotlinx-serialization-scanner:compileJvmTestJava NO-SOURCE
+> Task :kotlinx-serialization-scanner:jvmTestProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:processJvmTestResources SKIPPED
+> Task :kotlinx-serialization-scanner:jvmTestClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:jvmTest NO-SOURCE
+> Task :kotlinx-serialization-scanner:linkDebugTestMacosArm64 NO-SOURCE
+> Task :kotlinx-serialization-scanner:macosArm64Test SKIPPED
+> Task :kotlinx-serialization-scanner:linkDebugTestMacosX64 NO-SOURCE
+> Task :kotlinx-serialization-scanner:macosX64Test SKIPPED
+> Task :kotlinx-serialization-scanner:compileTestKotlinWasmJs NO-SOURCE
+> Task :kotlinx-serialization-scanner:kotlinNodeJsSetup UP-TO-DATE
+> Task :kotlinx-serialization-scanner:wasmJsTestProcessResources NO-SOURCE
+> Task :kotlinx-serialization-scanner:wasmJsTestClasses UP-TO-DATE
+> Task :kotlinx-serialization-scanner:compileTestDevelopmentExecutableKotlinWasmJs NO-SOURCE
+> Task :kotlinx-serialization-scanner:wasmJsTestTestDevelopmentExecutableCompileSync NO-SOURCE
+> Task :kotlinx-serialization-scanner:wasmJsBrowserTest SKIPPED
+> Task :kotlinx-serialization-scanner:wasmJsTest NO-SOURCE
+> Task :kotlinx-serialization-scanner:allTests NO-SOURCE
+> Task :kotlinx-serialization-scanner:check UP-TO-DATE
+> Task :kotlinx-serialization-scanner:build
+> Task :kotlinx-serialization-wireproto:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :kotlinx-serialization-wireproto:transformCommonMainDependenciesMetadata
+> Task :kotlinx-serialization-wireproto:kspCommonMainKotlinMetadata SKIPPED
+> Task :kotlinx-serialization-wireproto:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-wireproto:generateProjectStructureMetadata
+> Task :kotlinx-serialization-wireproto:metadataCommonMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:metadataCommonMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-wireproto:allMetadataJar
+> Task :kotlinx-serialization-wireproto:commonizeNativeDistribution
+> Task :kotlinx-serialization-wireproto:transformNativeMainDependenciesMetadata
+> Task :kotlinx-serialization-wireproto:compileNativeMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-wireproto:metadataNativeMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:metadataNativeMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-wireproto:transformAppleMainDependenciesMetadata
+> Task :kotlinx-serialization-wireproto:compileAppleMainKotlinMetadata NO-SOURCE
+> Task :ksp-processors:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Trikeshed:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Trikeshed:jvmProcessResources
+> Task :Trikeshed:processJvmMainResources SKIPPED
+> Task :ksp-processors:generateProcessorService
+> Task :ksp-processors:processResources
+> Task :kotlinx-serialization-wireproto:metadataAppleMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:metadataAppleMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-wireproto:transformMacosMainDependenciesMetadata
+> Task :kotlinx-serialization-wireproto:compileMacosMainKotlinMetadata NO-SOURCE
+> Task :kotlinx-serialization-wireproto:wasmJsProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:macosArm64ProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:macosX64ProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:metadataMacosMainProcessResources NO-SOURCE
+> Task :kotlinx-serialization-wireproto:metadataMacosMainClasses UP-TO-DATE
+> Task :kotlinx-serialization-wireproto:macosArm64MetadataElements
+> Task :kotlinx-serialization-wireproto:macosX64MetadataElements
+> Task :kotlinx-serialization-wireproto:kotlinNodeJsSetup UP-TO-DATE
+> Task :kotlinx-serialization-wireproto:wasmJsTestProcessResources NO-SOURCE
+> Task :ksp-processors:processTestResources NO-SOURCE
+> Task :moneyfan:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :moneyfan:transformCommonMainDependenciesMetadata
+> Task :moneyfan:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :moneyfan:generateProjectStructureMetadata
+> Task :moneyfan:metadataCommonMainProcessResources NO-SOURCE
+> Task :moneyfan:metadataCommonMainClasses UP-TO-DATE
+> Task :moneyfan:allMetadataJar
+> Task :moneyfan:commonizeNativeDistribution
+> Task :moneyfan:transformNativeMainDependenciesMetadata
+> Task :moneyfan:compileNativeMainKotlinMetadata NO-SOURCE
+> Task :moneyfan:metadataNativeMainProcessResources NO-SOURCE
+> Task :moneyfan:metadataNativeMainClasses UP-TO-DATE
+> Task :moneyfan:transformAppleMainDependenciesMetadata
+> Task :moneyfan:compileAppleMainKotlinMetadata NO-SOURCE
+> Task :moneyfan:compileKotlinMacosArm64 NO-SOURCE
+> Task :moneyfan:compileKotlinMacosX64 NO-SOURCE
+> Task :moneyfan:metadataAppleMainProcessResources NO-SOURCE
+> Task :moneyfan:metadataAppleMainClasses UP-TO-DATE
+> Task :moneyfan:transformMacosMainDependenciesMetadata
+> Task :moneyfan:compileMacosMainKotlinMetadata NO-SOURCE
+> Task :moneyfan:compileKotlinWasmJs NO-SOURCE
+> Task :moneyfan:wasmJsProcessResources NO-SOURCE
+> Task :moneyfan:wasmJsMainClasses UP-TO-DATE
+> Task :moneyfan:compileProductionExecutableKotlinWasmJs NO-SOURCE
+> Task :moneyfan:compileProductionExecutableKotlinWasmJsOptimize SKIPPED
+> Task :moneyfan:wasmJsProductionExecutableCompileSync NO-SOURCE
+> Task :moneyfan:macosArm64ProcessResources NO-SOURCE
+> Task :moneyfan:macosArm64MainKlibrary UP-TO-DATE
+> Task :moneyfan:compileTestKotlinMacosArm64 NO-SOURCE
+> Task :moneyfan:macosX64ProcessResources NO-SOURCE
+> Task :moneyfan:macosX64MainKlibrary UP-TO-DATE
+> Task :moneyfan:compileTestKotlinMacosX64 NO-SOURCE
+> Task :moneyfan:compileKotlinJvm NO-SOURCE
+> Task :moneyfan:compileJvmMainJava NO-SOURCE
+> Task :moneyfan:jvmProcessResources NO-SOURCE
+> Task :moneyfan:processJvmMainResources SKIPPED
+> Task :moneyfan:jvmMainClasses UP-TO-DATE
+> Task :moneyfan:jvmJar
+> Task :moneyfan:metadataMacosMainProcessResources NO-SOURCE
+> Task :moneyfan:metadataMacosMainClasses UP-TO-DATE
+> Task :moneyfan:macosArm64MetadataElements
+> Task :moneyfan:macosX64MetadataElements
+> Task :moneyfan:wasmJsBrowserProductionWebpack SKIPPED
+> Task :moneyfan:wasmJsBrowserDistribution NO-SOURCE
+> Task :moneyfan:wasmJsJar
+> Task :moneyfan:assemble
+> Task :moneyfan:compileTestKotlinJvm NO-SOURCE
+> Task :moneyfan:compileJvmTestJava NO-SOURCE
+> Task :moneyfan:jvmTestProcessResources NO-SOURCE
+> Task :moneyfan:processJvmTestResources SKIPPED
+> Task :moneyfan:jvmTestClasses UP-TO-DATE
+> Task :moneyfan:jvmTest NO-SOURCE
+> Task :moneyfan:linkDebugTestMacosArm64 NO-SOURCE
+> Task :moneyfan:macosArm64Test SKIPPED
+> Task :moneyfan:linkDebugTestMacosX64 NO-SOURCE
+> Task :moneyfan:macosX64Test SKIPPED
+> Task :moneyfan:compileTestKotlinWasmJs NO-SOURCE
+> Task :moneyfan:kotlinNodeJsSetup UP-TO-DATE
+> Task :moneyfan:wasmJsTestProcessResources NO-SOURCE
+> Task :moneyfan:wasmJsTestClasses UP-TO-DATE
+> Task :moneyfan:compileTestDevelopmentExecutableKotlinWasmJs NO-SOURCE
+> Task :moneyfan:wasmJsTestTestDevelopmentExecutableCompileSync NO-SOURCE
+> Task :moneyfan:wasmJsBrowserTest SKIPPED
+> Task :moneyfan:wasmJsTest NO-SOURCE
+> Task :moneyfan:allTests NO-SOURCE
+> Task :moneyfan:check UP-TO-DATE
+> Task :moneyfan:build
+> Task :nexus:generateProjectStructureMetadata
+> Task :nexus:allMetadataJar
+> Task :nexus:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :nexus:jvmProcessResources NO-SOURCE
+> Task :nexus:processJvmMainResources SKIPPED
+> Task :nexus:jvmTestProcessResources NO-SOURCE
+> Task :nexus:processJvmTestResources SKIPPED
+> Task :rtsgame:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :Trikeshed:transformCommonMainDependenciesMetadata
+> Task :Trikeshed:generateProjectStructureMetadata
+> Task :Trikeshed:metadataCommonMainProcessResources
+> Task :Trikeshed:macosArm64MetadataElements
+> Task :Trikeshed:exportRootPublicationCoordinatesForMetadataApiElements
+> Task :rtsgame:generateProjectStructureMetadata
+> Task :rtsgame:metadataCommonMainProcessResources NO-SOURCE
+
+> Task :Trikeshed:compileCommonMainKotlinMetadata FAILED
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:214)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:159)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:111)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+
+> Task :Trikeshed:compileKotlinJvm
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:214)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:159)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:111)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+
+> Task :nexus:compileKotlinJvm FAILED
+
+> Task :Trikeshed:compileKotlinMacosArm64 FAILED
+
+> Task :rtsgame:wasmJsProcessResources NO-SOURCE
+> Task :rtsgame:macosArm64ProcessResources NO-SOURCE
+> Task :rtsgame:jvmProcessResources NO-SOURCE
+> Task :rtsgame:processJvmMainResources SKIPPED
+> Task :rtsgame:macosArm64MetadataElements
+> Task :rtsgame:jvmTestProcessResources NO-SOURCE
+> Task :rtsgame:processJvmTestResources SKIPPED
+> Task :rtsgame:kotlinNodeJsSetup UP-TO-DATE
+> Task :rtsgame:wasmJsTestProcessResources NO-SOURCE
+> Task :spacegraph:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :spacegraph:transformCommonMainDependenciesMetadata
+> Task :spacegraph:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :spacegraph:generateProjectStructureMetadata
+> Task :spacegraph:metadataCommonMainProcessResources NO-SOURCE
+> Task :spacegraph:metadataCommonMainClasses UP-TO-DATE
+> Task :spacegraph:allMetadataJar
+> Task :spacegraph:compileKotlinMacosArm64 NO-SOURCE
+> Task :spacegraph:compileKotlinWasmJs NO-SOURCE
+> Task :spacegraph:wasmJsProcessResources NO-SOURCE
+> Task :spacegraph:wasmJsMainClasses UP-TO-DATE
+> Task :spacegraph:compileProductionExecutableKotlinWasmJs NO-SOURCE
+> Task :spacegraph:compileProductionExecutableKotlinWasmJsOptimize SKIPPED
+> Task :spacegraph:wasmJsProductionExecutableCompileSync NO-SOURCE
+> Task :spacegraph:macosArm64ProcessResources NO-SOURCE
+> Task :spacegraph:macosArm64MainKlibrary UP-TO-DATE
+> Task :spacegraph:compileTestKotlinMacosArm64 NO-SOURCE
+> Task :spacegraph:compileKotlinJvm NO-SOURCE
+> Task :spacegraph:compileJvmMainJava NO-SOURCE
+> Task :spacegraph:jvmProcessResources NO-SOURCE
+> Task :spacegraph:processJvmMainResources SKIPPED
+> Task :spacegraph:jvmMainClasses UP-TO-DATE
+> Task :spacegraph:jvmJar
+> Task :spacegraph:macosArm64MetadataElements
+> Task :spacegraph:wasmJsBrowserProductionWebpack SKIPPED
+> Task :spacegraph:wasmJsBrowserDistribution NO-SOURCE
+> Task :spacegraph:wasmJsJar
+> Task :spacegraph:assemble
+> Task :spacegraph:compileTestKotlinJvm NO-SOURCE
+> Task :spacegraph:compileJvmTestJava NO-SOURCE
+> Task :spacegraph:jvmTestProcessResources NO-SOURCE
+> Task :spacegraph:processJvmTestResources SKIPPED
+> Task :spacegraph:jvmTestClasses UP-TO-DATE
+> Task :spacegraph:jvmTest NO-SOURCE
+> Task :spacegraph:linkDebugTestMacosArm64 NO-SOURCE
+> Task :spacegraph:macosArm64Test SKIPPED
+> Task :spacegraph:compileTestKotlinWasmJs NO-SOURCE
+> Task :spacegraph:kotlinNodeJsSetup
+> Task :spacegraph:wasmJsTestProcessResources NO-SOURCE
+> Task :spacegraph:wasmJsTestClasses UP-TO-DATE
+> Task :spacegraph:compileTestDevelopmentExecutableKotlinWasmJs NO-SOURCE
+> Task :spacegraph:wasmJsTestTestDevelopmentExecutableCompileSync NO-SOURCE
+> Task :spacegraph:wasmJsBrowserTest SKIPPED
+> Task :spacegraph:wasmJsTest NO-SOURCE
+> Task :spacegraph:allTests NO-SOURCE
+> Task :spacegraph:check UP-TO-DATE
+> Task :spacegraph:build
+> Task :ta4k:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :ta4k:transformCommonMainDependenciesMetadata
+
+> Task :Trikeshed:compileKotlinWasmJs
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:214)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:159)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:111)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+
+> Task :ta4k:generateProjectStructureMetadata
+> Task :ta4k:metadataCommonMainProcessResources NO-SOURCE
+
+> Task :ta4k:compileKotlinMacosArm64 FAILED
+
+> Task :ta4k:wasmJsProcessResources NO-SOURCE
+> Task :ta4k:macosArm64ProcessResources NO-SOURCE
+> Task :ta4k:compileKotlinJvm FAILED
+> Task :ta4k:jvmProcessResources NO-SOURCE
+> Task :ta4k:processJvmMainResources SKIPPED
+> Task :ta4k:macosArm64MetadataElements
+> Task :ta4k:jvmTestProcessResources NO-SOURCE
+> Task :ta4k:processJvmTestResources SKIPPED
+> Task :ta4k:kotlinNodeJsSetup UP-TO-DATE
+> Task :ta4k:wasmJsTestProcessResources NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :ta4k-spacegraph-moneyfan-demo:transformCommonMainDependenciesMetadata
+> Task :ta4k-spacegraph-moneyfan-demo:compileCommonMainKotlinMetadata NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:generateProjectStructureMetadata
+> Task :ta4k-spacegraph-moneyfan-demo:metadataCommonMainProcessResources NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:metadataCommonMainClasses UP-TO-DATE
+> Task :ta4k-spacegraph-moneyfan-demo:allMetadataJar
+> Task :ta4k-spacegraph-moneyfan-demo:wasmJsProcessResources NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:compileKotlinJvm NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:compileJvmMainJava NO-SOURCE
+
+> Task :ta4k:compileCommonMainKotlinMetadata FAILED
+Failed to compile with Kotlin daemon: java.lang.RuntimeException: Could not connect to Kotlin compile daemon
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:214)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:159)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:111)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:76)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+
+> Task :ta4k-spacegraph-moneyfan-demo:jvmProcessResources NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:processJvmMainResources SKIPPED
+> Task :ta4k-spacegraph-moneyfan-demo:jvmMainClasses UP-TO-DATE
+> Task :ta4k-spacegraph-moneyfan-demo:jvmJar
+> Task :ta4k-spacegraph-moneyfan-demo:compileTestKotlinJvm NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:compileJvmTestJava NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:jvmTestProcessResources NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:processJvmTestResources SKIPPED
+> Task :ta4k-spacegraph-moneyfan-demo:jvmTestClasses UP-TO-DATE
+> Task :ta4k-spacegraph-moneyfan-demo:jvmTest NO-SOURCE
+> Task :ta4k-spacegraph-moneyfan-demo:kotlinNodeJsSetup UP-TO-DATE
+> Task :ta4k-spacegraph-moneyfan-demo:wasmJsTestProcessResources NO-SOURCE
+> Task :Trikeshed:wasmJsProcessResources
+> Task :Trikeshed:macosArm64ProcessResources
+> Task :Trikeshed:jvmTestProcessResources
+> Task :Trikeshed:processJvmTestResources SKIPPED
+> Task :Trikeshed:kotlinNodeJsSetup UP-TO-DATE
+> Task :Trikeshed:wasmJsTestProcessResources NO-SOURCE
+
+> Task :ta4k:compileKotlinWasmJs FAILED
+
+> Task :Trikeshed:compileKotlinJvm
+
+> Task :Trikeshed:compileKotlinJvm FAILED
+
+> Task :Trikeshed:compileKotlinWasmJs
+
+> Task :Trikeshed:compileKotlinWasmJs FAILED
+144 actionable tasks: 130 executed, 14 up-to-date

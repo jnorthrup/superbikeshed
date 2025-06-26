@@ -3,6 +3,7 @@
 package borg.trikeshed.lib
 
 // import kotlin.math.minOf
+import borg.trikeshed.reactor.currentTimeMillis
 import kotlin.properties.Delegates
 import kotlin.coroutines.coroutineContext
 
@@ -140,10 +141,10 @@ sealed interface Either<out L, out R> {
  * val coord = 42 j 37  // Join<Int, Int> aka Twin<Int>
  *
  * // Functional composition
- * val series = 10 j { i -> i * 2 }  // Indexed<Int>
+ * val series = 10 j { i: Int -> i * 2 }  // Indexed<Int>
  *
  * // Complex composition
- * val table = rowCount j { i -> columnCount j { j -> data[i][j] } }
+ * val table = rowCount j { i: Int -> columnCount j { j: Int -> data[i][j] } }
  * ```
  *
  * @param A The type of the first component
@@ -361,7 +362,7 @@ typealias Indexed2<A, B> = Indexed<Join<A, B>>
  * val p = "hello" j "world"
  *
  * // Create an Indexed<Int> series
- * val s = 100 j { i -> i * i }
+ * val s = 100 j { i: Int -> i * i }
  *
  * // Create a 3x3 identity matrix
  * val m = Shape(3, 3) j { (r, c) -> if (r == c) 1 else 0 }
@@ -390,7 +391,7 @@ inline infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  * val scaled = matrix α { it * 2.0f }
  * ```
  */
-inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> = a j { index -> transform(b(index)) }
+inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> = a j { index: Int -> transform(b(index)) }
 
 /**
  * ## ▶ - The Universal Materialization Operator
@@ -591,18 +592,18 @@ fun <T: Comparable<T>> Indexed<T>.commonPrefixWith(other: Indexed<T>): Indexed<T
 
 fun <T> Indexed<T>.drop(n: Int): Indexed<T> {
     if (n >= a) return emptyIndexed()
-    return (a - n) j { i -> this[n + i] }
+    return (a - n) j { i: Int -> this[n + i] }
 }
 
 fun <T> Indexed<T>.take(n: Int): Indexed<T> {
     if (n >= a) return this
-    return n j { i -> this[i] }
+    return n j { i: Int -> this[i] }
 }
 
 fun <T> Indexed<T>.isEmpty(): Boolean = this.a == 0
 
 fun <T> Indexed<T>.plus(other: Indexed<T>): Indexed<T> {
-    return (this.a + other.a) j { i ->
+    return (this.a + other.a) j { i: Int ->
         if (i < this.a) this[i] else other[i - this.a]
     }
 }

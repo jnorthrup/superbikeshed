@@ -1,5 +1,6 @@
 package borg.trikeshed.ljson
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -224,7 +225,7 @@ class KzranGzipReader(
             totalDecompressed += decompressed
         }
         
-        output.size j { i -> output[i] }
+        output.size j { i: Int -> output[i] }
     }
     
     /**

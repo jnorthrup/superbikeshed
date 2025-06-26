@@ -1,5 +1,6 @@
 package borg.trikeshed.common.collections.associative
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.common.collections.NavigableSet
 
 /**

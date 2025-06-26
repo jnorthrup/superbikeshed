@@ -1,5 +1,6 @@
 package borg.trikeshed.common.collections
 
+import borg.trikeshed.reactor.currentTimeMillis
 import kotlin.math.ln
 
 class StrictFibonacciHeap<T : Comparable<T>> {

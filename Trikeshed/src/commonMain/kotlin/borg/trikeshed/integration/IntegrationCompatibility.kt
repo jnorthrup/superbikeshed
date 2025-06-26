@@ -1,5 +1,6 @@
 package borg.trikeshed.integration
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.ipfs.*

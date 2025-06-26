@@ -1,5 +1,6 @@
 package borg.trikeshed.parse
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Indexed
 
@@ -24,7 +25,7 @@ value class Parser<T>(
                 } else {
                     val token = tokens[0]
                     if (token.type == type) {
-                        ParseResult(token, tokens.size - 1 j { i -> tokens[i + 1] })
+                        ParseResult(token, tokens.size - 1 j { i: Int -> tokens[i + 1] })
                     } else {
                         null
                     }
@@ -92,7 +93,7 @@ object BashParsers {
             } else {
                 val token = tokens[0]
                 if (token.type == TokenType.LITERAL) {
-                    ParseResult(token.literal, tokens.size - 1 j { i -> tokens[i + 1] })
+                    ParseResult(token.literal, tokens.size - 1 j { i: Int -> tokens[i + 1] })
                 } else {
                     null
                 }

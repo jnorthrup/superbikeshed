@@ -1,5 +1,6 @@
 package borg.trikeshed.net.quic
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.PlatformInetSocketAddress
@@ -110,7 +111,7 @@ class QuicStream(
             }
         }
         
-        return result.size j { i -> result[i] }
+        return result.size j { i: Int -> result[i] }
     }
 
     /**

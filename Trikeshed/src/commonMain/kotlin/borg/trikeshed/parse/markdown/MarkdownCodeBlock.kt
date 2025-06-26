@@ -1,5 +1,6 @@
 package borg.trikeshed.parse.markdown
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import kotlin.math.ceil
 
@@ -174,7 +175,7 @@ object LightningMarkdown {
 
                     val contentSlice =
                         if (rangeSize > 0) {
-                            rangeSize j { i -> markdownChars[startIndex + i] }
+                            rangeSize j { i: Int -> markdownChars[startIndex + i] }
                         } else {
                             emptyIndex<Char>()
                         }
@@ -257,7 +258,7 @@ fun createBitmapAsSeries(input: UByteArray): Indexed<UByte> {
     val inputSize = input.size
 
     // 2. Return a lazy Indexed view over the materialized array.
-    return inputSize j { i ->
+    return inputSize j { i: Int ->
         val ulongIndex = i / 16
         val bitPosition = (i % 16) * 4
 
@@ -301,4 +302,4 @@ data class MarkdownCodeBlockStats(
 )
 
 // Extension function for String to Indexed<Char>
-fun String.toIdx(): Indexed<Char> = length j { index -> this[index] }
+fun String.toIdx(): Indexed<Char> = length j { index: Int -> this[index] }

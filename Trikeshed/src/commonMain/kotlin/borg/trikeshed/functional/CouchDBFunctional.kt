@@ -1,8 +1,10 @@
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.functional
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.http.*
+import borg.trikeshed.reactor.currentTimeMillis
 import kotlin.jvm.JvmInline
 
 // === COUCHDB FUNCTIONAL TYPES ===
@@ -91,7 +93,7 @@ inline fun couchdb_connect(
     password: Indexed<Byte>
 ): Long {
     // Returns connection handle
-    return System.currentTimeMillis()
+    return currentTimeMillis()
 }
 
 inline fun couchdb_disconnect(handle: Long) {
@@ -119,7 +121,7 @@ inline fun couchdb_put_document(
     doc: CouchDBDoc
 ): CouchDBRevision? {
     // Returns new revision on success
-    return "2-${System.currentTimeMillis()}"
+    return "2-${currentTimeMillis()}"
 }
 
 inline fun couchdb_get_document(
@@ -205,11 +207,11 @@ inline fun couchdb_replicate(
     targetAuth: Indexed<Byte>?
 ): CouchDBReplicationState {
     return CouchDBReplicationState(
-        sessionId = "session-${System.currentTimeMillis()}",
+        sessionId = "session-${currentTimeMillis()}",
         lastSeq = "0",
         sourceLastSeq = "0",
         replicationIdVersion = 4,
-        startTime = System.currentTimeMillis(),
+        startTime = currentTimeMillis(),
         endTime = 0,
         docsRead = 0,
         docsWritten = 0,
@@ -432,7 +434,7 @@ inline fun couchdb_create_index(
     partitioned: Boolean
 ): String {
     // Returns index id
-    return "idx-${System.currentTimeMillis()}"
+    return "idx-${currentTimeMillis()}"
 }
 
 inline fun couchdb_get_indexes(
@@ -464,5 +466,5 @@ inline fun couchdb_decode_json(json: Indexed<Byte>): CouchDBDoc? {
 }
 
 inline fun couchdb_generate_uuid(handle: Long, count: Int): Indexed<CouchDBUuid> {
-    return count j { i: Int -> "uuid-$i-${System.currentTimeMillis()}" }
+    return count j { i: Int -> "uuid-$i-${currentTimeMillis()}" }
 }

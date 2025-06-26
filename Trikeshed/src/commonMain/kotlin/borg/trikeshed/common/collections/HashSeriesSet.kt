@@ -2,6 +2,7 @@
 
 package borg.trikeshed.common.collections
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Indexed
 
 typealias Bucket<T> = MutableList<T>
@@ -38,9 +39,17 @@ open class HashSeriesSet<T : Any> : SeriesSet<T> {
     companion object {
         class MutableHashSeriesSet<T : Any>(
             private val theSet: HashSeriesSet<T> = HashSeriesSet<T>(),
-        ) : MutableSeriesSet<T>, Set<T> by theSet {
+        ) : MutableSeriesSet<T> {
 
             override val size: Int get() = theSet._size
+            
+            override fun isEmpty(): Boolean = theSet.isEmpty()
+            
+            override fun contains(element: T): Boolean = theSet.contains(element)
+            
+            override fun containsAll(elements: Collection<T>): Boolean = theSet.containsAll(elements)
+            
+            override fun iterator(): MutableIterator<T> = theSet.iterator()
             var buckets: Array<Bucket<T>>
                 get() = theSet.buckets
                 set(value) {
@@ -120,7 +129,7 @@ interface MutableSeriesSet<T> : SeriesSet<T>, MutableSet<T>
 
 // Example usage
 fun main1() {
-    val testSet = HashSeriesSet.MutableHashSeriesSet<Int>()
+    val testSet = HashSeriesSet.Companion.MutableHashSeriesSet<Int>()
     testSet.add(10)
     testSet.add(20)
     testSet.add(30)

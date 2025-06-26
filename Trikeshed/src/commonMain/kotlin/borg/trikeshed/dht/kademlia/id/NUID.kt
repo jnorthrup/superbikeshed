@@ -1,5 +1,6 @@
 package borg.trikeshed.dht.kademlia.id
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import kotlin.random.Random
 
@@ -21,7 +22,7 @@ data class NUID(
      */
     fun distanceTo(other: NUID): NUID {
         val maxSize = maxOf(this.size, other.size)
-        return NUID(maxSize j { i ->
+        return NUID(maxSize j { i: Int ->
             val thisByte = if (i < this.size) this.bytes[i] else 0.toByte()
             val otherByte = if (i < other.size) other.bytes[i] else 0.toByte()
             (thisByte.toInt() xor otherByte.toInt()).toByte()
@@ -125,7 +126,7 @@ data class NUID(
             val hash = data.fold(0L) { acc, byte -> 
                 ((acc shl 8) + (byte.toInt() and 0xFF)) and 0xFFFFFFFFL 
             }
-            return NUID(32 j { i -> 
+            return NUID(32 j { i: Int -> 
                 ((hash shr (i * 8)) and 0xFF).toByte()
             })
         }
@@ -141,14 +142,14 @@ data class NUID(
                 it.toInt(16).toByte() 
             }
             
-            return NUID(bytes.size j { i -> bytes[i] })
+            return NUID(bytes.size j { i: Int -> bytes[i] })
         }
 
         /**
          * Create NUID from raw byte array
          */
         fun fromBytes(bytes: ByteArray): NUID {
-            return NUID(bytes.size j { i -> bytes[i] })
+            return NUID(bytes.size j { i: Int -> bytes[i] })
         }
 
         /**

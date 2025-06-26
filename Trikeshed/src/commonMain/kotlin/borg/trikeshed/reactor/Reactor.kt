@@ -1,5 +1,6 @@
 package borg.trikeshed.reactor
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 
 // Platform-agnostic time function
@@ -76,7 +77,7 @@ open class Reactor<T>(
      * Register multiple event handlers
      */
     fun on(types: Indexed<EventType>, handler: EventHandler<T>) {
-        types.a j { i -> on(types.b(i), handler) }
+        types.a j { i: Int -> on(types.b(i), handler) }
     }
     
     /**

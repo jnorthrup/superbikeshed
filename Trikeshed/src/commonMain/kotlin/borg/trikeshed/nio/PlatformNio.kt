@@ -1,5 +1,6 @@
 package borg.trikeshed.nio
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 
 /**

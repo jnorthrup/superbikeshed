@@ -1,5 +1,6 @@
 package borg.trikeshed.dht.kademlia.routing
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.id.NUID
 import borg.trikeshed.dht.kademlia.events.NodeInfo
@@ -84,7 +85,7 @@ class KBucket(
      * Get all nodes in the bucket
      */
     fun getNodes(): Indexed<NodeInfo> {
-        return nodes.size j { i -> nodes[i] }
+        return nodes.size j { i: Int -> nodes[i] }
     }
     
     /**
@@ -95,7 +96,7 @@ class KBucket(
             node.nodeId.distanceTo(target).toHex()
         }
         val resultCount = minOf(count, sorted.size)
-        return resultCount j { i -> sorted[i] }
+        return resultCount j { i: Int -> sorted[i] }
     }
     
     /**

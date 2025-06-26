@@ -1,5 +1,6 @@
 package borg.trikeshed.services
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import kotlin.coroutines.CoroutineContext
@@ -68,7 +69,7 @@ object RequestFactoryRegistry {
      */
     fun getServices(): Indexed<ServiceRegistry> {
         val services = serviceLocators.toList()
-        return services.size j { i -> services[i].first j services[i].second }
+        return services.size j { i: Int -> services[i].first j services[i].second }
     }
     
     /**
@@ -76,7 +77,7 @@ object RequestFactoryRegistry {
      */
     fun getValidators(): Indexed<MethodValidator> {
         val validators = methodValidators.toList()
-        return validators.size j { i -> validators[i].first j validators[i].second }
+        return validators.size j { i: Int -> validators[i].first j validators[i].second }
     }
 }
 

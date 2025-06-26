@@ -1,5 +1,6 @@
 package borg.trikeshed.net.quic
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.getCurrentTimeMillis
 
@@ -23,12 +24,12 @@ object QuicPacketBuilder {
                 destinationConnectionId = ConnectionId(
                     bytes = byteArrayOf(
                         0x4D, 0x63, 0x44, 0x6F, 0x6E, 0x61, 0x6C, 0x64  // "McDonald"
-                    ).let { it.size j { i -> it[i] } }
+                    ).let { it.size j { i: Int -> it[i] } }
                 ),
                 sourceConnectionId = ConnectionId(
                     bytes = byteArrayOf(
                         0x54, 0x72, 0x69, 0x6B, 0x65, 0x53, 0x68, 0x64  // "TrikeSHd"
-                    ).let { it.size j { i -> it[i] } }
+                    ).let { it.size j { i: Int -> it[i] } }
                 ),
                 packetNumber = getCurrentTimeMillis() and 0xFFFFFF
             ),

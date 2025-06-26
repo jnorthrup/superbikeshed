@@ -2,6 +2,7 @@
 
 package borg.trikeshed.crypto.hash
 
+import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 
@@ -51,10 +52,10 @@ object MD4Hasher {
 
             // SIMD-friendly MD4 round functions
             val (newA, newB, newC, newD) = processMD4Block(blockData, a, b, c, d)
-            a = a + newA
-            b = b + newB
-            c = c + newC
-            d = d + newD
+            a = (a.toLong() + newA.toLong()).toInt()
+            b = (b.toLong() + newB.toLong()).toInt()
+            c = (c.toLong() + newC.toLong()).toInt()
+            d = (d.toLong() + newD.toLong()).toInt()
         }
 
         // Convert to little-endian bytes (SIMD-friendly)
