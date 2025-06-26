@@ -1,0 +1,12 @@
+commit 2bd02cef518e49156968100c5bddd7f508aca335
+Author: Jim Northrup <jnorthrup@users.noreply.github.com>
+Date:   Tue Jun 10 10:29:18 2025 -0400
+
+    Add comprehensive CCEK context keys and typealiases linkage documentation
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
+    
+    Co-Authored-By: Claude <noreply@anthropic.com>
+
+ ccek_typealiases_linkage.md | 267 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 267 insertions(+)

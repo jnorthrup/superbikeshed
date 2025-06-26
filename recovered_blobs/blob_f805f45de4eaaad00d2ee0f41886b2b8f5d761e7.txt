@@ -1,0 +1,9 @@
+#!/bin/bash
+# Run the QUIC server
+
+echo "Starting TrikeShed QUIC Server..."
+echo "Press Ctrl+C to stop"
+echo
+
+cd "$(dirname "$0")"
+kotlin src/QuicServer.kt

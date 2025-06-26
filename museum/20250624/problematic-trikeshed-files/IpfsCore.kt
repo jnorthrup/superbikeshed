@@ -163,16 +163,34 @@ data class KBucket(
     val peers: MutableList<PeerInfo> = mutableListOf(),
     val maxSize: Int = 20
 ) {
+    // Destruction notification callbacks
+    private val destructionListeners = mutableListOf<(PeerInfo, String) -> Unit>()
+    
+    fun addDestructionListener(listener: (PeerInfo, String) -> Unit) {
+        destructionListeners.add(listener)
+    }
+    
+    private fun notifyDestruction(peer: PeerInfo, reason: String) {
+        destructionListeners.forEach { it(peer, reason) }
+        println("⚠️  KBUCKET DESTRUCTION: Peer ${peer.id} destroyed - $reason")
+    }
+    
     fun add(peer: PeerInfo): Boolean {
         if (peers.size < maxSize) {
             peers.add(peer)
             return true
         }
+        // Bucket full - peer is silently rejected
+        notifyDestruction(peer, "bucket full - rejected")
         return false
     }
     
     fun remove(peerId: PeerId) {
+        val peerToRemove = peers.find { it.id == peerId }
         peers.removeAll { it.id == peerId }
+        if (peerToRemove != null) {
+            notifyDestruction(peerToRemove, "explicit removal")
+        }
     }
     
     fun contains(peerId: PeerId): Boolean = peers.any { it.id == peerId }
@@ -187,10 +205,30 @@ class RoutingTable(
 ) {
     private val buckets = Array(256) { KBucket(maxSize = bucketSize) }
     
+    // Destruction notification callbacks
+    private val destructionListeners = mutableListOf<(PeerInfo, String) -> Unit>()
+    
+    init {
+        // Add destruction listeners to all buckets
+        buckets.forEach { bucket ->
+            bucket.addDestructionListener { peer, reason ->
+                destructionListeners.forEach { it(peer, reason) }
+                println("⚠️  ROUTING TABLE DESTRUCTION: Peer ${peer.id} destroyed - $reason")
+            }
+        }
+    }
+    
+    fun addDestructionListener(listener: (PeerInfo, String) -> Unit) {
+        destructionListeners.add(listener)
+    }
+    
     fun addPeer(peer: PeerInfo) {
         if (peer.id == localId) return
         val bucketIndex = getBucketIndex(peer.id)
-        buckets[bucketIndex].add(peer)
+        val added = buckets[bucketIndex].add(peer)
+        if (!added) {
+            println("🔀 ROUTING TABLE: Peer ${peer.id} rejected from bucket $bucketIndex (full)")
+        }
     }
     
     fun findClosestPeers(target: PeerId, count: Int = 20): Indexed<PeerInfo> {

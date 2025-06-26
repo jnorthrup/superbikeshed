@@ -7,6 +7,8 @@ import borg.trikeshed.dht.kademlia.events.NodeInfo
 /**
  * Kademlia routing table with k-buckets
  * Organizes peers by XOR distance from local node
+ * 
+ * SAFEGUARD: All destructive operations now emit notifications
  */
 class RoutingTable(
     private val localNodeId: NUID,
@@ -14,9 +16,24 @@ class RoutingTable(
 ) {
     private val buckets = mutableListOf<KBucket>()
     
+    // Destruction notification callbacks
+    private val destructionListeners = mutableListOf<(NodeInfo, String) -> Unit>()
+    
     init {
         // Initialize with single bucket covering entire keyspace
         buckets.add(KBucket(k, 0..256))
+        
+        // Add destruction listeners to all buckets
+        buckets.forEach { bucket ->
+            bucket.addDestructionListener { node, reason ->
+                destructionListeners.forEach { it(node, reason) }
+                println("⚠️  ROUTING TABLE DESTRUCTION: Node ${node.nodeId} destroyed - $reason")
+            }
+        }
+    }
+    
+    fun addDestructionListener(listener: (NodeInfo, String) -> Unit) {
+        destructionListeners.add(listener)
     }
     
     /**
@@ -32,6 +49,7 @@ class RoutingTable(
         
         // Split bucket if it's full and contains our local node ID range
         if (!added && bucket.isFull() && shouldSplitBucket(bucketIndex)) {
+            println("🔀 ROUTING TABLE: Splitting bucket $bucketIndex due to overflow")
             splitBucket(bucketIndex)
             return addNode(node) // Retry after split
         }
@@ -44,7 +62,16 @@ class RoutingTable(
      */
     fun removeNode(nodeId: NUID): Boolean {
         val bucketIndex = getBucketIndex(nodeId)
-        return buckets[bucketIndex].removeNode(nodeId)
+        val bucket = buckets[bucketIndex]
+        val nodeToRemove = bucket.getNodes().play.find { it.nodeId == nodeId }
+        
+        val removed = bucket.removeNode(nodeId)
+        
+        if (removed && nodeToRemove != null) {
+            println("🗑️  ROUTING TABLE REMOVAL: Node ${nodeToRemove.nodeId} removed from bucket $bucketIndex")
+        }
+        
+        return removed
     }
     
     /**
@@ -132,11 +159,26 @@ class RoutingTable(
         val oldBucket = buckets[bucketIndex]
         val midpoint = (oldBucket.distanceRange.first + oldBucket.distanceRange.last) / 2
         
+        println("🔀 ROUTING TABLE SPLIT: Bucket $bucketIndex splitting at midpoint $midpoint")
+        println("  - Old range: ${oldBucket.distanceRange}")
+        
         val (lowerBucket, upperBucket) = oldBucket.split(midpoint)
+        
+        // Add destruction listeners to new buckets
+        lowerBucket.addDestructionListener { node, reason ->
+            destructionListeners.forEach { it(node, reason) }
+            println("⚠️  LOWER BUCKET DESTRUCTION: Node ${node.nodeId} destroyed - $reason")
+        }
+        upperBucket.addDestructionListener { node, reason ->
+            destructionListeners.forEach { it(node, reason) }
+            println("⚠️  UPPER BUCKET DESTRUCTION: Node ${node.nodeId} destroyed - $reason")
+        }
         
         // Replace old bucket with split buckets
         buckets.removeAt(bucketIndex)
         buckets.add(bucketIndex, lowerBucket)
         buckets.add(bucketIndex + 1, upperBucket)
+        
+        println("  - New buckets: ${lowerBucket.distanceRange} and ${upperBucket.distanceRange}")
     }
 }
