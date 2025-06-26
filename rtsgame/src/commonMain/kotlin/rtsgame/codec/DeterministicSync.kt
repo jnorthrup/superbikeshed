@@ -1,18 +1,8 @@
 package rtsgame.codec
 
 import borg.trikeshed.lib.*
-import kotlinx.serialization.*
 import kotlin.math.*
 
-/**
- * Deterministic synchronization primitives for RTS
- * Ensures bit-perfect compatibility with JS simulation
- */
-
-/**
- * Fixed-point arithmetic for deterministic cross-platform math
- * JS uses double precision floats, we must match exactly
- */
 @JvmInline
 value class FixedPoint(val raw: Long) {
     companion object {
@@ -30,11 +20,7 @@ value class FixedPoint(val raw: Long) {
     operator fun div(other: FixedPoint): FixedPoint = FixedPoint((raw * PRECISION) / other.raw)
 }
 
-/**
- * Deterministic random number generator matching JS Math.random() behavior
- */
 class DeterministicRandom(private var seed: Long) {
-    // Linear congruential generator matching JS behavior
     fun nextDouble(): Double {
         seed = (seed * 1664525L + 1013904223L) and 0xFFFFFFFFL
         return (seed and 0x7FFFFF).toDouble() / 0x800000
@@ -46,10 +32,6 @@ class DeterministicRandom(private var seed: Long) {
     fun restoreState(state: Long) { seed = state }
 }
 
-/**
- * Frame-locked execution context
- */
-@Serializable
 data class FrameContext(
     val frameNumber: Long,
     val deltaTime: Double,
@@ -57,18 +39,18 @@ data class FrameContext(
     val inputHash: Int
 )
 
-/**
- * Deterministic collection iteration
- * JS iterates in insertion order, we must match
- */
+@JvmInline
+value class Indexed<T>(private val series: Join<Int, (Int) -> T>) {
+    val size: Int get() = series.a
+    operator fun get(i: Int): T = series.b(i)
+}
+
 class DeterministicMap<K, V> {
     private val map = LinkedHashMap<K, V>()
     private val insertionOrder = mutableListOf<K>()
     
     operator fun set(key: K, value: V) {
-        if (key !in map) {
-            insertionOrder.add(key)
-        }
+        if (key !in map) insertionOrder.add(key)
         map[key] = value
     }
     
@@ -79,27 +61,22 @@ class DeterministicMap<K, V> {
         insertionOrder.remove(key)
     }
     
-    fun forEach(action: (K, V) -> GameUnit) {
-        // Iterate in insertion order to match JS
+    fun forEach(action: (K, V) -> Unit) {
         for (key in insertionOrder) {
-            map[key]?.let { value ->
-                action(key, value)
-            }
+            map[key]?.let { value -> action(key, value) }
         }
     }
     
-    fun toSeries(): Indexed<Pair<K, V>> {
-        val pairs = insertionOrder.mapNotNull { key ->
-            map[key]?.let { value -> key to value }
-        }
-        return pairs.size j { i: Int -> pairs[i] }
-    }
+    fun toIndexed(): Indexed<Pair<K, V>> = Indexed(Join(insertionOrder.size) { i -> insertionOrder[i] to map[insertionOrder[i]]!! })
 }
 
-/**
- * Synchronization checkpoint for validating determinism
- */
-@Serializable
+// Placeholder for missing types - these would need to be defined or imported
+data class TeamResourcesExtended(
+    val mass: Int,
+    val energy: Int,
+    val computronium: Int
+)
+
 data class SyncCheckpoint(
     val frameNumber: Long,
     val entityCount: Int,
@@ -108,24 +85,17 @@ data class SyncCheckpoint(
     val randomState: Long
 ) {
     companion object {
-        /**
-         * Calculate position checksum matching JS implementation
-         */
         fun calculatePositionChecksum(positions: Indexed<Pair<Double, Double>>): Int {
             var checksum = 0
-            for (i in 0 until positions.a) {
+            for (i in 0 until positions.size) {
                 val (x, y) = positions[i]
-                // Match JS number to int conversion
                 checksum = checksum xor (x * 1000).toInt()
                 checksum = checksum xor (y * 1000).toInt()
-                checksum = (checksum shl 1) or (checksum ushr 31) // Rotate left
+                checksum = (checksum shl 1) or (checksum ushr 31)
             }
             return checksum
         }
         
-        /**
-         * Calculate resource checksum
-         */
         fun calculateResourceChecksum(resources: Map<String, TeamResourcesExtended>): Int {
             var checksum = 0
             resources.forEach { (team, res) ->
@@ -139,33 +109,13 @@ data class SyncCheckpoint(
     }
 }
 
-/**
- * Replay frame for deterministic playback
- */
-@Serializable
-data class ReplayFrame(
-    val frameContext: FrameContext,
-    val requests: List<RTSRequest>,
-    val checkpoint: SyncCheckpoint
+data class SyncValidationResult(
+    val isValid: Boolean,
+    val errors: List<String>,
+    val frame: Long
 )
 
-/**
- * Full replay data structure
- */
-@Serializable
-data class ReplayData(
-    val version: String = "1.0",
-    val seed: Long,
-    val frames: List<ReplayFrame>,
-    val metadata: Map<String, String> = emptyMap()
-)
-
-/**
- * Sync validator for ensuring KMP/JS parity
- */
 object SyncValidator {
-    private const val POSITION_TOLERANCE = 0.0001
-    
     fun validateCheckpoints(kmp: SyncCheckpoint, reference: SyncCheckpoint): SyncValidationResult {
         val errors = mutableListOf<String>()
         
@@ -197,9 +147,15 @@ object SyncValidator {
     }
 }
 
-@Serializable
-data class SyncValidationResult(
-    val isValid: Boolean,
-    val errors: List<String>,
-    val frame: Long
+data class ReplayFrame(
+    val frameContext: FrameContext,
+    val requests: List<RTSRequest>,
+    val checkpoint: SyncCheckpoint
+)
+
+data class ReplayData(
+    val version: String = "1.0",
+    val seed: Long,
+    val frames: List<ReplayFrame>,
+    val metadata: Map<String, String> = emptyMap()
 )

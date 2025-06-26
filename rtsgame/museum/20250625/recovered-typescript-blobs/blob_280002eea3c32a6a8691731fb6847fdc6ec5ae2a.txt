@@ -1,0 +1,35 @@
+commit 0dde5965c9f5793689c20fd18027ac0c5fafa3ae
+Author: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date:   Sun Jun 8 02:22:34 2025 +0000
+
+    Further configure Kotlin/JS for trikeshed-core and maintain rtsgame integration
+    
+    This commit includes updates to the trikeshed-core build configuration
+    aimed at enabling a successful Kotlin/JS build, and maintains the
+    conceptual integration with rtsgame using placeholder JavaScript artifacts
+    due to persistent build environment issues.
+    
+    Key changes:
+    
+    1.  **trikeshed-core (Review/trikeshed-core):**
+        *   I added the Kotlin dev Maven repository (`https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev`)
+            to `build.gradle.kts` to assist with dependency resolution.
+        *   I verified and ensured Kotlin/JS plugin settings, including `moduleName = "trikeshedCore"`,
+            are correctly configured in `build.gradle.kts`.
+        *   My attempt to build `trikeshed-core` to produce actual JavaScript
+            artifacts continued to fail due to an unresolved Gradle wrapper issue
+            in the execution environment.
+    
+    2.  **rtsgame:**
+        *   This continues to use the placeholder `trikeshedCore.js` and `trikeshedCore.d.ts`
+            files located in `rtsgame/vendor/trikeshed-core/`.
+        *   The `package.json` and `tsconfig.json` configurations for importing
+            `trikeshed-core-js` remain as established in previous steps.
+    
+    While I could not achieve a fully verified Kotlin/JS build of trikeshed-core in the current environment, the project's build scripts are now
+    more robustly configured. The rtsgame integration remains at a conceptual
+    level, relying on the placeholder artifacts, but with the correct setup for
+    eventual use of actual generated code.
+
+ Review/trikeshed-core/build.gradle.kts | 3 +++
+ 1 file changed, 3 insertions(+)

@@ -489,6 +489,7 @@ val <A, B> Indexed2<A, B>.right: Indexed<B>
     get() = this.a j { i -> this.b(i).b }
 
 // === CZERO UTILITIES ===
+ 
 
 /**
  * CZero utilities for C-style zero/non-zero checks

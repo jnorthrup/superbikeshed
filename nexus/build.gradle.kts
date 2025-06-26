@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
-    id("com.google.devtools.ksp") version "2.1.21-2.0.2"
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
     `maven-publish`
     signing
 }
@@ -10,84 +10,58 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
-
     jvm {
-        testRuns["test"].executionTask.configure {
-            useJUnitPlatform()
-        }
+        // JVM only for now
     }
-
-    // Platform detection for native target
-    val hostOs = System.getProperty("os.name")
-    val hostArch = System.getProperty("os.arch")
-    val isMacOS = hostOs == "Mac OS X"
-    val isLinux = hostOs == "Linux"
-    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
-
-    when {
-        isMacOS && isArm64 -> macosArm64()
-        isMacOS -> macosX64()
-        isLinux && isArm64 -> linuxArm64()
-        isLinux -> linuxX64()
-    }
-
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-                implementation(project(":Trikeshed"))
+                implementation(kotlin("stdlib-common"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
             }
         }
-
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
-
         val jvmMain by getting {
+            kotlin.srcDir("src/standalone/kotlin")
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-            }
-        }
-
-        val jvmTest by getting {
-            dependencies {
-                implementation(kotlin("test-junit5"))
+                implementation(kotlin("stdlib-jdk8"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(kotlin("reflect"))
+                implementation(libs.kotlinx.serialization.json)
             }
         }
     }
 }
 
-// Configure KSP for all targets
-dependencies {
-    add("kspJvm", project(":ksp-processors"))
-    add("kspMacosArm64", project(":ksp-processors"))
-    // Add other targets as needed, e.g.:
-    // add("kspLinuxX64", project(":ksp-processors"))
-    // add("kspJs", project(":ksp-processors"))
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-
-// Disable linting to keep code terse
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
-            "-Xskip-metadata-version-check",
-            "-Xno-call-assertions",
-            "-Xno-param-assertions",
-            "-Xno-receiver-assertions",
-            "-Xno-source-roots-assertions",
+            "-Xskip-metadata-version-check"
         )
     }
+}
+
+tasks.register<JavaExec>("runStandaloneNexus") {
+    dependsOn("jvmJar")
+    group = "application"
+    description = "Run Standalone Nexus - Main()'s Pursuit of Happiness"
+    mainClass.set("borg.trikeshed.nexus.StandaloneNexusKt")
+    classpath = files(
+        tasks.named("jvmJar").get().outputs.files
+    ) + (configurations["jvmRuntimeClasspath"] ?: files())
+    jvmArgs = listOf(
+        "-Xmx1g",
+        "-XX:+UseG1GC"
+    )
 }
 
 publishing {
@@ -96,14 +70,11 @@ publishing {
             groupId = project.group.toString()
             artifactId = project.name
             version = project.version.toString()
-
             from(components["kotlin"])
-
             pom {
                 name.set("Nexus")
-                description.set("Nexus - Agentic intelligence framework with TrikeShed integration")
+                description.set("Nexus - Standalone JVM tool")
                 url.set("https://github.com/superbikeshed/superbikeshed")
-
                 licenses {
                     license {
                         name.set("MIT License")
@@ -125,13 +96,11 @@ publishing {
             }
         }
     }
-
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
@@ -142,43 +111,4 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
-}
-
-// IntelliJ Project Enumerator integration
-// The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
-// If additional dependencies are needed, add them here.
-
-tasks.register<JavaExec>("runNexus") {
-    dependsOn("jvmJar")
-    group = "application"
-    description = "Run Nexus - Main()'s Pursuit of Happiness"
-    mainClass.set("borg.trikeshed.nexus.MainKt")
-    classpath = files(
-        tasks
-            .named("jvmJar")
-            .get()
-            .outputs.files,
-    ) + (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
-    args = if (project.hasProperty("args")) project.property("args").toString().split(" ") else emptyList()
-}
-
-tasks.register<JavaExec>("realizeIntention") {
-    dependsOn("jvmJar")
-    group = "application"
-    description = "Realize Main()'s Intention - Universal Development Autonomy"
-    mainClass.set("borg.trikeshed.nexus.MainKt")
-    classpath = files(
-        tasks
-            .named("jvmJar")
-            .get()
-            .outputs.files,
-    ) + (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
-    
-    // Enable virtual machine optimizations for the pursuit of happiness
-    jvmArgs = listOf(
-        "--enable-native-access=ALL-UNNAMED",
-        "-Xmx2g",
-        "-XX:+UseG1GC",
-        "-XX:+UseStringDeduplication"
-    )
-}
+} 

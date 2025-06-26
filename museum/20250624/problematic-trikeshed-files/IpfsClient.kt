@@ -13,10 +13,23 @@ import borg.trikeshed.ksp.TrikeShedDsl
 class IpfsClient(
     private val localPeerId: PeerId,
     private val quicEngine: QuicEngine,
-    private val storage: IpfsStorage = IpfsStorage()
+    private val storage: IpfsStorage = IpfsStorage(),
+    private val config: IpfsConfig = IpfsConfig()
 ) {
     private val routingTable = RoutingTable(localPeerId)
     private var blockCache: Indexed<Join<CID, IpfsBlock>> = 0 j { CID(0, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, 0 j { 0.toByte() })) j IpfsBlock(CID(0, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, 0 j { 0.toByte() })), 0 j { 0.toByte() }) }
+    
+    // Destruction notification callbacks
+    private val destructionListeners = mutableListOf<(CID, String) -> Unit>()
+    
+    fun addDestructionListener(listener: (CID, String) -> Unit) {
+        destructionListeners.add(listener)
+    }
+    
+    private fun notifyDestruction(cid: CID, reason: String) {
+        destructionListeners.forEach { it(cid, reason) }
+        println("⚠️  IPFS DESTRUCTION: Block ${cid} destroyed - $reason")
+    }
     
     /**
      * Add content to IPFS
@@ -195,9 +208,14 @@ class IpfsClient(
     
     /**
      * Unpin content
+     * SAFEGUARD: Now emits destruction notification
      */
     suspend fun unpin(cid: CID): Boolean {
-        return storage.unpin(cid)
+        val removed = storage.unpin(cid)
+        if (removed) {
+            println("📌 IPFS UNPIN: Block ${cid} unpinned - now eligible for garbage collection")
+        }
+        return removed
     }
     
     /**
@@ -274,10 +292,23 @@ class IpfsClient(
 
 /**
  * Local IPFS block storage
+ * SAFEGUARD: All destructive operations now emit notifications
  */
 class IpfsStorage {
     private val blocks = mutableMapOf<String, IpfsBlock>()
     private val pins = mutableSetOf<CID>()
+    
+    // Destruction notification callbacks
+    private val destructionListeners = mutableListOf<(CID, String) -> Unit>()
+    
+    fun addDestructionListener(listener: (CID, String) -> Unit) {
+        destructionListeners.add(listener)
+    }
+    
+    private fun notifyDestruction(cid: CID, reason: String) {
+        destructionListeners.forEach { it(cid, reason) }
+        println("⚠️  IPFS STORAGE DESTRUCTION: Block ${cid} destroyed - $reason")
+    }
     
     fun putBlock(block: IpfsBlock) {
         blocks[block.cid.encode()] = block
@@ -291,17 +322,33 @@ class IpfsStorage {
         return blocks.containsKey(cid.encode())
     }
     
+    /**
+     * Delete a block from storage
+     * SAFEGUARD: Now emits destruction notification
+     */
     fun deleteBlock(cid: CID): Boolean {
-        if (pins.contains(cid)) return false
-        return blocks.remove(cid.encode()) != null
+        if (pins.contains(cid)) {
+            println("🚫 IPFS STORAGE: Cannot delete pinned block ${cid}")
+            return false
+        }
+        val removed = blocks.remove(cid.encode()) != null
+        if (removed) {
+            notifyDestruction(cid, "explicit deletion")
+        }
+        return removed
     }
     
     fun pin(cid: CID) {
         pins.add(cid)
+        println("📌 IPFS STORAGE: Block ${cid} pinned")
     }
     
     fun unpin(cid: CID): Boolean {
-        return pins.remove(cid)
+        val removed = pins.remove(cid)
+        if (removed) {
+            println("📌 IPFS STORAGE: Block ${cid} unpinned")
+        }
+        return removed
     }
     
     fun isPinned(cid: CID): Boolean {
@@ -317,15 +364,37 @@ class IpfsStorage {
         return cids.size j { cids[it] }
     }
     
+    /**
+     * Garbage collection - removes unpinned blocks
+     * SAFEGUARD: Now provides detailed destruction report
+     */
     fun garbageCollect(): Int {
-        var removed = 0
-        val unpinned = blocks.filter { !pins.contains(it.value.cid) }
+        println("🗑️  IPFS STORAGE GARBAGE COLLECTION: Starting...")
+        val blocksToRemove = mutableListOf<CID>()
+        val pinnedBlocks = mutableListOf<CID>()
         
-        for ((key, _) in unpinned) {
-            blocks.remove(key)
+        // First pass: identify blocks to remove
+        for ((key, block) in blocks) {
+            if (!pins.contains(block.cid)) {
+                blocksToRemove.add(block.cid)
+            } else {
+                pinnedBlocks.add(block.cid)
+            }
+        }
+        
+        println("  - Total blocks: ${blocks.size}")
+        println("  - Pinned blocks: ${pinnedBlocks.size}")
+        println("  - Blocks to destroy: ${blocksToRemove.size}")
+        
+        // Second pass: destroy unpinned blocks with notifications
+        var removed = 0
+        for (cid in blocksToRemove) {
+            blocks.remove(cid.encode())
+            notifyDestruction(cid, "garbage collection - unpinned")
             removed++
         }
         
+        println("🗑️  IPFS STORAGE GC COMPLETE: Destroyed $removed unpinned blocks")
         return removed
     }
 }
