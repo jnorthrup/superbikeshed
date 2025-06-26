@@ -75,10 +75,10 @@ inline fun crypto_random_bytes(
     length: Int
 ): CryptoResult {
     // Generate random bytes
-    for (i in 0 until length) {
-        if (i < output.a) {
-            output[i] = Random.nextInt(256).toByte()
-        }
+    val len = minOf(length, output.a)
+    val result = output.cow
+    for (i in 0 until len) {
+        result[i] = Random.nextInt(256).toByte()
     }
     return CryptoErrors.SUCCESS
 }
@@ -101,8 +101,9 @@ inline fun crypto_hash_sha256(
     if (output.a < 32) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified SHA-256 placeholder
+    val result = output.cow
     for (i in 0 until 32) {
-        output[i] = if (i < inputLen && i < input.a) 
+        result[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x5A).toByte()
         else 
             (i xor 0xA5).toByte()
@@ -118,8 +119,9 @@ inline fun crypto_hash_sha384(
     if (output.a < 48) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified SHA-384 placeholder
+    val result = output.cow
     for (i in 0 until 48) {
-        output[i] = if (i < inputLen && i < input.a) 
+        result[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x3C).toByte()
         else 
             (i xor 0xC3).toByte()
@@ -135,8 +137,9 @@ inline fun crypto_hash_sha512(
     if (output.a < 64) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified SHA-512 placeholder
+    val result = output.cow
     for (i in 0 until 64) {
-        output[i] = if (i < inputLen && i < input.a) 
+        result[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x7E).toByte()
         else 
             (i xor 0xE7).toByte()
@@ -154,10 +157,11 @@ inline fun crypto_hmac_sha256(
     if (output.a < 32) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified HMAC-SHA256 placeholder
+    val result = output.cow
     for (i in 0 until 32) {
         val k = if (i < keyLen && i < key.a) key[i].toInt() else 0
         val d = if (i < inputLen && i < input.a) input[i].toInt() else 0
-        output[i] = ((k xor d xor 0x36) and 0xFF).toByte()
+        result[i] = ((k xor d xor 0x36) and 0xFF).toByte()
     }
     return CryptoErrors.SUCCESS
 }
@@ -180,17 +184,19 @@ inline fun crypto_aead_aes128gcm_encrypt(
     if (ciphertext.a < plaintextLen) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified AES-128-GCM encryption placeholder
+    val ciphertextResult = ciphertext.cow
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertext[i] = ((plaintext[i].toInt() xor k xor n) and 0xFF).toByte()
+            ciphertextResult[i] = ((plaintext[i].toInt() xor k xor n) and 0xFF).toByte()
         }
     }
     
     // Generate tag
+    val tagResult = tag.cow
     for (i in 0 until 16) {
-        tag[i] = ((i xor 0xAE) and 0xFF).toByte()
+        tagResult[i] = ((i xor 0xAE) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS

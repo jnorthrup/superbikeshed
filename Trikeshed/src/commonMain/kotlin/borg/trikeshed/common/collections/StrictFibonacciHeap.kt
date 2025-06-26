@@ -18,13 +18,10 @@ class StrictFibonacciHeap<T : Comparable<T>> {
         var right: Node<T>? = null,
         var rank: Int = 0,
         var loss: Int = 0,
-        var isActive: Boolean = true,
+        var isActive: Boolean = true
     )
 
-    fun insert(
-        key: T,
-        value: Any? = null,
-    ): Node<T> {
+    fun insert(key: T, value: Any? = null): Node<T> {
         val newNode = Node(key, value)
         if (root == null) {
             root = newNode
@@ -75,10 +72,7 @@ class StrictFibonacciHeap<T : Comparable<T>> {
         return min.key
     }
 
-    fun decreaseKey(
-        node: Node<T>,
-        newKey: T,
-    ) {
+    fun decreaseKey(node: Node<T>, newKey: T) {
         require(newKey < node.key) { "New key must be smaller than current key" }
         node.key = newKey
         if (node.parent != null && node.key < node.parent!!.key) {
@@ -91,10 +85,7 @@ class StrictFibonacciHeap<T : Comparable<T>> {
         maintainInvariants()
     }
 
-    private fun link(
-        child: Node<T>,
-        parent: Node<T>,
-    ) {
+    private fun link(child: Node<T>, parent: Node<T>) {
         child.parent = parent
         if (parent.child == null) {
             parent.child = child
@@ -160,7 +151,7 @@ class StrictFibonacciHeap<T : Comparable<T>> {
         }
 
         for (node1 in roots) {
-            var node = node1
+            var node=node1
             var r = node.rank
             while (ranks[r] != null) {
                 var y = ranks[r]!!

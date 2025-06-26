@@ -1,6 +1,7 @@
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.http
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Indexed2
@@ -137,6 +138,9 @@ data class HttpResponse(
         }
     }
 }
+
+fun Map<String, String>.toHttpHeaders(): Indexed<Join<HttpHeaderName, HttpHeaderValue>> =
+    this.map { HttpHeaderName(it.key) j HttpHeaderValue(it.value) }.toIndexed()
 
 suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation needed")
 
