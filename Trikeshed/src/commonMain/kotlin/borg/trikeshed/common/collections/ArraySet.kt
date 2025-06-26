@@ -1,4 +1,6 @@
 package borg.trikeshed.common.collections
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 class ArraySet<T> : Set<T> {
     private var elements: Array<Any?> = arrayOfNulls(10)

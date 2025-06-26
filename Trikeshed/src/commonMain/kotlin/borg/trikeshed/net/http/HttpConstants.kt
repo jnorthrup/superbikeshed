@@ -1,4 +1,6 @@
 package borg.trikeshed.net.http
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * HTTP Status Code constants following RFC 7231

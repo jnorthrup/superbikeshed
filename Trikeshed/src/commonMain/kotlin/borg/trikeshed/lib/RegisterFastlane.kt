@@ -1,4 +1,6 @@
 package borg.trikeshed.lib
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * Register Fastlane - Zero-allocation primitive packing

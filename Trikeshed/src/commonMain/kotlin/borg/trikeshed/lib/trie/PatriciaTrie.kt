@@ -1,4 +1,6 @@
 package borg.trikeshed.lib.trie
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * Persistent, immutable Patricia (radix) trie with arraymap children and frozen sorted keys.

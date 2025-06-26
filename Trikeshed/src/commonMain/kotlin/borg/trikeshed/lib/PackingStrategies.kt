@@ -1,4 +1,6 @@
 package borg.trikeshed.lib
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 
 /**
  * TrikeShed Packing Strategies - Built on CoreTypes.kt foundation
