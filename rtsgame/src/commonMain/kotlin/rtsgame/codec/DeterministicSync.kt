@@ -39,12 +39,6 @@ data class FrameContext(
     val inputHash: Int
 )
 
-@JvmInline
-value class Indexed<T>(private val series: Join<Int, (Int) -> T>) {
-    val size: Int get() = series.a
-    operator fun get(i: Int): T = series.b(i)
-}
-
 class DeterministicMap<K, V> {
     private val map = LinkedHashMap<K, V>()
     private val insertionOrder = mutableListOf<K>()
@@ -67,7 +61,7 @@ class DeterministicMap<K, V> {
         }
     }
     
-    fun toIndexed(): Indexed<Pair<K, V>> = Indexed(Join(insertionOrder.size) { i -> insertionOrder[i] to map[insertionOrder[i]]!! })
+    fun toIndexed(): Indexed<Pair<K, V>> = insertionOrder.size j { i -> insertionOrder[i] to map[insertionOrder[i]]!! }
 }
 
 // Placeholder for missing types - these would need to be defined or imported

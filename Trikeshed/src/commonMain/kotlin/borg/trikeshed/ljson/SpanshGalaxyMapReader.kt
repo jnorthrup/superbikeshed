@@ -292,7 +292,7 @@ class SpanshGalaxyMapReader(
         readBytes: Long
     ): Indexed<Byte> {
         // Use platform-specific zlib decompression
-        val decompressed = withContext(Dispatchers.IO) {
+        val decompressed = withContext(Dispatchers.Default) {
             zlibDecompressWithDictionary(
                 compressedData,
                 syncPoint.windowData,
@@ -394,7 +394,7 @@ class LRUBlockCache(private val maxSizeBytes: Long) : BlockCache {
         
         // Remove old entries if needed
         while (currentSize + size > maxSizeBytes && cache.isNotEmpty()) {
-            val oldest = cache.entries.first()
+            val oldest = cache.iterator().next()
             cache.remove(oldest.key)
             currentSize -= oldest.value.a
         }

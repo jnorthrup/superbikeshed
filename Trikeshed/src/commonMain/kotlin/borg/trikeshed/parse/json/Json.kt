@@ -93,7 +93,7 @@ object Json {
 // JSON extension functions
 fun String.parseJson(): Indexed<UByte> = Json.parse(this)
 
-fun Any.toJsonString(): String = Json.stringify(this)
+fun Any.toJson(): String = Json.stringify(this)
 
 fun String.reifyJson(): Any? = Json.reify(this)
 

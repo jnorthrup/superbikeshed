@@ -13,6 +13,7 @@ import borg.trikeshed.dht.gossip.GossipService
 import borg.trikeshed.dht.agent.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
+import borg.trikeshed.integration.EventType
 import kotlinx.coroutines.*
 
 /**
@@ -61,24 +62,28 @@ class DHTQuicIntegration(
             
             // Initialize QUIC server
             quicServer = QuicServer(quicEngine, quicPort)
-            quicServer.onConnection { connection ->
-                handleNewQuicConnection(connection)
-            }
+            quicServer.onConnection(object : ConnectionHandler {
+                override suspend fun onConnect(connection: QuicConnection) {
+                    handleNewQuicConnection(connection)
+                }
+                
+                override suspend fun onDisconnect(connectionId: ConnectionId) {
+                    // Handle disconnect if needed
+                }
+            })
             
             // Initialize gossip service
             gossipService = GossipService(
                 localNodeId = localNodeId,
                 subnetManager = subnetManager,
-                sendToNode = { nodeId, message ->
+                sendToNode = { nodeId: NUID, message: GossipMessage ->
                     sendGossipToPeer(nodeId, message)
                 }
             )
             
             // Initialize reactor
-            dhtReactor = Reactor("dht-reactor") { event ->
-                handleDHTEvent(event)
-            }
-            network.addReactor(dhtReactor)
+            dhtReactor = Reactor("dht-reactor")
+            network.addReactor("dht-reactor", dhtReactor)
             
             // Start QUIC server
             GlobalScope.launch { quicServer.start() }
@@ -152,7 +157,7 @@ class DHTQuicIntegration(
             val event = codec.decode(messageData)
             
             // Process through reactor
-            dhtReactor.receive(event)
+            dhtReactor.emit("kademlia" as EventType, event)
             
         } catch (e: Exception) {
             println("Error handling QUIC stream: ${e.message}")
@@ -164,7 +169,8 @@ class DHTQuicIntegration(
     /**
      * Handle DHT event through reactor pattern
      */
-    private suspend fun handleDHTEvent(event: KademliaEvent) {
+    private suspend fun handleDHTEvent(event: Any) {
+        if (event !is KademliaEvent) return
         when (event) {
             is PingEvent -> handlePing(event)
             is PongEvent -> handlePong(event)

@@ -179,8 +179,8 @@ object HttpUtils {
         }
     }
     
-    fun buildHeaderString(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): String {
-        return (0 until headers.a).joinToString("\r\n") { i ->
+    fun buildHeader(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): String {
+        return (0 until headers.a).joinToString("\r\n") { i: Int ->
             val join = headers.b(i)
             "${join.a.value}: ${join.b.value}"
         }

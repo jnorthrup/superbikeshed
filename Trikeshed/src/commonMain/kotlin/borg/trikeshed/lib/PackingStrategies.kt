@@ -268,7 +268,7 @@ object Packer {
                 val aLong = a.toLong()
                 val bLong = b.toLong()
                 // Check if we can pack them into 32 bits each
-                aLong >= 0 && aLong <= 0xFFFFFFFFL && 
+                aLong >= 0 && aLong <= 0xFFFFFFFFL &&
                 bLong >= 0 && bLong <= 0xFFFFFFFFL
             }
             a is Long && b is Long -> {
@@ -307,18 +307,10 @@ object Packer {
     ): Boolean {
         // Range offset works when we have arrays/lists with values in a known range
         return when {
-            a is Array<*> && b is Long -> {
-                isArray(a) && (a.all { it is Int } || a.all { it is Long } || a.all { it is Short })
-            }
-            a is List<*> && b is Long -> {
-                a.isNotEmpty() && (a.first() is Int || a.first() is Long || a.first() is Short)
-            }
-            a is Long && b is Array<*> -> {
-                isArray(b) && (b.all { it is Int } || b.all { it is Long } || b.all { it is Short })
-            }
-            a is Long && b is List<*> -> {
-                b.isNotEmpty() && (b.first() is Int || b.first() is Long || b.first() is Short)
-            }
+            a is Array<*> && b is Long -> a.isNotEmpty() && (a.all { it is Int } || a.all { it is Long } || a.all { it is Short })
+            a is List<*> && b is Long -> a.isNotEmpty() && (a.first() is Int || a.first() is Long || a.first() is Short)
+            a is Long && b is Array<*> -> b.isNotEmpty() && (b.all { it is Int } || b.all { it is Long } || b.all { it is Short })
+            a is Long && b is List<*> -> b.isNotEmpty() && (b.first() is Int || b.first() is Long || b.first() is Short)
             else -> false
         }
     }
@@ -329,12 +321,8 @@ object Packer {
     ): Boolean {
         // Relative increment works when we have sequences with small differences
         return when {
-            a is Array<*> && b is Long -> {
-                isArray(a) && a.all { it is Int } && a.size > 1 && hasSmallIncrements(a as Array<Int>)
-            }
-            a is List<*> && b is Long -> {
-                a.isNotEmpty() && a.all { it is Int } && hasSmallIncrements(a as List<Int>)
-            }
+            a is Array<*> && b is Long -> a.size > 1 && a.all { it is Int } && hasSmallIncrements(a as Array<Int>)
+            a is List<*> && b is Long -> a.isNotEmpty() && a.all { it is Int } && hasSmallIncrements(a as List<Int>)
             else -> false
         }
     }

@@ -58,7 +58,7 @@ Main()'s original intention has been **fully materialized** through the followin
 ```kotlin
 🏗️ Foundation Patterns Operational
 ├── Join<A,B> universal composition
-├── AgentSeries<T> indexed operations
+├── Indexed<T> indexed operations
 ├── Database cursor manipulation
 ├── Fluent DSL construction
 └── Type-safe realm separation

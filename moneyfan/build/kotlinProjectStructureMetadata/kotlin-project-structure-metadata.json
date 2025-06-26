@@ -18,18 +18,6 @@
       {
         "name": "macosArm64ApiElements",
         "sourceSet": [
-          "macosMain",
-          "appleMain",
-          "nativeMain",
-          "commonMain"
-        ]
-      },
-      {
-        "name": "macosX64ApiElements",
-        "sourceSet": [
-          "macosMain",
-          "appleMain",
-          "nativeMain",
           "commonMain"
         ]
       },
@@ -48,21 +36,6 @@
     ],
     "sourceSets": [
       {
-        "name": "appleMain",
-        "dependsOn": [
-          "nativeMain"
-        ],
-        "moduleDependency": [
-          "org.jetbrains.kotlin:kotlin-stdlib-common",
-          "org.jetbrains.kotlinx:kotlinx-datetime",
-          "org.jetbrains.kotlinx:kotlinx-coroutines-core",
-          "org.jetbrains.kotlinx:kotlinx-serialization-core"
-        ],
-        "sourceSetCInteropMetadataDirectory": "appleMain-cinterop",
-        "binaryLayout": "klib",
-        "hostSpecific": "true"
-      },
-      {
         "name": "commonMain",
         "dependsOn": [],
         "moduleDependency": [
@@ -70,39 +43,10 @@
           "org.jetbrains.kotlin:kotlin-stdlib-common",
           "org.jetbrains.kotlinx:kotlinx-datetime",
           "org.jetbrains.kotlinx:kotlinx-coroutines-core",
-          "org.jetbrains.kotlinx:kotlinx-serialization-core"
+          "org.jetbrains.kotlinx:kotlinx-serialization-core",
+          "borg.trikeshed:Trikeshed"
         ],
         "binaryLayout": "klib"
-      },
-      {
-        "name": "macosMain",
-        "dependsOn": [
-          "appleMain"
-        ],
-        "moduleDependency": [
-          "org.jetbrains.kotlin:kotlin-stdlib-common",
-          "org.jetbrains.kotlinx:kotlinx-datetime",
-          "org.jetbrains.kotlinx:kotlinx-coroutines-core",
-          "org.jetbrains.kotlinx:kotlinx-serialization-core"
-        ],
-        "sourceSetCInteropMetadataDirectory": "macosMain-cinterop",
-        "binaryLayout": "klib",
-        "hostSpecific": "true"
-      },
-      {
-        "name": "nativeMain",
-        "dependsOn": [
-          "commonMain"
-        ],
-        "moduleDependency": [
-          "org.jetbrains.kotlin:kotlin-stdlib-common",
-          "org.jetbrains.kotlinx:kotlinx-datetime",
-          "org.jetbrains.kotlinx:kotlinx-coroutines-core",
-          "org.jetbrains.kotlinx:kotlinx-serialization-core"
-        ],
-        "sourceSetCInteropMetadataDirectory": "nativeMain-cinterop",
-        "binaryLayout": "klib",
-        "hostSpecific": "true"
       }
     ]
   }

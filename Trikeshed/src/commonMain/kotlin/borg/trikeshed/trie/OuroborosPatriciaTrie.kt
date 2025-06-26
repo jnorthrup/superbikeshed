@@ -84,7 +84,7 @@ fun <V, M> CompressedPatriciaNode<V, M>.insert(key: String, value: V, meta: M = 
     val nodeFrag = this.keyFragment
     val keyFrag = key
 
-    when {
+    return when {
         // Case 1: Node fragment is a prefix of key (recurse into child)
         commonPrefixLen == nodeFrag.length && commonPrefixLen < keyFrag.length -> {
             val suffix = keyFrag.substring(commonPrefixLen)

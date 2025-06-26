@@ -304,13 +304,13 @@ class SlidingWindow(private val size: Int) {
         
         if (copyLength < size - position) {
             // Simple append
-            System.arraycopy(data, offset + startOffset, buffer, position, copyLength)
+            data.copyInto(buffer, position, offset + startOffset, offset + startOffset + copyLength)
             position += copyLength
         } else {
             // Wrap around
             val firstPart = size - position
-            System.arraycopy(data, offset + startOffset, buffer, position, firstPart)
-            System.arraycopy(data, offset + startOffset + firstPart, buffer, 0, copyLength - firstPart)
+            data.copyInto(buffer, position, offset + startOffset, offset + startOffset + firstPart)
+            data.copyInto(buffer, 0, offset + startOffset + firstPart, offset + startOffset + firstPart + copyLength - firstPart)
             position = (position + copyLength) % size
         }
     }
@@ -318,10 +318,10 @@ class SlidingWindow(private val size: Int) {
     fun getWindow(): ByteArray {
         val result = ByteArray(size)
         if (position == 0) {
-            System.arraycopy(buffer, 0, result, 0, size)
+            buffer.copyInto(result, 0, 0, 0 + size)
         } else {
-            System.arraycopy(buffer, position, result, 0, size - position)
-            System.arraycopy(buffer, 0, result, size - position, position)
+            buffer.copyInto(result, 0, position, position + size - position)
+            buffer.copyInto(result, size - position, 0, 0 + position)
         }
         return result
     }

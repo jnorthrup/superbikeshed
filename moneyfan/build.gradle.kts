@@ -29,15 +29,19 @@ kotlin {
 
     // Native - High-performance trading algorithms
     val hostOs = System.getProperty("os.name")
-    val isMac = hostOs.startsWith("Mac OS")
-    val isLinux = hostOs.startsWith("Linux")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isWindows = hostOs.startsWith("Windows")
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 
-    if (isMac) {
-        macosArm64()
-        macosX64()
-    } else if (isLinux) {
-        linuxX64()
-        linuxArm64()
+    // Only configure native for current host platform
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS && !isArm64 -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux && !isArm64 -> linuxX64()
+        isWindows -> mingwX64()
     }
 
     sourceSets {
@@ -47,6 +51,7 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.core)
+                implementation(project(":Trikeshed"))
             }
         }
 
@@ -61,6 +66,7 @@ kotlin {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(kotlin("reflect"))
+                implementation(project(":Trikeshed"))
             }
         }
 

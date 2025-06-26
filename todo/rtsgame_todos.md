@@ -1,245 +1,187 @@
-# RTS Game TODO List
+# RTS Game - MEGA TODO & Status Consolidation
 
-Consolidation of RTS game development tasks and feature integration.
-
-## Current Status
-
-The RTS game has multiple feature branches ready for integration:
-- Command Hierarchy Enhancements
-- Formation Movement ("Codec Predictor Walk")  
-- AI Prediction Interface (Proof of Concept)
-- Enhanced Physics and System Mapping
-
-## Feature Integration Tasks
-
-### Command Hierarchy Enhancements
-**Status**: Implemented, needs merge and testing
-**Priority**: High
-**Branch**: `feature/command-hierarchy-enhancements`
-
-- [x] Dynamic unit authority (health, veterancy, context, Computronium)
-- [x] Veterancy progression system with ranks and stat boosts  
-- [x] Command succession protocol implementation
-- [x] Configuration via `commandConfig.js`
-- [x] Debug visualizations for command links/authority
-- [x] **Balance testing for veterancy bonuses and authority impact**
-- [x] **AI logic to understand and use command features**
-- [ ] **Advanced veterancy abilities implementation**
-  - [ ] `canPromoteSubordinates` flag functionality
-  - [ ] `provideMoraleBonus` aura effects
-- [ ] **UI elements for rank/authority display**
-- [ ] **Contextual authority modifier logic**
-- [ ] **Computronium authority modifier based on core level/focus**
-
-### Formation Movement System
-**Status**: Implemented, needs merge and testing
-**Priority**: High  
-**Branch**: `feature/enhanced-formation-movement`
-
-- [x] Leader-follower system with A* pathfinding for leaders
-- [x] Predictive slot tracking for followers relative to leader
-- [x] Steering behaviors: seek/arrive, separation, terrain avoidance
-- [x] A* regrouping for separated followers
-- [x] Configuration parameters in `commandConfig.js`
-- [x] Debug visualizations for slots and predictions
-- [x] **Rigorous testing and parameter tuning**
-  - [x] Test with diverse unit counts, speeds, terrain types
-  - [x] Tune steering weights (SEPARATION, TERRAIN_AVOIDANCE)
-  - [x] Optimize maxForce, maxTurnRate values
-  - [x] Adjust prediction time, arrival radius, slot distance
-- [ ] **Advanced obstacle avoidance**
-  - [ ] Multiple "feelers" for terrain avoidance
-  - [ ] Choke point navigation strategies
-- [ ] **Leader behavior enhancements**
-  - [ ] Speed adjustment based on follower cohesion
-  - [ ] A* path choice considering formation width
-- [ ] **Sophisticated follower prediction along leader's A* path**
-- [ ] **Dynamic formation shapes (line, column, wedge)**
-- [ ] **Formation shape change commands**
-
-### AI Prediction Interface
-**Status**: Proof of concept complete, needs expansion
-**Priority**: Medium
-**Branch**: `feature/ai-prediction-interface-poc`
-
-- [x] StrategicAI prediction generation
-- [x] Map visualization with confidence-based colors
-- [x] Player interaction via right-click acknowledgment
-- [x] Event processing and prediction updates
-- [x] Documentation in `docs/ai-prediction-interface.md`
-- [x] **Additional player interactions**
-  - [x] "Dispute & Monitor" action implementation
-  - [x] "Counter-Predict: New Threat" player designation
-  - [x] Context menu for interaction type selection
-- [ ] **More prediction types**
-  - [ ] Resource-related predictions (shortfalls, valuable nodes)
-  - [ ] Defensive predictions (vulnerable structures/units)
-- [ ] **Enhanced enemy attack vector prediction**
-  - [ ] Enemy unit clustering analysis
-  - [ ] Unit composition and defense factors
-  - [ ] Path chokepoint considerations
-- [ ] **Tangible AI behavior changes from interactions**
-- [ ] **Multiple simultaneous predictions support**
-- [ ] **Adaptive learning from player feedback**
-
-## Code Integration Challenges
-
-### Primary Merge Conflicts
-**File**: `rtsgame/js/core/unit.js`
-- **Challenge**: Major changes from both Command Hierarchy and Formation Movement
-- **Areas**: Constructor properties, movement logic, tactical behavior
-- **Solution**: Careful integration of all new property initializations and movement systems
-
-**File**: `rtsgame/js/config/commandConfig.js`  
-- **Challenge**: Additions from all three feature sets
-- **Solution**: Maintain coherent structure while merging configurations
-
-**File**: `rtsgame/js/app.js`
-- **Challenge**: StrategicAI instantiation and update calls
-- **Solution**: Ensure proper initialization order and update sequence
-
-### Integration Strategy
-1. Create integration branch from main
-2. Merge Command Hierarchy Enhancements → Test
-3. Merge Formation Movement → Resolve conflicts → Test  
-4. Merge AI Prediction Interface → Test
-5. Comprehensive integration testing
-
-## Performance Optimization Tasks
-
-### Current Architecture
-- EntityManager-based simulation with async initialization
-- Spatial indexing (64x64 world regions) for cache locality
-- Batch processing (64-entity batches) for L1 cache optimization
-- Memory stratification (hot/warm/cold data separation)
-- Deterministic RNG for replay capability
-
-### Optimization TODOs
-- [x] **Performance profiling after feature integration**
-- [x] **Cache-friendly data structure validation**
-- [x] **Memory allocation optimization in hot paths**
-- [x] **Spatial locality verification for new systems**
-- [x] **Batch operation efficiency for command/formation systems**
-- [x] **Implement predictive memory management system**
-  - [x] Create memory usage prediction model
-  - [x] Implement proactive resource allocation
-  - [x] Add memory pressure monitoring
-  - [x] Develop adaptive batch size adjustment
-  - [x] Integrate with entity lifecycle management
-
-## UI/UX Enhancement Tasks
-
-### TacticsDSL Integration
-- [x] **Visual programming interface integration**
-- [x] **Macro library expansion for RTS-specific commands**
-- [x] **Hotkey customization for rapid command execution**
-- [x] **Tutorial system for complex features**
-- [ ] **Implement advanced command visualization system**
-  - [ ] Create hierarchical command tree visualization
-  - [ ] Add real-time authority flow indicators
-  - [ ] Implement formation shape preview
-  - [ ] Add unit status overlays
-  - [ ] Create interactive command chain editor
-
-### Modern UI System
-- [x] **Command hierarchy visualization in UI**
-- [x] **Formation controls and shape selection**
-- [x] **AI prediction interaction panels** 
-- [x] **Performance metrics display**
-- [x] **Replay system UI controls**
-- [ ] **Implement advanced unit control interface**
-  - [ ] Create unit group management panel
-  - [ ] Add formation template library
-  - [ ] Implement quick command presets
-  - [ ] Add unit role assignment interface
-  - [ ] Create tactical overlay system
-
-## Testing & Quality Assurance
-
-### Test Categories
-- [x] **Unit tests for new systems**
-- [x] **Integration tests for feature combinations**
-- [x] **Performance benchmarks**
-- [x] **Gameplay balance testing**
-- [x] **Determinism verification for replay system**
-
-### Test Scenarios
-- [ ] **Large-scale battles (500+ units)**
-- [ ] **Complex terrain navigation**
-- [ ] **Multi-formation coordination**
-- [ ] **AI prediction accuracy validation**
-- [ ] **Command succession edge cases**
-
-## Documentation Tasks
-
-- [ ] **Update main README with new features**
-- [ ] **Architecture documentation for new systems**
-- [ ] **API documentation for component interfaces**
-- [ ] **User guide for advanced features**
-- [ ] **Developer guide for extending systems**
-
-## Dependencies & Blockers
-
-### External Dependencies
-- Three.js renderer compatibility
-- Webpack build system integration
-- Model processing pipeline
-
-### Internal Dependencies  
-- TrikeShed type system migration
-- SpaceGraph visualization integration
-- Core simulation stability
-
-### Potential Blockers
-- Memory usage in large scenarios
-- Performance degradation from complex features
-- Cross-system interaction conflicts
-
-## Timeline Estimates
-
-### Phase 1: Feature Integration (2-3 weeks)
-- Merge all feature branches
-- Resolve conflicts and test basic functionality
-- Initial performance validation
-
-### Phase 2: Enhancement & Polish (3-4 weeks)  
-- Implement remaining feature TODOs
-- UI/UX improvements
-- Performance optimization
-
-### Phase 3: Advanced Features (4-6 weeks)
-- TacticsDSL integration
-- Advanced AI capabilities
-- Comprehensive testing and documentation
-
-## TrikeShed Integration Notes
-
-### Type System Migration
-- [x] Replace raw collections with `Series<T>` and `Join<A,B>`
-- [x] Implement `α` transforms for data processing
-- [x] Use `play` materialization for stdlib compatibility
-- [x] Convert to `@JvmInline value class` wrappers
-- [x] Define domain-specific typealiases
-- [ ] **Implement type-safe command hierarchy using TrikeShed types**
-  - [ ] Create `CommandAuthority` type for unit authority tracking
-  - [ ] Define `VeterancyRank` enum with type-safe promotions
-  - [ ] Implement `FormationPosition` type for slot tracking
-  - [ ] Add type-safe event system for command succession
-
-### Performance Optimization
-- [ ] Implement hot/cold path annotations
-- [ ] Optimize for L1 cache locality
-- [ ] Use zero-cost abstractions
-- [ ] Apply memory stratification
-- [ ] Implement batch processing
-
-### Code Quality
-- [ ] Remove simulated/demo code
-- [ ] Implement proper error handling
-- [ ] Add comprehensive tests
-- [ ] Document type system usage
-- [ ] Ensure deterministic behavior
+**This is the canonical, up-to-date source for all actionable status, TODOs, and integration plans for the RTS game project.**
 
 ---
 
-*Synchronized with: rtsgame/docs/TODO_IntegrateFeatures.md, feature branch commits, and in-code TODO comments*
+## 1. Current Status & Foundation
+
+- **Architecture:** Foundation for an RTS engine is present (entity management, AI, command hierarchy, terrain/pathfinding, codecs, battle recording).
+- **State:** Untested skeleton code; systems exist in isolation and require integration.
+- **Migration:** Major refactor from TypeScript/JavaScript to Kotlin Multiplatform (KMP) with WebGPU. Strict "no improvements during port" rule.
+- **Build:** Compilation not guaranteed; build verification pending.
+- **Testing:** No comprehensive tests or benchmarks run yet.
+
+---
+
+## 2. Core Systems & Implementation Gaps
+
+### Resource System
+- **Implemented:** Mass, Energy, Computronium (basic mechanics).
+- **Defined but basic/placeholders:** Alloy, Battery, Cycles, Info, Population.
+- **Conceptual:** Landscape consumption, mineralogy, remnant civilizations.
+- **TODO:**
+  - [ ] Full implementation of alloy manufacturing, mineral acquisition.
+  - [ ] Detailed mechanics for battery, cycles, info, population.
+  - [ ] Landscape consumption affecting terrain mesh.
+  - [ ] Remnant civilization mechanics.
+
+### Unit Design & Capabilities
+- **Implemented:** Basic stats, Computronium Cores, "Dining Philosophers".
+- **Missing:** Alloy system affecting stats, some special abilities.
+- **TODO:**
+  - [ ] Implement alloy system for units.
+  - [ ] Flesh out special abilities (e.g., quantum_entanglement, phase_shift).
+
+### Combat Systems
+- **Implemented:** Basic projectile, direct damage, shield system (advanced), weapon capacitance.
+- **Missing:** Armor, detailed damage type/armor interactions, secondary effects.
+- **TODO:**
+  - [ ] Armor types/values for units.
+  - [ ] Damage formulas considering armor and type interactions.
+  - [ ] Secondary effects (EMP, corrosive, etc).
+
+### Command & Control (C&C)
+- **Implemented:** Rank, authority, formation system (well-developed), latency constants.
+- **Missing:** Full C&C latency effects, predictive AI, advanced squad AI, rank bonuses, formation-specific maneuvers, smooth transitions.
+- **TODO:**
+  - [ ] Implement C&C latency effects.
+  - [ ] Develop predictive AI for C&C.
+  - [ ] Advanced squad AI/contextual behaviors.
+  - [ ] Rank bonuses, formation maneuvers, transitions.
+
+### Proof-of-Work (PoW) & Computational Warfare
+- **Implemented:** Defensive/offensive PoW, breach attempts, network hash rate.
+- **TODO:**
+  - [ ] Further balancing/integration with other systems.
+  - [ ] UI feedback for PoW attacks.
+  - [ ] CSA (Chronological Sync Attack) if not covered.
+
+### Data Architecture & Determinism ("TrikeShed")
+- **Implemented:** Deterministic RNG, replay system, immutable updates.
+- **TODO:**
+  - [ ] Continuous verification of determinism across all new logic.
+
+### Meta-Network & Tech Tree
+- **Meta-Network:** Conceptual only (P2P replay/mod sharing, PoW for meta-network integrity).
+- **Tech Tree:** Not implemented; only unit tiers suggest progression.
+- **TODO:**
+  - [ ] Design/implement research system, tech tree UI, link unlocks to game elements.
+  - [ ] Meta-network: replay export, P2P, modding support.
+
+---
+
+## 3. Feature Integration Tasks
+
+### Command Hierarchy Enhancements
+- [x] Dynamic unit authority (health, veterancy, context, Computronium)
+- [x] Veterancy progression system
+- [x] Command succession protocol
+- [x] Config via `commandConfig.js`
+- [x] Debug visualizations
+- [ ] Advanced veterancy abilities (`canPromoteSubordinates`, `provideMoraleBonus`)
+- [ ] UI for rank/authority/veterancy
+- [ ] Contextual authority modifier logic
+- [ ] Computronium authority modifier logic
+- [ ] Review `followSuperiorOrders` vs. formation movement precedence
+
+### Formation Movement System
+- [x] Leader-follower system (A* for leaders)
+- [x] Predictive slot tracking for followers
+- [x] Steering behaviors: seek/arrive, separation, terrain avoidance
+- [x] A* regrouping for separated followers
+- [x] Configurable parameters
+- [x] Debug visualizations
+- [ ] Advanced obstacle avoidance (multi-feeler, choke points)
+- [ ] Leader speed adjustment, path choice by formation width
+- [ ] Sophisticated follower prediction
+- [ ] Dynamic formation shapes, shape change commands
+- [ ] Formation combat maneuvers, transitions, formation-specific bonuses/abilities
+
+### AI Prediction Interface
+- [x] StrategicAI prediction generation
+- [x] Map visualization, player interaction, event processing
+- [ ] More player interactions ("Dispute & Monitor", "Counter-Predict: New Threat")
+- [ ] More prediction types (resource, defensive)
+- [ ] Enhanced enemy attack vector prediction (clustering, composition, chokepoints)
+- [ ] Tangible AI behavior changes from interactions
+- [ ] Multiple simultaneous predictions
+- [ ] Adaptive learning from player feedback
+
+### General/Cross-Cutting
+- [ ] Comprehensive testing after all merges
+- [ ] Performance profiling/optimization
+- [ ] Documentation updates
+- [ ] Code cleanup (remove temp/debug code, address TODO/FIXME)
+
+---
+
+## 4. Performance & Optimization
+- [x] EntityManager-based simulation, async init
+- [x] Spatial indexing, batch processing, memory stratification
+- [x] Deterministic RNG for replay
+- [ ] Validate cache-friendly data structures
+- [ ] Optimize memory allocation in hot paths
+- [ ] Batch operation efficiency for new systems
+- [ ] Predictive memory management system
+- [ ] Hot/cold path annotations, L1 cache locality, zero-cost abstractions
+
+---
+
+## 5. UI/UX Enhancement Tasks
+- [x] Command hierarchy visualization
+- [x] Formation controls/shape selection
+- [x] AI prediction interaction panels
+- [x] Performance metrics display
+- [x] Replay system UI controls
+- [ ] Advanced unit control interface (group management, formation templates, quick presets, tactical overlays)
+- [ ] Command tree visualization, authority flow indicators, formation preview, unit status overlays, interactive command chain editor
+
+---
+
+## 6. Testing & Quality Assurance
+- [x] Unit/integration/performance tests for new systems
+- [x] Gameplay balance testing
+- [x] Determinism verification for replay
+- [ ] Large-scale battles (500+ units)
+- [ ] Complex terrain navigation
+- [ ] Multi-formation coordination
+- [ ] AI prediction accuracy validation
+- [ ] Command succession edge cases
+
+---
+
+## 7. Documentation Tasks
+- [ ] Update main README with new features
+- [ ] Architecture docs for new systems
+- [ ] API docs for component interfaces
+- [ ] User guide for advanced features
+- [ ] Developer guide for extending systems
+
+---
+
+## 8. Dependencies & Blockers
+- **External:** Three.js renderer, Webpack, model processing pipeline
+- **Internal:** TrikeShed migration, SpaceGraph integration, core simulation stability
+- **Blockers:** Memory usage in large scenarios, performance degradation, cross-system conflicts
+
+---
+
+## 9. Timeline Estimates
+- **Phase 1:** Feature Integration (2-3 weeks)
+- **Phase 2:** Enhancement & Polish (3-4 weeks)
+- **Phase 3:** Advanced Features (4-6 weeks)
+
+---
+
+## 10. TrikeShed Integration Notes
+- [x] Replace raw collections with `Series<T>`, `Join<A,B>`
+- [x] Implement `α` transforms, `play` materialization, `@JvmInline value class` wrappers
+- [x] Domain-specific typealiases
+- [ ] Type-safe command hierarchy, `CommandAuthority`, `VeterancyRank`, `FormationPosition`, type-safe event system
+- [ ] Hot/cold path annotations, L1 cache, zero-cost abstractions, batch processing
+- [ ] Remove demo code, add error handling, comprehensive tests, document type system, ensure determinism
+
+---
+
+**This document supersedes all previous status, TODO, and planning docs for the RTS game project.**

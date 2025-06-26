@@ -3,6 +3,11 @@ package borg.trikeshed.nexus
 import borg.trikeshed.lib.*
 import borg.trikeshed.nexus.reactor.*
 import kotlinx.coroutines.*
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.*
+
+typealias Indexed<T> = Indexed<T>
 
 /**
  * MAIN() - THE BENEFICIARY IN PURSUIT OF HAPPINESS
@@ -25,7 +30,7 @@ import kotlinx.coroutines.*
  */
 suspend fun main() {
     println("🎯 Main() begins pursuit of happiness through architectural artistry")
-    println("=" * 80)
+    println("=".repeat(80))
     
     try {
         // Realize main()'s intention through coordinated attention distribution
@@ -136,7 +141,7 @@ suspend fun demonstrateReactorCapabilities(reactor: Reactor) {
     reactor.start()
     
     // Simulate attention distribution through reactor patterns
-    val attentionOperations: AgentSeries<String> = 5 j { i ->
+    val attentionOperations: Indexed<String> = 5 j { i ->
         when (i) {
             0 -> "network-io-attention"
             1 -> "agent-coordination-attention" 
@@ -169,8 +174,8 @@ suspend fun demonstrateTrikeShedPatterns() {
     val compositionDemo = "architectural" j "artistry"
     println("      🔗 Join composition: ${compositionDemo.a} + ${compositionDemo.b}")
     
-    // AgentSeries<T> - Indexed realm
-    val capabilitySeries: AgentSeries<String> = 4 j { i ->
+    // Indexed<T> - Indexed realm
+    val capabilitySeries: Indexed<String> = 4 j { i ->
         when (i) {
             0 -> "autonomous-learning"
             1 -> "pattern-recognition" 
@@ -210,7 +215,7 @@ suspend fun coordinateSystemIntegration() {
     println("      🔄 Meta: Coordinating cross-system integration")
     
     // Integration points using TrikeShed patterns
-    val integrationPoints: AgentSeries<Join<String, String>> = 3 j { i ->
+    val integrationPoints: Indexed<Join<String, String>> = 3 j { i ->
         when (i) {
             0 -> "agent-intelligence" j "reactor-events"
             1 -> "reactor-coordination" j "trikeshed-foundation"

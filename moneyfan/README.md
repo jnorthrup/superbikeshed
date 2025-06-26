@@ -1,5 +1,10 @@
 # Moneyfan Trading System
 
+> **NOTE:** All prior documentation and TODOs for the moneyfan module have been consolidated into this README. The following files have been fully assimilated and are now superseded:
+> - DOCS_FINAL.md
+> - DOCS_REUP.md
+> - DOCS_SUMMARY.md
+
 ## ⚠️ CURRENT STATUS: INCOMPLETE PROTOTYPE ⚠️
 
 **This system is currently NON-FUNCTIONAL and requires substantial implementation work.**

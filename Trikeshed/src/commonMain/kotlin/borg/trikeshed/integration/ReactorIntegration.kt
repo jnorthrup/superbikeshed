@@ -2,7 +2,6 @@
 package borg.trikeshed.integration
 
 
-import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.ipfs.*
@@ -10,8 +9,6 @@ import borg.trikeshed.net.http.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
 import kotlinx.serialization.json.*
-
-// Platform-agnostic time function - defined in IntegrationTypes.kt
 
 /**
  * Reactor Integration System with Proper Indexed/Join Taxonomy
@@ -61,7 +58,7 @@ class ReactorIntegration(
     private lateinit var couchClient: CouchClient
     private lateinit var ipfsClient: IpfsClient
     private lateinit var httpServer: HttpQuicServer
-    private lateinit var quicServer: QuicServer
+    private lateinit var quicServer: borg.trikeshed.net.quic.QuicServer
     private lateinit var quicEngine: QuicEngine
     
     // Reactor network
@@ -101,7 +98,7 @@ class ReactorIntegration(
             ipfsClient = IpfsClient(peerId, quicEngine, storage, ipfsConfig)
             
             // Initialize QUIC server
-            quicServer = QuicServer(quicEngine, quicPort)
+            quicServer = borg.trikeshed.net.quic.QuicServer(quicEngine, quicPort, "0.0.0.0")
             
             // Initialize HTTP QUIC server
             httpServer = HttpQuicServer(quicEngine, quicPort)
@@ -187,7 +184,7 @@ class ReactorIntegration(
             HttpResponse(
                 status = HttpStatus.OK,
                 headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                body = (stats as Map<String, Any>).toJsonString().encodeToByteArray()
+                body = (stats as Map<String, Any?>).toJson().encodeToByteArray()
             )
         }
         
@@ -208,7 +205,7 @@ class ReactorIntegration(
                     HttpResponse(
                         status = HttpStatus.OK,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(), 
-                        body = (reactorStats as Map<String, Any>).toJsonString().encodeToByteArray())
+                        body = (reactorStats as Map<String, Any?>).toJson().encodeToByteArray())
                 }
                 else -> HttpResponse(
                     status = HttpStatus.METHOD_NOT_ALLOWED, 
@@ -227,19 +224,20 @@ class ReactorIntegration(
                     is ReactorStorageResult.Success -> HttpResponse(
                         status = HttpStatus.CREATED,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = result.toJsonString().encodeToByteArray()
+                        body = result.toJson().encodeToByteArray()
                     )
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = HttpStatus.INTERNAL_SERVER_ERROR,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = "{"error":"${result.message}"}".encodeToByteArray()
+                        body = ("{\"error\":\"${result.message}\"}").encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
                 HttpResponse(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = "{"error":"${e.message}"}".encodeToByteArray())
+                    body = ("{\"error\":\"${e.message}\"}").encodeToByteArray()
+                )
             }
         }
         
@@ -250,7 +248,7 @@ class ReactorIntegration(
                 if (id.isBlank()) return@route HttpResponse(
                     status = HttpStatus.BAD_REQUEST,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = "{"error":"Missing id parameter"}".encodeToByteArray()
+                    body = ("{\"error\":\"Missing id parameter\"}").encodeToByteArray()
                 )
 
                 val result = retrieveWithReactor(id)
@@ -259,19 +257,19 @@ class ReactorIntegration(
                     is ReactorStorageResult.Success -> HttpResponse(
                         status = HttpStatus.OK,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = result.toJsonString().encodeToByteArray()
+                        body = result.toJson().encodeToByteArray()
                     )
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = HttpStatus.NOT_FOUND,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = "{"error":"${result.message}"}".encodeToByteArray()
+                        body = ("{\"error\":\"${result.message}\"}").encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
                 HttpResponse(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = "{"error":"${e.message}"}".encodeToByteArray()
+                    body = ("{\"error\":\"${e.message}\"}").encodeToByteArray()
                 )
             }
         }
@@ -321,7 +319,7 @@ class ReactorIntegration(
                         ipfsHash = ipfsHash,
                         metadata = mapOf(
                             "content_length" to content.length,
-                            "created_at" to getCurrentTimeMillis()
+                            "created_at" to borg.trikeshed.integration.getCurrentTimeMillis()
                         )
                     )
                 }
@@ -371,7 +369,7 @@ class ReactorIntegration(
                                     ipfsHash = ipfsHash,
                                     metadata = mapOf(
                                         "content_length" to content.length,
-                                        "retrieved_at" to getCurrentTimeMillis()
+                                        "retrieved_at" to borg.trikeshed.integration.getCurrentTimeMillis()
                                     )
                                 )
                             } else {
@@ -387,7 +385,7 @@ class ReactorIntegration(
                             content = content,
                             metadata = mapOf(
                                 "content_length" to content.length,
-                                "retrieved_at" to getCurrentTimeMillis()
+                                "retrieved_at" to borg.trikeshed.integration.getCurrentTimeMillis()
                             )
                         )
                     }
@@ -485,8 +483,8 @@ sealed class ReactorStorageResult {
         val ipfsHash: String? = null,
         val metadata: StorageMetadata = emptyMap()
     ) : ReactorStorageResult() {
-        fun toJsonString(): String {
-            return """{"id":"$id","content":"${content ?: ""}","ipfs_hash":"${ipfsHash ?: ""}","metadata":${(metadata as Map<String, Any>).toJsonString()}}"""
+        fun toJson(): String {
+            return "{\"id\":\"$id\",\"content\":\"${content ?: ""}\",\"ipfs_hash\":\"${ipfsHash ?: ""}\",\"metadata\":${(metadata as Map<String, Any?>).toJson()}}"
         }
     }
     
@@ -499,15 +497,15 @@ data class ReactorEvent(
     val type: ReactorEventType,
     val data: ReactorEventData,
     val id: ReactorEventId = generateEventId(),
-    val timestamp: ReactorEventTimestamp = getCurrentTimeMillis()
+    val timestamp: ReactorEventTimestamp = borg.trikeshed.integration.getCurrentTimeMillis()
 )
 
 // === UTILITY FUNCTIONS ===
 
-private fun generateEventId(): ReactorEventId = "event_${getCurrentTimeMillis()}_${(kotlin.random.Random.nextDouble() * 1000).toInt()}"
+private fun generateEventId(): ReactorEventId = "event_${borg.trikeshed.integration.getCurrentTimeMillis()}_${(kotlin.random.Random.nextDouble() * 1000).toInt()}"
 
-private fun Map<String, Any>.toJsonString(): String {
-    return toString() // Simplified JSON conversion
+private fun Map<String, Any>.toJson(): String {
+    return toJson() // Simplified JSON conversion
 }
 
 // IPFS Event data

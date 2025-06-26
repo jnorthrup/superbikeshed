@@ -32,10 +32,10 @@ object MD4Hasher {
 
     private fun md4Hash(input: ByteArray): ByteArray {
         // MD4 constants for SIMD-friendly processing
-        val A = 0x67452301
-        val B = 0xEFCDAB89
-        val C = 0x98BADCFE
-        val D = 0x10325476
+        val A = 0x67452301.toInt()
+        val B = 0xEFCDAB89.toInt()
+        val C = 0x98BADCFE.toInt()
+        val D = 0x10325476.toInt()
 
         // Process data in 64-byte blocks (SIMD-friendly)
         val blockSize = 64
@@ -54,14 +54,14 @@ object MD4Hasher {
 
             // SIMD-friendly MD4 round functions
             val (newA, newB, newC, newD) = processMD4Block(blockData, a, b, c, d)
-            a = (a.toLong() + newA.toLong()).toInt()
-            b = (b.toLong() + newB.toLong()).toInt()
-            c = (c.toLong() + newC.toLong()).toInt()
-            d = (d.toLong() + newD.toLong()).toInt()
+            a = (a + newA).toInt()
+            b = (b + newB).toInt()
+            c = (c + newC).toInt()
+            d = (d + newD).toInt()
         }
 
         // Convert to little-endian bytes (SIMD-friendly)
-        return intArrayOf(a, b, c, d).flatMap {
+        return intArrayOf(a.toInt(), b.toInt(), c.toInt(), d.toInt()).flatMap {
             listOf(
                 (it and 0xFF).toByte(),
                 ((it shr 8) and 0xFF).toByte(),

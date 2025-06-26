@@ -8,6 +8,12 @@ import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
 
+data class HttpServerConfig(
+    val maxHeaderSize: Int = 8192,
+    val host: String = "0.0.0.0",
+    val port: Int = 4433
+)
+
 /**
  * Integrates HTTP protocols with QUIC transport
  * Supports HTTP/0.9, 1.0, 1.1 over QUIC streams
@@ -37,14 +43,19 @@ class HttpQuicIntegration(
      * Start HTTP over QUIC server
      */
     suspend fun start() {
-        println("Starting HTTP over QUIC server on ${config.host.value}:${config.port.value}")
+        println("Starting HTTP over QUIC server on ${config.host}:${config.port}")
         
         // Set up QUIC connection handler
-        quicServer.onConnection { connection ->
-            GlobalScope.launch {
-                handleHttpOverQuic(connection)
+        quicServer.onConnection(object : ConnectionHandler {
+            override suspend fun onConnect(connection: QuicConnection) {
+                GlobalScope.launch {
+                    handleHttpOverQuic(connection)
+                }
             }
-        }
+            override suspend fun onDisconnect(connectionId: ConnectionId) {
+                // No-op for now
+            }
+        })
     }
     
     /**
@@ -79,7 +90,7 @@ class HttpQuicIntegration(
                     buffer[buffer.size - 2] == '\r'.code.toByte() && 
                     buffer[buffer.size - 1] == '\n'.code.toByte()) {
                     
-                    val requestLine = String(buffer.dropLast(2).toByteArray())
+                    val requestLine = buffer.dropLast(2.concatToString().toByteArray())
                     httpVersion = detectHttpVersion(requestLine)
                     break
                 }
@@ -117,7 +128,7 @@ class HttpQuicIntegration(
      * Handle HTTP/0.9 request
      */
     private suspend fun handleHttp09(stream: QuicStream, buffer: MutableList<Byte>) {
-        val requestLine = String(buffer.toByteArray()).trim()
+        val requestLine = buffer.toByteArray(.concatToString()).trim()
         val parts = requestLine.split(" ")
         
         if (parts.isNotEmpty() && parts[0] == "GET") {
@@ -150,7 +161,7 @@ class HttpQuicIntegration(
     private suspend fun handleHttp10(stream: QuicStream, buffer: MutableList<Byte>) {
         // Continue reading headers
         val fullRequest = readFullRequest(stream, buffer)
-        val request = HttpRequest.parse(fullRequest)
+        val request = HttpRequest.Companion.parse(fullRequest)
         
         // Apply middlewares
         val processedRequest = applyMiddlewares(request)
@@ -162,7 +173,6 @@ class HttpQuicIntegration(
         } else {
             HttpResponse(
                 status = HttpStatus.NOT_FOUND,
-                reasonPhrase = HttpStatus.NOT_FOUND.defaultReasonPhrase(),
                 headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/plain")) },
                 body = "Not Found".encodeToByteArray(),
                 version = HttpVersion("HTTP/1.0")
@@ -186,7 +196,7 @@ class HttpQuicIntegration(
     private suspend fun handleHttp11(stream: QuicStream, buffer: MutableList<Byte>) {
         // Continue reading headers
         val fullRequest = readFullRequest(stream, buffer)
-        val request = HttpRequest.parse(fullRequest)
+        val request = HttpRequest.Companion.parse(fullRequest)
         
         // Apply middlewares
         val processedRequest = applyMiddlewares(request)
@@ -198,7 +208,6 @@ class HttpQuicIntegration(
         } else {
             HttpResponse(
                 status = HttpStatus.NOT_FOUND,
-                reasonPhrase = HttpStatus.NOT_FOUND.defaultReasonPhrase(),
                 headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/plain")) },
                 body = "Not Found".encodeToByteArray(),
                 version = HttpVersion("HTTP/1.1")
@@ -247,7 +256,7 @@ class HttpQuicIntegration(
         }
         
         // Read body if Content-Length header present
-        val headers = String(buffer.toByteArray()).substringBefore("\r\n\r\n")
+        val headers = buffer.toByteArray(.concatToString()).substringBefore("\r\n\r\n")
         val contentLength = extractContentLength(headers)
         
         if (contentLength > 0) {
@@ -299,7 +308,6 @@ class HttpQuicIntegration(
     private suspend fun sendErrorResponse(stream: QuicStream, status: HttpStatusCode) {
         val response = HttpResponse(
             status = status,
-            reasonPhrase = status.defaultReasonPhrase(),
             headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/plain")) },
             body = status.defaultReasonPhrase().value.encodeToByteArray(),
             version = HttpVersion("HTTP/1.1")
@@ -350,13 +358,6 @@ class HttpQuicIntegration(
         }
         return 0
     }
-}
-
-/**
- * HTTP middleware interface
- */
-interface HttpMiddleware {
-    fun process(request: HttpRequest): HttpRequest
 }
 
 /**

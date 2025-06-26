@@ -41,7 +41,3 @@
 - **NO EXPLORATION OR MODIFICATION** - Claude must never "improve" working code
 - **PRESERVE EXISTING PATTERNS** - Copy exactly, don't "fix" or "enhance" or reformat. formatting  tools cost less than  tokens.
 
-**EXECUTION GOAL**:
-   Maintain precise execution where Claude's only role is exact reproduction of Architect's specifications. No creative input, no architectural opinions, no "improvements."
-
- 

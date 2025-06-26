@@ -66,7 +66,7 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
         responseHeaders["Content-Length"] = responseBody.length.toString()
         responseHeaders["Connection"] = "close"
 
-        val responseHeadersFormatted = responseHeaders.entries.joinToString("\r\n") { (k, v) -> "$k: $v" }
+        val responseHeadersFormatted = responseHeaders.entries.joinToString("\r\n") { entry: Map.Entry<String, String> -> "${entry.key}: ${entry.value}" }
         return "HTTP/1.1 200 OK\r\n$responseHeadersFormatted\r\n\r\n$responseBody"
     }
 }

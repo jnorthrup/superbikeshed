@@ -54,7 +54,7 @@ data class ConnectionId(
 ) {
     val length: Int get() = bytes.a
     
-    fun toHexString(): String = buildString {
+    fun toHex.concatToString(): String = buildString {
         for (i in 0 until bytes.a) {
             append(bytes.b(i).toUByte().toString(16).padStart(2, '0'))
         }

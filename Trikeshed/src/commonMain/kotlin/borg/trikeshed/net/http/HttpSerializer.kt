@@ -28,7 +28,7 @@ object HttpSerializer {
     }
     
     private fun serializeHeaders(headers: Indexed<Join<String, String>>): String {
-        return (0 until headers.a).joinToString("\r\n") { i ->
+        return (0 until headers.a).joinToString("\r\n") { i: Int ->
             val header = headers.b(i)
             "${header.a}: ${header.b}"
         }

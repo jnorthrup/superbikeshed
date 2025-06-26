@@ -122,17 +122,7 @@ inline fun <T> errorToResult(result: SystemCallResult, value: T): Result<T> {
  * Get error message for error code
  * Platform-specific implementations provide actual messages
  */
-expect fun errorString(code: ErrorCode): ErrorMessage
-
-/**
- * Get error code from error key/name
- */
-expect fun errorFromKey(key: ErrorKey): ErrorCode
-
-/**
- * Common error messages for fallback
- */
-fun commonErrorString(code: ErrorCode): ErrorMessage = when (code) {
+fun commonErrorcode(code: ErrorCode): ErrorMessage = when (code) {
     ErrorCodes.SUCCESS -> "Success"
     ErrorCodes.EPERM -> "Operation not permitted"
     ErrorCodes.ENOENT -> "No such file or directory"
@@ -170,6 +160,11 @@ fun commonErrorString(code: ErrorCode): ErrorMessage = when (code) {
     ErrorCodes.ERANGE -> "Math result not representable"
     else -> "Unknown error $code"
 }
+
+/**
+ * Get error code from error key/name
+ */
+expect fun errorFromKey(key: ErrorKey): ErrorCode
 
 /**
  * Common error key mapping
@@ -223,7 +218,7 @@ class SystemCallException(
     val operation: String,
     val errorCode: ErrorCode,
     message: String? = null
-) : Exception(message ?: "$operation failed: ${errorString(errorCode)} (error $errorCode)")
+) : Exception(message ?: "$operation failed: ${commonErrorcode(errorCode)} (error $errorCode)")
 
 /**
  * Exception with platform-specific error information

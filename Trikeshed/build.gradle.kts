@@ -24,7 +24,7 @@ kotlin {
         binaries.executable()
     }
 
-    // Native targets - conditional based on current host
+    // Native targets - only for current host
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     val isMacOS = hostOs == "Mac OS X"

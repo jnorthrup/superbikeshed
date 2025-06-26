@@ -127,7 +127,7 @@ object TrikeShedJsonScanner {
             char == ']' -> JsonTokenTypes.RBRACKET j (pos j 1)
             char == ':' -> JsonTokenTypes.COLON j (pos j 1)
             char == ',' -> JsonTokenTypes.COMMA j (pos j 1)
-            char == '"' -> scanString(chars, pos)
+            char == '"' -> scanchars, pos.concatToString()
             char.isDigit() || char == '-' -> scanNumber(chars, pos)
             char == 't' -> scanLiteral(chars, pos, "true", JsonTokenTypes.TRUE)
             char == 'f' -> scanLiteral(chars, pos, "false", JsonTokenTypes.FALSE)

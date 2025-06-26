@@ -196,7 +196,7 @@ data class SSHPacket(
             
             return SSHPacket(
                 packetLength = packetLength,
-                paddingLength = SSHPaddingLength(paddingLength.toByte()),
+                paddingLength = paddingLength.toByte(),
                 payload = payload,
                 padding = padding
             )
@@ -384,7 +384,7 @@ class SSHConnection(
      */
     suspend fun connect() {
         // Exchange version strings
-        sendVersionString()
+        sendVersion()
         state = State.VERSION_EXCHANGED
         
         // Send KEXINIT
@@ -395,7 +395,7 @@ class SSHConnection(
     /**
      * Send version string
      */
-    private suspend fun sendVersionString() {
+    private suspend fun sendVersion() {
         val version = "${SSHProtocol.VERSION}\r\n"
         val stream = transport.createStream() ?: return
         stream.writeBytes(version.encodeToByteArray().size j { i: Int -> version.encodeToByteArray()[i] })

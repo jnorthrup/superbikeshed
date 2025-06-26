@@ -146,6 +146,22 @@ class TrikeshedIntegration(
     }
     
     /**
+     * Parse query parameters from request path
+     */
+    private fun parseQueryParams(path: String): Map<String, String> {
+        val questionMarkIndex = path.indexOf('?')
+        if (questionMarkIndex == -1) return emptyMap()
+        
+        val queryString = path.substring(questionMarkIndex + 1)
+        return queryString.split('&')
+            .mapNotNull { param ->
+                val parts = param.split('=', limit = 2)
+                if (parts.size == 2) parts[0] to parts[1] else null
+            }
+            .toMap()
+    }
+    
+    /**
      * Setup HTTP routes for the integration API
      */
     private fun setupHttpRoutes() {
@@ -161,108 +177,140 @@ class TrikeshedIntegration(
             )
             HttpResponse(
                 status = HttpStatusCode(200),
-                headers = mapOf("content-type" to "application/json"),
-                body = health.toJson()
+                headers = 1 j { i: Int -> 
+                    HttpHeaderName("content-type") j HttpHeaderValue("application/json")
+                },
+                body = health.toJson().encodeToByteArray()
             )
         }
         
         // Document operations
         httpServer.route("/documents") { request ->
+            val queryParams = parseQueryParams(request.path.value)
             when (request.method) {
-                "POST" -> {
-                    val result = createDocument(request.body)
+                HttpMethod.POST -> {
+                    val result = createDocument(request.body.decodeToString())
                     when (result) {
                         is Either.Right -> HttpResponse(
                             status = HttpStatusCode(201),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = result.value.toJson()
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = result.value.toJson().encodeToByteArray()
                         )
                         is Either.Left -> HttpResponse(
                             status = HttpStatusCode(500),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = """{"error":"${result.value.message}"}"""
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                         )
                     }
                 }
-                "GET" -> {
-                    val id = request.queryParams["id"]
+                HttpMethod.GET -> {
+                    val id = queryParams["id"]
                     if (id != null) {
                         val result = getDocument(id)
                         when (result) {
                             is Either.Right -> HttpResponse(
                                 status = HttpStatusCode(200),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = result.value.toJson()
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = result.value.toJson().encodeToByteArray()
                             )
                             is Either.Left -> HttpResponse(
                                 status = HttpStatusCode(404),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = """{"error":"${result.value.message}"}"""
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                             )
                         }
                     } else {
-                        HttpResponse(400, mapOf("content-type" to "application/json"), """{"error":"Missing id parameter"}""")
+                        HttpResponse(
+                            status = HttpStatusCode(400),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"Missing id parameter"}""".encodeToByteArray()
+                        )
                     }
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatusCode(405),
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray()
+                )
             }
         }
         
         // IPFS operations
         httpServer.route("/ipfs") { request ->
+            val queryParams = parseQueryParams(request.path.value)
             when (request.method) {
-                "POST" -> {
-                    val result = storeInIpfs(request.body)
+                HttpMethod.POST -> {
+                    val result = storeInIpfs(request.body.decodeToString())
                     when (result) {
                         is Either.Right -> HttpResponse(
                             status = HttpStatusCode(201),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = """{"hash":"${result.value.hash}"}"""
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"hash":"${result.value.hash}"}""".encodeToByteArray()
                         )
                         is Either.Left -> HttpResponse(
                             status = HttpStatusCode(500),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = """{"error":"${result.value.message}"}"""
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                         )
                     }
                 }
-                "GET" -> {
-                    val hash = request.queryParams["hash"]
+                HttpMethod.GET -> {
+                    val hash = queryParams["hash"]
                     if (hash != null) {
                         val result = retrieveFromIpfs(hash)
                         when (result) {
                             is Either.Right -> HttpResponse(
                                 status = HttpStatusCode(200),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = result.value.content ?: ""
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = (result.value.content ?: "").encodeToByteArray()
                             )
                             is Either.Left -> HttpResponse(
                                 status = HttpStatusCode(404),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = """{"error":"${result.value.message}"}"""
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                             )
                         }
                     } else {
-                        HttpResponse(400, mapOf("content-type" to "application/json"), """{"error":"Missing hash parameter"}""")
+                        HttpResponse(
+                            status = HttpStatusCode(400),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"Missing hash parameter"}""".encodeToByteArray()
+                        )
                     }
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatusCode(405),
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray()
+                )
             }
         }
         
         // Reactor events
         httpServer.route("/events") { request ->
             when (request.method) {
-                "POST" -> {
-                    val event = parseEvent(request.body)
+                HttpMethod.POST -> {
+                    val event = parseEvent(request.body.decodeToString())
                     network.emit("integration", event)
-                    HttpResponse(200, mapOf("content-type" to "application/json"), """{"status":"event_emitted"}""")
+                    HttpResponse(
+                        status = HttpStatusCode(200),
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = """{"status":"event_emitted"}""".encodeToByteArray()
+                    )
                 }
-                "GET" -> {
+                HttpMethod.GET -> {
                     val stats = network.getStats()
-                    HttpResponse(200, mapOf("content-type" to "application/json"), stats.toJson())
+                    HttpResponse(
+                        status = HttpStatusCode(200),
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = stats.toJson().encodeToByteArray()
+                    )
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatusCode(405),
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray()
+                )
             }
         }
     }
@@ -288,7 +336,7 @@ class TrikeshedIntegration(
                     
                     // Store content in IPFS
                     val contentBytes = content.encodeToByteArray()
-                    val indexedContent = contentBytes.size j { contentBytes[it] }
+                    val indexedContent = contentBytes.size j { it: Int -> contentBytes[it] }
                     val ipfsResult = ipfsClient.store(indexedContent)
                     
                     // Update document with IPFS hash
@@ -393,7 +441,7 @@ class TrikeshedIntegration(
     private suspend fun storeInIpfs(content: String): TrikeshedIntegrationResult {
         return try {
             val contentBytes = content.encodeToByteArray()
-            val indexedContent = contentBytes.size j { contentBytes[it] }
+            val indexedContent = contentBytes.size j { it: Int -> contentBytes[it] }
             val result = ipfsClient.store(indexedContent)
             
             Either.Right(IntegrationSuccess(hash = result.hash))
@@ -527,5 +575,5 @@ data class IntegrationSuccess(
 private fun generateEventId(): EventId = "event_${getCurrentTimeMillis()}_${(Random.nextDouble() * 1000).toInt()}"
 
 private fun Map<String, Any>.toJson(): String {
-    return toString() // Simplified JSON conversion
+    return this.toString() // Simplified JSON conversion
 } 

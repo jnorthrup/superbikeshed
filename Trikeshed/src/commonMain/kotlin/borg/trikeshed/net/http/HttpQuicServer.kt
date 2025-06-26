@@ -5,6 +5,8 @@ package borg.trikeshed.net.http
 import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.quic.*
+import borg.trikeshed.net.http.Http3Frame
+import borg.trikeshed.net.http.Http3Protocol
 
 /**
  * HTTP/3 Server over QUIC
@@ -68,7 +70,7 @@ class HttpQuicServer(
             } else {
                 HttpResponse(
                     status = HttpStatus.NOT_FOUND,
-                    headers = (mapOf("content-type" to "text/plain").toIndexed()),
+                    headers = 1 j { Join(HttpHeaderName("content-type"), HttpHeaderValue("text/plain")) },
                     body = "Not Found".encodeToByteArray()
                 )
             }
@@ -80,7 +82,7 @@ class HttpQuicServer(
             // Send error response
             val errorResponse = HttpResponse(
                 status = HttpStatus.INTERNAL_SERVER_ERROR,
-                headers = (mapOf("content-type" to "text/plain").toIndexed()),
+                headers = 1 j { Join(HttpHeaderName("content-type"), HttpHeaderValue("text/plain")) },
                 body = "Internal Server Error".encodeToByteArray()
             )
             sendHttp3Response(stream, errorResponse)
@@ -114,9 +116,9 @@ class HttpQuicServer(
         val frameData = stream.readBytes(frameLength.toInt())
         
         return when (frameType) {
-            0x00.toByte() -> Http3Frame.Data(frameData)
-            0x01.toByte() -> Http3Frame.Headers(parseHeaders(frameData))
-            else -> Http3Frame.Unknown(frameType)
+            0x00.toByte() -> Http3Frame(Http3Protocol.FrameTypes.DATA, frameData)
+            0x01.toByte() -> Http3Frame(Http3Protocol.FrameTypes.HEADERS, frameData)
+            else -> Http3Frame(frameType.toLong(), frameData)
         }
     }
     
@@ -156,9 +158,9 @@ class HttpQuicServer(
         var body: ByteArray = byteArrayOf()
 
         for (frame in frames) {
-            when (frame) {
-                is Http3Frame.Headers -> {
-                    headers = frame.headers
+            when (frame.type) {
+                Http3Protocol.FrameTypes.HEADERS -> {
+                    headers = parseHeaders(frame.payload)
                     // Parse pseudo-headers
                     val methodHeader = headers.play.find { it.a.value == ":method" }?.b?.value
                     method = if(methodHeader != null) HttpMethod.valueOf(methodHeader) else HttpMethod.GET
@@ -166,8 +168,8 @@ class HttpQuicServer(
                     val pathHeader = headers.play.find { it.a.value == ":path" }?.b?.value
                     path = if(pathHeader != null) HttpRequestPath(pathHeader) else HttpRequestPath("/")
                 }
-                is Http3Frame.Data -> {
-                    body = frame.data.play.toByteArray()
+                Http3Protocol.FrameTypes.DATA -> {
+                    body = frame.payload.play.toByteArray()
                 }
                 else -> {}
             }
@@ -258,27 +260,12 @@ class HttpQuicServer(
 
 // === HTTP/3 FRAME TYPES ===
 
-sealed class Http3Frame {
-    data class Data(val data: Indexed<Byte>) : Http3Frame()
-    data class Headers(val headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>) : Http3Frame()
-    data class Unknown(val frameType: Byte) : Http3Frame()
-}
+// Removed local sealed class Http3Frame
 
 // === HTTP REQUEST/RESPONSE MODELS ===
 
-data class HttpRequest(
-    val method: HttpMethod,
-    val path: HttpPath,
-    val headers: HttpHeaders,
-    val body: HttpBody,
-    val queryParams: Map<String, String> = emptyMap()
-)
-
-data class HttpResponse(
-    val status: HttpStatus,
-    val headers: HttpHeaders,
-    val body: HttpBody
-)
+// Removed local data class HttpRequest
+// Removed local data class HttpResponse
 
 // === HANDLER AND MIDDLEWARE INTERFACES ===
 

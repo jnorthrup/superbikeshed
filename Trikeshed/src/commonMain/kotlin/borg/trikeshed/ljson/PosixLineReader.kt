@@ -4,6 +4,7 @@ package borg.trikeshed.ljson
 
 import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
+import borg.trikeshed.ljson.*
 import kotlinx.coroutines.flow.*
 
 /**
@@ -178,7 +179,7 @@ private class ByteArrayBuilder {
     
     fun append(bytes: ByteArray, offset: Int, length: Int) {
         ensureCapacity(position + length)
-        System.arraycopy(bytes, offset, buffer, position, length)
+        bytes.copyInto(buffer, position, offset, offset + length)
         position += length
     }
     
@@ -223,10 +224,10 @@ fun Flow<ByteArray>.readLinesAsStrings(charset: String = "UTF-8"): Flow<String> 
  * Process Spansh JSONL data efficiently
  */
 fun Flow<ByteArray>.readSpanshSystems(): Flow<GalaxySystem> = flow {
-    readLines().collect { lineBytes ->
+    readLines().collect { lineBytes: ByteArray ->
         try {
             val json = lineBytes.decodeToString()
-            JsonLinesParser.parseGalaxySystem(json)?.let { system ->
+            JsonLinesParser.parseGalaxySystem(json)?.let { system: GalaxySystem ->
                 emit(system)
             }
         } catch (e: Exception) {

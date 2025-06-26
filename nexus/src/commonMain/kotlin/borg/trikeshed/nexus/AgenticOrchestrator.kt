@@ -8,7 +8,9 @@ import kotlinx.serialization.json.*
 import kotlin.random.Random
 
 // Import alias for migration to Indexed
-import borg.trikeshed.lib.Indexed as AgentSeries
+import borg.trikeshed.lib.Indexed as Indexed
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.*
 
 // Inline value classes require JvmInline annotation
 import kotlin.jvm.JvmInline
@@ -30,9 +32,9 @@ import kotlin.jvm.JvmInline
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @JvmInline
-internal value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
+internal value class CCEKContext(val data: Indexed<Join<String, String>>) {
     fun extractCurrentScope(): String = findValue("scope") ?: "global"
-    fun extractCurrentCapabilities(): AgentSeries<String> = findValue("capabilities")?.split(",")?.toIdx() ?: (0 j { "" })
+    fun extractCurrentCapabilities(): Indexed<String> = findValue("capabilities")?.split(",")?.toIdx() ?: (0 j { "" })
     fun extractCurrentConstraints(): String = findValue("constraints") ?: "none"
     fun extractCurrentPreferences(): String = findValue("preferences") ?: "balanced"
     
@@ -145,7 +147,7 @@ class AgenticOrchestrator {
     }
     
     /**
-     * Autonomous learning subsystem using TrikeShed AgentSeries
+     * Autonomous learning subsystem using TrikeShed Indexed
      */
     private suspend fun autonomousLearning() {
         println("🧠 Learning subsystem started...")
@@ -229,15 +231,15 @@ class AgenticOrchestrator {
     }
     
     /**
-     * Extract and update patterns from observations using AgentSeries operations
+     * Extract and update patterns from observations using Indexed operations
      */
     private fun extractAndUpdatePatterns(observation: AgentObservation) {
-        // Use TrikeShed AgentSeries for pattern analysis
-        val observationSeries: AgentSeries<AgentObservation> = observations.size j { i -> observations[i] }
+        // Use TrikeShed Indexed for pattern analysis
+        val observationSeries: Indexed<AgentObservation> = observations.size j { i -> observations[i] }
         
         // Analyze patterns using Series transformations
         val recentObservations = observationSeries.take(10)
-        val successfulActions: AgentSeries<String?> = recentObservations.size j { i: Int ->
+        val successfulActions: Indexed<String?> = recentObservations.size j { i: Int ->
             val obs = recentObservations[i]
             if (obs.success) obs.action else null
         }
@@ -280,7 +282,7 @@ class AgenticOrchestrator {
     /**
      * Detect current system capabilities
      */
-    private fun detectCapabilities(): AgentSeries<String> {
+    private fun detectCapabilities(): Indexed<String> {
         return 4 j { i ->
             when (i) {
                 0 -> "kotlin-multiplatform"
@@ -298,8 +300,8 @@ class AgenticOrchestrator {
     private suspend fun demonstrateCapabilities() {
         println("\n🚀 Demonstrating Agentic Orchestrator capabilities:")
         
-        // Demonstrate AgentSeries operations
-        val demoSeries: AgentSeries<Int> = 10 j { i -> i * i }
+        // Demonstrate Indexed operations
+        val demoSeries: Indexed<Int> = 10 j { i -> i * i }
         println("   📊 Series demo: ${demoSeries.play.take(5).joinToString(", ")}")
         
         // Demonstrate Join composition
@@ -338,20 +340,15 @@ class AgenticOrchestrator {
 // === UTILITY FUNCTIONS ===
 
 /**
- * Platform-agnostic current time function
+ * Indexed extension for taking first n elements
  */
-expect fun getCurrentTimeMillis(): Long
-
-/**
- * AgentSeries extension for taking first n elements
- */
-fun <T> AgentSeries<T>.take(n: Int): AgentSeries<T> = 
+fun <T> Indexed<T>.take(n: Int): Indexed<T> = 
     minOf(n, this.size) j { i -> this[i] }
 
 /**
- * AgentSeries extension for filtering
+ * Indexed extension for filtering
  */
-fun <T> AgentSeries<T>.filter(predicate: (T) -> Boolean): AgentSeries<T> {
+fun <T> Indexed<T>.filter(predicate: (T) -> Boolean): Indexed<T> {
     val filtered = mutableListOf<T>()
     for (i in 0 until this.size) {
         val element = this[i]

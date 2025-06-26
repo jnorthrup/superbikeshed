@@ -219,7 +219,7 @@ object BinaryPacker {
                 }
             }
             else -> {
-                buffer.add(0xFF) // Unknown type
+                buffer.add(0xFF.toByte()) // Unknown type
             }
         }
     }
