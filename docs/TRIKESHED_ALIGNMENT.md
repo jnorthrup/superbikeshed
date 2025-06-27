@@ -26,7 +26,7 @@ After examining the actual TrikeShed implementation, I've identified several key
 
 2. **Iterator Access**:
    - **WRONG**: Direct iteration over Series
-   - **RIGHT**: `series.play` to get IterableSeries, then iterate
+   - **RIGHT**: `series.play` to get a List (materialized Indexed<T>), then iterate
 
 3. **Join Usage**:
    - **WRONG**: Using Pair anywhere in codebase
