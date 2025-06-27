@@ -3,12 +3,12 @@
 
 package borg.trikeshed.lib
 
+import borg.trikeshed.lib.CZero.nz
+import borg.trikeshed.common.collections.ArrayCowView
+import kotlin.properties.Delegates
+import kotlin.jvm.JvmInline
 
 // import kotlin.math.minOf
-import borg.trikeshed.reactor.currentTimeMillis
-import kotlin.properties.Delegates
-import kotlin.coroutines.coroutineContext
-
 // import kotlinx.datetime.Clock // Removed dependency
 
 // Post-migration: Indexed is now the canonical type
@@ -68,7 +68,7 @@ import kotlin.coroutines.coroutineContext
  *
  * 1. **Composition (j)** - Combines any two values into a Join
  * 2. **Transform (α)** - Maps over Indexed structures functionally
- * 3. **Play (▶)** - Materializes lazy structures for standard library integration
+ * 3. **Play (play)** - Materializes lazy structures for standard library integration
  *
  * ## Benefits of Metaclass Design
  *
@@ -296,7 +296,7 @@ typealias MetaSeries<A, T> = Join<A, (A) -> T>
  * - **Creation**: `val s = 10 j { ... }`
  * - **Access**: `val x = s[5]`
  * - **Transformation**: `val t = s α { it * 2 }`
- * - **Materialization**: `val list = s.▶`
+ * - **Materialization**: `val list = s.play`
  */
 typealias Indexed<T> = MetaSeries<Int, T>
 
@@ -394,32 +394,7 @@ inline infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  * ```
  */
 inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> = a j { index: A -> transform(b(index)) }
-
-/**
- * ## ▶ - The Universal Materialization Operator
- *
- * `▶` (play) is a prefix operator that serves as the **universal materialization operator**.
- * It converts a lazy, functional MetaSeries into a standard, eager Kotlin List, providing
- * a bridge to the standard library for printing, iteration, or interoperability.
- *
- * **Pronunciation**: "play", "realize", "to-list"
- *
- * **Warning**: This forces evaluation of the entire structure. Avoid on large or infinite series.
- *
- * ### Usage
- *
- * ```kotlin
- * val series = 5 j { it * 2 }
- * val list = ▶series // Returns [0, 2, 4, 6, 8]
- *
- * for(item in ▶series) {
- *     println(item)
- * }
- * ```
- */
 inline operator fun <T> Indexed<T>.unaryPlus(): List<T> = List(a) { b(it) }
-
-val <T> Indexed<T>.▶: List<T> get() = List(a) { b(it) }
 
 // === INDEXED REALM EXTENSIONS ===
 
@@ -437,6 +412,7 @@ inline operator fun <T> Indexed<T>.get(range: IntRange): Indexed<T> {
     val count = end - start + 1
     return count j { b(start + it) }
 }
+
 
 val <T> Indexed<T>.size get() = a
 
@@ -538,11 +514,11 @@ inline val <reified T> Indexed<T>.cow: CowSeriesHandle<T> get() = CowSeriesHandl
 /**
  * A simpler copy-on-write implementation that returns a direct view of the data.
  */
-val <T> Indexed<T>.cowView: borg.trikeshed.common.collections.ArrayCowView<T>
+val <T> Indexed<T>.cowView: ArrayCowView<T>
     get() {
         @Suppress("UNCHECKED_CAST")
         val array = Array<Any?>(a) { b(it) } as Array<T>
-        return borg.trikeshed.common.collections.ArrayCowView(array)
+        return ArrayCowView(array)
     }
 
 /**
@@ -621,9 +597,19 @@ val <T: Comparable<T>> Indexed<T>.cpb: T
 
 // The play property and toIdx functions are from a previous version of the API.
 // They are preserved here for backward compatibility with existing code.
-// The modern equivalent of `play` is the `▶` operator.
+// The modern equivalent of `play` is the `play` operator.
+    fun <T>Indexed<T>.iterator(start:Int=0): Iterator<T> = object: Iterator<T>{
+    var  idx1=start
+    override fun next(): T  = b(idx1++)
+    override fun hasNext(): Boolean  =( a - start).nz
 
-val <T> Indexed<T>.play: List<T> get() = this.`▶`
+}
+
+@JvmInline value class IterableIndexed<T>(val i:Indexed<T>): Indexed<T> by i , Iterable<T>  {
+    override fun iterator(): Iterator<T> =i.iterator()
+}
+
+val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 
 fun <T> List<T>.toIdx(): Indexed<T> = toIndexed()
 fun <T> Array<T>.toIdx(): Indexed<T> = toIndexed()
@@ -636,24 +622,5 @@ fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
 fun BooleanArray.toIdx(): Indexed<Boolean> = size j { this[it] }
 fun CharArray.toIdx(): Indexed<Char> = size j { this[it] }
 fun String.toIdx(): Indexed<Char> = length j { this[it] }
-
-/**
- * Checks the PackingMode in the current coroutine context and applies the
- * appropriate memory strategy.
- *
- * - If the mode is `Register` (or absent), it returns `this` (a no-op),
- *   preserving the lazy, function-based structure.
- * - If the mode is `Pointer`, it materializes the series into a new,
- *   concrete Indexed backed by a List, effectively memoizing the results
- *   and preventing re-computation.
- *
- * This should be called before entering a critical loop with a complex Indexed.
- */
-suspend fun <T> Indexed<T>.memoize(): Indexed<T> {
-    // Default to Register mode if not specified
-    val mode = coroutineContext[PackingMode] ?: PackingMode.Register
-    return when (mode) {
-        PackingMode.Register -> this
-        PackingMode.Pointer -> this.play.toIndexed() // Materialize and wrap
-    }
-}
+ @Deprecated ("causes accidents leaking the internals")
+suspend fun <T> Indexed<T>.memoize(): Indexed<T>  = apply{}
