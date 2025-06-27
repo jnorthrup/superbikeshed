@@ -18,12 +18,6 @@ val <T> Series<T>.size: Int get() = a
 
 /** index operator for Series*/
 operator fun <T> Series<T>.get(i: Int): T = b(i)
-val <T> Series<T>.`play`: IterableSeries<T> get() = this as? IterableSeries ?: IterableSeries(this)
+val <T> Series<T>.`play`: List<T> get() = this.`▶`
 /**Left Identity Function */
-inline val <T> T.`↺`: () -> T get() = leftIdentity
-/*lazy series conversion */ inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> =
-    size j { i -> xform(this[i]) }
-/*iterable conversion*/ infix fun <X, C, Subject : Iterable<X>> Subject.α[...]
-
-[...] dozens of monadic and fp mix -ins and specializations
-```
+inline val <T> T.`
