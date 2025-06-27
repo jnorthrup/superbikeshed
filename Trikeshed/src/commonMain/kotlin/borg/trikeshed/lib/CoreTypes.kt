@@ -3,8 +3,7 @@
 
 package borg.trikeshed.lib
 
-import borg.trikeshed.lib.CZero.nz
-import borg.trikeshed.common.collections.ArrayCowView
+ import borg.trikeshed.common.collections.ArrayCowView
 import kotlin.properties.Delegates
 import kotlin.jvm.JvmInline
 
@@ -393,7 +392,9 @@ inline infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  * val scaled = matrix α { it * 2.0f }
  * ```
  */
-inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> = a j { index: A -> transform(b(index)) }
+inline infix fun <A, T, R> MetaSeries<A, T>.α(crossinline transform: (T) -> R): MetaSeries<A, R> =
+    a j { index: A -> transform(b(index)) }
+
 inline operator fun <T> Indexed<T>.unaryPlus(): List<T> = List(a) { b(it) }
 
 // === INDEXED REALM EXTENSIONS ===
@@ -466,22 +467,26 @@ inline operator fun <T> Tensor<T>.get(
 fun <T> List<T>.toIndexed(): Indexed<T> = size j { this[it] }
 fun <T> Array<T>.toIndexed(): Indexed<T> = size j { this[it] }
 
-
 /**
  * Converts a standard map to an indexed series of pairs
  */
-fun <K, V> Map<K, V>.toIndexed(): Indexed<Join<K, V>> {
-    val entries = this.entries.toList()
-    return entries.size j { entries[it].toPair().let { p -> p.first j p.second } }
-}
+fun <K, V> Map<K, V>.toIdx2(): Indexed2<K, V> = entries.toTypedArray<Map.Entry<K, V>>()
+    .let<Array<Map.Entry<K, V>>, Join<Int, (Int) -> Join<K, V>>> { it: Array<Map.Entry<K, V>> -> it.size j { i: Int -> it[i].key j it[i].value } }
 
 // === UTILITY FUNCTIONS ===
+
+val <A, B> Indexed2<A, B>.right: Indexed<B>
+    get() =
+        this α Join<A, B>::b
+val <A, B> Indexed2<A, B>.left: Indexed<A>
+    get() =
+        this α Join<A, B>::a
+
 
 /**
  * Convenience function to create an empty Indexed series.
  */
-fun <T> emptyIndexed(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Accessing empty series") }
-
+fun <T> emptyIndexed(): Indexed<T> = 0 j { _: Int -> TODO("empty index overflow") }
 
 /**
  * Helper function for debugging to print the contents of an Indexed series.
@@ -497,12 +502,6 @@ fun isArray(
     maxSize: Int,
 ): Boolean =
     obj is Array<*> && obj.size in minSize..maxSize
-
-fun <T> Indexed<T>.asTensor(): Tensor<T> = this as Tensor<T>
-fun <T> Indexed<T>.asTwin(): Twin<T> = this as Twin<T>
-
-// --- CopyOnWrite Indexed Implementation ---
-// From CowSeriesHandle.kt, consolidated into the single source of truth.
 
 /**
  * Creates a handle for a copy-on-write Indexed.
@@ -527,7 +526,7 @@ val <T> Indexed<T>.cowView: ArrayCowView<T>
  * Observers can be attached to watch for changes.
  */
 class CowSeriesHandle<T>(
-    letter1: COWSeriesBody<T>
+    letter1: COWSeriesBody<T>,
 ) {
 
     var letter: COWSeriesBody<T> by Delegates.observable(letter1) { prop, old, new ->
@@ -554,12 +553,12 @@ class CowSeriesHandle<T>(
  */
 data class COWSeriesBody<T>(
     val series: Indexed<T>,
-    val version: Int = 0
+    val version: Int = 0,
 )
 
 // --- RadixTree Support Extensions ---
 
-fun <T: Comparable<T>> Indexed<T>.commonPrefixWith(other: Indexed<T>): Indexed<T> {
+fun <T : Comparable<T>> Indexed<T>.commonPrefixWith(other: Indexed<T>): Indexed<T> {
     val len = if (this.a < other.a) this.a else other.a
     var common = 0
     while (common < len && this[common] == other[common]) {
@@ -589,7 +588,7 @@ fun <T> Indexed<T>.plus(other: Indexed<T>): Indexed<T> {
 val <T> Indexed<T>.first: T
     get() = if (a > 0) this[0] else throw NoSuchElementException("Indexed is empty.")
 
-val <T: Comparable<T>> Indexed<T>.cpb: T
+val <T : Comparable<T>> Indexed<T>.cpb: T
     get() = this.first
 
 
@@ -598,21 +597,21 @@ val <T: Comparable<T>> Indexed<T>.cpb: T
 // The play property and toIdx functions are from a previous version of the API.
 // They are preserved here for backward compatibility with existing code.
 // The modern equivalent of `play` is the `play` operator.
-    fun <T>Indexed<T>.iterator(start:Int=0): Iterator<T> = object: Iterator<T>{
-    var  idx1=start
-    override fun next(): T  = b(idx1++)
-    override fun hasNext(): Boolean  =( a - start).nz
+fun <T> Indexed<T>.iterator(start: Int = /**qol*/0): Iterator<T> = object : Iterator<T> {
+        var idx1: Int = start
+        override fun next(): T = b(idx1++)
+        override fun hasNext(): Boolean = (a - start).nz
+    }
 
-}
-
-@JvmInline value class IterableIndexed<T>(val i:Indexed<T>): Indexed<T> by i , Iterable<T>  {
-    override fun iterator(): Iterator<T> =i.iterator()
+@JvmInline
+value class IterableIndexed<T>(val i: Indexed<T>) : Indexed<T> by i, Iterable<T> {
+    override fun iterator(): Iterator<T> { return i.iterator()}
 }
 
 val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 
-fun <T> List<T>.toIdx(): Indexed<T> = toIndexed()
-fun <T> Array<T>.toIdx(): Indexed<T> = toIndexed()
+fun <T> List<T>.toIdx(): Indexed<T> = toIdx()
+fun <T> Array<T>.toIdx(): Indexed<T> = toIdx()
 fun IntArray.toIdx(): Indexed<Int> = size j { this[it] }
 fun DoubleArray.toIdx(): Indexed<Double> = size j { this[it] }
 fun FloatArray.toIdx(): Indexed<Float> = size j { this[it] }
@@ -622,5 +621,6 @@ fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
 fun BooleanArray.toIdx(): Indexed<Boolean> = size j { this[it] }
 fun CharArray.toIdx(): Indexed<Char> = size j { this[it] }
 fun String.toIdx(): Indexed<Char> = length j { this[it] }
- @Deprecated ("causes accidents leaking the internals")
-suspend fun <T> Indexed<T>.memoize(): Indexed<T>  = apply{}
+
+@Deprecated("causes accidents leaking the internals")
+suspend fun <T> Indexed<T>.memoize(): Indexed<T> = apply {}
