@@ -106,7 +106,7 @@ inline fun crypto_hash_sha256(
     if (output.a < 32) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified SHA-256 placeholder
-    val result = output.cow
+    val result = output.cowView
     for (i in 0 until 32) {
         result[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x5A).toByte()
@@ -124,7 +124,7 @@ inline fun crypto_hash_sha384(
     if (output.a < 48) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified SHA-384 placeholder
-    val result = output.cow
+    val result = output.cowView
     for (i in 0 until 48) {
         result[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x3C).toByte()
@@ -142,7 +142,7 @@ inline fun crypto_hash_sha512(
     if (output.a < 64) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified SHA-512 placeholder
-    val result = output.cow
+    val result = output.cowView
     for (i in 0 until 64) {
         result[i] = if (i < inputLen && i < input.a) 
             (input[i].toInt() xor 0x7E).toByte()
@@ -162,7 +162,7 @@ inline fun crypto_hmac_sha256(
     if (output.a < 32) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified HMAC-SHA256 placeholder
-    val result = output.cow
+    val result = output.cowView
     for (i in 0 until 32) {
         val k = if (i < keyLen && i < key.a) key[i].toInt() else 0
         val d = if (i < inputLen && i < input.a) input[i].toInt() else 0
@@ -189,7 +189,7 @@ inline fun crypto_aead_aes128gcm_encrypt(
     if (ciphertext.a < plaintextLen) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified AES-128-GCM encryption placeholder
-    val ciphertextResult = ciphertext.cow
+    val ciphertextResult = ciphertext.cowView
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i].toInt() else 0
@@ -199,7 +199,7 @@ inline fun crypto_aead_aes128gcm_encrypt(
     }
     
     // Generate tag
-    val tagResult = tag.cow
+    val tagResult = tag.cowView
     for (i in 0 until 16) {
         tagResult[i] = ((i xor 0xAE) and 0xFF).toByte()
     }
@@ -230,11 +230,12 @@ inline fun crypto_aead_aes128gcm_decrypt(
     }
     
     // Simplified AES-128-GCM decryption placeholder
+    val plaintextResult = plaintext.cowView
     for (i in 0 until ciphertextLen) {
         if (i < ciphertext.a && i < plaintext.a) {
             val k = if (i < key.a) key[i].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            plaintext[i] = ((ciphertext[i].toInt() xor k xor n) and 0xFF).toByte()
+            plaintextResult[i] = ((ciphertext[i].toInt() xor k xor n) and 0xFF).toByte()
         }
     }
     
@@ -257,17 +258,19 @@ inline fun crypto_aead_aes256gcm_encrypt(
     if (ciphertext.a < plaintextLen) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified AES-256-GCM encryption placeholder
+    val ciphertextResult = ciphertext.cowView
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i % 32].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertext[i] = ((plaintext[i].toInt() xor k xor n xor 0x25) and 0xFF).toByte()
+            ciphertextResult[i] = ((plaintext[i].toInt() xor k xor n xor 0x25) and 0xFF).toByte()
         }
     }
     
     // Generate tag
+    val tagResult = tag.cowView
     for (i in 0 until 16) {
-        tag[i] = ((i xor 0xBE) and 0xFF).toByte()
+        tagResult[i] = ((i xor 0xBE) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -289,17 +292,19 @@ inline fun crypto_aead_chacha20poly1305_encrypt(
     if (ciphertext.a < plaintextLen) return CryptoErrors.ERR_BUFFER_TOO_SMALL
     
     // Simplified ChaCha20-Poly1305 encryption placeholder
+    val ciphertextResult = ciphertext.cowView
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
             val k = if (i < key.a) key[i % 32].toInt() else 0
             val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertext[i] = ((plaintext[i].toInt() xor k xor n xor 0x20) and 0xFF).toByte()
+            ciphertextResult[i] = ((plaintext[i].toInt() xor k xor n xor 0x20) and 0xFF).toByte()
         }
     }
     
     // Generate tag
+    val tagResult = tag.cowView
     for (i in 0 until 16) {
-        tag[i] = ((i xor 0xCC) and 0xFF).toByte()
+        tagResult[i] = ((i xor 0xCC) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -318,12 +323,14 @@ inline fun crypto_kx_x25519_keypair(
     crypto_random_bytes(privateKey, 32)
     
     // Clamp private key
-    privateKey[0] = (privateKey[0].toInt() and 248).toByte()
-    privateKey[31] = ((privateKey[31].toInt() and 127) or 64).toByte()
+    val privateKeyResult = privateKey.cowView
+    privateKeyResult[0] = (privateKey[0].toInt() and 248).toByte()
+    privateKeyResult[31] = ((privateKey[31].toInt() and 127) or 64).toByte()
     
     // Derive public key (simplified)
+    val publicKeyResult = publicKey.cowView
     for (i in 0 until 32) {
-        publicKey[i] = (privateKey[i].toInt() xor 0x25).toByte()
+        publicKeyResult[i] = (privateKey[i].toInt() xor 0x25).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -339,10 +346,11 @@ inline fun crypto_kx_x25519_shared_secret(
     if (publicKey.a < 32) return CryptoErrors.ERR_INVALID_KEY
     
     // Compute shared secret (simplified)
+    val sharedSecretResult = sharedSecret.cowView
     for (i in 0 until 32) {
         val priv = privateKey[i].toInt() and 0xFF
         val pub = publicKey[i].toInt() and 0xFF
-        sharedSecret[i] = ((priv * pub) and 0xFF).toByte()
+        sharedSecretResult[i] = ((priv * pub) and 0xFF).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -361,9 +369,11 @@ inline fun crypto_sign_ed25519_keypair(
     crypto_random_bytes(privateKey, 32)
     
     // Derive public key (simplified)
+    val publicKeyResult = publicKey.cowView
+    val privateKeyResult = privateKey.cowView
     for (i in 0 until 32) {
-        publicKey[i] = (privateKey[i].toInt() xor 0xED).toByte()
-        privateKey[32 + i] = publicKey[i] // Copy public key to second half
+        publicKeyResult[i] = (privateKey[i].toInt() xor 0xED).toByte()
+        privateKeyResult[32 + i] = publicKeyResult[i] // Copy public key to second half
     }
     
     return CryptoErrors.SUCCESS
@@ -578,7 +588,7 @@ inline fun crypto_mac_poly1305(
     return CryptoErrors.SUCCESS
 }
 
-// === ARGON2 PASSWORD HASHING ===
+// === ARON2 PASSWORD HASHING ===
 
 inline fun crypto_pwhash_argon2id(
     output: Indexed<Byte>,

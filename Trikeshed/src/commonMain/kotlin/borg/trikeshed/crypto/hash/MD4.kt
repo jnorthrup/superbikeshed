@@ -42,10 +42,10 @@ object MD4Hasher {
         val paddedInput = pad(input)
         val blocks = paddedInput.size / blockSize
 
-        var a = A
-        var b = B
-        var c = C
-        var d = D
+        var a = A.toLong()
+        var b = B.toLong()
+        var c = C.toLong()
+        var d = D.toLong()
 
         // Vectorized block processing
         for (blockIndex in 0 until blocks) {
@@ -54,14 +54,14 @@ object MD4Hasher {
 
             // SIMD-friendly MD4 round functions
             val (newA, newB, newC, newD) = processMD4Block(blockData, a, b, c, d)
-            a = (a.toLong() + newA.toLong()).toInt()
-            b = (b.toLong() + newB.toLong()).toInt()
-            c = (c.toLong() + newC.toLong()).toInt()
-            d = (d.toLong() + newD.toLong()).toInt()
+            a = a + newA
+            b = b + newB
+            c = c + newC
+            d = d + newD
         }
 
         // Convert to little-endian bytes (SIMD-friendly)
-        return intArrayOf(a, b, c, d).flatMap {
+        return intArrayOf(a.toInt(), b.toInt(), c.toInt(), d.toInt()).flatMap {
             listOf(
                 (it and 0xFF).toByte(),
                 ((it shr 8) and 0xFF).toByte(),
@@ -87,7 +87,7 @@ object MD4Hasher {
         return padded
     }
 
-    private fun processMD4Block(block: ByteArray, a: Int, b: Int, c: Int, d: Int): IntArray {
+    private fun processMD4Block(block: ByteArray, a: Long, b: Long, c: Long, d: Long): LongArray {
         // SIMD-friendly MD4 round processing
         // Process 16 32-bit words in parallel-friendly manner
         val words = IntArray(16) { i ->
@@ -98,78 +98,72 @@ object MD4Hasher {
                     ((block[offset + 3].toInt() and 0xFF) shl 24)
         }
 
-        var aa = a.toLong()
-        var bb = b.toLong()
-        var cc = c.toLong()
-        var dd = d.toLong()
+        var aa = a
+        var bb = b
+        var cc = c
+        var dd = d
 
         // Round 1
-        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[0].toLong(), 3).toLong()
-        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[1].toLong(), 7).toLong()
-        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[2].toLong(), 11).toLong()
-        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[3].toLong(), 19).toLong()
-        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[4].toLong(), 3).toLong()
-        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[5].toLong(), 7).toLong()
-        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[6].toLong(), 11).toLong()
-        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[7].toLong(), 19).toLong()
-        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[8].toLong(), 3).toLong()
-        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[9].toLong(), 7).toLong()
-        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[10].toLong(), 11).toLong()
-        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[11].toLong(), 19).toLong()
-        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[12].toLong(), 3).toLong()
-        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[13].toLong(), 7).toLong()
-        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[14].toLong(), 11).toLong()
-        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[15].toLong(), 19).toLong()
+        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[0].toLong(), 3)
+        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[1].toLong(), 7)
+        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[2].toLong(), 11)
+        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[3].toLong(), 19)
+        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[4].toLong(), 3)
+        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[5].toLong(), 7)
+        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[6].toLong(), 11)
+        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[7].toLong(), 19)
+        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[8].toLong(), 3)
+        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[9].toLong(), 7)
+        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[10].toLong(), 11)
+        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[11].toLong(), 19)
+        aa = rotateLeft(aa + f(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[12].toLong(), 3)
+        dd = rotateLeft(dd + f(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[13].toLong(), 7)
+        cc = rotateLeft(cc + f(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[14].toLong(), 11)
+        bb = rotateLeft(bb + f(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[15].toLong(), 19)
 
         // Round 2
-        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[0].toLong() + 0x5A827999L, 3).toLong()
-        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[4].toLong() + 0x5A827999L, 5).toLong()
-        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[8].toLong() + 0x5A827999L, 9).toLong()
-        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[12].toLong() + 0x5A827999L, 13).toLong()
-        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[1].toLong() + 0x5A827999L, 3).toLong()
-        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[5].toLong() + 0x5A827999L, 5).toLong()
-        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[9].toLong() + 0x5A827999L, 9).toLong()
-        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[13].toLong() + 0x5A827999L, 13).toLong()
-        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[2].toLong() + 0x5A827999L, 3).toLong()
-        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[6].toLong() + 0x5A827999L, 5).toLong()
-        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[10].toLong() + 0x5A827999L, 9).toLong()
-        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[14].toLong() + 0x5A827999L, 13).toLong()
-        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[3].toLong() + 0x5A827999L, 3).toLong()
-        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[7].toLong() + 0x5A827999L, 5).toLong()
-        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[11].toLong() + 0x5A827999L, 9).toLong()
-        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[15].toLong() + 0x5A827999L, 13).toLong()
+        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[0].toLong() + 0x5A827999L, 3)
+        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[4].toLong() + 0x5A827999L, 5)
+        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[8].toLong() + 0x5A827999L, 9)
+        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[12].toLong() + 0x5A827999L, 13)
+        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[1].toLong() + 0x5A827999L, 3)
+        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[5].toLong() + 0x5A827999L, 5)
+        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[9].toLong() + 0x5A827999L, 9)
+        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[13].toLong() + 0x5A827999L, 13)
+        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[2].toLong() + 0x5A827999L, 3)
+        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[6].toLong() + 0x5A827999L, 5)
+        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[10].toLong() + 0x5A827999L, 9)
+        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[14].toLong() + 0x5A827999L, 13)
+        aa = rotateLeft(aa + g(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[3].toLong() + 0x5A827999L, 3)
+        dd = rotateLeft(dd + g(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[7].toLong() + 0x5A827999L, 5)
+        cc = rotateLeft(cc + g(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[11].toLong() + 0x5A827999L, 9)
+        bb = rotateLeft(bb + g(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[15].toLong() + 0x5A827999L, 13)
 
         // Round 3
-        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[0].toLong() + 0x6ED9EBA1L, 3).toLong()
-        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[8].toLong() + 0x6ED9EBA1L, 9).toLong()
-        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[4].toLong() + 0x6ED9EBA1L, 11).toLong()
-        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[12].toLong() + 0x6ED9EBA1L, 15).toLong()
-        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[2].toLong() + 0x6ED9EBA1L, 3).toLong()
-        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[10].toLong() + 0x6ED9EBA1L, 9).toLong()
-        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[6].toLong() + 0x6ED9EBA1L, 11).toLong()
-        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[14].toLong() + 0x6ED9EBA1L, 15).toLong()
-        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[1].toLong() + 0x6ED9EBA1L, 3).toLong()
-        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[9].toLong() + 0x6ED9EBA1L, 9).toLong()
-        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[5].toLong() + 0x6ED9EBA1L, 11).toLong()
-        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[13].toLong() + 0x6ED9EBA1L, 15).toLong()
-        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[3].toLong() + 0x6ED9EBA1L, 3).toLong()
-        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[11].toLong() + 0x6ED9EBA1L, 9).toLong()
-        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[7].toLong() + 0x6ED9EBA1L, 11).toLong()
-        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[15].toLong() + 0x6ED9EBA1L, 15).toLong()
+        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[0].toLong() + 0x6ED9EBA1L, 3)
+        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[8].toLong() + 0x6ED9EBA1L, 9)
+        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[4].toLong() + 0x6ED9EBA1L, 11)
+        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[12].toLong() + 0x6ED9EBA1L, 15)
+        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[2].toLong() + 0x6ED9EBA1L, 3)
+        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[10].toLong() + 0x6ED9EBA1L, 9)
+        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[6].toLong() + 0x6ED9EBA1L, 11)
+        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[14].toLong() + 0x6ED9EBA1L, 15)
+        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[1].toLong() + 0x6ED9EBA1L, 3)
+        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[9].toLong() + 0x6ED9EBA1L, 9)
+        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[5].toLong() + 0x6ED9EBA1L, 11)
+        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[13].toLong() + 0x6ED9EBA1L, 15)
+        aa = rotateLeft(aa + h(bb.toInt(), cc.toInt(), dd.toInt()).toLong() + words[3].toLong() + 0x6ED9EBA1L, 3)
+        dd = rotateLeft(dd + h(aa.toInt(), bb.toInt(), cc.toInt()).toLong() + words[11].toLong() + 0x6ED9EBA1L, 9)
+        cc = rotateLeft(cc + h(dd.toInt(), aa.toInt(), bb.toInt()).toLong() + words[7].toLong() + 0x6ED9EBA1L, 11)
+        bb = rotateLeft(bb + h(cc.toInt(), dd.toInt(), aa.toInt()).toLong() + words[15].toLong() + 0x6ED9EBA1L, 15)
 
-        return intArrayOf(aa.toInt(), bb.toInt(), cc.toInt(), dd.toInt())
-
-        return intArrayOf(aa.toInt(), bb.toInt(), cc.toInt(), dd.toInt())
-
-        return intArrayOf(aa.toInt(), bb.toInt(), cc.toInt(), dd.toInt())
-
-        return intArrayOf(aa, bb, cc, dd)
+        return longArrayOf(aa, bb, cc, dd)
     }
 
     private fun f(x: Int, y: Int, z: Int): Int = (x and y) or (x.inv() and z)
     private fun g(x: Int, y: Int, z: Int): Int = (x and y) or (x and z) or (y and z)
     private fun h(x: Int, y: Int, z: Int): Int = x xor y xor z
-    private fun rotateLeft(value: Int, shift: Int): Int = (value shl shift) or (value ushr (32 - shift))
+    private fun rotateLeft(value: Long, shift: Int): Long = ((value and 0xFFFFFFFFL) shl shift) or ((value and 0xFFFFFFFFL) ushr (32 - shift))
 }
 
 /**

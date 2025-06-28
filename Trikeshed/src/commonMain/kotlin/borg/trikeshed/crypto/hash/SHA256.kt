@@ -18,7 +18,7 @@ import borg.trikeshed.lib.j
 object SHA256Hasher {
     fun hash(data: Indexed<Byte>): Indexed<Byte> {
         // Convert Indexed to big array for SIMD optimization
-        val inputArray = ByteArray(data.size) { data[it] }
+        val inputArray = ByteArray(data.a) { data.b(it) }
         val result = sha256Hash(inputArray)
         return result.size j { result[it] }
     }
@@ -27,36 +27,36 @@ object SHA256Hasher {
         // SHA256 constants for SIMD-friendly processing
         val h = IntArray(8) { i ->
             when (i) {
-                0 -> 0x6a09e667
-                1 -> 0xbb67ae85
-                2 -> 0x3c6ef372
-                3 -> 0xa54ff53a
-                4 -> 0x510e527f
-                5 -> 0x9b05688c
-                6 -> 0x1f83d9ab
-                7 -> 0x5be0cd19
+                0 -> 0x6a09e667.toInt()
+                1 -> 0xbb67ae85.toInt()
+                2 -> 0x3c6ef372.toInt()
+                3 -> 0xa54ff53a.toInt()
+                4 -> 0x510e527f.toInt()
+                5 -> 0x9b05688c.toInt()
+                6 -> 0x1f83d9ab.toInt()
+                7 -> 0x5be0cd19.toInt()
                 else -> 0
             }
         }
         
         val k = IntArray(64) { i ->
             when (i) {
-                0 -> 0x428a2f98; 1 -> 0x71374491; 2 -> 0xb5c0fbcf; 3 -> 0xe9b5dba5
-                4 -> 0x3956c25b; 5 -> 0x59f111f1; 6 -> 0x923f82a4; 7 -> 0xab1c5ed5
-                8 -> 0xd807aa98; 9 -> 0x12835b01; 10 -> 0x243185be; 11 -> 0x550c7dc3
-                12 -> 0x72be5d74; 13 -> 0x80deb1fe; 14 -> 0x9bdc06a7; 15 -> 0xc19bf174
-                16 -> 0xe49b69c1; 17 -> 0xefbe4786; 18 -> 0x0fc19dc6; 19 -> 0x240ca1cc
-                20 -> 0x2de92c6f; 21 -> 0x4a7484aa; 22 -> 0x5cb0a9dc; 23 -> 0x76f988da
-                24 -> 0x983e5152; 25 -> 0xa831c66d; 26 -> 0xb00327c8; 27 -> 0xbf597fc7
-                28 -> 0xc6e00bf3; 29 -> 0xd5a79147; 30 -> 0x06ca6351; 31 -> 0x14292967
-                32 -> 0x27b70a85; 33 -> 0x2e1b2138; 34 -> 0x4d2c6dfc; 35 -> 0x53380d13
-                36 -> 0x650a7354; 37 -> 0x766a0abb; 38 -> 0x81c2c92e; 39 -> 0x92722c85
-                40 -> 0xa2bfe8a1; 41 -> 0xa81a664b; 42 -> 0xc24b8b70; 43 -> 0xc76c51a3
-                44 -> 0xd192e819; 45 -> 0xd6990624; 46 -> 0xf40e3585; 47 -> 0x106aa070
-                48 -> 0x19a4c116; 49 -> 0x1e376c08; 50 -> 0x2748774c; 51 -> 0x34b0bcb5
-                52 -> 0x391c0cb3; 53 -> 0x4ed8aa4a; 54 -> 0x5b9cca4f; 55 -> 0x682e6ff3
-                56 -> 0x748f82ee; 57 -> 0x78a5636f; 58 -> 0x84c87814; 59 -> 0x8cc70208
-                60 -> 0x90befffa; 61 -> 0xa4506ceb; 62 -> 0xbef9a3f7; 63 -> 0xc67178f2
+                0 -> 0x428a2f98.toInt(); 1 -> 0x71374491.toInt(); 2 -> 0xb5c0fbcf.toInt(); 3 -> 0xe9b5dba5.toInt()
+                4 -> 0x3956c25b.toInt(); 5 -> 0x59f111f1.toInt(); 6 -> 0x923f82a4.toInt(); 7 -> 0xab1c5ed5.toInt()
+                8 -> 0xd807aa98.toInt(); 9 -> 0x12835b01.toInt(); 10 -> 0x243185be.toInt(); 11 -> 0x550c7dc3.toInt()
+                12 -> 0x72be5d74.toInt(); 13 -> 0x80deb1fe.toInt(); 14 -> 0x9bdc06a7.toInt(); 15 -> 0xc19bf174.toInt()
+                16 -> 0xe49b69c1.toInt(); 17 -> 0xefbe4786.toInt(); 18 -> 0x0fc19dc6.toInt(); 19 -> 0x240ca1cc.toInt()
+                20 -> 0x2de92c6f.toInt(); 21 -> 0x4a7484aa.toInt(); 22 -> 0x5cb0a9dc.toInt(); 23 -> 0x76f988da.toInt()
+                24 -> 0x983e5152.toInt(); 25 -> 0xa831c66d.toInt(); 26 -> 0xb00327c8.toInt(); 27 -> 0xbf597fc7.toInt()
+                28 -> 0xc6e00bf3.toInt(); 29 -> 0xd5a79147.toInt(); 30 -> 0x06ca6351.toInt(); 31 -> 0x14292967.toInt()
+                32 -> 0x27b70a85.toInt(); 33 -> 0x2e1b2138.toInt(); 34 -> 0x4d2c6dfc.toInt(); 35 -> 0x53380d13.toInt()
+                36 -> 0x650a7354.toInt(); 37 -> 0x766a0abb.toInt(); 38 -> 0x81c2c92e.toInt(); 39 -> 0x92722c85.toInt()
+                40 -> 0xa2bfe8a1.toInt(); 41 -> 0xa81a664b.toInt(); 42 -> 0xc24b8b70.toInt(); 43 -> 0xc76c51a3.toInt()
+                44 -> 0xd192e819.toInt(); 45 -> 0xd6990624.toInt(); 46 -> 0xf40e3585.toInt(); 47 -> 0x106aa070.toInt()
+                48 -> 0x19a4c116.toInt(); 49 -> 0x1e376c08.toInt(); 50 -> 0x2748774c.toInt(); 51 -> 0x34b0bcb5.toInt()
+                52 -> 0x391c0cb3.toInt(); 53 -> 0x4ed8aa4a.toInt(); 54 -> 0x5b9cca4f.toInt(); 55 -> 0x682e6ff3.toInt()
+                56 -> 0x748f82ee.toInt(); 57 -> 0x78a5636f.toInt(); 58 -> 0x84c87814.toInt(); 59 -> 0x8cc70208.toInt()
+                60 -> 0x90befffa.toInt(); 61 -> 0xa4506ceb.toInt(); 62 -> 0xbef9a3f7.toInt(); 63 -> 0xc67178f2.toInt()
                 else -> 0
             }
         }
