@@ -106,7 +106,7 @@ class HttpQuicServer(
                 HttpResponse(
                     status = HttpStatus.NOT_FOUND,
                     headers = emptyIndexed(),
-                    body = "Not Found".encodeToByteArray().toIdx()
+                    body = "Not Found".encodeToByteArray()
                 )
             }
             

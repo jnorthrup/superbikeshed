@@ -32,7 +32,7 @@ object QuicPacketBuilder {
                         0x54, 0x72, 0x69, 0x6B, 0x65, 0x53, 0x68, 0x64  // "TrikeSHd"
                     ).let { it.size j { i: Int -> it[i] } }
                 ),
-                packetNumber = (borg.trikeshed.reactor.getCurrentTimeMillis() and 0xFFFFFFL).toInt()
+                packetNumber = (currentTimeMillis() and 0xFFFFFFL).toInt()
             ),
             frames = 1 j {
                 StreamFrame(

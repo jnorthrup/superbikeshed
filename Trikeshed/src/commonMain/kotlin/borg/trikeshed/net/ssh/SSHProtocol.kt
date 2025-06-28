@@ -196,7 +196,7 @@ data class SSHPacket(
             
             return SSHPacket(
                 packetLength = packetLength,
-                paddingLength = SSHPaddingLength(paddingLength.toUByte()),
+                paddingLength = SSHPaddingLength(paddingLength.toByte()),
                 payload = payload,
                 padding = padding
             )
@@ -340,7 +340,7 @@ class SSHConnection(
     
     // Channels
     private val channels = mutableMapOf<SSHChannelID, SSHChannel>()
-    private var nextChannelId = SSHChannelID(0u)
+    private var nextChannelId = SSHChannelID(0)
     
     // Supported algorithms
     private val supportedKexAlgorithms = listOf(
@@ -461,7 +461,7 @@ class SSHConnection(
         maxPacketSize: ChannelPacketSize = ChannelPacketSize(32768u) // 32KB
     ): SSHChannel? {
         val localId = nextChannelId
-        nextChannelId = SSHChannelID((nextChannelId.id + 1u).toInt())
+        nextChannelId = SSHChannelID(nextChannelId.value + 1)
         
         val channel = SSHChannel(
             localId = localId,

@@ -95,7 +95,7 @@ class HttpQuicIntegration(
                     buffer[buffer.size - 2] == '\r'.code.toByte() && 
                     buffer[buffer.size - 1] == '\n'.code.toByte()) {
                     
-                    val requestLine = String(buffer.dropLast(2).toByteArray())
+                    val requestLine = buffer.dropLast(2).toByteArray().decodeToString()
                     httpVersion = detectHttpVersion(requestLine)
                     break
                 }
@@ -133,7 +133,7 @@ class HttpQuicIntegration(
      * Handle HTTP/0.9 request
      */
     private suspend fun handleHttp09(stream: QuicStream, buffer: MutableList<Byte>) {
-        val requestLine = String(buffer.toByteArray()).trim()
+        val requestLine = buffer.toByteArray().decodeToString().trim()
         val parts = requestLine.split(" ")
         
         if (parts.isNotEmpty() && parts[0] == "GET") {
@@ -263,7 +263,7 @@ class HttpQuicIntegration(
         }
         
         // Read body if Content-Length header present
-        val headers = String(buffer.toByteArray()).substringBefore("\r\n\r\n")
+        val headers = buffer.toByteArray().decodeToString().substringBefore("\r\n\r\n")
         val contentLength = extractContentLength(headers)
         
         if (contentLength > 0) {

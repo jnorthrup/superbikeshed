@@ -178,7 +178,7 @@ private class ByteArrayBuilder {
     
     fun append(bytes: ByteArray, offset: Int, length: Int) {
         ensureCapacity(position + length)
-        System.arraycopy(bytes, offset, buffer, position, length)
+        bytes.copyInto(buffer, position, offset, offset + length)
         position += length
     }
     

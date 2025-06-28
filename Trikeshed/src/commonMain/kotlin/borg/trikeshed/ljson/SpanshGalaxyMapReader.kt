@@ -381,7 +381,7 @@ interface BlockCache {
  * LRU cache implementation for blocks
  */
 class LRUBlockCache(private val maxSizeBytes: Long) : BlockCache {
-    private val cache = LinkedHashMap<String, Indexed<Byte>>(16, 0.75f, true)
+    private val cache = LinkedHashMap<String, Indexed<Byte>>()
     private var currentSize = 0L
     
     override suspend fun get(fileId: String, blockId: Int): Indexed<Byte>? {
@@ -394,7 +394,7 @@ class LRUBlockCache(private val maxSizeBytes: Long) : BlockCache {
         
         // Remove old entries if needed
         while (currentSize + size > maxSizeBytes && cache.isNotEmpty()) {
-            val oldest = cache.entries.first()
+            val oldest = cache.iterator().next()
             cache.remove(oldest.key)
             currentSize -= oldest.value.a
         }
