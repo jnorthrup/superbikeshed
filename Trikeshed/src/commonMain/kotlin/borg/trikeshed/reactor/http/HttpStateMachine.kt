@@ -11,7 +11,7 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
     private val responseHeaders = mutableMapOf<String, String>()
 
     fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
-        buffer.flip()
+        // TODO: Implement buffer.flip() for ByteBuffer
 
         // Simplified parsing - just return a basic response
         val response = generateMotdResponse(emptyMap())
@@ -28,20 +28,20 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
             object : UnaryAsyncReaction {
                 override fun invoke(key: SelectionKey): Join<Int, UnaryAsyncReaction>? {
                     return try {
-                        socket.write(responseBuffer)
+                        // TODO: Implement socket.write() for ClientChannel
                         
                         if (responseBuffer.hasRemaining()) {
                             // More data to write, register for write again
-                            key.interestOps(1 shl 2) // OP_WRITE
+                            // TODO: Implement key.interestOps() for SelectionKey
                             Join(1 shl 2, this)
                         } else {
                             // All data written, close connection
-                            socket.close()
+                            // TODO: Implement socket.close() for ClientChannel
                             null
                         }
                     } catch (e: Exception) {
                         println("Error writing response: ${e.message}")
-                        socket.close()
+                        // TODO: Implement socket.close() for ClientChannel
                         null
                     }
                 }

@@ -470,3 +470,6 @@ class DHTQuicIntegration(
 
 // Extension to convert NUID to ByteArray
 public fun NUID.toByteArray(): ByteArray = ByteArray(size) { i -> bytes[i] }
+
+// Extension to convert Indexed<Byte> to ByteArray
+public fun Indexed<Byte>.toByteArray(): ByteArray = ByteArray(a) { i -> b(i) }

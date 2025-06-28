@@ -61,7 +61,7 @@ data class HttpServerContext(
     val packingStrategy: PackingStrategy = PackingStrategy.REGISTER_SWEET_SPOT,
     val nativeAccess: Boolean = false,
     val packerRegisters: PackerRegister = 0 j { 0 },
-    val traitGraph: Indexed<ContextTraitGraph> = 0 j { "" j CoroutineContext.Element },
+    val traitGraph: Indexed<ContextTraitGraph> = 0 j { "" j EmptyCoroutineContext },
     val asyncHierarchy: AsyncHierarchyControl = AsyncHierarchyControl(),
     val mapReduceEngine: ConcurrentMapReduceEngine = ConcurrentMapReduceEngine()
 ) : CoroutineContext.Element {
@@ -169,7 +169,11 @@ class ConcurrentMapReduceEngine {
         }
         
         // Final reduction
-        return results.a j { i: Int -> results.b(i) } j reducer
+        var result = identity
+        for (i in 0 until results.a) {
+            result = reducer(result, results.b(i))
+        }
+        return result
     }
     
     private fun calculateOptimalChunkSize(dataSize: Int): Int {
@@ -197,7 +201,11 @@ class ConcurrentMapReduceEngine {
         reducer: (R, R) -> R,
         identity: R
     ): R {
-        return chunk.a j { i: Int -> mapper(chunk.b(i)) } j reducer
+        var result = identity
+        for (i in 0 until chunk.a) {
+            result = reducer(result, mapper(chunk.b(i)))
+        }
+        return result
     }
 }
 

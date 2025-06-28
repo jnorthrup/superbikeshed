@@ -272,7 +272,7 @@ class SpanshGalaxyMapReader(
      * Parse a single system line (LJSON format)
      */
     private fun parseSystemLine(line: String): GalaxySystem {
-        return SimpleJsonParser.parseSystemLine(line) ?: GalaxySystem(
+        return borg.trikeshed.ljson.JsonLinesParser.parseGalaxySystem(line) ?: GalaxySystem(
             id = 0L,
             name = "Unknown",
             coords = 0.0 j (0.0 j 0.0),
@@ -438,7 +438,7 @@ data class HttpResponse(
  */
 private object SimpleJsonParser {
     fun parseSystemLine(line: String): GalaxySystem? {
-        return JsonLinesParser.parseGalaxySystem(line)
+        return borg.trikeshed.ljson.JsonLinesParser.parseGalaxySystem(line)
     }
 }
 

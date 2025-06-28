@@ -490,6 +490,47 @@ class Http3Connection(
         }
         return bytes.size j { i: Int -> bytes[i] }
     }
+    
+    /**
+     * Handle push stream
+     */
+    private suspend fun handlePushStream(stream: QuicStream) {
+        // Read push ID
+        val pushId = readVarInt(stream)
+        if (pushId == null) {
+            stream.close()
+            return
+        }
+        
+        // Handle push stream data
+        while (stream.hasData()) {
+            val data = readAllBytes(stream)
+            // Process push data (simplified)
+            println("Received push data: ${data.size} bytes")
+        }
+    }
+    
+    /**
+     * Handle QPACK encoder stream
+     */
+    private suspend fun handleQpackEncoderStream(stream: QuicStream) {
+        while (stream.hasData()) {
+            val data = readAllBytes(stream)
+            // Process QPACK encoder stream data (simplified)
+            println("Received QPACK encoder data: ${data.size} bytes")
+        }
+    }
+    
+    /**
+     * Handle QPACK decoder stream
+     */
+    private suspend fun handleQpackDecoderStream(stream: QuicStream) {
+        while (stream.hasData()) {
+            val data = readAllBytes(stream)
+            // Process QPACK decoder stream data (simplified)
+            println("Received QPACK decoder data: ${data.size} bytes")
+        }
+    }
 }
 
 /**

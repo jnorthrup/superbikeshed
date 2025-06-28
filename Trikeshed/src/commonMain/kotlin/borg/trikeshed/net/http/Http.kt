@@ -143,7 +143,7 @@ data class HttpResponse(
 }
 
 fun Map<String, String>.toHttpHeaders(): Indexed<Join<HttpHeaderName, HttpHeaderValue>> =
-    this.map { HttpHeaderName(it.key) j HttpHeaderValue(it.value) }.toIndexed()
+    this.map { HttpHeaderName(it.key) j HttpHeaderValue(it.value) }.toIdx()
 
 suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation needed")
 

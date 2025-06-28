@@ -9,6 +9,15 @@ import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
 
 /**
+ * HTTP Server Configuration
+ */
+data class HttpServerConfig(
+    val host: String = "0.0.0.0",
+    val port: Int = 8080,
+    val maxHeaderSize: Int = 8192
+)
+
+/**
  * Integrates HTTP protocols with QUIC transport
  * Supports HTTP/0.9, 1.0, 1.1 over QUIC streams
  */
@@ -37,14 +46,21 @@ class HttpQuicIntegration(
      * Start HTTP over QUIC server
      */
     suspend fun start() {
-        println("Starting HTTP over QUIC server on ${config.host.value}:${config.port.value}")
+        println("Starting HTTP over QUIC server on ${config.host}:${config.port}")
         
         // Set up QUIC connection handler
-        quicServer.onConnection { connection ->
-            GlobalScope.launch {
-                handleHttpOverQuic(connection)
+        quicServer.onConnection(object : ConnectionHandler {
+            override suspend fun onConnect(connection: QuicConnection) {
+                GlobalScope.launch {
+                    handleHttpOverQuic(connection)
+                }
             }
-        }
+            
+            override suspend fun onDisconnect(connectionId: ConnectionId) {
+                // Handle disconnection
+                println("HTTP connection disconnected: $connectionId")
+            }
+        })
     }
     
     /**

@@ -132,7 +132,7 @@ fun <V, M> CompressedPatriciaNode<V, M>.insert(key: String, value: V, meta: M = 
             return copy(value = value, meta = meta)
         }
         // Case 5: No commonality (should not happen at root, but handle defensively)
-        else -> this
+        else -> return this
     }
 }
 

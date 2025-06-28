@@ -71,7 +71,7 @@ object TLS13Protocol {
         const val CERTIFICATE_VERIFY: HandshakeType = 15
         const val FINISHED: HandshakeType = 20
         const val KEY_UPDATE: HandshakeType = 24
-        const val MESSAGE_HASH: HandshakeType = 254
+        const val MESSAGE_HASH: HandshakeType = 254.toByte()
     }
     
     // === EXTENSION TYPES ===
@@ -102,8 +102,8 @@ object TLS13Protocol {
     
     // === ALERT LEVELS ===
     object AlertLevels {
-        const val WARNING: AlertLevel = 1
-        const val FATAL: AlertLevel = 2
+        const val WARNING: AlertLevel = 1.toByte()
+        const val FATAL: AlertLevel = 2.toByte()
     }
     
     // === ALERT DESCRIPTIONS ===
@@ -691,8 +691,8 @@ class TLS13Connection(
         val extensionsEnd = offset + extensionsLength
         while (offset < extensionsEnd) {
             val extType = ExtensionType(
-                ((body[offset].toInt() and 0xFF) shl 8) or 
-                (body[offset + 1].toInt() and 0xFF)
+                (((body[offset].toInt() and 0xFF) shl 8) or 
+                (body[offset + 1].toInt() and 0xFF)).toShort()
             )
             offset += 2
             

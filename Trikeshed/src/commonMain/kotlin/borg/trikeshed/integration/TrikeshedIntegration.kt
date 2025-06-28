@@ -53,7 +53,7 @@ class TrikeshedIntegration(
     private lateinit var couchClient: CouchClient
     private lateinit var ipfsClient: IpfsClient
     private lateinit var httpServer: HttpQuicServer
-    private lateinit var quicServer: QuicServer
+    private lateinit var quicServer: borg.trikeshed.net.quic.QuicServer
     private lateinit var quicEngine: QuicEngine
     
     // Reactor network
@@ -96,10 +96,10 @@ class TrikeshedIntegration(
             ipfsClient = IpfsClient(peerId, quicEngine, ipfsStorage, ipfsConfig)
             
             // Initialize QUIC server
-            quicServer = QuicServer(quicEngine, quicPort)
+            quicServer = borg.trikeshed.net.quic.QuicServer(quicEngine, quicPort)
             
             // Initialize HTTP QUIC server
-            httpServer = HttpQuicServer(quicEngine, quicPort)
+            httpServer = HttpQuicServer(quicServer, HttpServerConfig(port = quicPort))
             setupHttpRoutes()
             
             // Initialize reactor

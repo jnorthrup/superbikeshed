@@ -5,7 +5,7 @@ package borg.trikeshed.reactor
 typealias Interest = Int
 
 // Platform-agnostic time function that returns current time in milliseconds
-fun currentTimeMillis(): Long = kotlin.system.getTimeMillis()
+fun currentTimeMillis(): Long = System.currentTimeMillis()
 
 sealed class AsyncReaction {
     object Continue : AsyncReaction()

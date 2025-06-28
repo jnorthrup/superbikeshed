@@ -42,6 +42,10 @@ object MD4Hasher {
         val paddedInput = pad(input)
         val blocks = paddedInput.size / blockSize
 
+
+
+
+
         var a = A.toLong()
         var b = B.toLong()
         var c = C.toLong()

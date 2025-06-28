@@ -1,27 +1,25 @@
-@file:OptIn(ExperimentalUnsignedTypes::class)
 package borg.trikeshed.net.http
 
-
-import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.quic.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+
+// Type alias for HTTP handler
+typealias HttpHandler = suspend (HttpRequest) -> HttpResponse
 
 /**
- * HTTP/3 Server over QUIC
- * Implements HTTP/3 protocol using QUIC transport
+ * HTTP/3 Server implementation
  */
-
-// === HTTP/3 IMPLEMENTATION ===
-
 class HttpQuicServer(
-    private val quicEngine: QuicEngine,
-    private val port: Int
+    private val quicServer: QuicServer,
+    private val config: HttpServerConfig = HttpServerConfig()
 ) {
     private val routes = mutableMapOf<String, HttpHandler>()
     private val middlewares = mutableListOf<HttpMiddleware>()
     
     /**
-     * Add a route handler
+     * Add route handler
      */
     fun route(path: String, handler: HttpHandler) {
         routes[path] = handler
@@ -35,28 +33,67 @@ class HttpQuicServer(
     }
     
     /**
-     * Start the HTTP/3 server
+     * Start HTTP/3 server
      */
     suspend fun start() {
-        println("HTTP/3 Server starting on port $port")
-        // Start QUIC engine and begin accepting connections
+        quicServer.start()
+        
+        // Set up QUIC connection handler
+        quicServer.onConnection(object : ConnectionHandler {
+            override suspend fun onConnect(connection: QuicConnection) {
+                kotlinx.coroutines.GlobalScope.launch {
+                    handleConnection(connection)
+                }
+            }
+            
+            override suspend fun onDisconnect(connectionId: ConnectionId) {
+                // Handle disconnection
+                println("HTTP/3 connection disconnected: $connectionId")
+            }
+        })
     }
     
     /**
-     * Stop the HTTP/3 server
+     * Handle QUIC connection
      */
-    suspend fun stop() {
-        println("HTTP/3 Server stopping")
-        // Stop QUIC engine and close connections
-    }
-    
-    /**
-     * Handle incoming QUIC stream
-     */
-    suspend fun handleStream(stream: QuicStream) {
+    private suspend fun handleConnection(connection: QuicConnection) {
         try {
-            // Parse HTTP/3 request
-            val request = parseHttp3Request(stream)
+            // Initialize HTTP/3 connection
+            val http3Connection = Http3Connection(connection, Http3Connection.Role.SERVER)
+            http3Connection.initialize()
+            
+            // Process streams
+            while (connection.isActive()) {
+                val stream = connection.acceptStream() ?: continue
+                
+                kotlinx.coroutines.GlobalScope.launch {
+                    handleStream(stream)
+                }
+            }
+        } catch (e: Exception) {
+            println("Error handling connection: ${e.message}")
+            connection.close()
+        }
+    }
+    
+    /**
+     * Handle QUIC stream
+     */
+    private suspend fun handleStream(stream: QuicStream) {
+        try {
+            val frames = mutableListOf<Http3Frame>()
+            
+            // Read frames from stream
+            while (stream.hasData()) {
+                val frameData = stream.readBytes(1024) // Read chunk
+                val (frame, _) = Http3Frame.decode(frameData)
+                if (frame != null) {
+                    frames.add(frame)
+                }
+            }
+            
+            // Parse request
+            val request = parseFramesToRequest(frames)
             
             // Apply middlewares
             val processedRequest = applyMiddlewares(request)
@@ -68,60 +105,22 @@ class HttpQuicServer(
             } else {
                 HttpResponse(
                     status = HttpStatus.NOT_FOUND,
-                    headers = (mapOf("content-type" to "text/plain").toIndexed()),
-                    body = "Not Found".encodeToByteArray()
+                    headers = emptyIndexed(),
+                    body = "Not Found".encodeToByteArray().toIdx()
                 )
             }
             
-            // Send HTTP/3 response
+            // Send response
             sendHttp3Response(stream, response)
             
         } catch (e: Exception) {
-            // Send error response
-            val errorResponse = HttpResponse(
-                status = HttpStatus.INTERNAL_SERVER_ERROR,
-                headers = (mapOf("content-type" to "text/plain").toIndexed()),
-                body = "Internal Server Error".encodeToByteArray()
-            )
-            sendHttp3Response(stream, errorResponse)
-        } finally {
+            println("Error handling stream: ${e.message}")
             stream.close()
         }
     }
     
     /**
-     * Parse HTTP/3 request from QUIC stream
-     */
-    private suspend fun parseHttp3Request(stream: QuicStream): HttpRequest {
-        // Read HTTP/3 frames from QUIC stream
-        val frames = mutableListOf<Http3Frame>()
-        
-        while (stream.hasData()) {
-            val frame = readHttp3Frame(stream)
-            frames.add(frame)
-        }
-        
-        // Parse HTTP/3 frames into HTTP request
-        return parseFramesToRequest(frames)
-    }
-    
-    /**
-     * Read HTTP/3 frame from stream
-     */
-    private suspend fun readHttp3Frame(stream: QuicStream): Http3Frame {
-        val frameType = stream.readByte()
-        val frameLength = stream.readVarInt()
-        val frameData = stream.readBytes(frameLength.toInt())
-        
-        return when (frameType) {
-            0x00.toByte() -> Http3Frame.Data(frameData)
-            0x01.toByte() -> Http3Frame.Headers(parseHeaders(frameData))
-            else -> Http3Frame.Unknown(frameType)
-        }
-    }
-    
-    /**
-     * Parse headers from frame data
+     * Parse HTTP/3 frames to extract headers
      */
     private fun parseHeaders(frameData: Indexed<Byte>): Indexed<Join<HttpHeaderName, HttpHeaderValue>> {
         val headers = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
@@ -143,7 +142,7 @@ class HttpQuicServer(
             headers.add(HttpHeaderName(name) j HttpHeaderValue(value))
         }
         
-        return headers.toIndexed()
+        return headers.toIdx()
     }
     
     /**
@@ -156,9 +155,9 @@ class HttpQuicServer(
         var body: ByteArray = byteArrayOf()
 
         for (frame in frames) {
-            when (frame) {
-                is Http3Frame.Headers -> {
-                    headers = frame.headers
+            when (frame.type) {
+                Http3Protocol.FrameTypes.HEADERS -> {
+                    headers = parseHeaders(frame.payload)
                     // Parse pseudo-headers
                     val methodHeader = headers.play.find { it.a.value == ":method" }?.b?.value
                     method = if(methodHeader != null) HttpMethod.valueOf(methodHeader) else HttpMethod.GET
@@ -166,8 +165,8 @@ class HttpQuicServer(
                     val pathHeader = headers.play.find { it.a.value == ":path" }?.b?.value
                     path = if(pathHeader != null) HttpRequestPath(pathHeader) else HttpRequestPath("/")
                 }
-                is Http3Frame.Data -> {
-                    body = frame.data.play.toList().toByteArray()
+                Http3Protocol.FrameTypes.DATA -> {
+                    body = frame.payload.play.toList().toByteArray()
                 }
                 else -> {}
             }
@@ -230,7 +229,7 @@ class HttpQuicServer(
         frameData.addAll(encodeVarInt(headerData.size.toLong()))
         frameData.addAll(headerData)
         
-        return frameData.toIndexed()
+        return frameData.toIdx()
     }
     
     /**
@@ -242,7 +241,7 @@ class HttpQuicServer(
         frameData.addAll(encodeVarInt(body.size.toLong()))
         frameData.addAll(body.toList())
         
-        return frameData.toIndexed()
+        return frameData.toIdx()
     }
     
     /**
@@ -254,38 +253,6 @@ class HttpQuicServer(
         // Add more complex cases if needed
         return listOf()
     }
-}
-
-// === HTTP/3 FRAME TYPES ===
-
-sealed class Http3Frame {
-    data class Data(val data: Indexed<Byte>) : Http3Frame()
-    data class Headers(val headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>) : Http3Frame()
-    data class Unknown(val frameType: Byte) : Http3Frame()
-}
-
-// === HTTP REQUEST/RESPONSE MODELS ===
-
-data class HttpRequest(
-    val method: HttpMethod,
-    val path: HttpPath,
-    val headers: HttpHeaders,
-    val body: HttpBody,
-    val queryParams: Map<String, String> = emptyMap()
-)
-
-data class HttpResponse(
-    val status: HttpStatus,
-    val headers: HttpHeaders,
-    val body: HttpBody
-)
-
-// === HANDLER AND MIDDLEWARE INTERFACES ===
-
-typealias HttpHandler = suspend (HttpRequest) -> HttpResponse
-
-interface HttpMiddleware {
-    fun process(request: HttpRequest): HttpRequest
 }
 
 // === QUIC STREAM EXTENSIONS ===

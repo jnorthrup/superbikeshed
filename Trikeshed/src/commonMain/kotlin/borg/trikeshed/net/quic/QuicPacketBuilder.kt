@@ -4,7 +4,6 @@ package borg.trikeshed.net.quic
 
 import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
-import borg.trikeshed.reactor.getCurrentTimeMillis
 
 /**
  * Build actual QUIC packets for HTTP/3 responses
@@ -33,7 +32,7 @@ object QuicPacketBuilder {
                         0x54, 0x72, 0x69, 0x6B, 0x65, 0x53, 0x68, 0x64  // "TrikeSHd"
                     ).let { it.size j { i: Int -> it[i] } }
                 ),
-                packetNumber = getCurrentTimeMillis() and 0xFFFFFF
+                packetNumber = (borg.trikeshed.reactor.getCurrentTimeMillis() and 0xFFFFFFL).toInt()
             ),
             frames = 1 j {
                 StreamFrame(
@@ -116,13 +115,13 @@ object QuicPacketBuilder {
                 buffer.add(pn.toByte())
             }
             pn < 0x4000 -> {
-                buffer.add((0x40 or (pn shr 8)).toInt().toByte())
-                buffer.add((pn and 0xFF).toInt().toByte())
+                buffer.add((0x40 or (pn shr 8)).toByte())
+                buffer.add((pn and 0xFF).toByte())
             }
             else -> {
-                buffer.add((0x80 or (pn shr 16)).toInt().toByte())
-                buffer.add(((pn shr 8) and 0xFF).toInt().toByte())
-                buffer.add((pn and 0xFF).toInt().toByte())
+                buffer.add((0x80 or (pn shr 16)).toByte())
+                buffer.add(((pn shr 8) and 0xFF).toByte())
+                buffer.add((pn and 0xFF).toByte())
             }
         }
         
