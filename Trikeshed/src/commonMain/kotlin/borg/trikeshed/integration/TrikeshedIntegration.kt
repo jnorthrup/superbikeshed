@@ -74,9 +74,7 @@ class TrikeshedIntegration(
                 initialState = QuicConnectionState(
                     localConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() }),
                     remoteConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() })
-                ),
-                port = quicPort,
-                privateKey = (32 j { it.toByte() }) // Generate proper key in production
+                )
             )
             
             // Initialize CouchDB client
@@ -159,7 +157,7 @@ class TrikeshedIntegration(
                 "ipfs" to true,
                 "quic" to true,
                 "reactor" to network.isActive(),
-                "timestamp" to currentTimeMillis()
+                "timestamp" to borg.trikeshed.integration.getCurrentTimeMillis()
             )
             HttpResponse(
                 status = HttpStatus.OK,
@@ -342,7 +340,7 @@ class TrikeshedIntegration(
             val document = CouchDocument(
                 data = buildJsonObject { 
                     put("content", content)
-                    put("created_at", currentTimeMillis())
+                    put("created_at", borg.trikeshed.integration.getCurrentTimeMillis())
                 }
             )
             
@@ -354,7 +352,7 @@ class TrikeshedIntegration(
                     
                     // Store content in IPFS
                     val contentBytes = content.encodeToByteArray()
-                    val indexedContent = contentBytes.size j { contentBytes[it] }
+                    val indexedContent = contentBytes.size j { i: Int -> contentBytes[i] }
                     val ipfsResult = ipfsClient.store(indexedContent)
                     
                     // Update document with IPFS hash
@@ -373,7 +371,7 @@ class TrikeshedIntegration(
                             "document_id" to docId,
                             "ipfs_hash" to ipfsResult.hash,
                             "content_length" to content.length,
-                            "created_at" to currentTimeMillis()
+                            "created_at" to borg.trikeshed.integration.getCurrentTimeMillis()
                         )
                     )
                     network.emit("integration", event)
@@ -384,7 +382,7 @@ class TrikeshedIntegration(
                             content = content,
                             ipfsHash = ipfsResult.hash,
                             metadata = mapOf(
-                                "created_at" to currentTimeMillis(),
+                                "created_at" to borg.trikeshed.integration.getCurrentTimeMillis(),
                                 "content_length" to content.length
                             )
                         )
@@ -422,7 +420,7 @@ class TrikeshedIntegration(
                                         content = content,
                                         ipfsHash = ipfsHash,
                                         metadata = mapOf(
-                                            "retrieved_at" to currentTimeMillis(),
+                                            "retrieved_at" to borg.trikeshed.integration.getCurrentTimeMillis(),
                                             "verified" to true
                                         )
                                     )
@@ -440,7 +438,7 @@ class TrikeshedIntegration(
                                 id = id,
                                 content = content,
                                 metadata = mapOf(
-                                    "retrieved_at" to currentTimeMillis(),
+                                    "retrieved_at" to borg.trikeshed.integration.getCurrentTimeMillis(),
                                     "verified" to false
                                 )
                             )
@@ -460,7 +458,7 @@ class TrikeshedIntegration(
     private suspend fun storeInIpfs(content: String): TrikeshedIntegrationResult {
         return try {
             val contentBytes = content.encodeToByteArray()
-            val indexedContent = contentBytes.size j { contentBytes[it] }
+            val indexedContent = contentBytes.size j { i: Int -> contentBytes[i] }
             val result = ipfsClient.store(indexedContent)
             
             Either.Right(IntegrationSuccess(hash = result.hash))
@@ -579,7 +577,7 @@ data class IntegrationEvent(
     val type: EventType,
     val data: EventData,
     val id: EventId = generateEventId(),
-    val timestamp: EventTimestamp = getCurrentTimeMillis()
+    val timestamp: EventTimestamp = borg.trikeshed.integration.getCurrentTimeMillis()
 )
 
 
@@ -591,7 +589,7 @@ data class IntegrationSuccess(
 
 // === UTILITY FUNCTIONS ===
 
-private fun generateEventId(): EventId = "event_${getCurrentTimeMillis()}_${(Random.nextDouble() * 1000).toInt()}"
+private fun generateEventId(): EventId = "event_${borg.trikeshed.integration.getCurrentTimeMillis()}_${(Random.nextDouble() * 1000).toInt()}"
 
 private fun Map<String, Any>.toJson(): String {
     return toString() // Simplified JSON conversion

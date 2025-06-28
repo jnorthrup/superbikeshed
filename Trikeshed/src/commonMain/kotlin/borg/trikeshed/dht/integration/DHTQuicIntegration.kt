@@ -61,24 +61,32 @@ class DHTQuicIntegration(
             
             // Initialize QUIC server
             quicServer = QuicServer(quicEngine, quicPort)
-            quicServer.onConnection { connection ->
-                handleNewQuicConnection(connection)
-            }
+            quicServer.onConnection(object : ConnectionHandler {
+                override suspend fun onConnect(connection: QuicConnection) {
+                    handleNewQuicConnection(connection)
+                }
+                
+                override suspend fun onDisconnect(connectionId: ConnectionId) {
+                    // Handle disconnection
+                    println("Connection disconnected: $connectionId")
+                }
+            })
             
             // Initialize gossip service
             gossipService = GossipService(
                 localNodeId = localNodeId,
                 subnetManager = subnetManager,
-                sendToNode = { nodeId, message ->
+                sendToNode = { nodeId: NUID, message: GossipMessage ->
                     sendGossipToPeer(nodeId, message)
                 }
             )
             
             // Initialize reactor
-            dhtReactor = Reactor("dht-reactor") { event ->
-                handleDHTEvent(event)
+            dhtReactor = Reactor<KademliaEvent>("dht-reactor")
+            dhtReactor.on(EventType.MESSAGE) { event ->
+                handleDHTEvent(event.data)
             }
-            network.addReactor(dhtReactor)
+            network.addReactor("dht", dhtReactor)
             
             // Start QUIC server
             GlobalScope.launch { quicServer.start() }
@@ -152,7 +160,7 @@ class DHTQuicIntegration(
             val event = codec.decode(messageData)
             
             // Process through reactor
-            dhtReactor.receive(event)
+            dhtReactor.emit(EventType.MESSAGE, event)
             
         } catch (e: Exception) {
             println("Error handling QUIC stream: ${e.message}")
@@ -431,8 +439,8 @@ class DHTQuicIntegration(
     private fun encodeGossipMessage(message: GossipMessage): Indexed<Byte> {
         // Simple encoding - in production would use proper serialization
         val parts = listOf(
-            message.messageId.toByteArray(),
-            message.publisherId.toByteArray(),
+            message.messageId.bytes.toByteArray(),
+            message.publisherId.bytes.toByteArray(),
             message.targetSubnets.play.joinToString(",").encodeToByteArray(),
             message.payload.play.toByteArray(),
             message.timestamp.toString().encodeToByteArray(),
@@ -460,9 +468,5 @@ class DHTQuicIntegration(
     }
 }
 
-/**
- * Extension to convert NUID to ByteArray
- */
-private fun NUID.toByteArray(): ByteArray {
-    return ByteArray(size) { i -> bytes[i] }
-}
+// Extension to convert NUID to ByteArray
+public fun NUID.toByteArray(): ByteArray = ByteArray(size) { i -> bytes[i] }

@@ -10,6 +10,8 @@ import borg.trikeshed.net.http.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.reactor.*
 import kotlinx.serialization.json.*
+import borg.trikeshed.parse.json.createJsonError
+import borg.trikeshed.parse.json.toJsonString
 
 // Platform-agnostic time function - defined in IntegrationTypes.kt
 
@@ -232,14 +234,14 @@ class ReactorIntegration(
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = HttpStatus.INTERNAL_SERVER_ERROR,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = "{"error":"${result.message}"}".encodeToByteArray()
+                        body = createJsonError(result.message).encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
                 HttpResponse(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = "{"error":"${e.message}"}".encodeToByteArray())
+                    body = createJsonError(e.message ?: "Unknown error").encodeToByteArray())
             }
         }
         
@@ -250,7 +252,7 @@ class ReactorIntegration(
                 if (id.isBlank()) return@route HttpResponse(
                     status = HttpStatus.BAD_REQUEST,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = "{"error":"Missing id parameter"}".encodeToByteArray()
+                    body = createJsonError("Missing id parameter").encodeToByteArray()
                 )
 
                 val result = retrieveWithReactor(id)
@@ -264,14 +266,14 @@ class ReactorIntegration(
                     is ReactorStorageResult.Error -> HttpResponse(
                         status = HttpStatus.NOT_FOUND,
                         headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                        body = "{"error":"${result.message}"}".encodeToByteArray()
+                        body = createJsonError(result.message).encodeToByteArray()
                     )
                 }
             } catch (e: Exception) {
                 HttpResponse(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                     headers = mapOf("content-type" to "application/json").toHttpHeaders(),
-                    body = "{"error":"${e.message}"}".encodeToByteArray()
+                    body = createJsonError(e.message ?: "Unknown error").encodeToByteArray()
                 )
             }
         }
@@ -321,7 +323,7 @@ class ReactorIntegration(
                         ipfsHash = ipfsHash,
                         metadata = mapOf(
                             "content_length" to content.length,
-                            "created_at" to getCurrentTimeMillis()
+                            "created_at" to borg.trikeshed.reactor.currentTimeMillis()
                         )
                     )
                 }
@@ -371,7 +373,7 @@ class ReactorIntegration(
                                     ipfsHash = ipfsHash,
                                     metadata = mapOf(
                                         "content_length" to content.length,
-                                        "retrieved_at" to getCurrentTimeMillis()
+                                        "retrieved_at" to borg.trikeshed.reactor.currentTimeMillis()
                                     )
                                 )
                             } else {
@@ -387,7 +389,7 @@ class ReactorIntegration(
                             content = content,
                             metadata = mapOf(
                                 "content_length" to content.length,
-                                "retrieved_at" to getCurrentTimeMillis()
+                                "retrieved_at" to borg.trikeshed.reactor.currentTimeMillis()
                             )
                         )
                     }

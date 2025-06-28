@@ -99,6 +99,9 @@ fun String.reifyJson(): Any? = Json.reify(this)
 
 fun String.indexJson(): JsonStructuralIndices = Json.index(this)
 
+// Public error function for JSON error handling
+fun createJsonError(message: String): String = """{"error":"$message"}"""
+
 // Helper functions for compatibility with main branch
 fun createBitmapAsSeries(data: UByteArray): Indexed<UByte> = data.toIdx()
 

@@ -183,43 +183,43 @@ object BinaryPacker {
         
         // Pack field value with type tag
         when (value) {
-            null -> buffer.add(0x00)
+            null -> buffer.add(0x00.toByte())
             is Long -> {
-                buffer.add(0x01)
+                buffer.add(0x01.toByte())
                 packLong(buffer, value)
             }
             is Int -> {
-                buffer.add(0x02)
+                buffer.add(0x02.toByte())
                 packInt(buffer, value)
             }
             is String -> {
-                buffer.add(0x03)
+                buffer.add(0x03.toByte())
                 val strBytes = value.encodeToByteArray()
                 packInt(buffer, strBytes.size)
                 strBytes.forEach { buffer.add(it) }
             }
             is ByteArray -> {
-                buffer.add(0x04)
+                buffer.add(0x04.toByte())
                 packInt(buffer, value.size)
                 value.forEach { buffer.add(it) }
             }
             is Boolean -> {
-                buffer.add(0x05)
-                buffer.add(if (value) 1 else 0)
+                buffer.add(0x05.toByte())
+                buffer.add(if (value) (1).toByte() else (0).toByte())
             }
             is Double -> {
-                buffer.add(0x06)
+                buffer.add(0x06.toByte())
                 packLong(buffer, value.toBits())
             }
             is List<*> -> {
-                buffer.add(0x07)
+                buffer.add(0x07.toByte())
                 packInt(buffer, value.size)
                 for (item in value) {
                     packField(buffer, "", item) // Recursive packing
                 }
             }
             else -> {
-                buffer.add(0xFF) // Unknown type
+                buffer.add(0xFF.toByte()) // Unknown type
             }
         }
     }
