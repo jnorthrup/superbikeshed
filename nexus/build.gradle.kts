@@ -21,6 +21,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
+                implementation(project(":Trikeshed"))
             }
         }
         val commonTest by getting {
@@ -36,6 +37,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
+                implementation(project(":Trikeshed"))
             }
         }
     }

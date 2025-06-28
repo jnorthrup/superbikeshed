@@ -1,3 +1,5 @@
 package borg.trikeshed.nexus
 
-actual fun getCurrentTimeMillis(): Long = System.currentTimeMillis()
+import kotlin.system.getTimeMillis
+
+actual fun getCurrentTimeMillis(): Long = getTimeMillis()

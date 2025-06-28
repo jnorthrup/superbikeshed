@@ -108,6 +108,41 @@ data class LearnedPattern(
 )
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MISSING TYPE DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Serializable
+@JvmInline
+value class TaskId(val value: String) {
+    override fun toString(): String = value
+}
+
+enum class TaskType {
+    ANALYSIS,
+    COMPUTATION,
+    OPTIMIZATION,
+    LEARNING,
+    INTEGRATION,
+    TESTING
+}
+
+enum class Priority {
+    LOW,
+    NORMAL,
+    HIGH,
+    CRITICAL
+}
+
+// Extension function for List to convert to Indexed
+fun <T> List<T>.toIdx(): Indexed<T> = this.size j { this[it] }
+
+// Extension function for Indexed to take first n elements
+fun <T> Indexed<T>.take(n: Int): Indexed<T> = minOf(n, this.size) j { this[it] }
+
+// Extension function for getCurrentTimeMillis
+expect fun getCurrentTimeMillis(): Long
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // AGENTIC ORCHESTRATOR - Autonomous Development Assistant  
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -300,7 +335,7 @@ class AgenticOrchestrator {
         
         // Demonstrate AgentSeries operations
         val demoSeries: AgentSeries<Int> = 10 j { i -> i * i }
-        println("   📊 Series demo: ${demoSeries.play.take(5).joinToString(", ")}")
+        println("   📊 Series demo: ${demoSeries.take(5).joinToString(", ")}")
         
         // Demonstrate Join composition
         val demoJoin = "hello" j 42
@@ -334,19 +369,6 @@ class AgenticOrchestrator {
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITY EXTENSIONS FOR TRIKESHED INTEGRATION
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// === UTILITY FUNCTIONS ===
-
-/**
- * Platform-agnostic current time function
- */
-expect fun getCurrentTimeMillis(): Long
-
-/**
- * AgentSeries extension for taking first n elements
- */
-fun <T> AgentSeries<T>.take(n: Int): AgentSeries<T> = 
-    minOf(n, this.size) j { i -> this[i] }
 
 /**
  * AgentSeries extension for filtering

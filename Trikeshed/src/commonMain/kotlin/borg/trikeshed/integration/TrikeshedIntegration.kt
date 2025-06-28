@@ -74,7 +74,9 @@ class TrikeshedIntegration(
                 initialState = QuicConnectionState(
                     localConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() }),
                     remoteConnectionId = ConnectionId(8 j { _: Int -> 0.toByte() })
-                )
+                ),
+                port = quicPort,
+                privateKey = (32 j { it.toByte() }) // Generate proper key in production
             )
             
             // Initialize CouchDB client
@@ -157,112 +159,176 @@ class TrikeshedIntegration(
                 "ipfs" to true,
                 "quic" to true,
                 "reactor" to network.isActive(),
-                "timestamp" to getCurrentTimeMillis()
+                "timestamp" to currentTimeMillis()
             )
             HttpResponse(
-                status = HttpStatusCode(200),
-                headers = mapOf("content-type" to "application/json"),
-                body = health.toJson()
+                status = HttpStatus.OK,
+                reasonPhrase = HttpReasonPhrase("OK"),
+                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                body = health.toJson().encodeToByteArray()
             )
         }
         
         // Document operations
         httpServer.route("/documents") { request ->
             when (request.method) {
-                "POST" -> {
-                    val result = createDocument(request.body)
+                HttpMethod.POST -> {
+                    val result = createDocument(request.body.decodeToString())
                     when (result) {
                         is Either.Right -> HttpResponse(
-                            status = HttpStatusCode(201),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = result.value.toJson()
+                            status = HttpStatus.CREATED,
+                            reasonPhrase = HttpReasonPhrase("Created"),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"id":"${result.value.id}","content":"${result.value.content}"}""".encodeToByteArray()
                         )
                         is Either.Left -> HttpResponse(
-                            status = HttpStatusCode(500),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = """{"error":"${result.value.message}"}"""
+                            status = HttpStatus.INTERNAL_SERVER_ERROR,
+                            reasonPhrase = HttpReasonPhrase("Internal Server Error"),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                         )
                     }
                 }
-                "GET" -> {
-                    val id = request.queryParams["id"]
+                HttpMethod.GET -> {
+                    // Parse query parameters from path
+                    val path = request.path.value
+                    val id = if (path.contains("?")) {
+                        val queryPart = path.substringAfter("?")
+                        val params = queryPart.split("&").associate { param ->
+                            val parts = param.split("=", limit = 2)
+                            if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
+                        }
+                        params["id"]
+                    } else null
+                    
                     if (id != null) {
                         val result = getDocument(id)
                         when (result) {
                             is Either.Right -> HttpResponse(
-                                status = HttpStatusCode(200),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = result.value.toJson()
+                                status = HttpStatus.OK,
+                                reasonPhrase = HttpReasonPhrase("OK"),
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = """{"id":"${result.value.id}","content":"${result.value.content}"}""".encodeToByteArray()
                             )
                             is Either.Left -> HttpResponse(
-                                status = HttpStatusCode(404),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = """{"error":"${result.value.message}"}"""
+                                status = HttpStatus.NOT_FOUND,
+                                reasonPhrase = HttpReasonPhrase("Not Found"),
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                             )
                         }
                     } else {
-                        HttpResponse(400, mapOf("content-type" to "application/json"), """{"error":"Missing id parameter"}""")
+                        HttpResponse(
+                            status = HttpStatus.BAD_REQUEST,
+                            reasonPhrase = HttpReasonPhrase("Bad Request"),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"Missing id parameter"}""".encodeToByteArray()
+                        )
                     }
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatus.METHOD_NOT_ALLOWED,
+                    reasonPhrase = HttpReasonPhrase("Method Not Allowed"),
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray()
+                )
             }
         }
         
         // IPFS operations
         httpServer.route("/ipfs") { request ->
             when (request.method) {
-                "POST" -> {
-                    val result = storeInIpfs(request.body)
+                HttpMethod.POST -> {
+                    val result = storeInIpfs(request.body.decodeToString())
                     when (result) {
                         is Either.Right -> HttpResponse(
-                            status = HttpStatusCode(201),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = """{"hash":"${result.value.hash}"}"""
+                            status = HttpStatus.CREATED,
+                            reasonPhrase = HttpReasonPhrase("Created"),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"hash":"${result.value.hash}"}""".encodeToByteArray()
                         )
                         is Either.Left -> HttpResponse(
-                            status = HttpStatusCode(500),
-                            headers = mapOf("content-type" to "application/json"),
-                            body = """{"error":"${result.value.message}"}"""
+                            status = HttpStatus.INTERNAL_SERVER_ERROR,
+                            reasonPhrase = HttpReasonPhrase("Internal Server Error"),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                         )
                     }
                 }
-                "GET" -> {
-                    val hash = request.queryParams["hash"]
+                HttpMethod.GET -> {
+                    // Parse query parameters from path
+                    val path = request.path.value
+                    val hash = if (path.contains("?")) {
+                        val queryPart = path.substringAfter("?")
+                        val params = queryPart.split("&").associate { param ->
+                            val parts = param.split("=", limit = 2)
+                            if (parts.size == 2) parts[0] to parts[1] else parts[0] to ""
+                        }
+                        params["hash"]
+                    } else null
+                    
                     if (hash != null) {
                         val result = retrieveFromIpfs(hash)
                         when (result) {
                             is Either.Right -> HttpResponse(
-                                status = HttpStatusCode(200),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = result.value.content ?: ""
+                                status = HttpStatus.OK,
+                                reasonPhrase = HttpReasonPhrase("OK"),
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = (result.value.content ?: "").encodeToByteArray()
                             )
                             is Either.Left -> HttpResponse(
-                                status = HttpStatusCode(404),
-                                headers = mapOf("content-type" to "application/json"),
-                                body = """{"error":"${result.value.message}"}"""
+                                status = HttpStatus.NOT_FOUND,
+                                reasonPhrase = HttpReasonPhrase("Not Found"),
+                                headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                                body = """{"error":"${result.value.message}"}""".encodeToByteArray()
                             )
                         }
                     } else {
-                        HttpResponse(400, mapOf("content-type" to "application/json"), """{"error":"Missing hash parameter"}""")
+                        HttpResponse(
+                            status = HttpStatus.BAD_REQUEST,
+                            reasonPhrase = HttpReasonPhrase("Bad Request"),
+                            headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                            body = """{"error":"Missing hash parameter"}""".encodeToByteArray()
+                        )
                     }
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatus.METHOD_NOT_ALLOWED,
+                    reasonPhrase = HttpReasonPhrase("Method Not Allowed"),
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray()
+                )
             }
         }
         
         // Reactor events
         httpServer.route("/events") { request ->
             when (request.method) {
-                "POST" -> {
-                    val event = parseEvent(request.body)
+                HttpMethod.POST -> {
+                    val event = parseEvent(request.body.decodeToString())
                     network.emit("integration", event)
-                    HttpResponse(200, mapOf("content-type" to "application/json"), """{"status":"event_emitted"}""")
+                    HttpResponse(
+                        status = HttpStatus.OK,
+                        reasonPhrase = HttpReasonPhrase("OK"),
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = """{"status":"event_emitted"}""".encodeToByteArray()
+                    )
                 }
-                "GET" -> {
+                HttpMethod.GET -> {
                     val stats = network.getStats()
-                    HttpResponse(200, mapOf("content-type" to "application/json"), stats.toJson())
+                    HttpResponse(
+                        status = HttpStatus.OK,
+                        reasonPhrase = HttpReasonPhrase("OK"),
+                        headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                        body = stats.toJson().encodeToByteArray()
+                    )
                 }
-                else -> HttpResponse(405, mapOf("content-type" to "application/json"), """{"error":"Method not allowed"}""")
+                else -> HttpResponse(
+                    status = HttpStatus.METHOD_NOT_ALLOWED,
+                    reasonPhrase = HttpReasonPhrase("Method Not Allowed"),
+                    headers = mapOf("content-type" to "application/json").toHttpHeaders(),
+                    body = """{"error":"Method not allowed"}""".encodeToByteArray()
+                )
             }
         }
     }
@@ -276,7 +342,7 @@ class TrikeshedIntegration(
             val document = CouchDocument(
                 data = buildJsonObject { 
                     put("content", content)
-                    put("created_at", getCurrentTimeMillis())
+                    put("created_at", currentTimeMillis())
                 }
             )
             
@@ -306,7 +372,8 @@ class TrikeshedIntegration(
                         data = mapOf(
                             "document_id" to docId,
                             "ipfs_hash" to ipfsResult.hash,
-                            "content_length" to content.length
+                            "content_length" to content.length,
+                            "created_at" to currentTimeMillis()
                         )
                     )
                     network.emit("integration", event)
@@ -317,7 +384,7 @@ class TrikeshedIntegration(
                             content = content,
                             ipfsHash = ipfsResult.hash,
                             metadata = mapOf(
-                                "created_at" to getCurrentTimeMillis(),
+                                "created_at" to currentTimeMillis(),
                                 "content_length" to content.length
                             )
                         )
@@ -355,7 +422,7 @@ class TrikeshedIntegration(
                                         content = content,
                                         ipfsHash = ipfsHash,
                                         metadata = mapOf(
-                                            "retrieved_at" to getCurrentTimeMillis(),
+                                            "retrieved_at" to currentTimeMillis(),
                                             "verified" to true
                                         )
                                     )
@@ -373,7 +440,7 @@ class TrikeshedIntegration(
                                 id = id,
                                 content = content,
                                 metadata = mapOf(
-                                    "retrieved_at" to getCurrentTimeMillis(),
+                                    "retrieved_at" to currentTimeMillis(),
                                     "verified" to false
                                 )
                             )

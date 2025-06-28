@@ -112,6 +112,9 @@ data class NUID(
 
     override fun toString(): String = toBase58()
 
+    // Extension to convert NUID to ByteArray
+    fun toByteArray(): ByteArray = ByteArray(size) { i -> bytes[i] }
+
     companion object {
         /**
          * Generate random NUID with specified byte length
