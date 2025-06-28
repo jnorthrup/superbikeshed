@@ -1,10 +1,8 @@
 package borg.trikeshed.lib
 
-actual fun assert(value: Boolean) {
-    kotlin.assert(value)
-}
+import kotlin.assert
+
+actual fun assert(value: Boolean) = kotlin.assert(value)
 
 @Throws(AssertionError::class)
-actual fun assert(value: Boolean, lazyMessage: () -> Any) {
-    kotlin.assert(value, lazyMessage)
-} 
+actual fun assert(value: Boolean, lazyMessage: () -> Any) = kotlin.assert(value, lazyMessage) 

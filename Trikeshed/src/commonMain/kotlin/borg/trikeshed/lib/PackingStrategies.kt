@@ -308,13 +308,13 @@ object Packer {
         // Range offset works when we have arrays/lists with values in a known range
         return when {
             a is Array<*> && b is Long -> {
-                isArray(a) && (a.all { it is Int } || a.all { it is Long } || a.all { it is Short })
+                isArray(a, 1, Int.MAX_VALUE) && (a.all { it is Int } || a.all { it is Long } || a.all { it is Short })
             }
             a is List<*> && b is Long -> {
                 a.isNotEmpty() && (a.first() is Int || a.first() is Long || a.first() is Short)
             }
             a is Long && b is Array<*> -> {
-                isArray(b) && (b.all { it is Int } || b.all { it is Long } || b.all { it is Short })
+                isArray(b, 1, Int.MAX_VALUE) && (b.all { it is Int } || b.all { it is Long } || b.all { it is Short })
             }
             a is Long && b is List<*> -> {
                 b.isNotEmpty() && (b.first() is Int || b.first() is Long || b.first() is Short)
@@ -330,7 +330,7 @@ object Packer {
         // Relative increment works when we have sequences with small differences
         return when {
             a is Array<*> && b is Long -> {
-                isArray(a) && a.all { it is Int } && a.size > 1 && hasSmallIncrements(a as Array<Int>)
+                isArray(a, 2, Int.MAX_VALUE) && a.all { it is Int } && a.size > 1 && hasSmallIncrements(a as Array<Int>)
             }
             a is List<*> && b is Long -> {
                 a.isNotEmpty() && a.all { it is Int } && hasSmallIncrements(a as List<Int>)

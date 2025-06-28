@@ -131,13 +131,13 @@ class HttpQuicServer(
             val nameLength = frameData[offset].toInt()
             offset++
             
-            val name = frameData.play.drop(offset).take(nameLength).joinToString("") { it.toChar().toString() }
+            val name = frameData.play.drop(offset).take(nameLength).play.joinToString("") { it.toChar().toString() }
             offset += nameLength
             
             val valueLength = frameData[offset].toInt()
             offset++
             
-            val value = frameData.play.drop(offset).take(valueLength).joinToString("") { it.toChar().toString() }
+            val value = frameData.play.drop(offset).take(valueLength).play.joinToString("") { it.toChar().toString() }
             offset += valueLength
             
             headers.add(HttpHeaderName(name) j HttpHeaderValue(value))
@@ -167,7 +167,7 @@ class HttpQuicServer(
                     path = if(pathHeader != null) HttpRequestPath(pathHeader) else HttpRequestPath("/")
                 }
                 is Http3Frame.Data -> {
-                    body = frame.data.play.toByteArray()
+                    body = frame.data.play.toList().toByteArray()
                 }
                 else -> {}
             }

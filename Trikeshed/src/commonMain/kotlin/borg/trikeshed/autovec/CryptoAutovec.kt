@@ -77,9 +77,11 @@ inline fun crypto_random_bytes(
     output: Indexed<Byte>,
     length: Int
 ): CryptoResult {
+    if (output.a < length) return CryptoErrors.ERR_BUFFER_TOO_SMALL
+    
     // Generate random bytes
     val len = minOf(length, output.a)
-    val result = output.cow
+    val result = output.cowView
     for (i in 0 until len) {
         result[i] = Random.nextInt(256).toByte()
     }

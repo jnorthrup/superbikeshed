@@ -4,7 +4,6 @@
 package borg.trikeshed.lib
 
  import borg.trikeshed.common.collections.ArrayCowView
- import kotlinx.coroutines.assert
  import kotlin.properties.Delegates
 import kotlin.jvm.JvmInline
 
@@ -650,23 +649,11 @@ val Boolean.bool: Int get() = if (this) 1 else 0
 
 // Debug utility function
 infix fun <T> T.d(other: T): T {
-    assert  (false){} catch{
-        println(other)
-        return this
-    }
+    println(other)
+    return this
 }
 
 // === ASSERT FUNCTIONS ===
 
-/**fun assert(value: Boolean)
-(JVM source) (Native source)
-For JVM
-Throws an AssertionError if the value is false and runtime assertions have been enabled on the JVM using the -ea JVM option.
-
-For Native
-Throws an AssertionError if the value is false and runtime assertions have been enabled during compilation.*/
-
 expect fun assert(value: Boolean)
-
-@Throws(AssertionError::class)
 expect fun assert(value: Boolean, lazyMessage: () -> Any)

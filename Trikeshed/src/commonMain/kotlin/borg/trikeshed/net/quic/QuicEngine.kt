@@ -4,8 +4,6 @@ package borg.trikeshed.net.quic
 
 import borg.trikeshed.reactor.currentTimeMillis
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.CZero.z
-import borg.trikeshed.lib.CZero.nz
 import kotlinx.serialization.json.*
 import kotlin.random.Random
 
