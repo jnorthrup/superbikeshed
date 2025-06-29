@@ -18,25 +18,74 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.Contextual
 import kotlin.uuid.ExperimentalUuidApi
 
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.SerialName
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid // Ensure Uuid is imported if not already via other means
+
 /**
- * URing-optimized CouchDB client with context-aware operations
+ * A client for interacting with a CouchDB server using the Trikeshed HTTP client infrastructure.
+ *
+ * This client provides methods for common CouchDB operations such as managing databases,
+ * documents, views, replication, and attachments. It relies on `HttpRequest.send()`
+ * for network communication, which in turn uses platform-specific `ClientChannel` implementations.
+ *
+ * Usage:
+ * ```
+ * val client = CouchClient(baseUrl = "http://localhost:5984")
+ * val result = client.createDatabase("mydb")
+ * // ...
+ * ```
+ *
+ * Note: The "URing-optimized" comments in method descriptions are aspirational,
+ * dependent on the underlying `ClientChannel` actual implementations leveraging URing.
+ * JSON serialization and deserialization are handled using `kotlinx.serialization`.
  */
 class CouchClient(
-    private val baseUrl: String,
-    private val httpClient: HttpClient,
-    private val bufferPool: URingBufferPool = URingBufferPool()
+    private val baseUrl: String, // e.g., "http://localhost:5984"
+    // private val bufferPool: URingBufferPool = URingBufferPool() // bufferPool might be managed by HttpRequest.send() or its underlying ClientChannel impls
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json { ignoreUnknownKeys = true; prettyPrint = false; encodeDefaults = true }
+
+    private fun buildCommonHeaders(hostOnly: String): Map<String, String> {
+        return mapOf(
+            "Host" to hostOnly,
+            "Connection" to "close", // Keep-alive needs more complex management, start with close
+            "Accept" to "application/json"
+        )
+    }
     
+    private fun buildCommonHeadersWithContentType(hostOnly: String): Map<String, String> {
+        return buildCommonHeaders(hostOnly) + ("Content-Type" to "application/json")
+    }
+
+    private fun extractHostFromBaseUrl(): String {
+        return baseUrl.removePrefix("http://").removePrefix("https://").split("/")[0]
+    }
+
     /**
      * Create database with URing-optimized file operations
      */
     suspend fun createDatabase(name: String): CouchResult {
-        val response = httpClient.put("/$name", emptyMap(), null)
-        return if (response.isSuccess) {
-            CouchResult.Success("Database created: $name")
-        } else {
-            CouchResult.Error("Failed to create database: ${response.status.value}")
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.PUT,
+            path = HttpRequestPath("/$name"),
+            headers = buildCommonHeadersWithContentType(hostOnly).toHttpHeaders(),
+            body = byteArrayOf()
+        )
+        try {
+            val response = request.send()
+            return if (response.isSuccess) {
+                CouchResult.Success("Database created: $name")
+            } else {
+                CouchResult.Error("Failed to create database: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            return CouchResult.Error("Failed to create database: ${e.message}")
         }
     }
     
@@ -44,11 +93,21 @@ class CouchClient(
      * Delete database with URing cleanup
      */
     suspend fun deleteDatabase(name: String): CouchResult {
-        val response = httpClient.delete("/$name")
-        return if (response.isSuccess) {
-            CouchResult.Success("Database deleted: $name")
-        } else {
-            CouchResult.Error("Failed to delete database: ${response.status.value}")
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.DELETE,
+            path = HttpRequestPath("/$name"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
+        try {
+            val response = request.send()
+            return if (response.isSuccess) {
+                CouchResult.Success("Database deleted: $name")
+            } else {
+                CouchResult.Error("Failed to delete database: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            return CouchResult.Error("Failed to delete database: ${e.message}")
         }
     }
     
@@ -56,10 +115,22 @@ class CouchClient(
      * Get database info with URing-optimized read
      */
     suspend fun getDatabaseInfo(name: String): CouchDatabaseInfo? {
-        val response = httpClient.get("/$name")
-        return if (response.isSuccess) {
-            parseDatabaseInfo(response.body)
-        } else {
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath("/$name"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                parseDatabaseInfo(response.body)
+            } else {
+                // Log error: response.status.value, response.body.decodeToString()
+                null
+            }
+        } catch (e: Exception) {
+            // Log error: e.message
             null
         }
     }
@@ -68,14 +139,25 @@ class CouchClient(
      * Create document with URing-optimized write
      */
     suspend fun createDocument(database: String, document: CouchDocument): CouchDocumentResult {
+        val hostOnly = extractHostFromBaseUrl()
         val docId = document._id.ifEmpty { generateUuid() }
-        val response = httpClient.put("/$database/$docId", emptyMap(), document.toJson())
+        val request = HttpRequest(
+            method = HttpMethod.PUT,
+            path = HttpRequestPath("/$database/$docId"),
+            headers = buildCommonHeadersWithContentType(hostOnly).toHttpHeaders(),
+            body = document.toJson()
+        )
         
-        return if (response.isSuccess) {
-            val result = parsePutResult(response.body)
-            Either.Right(CouchDocumentData(docId, result.rev, document.data.mapValues { (_, value) -> value.toString() }))
-        } else {
-            Either.Left("Failed to create document: ${response.status.value}")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val result = parsePutResult(response.body)
+                Either.Right(CouchDocumentData(docId, result.rev, document.data.mapValues { (_, value) -> value.toString() }))
+            } else {
+                Either.Left("Failed to create document: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            Either.Left("Failed to create document: ${e.message}")
         }
     }
     
@@ -83,13 +165,24 @@ class CouchClient(
      * Update document with URing-optimized write
      */
     suspend fun updateDocument(database: String, document: CouchDocumentData): CouchDocumentResult {
-        val response = httpClient.put("/$database/${document.id}", emptyMap(), document.toJson())
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.PUT,
+            path = HttpRequestPath("/$database/${document.id}"),
+            headers = buildCommonHeadersWithContentType(hostOnly).toHttpHeaders(),
+            body = document.toJson()
+        )
         
-        return if (response.isSuccess) {
-            val result = parsePutResult(response.body)
-            Either.Right(document.copy(rev = result.rev))
-        } else {
-            Either.Left("Failed to update document: ${response.status.value}")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val result = parsePutResult(response.body)
+                Either.Right(document.copy(rev = result.rev))
+            } else {
+                Either.Left("Failed to update document: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            Either.Left("Failed to update document: ${e.message}")
         }
     }
     
@@ -97,13 +190,23 @@ class CouchClient(
      * Get document with URing-optimized read
      */
     suspend fun getDocument(database: String, id: String): CouchDocumentResult {
-        val response = httpClient.get("/$database/$id")
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath("/$database/$id"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
         
-        return if (response.isSuccess) {
-            val document = parseDocument(response.body)
-            Either.Right(document)
-        } else {
-            Either.Left("Document not found: $id")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val document = parseDocument(response.body)
+                Either.Right(document)
+            } else {
+                Either.Left("Document not found: $id. Status: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+             Either.Left("Document not found: $id. Error: ${e.message}")
         }
     }
     
@@ -111,13 +214,23 @@ class CouchClient(
      * Delete document with URing cleanup
      */
     suspend fun deleteDocument(database: String, id: String, rev: String): CouchDocumentResult {
-        val response = httpClient.delete("/$database/$id?rev=$rev")
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.DELETE,
+            path = HttpRequestPath("/$database/$id?rev=$rev"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
         
-        return if (response.isSuccess) {
-            val result = parsePutResult(response.body)
-            Either.Right(CouchDocumentData(id, result.rev, emptyMap()))
-        } else {
-            Either.Left("Failed to delete document: ${response.status.value}")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val result = parsePutResult(response.body)
+                Either.Right(CouchDocumentData(id, result.rev, emptyMap()))
+            } else {
+                Either.Left("Failed to delete document: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            Either.Left("Failed to delete document: ${e.message}")
         }
     }
     
@@ -125,12 +238,25 @@ class CouchClient(
      * Bulk operations with URing-optimized batch processing
      */
     suspend fun bulkDocuments(database: String, documents: List<CouchDocument>): List<CouchBulkResult> {
+        val hostOnly = extractHostFromBaseUrl()
         val bulkRequest = CouchBulkRequest(documents)
-        val response = httpClient.post("/$database/_bulk_docs", emptyMap(), bulkRequest.toJson())
+        val request = HttpRequest(
+            method = HttpMethod.POST,
+            path = HttpRequestPath("/$database/_bulk_docs"),
+            headers = buildCommonHeadersWithContentType(hostOnly).toHttpHeaders(),
+            body = bulkRequest.toJson()
+        )
         
-        return if (response.isSuccess) {
-            parseBulkResults(response.body)
-        } else {
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                parseBulkResults(response.body)
+            } else {
+                // Log error
+                emptyList()
+            }
+        } catch (e: Exception) {
+            // Log error
             emptyList()
         }
     }
@@ -145,6 +271,7 @@ class CouchClient(
         includeDocs: Boolean = false,
         filter: String? = null
     ): Flow<CouchChange> = flow {
+        val hostOnly = extractHostFromBaseUrl()
         val params = mutableMapOf<String, String>()
         since?.let { params["since"] = it }
         limit?.let { params["limit"] = it.toString() }
@@ -155,11 +282,22 @@ class CouchClient(
             "?" + params.entries.joinToString("&") { "${it.key}=${it.value}" }
         } else ""
         
-        val response = httpClient.get("/$database/_changes$queryString")
-        
-        if (response.isSuccess) {
-            val changes = parseChanges(response.body)
-            changes.forEach { change -> emit(change) }
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath("/$database/_changes$queryString"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
+
+        try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val changes = parseChanges(response.body)
+                changes.forEach { change -> emit(change) }
+            } else {
+                // Log error
+            }
+        } catch (e: Exception) {
+            // Log error
         }
     }
     
@@ -172,19 +310,30 @@ class CouchClient(
         continuous: Boolean = false,
         createTarget: Boolean = false
     ): CouchReplicationResult {
+        val hostOnly = extractHostFromBaseUrl() // Assumes replication endpoint is on the same CouchDB instance
         val replicationRequest = CouchReplicationRequest(
-            source = source,
-            target = target,
+            source = source, // This might be a full URL or local DB name
+            target = target, // This might be a full URL or local DB name
             continuous = continuous,
             createTarget = createTarget
         )
         
-        val response = httpClient.post("/_replicate", emptyMap(), replicationRequest.toJson())
+        val request = HttpRequest(
+            method = HttpMethod.POST,
+            path = HttpRequestPath("/_replicate"),
+            headers = buildCommonHeadersWithContentType(hostOnly).toHttpHeaders(),
+            body = replicationRequest.toJson()
+        )
         
-        return if (response.isSuccess) {
-            parseReplicationResult(response.body)
-        } else {
-            CouchReplicationResult(false, "Replication failed: ${response.status.value}")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                parseReplicationResult(response.body)
+            } else {
+                CouchReplicationResult(false, "Replication failed: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+             CouchReplicationResult(false, "Replication failed: ${e.message}")
         }
     }
     
@@ -197,13 +346,23 @@ class CouchClient(
         viewName: String,
         params: CouchViewParams = CouchViewParams()
     ): CouchViewResult {
+        val hostOnly = extractHostFromBaseUrl()
         val queryString = buildViewQueryString(params)
-        val response = httpClient.get("/$database/_design/$designDoc/_view/$viewName$queryString")
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath("/$database/_design/$designDoc/_view/$viewName$queryString"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
         
-        return if (response.isSuccess) {
-            parseViewResult(response.body)
-        } else {
-            CouchViewResult(0, 0, emptyList())
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                parseViewResult(response.body)
+            } else {
+                CouchViewResult(0, 0, emptyList()) // Consider returning error info
+            }
+        } catch (e: Exception) {
+            CouchViewResult(0, 0, emptyList()) // Consider returning error info
         }
     }
     
@@ -215,16 +374,28 @@ class CouchClient(
         docId: String,
         attachmentName: String,
         contentType: String,
-        data: ByteArray
+        data: ByteArray,
+        rev: String? = null // rev is often required for attachments
     ): CouchDocumentResult {
-        val headers = mapOf("Content-Type" to contentType)
-        val response = httpClient.put("/$database/$docId/$attachmentName", headers, data)
+        val hostOnly = extractHostFromBaseUrl()
+        val path = if (rev != null) "/$database/$docId/$attachmentName?rev=$rev" else "/$database/$docId/$attachmentName"
+        val request = HttpRequest(
+            method = HttpMethod.PUT,
+            path = HttpRequestPath(path),
+            headers = (buildCommonHeaders(hostOnly) + ("Content-Type" to contentType)).toHttpHeaders(),
+            body = data
+        )
         
-        return if (response.isSuccess) {
-            val result = parsePutResult(response.body)
-            Either.Right(CouchDocumentData(docId, result.rev, emptyMap()))
-        } else {
-            Either.Left("Failed to put attachment: ${response.status.value}")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val result = parsePutResult(response.body)
+                Either.Right(CouchDocumentData(docId, result.rev, emptyMap())) // Body might not contain full doc data
+            } else {
+                Either.Left("Failed to put attachment: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            Either.Left("Failed to put attachment: ${e.message}")
         }
     }
     
@@ -236,10 +407,23 @@ class CouchClient(
         docId: String,
         attachmentName: String
     ): ByteArray? {
-        val response = httpClient.get("/$database/$docId/$attachmentName")
-        return if (response.isSuccess) {
-            response.body
-        } else {
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath("/$database/$docId/$attachmentName"),
+            headers = mapOf( // Accept might vary depending on attachment
+                "Host" to hostOnly,
+                "Connection" to "close"
+            ).toHttpHeaders()
+        )
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                response.body
+            } else {
+                null
+            }
+        } catch (e: Exception) {
             null
         }
     }
@@ -253,13 +437,23 @@ class CouchClient(
         attachmentName: String,
         rev: String
     ): CouchDocumentResult {
-        val response = httpClient.delete("/$database/$docId/$attachmentName?rev=$rev")
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.DELETE,
+            path = HttpRequestPath("/$database/$docId/$attachmentName?rev=$rev"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
         
-        return if (response.isSuccess) {
-            val result = parsePutResult(response.body)
-            Either.Right(CouchDocumentData(docId, result.rev, emptyMap()))
-        } else {
-            Either.Left("Failed to delete attachment: ${response.status.value}")
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                val result = parsePutResult(response.body)
+                Either.Right(CouchDocumentData(docId, result.rev, emptyMap()))
+            } else {
+                Either.Left("Failed to delete attachment: ${response.status.value} - ${response.body.decodeToString()}")
+            }
+        } catch (e: Exception) {
+            Either.Left("Failed to delete attachment: ${e.message}")
         }
     }
     
@@ -267,17 +461,37 @@ class CouchClient(
      * Security operations with URing-optimized access control
      */
     suspend fun getSecurity(database: String): CouchSecurity? {
-        val response = httpClient.get("/$database/_security")
-        return if (response.isSuccess) {
-            parseSecurity(response.body)
-        } else {
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath("/$database/_security"),
+            headers = buildCommonHeaders(hostOnly).toHttpHeaders()
+        )
+        return try {
+            val response = request.send()
+            if (response.isSuccess) {
+                parseSecurity(response.body)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
             null
         }
     }
     
     suspend fun setSecurity(database: String, security: CouchSecurity): Boolean {
-        val response = httpClient.put("/$database/_security", emptyMap(), security.toJson())
-        return response.isSuccess
+        val hostOnly = extractHostFromBaseUrl()
+        val request = HttpRequest(
+            method = HttpMethod.PUT,
+            path = HttpRequestPath("/$database/_security"),
+            headers = buildCommonHeadersWithContentType(hostOnly).toHttpHeaders(),
+            body = security.toJson()
+        )
+        return try {
+            request.send().isSuccess
+        } catch (e: Exception) {
+            false
+        }
     }
     
     // Helper methods
@@ -289,17 +503,30 @@ class CouchClient(
     private fun buildViewQueryString(params: CouchViewParams): String {
         val queryParams = mutableListOf<String>()
         
-        params.startKey?.let { queryParams.add("startkey=${it}") }
-        params.endKey?.let { queryParams.add("endkey=${it}") }
+        // Ensure keys are JSON encoded strings for query parameters
+        params.startKey?.let { queryParams.add("startkey=${json.encodeToString(JsonElement.serializer(), toJsonLiteral(it))}") }
+        params.endKey?.let { queryParams.add("endkey=${json.encodeToString(JsonElement.serializer(), toJsonLiteral(it))}") }
         params.limit?.let { queryParams.add("limit=$it") }
         params.skip?.let { queryParams.add("skip=$it") }
         if (params.descending) queryParams.add("descending=true")
         if (params.includeDocs) queryParams.add("include_docs=true")
-        if (!params.reduce) queryParams.add("reduce=false")
+        if (!params.reduce) queryParams.add("reduce=false") // CouchDB defaults to reduce=true for map/reduce views
         if (params.group) queryParams.add("group=true")
         params.groupLevel?.let { queryParams.add("group_level=$it") }
         
         return if (queryParams.isNotEmpty()) "?${queryParams.joinToString("&")}" else ""
+    }
+
+    private fun toJsonLiteral(value: Any?): JsonElement {
+        return when (value) {
+            null -> JsonNull
+            is String -> JsonPrimitive(value)
+            is Number -> JsonPrimitive(value)
+            is Boolean -> JsonPrimitive(value)
+            is JsonElement -> value // Already a JsonElement
+            // Add other common types if necessary, or rely on kotlinx.serialization for complex objects if passed as string
+            else -> JsonPrimitive(value.toString()) // Fallback, might not be correct for all CouchDB key types
+        }
     }
     
     // JSON parsing methods
@@ -307,6 +534,7 @@ class CouchClient(
         return try {
             json.decodeFromString(CouchDatabaseInfo.serializer(), body.decodeToString())
         } catch (e: Exception) {
+            // Log exception e
             null
         }
     }
@@ -319,20 +547,30 @@ class CouchClient(
         val jsonObject = json.parseToJsonElement(body.decodeToString()).jsonObject
         val id = jsonObject["_id"]?.jsonPrimitive?.content ?: ""
         val rev = jsonObject["_rev"]?.jsonPrimitive?.content ?: ""
-        val data = jsonObject.filterKeys { it !in listOf("_id", "_rev", "_deleted") }
-            .mapValues { (_, value) -> value.toString() }
+        val data = jsonObject.filterKeys { it !in listOf("_id", "_rev", "_deleted", "_attachments") }
+            .mapValues { (_, value) -> value.toString() } // This is a simplification, values might not be strings
         return CouchDocumentData(id, rev, data)
     }
     
     private fun parseBulkResults(body: ByteArray): List<CouchBulkResult> {
-        return json.decodeFromString(ListSerializer(CouchBulkResult.serializer()), body.decodeToString())
+         return try {
+            json.decodeFromString(ListSerializer(CouchBulkResult.serializer()), body.decodeToString())
+        } catch (e: Exception) {
+            // Log exception
+            emptyList()
+        }
     }
     
     private fun parseChanges(body: ByteArray): List<CouchChange> {
-        val jsonObject = json.parseToJsonElement(body.decodeToString()).jsonObject
-        val results = jsonObject["results"]?.jsonArray ?: return emptyList()
-        return results.map { element ->
-            json.decodeFromJsonElement(CouchChange.serializer(), element)
+        return try {
+            val jsonObject = json.parseToJsonElement(body.decodeToString()).jsonObject
+            val results = jsonObject["results"]?.jsonArray ?: return emptyList()
+            results.map { element ->
+                json.decodeFromJsonElement(CouchChange.serializer(), element)
+            }
+        } catch (e: Exception) {
+            // Log exception
+            emptyList()
         }
     }
     
@@ -341,7 +579,12 @@ class CouchClient(
     }
     
     private fun parseViewResult(body: ByteArray): CouchViewResult {
-        return json.decodeFromString(CouchViewResult.serializer(), body.decodeToString())
+         return try {
+            json.decodeFromString(CouchViewResult.serializer(), body.decodeToString())
+        } catch (e: Exception) {
+            // Log exception
+            CouchViewResult(0,0, emptyList())
+        }
     }
     
     private fun parseSecurity(body: ByteArray): CouchSecurity {
@@ -379,20 +622,20 @@ data class CouchBulkRequest(
 
 @Serializable
 data class CouchBulkResult(
-    val ok: Boolean,
+    val ok: Boolean? = null, // Made nullable as per CouchDB, not always present on error
     val id: String,
-    val rev: String,
+    val rev: String? = null, // Made nullable
     val error: String? = null,
     val reason: String? = null
 )
 
 @Serializable
 data class CouchChange(
-    val seq: String,
+    val seq: JsonElement, // Sequence can be string or int
     val id: String,
     val changes: List<CouchChangeRev>,
     val deleted: Boolean = false,
-    val doc: CouchDocumentData? = null
+    val doc: JsonObject? = null // Doc is a JsonObject
 )
 
 @Serializable
@@ -405,41 +648,68 @@ data class CouchReplicationRequest(
     val source: String,
     val target: String,
     val continuous: Boolean = false,
-    val createTarget: Boolean = false
+    val createTarget: Boolean = false,
+    val doc_ids: List<String>? = null, // Optional field
+    val proxy: String? = null // Optional field
 )
 
 @Serializable
 data class CouchReplicationResult(
     val ok: Boolean,
-    val sessionId: String
+    @SerialName("session_id") val sessionId: String, // CouchDB uses session_id
+    @SerialName("source_last_seq") val sourceLastSeq: JsonElement? = null, // Can be string or int
+    @SerialName("history") val history: List<ReplicationHistoryEntry>? = null // Optional
 )
 
 @Serializable
+data class ReplicationHistoryEntry(
+    @SerialName("session_id") val sessionId: String,
+    @SerialName("start_time") val startTime: String,
+    @SerialName("end_time") val endTime: String,
+    @SerialName("start_last_seq") val startLastSeq: JsonElement,
+    @SerialName("end_last_seq") val endLastSeq: JsonElement,
+    @SerialName("recorded_seq") val recordedSeq: JsonElement,
+    @SerialName("missing_checked") val missingChecked: Long,
+    @SerialName("missing_found") val missingFound: Long,
+    @SerialName("docs_read") val docsRead: Long,
+    @SerialName("docs_written") val docsWritten: Long,
+    @SerialName("doc_write_failures") val docWriteFailures: Long
+)
+
+
+@Serializable
 data class CouchViewParams(
+    @Contextual val key: Any? = null, // Single key
+    @Contextual val keys: List<Any>? = null, // Multiple keys for POST
     @Contextual val startKey: Any? = null,
     @Contextual val endKey: Any? = null,
+    @SerialName("startkey_docid") @Contextual val startKeyDocId: String? = null,
+    @SerialName("endkey_docid") @Contextual val endKeyDocId: String? = null,
     val limit: Int? = null,
     val skip: Int? = null,
     val descending: Boolean = false,
-    val includeDocs: Boolean = false,
-    val reduce: Boolean = true,
+    @SerialName("include_docs") val includeDocs: Boolean = false,
+    val reduce: Boolean? = null, // Nullable to allow CouchDB default (true for reduce views, false for map)
     val group: Boolean = false,
-    val groupLevel: Int? = null
+    @SerialName("group_level") val groupLevel: Int? = null,
+    @SerialName("stale") val stale: String? = null, // ok, update_after, false (as string)
+    @SerialName("update_seq") val updateSeq: Boolean = false
 )
 
 @Serializable
 data class CouchViewResult(
-    val totalRows: Int,
-    val offset: Int,
-    val rows: List<CouchViewRow>
+    @SerialName("total_rows") val totalRows: Long, // Changed to Long
+    val offset: Long, // Changed to Long
+    val rows: List<CouchViewRow>,
+    @SerialName("update_seq") val updateSeq: JsonElement? = null // Optional, can be string or int
 )
 
 @Serializable
 data class CouchViewRow(
-    val id: String,
-    val key: String,
-    val value: String,
-    val doc: CouchDocumentData? = null
+    val id: String? = null, // Not always present (e.g. with reduce)
+    val key: JsonElement, // Key can be any JSON value
+    val value: JsonElement, // Value can be any JSON value
+    val doc: JsonObject? = null // Optional document
 )
 
 // Missing data classes for CouchDB operations
@@ -452,24 +722,37 @@ typealias CouchDocumentResult = Either<String, CouchDocumentData>
 
 @Serializable
 data class CouchDocumentData(
-    val id: String,
-    val rev: String,
-    val data: Map<String, String> = emptyMap()
+    @SerialName("_id") val id: String, // Use @SerialName for _id and _rev
+    @SerialName("_rev") val rev: String,
+    val data: Map<String, String> = emptyMap(), // This remains simplified; real docs have complex JSON values
+    @SerialName("_deleted") val deleted: Boolean? = null, // Optional
+    @SerialName("_attachments") val attachments: Map<String, CouchAttachmentInfo>? = null // Optional
 )
 
 @Serializable
+data class CouchAttachmentInfo(
+    val stub: Boolean? = null,
+    @SerialName("content_type") val contentType: String,
+    val length: Long,
+    val revpos: Int? = null, // Not always present
+    val digest: String? = null // Not always present if stub=true
+    // data is not part of info, it's separate
+)
+
+
+@Serializable
 data class CouchDatabaseInfo(
-    val dbName: String,
-    val docCount: Long,
-    val updateSeq: String,
-    val docDelCount: Long,
-    val purgeSeq: Long,
-    val compactRunning: Boolean,
-    val diskSize: Long,
-    val dataSize: Long,
-    val instanceStartTime: Long,
-    val diskFormatVersion: Int,
-    val committedUpdateSeq: Long
+    @SerialName("db_name") val dbName: String,
+    @SerialName("doc_count") val docCount: Long,
+    @SerialName("update_seq") val updateSeq: JsonElement, // Can be string or int
+    @SerialName("doc_del_count") val docDelCount: Long,
+    @SerialName("purge_seq") val purgeSeq: JsonElement, // Can be string or int
+    @SerialName("compact_running") val compactRunning: Boolean,
+    @SerialName("disk_size") val diskSize: Long,
+    @SerialName("data_size") val dataSize: Long,
+    @SerialName("instance_start_time") val instanceStartTime: String, // Usually a string
+    @SerialName("disk_format_version") val diskFormatVersion: Int,
+    @SerialName("committed_update_seq") val committedUpdateSeq: JsonElement // Can be string or int
 )
 
 @Serializable
@@ -489,75 +772,6 @@ data class CouchSecurity(
         val names: List<String> = emptyList(),
         val roles: List<String> = emptyList()
     )
-}
-
-// HTTP Client implementation with URing optimization
-class HttpClient(
-    private val baseUrl: String,
-    private val timeout: Long,
-    private val bufferPool: URingBufferPool
-) {
-    suspend fun get(path: String): HttpResponse {
-        val request = HttpRequest(
-            method = HttpMethod.GET,
-            path = HttpRequestPath(path),
-            headers = mapOf(
-                "Host" to extractHost(baseUrl),
-                "Connection" to "keep-alive"
-            ).toHttpHeaders()
-        )
-        return request.send()
-    }
-    
-    suspend fun put(path: String, headers: Map<String, String>, body: ByteArray?): HttpResponse {
-        val requestHeaders = mutableMapOf<String, String>()
-        requestHeaders["Host"] = extractHost(baseUrl)
-        requestHeaders["Connection"] = "keep-alive"
-        requestHeaders.putAll(headers)
-        
-        val request = HttpRequest(
-            method = HttpMethod.PUT,
-            path = HttpRequestPath(path),
-            headers = requestHeaders.toHttpHeaders(),
-            body = body ?: byteArrayOf()
-        )
-        return request.send()
-    }
-    
-    suspend fun post(path: String, headers: Map<String, String>, body: ByteArray?): HttpResponse {
-        val requestHeaders = mutableMapOf<String, String>()
-        requestHeaders["Host"] = extractHost(baseUrl)
-        requestHeaders["Connection"] = "keep-alive"
-        requestHeaders.putAll(headers)
-        
-        val request = HttpRequest(
-            method = HttpMethod.POST,
-            path = HttpRequestPath(path),
-            headers = requestHeaders.toHttpHeaders(),
-            body = body ?: byteArrayOf()
-        )
-        return request.send()
-    }
-    
-    suspend fun delete(path: String): HttpResponse {
-        val request = HttpRequest(
-            method = HttpMethod.DELETE,
-            path = HttpRequestPath(path),
-            headers = mapOf(
-                "Host" to extractHost(baseUrl),
-                "Connection" to "keep-alive"
-            ).toHttpHeaders()
-        )
-        return request.send()
-    }
-    
-    fun close() {
-        // Close connection
-    }
-    
-    private fun extractHost(url: String): String {
-        return url.removePrefix("http://").removePrefix("https://").split("/")[0]
-    }
 }
 
 // Extension functions for JSON serialization

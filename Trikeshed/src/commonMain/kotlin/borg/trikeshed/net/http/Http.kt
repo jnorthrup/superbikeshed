@@ -143,7 +143,96 @@ data class HttpResponse(
 fun Map<String, String>.toHttpHeaders(): Indexed<Join<HttpHeaderName, HttpHeaderValue>> =
     this.map { HttpHeaderName(it.key) j HttpHeaderValue(it.value) }.toIdx()
 
-suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation needed")
+/**
+ * Sends this HTTP request and returns the received HTTP response.
+ *
+ * This is a suspending function that performs network I/O. It relies on platform-specific
+ * actual implementations of `borg.trikeshed.reactor.ClientChannel` to perform
+ * the actual socket operations.
+ *
+ * Current implementation details and limitations:
+ * - Extracts host and port from the "Host" header. Assumes port 80 if not specified.
+ *   Does not currently handle scheme (http/https) to determine default port or initiate TLS.
+ * - HTTPS is NOT supported.
+ * - Creates a new connection for each call; does not support HTTP keep-alive or connection pooling.
+ * - Response body reading is simplified: it performs a single read attempt. For large bodies,
+ *   or chunked encoding, this will be insufficient.
+ * - Error handling is basic (throws exceptions).
+ *
+ * @return The [HttpResponse] received from the server.
+ * @throws IllegalArgumentException if the "Host" header is missing.
+ * @throws RuntimeException for various I/O errors or if no response data is received (specific exceptions depend on platform actuals of ClientChannel).
+ */
+suspend fun HttpRequest.send(): HttpResponse {
+    val hostHeader = headers.b((0 until headers.a).firstOrNull { headers.b(it).a.value.equals("Host", ignoreCase = true) } ?: -1)
+        ?: throw IllegalArgumentException("Host header is missing in HttpRequest")
+
+    val hostValue = hostHeader.b.value
+    val (host, port) = when {
+        hostValue.contains(":") -> hostValue.split(":").let { it[0] to it[1].toInt() }
+        // TODO: Add scheme (http/https) detection to determine default port
+        else -> hostValue to 80 // Default to port 80 for HTTP
+    }
+
+    val clientChannel = borg.trikeshed.reactor.ClientChannel()
+
+    try {
+        clientChannel.connect(host, port)
+
+        // Send request
+        val requestBytes = this.toByteArray()
+        val sendBuffer = borg.trikeshed.nio.PlatformByteBuffer.wrap(requestBytes)
+        while (sendBuffer.hasRemaining()) {
+            clientChannel.write(sendBuffer)
+        }
+
+        // Read response
+        // Initial read for headers, then potentially more for body based on Content-Length or chunking
+        // This is a simplified version; a full implementation needs to handle various body types and sizes.
+        val readBuffer = borg.trikeshed.nio.PlatformByteBuffer.allocate(8192) // 8KB buffer
+        val responseBytesList = mutableListOf<ByteArray>()
+        var totalBytesRead = 0
+        var bytesRead: Int
+
+        // Simplified read loop: reads until no more data or buffer is full once.
+        // A proper implementation would loop based on Content-Length or chunked encoding.
+        bytesRead = clientChannel.read(readBuffer)
+        if (bytesRead > 0) {
+            readBuffer.flip()
+            val receivedData = ByteArray(bytesRead)
+            readBuffer.get(receivedData)
+            responseBytesList.add(receivedData)
+            totalBytesRead += bytesRead
+            readBuffer.clear()
+        } else if (bytesRead == -1 && totalBytesRead == 0) {
+            // Connection closed before any data, or error
+            throw RuntimeException("Failed to read response, connection closed or error.")
+        }
+
+
+        // Combine all read byte arrays
+        val combinedResponseBytes = ByteArray(totalBytesRead)
+        var currentPosition = 0
+        responseBytesList.forEach {
+            System.arraycopy(it, 0, combinedResponseBytes, currentPosition, it.size)
+            currentPosition += it.size
+        }
+
+        if (combinedResponseBytes.isEmpty()) {
+            // This case might happen if the server closes connection immediately after headers without body,
+            // or if read returned 0 and we didn't loop.
+            // For now, let's throw an error if nothing was read, as HttpResponse.parse expects data.
+             throw RuntimeException("No response data received from server.")
+        }
+
+        return HttpResponse.parse(combinedResponseBytes)
+
+    } finally {
+        if (clientChannel.isConnected()) {
+            clientChannel.close()
+        }
+    }
+}
 
 // Protocol upgrade types
 @JvmInline value class ProtocolName(val value: String)
