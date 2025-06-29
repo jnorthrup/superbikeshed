@@ -58,7 +58,8 @@
           "org.jetbrains.kotlinx:kotlinx-collections-immutable",
           "org.jetbrains.kotlinx:kotlinx-serialization-core",
           "org.jetbrains.kotlinx:kotlinx-serialization-json",
-          "org.jetbrains.kotlinx:kotlinx-datetime"
+          "org.jetbrains.kotlinx:kotlinx-datetime",
+          "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
         ],
         "sourceSetCInteropMetadataDirectory": "appleMain-cinterop",
         "binaryLayout": "klib",
@@ -68,13 +69,13 @@
         "name": "commonMain",
         "dependsOn": [],
         "moduleDependency": [
-          "org.jetbrains.kotlin:kotlin-stdlib",
           "org.jetbrains.kotlin:kotlin-stdlib-common",
           "org.jetbrains.kotlinx:kotlinx-coroutines-core",
           "org.jetbrains.kotlinx:kotlinx-collections-immutable",
           "org.jetbrains.kotlinx:kotlinx-serialization-core",
           "org.jetbrains.kotlinx:kotlinx-serialization-json",
-          "org.jetbrains.kotlinx:kotlinx-datetime"
+          "org.jetbrains.kotlinx:kotlinx-datetime",
+          "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
         ],
         "binaryLayout": "klib"
       },
@@ -89,7 +90,8 @@
           "org.jetbrains.kotlinx:kotlinx-collections-immutable",
           "org.jetbrains.kotlinx:kotlinx-serialization-core",
           "org.jetbrains.kotlinx:kotlinx-serialization-json",
-          "org.jetbrains.kotlinx:kotlinx-datetime"
+          "org.jetbrains.kotlinx:kotlinx-datetime",
+          "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
         ],
         "sourceSetCInteropMetadataDirectory": "macosMain-cinterop",
         "binaryLayout": "klib",
@@ -106,7 +108,8 @@
           "org.jetbrains.kotlinx:kotlinx-collections-immutable",
           "org.jetbrains.kotlinx:kotlinx-serialization-core",
           "org.jetbrains.kotlinx:kotlinx-serialization-json",
-          "org.jetbrains.kotlinx:kotlinx-datetime"
+          "org.jetbrains.kotlinx:kotlinx-datetime",
+          "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
         ],
         "sourceSetCInteropMetadataDirectory": "nativeMain-cinterop",
         "binaryLayout": "klib",

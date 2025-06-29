@@ -2,6 +2,7 @@ package borg.trikeshed.parse.grpc
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.http.*
+import kotlinx.coroutines.runBlocking
 import borg.trikeshed.net.quic.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -121,9 +122,8 @@ class GrpcHttp2Bridge(
         val stream = http2Connection.createStream()
         val headers = buildGrpcHeaders(path, metadata)
         
-        runBlocking {
-            http2Connection.sendHeaders(stream.id, headers, endStream = false)
-        }
+        // TODO: Make this function suspend to avoid runBlocking
+        // http2Connection.sendHeaders(stream.id, headers, endStream = false)
         
         return GrpcClientStream(stream.id, http2Connection)
     }

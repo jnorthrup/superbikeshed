@@ -62,7 +62,7 @@ tasks.register<JavaExec>("runStandaloneNexus") {
     dependsOn("jvmJar")
     group = "application"
     description = "Run Standalone Nexus - Main()'s Pursuit of Happiness"
-    mainClass.set("borg.trikeshed.nexus.StandaloneNexusKt")
+    mainClass.set("nexus.standalone.MainStarter")
     classpath = files(
         tasks.named("jvmJar").get().outputs.files
     ) + (configurations["jvmRuntimeClasspath"] ?: files())
@@ -126,7 +126,7 @@ afterEvaluate {
     tasks.withType<Jar> {
         if (name == "jvmJar") {
             manifest {
-                attributes["Main-Class"] = "borg.trikeshed.nexus.StandaloneNexusKt"
+                attributes["Main-Class"] = "nexus.standalone.MainStarter"
             }
         }
     }

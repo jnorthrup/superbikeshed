@@ -10,7 +10,13 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.Contextual
+import kotlin.uuid.ExperimentalUuidApi
 
 /**
  * URing-optimized CouchDB client with context-aware operations
@@ -275,8 +281,9 @@ class CouchClient(
     }
     
     // Helper methods
+    @OptIn(ExperimentalUuidApi::class)
     private fun generateUuid(): String {
-        return java.util.UUID.randomUUID().toString()
+        return kotlin.uuid.Uuid.random().toString()
     }
     
     private fun buildViewQueryString(params: CouchViewParams): String {
@@ -318,7 +325,7 @@ class CouchClient(
     }
     
     private fun parseBulkResults(body: ByteArray): List<CouchBulkResult> {
-        return json.decodeFromString(List.serializer(CouchBulkResult.serializer()), body.decodeToString())
+        return json.decodeFromString(ListSerializer(CouchBulkResult.serializer()), body.decodeToString())
     }
     
     private fun parseChanges(body: ByteArray): List<CouchChange> {
@@ -556,19 +563,19 @@ class HttpClient(
 // Extension functions for JSON serialization
 fun CouchDocument.toJson(): ByteArray {
     val jsonObject = buildJsonObject {
-        if (_id.isNotEmpty()) put("_id", _id)
-        if (_rev.isNotEmpty()) put("_rev", _rev)
-        if (_deleted) put("_deleted", true)
-        data.forEach { (key, value) -> put(key, value.toString()) }
+        if (_id.isNotEmpty()) put("_id", JsonPrimitive(_id))
+        if (_rev.isNotEmpty()) put("_rev", JsonPrimitive(_rev))
+        if (_deleted) put("_deleted", JsonPrimitive(true))
+        data.forEach { (key, value) -> put(key, JsonPrimitive(value.toString())) }
     }
     return Json.encodeToString(JsonElement.serializer(), jsonObject).encodeToByteArray()
 }
 
 fun CouchDocumentData.toJson(): ByteArray {
     val jsonObject = buildJsonObject {
-        put("_id", id)
-        put("_rev", rev)
-        data.forEach { (key, value) -> put(key, value) }
+        put("_id", JsonPrimitive(id))
+        put("_rev", JsonPrimitive(rev))
+        data.forEach { (key, value) -> put(key, JsonPrimitive(value)) }
     }
     return Json.encodeToString(JsonElement.serializer(), jsonObject).encodeToByteArray()
 }
