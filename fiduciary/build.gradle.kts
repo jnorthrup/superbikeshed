@@ -48,6 +48,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(project(":Trikeshed"))
+                // implementation(libs.okio) // Okio removed as per feedback
             }
         }
 
@@ -62,6 +63,7 @@ kotlin {
                 implementation(kotlin("stdlib-jdk8"))
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(kotlin("reflect"))
+                implementation(libs.zstd.jni) // Zstd JNI for JVM
             }
         }
 

@@ -13,6 +13,8 @@ versions-plugin = "0.51.0"
 
 # Additional Kotlin libraries
 kotlin-reflect = "2.1.21"
+# okio = "3.9.0" # Okio removed as per feedback
+zstd-jni = "1.5.6-3"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -23,6 +25,8 @@ kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collec
 kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+# okio = { module = "com.squareup.okio:okio", version.ref = "okio" } # Okio removed
+zstd-jni = { module = "com.github.luben:zstd-jni", version.ref = "zstd-jni" }
 
 # Additional Kotlin libraries
 kotlin-stdlib-common = { module = "org.jetbrains.kotlin:kotlin-stdlib-common", version.ref = "kotlin" }
