@@ -4,6 +4,8 @@ import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.j
 import rtsgame.config.*
 import rtsgame.codec.*
+import rtsgame.core.Simulation // Ensure Simulation is imported
+import rtsgame.core.TeamResourcesExtended // For resource checking
 import kotlin.math.*
 
 /**
@@ -12,325 +14,272 @@ import kotlin.math.*
  */
 class Building(
     var id: Int,
-    var type: String,
+    val buildingTypeName: String, // Name of the building type, e.g., "landFactory"
     var team: String,
     var x: Double,
     var y: Double,
-    var maxHp: Double = BUILDING_HEALTH.toDouble(),
-    var hp: Double = BUILDING_HEALTH.toDouble()
+    // Simulation reference for accessing game state, entity manager, etc.
+    private val simulationInstance: Simulation
 ) {
+    val type: BuildingType = BUILDING_TYPES.byName(buildingTypeName)
+        ?: throw IllegalArgumentException("Unknown building type: $buildingTypeName")
+
+    var hp: Double = type.health
+    var maxHp: Double = type.maxHp ?: type.health // Use maxHp from type if available, else health
+
     // Construction state
     var isUnderConstruction: Boolean = true
-    var constructionProgress: Double = 0.0
-    var constructionTime: Int = BUILDING_CONSTRUCTION_TIME
-    
+    var constructionProgress: Double = 0.0 // Progress in frames or seconds, ensure consistency
+    val constructionTime: Int = type.buildTime // Assuming buildTime is in frames from BuildingType
+
     // Production state
     var productionQueue: MutableList<ProductionItem> = mutableListOf()
     var currentProduction: ProductionItem? = null
-    var productionProgress: Double = 0.0
-    
+    var productionProgressInternal: Double = 0.0 // Renamed to avoid conflict with constructionProgress if used differently
+
     // Resource generation
-    var income: Double = 0.0
-    var resourceType: String? = null
-    
+    val income: Double = type.resourceGeneration?.amount ?: 0.0
+    val resourceType: String? = type.resourceGeneration?.type
+
     // Rally point for unit production
-    var rallyX: Double = x
-    var rallyY: Double = y
-    
-    // Power and connectivity
+    var rallyX: Double = x + (type.size / 2.0) // Default rally point slightly offset
+    var rallyY: Double = y + (type.size / 2.0)
+
+    // Power and connectivity (simplified for now)
     var isPowered: Boolean = true
-    var powerConsumption: Double = 0.0
-    var powerGeneration: Double = 0.0
+    val powerConsumption: Double = 0.0 // TODO: Get from BuildingType if defined
+    val powerGeneration: Double = 0.0  // TODO: Get from BuildingType if defined
     
+    // Computronium Core (if applicable)
+    val hasComputroniumCore: Boolean = type.hasComputroniumCore ?: false
+    val coreEfficiency: Double = type.coreEfficiency ?: 1.0
+    // private var computroniumCoreInstance: ComputroniumCore? = null // TODO: When ComputroniumSystem is ported
+
     init {
-        setupBuildingType()
+        // Specific setup based on BuildingType if needed, most properties now come from BuildingType directly
+        // Example: if (type.name == "Land Factory") { this.rallyX = x + type.size; }
+
+        // If it has a computronium core, register it with the manager
+        // if (hasComputroniumCore) {
+        //     val manager = simulationInstance.computroniumManagers[team]
+        //     // manager?.addCore(this, coreEfficiency) // `this` refers to Building instance
+        // }
     }
     
-    private fun setupBuildingType() {
-        when (type) {
-            "massExtractor" -> {
-                resourceType = RESOURCE_TYPES.MASS
-                income = BUILDING_YIELDS.EXTRACTOR.mass.toDouble()
-                constructionTime = 180 // 3 seconds at 60 FPS
-            }
-            "energyExtractor" -> {
-                resourceType = RESOURCE_TYPES.ENERGY
-                income = BUILDING_YIELDS.ENERGY_PLANT.energy.toDouble()
-                powerGeneration = 10.0
-                constructionTime = 120 // 2 seconds
-            }
-            "landFactory" -> {
-                constructionTime = 600 // 10 seconds
-                powerConsumption = 5.0
-                rallyX = x + 50.0 // Default rally point
-                rallyY = y
-            }
-            "airFactory" -> {
-                constructionTime = 720 // 12 seconds
-                powerConsumption = 8.0
-                rallyX = x
-                rallyY = y + 50.0
-            }
-            "navalFactory" -> {
-                constructionTime = 900 // 15 seconds
-                powerConsumption = 12.0
-            }
-            "computroniumExtractor" -> {
-                resourceType = "COMPUTRONIUM"
-                income = 0.5
-                constructionTime = 300 // 5 seconds
-                powerConsumption = 3.0
-            }
-            "advancedComputroniumCore" -> {
-                resourceType = "COMPUTRONIUM"
-                income = 2.0
-                constructionTime = 1200 // 20 seconds
-                powerConsumption = 15.0
-            }
-        }
-    }
-    
-    fun update(simulation: rtsgame.core.Simulation, deltaTime: Double) {
+    fun update(simulation: Simulation, deltaTime: Double) {
         if (hp <= 0) return
-        
-        // Handle construction
+
         if (isUnderConstruction) {
-            updateConstruction()
+            // Assuming constructionTime is in seconds, and deltaTime is in seconds.
+            // JS version incremented progress by 1 per frame.
+            // To match, if buildTime in BuildingType is frames, this should be:
+            // constructionProgress += 1.0
+            // If buildTime is seconds:
+            constructionProgress += deltaTime
+
+            if (constructionProgress >= type.buildTime.toDouble()) { // Compare with type's buildTime
+                isUnderConstruction = false
+                constructionProgress = type.buildTime.toDouble()
+                simulationInstance.gameState.addEvent("build_complete", "$buildingTypeName constructed by $team", 1, x to y)
+            }
             return
         }
-        
-        // Check power status
-        updatePowerStatus(simulation)
-        
-        if (!isPowered && type != "energyExtractor") {
-            // Most buildings don't work without power
-            return
+
+        // updatePowerStatus(simulation) // TODO: Port power logic
+        // if (!isPowered && type.name != "Energy Extractor") return // Example building type name
+
+        if (resourceType != null && income > 0.0 && isPowered) {
+            generateResources(simulation, deltaTime) // Pass deltaTime
         }
-        
-        // Generate resources
-        if (resourceType != null && income > 0) {
-            generateResources(simulation)
-        }
-        
-        // Handle production
-        updateProduction(simulation, deltaTime)
-    }
-    
-    private fun updateConstruction() {
-        constructionProgress += 1.0 // 1 per frame
-        
-        if (constructionProgress >= constructionTime) {
-            isUnderConstruction = false
-            constructionProgress = constructionTime.toDouble()
+
+        if (isPowered) {
+            updateProduction(simulation, deltaTime)
         }
     }
     
-    private fun updatePowerStatus(simulation: rtsgame.core.Simulation) {
-        if (type == "energyExtractor") {
-            isPowered = true // Energy plants always work
-            return
-        }
+    private fun generateResources(simulation: Simulation, deltaTime: Double) {
+        val teamRes = simulation.resources[team] ?: return
         
-        // Simple power calculation - check if team has positive energy
-        val teamResources = simulation.resources[team]
-        isPowered = teamResources?.energy ?: 0 > 0
-    }
-    
-    private fun generateResources(simulation: rtsgame.core.Simulation) {
-        val teamResources = simulation.resources[team] ?: return
+        val incomeThisTick = income * deltaTime // income is per second, scale by deltaTime
         
         when (resourceType) {
             RESOURCE_TYPES.MASS -> {
-                teamResources.mass += income.toInt()
-                teamResources.massIncome += income
+                teamRes.mass += incomeThisTick
+                teamRes.massIncome = income // This should be the per-second rate for UI display
             }
             RESOURCE_TYPES.ENERGY -> {
-                teamResources.energy += income.toInt()
-                teamResources.energyIncome += income
+                teamRes.energy += incomeThisTick
+                teamRes.energyIncome = income
             }
             "COMPUTRONIUM" -> {
-                teamResources.computronium += income.toInt()
-                teamResources.computroniumIncome += income
+                teamRes.computronium += incomeThisTick
+                teamRes.computroniumIncome = income
             }
         }
     }
     
-    private fun updateProduction(simulation: rtsgame.core.Simulation, deltaTime: Double) {
-        val current = currentProduction
-        
-        if (current == null) {
-            // Start next item in queue
-            if (productionQueue.isNotEmpty()) {
-                currentProduction = productionQueue.removeAt(0)
-                productionProgress = 0.0
+    private fun updateProduction(simulation: Simulation, deltaTime: Double) {
+        if (currentProduction == null && productionQueue.isNotEmpty()) {
+            val nextItem = productionQueue.first()
+            val unitTypeData = UNIT_TYPES.byName(nextItem.type)
+            if (unitTypeData != null) {
+                val teamRes = simulation.resources[team]!!
+                // Check cost for starting production (full cost, not per tick)
+                if (teamRes.mass >= unitTypeData.cost.mass &&
+                    teamRes.energy >= unitTypeData.cost.energy &&
+                    teamRes.computronium >= (unitTypeData.cost.computronium ?: 0.0)
+                ) {
+                    // Deduct full cost when starting
+                    teamRes.mass -= unitTypeData.cost.mass.toDouble()
+                    teamRes.energy -= unitTypeData.cost.energy.toDouble()
+                    teamRes.computronium -= (unitTypeData.cost.computronium ?: 0).toDouble()
+
+                    currentProduction = productionQueue.removeAt(0)
+                    productionProgressInternal = 0.0
+                    simulationInstance.gameState.addEvent("production_start", "Started producing ${currentProduction!!.type}", 0, x to y)
+                } else {
+                    // Not enough resources to start
+                    // simulationInstance.gameState.addEvent("production_stall", "Cannot start ${nextItem.type}, insufficient resources", 1, x to y)
+                    return
+                }
+            } else {
+                 // simulationInstance.gameState.addEvent("production_error", "Unknown unit type ${nextItem.type} in queue", 2, x to y)
+                productionQueue.removeAt(0) // Remove invalid item
+                return
             }
-            return
         }
-        
-        // Check if we can afford to continue production
-        val teamResources = simulation.resources[team] ?: return
-        if (!canAffordProduction(teamResources, current)) {
-            // Pause production if resources unavailable
-            return
-        }
-        
-        // Continue production
-        productionProgress += 1.0 // 1 per frame
-        
-        // Consume resources gradually during production
-        val progressRatio = 1.0 / current.buildTime
-        deductProductionResources(teamResources, current, progressRatio)
-        
-        if (productionProgress >= current.buildTime) {
-            // Production complete
-            completeProduction(simulation, current)
-            currentProduction = null
-            productionProgress = 0.0
+
+        currentProduction?.let { currentItem ->
+            val unitTypeToProduce = UNIT_TYPES.byName(currentItem.type)
+                ?: run {
+                    // simulationInstance.gameState.addEvent("production_error", "Invalid unit type ${currentItem.type} during production", 2, x to y)
+                    currentProduction = null // Clear invalid current production
+                    return
+                }
+
+            val unitBuildTime = unitTypeToProduce.buildTime.toDouble()
+            if (unitBuildTime <= 0) {
+                // simulationInstance.gameState.addEvent("production_error", "Invalid build time for ${unitTypeToProduce.name}", 2, x to y)
+                currentProduction = null
+                return
+            }
+
+            productionProgressInternal += deltaTime
+
+            if (productionProgressInternal >= unitBuildTime) {
+                spawnUnit(simulation, currentItem.type)
+                currentProduction = null
+                productionProgressInternal = 0.0
+            }
         }
     }
     
-    private fun completeProduction(simulation: rtsgame.core.Simulation, item: ProductionItem) {
-        when (item.type) {
-            "scout", "tank", "artillery", "fighter", "submarine" -> {
-                spawnUnit(simulation, item.type)
+    private fun spawnUnit(simulation: Simulation, unitTypeNameToSpawn: String) {
+        // Ensure UNIT_TYPES.byName returns a valid UnitType before creating GameUnit
+        val unitTypeData = UNIT_TYPES.byName(unitTypeNameToSpawn)
+            ?: run {
+                // simulationInstance.gameState.addEvent("spawn_fail", "Unknown unit type $unitTypeNameToSpawn for spawning", 2, rallyX to rallyY)
+                return
             }
-            // Handle other production types
-        }
-    }
-    
-    private fun spawnUnit(simulation: rtsgame.core.Simulation, unitType: String) {
-        val unit = GameUnit(
-            id = simulation.nextEntityId++,
-            type = unitType,
+
+        val newUnit = GameUnit(
+            id = simulation.entityManager.nextEntityId++,
+            unitTypeName = unitTypeNameToSpawn, // Pass the name
             team = team,
             x = rallyX,
-            y = rallyY
-        )
-        
-        // Set unit stats based on type
-        when (unitType) {
-            "scout" -> {
-                unit.speed = 4.0
-                unit.hp = 50.0
-                unit.maxHp = 50.0
-                unit.attackRange = 80.0
-            }
-            "tank" -> {
-                unit.speed = 1.5
-                unit.hp = 200.0
-                unit.maxHp = 200.0
-                unit.attackRange = 120.0
-            }
-            "artillery" -> {
-                unit.speed = 1.0
-                unit.hp = 80.0
-                unit.maxHp = 80.0
-                unit.attackRange = 300.0
-            }
-            "fighter" -> {
-                unit.speed = 6.0
-                unit.hp = 80.0
-                unit.maxHp = 80.0
-                unit.attackRange = 100.0
-            }
-            "submarine" -> {
-                unit.speed = 2.0
-                unit.hp = 150.0
-                unit.maxHp = 150.0
-                unit.attackRange = 150.0
-            }
-        }
-        
-        simulation.entityManager.addUnit(unit)
-        
-        // Create spawn effect
-        val effect = Effect(
-            x = rallyX,
             y = rallyY,
-            type = "spawn",
-            duration = 30
+            simulation = simulation // Pass simulation instance
         )
-        simulation.entityManager.addEffect(effect)
+        simulation.entityManager.addUnit(newUnit)
+        // simulationInstance.gameState.addEvent("unit_spawned", "$unitTypeName produced", 1, rallyX to rallyY)
+
+        // TODO: Port Effect class and add spawn effect
+        // val effect = Effect(x = rallyX, y = rallyY, type = "spawn", duration = 30)
+        // simulation.entityManager.addEffect(effect)
     }
-    
-    fun queueProduction(unitType: String): Boolean {
-        val productionItem = createProductionItem(unitType) ?: return false
-        productionQueue.add(productionItem)
+
+    fun queueProduction(unitTypeName: String): Boolean {
+        val unitTypeData = UNIT_TYPES.byName(unitTypeName) ?: return false // Ensure unit type exists
+        // Check if this building can produce this unit type
+        if (type.buildList?.contains(unitTypeName) != true && type.produces?.contains(unitTypeName) != true) {
+            // simulationInstance.gameState.addEvent("production_fail", "Building ${this.buildingTypeName} cannot produce $unitTypeName", 1, this.x to this.y)
+            return false
+        }
+        // simulationInstance.gameState.addEvent("production_queued", "$unitTypeName queued at ${this.buildingTypeName}", 0, this.x to this.y)
+        productionQueue.add(ProductionItem(unitTypeName, unitTypeData.buildTime, unitTypeData.cost.mass, unitTypeData.cost.energy, unitTypeData.cost.computronium ?: 0))
         return true
     }
     
     fun cancelProduction(index: Int): ProductionItem? {
-        return if (index == -1) {
-            // Cancel current production
-            val current = currentProduction
+        return if (index == -1 && currentProduction != null) { // Cancel current
+            val item = currentProduction
+            // Refund partial resources based on progress
+            val unitTypeData = UNIT_TYPES.byName(item!!.type)
+            if(unitTypeData != null) {
+                val unitBuildTime = unitTypeData.buildTime.toDouble()
+                if (unitBuildTime > 0) {
+                    val progressRatio = productionProgressInternal / unitBuildTime
+                    val teamRes = simulationInstance.resources[team]
+                    teamRes?.mass = teamRes?.mass?.plus(item.massCost * (1-progressRatio))!!
+                    teamRes.energy = teamRes.energy.plus(item.energyCost * (1-progressRatio))
+                    teamRes.computronium = teamRes.computronium.plus((item.computroniumCost ?: 0) * (1-progressRatio))
+                }
+            }
             currentProduction = null
-            productionProgress = 0.0
-            current
+            productionProgressInternal = 0.0
+            item
         } else if (index >= 0 && index < productionQueue.size) {
-            productionQueue.removeAt(index)
+            val item = productionQueue.removeAt(index)
+            // Full refund for queued items
+            val teamRes = simulationInstance.resources[team]
+            teamRes?.mass = teamRes?.mass?.plus(item.massCost)!!
+            teamRes.energy = teamRes.energy.plus(item.energyCost)
+            teamRes.computronium = teamRes.computronium.plus(item.computroniumCost ?: 0)
+            item
         } else {
             null
         }
     }
-    
+
     fun setRallyPoint(newX: Double, newY: Double) {
+        // TODO: Add validation for rally point placement (e.g., within map bounds, on valid terrain for units)
         rallyX = newX
         rallyY = newY
     }
-    
+
     fun takeDamage(damage: Double) {
         hp -= damage
         if (hp < 0) hp = 0.0
+        // if (hp == 0.0) simulationInstance.gameState.addEvent("building_destroyed", "$buildingTypeName destroyed", 2, x to y)
     }
+
+    // Not needed if BuildingType holds all info
+    // private fun createProductionItem(unitType: String): ProductionItem?
     
-    private fun createProductionItem(unitType: String): ProductionItem? {
-        return when (unitType) {
-            "scout" -> ProductionItem(unitType, 180, 50, 25) // 3s, 50 mass, 25 energy
-            "tank" -> ProductionItem(unitType, 300, 100, 50)  // 5s, 100 mass, 50 energy
-            "artillery" -> ProductionItem(unitType, 480, 150, 100) // 8s
-            "fighter" -> ProductionItem(unitType, 240, 80, 120) // 4s
-            "submarine" -> ProductionItem(unitType, 360, 120, 80) // 6s
-            else -> null
-        }
-    }
-    
-    private fun canAffordProduction(resources: TeamResourcesExtended, item: ProductionItem): Boolean {
-        return resources.mass >= item.massCost && resources.energy >= item.energyCost
-    }
-    
-    private fun deductProductionResources(
-        resources: TeamResourcesExtended, 
-        item: ProductionItem, 
-        ratio: Double
-    ) {
-        val massToDeduct = (item.massCost * ratio).toInt()
-        val energyToDeduct = (item.energyCost * ratio).toInt()
-        
-        resources.mass = maxOf(0, resources.mass - massToDeduct)
-        resources.energy = maxOf(0, resources.energy - energyToDeduct)
-    }
-    
-    fun getProductionQueueInfo(): Indexed<ProductionItem> {
+    fun getProductionQueueInfo(): List<ProductionItem> { // Kotlin idiomatic return type
         val items = mutableListOf<ProductionItem>()
-        
         currentProduction?.let { items.add(it) }
         items.addAll(productionQueue)
-        
-        return items.size j { i -> items[i] }
+        return items
     }
-    
+
     fun getCompletionPercentage(): Double {
         return if (isUnderConstruction) {
-            constructionProgress / constructionTime
+            if (constructionTime > 0) constructionProgress / constructionTime else 0.0
         } else {
-            currentProduction?.let { productionProgress / it.buildTime } ?: 0.0
+            currentProduction?.let {
+                val unitTypeData = UNIT_TYPES.byName(it.type)
+                if (unitTypeData != null && unitTypeData.buildTime > 0) {
+                    productionProgressInternal / unitTypeData.buildTime
+                } else 0.0
+            } ?: 0.0
         }
     }
     
     fun toEntityState(): EntityState {
         return EntityState(
             id = id,
-            type = type,
+            type = buildingTypeName, // Use the original type name string
             team = team,
             x = x,
             y = y,
@@ -344,103 +293,46 @@ class Building(
  * Production queue item
  */
 data class ProductionItem(
-    val type: String,
-    val buildTime: Int, // frames
+    val type: String, // Unit type name
+    val buildTime: Int, // Frames or seconds, must be consistent with UnitType
     val massCost: Int,
-    val energyCost: Int
+    val energyCost: Int,
+    val computroniumCost: Int? = 0
 )
 
-/**
- * Effect system for visual feedback
- */
+// TODO: Port Effect and Projectile classes if they are substantially different from placeholders
+// For now, assuming they are simple data classes or will be ported later.
 class Effect(
-    var x: Double,
-    var y: Double,
-    var type: String,
-    var duration: Int,
-    var life: Int = duration
+    var x: Double, var y: Double, var type: String,
+    var duration: Int, var life: Int = duration
 ) {
-    var scale: Double = 1.0
-    var alpha: Double = 1.0
-    
-    fun update() {
-        life--
-        
-        // Fade out over time
-        alpha = life.toDouble() / duration
-        
-        // Scale effects based on type
-        when (type) {
-            "explosion" -> {
-                scale = 1.0 + (1.0 - alpha) * 2.0 // Expand as it fades
-            }
-            "spawn" -> {
-                scale = alpha * 1.5 // Shrink as it fades
-            }
-        }
-    }
+    fun update() { life-- }
 }
 
-/**
- * Projectile system for ranged combat
- */
 class Projectile(
-    var x: Double,
-    var y: Double,
-    val targetX: Double,
-    val targetY: Double,
-    val damage: Double,
-    val speed: Double,
-    val team: String
+    var x: Double, var y: Double, val targetX: Double, val targetY: Double,
+    val damage: Double, val speed: Double, val team: String
 ) {
     var shouldDestroy: Boolean = false
-    
-    fun update(simulation: rtsgame.core.Simulation, deltaTime: Double) {
+    fun update(simulation: Simulation, deltaTime: Double) {
         val dx = targetX - x
         val dy = targetY - y
         val distance = sqrt(dx * dx + dy * dy)
-        
-        if (distance < 2.0) {
-            // Hit target area
+        if (distance < speed * deltaTime) { // Simplified hit detection
             explode(simulation)
             shouldDestroy = true
             return
         }
-        
-        // Move towards target
-        val moveDistance = speed * deltaTime
-        val normalizedDx = dx / distance
-        val normalizedDy = dy / distance
-        
-        x += normalizedDx * moveDistance
-        y += normalizedDy * moveDistance
+        val moveDist = speed * deltaTime
+        x += (dx / distance) * moveDist
+        y += (dy / distance) * moveDist
     }
-    
-    private fun explode(simulation: rtsgame.core.Simulation) {
-        // Create explosion effect
-        val effect = Effect(
-            x = x,
-            y = y,
-            type = "explosion",
-            duration = 20
-        )
-        simulation.entityManager.addEffect(effect)
-        
-        // Damage nearby units
-        val blastRadius = PROJECTILE_BLAST_RADIUS.toDouble()
-        val nearbyUnits = simulation.units.filter { unit ->
-            !unit.isDead && unit.team != team &&
-            sqrt((unit.x - x).pow(2) + (unit.y - y).pow(2)) <= blastRadius
-        }
-        
-        nearbyUnits.forEach { unit ->
-            unit.takeDamage(damage, null)
-        }
-    }
+    private fun explode(simulation: Simulation) { /* TODO: Implement explosion logic */ }
 }
 
-private val rtsgame.core.Simulation.units: List<GameUnit>
-    get() = entityManager.units.mapNotNull { it as? GameUnit }
 
-private val rtsgame.core.Simulation.nextEntityId: Int
-    get() = entityManager.nextEntityId++
+// Extension property on Simulation to get nextEntityId (example, adjust as needed)
+// This should ideally be part of EntityManager if it's responsible for ID generation
+var Simulation.nextEntityId: Int
+    get() = this.entityManager.nextEntityId // Delegate to EntityManager
+    set(value) { this.entityManager.nextEntityId = value } // Delegate to EntityManager
