@@ -115,6 +115,32 @@ value class SyntaxToken(val semantic: UByte) {
         const val PROPERTY_ACCESS: UByte = 14u
         const val OPERATOR_USAGE: UByte = 15u
         const val KEYWORD_USAGE: UByte = 16u
+        const val CONSTANT_NAME: UByte = 17u
+        const val QUALIFIED_NAME_PART: UByte = 18u
+        const val IMPORT_KEYWORD: UByte = 19u
+        const val PACKAGE_KEYWORD: UByte = 20u
+        const val BRACE_OPEN: UByte = 21u
+        const val BRACE_CLOSE: UByte = 22u
+        const val PAREN_OPEN: UByte = 23u
+        const val PAREN_CLOSE: UByte = 24u
+        // Specific keywords if needed, e.g. for visibility checks
+        const val CLASS_KEYWORD: UByte = 25u
+        const val INTERFACE_KEYWORD: UByte = 26u
+        const val FUN_KEYWORD: UByte = 27u
+        const val VAL_KEYWORD: UByte = 28u
+        const val VAR_KEYWORD: UByte = 29u
+        const val DATA_KEYWORD: UByte = 30u
+        // Visibility Keywords
+        const val PUBLIC_KEYWORD: UByte = 31u
+        const val PRIVATE_KEYWORD: UByte = 32u
+        const val INTERNAL_KEYWORD: UByte = 33u
+        const val PROTECTED_KEYWORD: UByte = 34u
+        const val ABSTRACT_KEYWORD: UByte = 35u
+        const val FINAL_KEYWORD: UByte = 36u
+        const val OPEN_KEYWORD: UByte = 37u
+        const val SUSPEND_KEYWORD: UByte = 38u
+        const val INLINE_KEYWORD: UByte = 39u
+        // Add more as identified
     }
 }
 
@@ -166,6 +192,7 @@ value class EntityToken(val entityType: UByte) {
         const val TYPEALIAS: UByte = 16u
         const val ANNOTATION_CLASS: UByte = 17u
         const val VALUE_CLASS: UByte = 18u
+        const val UNKNOWN_ENTITY: UByte = 19u
     }
 }
 
@@ -182,6 +209,7 @@ value class RoleToken(val role: UByte) {
         const val TYPE_ARGUMENT: UByte = 8u
         const val IMPORT_TARGET: UByte = 9u
         const val DEPENDENCY_TARGET: UByte = 10u
+        const val UNKNOWN_ROLE: UByte = 11u
     }
 }
 
@@ -199,6 +227,9 @@ value class ContextToken(val context: UByte) {
         const val LAMBDA_BODY: UByte = 9u
         const val ANNOTATION_PARAMS: UByte = 10u
         const val TYPE_CONSTRAINT: UByte = 11u
+        const val PACKAGE_CONTEXT: UByte = 12u
+        const val IMPORT_CONTEXT: UByte = 13u
+        const val UNKNOWN_CONTEXT: UByte = 14u
     }
 }
 
@@ -275,35 +306,150 @@ object TokenStairway {
     }
     
     /**
-     * Step 3: Syntactic Classification  
+     * Step 3: Syntactic Classification
      * Lexical tokens → Syntactic elements with scope and visibility
      */
-    fun tokensToSyntax(tokens: TokenSeries): SyntaxSeries = tokens.α { boundedToken ->
-        val (classifiedToken, bounds) = boundedToken
-        val (lexicalToken, tokenType) = classifiedToken
-        
-        val syntaxToken = tokenTypeToSyntax(tokenType, lexicalToken.value)
-        val scopeLevel = ScopeLevel(0u) // Would calculate from context
-        val visibility = VisibilityToken.NONE
-        
-        (syntaxToken j scopeLevel) j VisibilityToken(visibility)
+    fun tokensToSyntax(tokens: TokenSeries): SyntaxSeries {
+        val syntaxList = mutableListOf<VisibleSyntax>()
+        var currentScopeDepth: UByte = 0u
+        val activeVisibilityModifiers = mutableListOf<VisibilityToken>()
+
+        for (i in 0 until tokens.size) {
+            val currentToken = tokens[i]
+            val prevToken = if (i > 0) tokens[i - 1] else null
+            val nextToken = if (i < tokens.size - 1) tokens[i + 1] else null
+
+            val (classifiedToken, _) = currentToken
+            val (lexicalToken, tokenType) = classifiedToken
+
+            // Basic scope handling
+            if (lexicalToken.value == "{") currentScopeDepth++
+
+            val syntaxToken = tokenTypeToSyntax(tokenType, lexicalToken.value, prevToken, nextToken)
+            val scopeLevel = ScopeLevel(currentScopeDepth)
+
+            var currentVisibility = VisibilityToken(VisibilityToken.NONE)
+            if (isVisibilityKeyword(lexicalToken.value)) {
+                 activeVisibilityModifiers.add(mapLexicalToVisibility(lexicalToken.value))
+            } else if (syntaxToken.semantic == SyntaxToken.CLASS_NAME ||
+                       syntaxToken.semantic == SyntaxToken.INTERFACE_NAME ||
+                       syntaxToken.semantic == SyntaxToken.FUNCTION_NAME ||
+                       syntaxToken.semantic == SyntaxToken.PROPERTY_NAME) {
+                // Apply collected modifiers and then clear them for the next declaration
+                if (activeVisibilityModifiers.isNotEmpty()) {
+                    // Combine multiple modifiers if necessary (e.g. "public open")
+                    // For simplicity, just taking the first one found for now, or a combined value.
+                    // A more robust system would create a Join<VisibilityToken, VisibilityToken> or a bitmask.
+                    currentVisibility = activeVisibilityModifiers.first() // Simplified
+                    activeVisibilityModifiers.clear()
+                }
+            }
+
+
+            syntaxList.add((syntaxToken j scopeLevel) j currentVisibility)
+
+            if (lexicalToken.value == "}") {
+                if (currentScopeDepth > 0u) currentScopeDepth--
+            }
+        }
+        return syntaxList.size j { idx -> syntaxList[idx] }
     }
-    
+
     /**
      * Step 4: Entity Recognition
      * Syntactic elements → Semantic entities with roles and context
      */
-    fun syntaxToEntities(syntax: SyntaxSeries): EntitySeries = syntax.α { visibleSyntax ->
-        val (classifiedSyntax, visibility) = visibleSyntax
-        val (syntaxToken, scopeLevel) = classifiedSyntax
-        
-        val entityToken = syntaxToEntity(syntaxToken)
-        val roleToken = RoleToken(RoleToken.DECLARATION) // Would analyze context
-        val contextToken = ContextToken(ContextToken.TOP_LEVEL) // Would analyze scope
-        
-        (entityToken j roleToken) j contextToken
+    fun syntaxToEntities(syntaxSeries: SyntaxSeries): EntitySeries {
+        val entityList = mutableListOf<ContextualEntity>()
+        var currentPackageContext = false
+        var currentImportContext = false
+
+        for (i in 0 until syntaxSeries.size) {
+            val currentSyntax = syntaxSeries[i]
+            val prevSyntax = if (i > 0) syntaxSeries[i-1] else null
+            val nextSyntax = if (i < syntaxSeries.size - 1) syntaxSeries[i+1] else null
+
+            val (classifiedSyntax, visibility) = currentSyntax
+            val (syntaxToken, scopeLevel) = classifiedSyntax
+
+            val entityToken = syntaxToEntity(syntaxToken, visibility, prevSyntax, nextSyntax)
+
+            // Basic Role Token Logic
+            var roleToken = RoleToken(RoleToken.UNKNOWN_ROLE)
+            when (syntaxToken.semantic) {
+                SyntaxToken.CLASS_NAME, SyntaxToken.INTERFACE_NAME, SyntaxToken.ENUM_NAME,
+                SyntaxToken.FUNCTION_NAME, SyntaxToken.PROPERTY_NAME, SyntaxToken.VARIABLE_NAME -> {
+                    // Check if previous token was a declaration keyword (simplified)
+                    val prevLexical = prevSyntax?.let { ps ->
+                        // This requires access to the original BoundedToken, which is not directly in VisibleSyntax
+                        // This part highlights a limitation if we only pass VisibleSyntax
+                        // For now, we assume some keywords might be classified as SyntaxToken types
+                        ps.get<ClassifiedSyntax>().get<SyntaxToken>()
+                    }
+                    if (prevLexical?.semantic == SyntaxToken.CLASS_KEYWORD ||
+                        prevLexical?.semantic == SyntaxToken.INTERFACE_KEYWORD ||
+                        prevLexical?.semantic == SyntaxToken.FUN_KEYWORD ||
+                        prevLexical?.semantic == SyntaxToken.VAL_KEYWORD ||
+                        prevLexical?.semantic == SyntaxToken.VAR_KEYWORD) {
+                        roleToken = RoleToken(RoleToken.DECLARATION)
+                    } else {
+                         roleToken = RoleToken(RoleToken.REFERENCE) // Default to reference if not clearly a declaration start
+                    }
+                }
+                SyntaxToken.FUNCTION_CALL -> roleToken = RoleToken(RoleToken.REFERENCE)
+                SyntaxToken.IMPORT_DECLARATION -> roleToken = RoleToken(RoleToken.IMPORT_TARGET) // Should apply to parts of import
+                SyntaxToken.IDENTIFIER -> { // If it's part of an import path
+                    if (currentImportContext) roleToken = RoleToken(RoleToken.IMPORT_TARGET)
+                }
+                else -> roleToken = RoleToken(RoleToken.UNKNOWN_ROLE)
+            }
+            if (syntaxToken.semantic == SyntaxToken.IMPORT_KEYWORD) currentImportContext = true
+            if (syntaxToken.semantic != SyntaxToken.IDENTIFIER && syntaxToken.semantic != SyntaxToken.QUALIFIED_NAME_PART && syntaxToken.semantic != SyntaxToken.OPERATOR_USAGE) {
+                 // Reset import context if we see something that's not part of a path
+                if (lexicalValueFromSyntax(currentSyntax) != ".") currentImportContext = false
+            }
+
+
+            // Basic Context Token Logic
+            var contextToken = ContextToken(ContextToken.UNKNOWN_CONTEXT)
+            if (syntaxToken.semantic == SyntaxToken.PACKAGE_KEYWORD) currentPackageContext = true
+
+            if (currentPackageContext) {
+                contextToken = ContextToken(ContextToken.PACKAGE_CONTEXT)
+                 if (syntaxToken.semantic != SyntaxToken.IDENTIFIER && syntaxToken.semantic != SyntaxToken.QUALIFIED_NAME_PART && syntaxToken.semantic != SyntaxToken.OPERATOR_USAGE) {
+                    // Reset package context if we see something that's not part of a path
+                     if (lexicalValueFromSyntax(currentSyntax) != ".") currentPackageContext = false
+                }
+            } else if (currentImportContext) {
+                 contextToken = ContextToken(ContextToken.IMPORT_CONTEXT)
+            } else if (scopeLevel.depth == 0u.toUByte()) {
+                contextToken = ContextToken(ContextToken.TOP_LEVEL)
+            } else if (scopeLevel.depth > 0u.toUByte()) {
+                // Simplified: any scope > 0 is class body. Needs refinement.
+                contextToken = ContextToken(ContextToken.CLASS_BODY)
+            }
+            // ANNOTATION_PARAMS needs more specific logic, e.g. tracking if inside @Ann(...)
+
+            entityList.add((entityToken j roleToken) j contextToken)
+        }
+        return entityList.size j { idx -> entityList[idx] }
     }
-    
+
+    // Helper to attempt to get lexical value from VisibleSyntax (placeholder)
+    // This is a conceptual challenge: VisibleSyntax doesn't directly hold the BoundedToken.
+    // The transformation chain currently loses direct access to the original lexical value easily.
+    // This might require redesigning how context is passed or how tokens are structured.
+    // For now, this function won't work correctly without significant changes to data structures or transform process.
+    private fun lexicalValueFromSyntax(vs: VisibleSyntax): String? {
+        // This is a placeholder. In a real scenario, you'd need a way to trace back
+        // to the LexicalToken or ensure BoundedToken (or its value) is carried forward.
+        // One way is to make BoundedToken part of the Join chain up to VisibleSyntax.
+        // E.g., typealias VisibleSyntax = Join<Join<ClassifiedSyntax, VisibilityToken>, BoundedToken>
+        // For this exercise, we'll assume such access or a workaround.
+        return null
+    }
+
+
     /**
      * Step 5: Graph Node Generation
      * Semantic entities → Graph nodes with dependencies and confidence
@@ -343,51 +489,179 @@ object TokenStairway {
         char == '#' -> CharClass(CharClass.HASH)
         else -> CharClass(CharClass.SYMBOL)
     }
-    
+
     private fun charClassToTokenType(charClass: CharClass): TokenType = when (charClass.type) {
         CharClass.LETTER -> TokenType(TokenType.IDENTIFIER)
         CharClass.DIGIT -> TokenType(TokenType.LITERAL_NUMBER)
-        CharClass.AT_SYMBOL -> TokenType(TokenType.ANNOTATION)
+        CharClass.AT_SYMBOL -> TokenType(TokenType.ANNOTATION) // Assumes @ is lexed as part of annotation marker
         CharClass.WHITESPACE -> TokenType(TokenType.WHITESPACE)
         CharClass.NEWLINE -> TokenType(TokenType.NEWLINE)
-        else -> TokenType(TokenType.PUNCTUATION)
+        CharClass.DOT -> TokenType(TokenType.OPERATOR) // Or specific DOT_PUNCTUATION
+        CharClass.PAREN_OPEN, CharClass.PAREN_CLOSE,
+        CharClass.BRACE_OPEN, CharClass.BRACE_CLOSE -> TokenType(TokenType.PUNCTUATION)
+        else -> TokenType(TokenType.PUNCTUATION) // Default for other symbols
+    }
+
+    private fun tokenTypeToSyntax(
+        tokenType: TokenType,
+        value: String,
+        prevToken: BoundedToken?,
+        nextToken: BoundedToken?
+    ): SyntaxToken {
+        val prevLexical = prevToken?.get<ClassifiedToken>()?.get<LexicalToken>()?.value
+        val nextLexical = nextToken?.get<ClassifiedToken>()?.get<LexicalToken>()?.value
+
+        return when (tokenType.category) {
+            TokenType.IDENTIFIER -> {
+                if (isKotlinKeyword(value)) { // Check if identifier is actually a keyword missed by lexer
+                    return mapKeywordToSyntax(value)
+                }
+                when (prevLexical) {
+                    "class" -> SyntaxToken(SyntaxToken.CLASS_NAME)
+                    "interface" -> SyntaxToken(SyntaxToken.INTERFACE_NAME)
+                    "fun" -> SyntaxToken(SyntaxToken.FUNCTION_NAME)
+                    "val" -> SyntaxToken(SyntaxToken.PROPERTY_NAME)
+                    "var" -> SyntaxToken(SyntaxToken.PROPERTY_NAME) // or VARIABLE_NAME if distinction is needed
+                    "@" -> SyntaxToken(SyntaxToken.ANNOTATION_NAME) // If @ is separate
+                    else -> {
+                        if (nextLexical == "(" && prevLexical !in setOf("if", "while", "for", "when")) {
+                            SyntaxToken(SyntaxToken.FUNCTION_CALL)
+                        } else if (nextLexical == ".") {
+                            SyntaxToken(SyntaxToken.QUALIFIED_NAME_PART) // part of qualified name or start of property access
+                        } else if (value.all { it.isUpperCase() || it == '_' || it.isDigit() } && value.contains('_')) {
+                            SyntaxToken(SyntaxToken.CONSTANT_NAME)
+                        } else if (value.firstOrNull()?.isUpperCase() == true && prevLexical != "." && prevLexical != "import") {
+                            // Heuristic: Capitalized identifier might be a class name (e.g. type annotation, constructor call)
+                            // This needs more context to differentiate (e.g. Type vs ConstructorCall)
+                            SyntaxToken(SyntaxToken.CLASS_NAME) // Could be TYPE_REFERENCE or CONSTRUCTOR_CALL
+                        }
+                        else {
+                            SyntaxToken(SyntaxToken.VARIABLE_NAME) // Default
+                        }
+                    }
+                }
+            }
+            TokenType.ANNOTATION -> { // e.g. @file:
+                if (value.contains("EntryPoint")) SyntaxToken(SyntaxToken.ANNOTATION_NAME) // Specific check
+                else SyntaxToken(SyntaxToken.ANNOTATION_NAME)
+            }
+            TokenType.KEYWORD -> mapKeywordToSyntax(value)
+            TokenType.PUNCTUATION -> when(value) {
+                "{" -> SyntaxToken(SyntaxToken.BRACE_OPEN)
+                "}" -> SyntaxToken(SyntaxToken.BRACE_CLOSE)
+                "(" -> SyntaxToken(SyntaxToken.PAREN_OPEN)
+                ")" -> SyntaxToken(SyntaxToken.PAREN_CLOSE)
+                else -> SyntaxToken(SyntaxToken.OPERATOR_USAGE) // Or some GENERIC_PUNCTUATION
+            }
+            TokenType.OPERATOR -> SyntaxToken(SyntaxToken.OPERATOR_USAGE)
+            // Handle other token types if necessary
+            else -> SyntaxToken(SyntaxToken.KEYWORD_USAGE) // Fallback, consider UNKNOWN_SYNTAX
+        }
     }
     
-    private fun tokenTypeToSyntax(tokenType: TokenType, value: String): SyntaxToken = when {
-        tokenType.category == TokenType.IDENTIFIER && isKotlinKeyword(value) -> 
-            SyntaxToken(SyntaxToken.KEYWORD_USAGE)
-        tokenType.category == TokenType.IDENTIFIER && value.first().isUpperCase() -> 
-            SyntaxToken(SyntaxToken.CLASS_NAME)
-        tokenType.category == TokenType.IDENTIFIER -> 
-            SyntaxToken(SyntaxToken.VARIABLE_NAME)
-        tokenType.category == TokenType.ANNOTATION -> 
-            SyntaxToken(SyntaxToken.ANNOTATION_NAME)
-        else -> SyntaxToken(SyntaxToken.KEYWORD_USAGE)
+    private fun mapKeywordToSyntax(value: String): SyntaxToken {
+        return when(value) {
+            "package" -> SyntaxToken(SyntaxToken.PACKAGE_KEYWORD)
+            "import" -> SyntaxToken(SyntaxToken.IMPORT_KEYWORD)
+            "class" -> SyntaxToken(SyntaxToken.CLASS_KEYWORD)
+            "interface" -> SyntaxToken(SyntaxToken.INTERFACE_KEYWORD)
+            "fun" -> SyntaxToken(SyntaxToken.FUN_KEYWORD)
+            "val" -> SyntaxToken(SyntaxToken.VAL_KEYWORD)
+            "var" -> SyntaxToken(SyntaxToken.VAR_KEYWORD)
+            "data" -> SyntaxToken(SyntaxToken.DATA_KEYWORD)
+            "public" -> SyntaxToken(SyntaxToken.PUBLIC_KEYWORD)
+            "private" -> SyntaxToken(SyntaxToken.PRIVATE_KEYWORD)
+            "internal" -> SyntaxToken(SyntaxToken.INTERNAL_KEYWORD)
+            "protected" -> SyntaxToken(SyntaxToken.PROTECTED_KEYWORD)
+            "abstract" -> SyntaxToken(SyntaxToken.ABSTRACT_KEYWORD)
+            "final" -> SyntaxToken(SyntaxToken.FINAL_KEYWORD)
+            "open" -> SyntaxToken(SyntaxToken.OPEN_KEYWORD)
+            "suspend" -> SyntaxToken(SyntaxToken.SUSPEND_KEYWORD)
+            "inline" -> SyntaxToken(SyntaxToken.INLINE_KEYWORD)
+            // Add all other keywords from isKotlinKeyword
+            else -> SyntaxToken(SyntaxToken.KEYWORD_USAGE)
+        }
     }
     
-    private fun syntaxToEntity(syntaxToken: SyntaxToken): EntityToken = when (syntaxToken.semantic) {
-        SyntaxToken.CLASS_NAME -> EntityToken(EntityToken.REGULAR_CLASS)
-        SyntaxToken.FUNCTION_NAME -> EntityToken(EntityToken.SUSPEND_FUNCTION)
-        SyntaxToken.VARIABLE_NAME -> EntityToken(EntityToken.PROPERTY)
-        SyntaxToken.ANNOTATION_NAME -> EntityToken(EntityToken.ANNOTATION_CLASS)
-        else -> EntityToken(EntityToken.OBJECT)
+    private fun isVisibilityKeyword(value: String): Boolean {
+        return value in setOf("public", "private", "internal", "protected", "abstract", "final", "open", "suspend", "inline")
     }
-    
+
+    private fun mapLexicalToVisibility(value: String): VisibilityToken {
+        return when(value) {
+            "public" -> VisibilityToken(VisibilityToken.PUBLIC)
+            "private" -> VisibilityToken(VisibilityToken.PRIVATE)
+            "internal" -> VisibilityToken(VisibilityToken.INTERNAL)
+            "protected" -> VisibilityToken(VisibilityToken.PROTECTED)
+            "abstract" -> VisibilityToken(VisibilityToken.ABSTRACT)
+            "final" -> VisibilityToken(VisibilityToken.FINAL)
+            "open" -> VisibilityToken(VisibilityToken.OPEN)
+            "suspend" -> VisibilityToken(VisibilityToken.SUSPEND)
+            "inline" -> VisibilityToken(VisibilityToken.INLINE)
+            else -> VisibilityToken(VisibilityToken.NONE)
+        }
+    }
+
+
+    private fun syntaxToEntity(
+        syntaxToken: SyntaxToken,
+        visibility: VisibilityToken,
+        prevSyntax: VisibleSyntax?,
+        nextSyntax: VisibleSyntax?
+    ): EntityToken {
+        // Basic logic, needs refinement with more context
+        val prevLexicalSyntax = prevSyntax?.get<ClassifiedSyntax>()?.get<SyntaxToken>()
+
+        return when (syntaxToken.semantic) {
+            SyntaxToken.CLASS_NAME -> {
+                if (prevLexicalSyntax?.semantic == SyntaxToken.DATA_KEYWORD) EntityToken(EntityToken.DATA_CLASS)
+                else if (visibility.access == VisibilityToken.ABSTRACT) EntityToken(EntityToken.ABSTRACT_CLASS)
+                else EntityToken(EntityToken.REGULAR_CLASS)
+            }
+            SyntaxToken.INTERFACE_NAME -> EntityToken(EntityToken.INTERFACE)
+            SyntaxToken.FUNCTION_NAME -> {
+                if (visibility.access == VisibilityToken.SUSPEND) EntityToken(EntityToken.SUSPEND_FUNCTION)
+                // else if (visibility includes INLINE) EntityToken(EntityToken.INLINE_FUNCTION) // Needs combined visibility
+                else EntityToken(EntityToken.EXTENSION_FUNCTION) // Default, needs refinement
+            }
+            SyntaxToken.PROPERTY_NAME -> EntityToken(EntityToken.PROPERTY)
+            SyntaxToken.VARIABLE_NAME -> EntityToken(EntityToken.PROPERTY) // Or a more general variable if not a class member
+            SyntaxToken.ANNOTATION_NAME -> EntityToken(EntityToken.ANNOTATION_CLASS) // Or ANNOTATION_USAGE if it's an instance
+            // Add more mappings
+            else -> EntityToken(EntityToken.UNKNOWN_ENTITY)
+        }
+    }
+
     private fun roleToDependencyType(roleToken: RoleToken): UByte = when (roleToken.role) {
         RoleToken.DECLARATION -> DependencyToken.INTERNAL_REFERENCE
-        RoleToken.REFERENCE -> DependencyToken.FUNCTION_CALLS
+        RoleToken.REFERENCE -> DependencyToken.FUNCTION_CALLS // Or PROPERTY_ACCESS, etc.
         RoleToken.INHERITANCE -> DependencyToken.INHERITANCE
+        RoleToken.IMPLEMENTATION -> DependencyToken.IMPLEMENTATION
         RoleToken.IMPORT_TARGET -> DependencyToken.IMPORTS
+        RoleToken.ANNOTATION_USAGE -> DependencyToken.ANNOTATION
+        RoleToken.TYPE_ARGUMENT -> DependencyToken.TYPE_PARAMETER // Or generic type usage
+        RoleToken.PARAMETER -> DependencyToken.INTERNAL_REFERENCE // Parameter usage
         else -> DependencyToken.INTERNAL_REFERENCE
     }
     
-    private fun isKotlinKeyword(value: String): Boolean = when (value) {
-        "class", "fun", "val", "var", "if", "else", "when", "for", "while", 
-        "do", "try", "catch", "finally", "return", "break", "continue",
-        "object", "interface", "enum", "sealed", "data", "inline", "suspend",
-        "public", "private", "internal", "protected", "open", "final", "abstract" -> true
-        else -> false
-    }
+    // More comprehensive keyword list
+    private val kotlinKeywords = setOf(
+        // Hard keywords
+        "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
+        "interface", "is", "null", "object", "package", "return", "super", "this", "throw",
+        "true", "try", "typealias", "typeof", "val", "var", "when", "while",
+        // Soft keywords
+        "by", "catch", "constructor", "delegate", "dynamic", "field", "file", "finally",
+        "get", "import", "init", "param", "property", "receiver", "set", "setparam", "where",
+        // Modifier keywords
+        "abstract", "actual", "annotation", "companion", "const", "crossinline", "data",
+        "enum", "expect", "external", "final", "infix", "inline", "inner", "internal",
+        "lateinit", "noinline", "open", "operator", "out", "override", "private",
+        "protected", "public", "reified", "sealed", "suspend", "tailrec", "value", "vararg"
+    )
+
+    private fun isKotlinKeyword(value: String): Boolean = value in kotlinKeywords
+
 }
 
 // ==== CONVENIENCE EXTENSIONS ====
