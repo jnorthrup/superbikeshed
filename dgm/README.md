@@ -1,3 +1,6 @@
+> [!NOTE]
+> The Darwin Gödel Machine (DGM) is a component of a larger, unified architecture. For an overview of how DGM fits into the broader ecosystem, particularly its evolving role with Nexus as the primary DGM orchestrator, please see the [Unified Architecture Documentation v3](../../docs/unified_architecture_v3.md).
+
 <h1 align="center">
     Darwin Gödel Machine:<br/>Open-Ended Evolution of Self-Improving Agents
 </h1>

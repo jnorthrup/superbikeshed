@@ -152,6 +152,18 @@ Make Roo Code work your way with:
 
 ---
 
+## Advanced Architecture Concepts
+
+Roo Code (Bao-Cline) itself provides powerful autonomous coding capabilities. It is also designed to be compatible with a broader, evolving ecosystem where Nexus (a Kotlin-based universal development agent) takes on the primary role of the Darwin Gödel Machine (DGM). In this enhanced architecture:
+
+-   **Nexus (Kotlin/KMP):** Becomes the central DGM orchestrator, managing the self-improvement loop, state, and core evolutionary logic using TrikeShed and CCEK.
+-   **Specialized Python Components:** Python scripts (e.g., for specific Langchain agent tasks or benchmark execution) are invoked by Nexus.
+-   **Langchain:** Utilized within these Python components for advanced LLM interactions, orchestrated by Nexus.
+
+This DGM-in-Nexus architecture aims to combine Kotlin's performance and type safety with Python's rich AI ecosystem. To understand this integrated system in detail, please refer to the [Unified Architecture Documentation v3](../docs/unified_architecture_v3.md).
+
+---
+
 ## Local Setup & Development
 
 1. **Clone** the repo:
