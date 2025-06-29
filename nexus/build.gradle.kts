@@ -1,63 +1,16 @@
 plugins {
-<<<<<<< HEAD
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    id("com.google.devtools.ksp") version "2.1.21-2.0.2"
+    // id("com.google.devtools.ksp") version "2.1.21-2.0.2" // Temporarily disabled
     `maven-publish`
     signing
 }
 
 group = "borg.nexus"
-=======
-    kotlin("multiplatform") version "2.1.21"
-}
-
-group = "nexus"
->>>>>>> origin/feat/core-serialization-impl
 version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
-<<<<<<< HEAD
-    jvm {
-        // JVM only for now
-    }
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-common"))
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.serialization.core)
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.kotlinx.datetime)
-                implementation(project(":Trikeshed"))
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.test)
-            }
-        }
-        val jvmMain by getting {
-            kotlin.srcDir("src/standalone/kotlin")
-            dependencies {
-                implementation(kotlin("stdlib-jdk8"))
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(kotlin("reflect"))
-                implementation(libs.kotlinx.serialization.json)
-                implementation(project(":Trikeshed"))
-            }
-        }
-    }
-}
-
-dependencies {
-    add("kspJvm", project(":ksp-processors"))
-    add("kspCommonMainMetadata", project(":ksp-processors"))
-}
-
-=======
     
     jvm {
         testRuns["test"].executionTask.configure {
@@ -82,60 +35,64 @@ dependencies {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(kotlin("stdlib-common"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.serialization.core)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
                 implementation(project(":Trikeshed"))
                 implementation(project(":k2script"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
-        
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
-        
         val jvmMain by getting {
+            kotlin.srcDir("src/standalone/kotlin")
             dependencies {
+                implementation(kotlin("stdlib-jdk8"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(kotlin("reflect"))
+                implementation(libs.kotlinx.serialization.json)
+                implementation(project(":Trikeshed"))
                 implementation(project(":k2script"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
             }
         }
-        
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
                 implementation(kotlin("test-junit"))
             }
         }
-
     }
 }
+
+// KSP dependencies temporarily disabled during merge
+// dependencies {
+//     add("kspJvm", project(":ksp-processors"))
+//     add("kspCommonMainMetadata", project(":ksp-processors"))
+// }
 
 tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-// Disable linting to keep code terse
->>>>>>> origin/feat/core-serialization-impl
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
-<<<<<<< HEAD
-            "-Xskip-metadata-version-check"
-=======
             "-Xskip-metadata-version-check",
             "-Xno-call-assertions",
             "-Xno-param-assertions",
             "-Xno-receiver-assertions",
             "-Xno-source-roots-assertions"
->>>>>>> origin/feat/core-serialization-impl
         )
     }
 }
 
-<<<<<<< HEAD
 tasks.register<JavaExec>("runStandaloneNexus") {
     dependsOn("jvmJar")
     group = "application"
@@ -208,14 +165,8 @@ afterEvaluate {
             }
         }
     }
-} 
-=======
+}
+
 // IntelliJ Project Enumerator integration
 // The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
 // If additional dependencies are needed, add them here.
-
-// If you want to expose the enumerator CLI, add:
-// application {
-//     mainClass.set("nexus.enumerator.intellij.MainKt")
-// }
->>>>>>> origin/feat/core-serialization-impl

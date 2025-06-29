@@ -44,20 +44,6 @@ include(":moneyfan")
 include(":spacegraph")
 include(":k2script")
 include(":flatton")
-<<<<<<< HEAD
-// include(":boingDemo")  // Native audio implemented, but gradle config needs debugging
-include(":ta4k-spacegraph-moneyfan-demo")
-include(":tools")
-// include(":superbikeshed")  // Directory doesn't exist
-// include(":museum")  // Directory doesn't exist
-// include(":dgm")  // Directory doesn't exist
-// include(":tests")  // Directory doesn't exist
-// include(":todo")  // Directory doesn't exist
-// include(":gradle")  // Conflicts with gradle wrapper
-// include(":kotlin-js-store")  // Directory doesn't exist
-include(":SSH")
-include(":fiduciary")
-=======
 // include(":boingDemo")  // Temporarily disabled due to configuration issues
 include(":ta4k-spacegraph-moneyfan-demo")
 include(":tools")
@@ -68,4 +54,3 @@ include(":tests")
 include(":todo")
 include(":gradle")
 include(":kotlin-js-store")
->>>>>>> origin/feat/core-serialization-impl

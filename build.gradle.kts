@@ -1,9 +1,6 @@
 plugins {
     id("com.github.ben-manes.versions") version "0.51.0" apply false
-<<<<<<< HEAD
     id("org.jlleitschuh.gradle.ktlint") version "12.1.1" apply false
-=======
->>>>>>> origin/feat/core-serialization-impl
     kotlin("multiplatform") version "2.1.21" apply false
 }
 
@@ -14,7 +11,6 @@ allprojects {
         google()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
-<<<<<<< HEAD
 }
 
 // KtLint disabled due to rule dependency issues - core compilation works fine
@@ -44,6 +40,3 @@ allprojects {
 //         }
 //     }
 // }
-=======
-} 
->>>>>>> origin/feat/core-serialization-impl

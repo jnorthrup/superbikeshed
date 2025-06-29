@@ -1,17 +1,10 @@
-<<<<<<< HEAD
 import java.util.Locale
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-=======
-import java.util.Locale // Added for toLowerCase
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
-
-plugins {
-    kotlin("multiplatform") version "2.1.21"
->>>>>>> origin/feat/core-serialization-impl
     `maven-publish`
     signing
 }
@@ -30,16 +23,19 @@ kotlin {
             useJUnitPlatform()
         }
     }
-<<<<<<< HEAD
+    
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
         browser()
-=======
+        binaries.executable()
+    }
+    
     js(IR) {
         browser()
         nodejs()
->>>>>>> origin/feat/core-serialization-impl
         binaries.executable()
     }
+    
     // Platform detection for native target
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -47,6 +43,7 @@ kotlin {
     val isLinux = hostOs == "Linux"
     val isWindows = hostOs == "Windows"
     val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+    
     when {
         isMacOS && isArm64 -> macosArm64()
         isMacOS -> macosX64()
@@ -54,27 +51,21 @@ kotlin {
         isLinux -> linuxX64()
         isWindows -> mingwX64()
     }
+    
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation("commons-cli:commons-cli:1.5.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation(libs.kotlinx.coroutines.core)
                 implementation("org.apache.commons:commons-lang3:3.12.0")
                 implementation("commons-io:commons-io:2.11.0")
                 implementation("commons-codec:commons-codec:1.15")
                 implementation("com.konghq:unirest-java:3.14.2")
                 implementation("org.semver4j:semver4j:4.3.0")
-                // implementation(project(":Trikeshed")) // Temporarily disabled due to compilation issues
-<<<<<<< HEAD
-                // implementation(project(":kotlin-entity-scanner")) // Only in JVM
-            }
-        }
-
-=======
+                implementation(project(":Trikeshed"))
             }
         }
         
->>>>>>> origin/feat/core-serialization-impl
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -82,210 +73,178 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
             }
         }
-<<<<<<< HEAD
-
-=======
         
->>>>>>> origin/feat/core-serialization-impl
         val jvmMain by getting {
+            dependsOn(commonMain)
+            kotlin.srcDir("src/main/kotlin")
             dependencies {
                 implementation("commons-cli:commons-cli:1.5.0")
-                implementation("com.konghq:unirest-java:3.14.2")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+                implementation(libs.kotlinx.coroutines.core)
                 implementation("org.apache.commons:commons-lang3:3.12.0")
                 implementation("commons-io:commons-io:2.11.0")
                 implementation("commons-codec:commons-codec:1.15")
+                implementation("com.konghq:unirest-java:3.14.2")
                 implementation("org.semver4j:semver4j:4.3.0")
-                implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.21")
-                implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
+                implementation("org.slf4j:slf4j-nop:2.0.6")
+                implementation("org.jetbrains.kotlin:kotlin-compiler:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-common:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:2.1.21")
-                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven-all:2.1.21")
-                implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.1.21")
-                implementation("org.slf4j:slf4j-nop:2.0.7")
-                implementation("org.apache.maven.resolver:maven-resolver-impl:1.9.18")
-                implementation("org.apache.maven.resolver:maven-resolver-api:1.9.18")
-                implementation("org.apache.maven.resolver:maven-resolver-spi:1.9.18")
-                implementation("org.apache.maven.resolver:maven-resolver-util:1.9.18")
-                implementation("org.apache.maven.resolver:maven-resolver-connector-basic:1.9.18")
-                implementation("org.apache.maven.resolver:maven-resolver-transport-http:1.9.18")
-                implementation("org.apache.maven:maven-core:3.9.6")
-                implementation("org.apache.maven:maven-model:3.9.6")
-                implementation("org.apache.maven:maven-artifact:3.9.6")
-<<<<<<< HEAD
                 implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven-all:2.1.21")
+                implementation("org.jetbrains.kotlin:kotlin-reflect:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-script-runtime:2.1.21")
-                implementation("org.jetbrains.kotlin:kotlin-main-kts:2.1.21")
-                // implementation(project(":kotlin-entity-scanner")) // Temporarily disabled
-            }
-        }
-
-=======
+                implementation("com.jcabi:jcabi-aether:0.10.1")
+                implementation("org.sonatype.aether:aether-api:1.13.1")
+                implementation("net.java.dev.jna:jna:5.13.0")
+                implementation("com.zaxxer:nuprocess:2.0.6")
+                implementation("com.sangupta:murmur:1.0.0")
+                implementation("com.offbytwo:docopt:0.6.0.20150202")
+                implementation("io.sdkman:sdkman-cli-publicapi:0.0.1")
+                implementation("com.github.ajalt.mordant:mordant:2.2.0")
+                implementation("org.apache.ivy:ivy:2.5.2")
+                implementation("org.eclipse.jgit:org.eclipse.jgit:6.0.0.202111291000-r")
+                implementation("org.apache.httpcomponents:httpclient:4.5.14")
+                implementation("org.codehaus.plexus:plexus-utils:3.3.0")
+                implementation("org.eclipse.aether:aether-api:1.1.0")
+                implementation("org.eclipse.aether:aether-connector-basic:1.1.0")
+                implementation("org.eclipse.aether:aether-transport-file:1.1.0")
+                implementation("org.eclipse.aether:aether-transport-http:1.1.0")
+                implementation("org.eclipse.aether:aether-impl:1.1.0")
+                implementation("org.apache.maven:maven-aether-provider:3.3.9")
+                implementation("commons-logging:commons-logging:1.2")
             }
         }
         
->>>>>>> origin/feat/core-serialization-impl
         val jvmTest by getting {
-            dependencies {
-                implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
-                implementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
-                implementation("com.willowtreeapps.assertk:assertk-jvm:0.25")
-                implementation("io.mockk:mockk:1.13.2")
-                implementation(kotlin("script-runtime"))
-            }
-        }
-<<<<<<< HEAD
-
-        val wasmJsMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-            }
-        }
-
-        val wasmJsTest by getting {
+            kotlin.srcDir("src/test/kotlin")
             dependencies {
                 implementation(kotlin("test"))
-=======
+                implementation(kotlin("test-junit5"))
+                implementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+                implementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+                implementation("io.mockk:mockk:1.13.8")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:2.1.21")
+            }
+        }
+        
+        if (isMacOS) {
+            if (isArm64) {
+                val macosArm64Main by getting
+                val macosArm64Test by getting
+            } else {
+                val macosX64Main by getting
+                val macosX64Test by getting
+            }
+        }
+        
+        if (isLinux) {
+            if (isArm64) {
+                val linuxArm64Main by getting {
+                    dependencies {
+                        implementation(libs.kotlinx.coroutines.core)
+                    }
+                }
+                val linuxArm64Test by getting
+            } else {
+                val linuxX64Main by getting {
+                    dependencies {
+                        implementation(libs.kotlinx.coroutines.core)
+                    }
+                }
+                val linuxX64Test by getting
+            }
+        }
+        
+        if (isWindows) {
+            val mingwX64Main by getting {
+                dependencies {
+                    implementation(libs.kotlinx.coroutines.core)
+                }
+            }
+            val mingwX64Test by getting
+        }
         
         val jsMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-js"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
-            }
+            dependsOn(commonMain)
         }
         
         val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-js"))
->>>>>>> origin/feat/core-serialization-impl
+            }
+        }
+        
+        val wasmJsMain by getting {
+            dependsOn(commonMain)
+        }
+        
+        val wasmJsTest by getting {
+            dependencies {
+                implementation(kotlin("test-wasm-js"))
             }
         }
     }
 }
 
-// Disable linting to keep code terse
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    compilerOptions {
-        freeCompilerArgs.addAll(
-            "-Xskip-prerelease-check",
-            "-Xskip-metadata-version-check",
-            "-Xno-call-assertions",
-            "-Xno-param-assertions",
-            "-Xno-receiver-assertions",
-            "-Xno-source-roots-assertions",
-            "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
-            "-Xopt-in=kotlin.RequiresOptIn",
-<<<<<<< HEAD
-            "-Xopt-in=kotlin.ExperimentalStdlibApi",
-=======
-            "-Xopt-in=kotlin.ExperimentalStdlibApi"
->>>>>>> origin/feat/core-serialization-impl
-        )
+val hostOsName = System.getProperty("os.name").lowercase()
+val isMac = hostOsName.contains("mac")
+val isLinux = hostOsName.contains("linux")
+val isWindows = hostOsName.contains("windows")
+
+val generateEmbeddedResources by tasks.registering {
+    outputs.dir("${layout.buildDirectory.get()}/generated/src/jvmMain/kotlin")
+    doLast {
+        val dir = file("${layout.buildDirectory.get()}/generated/src/jvmMain/kotlin/k2script/util")
+        dir.mkdirs()
+        val file = File(dir, "GeneratedBuildConfig.kt")
+        file.writeText("""
+            package k2script.util
+            
+            object GeneratedBuildConfig {
+                const val KSCRIPT_VERSION = "${project.version}"
+                const val KSCRIPT_KOTLINC_VERSION = "2.1.21"
+                const val KSCRIPT_GRADLE_VERSION = "8.14.1"
+            }
+        """.trimIndent())
     }
 }
 
-val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
-    from("src/main/resources") {
-        into(".")
+val k2scriptKt by tasks.registering(Jar::class) {
+    dependsOn(tasks.named("jvmJar"))
+    archiveClassifier.set("bin")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes["Main-Class"] = "io.github.kscripting.k2script.Kscript"
     }
-    from("src/commonMain/kotlin") {
-        into(".")
-    }
-    from("src/commonMain/kotlin") {
-        into("bin")
-    }
-    from("src/jvmMain/kotlin") {
-        into(".")
-    }
-    from("wrappers") {
-        into("wrappers")
-    }
-    from("setup.py")
-    from("package.json")
-<<<<<<< HEAD
-    destinationDir =
-        layout.buildDirectory
-            .dir("kscript")
-            .get()
-            .asFile
-=======
-    destinationDir = layout.buildDirectory.dir("kscript").get().asFile
->>>>>>> origin/feat/core-serialization-impl
+    from(configurations["jvmRuntimeClasspath"].map { if (it.isDirectory) it else zipTree(it) })
+    with(tasks.named("jvmJar").get() as CopySpec)
 }
 
-val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
-    from("src/main/resources") {
-        into(".")
-    }
-    from("src/commonMain/kotlin") {
-        into(".")
-    }
-    from("src/commonMain/kotlin") {
-        into("bin")
-    }
-    from("src/jvmMain/kotlin") {
-        into(".")
-    }
-    from("wrappers") {
-        into("wrappers")
-    }
-    from("setup.py")
-    from("package.json")
-<<<<<<< HEAD
-    destinationDir =
-        layout.buildDirectory
-            .dir("k2script")
-            .get()
-            .asFile
-=======
-    destinationDir = layout.buildDirectory.dir("k2script").get().asFile
->>>>>>> origin/feat/core-serialization-impl
-}
-
-val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribution") {
-    dependsOn(createK2scriptLayout)
-    from(layout.buildDirectory.dir("k2script")) {
-        into("k2script-${project.version}")
-    }
-    archiveFileName.set("k2script-${project.version}-bin.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-}
-
-// Disable distribution tasks that are not needed for Maven-centric build
-tasks.withType<Tar> {
-    enabled = false
-}
-
-tasks.withType<Zip> {
-    if (name != "packageK2scriptDistribution") {
-        enabled = false
+val k2scriptDistribution by tasks.registering(Task::class) {
+    dependsOn(k2scriptKt)
+    doLast {
+        println("K2Script distribution built: ${k2scriptKt.get().archiveFile.get().asFile}")
     }
 }
 
 publishing {
     publications {
-        create<MavenPublication>("mavenJava") {
+        create<MavenPublication>("maven") {
             groupId = project.group.toString()
-            artifactId = project.name
-            version = adjustVersion(project.version.toString())
-<<<<<<< HEAD
-
-            artifact(tasks.named("jvmJar"))
-
-=======
+            artifactId = project.name.lowercase(Locale.getDefault())
+            version = project.version.toString()
             
-            artifact(tasks.named("jvmJar"))
+            from(components["kotlin"])
             
->>>>>>> origin/feat/core-serialization-impl
+            artifact(tasks["k2scriptKt"]) {
+                classifier = "bin"
+            }
+            
             pom {
-                name.set("kscript")
-                description.set("KScript - easy scripting with Kotlin")
-                url.set("https://github.com/kscripting/kscript")
-<<<<<<< HEAD
-
-=======
-                
->>>>>>> origin/feat/core-serialization-impl
+                name.set("k2script")
+                description.set("Kotlin scripting for the terminal")
+                url.set("https://github.com/holgerbrandl/kscript")
                 licenses {
                     license {
                         name.set("MIT License")
@@ -298,36 +257,21 @@ publishing {
                         name.set("Holger Brandl")
                         email.set("holgerbrandl@gmail.com")
                     }
-                    developer {
-                        id.set("aartiPl")
-                        name.set("Marcin Kuszczak")
-                        email.set("aarti@interia.pl")
-                    }
                 }
                 scm {
-                    connection.set("scm:git:git://https://github.com/kscripting/kscript.git")
-                    developerConnection.set("scm:git:ssh:https://github.com/kscripting/kscript.git")
-                    url.set("https://github.com/kscripting/kscript")
+                    connection.set("scm:git:git://github.com/holgerbrandl/kscript.git")
+                    developerConnection.set("scm:git:ssh://github.com/holgerbrandl/kscript.git")
+                    url.set("https://github.com/holgerbrandl/kscript")
                 }
             }
         }
     }
-<<<<<<< HEAD
-
-=======
     
->>>>>>> origin/feat/core-serialization-impl
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            val adjustedVersion = adjustVersion(project.version.toString())
-            url = uri(if (adjustedVersion.endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-<<<<<<< HEAD
-
-=======
-            
->>>>>>> origin/feat/core-serialization-impl
+            url = uri(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
@@ -336,79 +280,77 @@ publishing {
     }
 }
 
-<<<<<<< HEAD
-// signing {
-//     sign(publishing.publications["mavenJava"])
-// }
-=======
 signing {
-    sign(publishing.publications["mavenJava"])
-}
->>>>>>> origin/feat/core-serialization-impl
-
-fun adjustVersion(archiveVersion: String): String {
-    var newVersion = archiveVersion.lowercase(Locale.ROOT)
-    val temporaryVersion = newVersion.substringBeforeLast(".")
-<<<<<<< HEAD
-
-    if (temporaryVersion.endsWith("-RC", true) ||
-        temporaryVersion.endsWith("-BETA", true) ||
-        temporaryVersion.endsWith("-ALPHA", true) ||
-=======
-    
-    if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
->>>>>>> origin/feat/core-serialization-impl
-        temporaryVersion.endsWith("-SNAPSHOT", true)
-    ) {
-        newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"
-    }
-<<<<<<< HEAD
-
-    return newVersion
+    sign(publishing.publications["maven"])
 }
 
-// Create executable JAR
-val k2scriptJar by tasks.registering(Jar::class) {
-    dependsOn("compileKotlinJvm")
-    
-    archiveBaseName.set("k2script")
-    archiveClassifier.set("standalone")
-    
-    manifest {
-        attributes["Main-Class"] = "k2script.jvm.K2ScriptStandaloneKt"
-    }
-    
-    // Get the compiled classes
-    val kotlinClasses = tasks.getByName("compileKotlinJvm").outputs.files
-    from(kotlinClasses)
-    
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-// Create k2script executable script
-tasks.register("createK2ScriptExecutable") {
-    dependsOn(k2scriptJar)
-    doLast {
-        val jarFile = k2scriptJar.get().archiveFile.get().asFile
-        
-        val scriptContent = """#!/bin/bash
-DIR="${'$'}( cd "${'$'}( dirname "${'$'}{BASH_SOURCE[0]}" )" && pwd )"
-java -jar "${'$'}DIR/${jarFile.name}" "$@"
-"""
-        val scriptFile = file("${layout.buildDirectory.get().asFile}/bin/k2script")
-        scriptFile.parentFile.mkdirs()
-        scriptFile.writeText(scriptContent)
-        scriptFile.setExecutable(true)
-        
-        println("Created executable: ${scriptFile.absolutePath}")
-        println("JAR location: ${jarFile.absolutePath}")
-        
-        // Copy JAR to bin directory
-        jarFile.copyTo(file("${layout.buildDirectory.get().asFile}/bin/${jarFile.name}"), overwrite = true)
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+        jvmTarget.set(JvmTarget.JVM_1_8)
+        freeCompilerArgs.addAll(
+            "-Xjsr305=strict",
+            "-Xskip-prerelease-check"
+        )
     }
 }
-=======
-    
-    return newVersion
+
+kotlin.sourceSets.getByName("jvmMain").kotlin.srcDir("${layout.buildDirectory.get()}/generated/src/jvmMain/kotlin")
+tasks.named("compileKotlinJvm").configure {
+    dependsOn(generateEmbeddedResources)
 }
->>>>>>> origin/feat/core-serialization-impl
+
+if (isMac || isLinux) {
+    val createNativeDistributable by tasks.registering(Exec::class) {
+        dependsOn(k2scriptKt)
+        val workingDirPath = projectDir.absolutePath
+        val jarFile = "${layout.buildDirectory.get()}/libs/${project.name}-${project.version}-bin.jar"
+        workingDir = File(workingDirPath)
+        
+        commandLine("bash", "-c", """
+            mkdir -p build/native
+            export APP_NAME="${project.name}"
+            export APP_VERSION="${project.version}"
+            export MODULE_JAR="$jarFile"
+            export BUILD_DIR="${layout.buildDirectory.get()}/native"
+            export MAIN_CLASS="io.github.kscripting.k2script.Kscript"
+            
+            echo '#!/bin/bash' > "${'$'}BUILD_DIR/${'$'}APP_NAME"
+            echo 'DIR="${'$'}( cd "${'$'}( dirname "${'$'}{BASH_SOURCE[0]}" )" && pwd )"' >> "${'$'}BUILD_DIR/${'$'}APP_NAME"
+            echo 'java -jar "${'$'}DIR/${'$'}APP_NAME-${'$'}APP_VERSION-bin.jar" "${'$'}@"' >> "${'$'}BUILD_DIR/${'$'}APP_NAME"
+            chmod +x "${'$'}BUILD_DIR/${'$'}APP_NAME"
+            cp "${'$'}MODULE_JAR" "${'$'}BUILD_DIR/"
+            
+            echo "Created native distributable at ${'$'}BUILD_DIR/${'$'}APP_NAME"
+        """.trimIndent())
+    }
+    
+    val packageDistribution by tasks.registering(Zip::class) {
+        dependsOn(createNativeDistributable)
+        archiveBaseName.set("${project.name}-${project.version}-${currentPlatform()}")
+        destinationDirectory.set(file("${layout.buildDirectory.get()}/distributions"))
+        from("${layout.buildDirectory.get()}/native") {
+            include("**/*")
+        }
+    }
+}
+
+fun currentPlatform(): String {
+    val os = System.getProperty("os.name").lowercase()
+    val arch = System.getProperty("os.arch")
+    return when {
+        os.contains("mac") && arch == "aarch64" -> "macos-arm64"
+        os.contains("mac") -> "macos-x64"
+        os.contains("linux") && arch == "aarch64" -> "linux-arm64"
+        os.contains("linux") -> "linux-x64"
+        os.contains("windows") -> "windows-x64"
+        else -> "unknown"
+    }
+}
+
+tasks.withType<Test> {
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+    useJUnitPlatform()
+}
