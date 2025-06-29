@@ -47,12 +47,12 @@ include(":flatton")
 // include(":boingDemo")  // Native audio implemented, but gradle config needs debugging
 include(":ta4k-spacegraph-moneyfan-demo")
 include(":tools")
-include(":superbikeshed")
-include(":museum")
-include(":dgm")
-include(":tests")
-include(":todo")
-include(":gradle")
-include(":kotlin-js-store")
+// include(":superbikeshed")  // Directory doesn't exist
+// include(":museum")  // Directory doesn't exist
+// include(":dgm")  // Directory doesn't exist
+// include(":tests")  // Directory doesn't exist
+// include(":todo")  // Directory doesn't exist
+// include(":gradle")  // Conflicts with gradle wrapper
+// include(":kotlin-js-store")  // Directory doesn't exist
 include(":SSH")
 include(":fiduciary")
