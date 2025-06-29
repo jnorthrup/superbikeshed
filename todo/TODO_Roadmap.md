@@ -86,6 +86,154 @@ This document outlines pending tasks, conceptual features, and areas for future 
     - [ ] Implement concepts of command hierarchy (if applicable to AI or player control).
     - [ ] Consider how latency and PoW (as per `the-rts-concepts.md`) would affect AI command processing.
 
+### Feature Integration Tasks (from `todo/rtsgame_todos.md`)
+
+#### Command Hierarchy Enhancements
+*Note: Branch `feature/command-hierarchy-enhancements`*
+- [x] **P1: Dynamic unit authority (health, veterancy, context, Computronium)**
+- [x] **P1: Veterancy progression system with ranks and stat boosts**
+- [x] **P1: Command succession protocol implementation**
+- [x] **P1: Configuration via `commandConfig.js`** (Note: This might be outdated if Kotlin conversion is complete)
+- [x] **P1: Debug visualizations for command links/authority**
+- [ ] **P2: Balance testing for veterancy bonuses and authority impact**
+- [ ] **P2: AI logic to understand and use command features**
+- [ ] **P3: Advanced veterancy abilities implementation**
+  - [ ] `canPromoteSubordinates` flag functionality
+  - [ ] `provideMoraleBonus` aura effects
+- [ ] **P2: UI elements for rank/authority display**
+- [ ] **P3: Contextual authority modifier logic**
+- [ ] **P3: Computronium authority modifier based on core level/focus**
+
+#### Formation Movement System
+*Note: Branch `feature/enhanced-formation-movement`*
+- [x] **P1: Leader-follower system with A* pathfinding for leaders**
+- [x] **P1: Predictive slot tracking for followers relative to leader**
+- [x] **P1: Steering behaviors: seek/arrive, separation, terrain avoidance**
+- [x] **P1: A* regrouping for separated followers**
+- [x] **P1: Configuration parameters in `commandConfig.js`** (Note: This might be outdated if Kotlin conversion is complete)
+- [x] **P1: Debug visualizations for slots and predictions**
+- [ ] **P2: Rigorous testing and parameter tuning**
+  - [x] Test with diverse unit counts, speeds, terrain types
+  - [ ] Tune steering weights (SEPARATION, TERRAIN_AVOIDANCE)
+  - [ ] Optimize maxForce, maxTurnRate values
+  - [ ] Adjust prediction time, arrival radius, slot distance
+- [ ] **P3: Advanced obstacle avoidance**
+  - [ ] Multiple "feelers" for terrain avoidance
+  - [ ] Choke point navigation strategies
+- [ ] **P3: Leader behavior enhancements**
+  - [ ] Speed adjustment based on follower cohesion
+  - [ ] A* path choice considering formation width
+- [ ] **P3: Sophisticated follower prediction along leader's A* path**
+- [ ] **P2: Dynamic formation shapes (line, column, wedge)**
+- [ ] **P2: Formation shape change commands**
+
+#### AI Prediction Interface
+*Note: Branch `feature/ai-prediction-interface-poc`*
+- [x] **P1: StrategicAI prediction generation**
+- [x] **P1: Map visualization with confidence-based colors**
+- [x] **P1: Player interaction via right-click acknowledgment**
+- [x] **P1: Event processing and prediction updates**
+- [x] **P2: Documentation in `docs/ai-prediction-interface.md`**
+- [ ] **P3: Additional player interactions**
+  - [x] "Dispute & Monitor" action implementation
+  - [x] "Counter-Predict: New Threat" player designation
+  - [ ] Context menu for interaction type selection
+- [ ] **P3: More prediction types**
+  - [ ] Resource-related predictions (shortfalls, valuable nodes)
+  - [ ] Defensive predictions (vulnerable structures/units)
+- [ ] **P3: Enhanced enemy attack vector prediction**
+  - [ ] Enemy unit clustering analysis
+  - [ ] Unit composition and defense factors
+  - [ ] Path chokepoint considerations
+- [ ] **P3: Tangible AI behavior changes from interactions**
+- [ ] **P3: Multiple simultaneous predictions support**
+- [ ] **P3: Adaptive learning from player feedback**
+
+### Performance Optimization Tasks (from `todo/rtsgame_todos.md`)
+- [x] **P2: Performance profiling after feature integration**
+- [ ] **P2: Cache-friendly data structure validation**
+- [ ] **P2: Memory allocation optimization in hot paths**
+- [ ] **P2: Spatial locality verification for new systems**
+- [ ] **P2: Batch operation efficiency for command/formation systems**
+- [ ] **P3: Implement predictive memory management system**
+  - [x] Create memory usage prediction model
+  - [x] Implement proactive resource allocation
+  - [x] Add memory pressure monitoring
+  - [x] Develop adaptive batch size adjustment
+  - [x] Integrate with entity lifecycle management
+
+### UI/UX Enhancement Tasks (from `todo/rtsgame_todos.md`)
+
+#### TacticsDSL Integration
+- [x] **P2: Visual programming interface integration**
+- [x] **P2: Macro library expansion for RTS-specific commands**
+- [x] **P2: Hotkey customization for rapid command execution**
+- [x] **P3: Tutorial system for complex features**
+- [ ] **P3: Implement advanced command visualization system**
+  - [ ] Create hierarchical command tree visualization
+  - [ ] Add real-time authority flow indicators
+  - [ ] Implement formation shape preview
+  - [ ] Add unit status overlays
+  - [ ] Create interactive command chain editor
+
+#### Modern UI System
+- [x] **P2: Command hierarchy visualization in UI**
+- [x] **P2: Formation controls and shape selection**
+- [x] **P2: AI prediction interaction panels**
+- [x] **P2: Performance metrics display**
+- [x] **P2: Replay system UI controls**
+- [ ] **P3: Implement advanced unit control interface**
+  - [ ] Create unit group management panel
+  - [ ] Add formation template library
+  - [ ] Implement quick command presets
+  - [ ] Add unit role assignment interface
+  - [ ] Create tactical overlay system
+
+### Testing & Quality Assurance (from `todo/rtsgame_todos.md`)
+*Note: Some overlap with `IV. Build & Infrastructure / Automated Testing Setup` - this is more rtsgame specific application & scenarios.*
+- [x] **P1: Unit tests for new systems**
+- [x] **P1: Integration tests for feature combinations**
+- [x] **P2: Performance benchmarks**
+- [x] **P2: Gameplay balance testing**
+- [x] **P1: Determinism verification for replay system**
+
+#### Test Scenarios
+- [ ] **P2: Large-scale battles (500+ units)**
+- [ ] **P2: Complex terrain navigation**
+- [ ] **P2: Multi-formation coordination**
+- [ ] **P2: AI prediction accuracy validation**
+- [ ] **P2: Command succession edge cases**
+
+### Documentation Tasks (from `todo/rtsgame_todos.md`)
+- [ ] **P2: Update main README with new features**
+- [ ] **P3: Architecture documentation for new systems**
+- [ ] **P3: API documentation for component interfaces**
+- [ ] **P3: User guide for advanced features**
+- [ ] **P3: Developer guide for extending systems**
+
+### TrikeShed Integration Notes (for `rtsgame`, from `todo/rtsgame_todos.md`)
+*These tasks relate to applying TrikeShed principles and types within the rtsgame codebase.*
+- [x] **P1: Replace raw collections with `Series<T>` and `Join<A,B>`**
+- [x] **P1: Implement `α` transforms for data processing**
+- [x] **P1: Use `play` materialization for stdlib compatibility**
+- [x] **P1: Convert to `@JvmInline value class` wrappers**
+- [x] **P1: Define domain-specific typealiases**
+- [ ] **P2: Implement type-safe command hierarchy using TrikeShed types**
+  - [ ] Create `CommandAuthority` type for unit authority tracking
+  - [ ] Define `VeterancyRank` enum with type-safe promotions
+  - [ ] Implement `FormationPosition` type for slot tracking
+  - [ ] Add type-safe event system for command succession
+- [ ] **P2: Implement hot/cold path annotations** (Performance)
+- [ ] **P2: Optimize for L1 cache locality** (Performance)
+- [ ] **P2: Use zero-cost abstractions** (Performance)
+- [ ] **P2: Apply memory stratification** (Performance)
+- [ ] **P2: Implement batch processing** (Performance)
+- [ ] **P2: Remove simulated/demo code** (Code Quality)
+- [ ] **P2: Implement proper error handling** (Code Quality)
+- [ ] **P2: Add comprehensive tests** (Code Quality, overlaps with Testing & QA)
+- [ ] **P2: Document type system usage** (Documentation)
+- [ ] **P1: Ensure deterministic behavior** (Code Quality)
+
 ## III. `spacegraph.js` Visualization Integration
 
 - [ ] **P2: Display Edge Labels:** Enhance `Edge` class in `spacegraph.js` to render labels (e.g., for damage on attack lines, resource flow amounts).
@@ -222,10 +370,27 @@ gantt
 ### A. Making Awesome More Awesome
 
 #### 1. boingDemo Multiplatform Architecture
-- [ ] **P1: Complete Native Audio Implementation:**
-  - [ ] Implement `actual fun playSound` for `nativeMain` using C-interop (miniaudio or OpenAL)
-  - [ ] Complete the multiplatform experience for native desktop executables
-  - [ ] Ensure "boing" sound works universally across all platforms
+
+**From `boingDemo/TODO.md`:**
+
+##### Native Audio Implementation
+- [ ] **P1: Add C-interop audio library dependency** (e.g., miniaudio or OpenAL)
+- [ ] **P1: Implement `actual fun playSound` for `nativeMain`** (merges original and `boingDemo/TODO.md` item)
+- [ ] **P2: Test audio on macOS native target**
+- [ ] **P2: Test audio on Linux native target**
+- [ ] **P2: Verify resource loading works with embedded audio files**
+- [ ] **P1: Ensure "boing" sound works universally across all platforms** (from original roadmap)
+- [ ] **P2: Complete the multiplatform experience for native desktop executables** (from original roadmap)
+
+##### Platform Testing
+- [ ] **P2: Verify consistent bounce physics across all platforms**
+- [ ] **P2: Test window resizing behavior**
+- [ ] **P2: Confirm audio timing synchronization**
+
+##### Build System
+- [ ] **P2: Configure native audio library linking**
+- [ ] **P2: Add platform-specific build instructions**
+- [ ] **P2: Set up automated testing for all targets**
 
 #### 2. k2script Command-Line Interface Enhancement
 - [ ] **P1: AI-Powered Features Integration:**
