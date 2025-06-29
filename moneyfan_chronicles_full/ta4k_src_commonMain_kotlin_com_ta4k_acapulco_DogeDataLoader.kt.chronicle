@@ -1,0 +1,124 @@
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
+index 89601786..0f7f285d 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
+@@ -1,6 +1,6 @@
+ package com.ta4k.acapulco
+ 
+-import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.Indexed
+ import com.ta4k.core.model.Kline
+ import java.time.Instant
+ 
+@@ -24,7 +24,7 @@ class DogeDataLoader {
+         startTime: Instant,
+         endTime: Instant,
+         timeframe: String = DEFAULT_TIMEFRAME
+-    ): Series<Kline> {
++    ): Indexed<Kline> {
+         val filePath = getDataFilePath(timeframe)
+         val klines = KlineCsvParser.parseFile(filePath)
+         return klines.filter { kline ->
+@@ -42,7 +42,7 @@ class DogeDataLoader {
+     suspend fun loadLastNPeriods(
+         n: Int,
+         timeframe: String = DEFAULT_TIMEFRAME
+-    ): Series<Kline> {
++    ): Indexed<Kline> {
+         val filePath = getDataFilePath(timeframe)
+         val klines = KlineCsvParser.parseFile(filePath)
+         return klines.takeLast(n).sortedBy { it.openTimeMillis }.toSeries()
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
+index 0f7f285d..e2e511c9 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
+@@ -30,7 +30,7 @@ class DogeDataLoader {
+         return klines.filter { kline ->
+             kline.openTimeMillis >= startTime.toEpochMilli() &&
+             kline.openTimeMillis <= endTime.toEpochMilli()
+-        }.sortedBy { it.openTimeMillis }.toSeries()
++        }.sortedBy { it.openTimeMillis }.toIndexed()
+     }
+ 
+     /**
+@@ -45,7 +45,7 @@ class DogeDataLoader {
+     ): Indexed<Kline> {
+         val filePath = getDataFilePath(timeframe)
+         val klines = KlineCsvParser.parseFile(filePath)
+-        return klines.takeLast(n).sortedBy { it.openTimeMillis }.toSeries()
++        return klines.takeLast(n).sortedBy { it.openTimeMillis }.toIndexed()
+     }
+ 
+     private fun getDataFilePath(timeframe: String): String {
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
+deleted file mode 100644
+index e2e511c9..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/DogeDataLoader.kt
++++ /dev/null
+@@ -1,59 +0,0 @@
+-package com.ta4k.acapulco
+-
+-import borg.trikeshed.lib.Indexed
+-import com.ta4k.core.model.Kline
+-import java.time.Instant
+-
+-/**
+- * Handles loading of DOGE historical data for backtesting.
+- */
+-class DogeDataLoader {
+-    companion object {
+-        const val DOGE_SYMBOL = "DOGE"
+-        const val DEFAULT_TIMEFRAME = "1h"
+-    }
+-
+-    /**
+-     * Load historical DOGE data for the specified time period.
+-     * @param startTime Start time for historical data
+-     * @param endTime End time for historical data
+-     * @param timeframe Optional timeframe (defaults to 1h)
+-     * @return Series of Klines for the specified period
+-     */
+-    suspend fun loadHistoricalData(
+-        startTime: Instant,
+-        endTime: Instant,
+-        timeframe: String = DEFAULT_TIMEFRAME
+-    ): Indexed<Kline> {
+-        val filePath = getDataFilePath(timeframe)
+-        val klines = KlineCsvParser.parseFile(filePath)
+-        return klines.filter { kline ->
+-            kline.openTimeMillis >= startTime.toEpochMilli() &&
+-            kline.openTimeMillis <= endTime.toEpochMilli()
+-        }.sortedBy { it.openTimeMillis }.toIndexed()
+-    }
+-
+-    /**
+-     * Load the last N periods of DOGE data.
+-     * @param n Number of periods to load
+-     * @param timeframe Optional timeframe (defaults to 1h)
+-     * @return Series of Klines for the last N periods
+-     */
+-    suspend fun loadLastNPeriods(
+-        n: Int,
+-        timeframe: String = DEFAULT_TIMEFRAME
+-    ): Indexed<Kline> {
+-        val filePath = getDataFilePath(timeframe)
+-        val klines = KlineCsvParser.parseFile(filePath)
+-        return klines.takeLast(n).sortedBy { it.openTimeMillis }.toIndexed()
+-    }
+-
+-    private fun getDataFilePath(timeframe: String): String {
+-        return when (timeframe) {
+-            "1h" -> "data/doge/klines/1h"
+-            "4h" -> "data/doge/klines/4h"
+-            "1d" -> "data/doge/klines/1d"
+-            else -> throw IllegalArgumentException("Unsupported timeframe: $timeframe")
+-        }
+-    }
+-} 
+\ No newline at end of file

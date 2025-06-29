@@ -1,0 +1,33 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/AgentAssetBalance.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/AgentAssetBalance.kt
+deleted file mode 100644
+index 3af2135e..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/AgentAssetBalance.kt
++++ /dev/null
+@@ -1,24 +0,0 @@
+-package borg.trikeshed.acapulco.model
+-
+-import com.binance.api.client.domain.account.AssetBalance
+-import org.bereft.node.config.asymmetricCryptography
+-import vec.macros.Pai2
+-import kotlin.time.ExperimentalTime
+-
+-@OptIn(ExperimentalTime::class)
+-class AgentAssetBalance
+-constructor(
+-    var orderList:  List<OrderShim>? = null,
+-    free: Number = 1,
+-    asset: String,
+-) : AssetBalance() {
+-    init {
+-        this.free = "$free"
+-        this.asset = asset
+-    }
+-
+-    val simLocked
+-        get() =(orderList?.sumOf{ it.amt } ?:0.0 ).also { assert (it >=0.0) }
+-    override fun toString(): String = "bal(${asset}, free:${free}, lock:${simLocked}${orderList?.let{"orders"+it.toList()}?:""})"
+-
+-}
+\ No newline at end of file

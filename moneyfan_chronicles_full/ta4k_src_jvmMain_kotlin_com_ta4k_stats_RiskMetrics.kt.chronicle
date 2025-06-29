@@ -1,0 +1,197 @@
+
+--- Commit: 4f47c7612cc2cf60961e02d1da4ecebf7ab09280 | 2025-06-16 07:33:24 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
+index 92403e53..9a333099 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
+@@ -1,7 +1,7 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.core.Series
+-import borg.trikeshed.core.j
++import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.j
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+ import kotlin.math.sqrt
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
+index 9a333099..9df52e22 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
+@@ -1,10 +1,8 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.lib.Series
+-import borg.trikeshed.lib.j
++import borg.trikeshed.lib.Indexed
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+-import kotlin.math.sqrt
+ 
+ /**
+  * Risk metrics implementation ported from quantstats
+@@ -20,7 +18,7 @@ class RiskMetrics {
+      * Value at Risk (VaR) calculation
+      */
+     fun valueAtRisk(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         sigma: Double = DEFAULT_SIGMA,
+         confidence: Double = DEFAULT_CONFIDENCE
+     ): BigDecimal {
+@@ -36,7 +34,7 @@ class RiskMetrics {
+      * Conditional Value at Risk (CVaR) calculation
+      */
+     fun conditionalValueAtRisk(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         sigma: Double = DEFAULT_SIGMA,
+         confidence: Double = DEFAULT_CONFIDENCE
+     ): BigDecimal {
+@@ -54,7 +52,7 @@ class RiskMetrics {
+      * Expected Shortfall calculation
+      */
+     fun expectedShortfall(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         sigma: Double = DEFAULT_SIGMA,
+         confidence: Double = DEFAULT_CONFIDENCE
+     ): BigDecimal {
+@@ -65,7 +63,7 @@ class RiskMetrics {
+      * Tail Ratio calculation
+      */
+     fun tailRatio(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         cutoff: Double = DEFAULT_CONFIDENCE
+     ): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+@@ -81,7 +79,7 @@ class RiskMetrics {
+     /**
+      * Risk of Ruin calculation
+      */
+-    fun riskOfRuin(returns: Series<BigDecimal>): BigDecimal {
++    fun riskOfRuin(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val winRate = returns.count { it > BigDecimal.ZERO }.toDouble() / returns.size
+@@ -96,7 +94,7 @@ class RiskMetrics {
+             .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+     }
+ 
+-    private fun Series<BigDecimal>.average(): BigDecimal {
++    private fun Indexed<BigDecimal>.average(): BigDecimal {
+         if (isEmpty()) return BigDecimal.ZERO
+         return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+     }
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
+deleted file mode 100644
+index 9df52e22..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/RiskMetrics.kt
++++ /dev/null
+@@ -1,101 +0,0 @@
+-package com.ta4k.stats
+-
+-import borg.trikeshed.lib.Indexed
+-import java.math.BigDecimal
+-import java.math.RoundingMode
+-
+-/**
+- * Risk metrics implementation ported from quantstats
+- */
+-class RiskMetrics {
+-    companion object {
+-        private const val DEFAULT_SCALE = 8
+-        private const val DEFAULT_CONFIDENCE = 0.95
+-        private const val DEFAULT_SIGMA = 1.0
+-    }
+-
+-    /**
+-     * Value at Risk (VaR) calculation
+-     */
+-    fun valueAtRisk(
+-        returns: Indexed<BigDecimal>,
+-        sigma: Double = DEFAULT_SIGMA,
+-        confidence: Double = DEFAULT_CONFIDENCE
+-    ): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val sortedReturns = returns.sorted()
+-        val index = ((1 - confidence) * returns.size).toInt()
+-        return sortedReturns[index].multiply(BigDecimal(sigma))
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Conditional Value at Risk (CVaR) calculation
+-     */
+-    fun conditionalValueAtRisk(
+-        returns: Indexed<BigDecimal>,
+-        sigma: Double = DEFAULT_SIGMA,
+-        confidence: Double = DEFAULT_CONFIDENCE
+-    ): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val varValue = valueAtRisk(returns, sigma, confidence)
+-        val tailReturns = returns.filter { it <= varValue }
+-        
+-        return if (tailReturns.isEmpty()) BigDecimal.ZERO
+-        else tailReturns.average()
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Expected Shortfall calculation
+-     */
+-    fun expectedShortfall(
+-        returns: Indexed<BigDecimal>,
+-        sigma: Double = DEFAULT_SIGMA,
+-        confidence: Double = DEFAULT_CONFIDENCE
+-    ): BigDecimal {
+-        return conditionalValueAtRisk(returns, sigma, confidence)
+-    }
+-
+-    /**
+-     * Tail Ratio calculation
+-     */
+-    fun tailRatio(
+-        returns: Indexed<BigDecimal>,
+-        cutoff: Double = DEFAULT_CONFIDENCE
+-    ): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val sortedReturns = returns.sorted()
+-        val rightTail = sortedReturns[(cutoff * returns.size).toInt()]
+-        val leftTail = sortedReturns[((1 - cutoff) * returns.size).toInt()]
+-        
+-        return if (leftTail == BigDecimal.ZERO) BigDecimal.ZERO
+-        else rightTail.abs().divide(leftTail.abs(), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Risk of Ruin calculation
+-     */
+-    fun riskOfRuin(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val winRate = returns.count { it > BigDecimal.ZERO }.toDouble() / returns.size
+-        val avgWin = returns.filter { it > BigDecimal.ZERO }.average()
+-        val avgLoss = returns.filter { it < BigDecimal.ZERO }.average().abs()
+-        
+-        if (avgLoss == BigDecimal.ZERO) return BigDecimal.ZERO
+-        
+-        val kelly = winRate - ((1 - winRate) / (avgWin / avgLoss))
+-        return if (kelly <= BigDecimal.ZERO) BigDecimal.ZERO
+-        else BigDecimal.ONE.subtract(kelly)
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    private fun Indexed<BigDecimal>.average(): BigDecimal {
+-        if (isEmpty()) return BigDecimal.ZERO
+-        return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-}

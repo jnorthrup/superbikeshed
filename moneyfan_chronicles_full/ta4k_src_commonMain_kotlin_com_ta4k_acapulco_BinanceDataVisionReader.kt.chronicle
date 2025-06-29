@@ -1,0 +1,257 @@
+
+--- Commit: 832e2d2ec64b85cdbb823fdcbbaa9307cd321991 | 2025-06-19 16:48:53 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
+index 74d3a459..9c944814 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
+@@ -1,6 +1,6 @@
+ package com.ta4k.acapulco
+ 
+-import com.ta4k.acapulco.model.Kline
++import com.ta4k.core.model.Kline
+ import borg.trikeshed.lib.Series
+ import borg.trikeshed.lib.j
+ 
+@@ -16,5 +16,72 @@ expect class BinanceDataVisionReader() {
+          * @return Series of Klines
+          */
+         fun readArchive(filePath: String): Series<Kline>
++        
++        /**
++         * Fetches klines from Binance Data Vision archives for a specific symbol and time range
++         * @param symbol Trading symbol (e.g., "BTCUSDT")
++         * @param interval Time interval (e.g., "1m", "1h", "1d")
++         * @param startDate Start date in YYYY-MM format
++         * @param endDate End date in YYYY-MM format
++         * @param cacheDir Directory to cache downloaded files
++         * @return Series of Klines
++         */
++        suspend fun fetchKlines(
++            symbol: String,
++            interval: String = "1m",
++            startDate: String? = null,
++            endDate: String? = null,
++            cacheDir: String = "~/mpdata/cache"
++        ): Series<Kline>
++        
++        /**
++         * Downloads and processes a single month of kline data
++         * @param symbol Trading symbol
++         * @param interval Time interval
++         * @param yearMonth Year and month in YYYY-MM format
++         * @param cacheDir Cache directory
++         * @return Series of Klines
++         */
++        suspend fun fetchMonthKlines(
++            symbol: String,
++            interval: String,
++            yearMonth: String,
++            cacheDir: String
++        ): Series<Kline>
++        
++        /**
++         * Downloads and processes daily kline data for recent periods
++         * @param symbol Trading symbol
++         * @param interval Time interval
++         * @param days Number of days to fetch
++         * @param cacheDir Cache directory
++         * @return Series of Klines
++         */
++        suspend fun fetchDailyKlines(
++            symbol: String,
++            interval: String,
++            days: Int = 30,
++            cacheDir: String = "~/mpdata/cache"
++        ): Series<Kline>
++        
++        /**
++         * Combines multiple kline series into a single sorted series
++         * @param klineSeries List of kline series to combine
++         * @return Combined and sorted Series of Klines
++         */
++        fun combineKlineSeries(klineSeries: List<Series<Kline>>): Series<Kline>
++        
++        /**
++         * Filters klines by time range
++         * @param klines Series of klines to filter
++         * @param startTime Start time in milliseconds
++         * @param endTime End time in milliseconds
++         * @return Filtered Series of Klines
++         */
++        fun filterKlinesByTimeRange(
++            klines: Series<Kline>,
++            startTime: Long,
++            endTime: Long
++        ): Series<Kline>
+     }
+ } 
+\ No newline at end of file
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
+index 9c944814..e5420059 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
+@@ -1,8 +1,7 @@
+ package com.ta4k.acapulco
+ 
+ import com.ta4k.core.model.Kline
+-import borg.trikeshed.lib.Series
+-import borg.trikeshed.lib.j
++import borg.trikeshed.lib.Indexed
+ 
+ /**
+  * Reads and processes Binance Data Vision archive files.
+@@ -15,7 +14,7 @@ expect class BinanceDataVisionReader() {
+          * @param filePath Path to the archive file
+          * @return Series of Klines
+          */
+-        fun readArchive(filePath: String): Series<Kline>
++        fun readArchive(filePath: String): Indexed<Kline>
+         
+         /**
+          * Fetches klines from Binance Data Vision archives for a specific symbol and time range
+@@ -32,7 +31,7 @@ expect class BinanceDataVisionReader() {
+             startDate: String? = null,
+             endDate: String? = null,
+             cacheDir: String = "~/mpdata/cache"
+-        ): Series<Kline>
++        ): Indexed<Kline>
+         
+         /**
+          * Downloads and processes a single month of kline data
+@@ -47,7 +46,7 @@ expect class BinanceDataVisionReader() {
+             interval: String,
+             yearMonth: String,
+             cacheDir: String
+-        ): Series<Kline>
++        ): Indexed<Kline>
+         
+         /**
+          * Downloads and processes daily kline data for recent periods
+@@ -62,14 +61,14 @@ expect class BinanceDataVisionReader() {
+             interval: String,
+             days: Int = 30,
+             cacheDir: String = "~/mpdata/cache"
+-        ): Series<Kline>
++        ): Indexed<Kline>
+         
+         /**
+          * Combines multiple kline series into a single sorted series
+-         * @param klineSeries List of kline series to combine
++         * @param klineIndexed List of kline series to combine
+          * @return Combined and sorted Series of Klines
+          */
+-        fun combineKlineSeries(klineSeries: List<Series<Kline>>): Series<Kline>
++        fun combineKlineSeries(klineIndexed: List<Indexed<Kline>>): Indexed<Kline>
+         
+         /**
+          * Filters klines by time range
+@@ -79,9 +78,9 @@ expect class BinanceDataVisionReader() {
+          * @return Filtered Series of Klines
+          */
+         fun filterKlinesByTimeRange(
+-            klines: Series<Kline>,
++            klines: Indexed<Kline>,
+             startTime: Long,
+             endTime: Long
+-        ): Series<Kline>
++        ): Indexed<Kline>
+     }
+ } 
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
+deleted file mode 100644
+index e5420059..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/BinanceDataVisionReader.kt
++++ /dev/null
+@@ -1,86 +0,0 @@
+-package com.ta4k.acapulco
+-
+-import com.ta4k.core.model.Kline
+-import borg.trikeshed.lib.Indexed
+-
+-/**
+- * Reads and processes Binance Data Vision archive files.
+- * Supports both CSV and compressed formats.
+- */
+-expect class BinanceDataVisionReader() {
+-    companion object {
+-        /**
+-         * Reads a Binance Data Vision archive file and returns a Series of Klines.
+-         * @param filePath Path to the archive file
+-         * @return Series of Klines
+-         */
+-        fun readArchive(filePath: String): Indexed<Kline>
+-        
+-        /**
+-         * Fetches klines from Binance Data Vision archives for a specific symbol and time range
+-         * @param symbol Trading symbol (e.g., "BTCUSDT")
+-         * @param interval Time interval (e.g., "1m", "1h", "1d")
+-         * @param startDate Start date in YYYY-MM format
+-         * @param endDate End date in YYYY-MM format
+-         * @param cacheDir Directory to cache downloaded files
+-         * @return Series of Klines
+-         */
+-        suspend fun fetchKlines(
+-            symbol: String,
+-            interval: String = "1m",
+-            startDate: String? = null,
+-            endDate: String? = null,
+-            cacheDir: String = "~/mpdata/cache"
+-        ): Indexed<Kline>
+-        
+-        /**
+-         * Downloads and processes a single month of kline data
+-         * @param symbol Trading symbol
+-         * @param interval Time interval
+-         * @param yearMonth Year and month in YYYY-MM format
+-         * @param cacheDir Cache directory
+-         * @return Series of Klines
+-         */
+-        suspend fun fetchMonthKlines(
+-            symbol: String,
+-            interval: String,
+-            yearMonth: String,
+-            cacheDir: String
+-        ): Indexed<Kline>
+-        
+-        /**
+-         * Downloads and processes daily kline data for recent periods
+-         * @param symbol Trading symbol
+-         * @param interval Time interval
+-         * @param days Number of days to fetch
+-         * @param cacheDir Cache directory
+-         * @return Series of Klines
+-         */
+-        suspend fun fetchDailyKlines(
+-            symbol: String,
+-            interval: String,
+-            days: Int = 30,
+-            cacheDir: String = "~/mpdata/cache"
+-        ): Indexed<Kline>
+-        
+-        /**
+-         * Combines multiple kline series into a single sorted series
+-         * @param klineIndexed List of kline series to combine
+-         * @return Combined and sorted Series of Klines
+-         */
+-        fun combineKlineSeries(klineIndexed: List<Indexed<Kline>>): Indexed<Kline>
+-        
+-        /**
+-         * Filters klines by time range
+-         * @param klines Series of klines to filter
+-         * @param startTime Start time in milliseconds
+-         * @param endTime End time in milliseconds
+-         * @return Filtered Series of Klines
+-         */
+-        fun filterKlinesByTimeRange(
+-            klines: Indexed<Kline>,
+-            startTime: Long,
+-            endTime: Long
+-        ): Indexed<Kline>
+-    }
+-} 
+\ No newline at end of file

@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kotlin-entity-scanner-jvm">
+    <output-path>$PROJECT_DIR$/kotlin-entity-scanner/build/libs</output-path>
+    <root id="archive" name="kotlin-entity-scanner-jvm.jar">
+      <element id="module-output" name="Trikeshed-Monorepo.kotlin-entity-scanner.jvmMain" />
+    </root>
+  </artifact>
+</component>

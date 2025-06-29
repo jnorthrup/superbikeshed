@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/SSH" />
+            <option value="$PROJECT_DIR$/Trikeshed" />
+            <option value="$PROJECT_DIR$/dgm" />
+            <option value="$PROJECT_DIR$/flatton" />
+            <option value="$PROJECT_DIR$/gradle" />
+            <option value="$PROJECT_DIR$/k2script" />
+            <option value="$PROJECT_DIR$/kotlin-entity-scanner" />
+            <option value="$PROJECT_DIR$/kotlin-js-store" />
+            <option value="$PROJECT_DIR$/kotlinx-serialization-scanner" />
+            <option value="$PROJECT_DIR$/kotlinx-serialization-wireproto" />
+            <option value="$PROJECT_DIR$/ksp-processors" />
+            <option value="$PROJECT_DIR$/moneyfan" />
+            <option value="$PROJECT_DIR$/museum" />
+            <option value="$PROJECT_DIR$/nexus" />
+            <option value="$PROJECT_DIR$/rtsgame" />
+            <option value="$PROJECT_DIR$/spacegraph" />
+            <option value="$PROJECT_DIR$/superbikeshed" />
+            <option value="$PROJECT_DIR$/ta4k" />
+            <option value="$PROJECT_DIR$/ta4k-spacegraph-moneyfan-demo" />
+            <option value="$PROJECT_DIR$/tests" />
+            <option value="$PROJECT_DIR$/todo" />
+            <option value="$PROJECT_DIR$/tools" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

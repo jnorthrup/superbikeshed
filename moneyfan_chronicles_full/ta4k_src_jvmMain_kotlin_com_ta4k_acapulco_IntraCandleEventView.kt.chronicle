@@ -1,0 +1,44 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt
+index 01764ff8..cf802040 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt
+@@ -3,7 +3,7 @@
+ // =====================================================================
+ package borg.trikeshed.acapulco // Adjusted package
+ 
+-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
++import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
+ import borg.trikeshed.acapulco.ITradePairEventMuxer // Assuming ported
+ import borg.trikeshed.lib.Join // Replaces Pai2
+ import borg.trikeshed.lib.j // Replaces t2
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt
+deleted file mode 100644
+index cf802040..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/IntraCandleEventView.kt
++++ /dev/null
+@@ -1,21 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/IntraCandleEventView.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco // Adjusted package
+-
+-import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
+-import borg.trikeshed.acapulco.ITradePairEventMuxer // Assuming ported
+-import borg.trikeshed.lib.Join // Replaces Pai2
+-import borg.trikeshed.lib.j // Replaces t2
+-
+-class IntraCandleEventView(
+-    private val muxer: TradePairEventMuxer, // Requires ITradePairEventMuxer interface from Acapulco
+-    private val streamer: Streamer, // Requires Streamer class from Acapulco
+-) : CandleEventHandler<Join<Cursor, Int>>( // Use Join, CandleEventHandler needs T param
+-    evtSource = muxer.intra_events,
+-    onEvt = { (c0, intra): Join<Cursor, Int> ->
+-        // decorateView needs to be ported and accept Join<Cursor, Int> and TradingWallet
+-        val c1 = decorateView(muxer, c0 j intra, streamer.tradingWallet)
+-        // Process c1 if needed
+-    }
+-)

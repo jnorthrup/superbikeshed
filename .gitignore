@@ -1,0 +1,171 @@
+# Gradle build artifacts
+build/
+.gradle/
+gradle-wrapper.jar
+
+# Compiled Kotlin/Java artifacts
+*.class
+*.jar
+*.klib
+*.metadata.jar
+*.wasm
+*.mjs
+*.js.map
+*.wasm.map
+
+# IDE files
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/uiDesigner.xml
+.idea/dbnavigator.xml
+.idea/inspectionProfiles/
+.idea/artifacts/
+.idea/gradle.xml
+.idea/misc.xml
+.vscode/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js artifacts
+node_modules/
+yarn.lock
+yarn-error.log
+npm-debug.log*
+.npm
+
+# Python artifacts
+venv/
+venv_new/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+
+# Temporary and cache files
+tmp/
+tmpdir/
+temp/
+logs/
+*.log
+*.tmp
+.cache/
+
+# Test outputs and reports
+**/build/reports/
+**/build/test-results/
+**/build/kotlin/
+**/build/classes/
+**/build/generated/
+**/build/intermediates/
+**/build/libs/
+**/build/processedResources/
+**/build/compileSync/
+**/build/dist/
+**/build/kotlin-webpack/
+
+# Build configuration leftovers
+kotlin-js-store/
+.kotlin/
+build-cache/
+
+# IntelliJ IDEA project files (keep shared configs)
+.idea/copyright/
+.idea/scopes/
+
+# Webpack and JS artifacts
+webpack.config.js
+*.bundle.js
+*.chunk.js
+
+# KSP generated files
+**/build/generated/ksp/
+
+# Test sandbox artifacts
+**/test/
+**/kscript_test_sandbox/
+
+# Debug and temporary Kotlin files
+debug_packer.kt
+DebugBashBracePacker.kt
+TestBashPacker.kt
+test_bash_packer.kt
+test_parse.kt
+demo_packing_parser.kt
+
+# Platform-specific build outputs
+**/build/bin/
+**/build/obj/
+
+# Archive and backup directories
+archive/
+museum-*/
+worker-*/
+trikeshed-work/
+
+# Corpus files - should be reproduced from archive
+corpus/
+
+# Documentation build outputs
+docs/build/
+docs/_build/
+
+# Deployment directories
+deploy/
+
+# Additional development turds with wildcards
+*_evolution.diff
+*_history.txt
+git_taxonomical_system.md
+docs_consolidation.sh
+realize_intention*.kts
+**/CONSOLIDATED_DOCS.md
+**/DOCS_FINAL.md
+**/DOCS_REUP.md
+**/DOCS_SUMMARY.md
+
+# Backup and temporary build files
+*.backup
+*.orig
+*.rej
+*.patch
+*.diff
+*~
+*.swp
+*.swo
+
+# JS/TS development artifacts
+closure-config.json
+gemini/
+nvidia_nim/
+processed_models/
+models/
+*.glb
+*.obj
+
+# Python development artifacts
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.coverage/
+.nyc_outputbuild
+.gradle
+.kotlin/
+.idea/
+.aider*

@@ -1,0 +1,38 @@
+commit 5197b109f7a525adcc6b2131efcb62f900d71c4d
+Author: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date:   Thu Jun 19 11:42:24 2025 +0000
+
+    feat: Create TrikeshedMinimalJson KMP project for serialization
+    
+    This commit introduces the `TrikeshedMinimalJson` project, a Kotlin
+    Multiplatform (KMP) library designed to specify and demonstrate
+    JSON serialization for core Trikeshed data structures using
+    `kotlinx.serialization`.
+    
+    Key features:
+    - Defines KMP-compatible data classes: `DealProxy`, `VendorProxy`,
+      and `CouchTxProxy` in `commonMain`.
+    - Implements custom serializers for `DealProxy` and `VendorProxy` to
+      handle `_id` mapping, conditional `id` serialization, and a `type`
+      discriminator field, aligning with specified requirements.
+    - `CouchTxProxy` uses default `kotlinx.serialization`.
+    - Configures `kotlinx.serialization.json.Json` (as `AppJson`) with
+      `prettyPrint = false` and `encodeDefaults = false`.
+    - The project structure is based on the main Trikeshed KMP setup,
+      targeting JVM, JS, WasmJS, and Native platforms (Kotlin 2.0.0,
+      kotlinx.serialization 1.6.3).
+    - Includes comprehensive unit tests in `commonTest` for serialization
+      and deserialization logic, all passing on the JVM target.
+    - Provides a `README.md` detailing the project's purpose, structure,
+      and usage.
+    
+    This project serves as a reference for JSON interaction with these
+    Trikeshed types.
+
+ TrikeshedMinimalJson/README.md                     |  56 ++++
+ TrikeshedMinimalJson/build.gradle.kts              |  83 ++++++
+ TrikeshedMinimalJson/settings.gradle.kts           |  18 ++
+ .../trikeshedminimaljson/JsonSerialization.kt      | 108 ++++++++
+ .../trikeshedminimaljson/TrikeshedModels.kt        |  30 +++
+ .../trikeshedminimaljson/JsonSerializationTest.kt  | 286 +++++++++++++++++++++
+ 6 files changed, 581 insertions(+)

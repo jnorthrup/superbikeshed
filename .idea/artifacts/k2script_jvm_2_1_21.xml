@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="k2script-jvm-2.1.21">
+    <output-path>$PROJECT_DIR$/k2script/build/libs</output-path>
+    <root id="archive" name="k2script-jvm-2.1.21.jar">
+      <element id="module-output" name="Trikeshed-Monorepo.k2script.jvmMain" />
+    </root>
+  </artifact>
+</component>

@@ -1,0 +1,233 @@
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+index b8ed1c43..44297008 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+@@ -78,29 +78,29 @@ object SeriesDataProcessingExamples {
+         ).toSeries()
+ 
+         println("Original Klines:")
+-        dummyKlines.▶.forEach { println(it) }
++        dummyKlines.play.forEach { println(it) }
+ 
+         println("\nExtracted Close Prices:")
+         val closePrices = extractClosePrices(dummyKlines)
+-        closePrices.▶.forEach { println(it.value) } // Assuming Price has a meaningful toString or access to value
++        closePrices.play.forEach { println(it.value) } // Assuming Price has a meaningful toString or access to value
+ 
+         println("\nCalculated Typical Prices:")
+         val typicalPrices = calculateTypicalPrices(dummyKlines)
+-        typicalPrices.▶.forEach { println(it.value) }
++        typicalPrices.play.forEach { println(it.value) }
+ 
+         println("\nJoined Close Price and Volume:")
+         val closeAndVolume = joinClosePriceAndVolume(dummyKlines)
+-        closeAndVolume.▶.forEach { join -> println("Close: ${join.a.value}, Volume: ${join.b.value}") }
++        closeAndVolume.play.forEach { join -> println("Close: ${join.a.value}, Volume: ${join.b.value}") }
+ 
+         // Example of accessing left/right from Series2
+         // println("\nJoined Close (left):")
+-        // closeAndVolume.left.▶.forEach { println(it.value) }
++        // closeAndVolume.left.play.forEach { println(it.value) }
+         // println("\nJoined Volume (right):")
+-        // closeAndVolume.right.▶.forEach { println(it.value) }
++        // closeAndVolume.right.play.forEach { println(it.value) }
+     }
+     */
+     // Note: To run main, KlineModels.kt and Trikeshed files (Series.kt, Join.kt, Series2.kt)
+     // would need to be accessible in the classpath.
+     // The `toSeries()` extension for List also needs to be available.
+-    // The `▶` operator provides an Iterable wrapper.
++    // The `play` operator provides an Iterable wrapper.
+ }
+
+--- Commit: 2038f3399bd254f0f876808eca5807a9d1d10397 | 2025-06-19 14:47:16 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+index 44297008..62e1d76c 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+@@ -60,7 +60,7 @@ object SeriesDataProcessingExamples {
+         // For each index, we access the corresponding Kline from the input series (`klines.b(index)` or `klines[index]`)
+         // and then create a Join pair of its `close` price and `volume` using the `A.j(B)` infix function.
+         // The result is `Series<Join<Price, Volume>>`, which is typealiased as `Series2<Price, Volume>`.
+-        return klines.a j { index ->
++        return klines.a j { index:Int ->
+             val kline = klines.b(index) // or klines[index]
+             kline.close j kline.volume
+         }
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+index 62e1d76c..c5ab9bb8 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+@@ -12,7 +12,7 @@ import moneyfan.trikeshed.toList // For verification/display if needed
+ // import moneyfan.trikeshed.right // Not strictly needed for these examples but good for context
+ 
+ /**
+- * Contains example functions demonstrating data processing on `Series<Kline>`
++ * Contains example functions demonstrating data processing on `Indexed<Kline>`
+  * using the replicated TrikeShed API operators like `α` (alpha/map) and `j` (join/construct).
+  */
+ object SeriesDataProcessingExamples {
+@@ -23,7 +23,7 @@ object SeriesDataProcessingExamples {
+      * @param klines A Series of Kline objects.
+      * @return A Series of Price objects, representing the closing price of each Kline.
+      */
+-    fun extractClosePrices(klines: Series<Kline>): Series<Price> {
++    fun extractClosePrices(klines: Indexed<Kline>): Indexed<Price> {
+         // The `α` operator (alpha) is used here as a map-like transformation.
+         // It iterates through each Kline in the input series and applies the lambda,
+         // which extracts the `close` property (a Price object).
+@@ -37,7 +37,7 @@ object SeriesDataProcessingExamples {
+      * @param klines A Series of Kline objects.
+      * @return A Series of Price objects, representing the typical price for each Kline.
+      */
+-    fun calculateTypicalPrices(klines: Series<Kline>): Series<Price> {
++    fun calculateTypicalPrices(klines: Indexed<Kline>): Indexed<Price> {
+         // Again, `α` is used to transform each Kline.
+         // The lambda calculates the typical price using the high, low, and close values
+         // of the Kline. The result is wrapped in a `Price` value class instance.
+@@ -51,15 +51,15 @@ object SeriesDataProcessingExamples {
+      * Joins the closing price and volume of each Kline into a Series of pairs (Series2).
+      *
+      * @param klines A Series of Kline objects.
+-     * @return A Series2<Price, Volume> (which is Series<Join<Price, Volume>>),
++     * @return A Series2<Price, Volume> (which is Indexed<Join<Price, Volume>>),
+      *         where each element is a Join pair of (closePrice, volume) for a Kline.
+      */
+-    fun joinClosePriceAndVolume(klines: Series<Kline>): Series2<Price, Volume> {
++    fun joinClosePriceAndVolume(klines: Indexed<Kline>): Series2<Price, Volume> {
+         // To create a Series of Joins (Series2), we use the `Int.j` factory method
+         // for Series construction. `klines.a` gives the size of the input series.
+         // For each index, we access the corresponding Kline from the input series (`klines.b(index)` or `klines[index]`)
+         // and then create a Join pair of its `close` price and `volume` using the `A.j(B)` infix function.
+-        // The result is `Series<Join<Price, Volume>>`, which is typealiased as `Series2<Price, Volume>`.
++        // The result is `Indexed<Join<Price, Volume>>`, which is typealiased as `Series2<Price, Volume>`.
+         return klines.a j { index:Int ->
+             val kline = klines.b(index) // or klines[index]
+             kline.close j kline.volume
+@@ -75,7 +75,7 @@ object SeriesDataProcessingExamples {
+             Kline(TimestampEpochMillis(1000L), Price(10.0), Price(12.0), Price(9.0), Price(11.0), Volume(100.0), TimestampEpochMillis(1060L), Volume(1100.0), 10, Volume(50.0), Volume(550.0), null),
+             Kline(TimestampEpochMillis(2000L), Price(11.0), Price(13.0), Price(10.0), Price(12.0), Volume(120.0), TimestampEpochMillis(2060L), Volume(1320.0), 12, Volume(60.0), Volume(660.0), null),
+             Kline(TimestampEpochMillis(3000L), Price(12.0), Price(14.0), Price(11.0), Price(13.0), Volume(110.0), TimestampEpochMillis(3060L), Volume(1330.0), 11, Volume(55.0), Volume(605.0), null)
+-        ).toSeries()
++        ).toIndexed()
+ 
+         println("Original Klines:")
+         dummyKlines.play.forEach { println(it) }
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt b/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
+deleted file mode 100644
+index c5ab9bb8..00000000
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/examples/SeriesDataProcessingExamples.kt
++++ /dev/null
+@@ -1,106 +0,0 @@
+-package moneyfan.examples
+-
+-import moneyfan.models.Kline
+-import moneyfan.models.Price
+-import moneyfan.models.Volume
+-import moneyfan.trikeshed.Series
+-import moneyfan.trikeshed.Series2
+-import moneyfan.trikeshed.α // For the map-like transform operator
+-import moneyfan.trikeshed.j // For Series construction (Int.j) and Join creation (A.j(B))
+-import moneyfan.trikeshed.toList // For verification/display if needed
+-// import moneyfan.trikeshed.left // Not strictly needed for these examples but good for context
+-// import moneyfan.trikeshed.right // Not strictly needed for these examples but good for context
+-
+-/**
+- * Contains example functions demonstrating data processing on `Indexed<Kline>`
+- * using the replicated TrikeShed API operators like `α` (alpha/map) and `j` (join/construct).
+- */
+-object SeriesDataProcessingExamples {
+-
+-    /**
+-     * Extracts the closing prices from a Series of Klines.
+-     *
+-     * @param klines A Series of Kline objects.
+-     * @return A Series of Price objects, representing the closing price of each Kline.
+-     */
+-    fun extractClosePrices(klines: Indexed<Kline>): Indexed<Price> {
+-        // The `α` operator (alpha) is used here as a map-like transformation.
+-        // It iterates through each Kline in the input series and applies the lambda,
+-        // which extracts the `close` property (a Price object).
+-        return klines α { it.close }
+-    }
+-
+-    /**
+-     * Calculates the typical price for each Kline in a Series.
+-     * Typical Price = (High + Low + Close) / 3.
+-     *
+-     * @param klines A Series of Kline objects.
+-     * @return A Series of Price objects, representing the typical price for each Kline.
+-     */
+-    fun calculateTypicalPrices(klines: Indexed<Kline>): Indexed<Price> {
+-        // Again, `α` is used to transform each Kline.
+-        // The lambda calculates the typical price using the high, low, and close values
+-        // of the Kline. The result is wrapped in a `Price` value class instance.
+-        return klines α { kline ->
+-            val typicalValue = (kline.high.value + kline.low.value + kline.close.value) / 3.0
+-            Price(typicalValue)
+-        }
+-    }
+-
+-    /**
+-     * Joins the closing price and volume of each Kline into a Series of pairs (Series2).
+-     *
+-     * @param klines A Series of Kline objects.
+-     * @return A Series2<Price, Volume> (which is Indexed<Join<Price, Volume>>),
+-     *         where each element is a Join pair of (closePrice, volume) for a Kline.
+-     */
+-    fun joinClosePriceAndVolume(klines: Indexed<Kline>): Series2<Price, Volume> {
+-        // To create a Series of Joins (Series2), we use the `Int.j` factory method
+-        // for Series construction. `klines.a` gives the size of the input series.
+-        // For each index, we access the corresponding Kline from the input series (`klines.b(index)` or `klines[index]`)
+-        // and then create a Join pair of its `close` price and `volume` using the `A.j(B)` infix function.
+-        // The result is `Indexed<Join<Price, Volume>>`, which is typealiased as `Series2<Price, Volume>`.
+-        return klines.a j { index:Int ->
+-            val kline = klines.b(index) // or klines[index]
+-            kline.close j kline.volume
+-        }
+-    }
+-
+-    // --- Main function for simple demonstration (conceptual) ---
+-    // This would typically be in a test file or a separate main execution context.
+-    /*
+-    fun main() {
+-        // Create some dummy Kline data for examples
+-        val dummyKlines = listOf(
+-            Kline(TimestampEpochMillis(1000L), Price(10.0), Price(12.0), Price(9.0), Price(11.0), Volume(100.0), TimestampEpochMillis(1060L), Volume(1100.0), 10, Volume(50.0), Volume(550.0), null),
+-            Kline(TimestampEpochMillis(2000L), Price(11.0), Price(13.0), Price(10.0), Price(12.0), Volume(120.0), TimestampEpochMillis(2060L), Volume(1320.0), 12, Volume(60.0), Volume(660.0), null),
+-            Kline(TimestampEpochMillis(3000L), Price(12.0), Price(14.0), Price(11.0), Price(13.0), Volume(110.0), TimestampEpochMillis(3060L), Volume(1330.0), 11, Volume(55.0), Volume(605.0), null)
+-        ).toIndexed()
+-
+-        println("Original Klines:")
+-        dummyKlines.play.forEach { println(it) }
+-
+-        println("\nExtracted Close Prices:")
+-        val closePrices = extractClosePrices(dummyKlines)
+-        closePrices.play.forEach { println(it.value) } // Assuming Price has a meaningful toString or access to value
+-
+-        println("\nCalculated Typical Prices:")
+-        val typicalPrices = calculateTypicalPrices(dummyKlines)
+-        typicalPrices.play.forEach { println(it.value) }
+-
+-        println("\nJoined Close Price and Volume:")
+-        val closeAndVolume = joinClosePriceAndVolume(dummyKlines)
+-        closeAndVolume.play.forEach { join -> println("Close: ${join.a.value}, Volume: ${join.b.value}") }
+-
+-        // Example of accessing left/right from Series2
+-        // println("\nJoined Close (left):")
+-        // closeAndVolume.left.play.forEach { println(it.value) }
+-        // println("\nJoined Volume (right):")
+-        // closeAndVolume.right.play.forEach { println(it.value) }
+-    }
+-    */
+-    // Note: To run main, KlineModels.kt and Trikeshed files (Series.kt, Join.kt, Series2.kt)
+-    // would need to be accessible in the classpath.
+-    // The `toSeries()` extension for List also needs to be available.
+-    // The `play` operator provides an Iterable wrapper.
+-}

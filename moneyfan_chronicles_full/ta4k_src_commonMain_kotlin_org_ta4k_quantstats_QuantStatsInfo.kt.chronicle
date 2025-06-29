@@ -1,0 +1,15 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/org/ta4k/quantstats/QuantStatsInfo.kt b/ta4k/src/commonMain/kotlin/org/ta4k/quantstats/QuantStatsInfo.kt
+deleted file mode 100644
+index 8e0ed681..00000000
+--- a/ta4k/src/commonMain/kotlin/org/ta4k/quantstats/QuantStatsInfo.kt
++++ /dev/null
+@@ -1,7 +0,0 @@
+-package org.ta4k.quantstats
+-
+-object QuantStatsInfo {
+-    const val version = "0.0.63"
+-    const val author = "Ran Aroussi"
+-    // Corresponds to __version__ and __author__
+-}

@@ -1,0 +1,23 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/Sma.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/Sma.kt
+deleted file mode 100644
+index cb99b569..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/Sma.kt
++++ /dev/null
+@@ -1,15 +0,0 @@
+-package borg.trikeshed.acapulco.util
+-
+-import cursors.Cursor
+-import cursors.at
+-import cursors.context.Arity
+-import cursors.context.Scalar
+-import cursors.get
+-import vec.macros.*
+-import vec.macros.Vect02_.left
+-import vec.util._v
+-import vec.util.todub
+-import java.lang.ref.SoftReference
+-import kotlin.coroutines.CoroutineContext
+-import kotlin.math.max
+-

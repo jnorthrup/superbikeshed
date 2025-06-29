@@ -1,0 +1,36 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt
+index 2a5d3692..c7fbd418 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt
+@@ -7,6 +7,6 @@ interface ObservationBuilder {
+ }
+ 
+ // Define AgentObservation as per the task; using a placeholder based on description
+-typealias AgentObservation = Series<RowVec>  // Adjust RowVec as needed based on existing code
++typealias AgentObservation = Indexed<RowVec>  // Adjust RowVec as needed based on existing code
+ 
+ // Note: RowVec is not defined here; assume it's from existing project files
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt
+deleted file mode 100644
+index c7fbd418..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ObservationBuilder.kt
++++ /dev/null
+@@ -1,12 +0,0 @@
+-package borg.trikeshed.acapulco
+-
+-import borg.trikeshed.common.Series  // Assuming this is the correct import based on project structure
+-
+-interface ObservationBuilder {
+-    fun buildObservation(currentTick: MarketTick, history: MarketHistoryProvider): AgentObservation
+-}
+-
+-// Define AgentObservation as per the task; using a placeholder based on description
+-typealias AgentObservation = Indexed<RowVec>  // Adjust RowVec as needed based on existing code
+-
+-// Note: RowVec is not defined here; assume it's from existing project files
+\ No newline at end of file

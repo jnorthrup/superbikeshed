@@ -1,0 +1,8 @@
+{
+  "locationBySourceSetName": {
+    "appleMain": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/classes/kotlin/metadata/appleMain/klib/kotlinx-serialization-scanner_appleMain",
+    "commonMain": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/classes/kotlin/metadata/commonMain",
+    "macosMain": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/classes/kotlin/metadata/macosMain/klib/kotlinx-serialization-scanner_macosMain",
+    "nativeMain": "/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build/classes/kotlin/metadata/nativeMain/klib/kotlinx-serialization-scanner_nativeMain"
+  }
+}

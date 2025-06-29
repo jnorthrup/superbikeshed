@@ -1,0 +1,131 @@
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt
+index ee29128f..b62548da 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt
+@@ -1,9 +1,8 @@
+ package com.ta4k.acapulco
+ 
+-import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.Indexed
+ import borg.trikeshed.lib.toList
+ import com.ta4k.core.model.Kline
+-import java.math.BigDecimal
+ import java.time.Instant
+ import java.time.ZoneOffset
+ import java.time.format.DateTimeFormatter
+@@ -21,7 +20,7 @@ class SpaceGraphVisualizer {
+          * @param klines Series of Klines to visualize
+          * @return SpaceGraph visualization data
+          */
+-        fun visualizeKlines(klines: Series<Kline>): SpaceGraphData {
++        fun visualizeKlines(klines: Indexed<Kline>): SpaceGraphData {
+             val nodes = mutableListOf<Node>()
+             val edges = mutableListOf<Edge>()
+             
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt
+deleted file mode 100644
+index b62548da..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/SpaceGraphVisualizer.kt
++++ /dev/null
+@@ -1,96 +0,0 @@
+-package com.ta4k.acapulco
+-
+-import borg.trikeshed.lib.Indexed
+-import borg.trikeshed.lib.toList
+-import com.ta4k.core.model.Kline
+-import java.time.Instant
+-import java.time.ZoneOffset
+-import java.time.format.DateTimeFormatter
+-
+-/**
+- * Handles visualization of trading data using SpaceGraph.
+- */
+-class SpaceGraphVisualizer {
+-    companion object {
+-        private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+-            .withZone(ZoneOffset.UTC)
+-        
+-        /**
+-         * Creates a SpaceGraph visualization of kline data.
+-         * @param klines Series of Klines to visualize
+-         * @return SpaceGraph visualization data
+-         */
+-        fun visualizeKlines(klines: Indexed<Kline>): SpaceGraphData {
+-            val nodes = mutableListOf<Node>()
+-            val edges = mutableListOf<Edge>()
+-            
+-            // Create nodes for each kline
+-            klines.forEachIndexed { index, kline ->
+-                val nodeId = "kline_$index"
+-                nodes.add(
+-                    Node(
+-                        id = nodeId,
+-                        label = formatKlineLabel(kline),
+-                        x = index.toDouble(),
+-                        y = kline.closePrice.toDouble(),
+-                        size = kline.volume.toDouble(),
+-                        color = getKlineColor(kline)
+-                    )
+-                )
+-                
+-                // Connect to previous kline
+-                if (index > 0) {
+-                    val prevKline = klines.toList()[index - 1]
+-                    edges.add(
+-                        Edge(
+-                            source = "kline_${index - 1}",
+-                            target = nodeId,
+-                            weight = calculateEdgeWeight(prevKline, kline)
+-                        )
+-                    )
+-                }
+-            }
+-            
+-            return SpaceGraphData(nodes, edges)
+-        }
+-        
+-        private fun formatKlineLabel(kline: Kline): String {
+-            val time = DATE_FORMATTER.format(Instant.ofEpochMilli(kline.openTimeMillis))
+-            return "$time\nO: ${kline.openPrice}\nH: ${kline.highPrice}\nL: ${kline.lowPrice}\nC: ${kline.closePrice}"
+-        }
+-        
+-        private fun getKlineColor(kline: Kline): String {
+-            return if (kline.closePrice >= kline.openPrice) {
+-                "#00ff00" // Green for bullish
+-            } else {
+-                "#ff0000" // Red for bearish
+-            }
+-        }
+-        
+-        private fun calculateEdgeWeight(prev: Kline, curr: Kline): Double {
+-            val priceChange = curr.closePrice.subtract(prev.closePrice).abs()
+-            val volumeChange = curr.volume.subtract(prev.volume).abs()
+-            return (priceChange.toDouble() + volumeChange.toDouble()) / 2.0
+-        }
+-    }
+-}
+-
+-data class SpaceGraphData(
+-    val nodes: List<Node>,
+-    val edges: List<Edge>
+-)
+-
+-data class Node(
+-    val id: String,
+-    val label: String,
+-    val x: Double,
+-    val y: Double,
+-    val size: Double,
+-    val color: String
+-)
+-
+-data class Edge(
+-    val source: String,
+-    val target: String,
+-    val weight: Double
+-) 
+\ No newline at end of file

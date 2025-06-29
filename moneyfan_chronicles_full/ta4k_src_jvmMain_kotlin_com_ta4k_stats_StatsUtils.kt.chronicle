@@ -1,0 +1,339 @@
+
+--- Commit: 4f47c7612cc2cf60961e02d1da4ecebf7ab09280 | 2025-06-16 07:33:24 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+index b617021b..4691c00c 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+@@ -1,9 +1,9 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.core.Series
+-import borg.trikeshed.core.j
+-import borg.trikeshed.core.`▶`
+-import borg.trikeshed.core.size
++import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.j
++import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+ import kotlin.math.pow
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+index 4691c00c..d05416b9 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+@@ -2,7 +2,7 @@ package com.ta4k.stats
+ 
+ import borg.trikeshed.lib.Series
+ import borg.trikeshed.lib.j
+-import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+@@ -25,7 +25,7 @@ object StatsUtils {
+     ): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val totalReturn = returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
++        val totalReturn = returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
+             acc.multiply(BigDecimal.ONE.add(ret))
+         }
+         
+@@ -48,7 +48,7 @@ object StatsUtils {
+     ): Series<BigDecimal> {
+         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+         
+-        val returnsList = returns.`▶`.toList()
++        val returnsList = returns.`play`.toList()
+         val rollingVol = (returns.size - window + 1) j { i: Int ->
+             val windowReturns = returnsList.subList(i, i + window)
+             val std = calculateStdDev(windowReturns)
+@@ -70,7 +70,7 @@ object StatsUtils {
+     ): Series<BigDecimal> {
+         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+         
+-        val returnsList = returns.`▶`.toList()
++        val returnsList = returns.`play`.toList()
+         val rollingSharpe = (returns.size - window + 1) j { i: Int ->
+             val windowReturns = returnsList.subList(i, i + window)
+             val mean = windowReturns.average()
+@@ -98,7 +98,7 @@ object StatsUtils {
+     ): Series<BigDecimal> {
+         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+         
+-        val returnsList = returns.`▶`.toList()
++        val returnsList = returns.`play`.toList()
+         val rollingSortino = (returns.size - window + 1) j { i: Int ->
+             val windowReturns = returnsList.subList(i, i + window)
+             val mean = windowReturns.average()
+@@ -121,8 +121,8 @@ object StatsUtils {
+     fun kellyCriterion(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val wins = returns.`▶`.filter { it > BigDecimal.ZERO }.toList()
+-        val losses = returns.`▶`.filter { it < BigDecimal.ZERO }.toList()
++        val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
++        val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
+         
+         if (wins.isEmpty() || losses.isEmpty()) return BigDecimal.ZERO
+         
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+index d05416b9..e8592563 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+@@ -1,12 +1,11 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.Indexed
+ import borg.trikeshed.lib.j
+ import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+-import kotlin.math.pow
+ import kotlin.math.sqrt
+ 
+ /**
+@@ -19,7 +18,7 @@ object StatsUtils {
+      * Calculate the compound annual growth rate (CAGR)
+      */
+     fun cagr(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         rf: BigDecimal = BigDecimal.ZERO,
+         periods: Int = 252
+     ): BigDecimal {
+@@ -42,10 +41,10 @@ object StatsUtils {
+      * Calculate the rolling volatility
+      */
+     fun rollingVolatility(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         window: Int = 126,
+         periods: Int = 252
+-    ): Series<BigDecimal> {
++    ): Indexed<BigDecimal> {
+         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+         
+         val returnsList = returns.`play`.toList()
+@@ -63,11 +62,11 @@ object StatsUtils {
+      * Calculate the rolling Sharpe ratio
+      */
+     fun rollingSharpe(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         rf: BigDecimal = BigDecimal.ZERO,
+         window: Int = 126,
+         periods: Int = 252
+-    ): Series<BigDecimal> {
++    ): Indexed<BigDecimal> {
+         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+         
+         val returnsList = returns.`play`.toList()
+@@ -91,11 +90,11 @@ object StatsUtils {
+      * Calculate the rolling Sortino ratio
+      */
+     fun rollingSortino(
+-        returns: Series<BigDecimal>,
++        returns: Indexed<BigDecimal>,
+         rf: BigDecimal = BigDecimal.ZERO,
+         window: Int = 126,
+         periods: Int = 252
+-    ): Series<BigDecimal> {
++    ): Indexed<BigDecimal> {
+         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+         
+         val returnsList = returns.`play`.toList()
+@@ -118,7 +117,7 @@ object StatsUtils {
+     /**
+      * Calculate the Kelly Criterion
+      */
+-    fun kellyCriterion(returns: Series<BigDecimal>): BigDecimal {
++    fun kellyCriterion(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
+deleted file mode 100644
+index e8592563..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/StatsUtils.kt
++++ /dev/null
+@@ -1,170 +0,0 @@
+-package com.ta4k.stats
+-
+-import borg.trikeshed.lib.Indexed
+-import borg.trikeshed.lib.j
+-import borg.trikeshed.lib.`play`
+-import borg.trikeshed.lib.size
+-import java.math.BigDecimal
+-import java.math.RoundingMode
+-import kotlin.math.sqrt
+-
+-/**
+- * Utility functions for statistical calculations
+- */
+-object StatsUtils {
+-    private const val DEFAULT_SCALE = 8
+-
+-    /**
+-     * Calculate the compound annual growth rate (CAGR)
+-     */
+-    fun cagr(
+-        returns: Indexed<BigDecimal>,
+-        rf: BigDecimal = BigDecimal.ZERO,
+-        periods: Int = 252
+-    ): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val totalReturn = returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
+-            acc.multiply(BigDecimal.ONE.add(ret))
+-        }
+-        
+-        val years = BigDecimal(returns.size).divide(BigDecimal(periods), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-        val exponent = BigDecimal.ONE.divide(years, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-        
+-        return totalReturn.pow(exponent.toInt())
+-            .subtract(BigDecimal.ONE)
+-            .subtract(rf)
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Calculate the rolling volatility
+-     */
+-    fun rollingVolatility(
+-        returns: Indexed<BigDecimal>,
+-        window: Int = 126,
+-        periods: Int = 252
+-    ): Indexed<BigDecimal> {
+-        if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+-        
+-        val returnsList = returns.`play`.toList()
+-        val rollingVol = (returns.size - window + 1) j { i: Int ->
+-            val windowReturns = returnsList.subList(i, i + window)
+-            val std = calculateStdDev(windowReturns)
+-            std.multiply(BigDecimal(sqrt(periods.toDouble())))
+-                .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-        }
+-        
+-        return rollingVol
+-    }
+-
+-    /**
+-     * Calculate the rolling Sharpe ratio
+-     */
+-    fun rollingSharpe(
+-        returns: Indexed<BigDecimal>,
+-        rf: BigDecimal = BigDecimal.ZERO,
+-        window: Int = 126,
+-        periods: Int = 252
+-    ): Indexed<BigDecimal> {
+-        if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+-        
+-        val returnsList = returns.`play`.toList()
+-        val rollingSharpe = (returns.size - window + 1) j { i: Int ->
+-            val windowReturns = returnsList.subList(i, i + window)
+-            val mean = windowReturns.average()
+-            val std = calculateStdDev(windowReturns)
+-            
+-            if (std == BigDecimal.ZERO) BigDecimal.ZERO
+-            else {
+-                val excessReturn = mean.subtract(rf)
+-                excessReturn.multiply(BigDecimal(sqrt(periods.toDouble())))
+-                    .divide(std, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            }
+-        }
+-        
+-        return rollingSharpe
+-    }
+-
+-    /**
+-     * Calculate the rolling Sortino ratio
+-     */
+-    fun rollingSortino(
+-        returns: Indexed<BigDecimal>,
+-        rf: BigDecimal = BigDecimal.ZERO,
+-        window: Int = 126,
+-        periods: Int = 252
+-    ): Indexed<BigDecimal> {
+-        if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
+-        
+-        val returnsList = returns.`play`.toList()
+-        val rollingSortino = (returns.size - window + 1) j { i: Int ->
+-            val windowReturns = returnsList.subList(i, i + window)
+-            val mean = windowReturns.average()
+-            val downsideStd = calculateDownsideStdDev(windowReturns)
+-            
+-            if (downsideStd == BigDecimal.ZERO) BigDecimal.ZERO
+-            else {
+-                val excessReturn = mean.subtract(rf)
+-                excessReturn.multiply(BigDecimal(sqrt(periods.toDouble())))
+-                    .divide(downsideStd, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            }
+-        }
+-        
+-        return rollingSortino
+-    }
+-
+-    /**
+-     * Calculate the Kelly Criterion
+-     */
+-    fun kellyCriterion(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
+-        val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
+-        
+-        if (wins.isEmpty() || losses.isEmpty()) return BigDecimal.ZERO
+-        
+-        val winRate = BigDecimal(wins.size)
+-            .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-        val avgWin = wins.average()
+-        val avgLoss = losses.average().abs()
+-        
+-        if (avgLoss == BigDecimal.ZERO) return BigDecimal.ZERO
+-        
+-        val kelly = winRate.multiply(avgWin)
+-            .divide(avgLoss, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            .subtract(BigDecimal.ONE.subtract(winRate))
+-            .divide(avgWin, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            
+-        return kelly.max(BigDecimal.ZERO)
+-    }
+-
+-    private fun List<BigDecimal>.average(): BigDecimal {
+-        if (isEmpty()) return BigDecimal.ZERO
+-        return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    private fun calculateStdDev(values: List<BigDecimal>): BigDecimal {
+-        if (values.isEmpty()) return BigDecimal.ZERO
+-        
+-        val mean = values.average()
+-        val variance = values.map { it.subtract(mean).pow(2) }
+-            .average()
+-            
+-        return BigDecimal(sqrt(variance.toDouble()))
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    private fun calculateDownsideStdDev(values: List<BigDecimal>): BigDecimal {
+-        if (values.isEmpty()) return BigDecimal.ZERO
+-        
+-        val mean = values.average()
+-        val downsideVariance = values.filter { it < BigDecimal.ZERO }
+-            .map { it.subtract(mean).pow(2) }
+-            .average()
+-            
+-        return BigDecimal(sqrt(downsideVariance.toDouble()))
+-            .setScale(DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-}

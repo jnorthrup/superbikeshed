@@ -1,0 +1,11 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/org/ta4k/quantstats/Version.kt b/ta4k/src/commonMain/kotlin/org/ta4k/quantstats/Version.kt
+deleted file mode 100644
+index ab385633..00000000
+--- a/ta4k/src/commonMain/kotlin/org/ta4k/quantstats/Version.kt
++++ /dev/null
+@@ -1,3 +0,0 @@
+-package org.ta4k.quantstats
+-
+-const val QUANTSTATS_VERSION = "0.0.63"

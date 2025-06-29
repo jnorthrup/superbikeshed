@@ -1,0 +1,10 @@
+{
+  "name": "javax.annotation-api",
+  "version": "1.3.2",
+  "customFields": {},
+  "devDependencies": {},
+  "dependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}

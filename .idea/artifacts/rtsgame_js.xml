@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="rtsgame-js">
+    <output-path>$PROJECT_DIR$/rtsgame/build/libs</output-path>
+    <root id="archive" name="rtsgame-js.jar" />
+  </artifact>
+</component>

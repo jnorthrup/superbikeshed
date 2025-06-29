@@ -1,0 +1,840 @@
+
+--- Commit: b3f682b0aa3380f05a608a847f392dd2e297293d | 2025-06-17 10:31:41 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+index 83b2231c..687aceb3 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+@@ -20,20 +20,20 @@ value class TraceLevel(val value: Int) {
+ }
+ 
+ @JvmInline
+-value class FunctionKey(val keyCode: Int) {
++value class SpaceGraphNode(val nodeId: String) {
+     companion object {
+-        val F1 = FunctionKey(112)
+-        val F2 = FunctionKey(113)
+-        val F3 = FunctionKey(114)
+-        val F4 = FunctionKey(115)
+-        val F5 = FunctionKey(116)
+-        val F6 = FunctionKey(117)
+-        val F7 = FunctionKey(118)
+-        val F8 = FunctionKey(119)
+-        val F9 = FunctionKey(120)
+-        val F10 = FunctionKey(121)
+-        val F11 = FunctionKey(122)
+-        val F12 = FunctionKey(123)
++        val ATTENTION = SpaceGraphNode("attention_ticker")
++        val PORTFOLIO = SpaceGraphNode("portfolio_manager")
++        val TECHNICAL = SpaceGraphNode("technical_analysis")
++        val BACKTEST = SpaceGraphNode("backtest_results")
++        val TRACE = SpaceGraphNode("trace_viewer")
++        val JSON = SpaceGraphNode("json_scanner")
++        val BTC_CHART = SpaceGraphNode("btc_chart")
++        val ETH_CHART = SpaceGraphNode("eth_chart")
++        val TILE = SpaceGraphNode("tile_windows")
++        val CASCADE = SpaceGraphNode("cascade_windows")
++        val CLEAR = SpaceGraphNode("clear_trace")
++        val EXIT = SpaceGraphNode("exit_application")
+     }
+ }
+ 
+@@ -74,15 +74,7 @@ class MDITraceLogger {
+             traceBuffer.removeAt(0)
+         }
+         
+-        // Console output for immediate feedback
+-        val levelStr = when (level) {
+-            TraceLevel.DEBUG -> "DEBUG"
+-            TraceLevel.INFO -> "INFO"
+-            TraceLevel.WARN -> "WARN"
+-            TraceLevel.ERROR -> "ERROR"
+-            else -> "TRACE"
+-        }
+-        println("[$levelStr] $message")
++        // Store trace entry - no console output per CLAUDE.md compliance
+     }
+     
+     fun getTraceLog(): TraceLog = Series.of(traceBuffer.size) { traceBuffer[it] }
+@@ -96,84 +88,84 @@ class MDIInterface {
+     private val windows = mutableMapOf<String, MDIWindow>()
+     private val tracer = MDITraceLogger()
+     private var activeWindowId: String? = null
+-    private val functionKeyHandlers = mutableMapOf<FunctionKey, () -> Unit>()
+-    private val hoverStates = mutableMapOf<FunctionKey, Boolean>()
++    private val spaceGraphNodeHandlers = mutableMapOf<SpaceGraphNode, () -> Unit>()
++    private val nodeActivationStates = mutableMapOf<SpaceGraphNode, Boolean>()
+     
+     init {
+-        setupFunctionKeys()
++        setupSpaceGraphNodes()
+         createDefaultWindows()
+     }
+     
+-    private fun setupFunctionKeys() {
+-        // F1 - Attention Ticker Window
+-        functionKeyHandlers[FunctionKey.F1] = {
+-            tracer.log(TraceLevel.INFO, "F1: Opening Attention Ticker Window")
++    private fun setupSpaceGraphNodes() {
++        // Attention Ticker Node
++        spaceGraphNodeHandlers[SpaceGraphNode.ATTENTION] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Attention Ticker Window")
+             openOrFocusWindow("attention", "Attention Ticker", WindowContent.AttentionTicker)
+         }
+         
+-        // F2 - Portfolio Manager
+-        functionKeyHandlers[FunctionKey.F2] = {
+-            tracer.log(TraceLevel.INFO, "F2: Opening Portfolio Manager Window")
++        // Portfolio Manager Node
++        spaceGraphNodeHandlers[SpaceGraphNode.PORTFOLIO] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Portfolio Manager Window")
+             openOrFocusWindow("portfolio", "Portfolio Manager", WindowContent.PortfolioManager)
+         }
+         
+-        // F3 - Technical Analysis
+-        functionKeyHandlers[FunctionKey.F3] = {
+-            tracer.log(TraceLevel.INFO, "F3: Opening Technical Analysis Window")
++        // Technical Analysis Node
++        spaceGraphNodeHandlers[SpaceGraphNode.TECHNICAL] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Technical Analysis Window")
+             openOrFocusWindow("technical", "Technical Analysis", WindowContent.TechnicalAnalysis)
+         }
+         
+-        // F4 - Backtest Results
+-        functionKeyHandlers[FunctionKey.F4] = {
+-            tracer.log(TraceLevel.INFO, "F4: Opening Backtest Results Window")
++        // Backtest Results Node
++        spaceGraphNodeHandlers[SpaceGraphNode.BACKTEST] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Backtest Results Window")
+             openOrFocusWindow("backtest", "Backtest Results", WindowContent.BacktestResults)
+         }
+         
+-        // F5 - Trace Viewer
+-        functionKeyHandlers[FunctionKey.F5] = {
+-            tracer.log(TraceLevel.INFO, "F5: Opening Trace Viewer Window")
++        // Trace Viewer Node
++        spaceGraphNodeHandlers[SpaceGraphNode.TRACE] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Trace Viewer Window")
+             openOrFocusWindow("trace", "Trace Viewer", WindowContent.TraceViewer)
+         }
+         
+-        // F6 - JSON Scanner
+-        functionKeyHandlers[FunctionKey.F6] = {
+-            tracer.log(TraceLevel.INFO, "F6: Opening JSON Scanner Window")
++        // JSON Scanner Node
++        spaceGraphNodeHandlers[SpaceGraphNode.JSON] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening JSON Scanner Window")
+             openOrFocusWindow("json", "JSON Scanner", WindowContent.JSONScanner)
+         }
+         
+-        // F7 - BTC Chart
+-        functionKeyHandlers[FunctionKey.F7] = {
+-            tracer.log(TraceLevel.INFO, "F7: Opening BTC Chart Window")
++        // BTC Chart Node
++        spaceGraphNodeHandlers[SpaceGraphNode.BTC_CHART] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening BTC Chart Window")
+             openOrFocusWindow("btc_chart", "BTC Chart", WindowContent.Chart(Symbol("BTC")))
+         }
+         
+-        // F8 - ETH Chart
+-        functionKeyHandlers[FunctionKey.F8] = {
+-            tracer.log(TraceLevel.INFO, "F8: Opening ETH Chart Window")
++        // ETH Chart Node
++        spaceGraphNodeHandlers[SpaceGraphNode.ETH_CHART] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening ETH Chart Window")
+             openOrFocusWindow("eth_chart", "ETH Chart", WindowContent.Chart(Symbol("ETH")))
+         }
+         
+-        // F9 - Tile Windows
+-        functionKeyHandlers[FunctionKey.F9] = {
+-            tracer.log(TraceLevel.INFO, "F9: Tiling all windows")
++        // Tile Windows Node
++        spaceGraphNodeHandlers[SpaceGraphNode.TILE] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Tiling all windows")
+             tileWindows()
+         }
+         
+-        // F10 - Cascade Windows
+-        functionKeyHandlers[FunctionKey.F10] = {
+-            tracer.log(TraceLevel.INFO, "F10: Cascading all windows")
++        // Cascade Windows Node
++        spaceGraphNodeHandlers[SpaceGraphNode.CASCADE] = {
++            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Cascading all windows")
+             cascadeWindows()
+         }
+         
+-        // F11 - Clear Trace Log
+-        functionKeyHandlers[FunctionKey.F11] = {
+-            tracer.log(TraceLevel.WARN, "F11: Clearing trace log")
++        // Clear Trace Log Node
++        spaceGraphNodeHandlers[SpaceGraphNode.CLEAR] = {
++            tracer.log(TraceLevel.WARN, "SpaceGraph Node: Clearing trace log")
+             tracer.clearLog()
+         }
+         
+-        // F12 - Exit Application
+-        functionKeyHandlers[FunctionKey.F12] = {
+-            tracer.log(TraceLevel.ERROR, "F12: Exit application requested")
++        // Exit Application Node
++        spaceGraphNodeHandlers[SpaceGraphNode.EXIT] = {
++            tracer.log(TraceLevel.ERROR, "SpaceGraph Node: Exit application requested")
+             exitApplication()
+         }
+     }
+@@ -207,36 +199,36 @@ class MDIInterface {
+         activeWindowId = "trace"
+     }
+     
+-    fun onFunctionKeyHover(key: FunctionKey, isHovering: Boolean) {
+-        val wasHovering = hoverStates[key] ?: false
+-        hoverStates[key] = isHovering
++    fun onSpaceGraphNodeHover(node: SpaceGraphNode, isHovering: Boolean) {
++        val wasHovering = nodeActivationStates[node] ?: false
++        nodeActivationStates[node] = isHovering
+         
+         if (isHovering && !wasHovering) {
+-            tracer.log(TraceLevel.DEBUG, "Hover START: ${getFunctionKeyDescription(key)}")
++            tracer.log(TraceLevel.DEBUG, "Node HOVER START: ${getSpaceGraphNodeDescription(node)}")
+         } else if (!isHovering && wasHovering) {
+-            tracer.log(TraceLevel.DEBUG, "Hover END: ${getFunctionKeyDescription(key)}")
++            tracer.log(TraceLevel.DEBUG, "Node HOVER END: ${getSpaceGraphNodeDescription(node)}")
+         }
+     }
+     
+-    fun onFunctionKeyHold(key: FunctionKey) {
+-        tracer.log(TraceLevel.INFO, "Key HOLD: ${getFunctionKeyDescription(key)} - Executing action")
+-        functionKeyHandlers[key]?.invoke()
++    fun onSpaceGraphNodeActivate(node: SpaceGraphNode) {
++        tracer.log(TraceLevel.INFO, "Node ACTIVATE: ${getSpaceGraphNodeDescription(node)} - Executing action")
++        spaceGraphNodeHandlers[node]?.invoke()
+     }
+     
+-    private fun getFunctionKeyDescription(key: FunctionKey): String = when (key) {
+-        FunctionKey.F1 -> "F1 (Attention Ticker)"
+-        FunctionKey.F2 -> "F2 (Portfolio Manager)"
+-        FunctionKey.F3 -> "F3 (Technical Analysis)"
+-        FunctionKey.F4 -> "F4 (Backtest Results)"
+-        FunctionKey.F5 -> "F5 (Trace Viewer)"
+-        FunctionKey.F6 -> "F6 (JSON Scanner)"
+-        FunctionKey.F7 -> "F7 (BTC Chart)"
+-        FunctionKey.F8 -> "F8 (ETH Chart)"
+-        FunctionKey.F9 -> "F9 (Tile Windows)"
+-        FunctionKey.F10 -> "F10 (Cascade Windows)"
+-        FunctionKey.F11 -> "F11 (Clear Trace)"
+-        FunctionKey.F12 -> "F12 (Exit)"
+-        else -> "F? (Unknown)"
++    private fun getSpaceGraphNodeDescription(node: SpaceGraphNode): String = when (node) {
++        SpaceGraphNode.ATTENTION -> "Attention Ticker Node"
++        SpaceGraphNode.PORTFOLIO -> "Portfolio Manager Node"
++        SpaceGraphNode.TECHNICAL -> "Technical Analysis Node"
++        SpaceGraphNode.BACKTEST -> "Backtest Results Node"
++        SpaceGraphNode.TRACE -> "Trace Viewer Node"
++        SpaceGraphNode.JSON -> "JSON Scanner Node"
++        SpaceGraphNode.BTC_CHART -> "BTC Chart Node"
++        SpaceGraphNode.ETH_CHART -> "ETH Chart Node"
++        SpaceGraphNode.TILE -> "Tile Windows Node"
++        SpaceGraphNode.CASCADE -> "Cascade Windows Node"
++        SpaceGraphNode.CLEAR -> "Clear Trace Node"
++        SpaceGraphNode.EXIT -> "Exit Application Node"
++        else -> "Unknown Node (${node.nodeId})"
+     }
+     
+     private fun openOrFocusWindow(id: String, title: String, content: WindowContent) {
+@@ -321,7 +313,6 @@ class MDIInterface {
+     private fun exitApplication() {
+         tracer.log(TraceLevel.ERROR, "Application exit initiated")
+         // In real implementation, this would close the application
+-        println("MDI Application would exit here")
+     }
+     
+     // Public interface for external systems
+@@ -334,40 +325,42 @@ class MDIInterface {
+     
+     fun getTraceLog(): TraceLog = tracer.getTraceLog()
+     
+-    fun renderInterface() {
+-        println("\n" + "=".repeat(80))
+-        println("MDI Interface - Function Key Actions")
+-        println("=".repeat(80))
+-        
+-        // Show function key mappings
+-        println("Function Keys:")
+-        println("F1: Attention Ticker  F2: Portfolio    F3: Technical    F4: Backtest")
+-        println("F5: Trace Viewer      F6: JSON Scanner F7: BTC Chart    F8: ETH Chart")
+-        println("F9: Tile Windows      F10: Cascade     F11: Clear Trace F12: Exit")
+-        
+-        println("\nActive Windows:")
+-        windows.values.forEach { window ->
+-            val status = if (window.isActive) "[ACTIVE]" else "       "
+-            println("$status ${window.title.padEnd(20)} (${window.x},${window.y}) ${window.width}x${window.height}")
+-        }
+-        
+-        // Show recent trace entries
++    // Interface state for external rendering systems
++    fun getInterfaceState(): MDIInterfaceState {
++        val windowList = windows.values.toList()
+         val recentTraces = tracer.getTraceLog()
+-        if (recentTraces.size > 0) {
+-            println("\nRecent Trace Log:")
+-            recentTraces.play.takeLast(5).forEach { entry ->
+-                val (level, message) = entry
+-                val levelStr = when (level) {
+-                    TraceLevel.DEBUG -> "DBG"
+-                    TraceLevel.INFO -> "INF"
+-                    TraceLevel.WARN -> "WRN"
+-                    TraceLevel.ERROR -> "ERR"
+-                    else -> "TRC"
+-                }
+-                println("[$levelStr] $message")
+-            }
+-        }
+         
+-        println("=".repeat(80))
++        return MDIInterfaceState(
++            activeWindowId = activeWindowId,
++            windows = Series.of(windowList.size) { windowList[it] },
++            recentTraces = recentTraces,
++            functionKeyMappings = getFunctionKeyMappings()
++        )
++    }
++    
++    private fun getFunctionKeyMappings(): Series<Join<FunctionKey, String>> {
++        val mappings = listOf(
++            FunctionKey.F1 j "Attention Ticker",
++            FunctionKey.F2 j "Portfolio Manager", 
++            FunctionKey.F3 j "Technical Analysis",
++            FunctionKey.F4 j "Backtest Results",
++            FunctionKey.F5 j "Trace Viewer",
++            FunctionKey.F6 j "JSON Scanner",
++            FunctionKey.F7 j "BTC Chart",
++            FunctionKey.F8 j "ETH Chart",
++            FunctionKey.F9 j "Tile Windows",
++            FunctionKey.F10 j "Cascade Windows",
++            FunctionKey.F11 j "Clear Trace",
++            FunctionKey.F12 j "Exit Application"
++        )
++        return Series.of(mappings.size) { mappings[it] }
+     }
++}
++
++data class MDIInterfaceState(
++    val activeWindowId: String?,
++    val windows: Series<MDIWindow>,
++    val recentTraces: TraceLog,
++    val functionKeyMappings: Series<Join<FunctionKey, String>>
++)
+ }
+\ No newline at end of file
+
+--- Commit: 11d98261689589547b4fbcd1375270cc41ac3af6 | 2025-06-17 10:32:35 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+index 687aceb3..d22935dd 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+@@ -334,24 +334,24 @@ class MDIInterface {
+             activeWindowId = activeWindowId,
+             windows = Series.of(windowList.size) { windowList[it] },
+             recentTraces = recentTraces,
+-            functionKeyMappings = getFunctionKeyMappings()
++            spaceGraphNodeMappings = getSpaceGraphNodeMappings()
+         )
+     }
+     
+-    private fun getFunctionKeyMappings(): Series<Join<FunctionKey, String>> {
++    private fun getSpaceGraphNodeMappings(): Series<Join<SpaceGraphNode, String>> {
+         val mappings = listOf(
+-            FunctionKey.F1 j "Attention Ticker",
+-            FunctionKey.F2 j "Portfolio Manager", 
+-            FunctionKey.F3 j "Technical Analysis",
+-            FunctionKey.F4 j "Backtest Results",
+-            FunctionKey.F5 j "Trace Viewer",
+-            FunctionKey.F6 j "JSON Scanner",
+-            FunctionKey.F7 j "BTC Chart",
+-            FunctionKey.F8 j "ETH Chart",
+-            FunctionKey.F9 j "Tile Windows",
+-            FunctionKey.F10 j "Cascade Windows",
+-            FunctionKey.F11 j "Clear Trace",
+-            FunctionKey.F12 j "Exit Application"
++            SpaceGraphNode.ATTENTION j "Attention Ticker",
++            SpaceGraphNode.PORTFOLIO j "Portfolio Manager",
++            SpaceGraphNode.TECHNICAL j "Technical Analysis", 
++            SpaceGraphNode.BACKTEST j "Backtest Results",
++            SpaceGraphNode.TRACE j "Trace Viewer",
++            SpaceGraphNode.JSON j "JSON Scanner",
++            SpaceGraphNode.BTC_CHART j "BTC Chart",
++            SpaceGraphNode.ETH_CHART j "ETH Chart",
++            SpaceGraphNode.TILE j "Tile Windows",
++            SpaceGraphNode.CASCADE j "Cascade Windows",
++            SpaceGraphNode.CLEAR j "Clear Trace",
++            SpaceGraphNode.EXIT j "Exit Application"
+         )
+         return Series.of(mappings.size) { mappings[it] }
+     }
+@@ -361,6 +361,6 @@ data class MDIInterfaceState(
+     val activeWindowId: String?,
+     val windows: Series<MDIWindow>,
+     val recentTraces: TraceLog,
+-    val functionKeyMappings: Series<Join<FunctionKey, String>>
++    val spaceGraphNodeMappings: Series<Join<SpaceGraphNode, String>>
+ )
+ }
+\ No newline at end of file
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+index d22935dd..b0288a70 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+@@ -38,7 +38,7 @@ value class SpaceGraphNode(val nodeId: String) {
+ }
+ 
+ typealias TraceEntry = Join<TraceLevel, String>
+-typealias TraceLog = Series<TraceEntry>
++typealias TraceLog = Indexed<TraceEntry>
+ 
+ // MDI Window management
+ data class MDIWindow(
+@@ -77,7 +77,7 @@ class MDITraceLogger {
+         // Store trace entry - no console output per CLAUDE.md compliance
+     }
+     
+-    fun getTraceLog(): TraceLog = Series.of(traceBuffer.size) { traceBuffer[it] }
++    fun getTraceLog(): TraceLog = Indexed.of(traceBuffer.size) { traceBuffer[it] }
+     
+     fun clearLog() {
+         traceBuffer.clear()
+@@ -318,9 +318,9 @@ class MDIInterface {
+     // Public interface for external systems
+     fun getActiveWindow(): MDIWindow? = activeWindowId?.let { windows[it] }
+     
+-    fun getAllWindows(): Series<MDIWindow> {
++    fun getAllWindows(): Indexed<MDIWindow> {
+         val windowList = windows.values.toList()
+-        return Series.of(windowList.size) { windowList[it] }
++        return Indexed.of(windowList.size) { windowList[it] }
+     }
+     
+     fun getTraceLog(): TraceLog = tracer.getTraceLog()
+@@ -332,13 +332,13 @@ class MDIInterface {
+         
+         return MDIInterfaceState(
+             activeWindowId = activeWindowId,
+-            windows = Series.of(windowList.size) { windowList[it] },
++            windows = Indexed.of(windowList.size) { windowList[it] },
+             recentTraces = recentTraces,
+             spaceGraphNodeMappings = getSpaceGraphNodeMappings()
+         )
+     }
+     
+-    private fun getSpaceGraphNodeMappings(): Series<Join<SpaceGraphNode, String>> {
++    private fun getSpaceGraphNodeMappings(): Indexed<Join<SpaceGraphNode, String>> {
+         val mappings = listOf(
+             SpaceGraphNode.ATTENTION j "Attention Ticker",
+             SpaceGraphNode.PORTFOLIO j "Portfolio Manager",
+@@ -353,14 +353,14 @@ class MDIInterface {
+             SpaceGraphNode.CLEAR j "Clear Trace",
+             SpaceGraphNode.EXIT j "Exit Application"
+         )
+-        return Series.of(mappings.size) { mappings[it] }
++        return Indexed.of(mappings.size) { mappings[it] }
+     }
+ }
+ 
+ data class MDIInterfaceState(
+     val activeWindowId: String?,
+-    val windows: Series<MDIWindow>,
++    val windows: Indexed<MDIWindow>,
+     val recentTraces: TraceLog,
+-    val spaceGraphNodeMappings: Series<Join<SpaceGraphNode, String>>
++    val spaceGraphNodeMappings: Indexed<Join<SpaceGraphNode, String>>
+ )
+ }
+\ No newline at end of file
+
+--- Commit: b416366d71878c4cff303b993069583c52b13cda | 2025-06-23 04:34:56 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+index b0288a70..d90e429b 100644
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
++++ b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+@@ -362,5 +362,4 @@ data class MDIInterfaceState(
+     val windows: Indexed<MDIWindow>,
+     val recentTraces: TraceLog,
+     val spaceGraphNodeMappings: Indexed<Join<SpaceGraphNode, String>>
+-)
+-}
+\ No newline at end of file
++)
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt b/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
+deleted file mode 100644
+index d90e429b..00000000
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/ui/MDIInterface.kt
++++ /dev/null
+@@ -1,365 +0,0 @@
+-package moneyfan.ui
+-
+-import moneyfan.core.*
+-import moneyfan.attention.*
+-import borg.trikeshed.lib.*
+-
+-/**
+- * MDI (Multiple Document Interface) with trace logging on function key hover+hold
+- */
+-
+-// Trace logging system using TrikeShed patterns
+-@JvmInline
+-value class TraceLevel(val value: Int) {
+-    companion object {
+-        val DEBUG = TraceLevel(0)
+-        val INFO = TraceLevel(1)
+-        val WARN = TraceLevel(2)
+-        val ERROR = TraceLevel(3)
+-    }
+-}
+-
+-@JvmInline
+-value class SpaceGraphNode(val nodeId: String) {
+-    companion object {
+-        val ATTENTION = SpaceGraphNode("attention_ticker")
+-        val PORTFOLIO = SpaceGraphNode("portfolio_manager")
+-        val TECHNICAL = SpaceGraphNode("technical_analysis")
+-        val BACKTEST = SpaceGraphNode("backtest_results")
+-        val TRACE = SpaceGraphNode("trace_viewer")
+-        val JSON = SpaceGraphNode("json_scanner")
+-        val BTC_CHART = SpaceGraphNode("btc_chart")
+-        val ETH_CHART = SpaceGraphNode("eth_chart")
+-        val TILE = SpaceGraphNode("tile_windows")
+-        val CASCADE = SpaceGraphNode("cascade_windows")
+-        val CLEAR = SpaceGraphNode("clear_trace")
+-        val EXIT = SpaceGraphNode("exit_application")
+-    }
+-}
+-
+-typealias TraceEntry = Join<TraceLevel, String>
+-typealias TraceLog = Indexed<TraceEntry>
+-
+-// MDI Window management
+-data class MDIWindow(
+-    val id: String,
+-    val title: String,
+-    val x: Int,
+-    val y: Int,
+-    val width: Int,
+-    val height: Int,
+-    val isActive: Boolean = false,
+-    val content: WindowContent
+-)
+-
+-sealed class WindowContent {
+-    object AttentionTicker : WindowContent()
+-    object PortfolioManager : WindowContent()
+-    object TechnicalAnalysis : WindowContent()
+-    object BacktestResults : WindowContent()
+-    object TraceViewer : WindowContent()
+-    object JSONScanner : WindowContent()
+-    data class Chart(val symbol: Symbol) : WindowContent()
+-}
+-
+-class MDITraceLogger {
+-    private val traceBuffer = mutableListOf<TraceEntry>()
+-    private val maxTraceEntries = 1000
+-    
+-    fun log(level: TraceLevel, message: String) {
+-        val entry = level j message
+-        traceBuffer.add(entry)
+-        
+-        if (traceBuffer.size > maxTraceEntries) {
+-            traceBuffer.removeAt(0)
+-        }
+-        
+-        // Store trace entry - no console output per CLAUDE.md compliance
+-    }
+-    
+-    fun getTraceLog(): TraceLog = Indexed.of(traceBuffer.size) { traceBuffer[it] }
+-    
+-    fun clearLog() {
+-        traceBuffer.clear()
+-    }
+-}
+-
+-class MDIInterface {
+-    private val windows = mutableMapOf<String, MDIWindow>()
+-    private val tracer = MDITraceLogger()
+-    private var activeWindowId: String? = null
+-    private val spaceGraphNodeHandlers = mutableMapOf<SpaceGraphNode, () -> Unit>()
+-    private val nodeActivationStates = mutableMapOf<SpaceGraphNode, Boolean>()
+-    
+-    init {
+-        setupSpaceGraphNodes()
+-        createDefaultWindows()
+-    }
+-    
+-    private fun setupSpaceGraphNodes() {
+-        // Attention Ticker Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.ATTENTION] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Attention Ticker Window")
+-            openOrFocusWindow("attention", "Attention Ticker", WindowContent.AttentionTicker)
+-        }
+-        
+-        // Portfolio Manager Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.PORTFOLIO] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Portfolio Manager Window")
+-            openOrFocusWindow("portfolio", "Portfolio Manager", WindowContent.PortfolioManager)
+-        }
+-        
+-        // Technical Analysis Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.TECHNICAL] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Technical Analysis Window")
+-            openOrFocusWindow("technical", "Technical Analysis", WindowContent.TechnicalAnalysis)
+-        }
+-        
+-        // Backtest Results Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.BACKTEST] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Backtest Results Window")
+-            openOrFocusWindow("backtest", "Backtest Results", WindowContent.BacktestResults)
+-        }
+-        
+-        // Trace Viewer Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.TRACE] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening Trace Viewer Window")
+-            openOrFocusWindow("trace", "Trace Viewer", WindowContent.TraceViewer)
+-        }
+-        
+-        // JSON Scanner Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.JSON] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening JSON Scanner Window")
+-            openOrFocusWindow("json", "JSON Scanner", WindowContent.JSONScanner)
+-        }
+-        
+-        // BTC Chart Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.BTC_CHART] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening BTC Chart Window")
+-            openOrFocusWindow("btc_chart", "BTC Chart", WindowContent.Chart(Symbol("BTC")))
+-        }
+-        
+-        // ETH Chart Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.ETH_CHART] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Opening ETH Chart Window")
+-            openOrFocusWindow("eth_chart", "ETH Chart", WindowContent.Chart(Symbol("ETH")))
+-        }
+-        
+-        // Tile Windows Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.TILE] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Tiling all windows")
+-            tileWindows()
+-        }
+-        
+-        // Cascade Windows Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.CASCADE] = {
+-            tracer.log(TraceLevel.INFO, "SpaceGraph Node: Cascading all windows")
+-            cascadeWindows()
+-        }
+-        
+-        // Clear Trace Log Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.CLEAR] = {
+-            tracer.log(TraceLevel.WARN, "SpaceGraph Node: Clearing trace log")
+-            tracer.clearLog()
+-        }
+-        
+-        // Exit Application Node
+-        spaceGraphNodeHandlers[SpaceGraphNode.EXIT] = {
+-            tracer.log(TraceLevel.ERROR, "SpaceGraph Node: Exit application requested")
+-            exitApplication()
+-        }
+-    }
+-    
+-    private fun createDefaultWindows() {
+-        tracer.log(TraceLevel.INFO, "Creating default MDI windows")
+-        
+-        // Create initial windows but don't show them yet
+-        windows["attention"] = MDIWindow(
+-            id = "attention",
+-            title = "Attention Ticker",
+-            x = 10, y = 10, width = 400, height = 300,
+-            content = WindowContent.AttentionTicker
+-        )
+-        
+-        windows["portfolio"] = MDIWindow(
+-            id = "portfolio", 
+-            title = "Portfolio Manager",
+-            x = 420, y = 10, width = 400, height = 300,
+-            content = WindowContent.PortfolioManager
+-        )
+-        
+-        windows["trace"] = MDIWindow(
+-            id = "trace",
+-            title = "Trace Viewer", 
+-            x = 10, y = 320, width = 810, height = 200,
+-            isActive = true,
+-            content = WindowContent.TraceViewer
+-        )
+-        
+-        activeWindowId = "trace"
+-    }
+-    
+-    fun onSpaceGraphNodeHover(node: SpaceGraphNode, isHovering: Boolean) {
+-        val wasHovering = nodeActivationStates[node] ?: false
+-        nodeActivationStates[node] = isHovering
+-        
+-        if (isHovering && !wasHovering) {
+-            tracer.log(TraceLevel.DEBUG, "Node HOVER START: ${getSpaceGraphNodeDescription(node)}")
+-        } else if (!isHovering && wasHovering) {
+-            tracer.log(TraceLevel.DEBUG, "Node HOVER END: ${getSpaceGraphNodeDescription(node)}")
+-        }
+-    }
+-    
+-    fun onSpaceGraphNodeActivate(node: SpaceGraphNode) {
+-        tracer.log(TraceLevel.INFO, "Node ACTIVATE: ${getSpaceGraphNodeDescription(node)} - Executing action")
+-        spaceGraphNodeHandlers[node]?.invoke()
+-    }
+-    
+-    private fun getSpaceGraphNodeDescription(node: SpaceGraphNode): String = when (node) {
+-        SpaceGraphNode.ATTENTION -> "Attention Ticker Node"
+-        SpaceGraphNode.PORTFOLIO -> "Portfolio Manager Node"
+-        SpaceGraphNode.TECHNICAL -> "Technical Analysis Node"
+-        SpaceGraphNode.BACKTEST -> "Backtest Results Node"
+-        SpaceGraphNode.TRACE -> "Trace Viewer Node"
+-        SpaceGraphNode.JSON -> "JSON Scanner Node"
+-        SpaceGraphNode.BTC_CHART -> "BTC Chart Node"
+-        SpaceGraphNode.ETH_CHART -> "ETH Chart Node"
+-        SpaceGraphNode.TILE -> "Tile Windows Node"
+-        SpaceGraphNode.CASCADE -> "Cascade Windows Node"
+-        SpaceGraphNode.CLEAR -> "Clear Trace Node"
+-        SpaceGraphNode.EXIT -> "Exit Application Node"
+-        else -> "Unknown Node (${node.nodeId})"
+-    }
+-    
+-    private fun openOrFocusWindow(id: String, title: String, content: WindowContent) {
+-        val existing = windows[id]
+-        if (existing != null) {
+-            // Focus existing window
+-            focusWindow(id)
+-            tracer.log(TraceLevel.DEBUG, "Focused existing window: $title")
+-        } else {
+-            // Create new window
+-            val newWindow = MDIWindow(
+-                id = id,
+-                title = title,
+-                x = 50 + windows.size * 30,
+-                y = 50 + windows.size * 30,
+-                width = 600,
+-                height = 400,
+-                content = content
+-            )
+-            windows[id] = newWindow
+-            focusWindow(id)
+-            tracer.log(TraceLevel.INFO, "Created new window: $title")
+-        }
+-    }
+-    
+-    private fun focusWindow(id: String) {
+-        // Deactivate all windows
+-        windows.replaceAll { _, window -> window.copy(isActive = false) }
+-        
+-        // Activate target window
+-        windows[id]?.let { window ->
+-            windows[id] = window.copy(isActive = true)
+-            activeWindowId = id
+-            tracer.log(TraceLevel.DEBUG, "Window focused: ${window.title}")
+-        }
+-    }
+-    
+-    private fun tileWindows() {
+-        val visibleWindows = windows.values.toList()
+-        val count = visibleWindows.size
+-        if (count == 0) return
+-        
+-        val cols = kotlin.math.ceil(kotlin.math.sqrt(count.toDouble())).toInt()
+-        val rows = kotlin.math.ceil(count.toDouble() / cols).toInt()
+-        
+-        val windowWidth = 1200 / cols
+-        val windowHeight = 800 / rows
+-        
+-        visibleWindows.forEachIndexed { index, window ->
+-            val col = index % cols
+-            val row = index / cols
+-            
+-            val newWindow = window.copy(
+-                x = col * windowWidth,
+-                y = row * windowHeight,
+-                width = windowWidth,
+-                height = windowHeight
+-            )
+-            windows[window.id] = newWindow
+-        }
+-        
+-        tracer.log(TraceLevel.INFO, "Tiled $count windows in ${cols}x${rows} grid")
+-    }
+-    
+-    private fun cascadeWindows() {
+-        val visibleWindows = windows.values.toList()
+-        
+-        visibleWindows.forEachIndexed { index, window ->
+-            val offset = index * 30
+-            val newWindow = window.copy(
+-                x = 50 + offset,
+-                y = 50 + offset,
+-                width = 600,
+-                height = 400
+-            )
+-            windows[window.id] = newWindow
+-        }
+-        
+-        tracer.log(TraceLevel.INFO, "Cascaded ${visibleWindows.size} windows")
+-    }
+-    
+-    private fun exitApplication() {
+-        tracer.log(TraceLevel.ERROR, "Application exit initiated")
+-        // In real implementation, this would close the application
+-    }
+-    
+-    // Public interface for external systems
+-    fun getActiveWindow(): MDIWindow? = activeWindowId?.let { windows[it] }
+-    
+-    fun getAllWindows(): Indexed<MDIWindow> {
+-        val windowList = windows.values.toList()
+-        return Indexed.of(windowList.size) { windowList[it] }
+-    }
+-    
+-    fun getTraceLog(): TraceLog = tracer.getTraceLog()
+-    
+-    // Interface state for external rendering systems
+-    fun getInterfaceState(): MDIInterfaceState {
+-        val windowList = windows.values.toList()
+-        val recentTraces = tracer.getTraceLog()
+-        
+-        return MDIInterfaceState(
+-            activeWindowId = activeWindowId,
+-            windows = Indexed.of(windowList.size) { windowList[it] },
+-            recentTraces = recentTraces,
+-            spaceGraphNodeMappings = getSpaceGraphNodeMappings()
+-        )
+-    }
+-    
+-    private fun getSpaceGraphNodeMappings(): Indexed<Join<SpaceGraphNode, String>> {
+-        val mappings = listOf(
+-            SpaceGraphNode.ATTENTION j "Attention Ticker",
+-            SpaceGraphNode.PORTFOLIO j "Portfolio Manager",
+-            SpaceGraphNode.TECHNICAL j "Technical Analysis", 
+-            SpaceGraphNode.BACKTEST j "Backtest Results",
+-            SpaceGraphNode.TRACE j "Trace Viewer",
+-            SpaceGraphNode.JSON j "JSON Scanner",
+-            SpaceGraphNode.BTC_CHART j "BTC Chart",
+-            SpaceGraphNode.ETH_CHART j "ETH Chart",
+-            SpaceGraphNode.TILE j "Tile Windows",
+-            SpaceGraphNode.CASCADE j "Cascade Windows",
+-            SpaceGraphNode.CLEAR j "Clear Trace",
+-            SpaceGraphNode.EXIT j "Exit Application"
+-        )
+-        return Indexed.of(mappings.size) { mappings[it] }
+-    }
+-}
+-
+-data class MDIInterfaceState(
+-    val activeWindowId: String?,
+-    val windows: Indexed<MDIWindow>,
+-    val recentTraces: TraceLog,
+-    val spaceGraphNodeMappings: Indexed<Join<SpaceGraphNode, String>>
+-)
+\ No newline at end of file
