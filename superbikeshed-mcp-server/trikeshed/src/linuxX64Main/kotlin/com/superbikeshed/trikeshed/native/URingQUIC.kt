@@ -8,6 +8,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.channels.Channel
 import kotlin.experimental.ExperimentalNativeApi
+import kotlinx.atomicfu.AtomicLong // Added for kotlinx.atomicfu.AtomicLong
 
 /**
  * QUIC Server implementation using io_uring
@@ -39,12 +40,13 @@ class URingQUICServer(
         // Register multishot receive for QUIC packets
         memScoped {
             val sqe = io_uring_get_sqe(ring)!!
-            io_uring_prep_recv_multishot(
+            // Call the direct cinterop function or a refined wrapper if available
+            com.superbikeshed.trikeshed.native.uring.io_uring_prep_recv_multishot(
                 sqe, sock,
-                null, 0,
+                null, 0u, // length is UInt
                 MSG_DONTWAIT
             )
-            sqe.pointed.flags = sqe.pointed.flags or IOSQE_BUFFER_SELECT
+            sqe.pointed.flags = sqe.pointed.flags or IOSQE_BUFFER_SELECT.toUByte() // Ensure correct type for flags
             sqe.pointed.buf_group = bufRing.bgid.toUShort()
             io_uring_submit(ring)
         }
@@ -227,12 +229,13 @@ class URingQUICServer(
             iov.iov_len = response.size.toULong()
             
             val msg = alloc<msghdr>()
-            msg.msg_name = addr
+            msg.msg_name = addr.reinterpret() // Ensure correct pointer type if addr is CPointer<sockaddr_storage>
             msg.msg_namelen = sizeOf<sockaddr_storage>().toUInt()
             msg.msg_iov = iov.ptr
-            msg.msg_iovlen = 1u
+            msg.msg_iovlen = 1uL // iovlen is size_t, which is ULong in Kotlin/Native for 64-bit
             
-            io_uring_prep_sendmsg(sqe, sock, msg.ptr, 0)
+            // Use the wrapper from IoUringOps.kt or direct cinterop
+            io_uring_prep_sendmsg_wrapper(sqe, sock, msg.ptr, 0)
             io_uring_submit(ring)
         }
     }
@@ -342,12 +345,13 @@ class URingQUICServer(
     private fun rearmReceive() {
         memScoped {
             val sqe = io_uring_get_sqe(ring)!!
-            io_uring_prep_recv_multishot(
+            // Call the direct cinterop function or a refined wrapper
+            com.superbikeshed.trikeshed.native.uring.io_uring_prep_recv_multishot(
                 sqe, sock,
-                null, 0,
+                null, 0u, // length is UInt
                 MSG_DONTWAIT
             )
-            sqe.pointed.flags = sqe.pointed.flags or IOSQE_BUFFER_SELECT
+            sqe.pointed.flags = sqe.pointed.flags or IOSQE_BUFFER_SELECT.toUByte() // Ensure correct type for flags
             sqe.pointed.buf_group = bufRing.bgid.toUShort()
             io_uring_submit(ring)
         }
@@ -401,7 +405,7 @@ class URingQUICServer(
         val scid: ByteArray,
         var state: State,
         var lastActivity: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
-        val nextStreamId: AtomicLong = AtomicLong(0)
+        val nextStreamId: kotlinx.atomicfu.AtomicLong = kotlinx.atomicfu.atomic(0L) // Replaced with kotlinx.atomicfu
     ) {
         enum class State {
             HANDSHAKING,
@@ -460,10 +464,10 @@ class URingQUICServer(
     
     private class StatsCollector {
         private val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
-        private var totalConnections = AtomicLong(0)
-        private var totalPackets = AtomicLong(0)
-        private var totalBytes = AtomicLong(0)
-        private var totalErrors = AtomicLong(0)
+        private var totalConnections = kotlinx.atomicfu.atomic(0L) // Replaced with kotlinx.atomicfu
+        private var totalPackets = kotlinx.atomicfu.atomic(0L)     // Replaced with kotlinx.atomicfu
+        private var totalBytes = kotlinx.atomicfu.atomic(0L)       // Replaced with kotlinx.atomicfu
+        private var totalErrors = kotlinx.atomicfu.atomic(0L)      // Replaced with kotlinx.atomicfu
         
         fun recordPacket(packet: QUICPacket) {
             totalPackets.incrementAndGet()
@@ -480,13 +484,13 @@ class URingQUICServer(
         fun getStats(): ServerStats {
             val duration = (kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime) / 1000.0
             return ServerStats(
-                connections = totalConnections.get(),
-                requestsPerSecond = totalPackets.get() / duration,
-                bytesPerSecond = (totalBytes.get() / duration).toLong(),
+                connections = totalConnections.value, // Use .value for kotlinx.atomicfu
+                requestsPerSecond = totalPackets.value / duration,
+                bytesPerSecond = (totalBytes.value / duration).toLong(),
                 latencyP50 = 0.5, // TODO: Implement percentile tracking
                 latencyP99 = 1.0,
                 latencyP999 = 2.0,
-                errors = totalErrors.get(),
+                errors = totalErrors.value,
                 cpuUsage = 0.0, // TODO: Implement CPU tracking
                 memoryUsage = 0 // TODO: Implement memory tracking
             )
@@ -497,8 +501,10 @@ class URingQUICServer(
         const val QUIC_VERSION_1 = 0x00000001u
         const val IDLE_TIMEOUT = 30000L
         const val HANDSHAKE_TIMEOUT = 10000L
-        const val IORING_CQE_F_MORE = 2u
-        const val IORING_CQE_BUFFER_SHIFT = 16
+        // IOSQE_BUFFER_SELECT is already defined in URingProtocols.kt or should come from cinterop
+        // const val IOSQE_BUFFER_SELECT = 32u
+        const val IORING_CQE_F_MORE = 2u // This is a CQE flag bit
+        const val IORING_CQE_BUFFER_SHIFT = 16 // This is a CQE flag bit shift
     }
 }
 
@@ -586,48 +592,16 @@ private fun CPointer<ByteVar>.readBytes(offset: Int, length: Int): ByteArray {
     return bytes
 }
 
-    memScoped {
-        val tv = alloc<timeval>()
-        gettimeofday(tv.ptr, null)
-        return tv.tv_sec * 1000L + tv.tv_usec / 1000L
-    }
-}
+// Removed incorrect gettimeofday function here, it was out of place.
 
 // Additional safety: ConnectionState extension for time tracking
 private val ConnectionState.Handshaking.startTime: Long
     get() = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() // In real impl, store this
 
-// Atomic operations for native
-@OptIn(ExperimentalNativeApi::class)
-private class AtomicLong(initial: Long = 0) {
-    private var value = initial
-    
-    fun get(): Long = value
-    fun set(new: Long) { value = new }
-    fun incrementAndGet(): Long = ++value
-    fun getAndIncrement(): Long = value++
-    fun addAndGet(delta: Long): Long {
-        value += delta
-        return value
-    }
-}
+// Custom AtomicLong removed, kotlinx.atomicfu.AtomicLong is used directly.
 
-// Missing io_uring functions
-private fun io_uring_prep_recv_multishot(
-    sqe: CPointer<io_uring_sqe>,
-    fd: Int,
-    buf: CPointer<ByteVar>?,
-    len: Int,
-    flags: Int
-) {
-    // Implementation would call actual io_uring function
-}
-
-private fun io_uring_prep_sendmsg(
-    sqe: CPointer<io_uring_sqe>,
-    fd: Int,
-    msg: CPointer<msghdr>,
-    flags: Int
-) {
-    // Implementation would call actual io_uring function
-}
+// Missing io_uring functions stubs removed as they are now called directly or via IoUringOps.kt wrappers.
+// For example, io_uring_prep_recv_multishot is now:
+// com.superbikeshed.trikeshed.native.uring.io_uring_prep_recv_multishot(...)
+// And io_uring_prep_sendmsg is:
+// io_uring_prep_sendmsg_wrapper(...)

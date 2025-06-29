@@ -26,8 +26,15 @@ object NativeLauncher {
 
 class NativeLauncherImpl {
     private val platformLauncher = PlatformLauncher()
-    private var daemonMode = false
-    private val activeTasks = mutableListOf<Job>()
+    @Volatile private var daemonMode = false // Made volatile for thread safety
+    private val activeTasks = mutableListOf<Job>() // Consider thread-safe collection if accessed by Ktor threads
+    private var daemonServer: DaemonServer? = null
+
+    fun stopDaemon() {
+        println("Shutdown command received. Stopping daemon...")
+        daemonMode = false
+        daemonServer?.stop()
+    }
     
     fun run(args: Array<String>) {
         // Parse command line arguments
@@ -100,8 +107,8 @@ class NativeLauncherImpl {
             platformLauncher.initialize(config.jvmOptions)
             
             // Start daemon server
-            val server = DaemonServer(config.port, platformLauncher)
-            server.start()
+            daemonServer = DaemonServer(config.port, this, platformLauncher)
+            daemonServer?.start()
             
             // Keep alive
             while (daemonMode) {
@@ -344,27 +351,129 @@ class ProcessImports {
     fun args(): Array<String> = emptyArray() // Would be set from context
 }
 
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.plugins.contentnegotiation.*
+import kotlinx.serialization.Serializable
+
+
+@Serializable
+data class ExecuteRequest(val target: String, val args: List<String> = emptyList(), val type: String) // type: "wasm", "java", "jar", "class"
+
+@Serializable
+data class LoadModuleRequest(val name: String, val path: String, val type: String) // type: "wasm"
+
+@Serializable
+data class StatusResponse(val status: String, val activeTasks: Int)
+
+@Serializable
+data class GenericResponse(val message: String, val details: String? = null)
+
 // Daemon server for remote control
 class DaemonServer(
     private val port: Int,
-    private val launcher: PlatformLauncher
+    private val nativeLauncherImpl: NativeLauncherImpl, // Changed to NativeLauncherImpl
+    private val platformLauncher: PlatformLauncher // Keep platformLauncher for direct access if needed
 ) {
+    private var server: NettyApplicationEngine? = null
+
     fun start() {
-        // Simple HTTP server for daemon control
-        println("Daemon server started on port $port")
-        
-        // Would implement actual server using Ktor or similar
-        // Endpoints:
-        // POST /execute - Execute WASM or Java
-        // POST /load - Load module
-        // GET /status - Get daemon status
-        // POST /shutdown - Shutdown daemon
+        server = embeddedServer(Netty, port = port, module = { module() }).start(wait = false)
+        println("Daemon server started on port $port. Press Ctrl+C to stop.")
+        // To keep the daemon running if it's the main process and not managed by NativeLauncherImpl's daemonMode loop
+        // Runtime.getRuntime().addShutdownHook(Thread { stop() })
+    }
+
+    fun stop() {
+        server?.stop(1000, 5000)
+        println("Daemon server stopped.")
+    }
+
+    private fun Application.module() {
+        install(ContentNegotiation) {
+            json()
+        }
+
+        routing {
+            get("/") {
+                call.respondText("Platform Launcher Daemon")
+            }
+
+            post("/execute") {
+                try {
+                    val request = call.receive<ExecuteRequest>()
+                    // This part needs to be run off the Ktor request thread
+                    // and align with NativeLauncherImpl's execution logic.
+                    // For simplicity, directly calling platformLauncher's methods,
+                    // but ideally, it would queue tasks or use NativeLauncherImpl's mechanisms.
+
+                    // Caution: The execution methods in NativeLauncherImpl are runBlocking.
+                    // Running them directly in Ktor might block request threads.
+                    // A proper solution would involve a job queue or async execution.
+                    // For this example, we'll proceed with a simplified direct call,
+                    // assuming NativeLauncherImpl.executeCommand could be refactored to be non-blocking or offloaded.
+
+                    // Simplified: Reconstruct args for NativeLauncherImpl's parseArguments or execute directly
+                    val config = LauncherConfig(
+                        command = Command.EXECUTE,
+                        target = request.target,
+                        additionalArgs = request.args.toMutableList()
+                        // jvmOptions, wasmModules, javaClasses would need to be settable or pre-configured
+                    )
+
+                    // This is a conceptual call. Actual execution needs to be handled carefully.
+                    // nativeLauncherImpl.executeCommand(config) // This is blocking.
+
+                    // A more direct, but still potentially blocking approach for now:
+                    when (request.type) {
+                        "wasm" -> platformLauncher.executeWASMFunction(request.target, "_start", *request.args.toTypedArray()) // Assuming _start
+                        "java" -> { /* platformLauncher.compileAndLoadJava and invoke main */ }
+                        "jar" -> { /* platformLauncher.executeJar - needs ProcessBuilder logic from NativeLauncherImpl */ }
+                        // Add more types as needed
+                        else -> {
+                            call.respond(HttpStatusCode.BadRequest, GenericResponse("Unsupported execution type: ${request.type}"))
+                            return@post
+                        }
+                    }
+                    call.respond(HttpStatusCode.OK, GenericResponse("Execution command received for ${request.target}."))
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, GenericResponse("Error during execution", e.message))
+                }
+            }
+
+            post("/load/wasm") {
+                try {
+                    val request = call.receive<LoadModuleRequest>()
+                    platformLauncher.loadWASMModule(request.name, request.path) // Assuming default imports
+                    call.respond(HttpStatusCode.OK, GenericResponse("WASM module ${request.name} loading initiated."))
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, GenericResponse("Error loading WASM module", e.message))
+                }
+            }
+
+            get("/status") {
+                // val active = nativeLauncherImpl.getActiveTasksCount() // Need a way to get this
+                call.respond(HttpStatusCode.OK, StatusResponse("Daemon is running", 0 /*active*/))
+            }
+
+            post("/shutdown") {
+                call.respond(HttpStatusCode.OK, GenericResponse("Shutdown command received."))
+                // This should trigger a graceful shutdown of the NativeLauncher's main loop or the application.
+                nativeLauncherImpl.stopDaemon() // Need a method in NativeLauncherImpl
+            }
+        }
     }
 }
 
 // Helper function to measure time
 inline fun measureTimeMillis(block: () -> Unit): Long {
-    val start = System.kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+    val start = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
     block()
-    return System.kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - start
+    return kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - start
 }

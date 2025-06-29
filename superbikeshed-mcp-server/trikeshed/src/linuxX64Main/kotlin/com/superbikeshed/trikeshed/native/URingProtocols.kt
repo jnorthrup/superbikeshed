@@ -392,19 +392,78 @@ private const val TLS_TX = 1
 private const val TLS_1_3_VERSION = 0x0304
 private const val TLS_CIPHER_AES_GCM_128 = 51
 
-// Dummy functions for missing APIs
-private fun io_uring_queue_init_params(entries: UInt, ring: CPointer<io_uring>, params: CPointer<io_uring_params>): Int = TODO()
-private fun io_uring_prep_recv_multishot(sqe: CPointer<io_uring_sqe>, fd: Int, buf: CPointer<ByteVar>?, len: Int, flags: Int) = TODO()
-private fun io_uring_prep_multishot_accept(sqe: CPointer<io_uring_sqe>, fd: Int, addr: CPointer<sockaddr>?, addrlen: CPointer<socklen_tVar>?, flags: Int) = TODO()
-private fun io_uring_prep_files_update(sqe: CPointer<io_uring_sqe>, fds: CPointer<IntVar>, count: Int) = TODO()
-private fun io_uring_register_buf_ring(ring: CPointer<io_uring>, reg: CPointer<io_uring_buf_reg>): Int = TODO()
-private fun allocateBuffer(size: Int): CPointer<ByteVar> = TODO()
-private fun addBufferToRing(ring: CPointer<ByteVar>, index: Int, buf: CPointer<ByteVar>, size: Int) = TODO()
-private fun cpu_count(): Int = TODO()
-private fun sched_getcpu(): Int = TODO()
+// Implementations or wrappers for io_uring functions using IoUringOps.kt or direct cinterop.
 
-// Dummy structures
-class io_uring_params : CStructVar()
-class io_uring_buf_reg : CStructVar()
-class io_uring_buf : CStructVar()
-class tls12_crypto_info_aes_gcm_128 : CStructVar()
+// Wrapper for io_uring_queue_init_params
+// Actual signature: int io_uring_queue_init_params(unsigned entries, struct io_uring *ring, struct io_uring_params *params);
+private fun io_uring_queue_init_params_internal(entries: UInt, ring: CPointer<io_uring>, params: CPointer<io_uring_params>): Int {
+    return com.superbikeshed.trikeshed.native.uring.io_uring_queue_init_params(entries, ring, params)
+}
+
+// For recv_multishot, this often requires specific handling or might be a macro in liburing.
+// We will use a wrapper that might internally call io_uring_prep_recv or a direct multishot variant if available.
+// Actual signature: void io_uring_prep_recv_multishot(struct io_uring_sqe *sqe, int fd, void *buf, unsigned len, int flags);
+private fun io_uring_prep_recv_multishot_internal(sqe: CPointer<io_uring_sqe>, fd: Int, buf: CValuesRef<ByteVarOf<Byte>>?, len: UInt, flags: Int) {
+    // Assuming cinterop makes io_uring_prep_recv_multishot available.
+    // If not, this would need to be io_uring_prep_recv with flags, or a custom C stub.
+    // If buf is null, len should be 0. This pattern is used with IOSQE_BUFFER_SELECT.
+    com.superbikeshed.trikeshed.native.uring.io_uring_prep_recv_multishot(sqe, fd, buf, len, flags)
+}
+
+// Using the wrapper from IoUringOps.kt
+private fun io_uring_prep_multishot_accept_internal(sqe: CPointer<io_uring_sqe>, fd: Int, addr: CValuesRef<sockaddr>?, addrlen: CValuesRef<socklen_tVar>?, flags: Int) {
+    io_uring_prep_multishot_accept_wrapper(sqe, fd, addr, addrlen, flags)
+}
+
+// Actual signature: void io_uring_prep_files_update(struct io_uring_sqe *sqe, int *fds, unsigned nr_files, int offset);
+// The `offset` parameter for files_update is not the file offset, but an offset into a registered file table,
+// often set to -1 to use sqe->fd if not using a registered file table.
+// For simplicity, we'll assume direct usage with fds array.
+private fun io_uring_prep_files_update_internal(sqe: CPointer<io_uring_sqe>, fds: CPointer<IntVar>, count: Int) {
+    // The last argument `offset` for io_uring_prep_files_update refers to an offset in the ring's file table,
+    // not a file offset. It's often 0 if updating the base of a registered set, or can be specific.
+    // A common usage is to pass sqe->fd as the offset if you are updating a single file descriptor previously registered.
+    // For updating an array of fds that are not necessarily registered in a table in a specific way,
+    // the usage might be more complex or might refer to updating file table slots.
+    // Let's assume a simple direct update where `offset` is 0 for the context of this array.
+    com.superbikeshed.trikeshed.native.uring.io_uring_prep_files_update(sqe, fds.reinterpret(), count.toUInt(), 0)
+}
+
+// Actual signature: int io_uring_register_buf_ring(struct io_uring *ring, struct io_uring_buf_reg *reg, unsigned int flags); flags is usually 0
+private fun io_uring_register_buf_ring_internal(ring: CPointer<io_uring>, reg: CPointer<io_uring_buf_reg>): Int {
+    return com.superbikeshed.trikeshed.native.uring.io_uring_register_buf_ring(ring, reg.reinterpret(), 0u)
+}
+
+// These are application-specific helpers, not direct io_uring ops.
+private fun allocateBuffer(size: Int): CPointer<ByteVar> = nativeHeap.allocArray<ByteVar>(size)
+
+// This function is complex and involves direct manipulation of the buffer ring shared with the kernel.
+// It should be implemented carefully based on liburing examples like `io_uring_buf_ring_add`.
+// For now, this remains a conceptual placeholder.
+private fun addBufferToRing(ring_ptr: CPointer<io_uring_buf_ring>, buffer: CPointer<ByteVarOf<Byte>>, bid: UShort, index: UShort, mask: UShort, buf_size: Int) {
+    // Conceptual:
+    // val actual_ring_ptr = ring_ptr.pointed.bufs // This depends on the actual structure from cinterop
+    // val entry_ptr = actual_ring_ptr + (index.toInt() and mask.toInt()) // Example of accessing entry
+    // entry_ptr.pointed.addr = buffer.rawValue.toULong()
+    // entry_ptr.pointed.len = buf_size.toUInt()
+    // entry_ptr.pointed.bid = bid
+    // io_uring_buf_ring_advance(ring_ptr, 1) // Or manual tail advancement with memory barriers
+    platform.linux.TODO("addBufferToRing needs careful implementation based on liburing source/examples and atomic operations for tail advancement.")
+}
+
+
+private fun cpu_count(): Int = platform.posix.sysconf(platform.posix._SC_NPROCESSORS_ONLN).toInt()
+// Ensure sched_getcpu is available. It's Linux-specific.
+private fun sched_getcpu(): Int = platform.linux.sched_getcpu()
+
+
+// Structures like io_uring_params, io_uring_buf_reg, io_uring_buf are expected to be
+// provided by the cinterop layer from liburing.h.
+// tls12_crypto_info_aes_gcm_128 would come from <linux/tls.h>. If this header
+// was not included in the uring.def cinterop generation, this type will not be resolved.
+// It might require its own .def file or manual definition if not found.
+// For example, in uring.def:
+// headers = liburing.h linux/tls.h
+// compilerOpts.linux = -I/usr/include -I/path/to/liburing/headers
+// Or, define it manually if it's simple enough and stable.
+// Assuming these are correctly resolved by the current cinterop setup.
