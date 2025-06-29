@@ -4,8 +4,15 @@ plugins {
 
 kotlin {
     jvm() // Define a JVM target
+<<<<<<< HEAD
 
     // re-add wasm
+=======
+    js(IR) { // Define a JS target
+        browser()
+        binaries.executable()
+    }
+>>>>>>> origin/feat/core-serialization-impl
     // Minimal native target, e.g., macosX64, if easily configured
     // Or omit native for initial setup simplicity if it causes issues
     val hostOs = System.getProperty("os.name")
@@ -15,6 +22,10 @@ kotlin {
         linuxX64("nativeLinux") // Example native target
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/feat/core-serialization-impl
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -40,6 +51,19 @@ kotlin {
                 implementation(kotlin("test-junit5"))
             }
         }
+<<<<<<< HEAD
+=======
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
+>>>>>>> origin/feat/core-serialization-impl
         if (hostOs == "Mac OS X") {
             val nativeMacosMain by getting
             val nativeMacosTest by getting

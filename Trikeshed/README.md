@@ -58,7 +58,12 @@ typealias Cursor = Series<RowVec>
         * `(myseries as Series<T>).`\`play\` visually noticable forward-iterator accessor denoting kotlin stdlib
                   collections/functional facade for a given purpose, typically filters, maps, or folds
         * left identity anchors, respectively __\`↺\`__ e.g. "columnname".\`↺\` to functionalize a constant or
+<<<<<<< HEAD
                   other value in situations where sometimes a lambda might be generative but constant can be picked out from in the code
+=======
+                  other value in situations where sometimes a lambda might be generative but constant can be distinctly
+                  picked out from in the code
+>>>>>>> origin/feat/core-serialization-impl
 
 * [x] Cursor lazy and memory-resident Dataframes lending strongly typed columns, with names, splittability,
   combinability, transforms.

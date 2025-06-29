@@ -17,6 +17,7 @@ Implementing architectural rebuild described in nexus/CLAUDE.md:
 - Before any change, do 2-factor reach analysis (direct + transitive impact)
 - Submit memo describing planned changes
 
+<<<<<<< HEAD
 ## Progress Update - Enhancement Phase
 ✅ **COMPLETED**: Architectural rebuild analysis  
 ✅ **COMPLETED**: Implementation plan created  
@@ -63,3 +64,10 @@ The nexus agent now implements a **production-ready architecture** that:
 
 ## Mission Status: ✅ COMPLETE
 Nexus architectural rebuild successfully completed with enhancements.
+=======
+## Next Steps
+1. Read nexus/CLAUDE.md to understand architectural requirements
+2. Analyze current nexus structure and broken code
+3. Examine k2script patterns for reference
+4. Submit implementation plan memo
+>>>>>>> origin/feat/core-serialization-impl

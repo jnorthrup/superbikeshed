@@ -1,8 +1,14 @@
 plugins {
+<<<<<<< HEAD
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     `maven-publish`
     signing
+=======
+    kotlin("multiplatform") version "2.1.21"
+    kotlin("plugin.serialization") version "2.1.21"
+    `maven-publish`
+>>>>>>> origin/feat/core-serialization-impl
 }
 
 group = "borg.trikeshed"
@@ -17,6 +23,7 @@ kotlin {
         }
     }
     
+<<<<<<< HEAD
     // WASM for modern web deployment (replaces JS)
     wasmJs {
         browser()
@@ -24,6 +31,14 @@ kotlin {
     }
     
     // Native targets for high-performance execution
+=======
+    js(IR) {
+        browser()
+        nodejs()
+        binaries.executable()
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     val hostOs = System.getProperty("os.name")
     val isMingwX64 = hostOs.startsWith("Windows")
     val isMac = hostOs.startsWith("Mac OS")
@@ -43,12 +58,20 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
+<<<<<<< HEAD
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.collections.immutable)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
                 implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8") // For java.util.zip.GZIPInputStream and java.io.InputStream
+=======
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+                implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
+>>>>>>> origin/feat/core-serialization-impl
             }
         }
         
@@ -61,6 +84,7 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
+<<<<<<< HEAD
                 implementation(libs.junit.jupiter.api)
                 runtimeOnly(libs.junit.jupiter.engine)
             }
@@ -69,17 +93,33 @@ kotlin {
         val wasmJsMain by getting {
             dependencies {
                 implementation(libs.kotlinx.coroutines.core)
+=======
+                implementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+>>>>>>> origin/feat/core-serialization-impl
             }
         }
         
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+<<<<<<< HEAD
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation("edu.stanford.nlp:stanford-corenlp:4.5.6")
                 implementation("edu.stanford.nlp:stanford-corenlp:4.5.6:models")
+=======
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation(kotlin("reflect"))
+>>>>>>> origin/feat/core-serialization-impl
             }
         }
     }
@@ -94,6 +134,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
         )
     }
+<<<<<<< HEAD
 }
 
 publishing {
@@ -148,4 +189,6 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
+=======
+>>>>>>> origin/feat/core-serialization-impl
 }

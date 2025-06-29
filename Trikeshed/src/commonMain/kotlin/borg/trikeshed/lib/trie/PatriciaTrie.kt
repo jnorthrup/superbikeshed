@@ -1,6 +1,9 @@
 package borg.trikeshed.lib.trie
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/feat/core-serialization-impl
 /**
  * Persistent, immutable Patricia (radix) trie with arraymap children and frozen sorted keys.
  * Keys are sequences (e.g., String, List<Char>, etc.).
@@ -40,18 +43,26 @@ private class ArrayMapPatriciaTrie<K, V>(
         val parts = keySplitter(key)
         return get(parts)
     }
+<<<<<<< HEAD
     
+=======
+>>>>>>> origin/feat/core-serialization-impl
     private fun get(parts: List<Any>): V? {
         if (parts.startsWith(prefix)) {
             val rest = parts.drop(prefix.size)
             if (rest.isEmpty()) return value
+<<<<<<< HEAD
             val idx = children.indexOfFirst { it.first == rest[0] }
+=======
+            val idx = children.binarySearchBy(rest[0]) { it.first }
+>>>>>>> origin/feat/core-serialization-impl
             return if (idx >= 0) children[idx].second.get(rest) else null
         } else if (prefix.startsWith(parts)) {
             return if (parts.size == prefix.size) value else null
         }
         return null
     }
+<<<<<<< HEAD
     
     override fun put(key: K, value: V): PatriciaTrie<K, V> = put(keySplitter(key), value)
     
@@ -66,6 +77,20 @@ private class ArrayMapPatriciaTrie<K, V>(
             } else {
                 val newChild = ArrayMapPatriciaTrie(parts.drop(1), value, emptyArray<Pair<Any, ArrayMapPatriciaTrie<K, V>>>(), keySplitter)
                 val newChildren = (children + (parts[0] to newChild)).sortedBy { it.first.toString() }.toTypedArray()
+=======
+    override fun put(key: K, value: V): PatriciaTrie<K, V> = put(keySplitter(key), value)
+    private fun put(parts: List<Any>, value: V): PatriciaTrie<K, V> {
+        if (prefix.isEmpty()) {
+            if (parts.isEmpty()) return ArrayMapPatriciaTrie(prefix, value, children, keySplitter)
+            val idx = children.binarySearchBy(parts[0]) { it.first }
+            return if (idx >= 0) {
+                val updated = children.copyOf()
+                updated[idx] = children[idx].copy(second = children[idx].second.put(parts.drop(1), value))
+                ArrayMapPatriciaTrie(prefix, this.value, updated, keySplitter)
+            } else {
+                val newChild = ArrayMapPatriciaTrie(parts.drop(1), value, emptyArray(), keySplitter)
+                val newChildren = children.toMutableList().apply { add(idx, parts[0] to newChild) }.toTypedArray()
+>>>>>>> origin/feat/core-serialization-impl
                 ArrayMapPatriciaTrie(prefix, this.value, newChildren, keySplitter)
             }
         }
@@ -76,7 +101,11 @@ private class ArrayMapPatriciaTrie<K, V>(
         } else if (common.size == 0) {
             val newThis = ArrayMapPatriciaTrie(prefix.drop(1), this.value, children, keySplitter)
             val newOther = ArrayMapPatriciaTrie(parts.drop(1), value, emptyArray(), keySplitter)
+<<<<<<< HEAD
             val newChildren = listOf(prefix[0] to newThis, parts[0] to newOther).sortedBy { it.first.toString() }.toTypedArray()
+=======
+            val newChildren = arrayOf(prefix[0] to newThis, parts[0] to newOther).sortedBy { it.first }.toTypedArray()
+>>>>>>> origin/feat/core-serialization-impl
             return ArrayMapPatriciaTrie(common, null, newChildren, keySplitter)
         } else {
             val newThis = ArrayMapPatriciaTrie(prefix.drop(common.size), this.value, children, keySplitter)
@@ -84,6 +113,7 @@ private class ArrayMapPatriciaTrie<K, V>(
             val newChildren = listOfNotNull(
                 if (newThis.prefix.isNotEmpty()) newThis.prefix[0] to newThis else null,
                 if (newOther.prefix.isNotEmpty()) newOther.prefix[0] to newOther else null
+<<<<<<< HEAD
             ).sortedBy { it.first.toString() }.toTypedArray()
             return ArrayMapPatriciaTrie(common, null, newChildren, keySplitter)
         }
@@ -91,6 +121,13 @@ private class ArrayMapPatriciaTrie<K, V>(
     
     override fun remove(key: K): PatriciaTrie<K, V> = remove(keySplitter(key))
     
+=======
+            ).sortedBy { it.first }.toTypedArray()
+            return ArrayMapPatriciaTrie(common, null, newChildren, keySplitter)
+        }
+    }
+    override fun remove(key: K): PatriciaTrie<K, V> = remove(keySplitter(key))
+>>>>>>> origin/feat/core-serialization-impl
     private fun remove(parts: List<Any>): PatriciaTrie<K, V> {
         if (!parts.startsWith(prefix)) return this
         val rest = parts.drop(prefix.size)
@@ -98,6 +135,7 @@ private class ArrayMapPatriciaTrie<K, V>(
             return if (children.isEmpty()) ArrayMapPatriciaTrie(prefix, null, children, keySplitter)
             else ArrayMapPatriciaTrie(prefix, null, children, keySplitter)
         }
+<<<<<<< HEAD
         val idx = children.indexOfFirst { it.first == rest[0] }
         if (idx < 0) return this
         val updatedChild = children[idx].second.remove(rest)
@@ -143,3 +181,41 @@ private fun <T> List<T>.commonPrefixWith(other: List<T>): List<T> {
     }
     return result
 }
+=======
+        val idx = children.binarySearchBy(rest[0]) { it.first }
+        if (idx < 0) return this
+        val updatedChild = children[idx].second.remove(rest)
+        val updatedChildren = if (updatedChild.isEmpty()) {
+            children.toMutableList().apply { removeAt(idx) }.toTypedArray()
+        } else {
+            children.copyOf().apply { this[idx] = children[idx].copy(second = updatedChild) }
+        }
+        return ArrayMapPatriciaTrie(prefix, value, updatedChildren, keySplitter)
+    }
+    override val size: Int get() = (if (value != null) 1 else 0) + children.sumOf { it.second.size }
+    override val keys: Set<K> get() = entries.mapTo(mutableSetOf()) { it.key }
+    override val values: Collection<V> get() = entries.map { it.value }
+    override val entries: Set<Map.Entry<K, V>>
+        get() = buildSet {
+            if (value != null && prefix.isNotEmpty()) add(SimpleEntry(prefix, value))
+            for ((_, child) in children) addAll(child.entries)
+        }
+    fun isEmpty() = value == null && children.isEmpty()
+    private data class SimpleEntry<K, V>(val keyParts: List<Any>, override val value: V) : Map.Entry<K, V> {
+        override val key: K get() = @Suppress("UNCHECKED_CAST") (keyParts as K)
+    }
+}
+
+private fun List<Any>.startsWith(prefix: List<Any>): Boolean =
+    this.size >= prefix.size && this.subList(0, prefix.size) == prefix
+
+private fun List<Any>.commonPrefixWith(other: List<Any>): List<Any> {
+    val min = minOf(this.size, other.size)
+    for (i in 0 until min) if (this[i] != other[i]) return this.subList(0, i)
+    return this.subList(0, min)
+}
+
+private fun <T> MutableList<T>.add(index: Int, element: T) {
+    if (index < 0) this.add(this.size + index + 1, element) else this.add(index, element)
+} 
+>>>>>>> origin/feat/core-serialization-impl

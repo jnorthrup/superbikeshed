@@ -1,13 +1,19 @@
 plugins {
+<<<<<<< HEAD
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     id("com.github.ben-manes.versions")
     `maven-publish`
     signing
+=======
+    kotlin("multiplatform") version "2.1.21"
+    id("com.github.ben-manes.versions") version "0.51.0"
+>>>>>>> origin/feat/core-serialization-impl
 }
 
 @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
+<<<<<<< HEAD
 group = "rtsgame"
 version = "1.0-SNAPSHOT"
 
@@ -20,6 +26,10 @@ kotlin {
         browser()
         binaries.executable()
     }
+=======
+kotlin {
+    jvm()
+>>>>>>> origin/feat/core-serialization-impl
     // Platform detection for native targets
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
@@ -27,6 +37,10 @@ kotlin {
     val isLinux = hostOs == "Linux"
     val isWindows = hostOs == "Windows"
     val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/feat/core-serialization-impl
     when {
         isMacOS && isArm64 -> macosArm64()
         isMacOS -> macosX64()
@@ -34,10 +48,15 @@ kotlin {
         isLinux -> linuxX64()
         isWindows -> mingwX64()
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> origin/feat/core-serialization-impl
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(project(":Trikeshed"))
+<<<<<<< HEAD
                 implementation(kotlin("stdlib-common"))
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.core)
@@ -57,6 +76,15 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
+=======
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+            }
+        }
+        
+        val jvmMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+>>>>>>> origin/feat/core-serialization-impl
             }
         }
     }
@@ -67,14 +95,26 @@ tasks {
         dependsOn("build")
         dependsOn("wasmJsBrowserProductionWebpack")
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> origin/feat/core-serialization-impl
     register("runJvm", JavaExec::class) {
         classpath = configurations["jvmRuntimeClasspath"] + files("${layout.buildDirectory.get()}/classes/kotlin/jvm/main")
         mainClass.set("rtsgame.MainJvmKt")
         dependsOn("jvmMainClasses")
     }
+<<<<<<< HEAD
     register("runWasm") {
         dependsOn("wasmJsBrowserDevelopmentRun")
     }
+=======
+    
+    register("runWasm") {
+        dependsOn("wasmJsBrowserDevelopmentRun")
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     // Clean task to remove all build artifacts
     register("cleanAll") {
         dependsOn("clean")
@@ -86,6 +126,7 @@ tasks {
             delete("${project.projectDir}/node_modules")
         }
     }
+<<<<<<< HEAD
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -146,3 +187,6 @@ publishing {
 signing {
     sign(publishing.publications["mavenJava"])
 }
+=======
+} 
+>>>>>>> origin/feat/core-serialization-impl

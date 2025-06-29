@@ -1,0 +1,29 @@
+# Claude Agent Memo Template
+# Copy this template for agents to submit work requests
+
+Agent: [agent-name]
+Scope: [directory/path/**]
+Action: [brief description of changes needed]
+Dependencies: [list any prerequisites or dependencies]
+Risk: [low|medium|high]
+Priority: [low|medium|high|urgent]
+
+## Detailed Description
+[Longer description of what needs to be done and why]
+
+## Files Affected
+[List specific files that will be modified/created/deleted]
+
+## Factor Analysis
+Factor 1 (Direct): [files directly changed]
+Factor 2 (Transitive): [files that import/depend on Factor 1]
+
+## Testing Plan
+[How to verify the changes work correctly]
+
+## Rollback Plan
+[How to undo changes if something goes wrong]
+
+---
+Generated: [timestamp]
+Agent Version: [version info]

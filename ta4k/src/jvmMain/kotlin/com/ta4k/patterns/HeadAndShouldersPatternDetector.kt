@@ -1,0 +1,134 @@
+package com.ta4k.patterns
+
+import com.ta4k.core.model.Kline // Assuming this path
+import java.math.BigDecimal
+import java.math.RoundingMode
+
+// IdentifiedPattern data class is in PatternModel.kt and doesn't need to change for this subtask.
+// SwingPoint and SwingType are defined in SwingPointDetector.kt
+
+object HeadAndShouldersPatternDetector {
+
+    // Configuration parameters for pattern validation
+    // These can be part of DetectorConfig or accessed if companion object consts
+    private const val DEFAULT_SHOULDER_HEAD_RATIO_MIN = 0.50
+    private const val DEFAULT_SHOULDER_HEAD_RATIO_MAX = 0.98
+    private const val DEFAULT_NECKLINE_SYMMETRY_TOLERANCE = 0.10
+    // private const val DEFAULT_BREAKOUT_CONFIRMATION_PERCENT = 0.01 // Not used yet
+    private const val DEFAULT_MIN_PATTERN_DURATION = 10
+    private const val DEFAULT_MAX_PATTERN_DURATION = 150
+
+    data class DetectorConfig(
+        val shoulderHeadRatioMin: Double = DEFAULT_SHOULDER_HEAD_RATIO_MIN,
+        val shoulderHeadRatioMax: Double = DEFAULT_SHOULDER_HEAD_RATIO_MAX,
+        val necklineSymmetryTolerance: Double = DEFAULT_NECKLINE_SYMMETRY_TOLERANCE,
+        // val breakoutConfirmationPercent: Double = DEFAULT_BREAKOUT_CONFIRMATION_PERCENT, // Not used in current detect
+        val minPatternDuration: Int = DEFAULT_MIN_PATTERN_DURATION,
+        val maxPatternDuration: Int = DEFAULT_MAX_PATTERN_DURATION
+    )
+
+    fun detect(
+        @Suppress("UNUSED_PARAMETER") klineSeries: Series<Kline>, // Changed from List to Series, marked unused for now
+        swingPoints: List<SwingPoint>, // Remains List<SwingPoint>
+        config: DetectorConfig = DetectorConfig()
+    ): List<IdentifiedPattern> {
+        val patterns = mutableListOf<IdentifiedPattern>()
+        if (swingPoints.size < 5) return patterns
+
+        for (i in 0..(swingPoints.size - 5)) { // Iterate up to the point where a 5-point pattern can start
+            val p1 = swingPoints[i]
+            val p2 = swingPoints[i + 1]
+            val p3 = swingPoints[i + 2]
+            val p4 = swingPoints[i + 3]
+            val p5 = swingPoints[i + 4]
+
+            // Attempt to find classic Head and Shoulders (HIGH-LOW-HIGH-LOW-HIGH)
+            if (p1.type == SwingType.HIGH && p2.type == SwingType.LOW &&
+                p3.type == SwingType.HIGH && p4.type == SwingType.LOW &&
+                p5.type == SwingType.HIGH
+            ) {
+                val leftShoulder = p1
+                val neckline1 = p2
+                val head = p3
+                val neckline2 = p4
+                val rightShoulder = p5
+
+                if (head.price > leftShoulder.price && head.price > rightShoulder.price) {
+                    val avgNecklinePrice = (neckline1.price + neckline2.price).divide(BigDecimal(2), head.price.scale(), RoundingMode.HALF_UP)
+
+                    if (head.price <= avgNecklinePrice) continue // Head must be above average neckline
+
+                    val headHeight = head.price - avgNecklinePrice
+                    // Use individual neckline points for shoulder height calculation
+                    if (leftShoulder.price <= neckline1.price || rightShoulder.price <= neckline2.price) continue // Shoulders must be above their necklines
+
+                    val lsHeight = leftShoulder.price - neckline1.price
+                    val rsHeight = rightShoulder.price - neckline2.price
+
+                    if (headHeight.compareTo(BigDecimal.ZERO) > 0 &&
+                        lsHeight.divide(headHeight, 4, RoundingMode.HALF_UP).toDouble() in config.shoulderHeadRatioMin..config.shoulderHeadRatioMax &&
+                        rsHeight.divide(headHeight, 4, RoundingMode.HALF_UP).toDouble() in config.shoulderHeadRatioMin..config.shoulderHeadRatioMax) {
+
+                        if ((neckline1.price - neckline2.price).abs().toDouble() <= (neckline1.price.multiply(BigDecimal(config.necklineSymmetryTolerance))).toDouble()) {
+                             val patternDuration = rightShoulder.index - leftShoulder.index
+                             if (patternDuration < config.minPatternDuration || patternDuration > config.maxPatternDuration) continue
+
+                            val patternMap = mapOf(
+                                "leftShoulder" to leftShoulder, "neckline1" to neckline1,
+                                "head" to head, "neckline2" to neckline2, "rightShoulder" to rightShoulder
+                            )
+                            patterns.add(IdentifiedPattern(
+                                name = "Head and Shoulders", points = patternMap,
+                                startIndex = leftShoulder.index, endIndex = rightShoulder.index
+                            ))
+                        }
+                    }
+                }
+            }
+            // Attempt to find Inverse Head and Shoulders (LOW-HIGH-LOW-HIGH-LOW)
+             else if (p1.type == SwingType.LOW && p2.type == SwingType.HIGH &&
+                p3.type == SwingType.LOW && p4.type == SwingType.HIGH &&
+                p5.type == SwingType.LOW
+            ) {
+                val leftShoulder = p1
+                val neckline1 = p2
+                val head = p3
+                val neckline2 = p4
+                val rightShoulder = p5
+
+                if (head.price < leftShoulder.price && head.price < rightShoulder.price) {
+                    val avgNecklinePrice = (neckline1.price + neckline2.price).divide(BigDecimal(2), head.price.scale(), RoundingMode.HALF_UP)
+
+                    if (head.price >= avgNecklinePrice) continue // Head must be below average neckline
+
+                    val headDepth = avgNecklinePrice - head.price
+                    // Shoulders must be below their necklines
+                    if (leftShoulder.price >= neckline1.price || rightShoulder.price >= neckline2.price) continue
+
+                    val lsDepth = neckline1.price - leftShoulder.price
+                    val rsDepth = neckline2.price - rightShoulder.price
+
+                    if (headDepth.compareTo(BigDecimal.ZERO) > 0 &&
+                        lsDepth.divide(headDepth, 4, RoundingMode.HALF_UP).toDouble() in config.shoulderHeadRatioMin..config.shoulderHeadRatioMax &&
+                        rsDepth.divide(headDepth, 4, RoundingMode.HALF_UP).toDouble() in config.shoulderHeadRatioMin..config.shoulderHeadRatioMax) {
+
+                        if ((neckline1.price - neckline2.price).abs().toDouble() <= (neckline1.price.multiply(BigDecimal(config.necklineSymmetryTolerance))).toDouble()) {
+                            val patternDuration = rightShoulder.index - leftShoulder.index
+                            if (patternDuration < config.minPatternDuration || patternDuration > config.maxPatternDuration) continue
+
+                            val patternMap = mapOf(
+                                "leftShoulder" to leftShoulder, "neckline1" to neckline1,
+                                "head" to head, "neckline2" to neckline2, "rightShoulder" to rightShoulder
+                            )
+                            patterns.add(IdentifiedPattern(
+                                name = "Inverse Head and Shoulders", points = patternMap,
+                                startIndex = leftShoulder.index, endIndex = rightShoulder.index
+                            ))
+                        }
+                    }
+                }
+            }
+        }
+        return patterns
+    }
+}

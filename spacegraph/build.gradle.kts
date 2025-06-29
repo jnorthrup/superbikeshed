@@ -1,4 +1,5 @@
 plugins {
+<<<<<<< HEAD
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     id("com.github.ben-manes.versions")
@@ -18,6 +19,23 @@ kotlin {
         browser()
         binaries.executable()
     }
+=======
+    kotlin("multiplatform")
+    id("com.github.ben-manes.versions")
+}
+
+kotlin {
+    jvmToolchain(21)
+    jvm {
+        // jvmToolchain(21) removed from here
+    }
+    
+    js(IR) {
+        browser()
+        nodejs()
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     when {
@@ -36,10 +54,15 @@ kotlin {
             }
         }
     }
+<<<<<<< HEAD
+=======
+    
+>>>>>>> origin/feat/core-serialization-impl
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-common"))
+<<<<<<< HEAD
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
@@ -58,6 +81,15 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
+=======
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+            }
+        }
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+>>>>>>> origin/feat/core-serialization-impl
             }
         }
     }
@@ -66,7 +98,17 @@ kotlin {
 tasks {
     register("buildAll") {
         dependsOn("build")
+<<<<<<< HEAD
     }
+=======
+        dependsOn("jsBrowserProductionWebpack")
+    }
+    
+    register("runJs") {
+        dependsOn("jsBrowserDevelopmentRun")
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     register("cleanAll") {
         dependsOn("clean")
         doLast {
@@ -76,6 +118,7 @@ tasks {
             delete("${project.projectDir}/node_modules")
         }
     }
+<<<<<<< HEAD
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -136,3 +179,6 @@ publishing {
 signing {
     sign(publishing.publications["mavenJava"])
 }
+=======
+} 
+>>>>>>> origin/feat/core-serialization-impl

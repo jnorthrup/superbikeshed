@@ -1,0 +1,613 @@
+"use strict";
+// js/core/simulation.js - Modern Simulation Engine
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Simulation = exports.GameState = exports.EntityManager = void 0;
+exports.formatTime = formatTime;
+const unitTypes_js_1 = require("../config/unitTypes.js");
+const buildingTypes_js_1 = require("../config/buildingTypes.js");
+const gameConstants_js_1 = require("../config/gameConstants.js");
+const simulationConfig_js_1 = require("../config/simulationConfig.js");
+const unit_js_1 = require("./unit.js");
+const trikeshedEntityManager_js_1 = require("./trikeshedEntityManager.js");
+const computroniumManager_js_1 = require("./computroniumManager.js");
+const enhancedCommandHierarchy_js_1 = require("./enhancedCommandHierarchy.js");
+// Import specific functions from trikeshed-ts
+const trikeshed_ts_1 = require("trikeshed-ts");
+// Import resource manager functions and types
+const resourceManager_js_1 = require("./resourceManager.js");
+// EntityManager class to manage all game entities
+class EntityManager {
+    constructor(maxEntities = 1000) {
+        this.units = []; // Still used for storing full unit objects for now
+        this.buildings = [];
+        this.nextEntityId = 0; // Simple ID generation for now
+        this.entityIdToIndex = new Map(); // Map entity ID to Tensor row index
+        // TODO: Determine appropriate initial size or make dynamic
+        // For now, initialize with a fixed max size and default values (e.g., 0,0 for position)
+        // Positions: entityId (row) -> [x, y]
+        this.unitPositions = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0.0); // Use createCursor from trikeshed-ts
+        // Health: entityId (row) -> [hp, maxHp]
+        this.unitHealth = (0, trikeshed_ts_1.createCursor)(maxEntities, 2, () => 0.0); // Use createCursor from trikeshed-ts
+        // Placeholder for other components if refactored
+        // this.unitTypes = createSeries(maxEntities, () => ''); // type as string
+        // this.unitTeams = createSeries(maxEntities, () => ''); // team as string
+        this.projectiles = [];
+        this.effects = [];
+        this.captions = [];
+    }
+    _getNewEntityIndex(entityId) {
+        if (this.entityIdToIndex.has(entityId)) {
+            return this.entityIdToIndex.get(entityId);
+        }
+        // This simple index assignment assumes entities are never removed or IDs are not reused in Tensors.
+        // A more robust system would manage free indices.
+        const index = this.entityIdToIndex.size;
+        if (index >= this.unitPositions.rows) { // Check against .rows of one of the tensors
+            console.error("EntityManager: Exceeded maximum entity capacity for Tensors.");
+            // TODO: Implement dynamic resizing or better error handling
+            return null;
+        }
+        this.entityIdToIndex.set(entityId, index);
+        return index;
+    }
+    addUnit(unit) {
+        this.units.push(unit); // Keep full object for now for non-refactored properties
+        const entityIndex = this._getNewEntityIndex(unit.id);
+        if (entityIndex === null)
+            return; // Max capacity reached
+        // Write initial position to TensorCursor
+        // For immutable Tensors, an update means creating a new Tensor.
+        // This is a simplified representation. A real implementation might batch updates or use a more sophisticated approach.
+        const currentUnitX = unit.x;
+        const currentUnitY = unit.y;
+        this.unitPositions = this.unitPositions.alpha((_value, coords) => {
+            if (coords[0] === entityIndex && coords[1] === 0)
+                return currentUnitX;
+            if (coords[0] === entityIndex && coords[1] === 1)
+                return currentUnitY;
+            return this.unitPositions.get(coords); // Get old value for other cells
+        });
+        console.log(`EntityManager: Added unit ${unit.id} at index ${entityIndex}. Position (${unit.x}, ${unit.y}) stored in Tensor.`);
+        // Write initial health to TensorCursor
+        const currentUnitHp = unit.hp;
+        const currentUnitMaxHp = unit.maxHp;
+        this.unitHealth = this.unitHealth.alpha((_value, coords) => {
+            if (coords[0] === entityIndex && coords[1] === 0)
+                return currentUnitHp;
+            if (coords[0] === entityIndex && coords[1] === 1)
+                return currentUnitMaxHp;
+            return this.unitHealth.get(coords); // Get old value
+        });
+        console.log(`EntityManager: Unit ${unit.id} health (${unit.hp}/${unit.maxHp}) stored in Tensor.`);
+    }
+    // Example getter for position (would be used by unit or other systems)
+    getUnitPosition(unitId) {
+        if (!this.entityIdToIndex.has(unitId))
+            return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined)
+            return null;
+        // Read from actual Tensor using trikeshed-ts API
+        return { x: this.unitPositions.get([index, 0]), y: this.unitPositions.get([index, 1]) };
+    }
+    // Example setter for position (would be called by unit's movement logic)
+    setUnitPosition(unitId, x, y) {
+        if (!this.entityIdToIndex.has(unitId))
+            return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined)
+            return;
+        // Create a new tensor with the updated position
+        this.unitPositions = this.unitPositions.alpha((_value, coords) => {
+            if (coords[0] === index && coords[1] === 0)
+                return x;
+            if (coords[0] === index && coords[1] === 1)
+                return y;
+            return this.unitPositions.get(coords);
+        });
+        // console.log(`EntityManager: Unit ${unitId} position updated to (${x}, ${y}) in Tensor.`);
+        // Also update the original unit object if it's still being used as a partial source of truth
+        const unit = this.units.find(u => u.id === unitId);
+        if (unit) {
+            unit.x = x;
+            unit.y = y;
+        }
+    }
+    // Example getter for health
+    getUnitHealth(unitId) {
+        if (!this.entityIdToIndex.has(unitId))
+            return null;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined)
+            return null;
+        return { hp: this.unitHealth.get([index, 0]), maxHp: this.unitHealth.get([index, 1]) };
+    }
+    // Example setter for health
+    setUnitHealth(unitId, hp, maxHp) {
+        if (!this.entityIdToIndex.has(unitId))
+            return;
+        const index = this.entityIdToIndex.get(unitId);
+        if (index === undefined)
+            return;
+        this.unitHealth = this.unitHealth.alpha((_value, coords) => {
+            if (coords[0] === index && coords[1] === 0)
+                return hp;
+            if (coords[0] === index && coords[1] === 1)
+                return maxHp; // maxHp might not change often
+            return this.unitHealth.get(coords);
+        });
+        // console.log(`EntityManager: Unit ${unitId} health updated to (${hp}/${maxHp}) in Tensor.`);
+        const unit = this.units.find(u => u.id === unitId);
+        if (unit) {
+            unit.hp = hp;
+            unit.maxHp = maxHp;
+        }
+    }
+    addBuilding(building) {
+        this.buildings.push(building);
+    }
+    addProjectile(projectile) {
+        this.projectiles.push(projectile);
+    }
+    addEffect(effect) {
+        this.effects.push(effect);
+    }
+    addCaption(caption) {
+        this.captions.push(caption);
+    }
+    update(simulation, deltaTime) {
+        // Update units
+        for (let i = this.units.length - 1; i >= 0; i--) {
+            const unit = this.units[i];
+            // Before unit.update, sync unit's state from Tensors
+            // This ensures the unit object has the latest data if other systems modified it via EntityManager
+            const posData = this.getUnitPosition(unit.id);
+            if (posData) {
+                unit.x = posData.x;
+                unit.y = posData.y;
+            }
+            const healthData = this.getUnitHealth(unit.id);
+            if (healthData) {
+                unit.hp = healthData.hp;
+                unit.maxHp = healthData.maxHp;
+            }
+            unit.update(simulation, deltaTime);
+            // After unit.update, sync unit's state (potentially changed by its logic) back to Tensors
+            this.setUnitPosition(unit.id, unit.x, unit.y);
+            this.setUnitHealth(unit.id, unit.hp, unit.maxHp);
+            // Death check using data from tensor (or the synced unit object)
+            const currentHealth = this.getUnitHealth(unit.id); // Read fresh from tensor
+            if ((currentHealth && currentHealth.hp <= 0) || unit.isDead) {
+                this.units.splice(i, 1);
+                this.entityIdToIndex.delete(unit.id); // Mark index as free / remove mapping
+                // TODO: A more robust index management system would be needed for freeing/reusing indices in Tensors.
+                // Check for commander death (game over condition)
+                if (unit.type === unitTypes_js_1.UNIT_TYPES.commander) {
+                    const winner = unit.team === 'blue' ? 'RED' : 'BLUE';
+                    simulation.gameState.winner = winner;
+                    simulation.gameState.addEvent('game_over', `${winner} team wins! Enemy commander destroyed!`, 3);
+                }
+            }
+        }
+        // Update buildings
+        for (let i = this.buildings.length - 1; i >= 0; i--) {
+            const building = this.buildings[i];
+            building.update(simulation, deltaTime);
+            if (building.hp <= 0) {
+                this.buildings.splice(i, 1);
+            }
+        }
+        // Update projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const projectile = this.projectiles[i];
+            projectile.update(simulation, deltaTime);
+            if (projectile.shouldDestroy) {
+                this.projectiles.splice(i, 1);
+            }
+        }
+        // Update effects
+        for (let i = this.effects.length - 1; i >= 0; i--) {
+            const effect = this.effects[i];
+            effect.update();
+            if (effect.life <= 0) {
+                this.effects.splice(i, 1);
+            }
+        }
+        // Update captions
+        for (let i = this.captions.length - 1; i >= 0; i--) {
+            const caption = this.captions[i];
+            caption.update();
+            if (caption.life <= 0) {
+                this.captions.splice(i, 1);
+            }
+        }
+    }
+}
+exports.EntityManager = EntityManager;
+// GameState class to manage game state and events
+class GameState {
+    constructor() {
+        this.gameTime = 0;
+        this.winner = null;
+        this.paused = false;
+        this.events = [];
+        this.fpvMode = false;
+        this.aimingGrenade = false;
+    }
+    addEvent(type, message, importance = 1, position = null) {
+        const event = {
+            time: this.gameTime,
+            type: type,
+            message: message,
+            importance: importance,
+            position: position
+        };
+        this.events.push(event);
+        if (importance >= 2) {
+            console.log(`[${this.gameTime.toFixed(1)}s] ${type.toUpperCase()}: ${message}`);
+        }
+        return event;
+    }
+}
+exports.GameState = GameState;
+// Main Simulation class
+class Simulation {
+    constructor(context) {
+        this.GAME_SEED = context.GAME_SEED;
+        this.seedRandom = context.seedRandom;
+        this.HEADLESS_MODE = context.HEADLESS_MODE;
+        this.RECORD_AI_DECISIONS = context.RECORD_AI_DECISIONS;
+        this.RECORD_AI_DECISIONS_DURATION_SECONDS = context.RECORD_AI_DECISIONS_DURATION_SECONDS;
+        this.battleJournal = context.battleJournal;
+        // Initialize managers - use TrikeShed-based entity management
+        this.entityManager = new trikeshedEntityManager_js_1.TrikeShedEntityManager();
+        this.gameState = new GameState();
+        // Initialize Computronium managers for each team
+        this.computroniumManagers = {
+            blue: new computroniumManager_js_1.ComputroniumManager('blue'),
+            red: new computroniumManager_js_1.ComputroniumManager('red')
+        };
+        // Initialize Enhanced Command Hierarchies for each team
+        this.commandHierarchies = {
+            blue: new enhancedCommandHierarchy_js_1.EnhancedCommandHierarchy('blue', this.computroniumManagers.blue),
+            red: new enhancedCommandHierarchy_js_1.EnhancedCommandHierarchy('red', this.computroniumManagers.red)
+        };
+        // Initialize resources - now including Computronium
+        this.resources = {
+            blue: {
+                mass: simulationConfig_js_1.SIMULATION_CONFIG.INITIAL_BLUE_MASS,
+                energy: simulationConfig_js_1.SIMULATION_CONFIG.INITIAL_BLUE_ENERGY,
+                computronium: 10, // Start with some Computronium for initial building
+                massIncome: 0,
+                energyIncome: 0,
+                computroniumIncome: 0
+            },
+            red: {
+                mass: simulationConfig_js_1.SIMULATION_CONFIG.INITIAL_RED_MASS,
+                energy: simulationConfig_js_1.SIMULATION_CONFIG.INITIAL_RED_ENERGY,
+                computronium: 10, // Start with some Computronium for initial building
+                massIncome: 0,
+                energyIncome: 0,
+                computroniumIncome: 0
+            }
+        };
+        // Initialize terrain and resource nodes
+        this.terrain = [];
+        this.resourceNodes = context.resourceNodes || [];
+        // Create gameContext for compatibility with existing code
+        this.gameContext = {
+            terrain: this.terrain,
+            resourceNodes: this.resourceNodes,
+            UNIT_TYPES: unitTypes_js_1.UNIT_TYPES,
+            BUILDING_TYPES: buildingTypes_js_1.BUILDING_TYPES,
+            WORLD_SIZE: gameConstants_js_1.WORLD_SIZE,
+            TILE_SIZE: gameConstants_js_1.TILE_SIZE,
+            GRID_SIZE: gameConstants_js_1.GRID_SIZE,
+            TERRAIN_TYPES: gameConstants_js_1.TERRAIN_TYPES
+        };
+        this.lastFrameTime = 0;
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Initializing simulation...');
+            // Generate terrain
+            yield this.generateTerrain();
+            // Setup commander build lists
+            if (unitTypes_js_1.UNIT_TYPES.commander && unitTypes_js_1.UNIT_TYPES.commander.buildList) {
+                unitTypes_js_1.UNIT_TYPES.commander.buildList = [
+                    buildingTypes_js_1.BUILDING_TYPES.massExtractor,
+                    buildingTypes_js_1.BUILDING_TYPES.energyExtractor,
+                    buildingTypes_js_1.BUILDING_TYPES.landFactory,
+                    buildingTypes_js_1.BUILDING_TYPES.computroniumExtractor,
+                    buildingTypes_js_1.BUILDING_TYPES.advancedComputroniumCore
+                ];
+            }
+            // Spawn commanders
+            yield this.spawnCommanders();
+            console.log('Simulation initialized successfully');
+        });
+    }
+    generateTerrain() {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Generating terrain...');
+            // Initialize terrain grid
+            for (let x = 0; x < gameConstants_js_1.GRID_SIZE; x++) {
+                this.terrain[x] = [];
+                for (let y = 0; y < gameConstants_js_1.GRID_SIZE; y++) {
+                    // Simple terrain generation - mostly land with some water and mountains
+                    const noise = this.seedRandom.random();
+                    if (noise < 0.1) {
+                        this.terrain[x][y] = { type: gameConstants_js_1.TERRAIN_TYPES.WATER, elevation: -0.5 };
+                    }
+                    else if (noise > 0.85) {
+                        this.terrain[x][y] = { type: gameConstants_js_1.TERRAIN_TYPES.MOUNTAIN, elevation: 1.0 };
+                    }
+                    else if (noise > 0.80) {
+                        this.terrain[x][y] = { type: gameConstants_js_1.TERRAIN_TYPES.RESOURCE, elevation: 0.1 };
+                    }
+                    else {
+                        this.terrain[x][y] = { type: gameConstants_js_1.TERRAIN_TYPES.LAND, elevation: 0.0 };
+                    }
+                }
+            }
+            // Generate resource nodes
+            this.generateResourceNodes();
+            console.log('Terrain generation complete');
+        });
+    }
+    generateResourceNodes() {
+        this.resourceNodes = [];
+        // Place resource nodes on resource terrain tiles
+        for (let x = 0; x < gameConstants_js_1.GRID_SIZE; x++) {
+            for (let y = 0; y < gameConstants_js_1.GRID_SIZE; y++) {
+                if (this.terrain[x][y].type === gameConstants_js_1.TERRAIN_TYPES.RESOURCE) {
+                    const worldX = x * gameConstants_js_1.TILE_SIZE;
+                    const worldY = y * gameConstants_js_1.TILE_SIZE;
+                    // Generate different resource types including Computronium
+                    const rand = this.seedRandom.random();
+                    let type;
+                    if (rand < 0.4) {
+                        type = gameConstants_js_1.RESOURCE_TYPES.MASS;
+                    }
+                    else if (rand < 0.8) {
+                        type = gameConstants_js_1.RESOURCE_TYPES.ENERGY;
+                    }
+                    else {
+                        type = gameConstants_js_1.RESOURCE_TYPES.COMPUTRONIUM; // Rare but valuable
+                    }
+                    this.resourceNodes.push({
+                        x: worldX,
+                        y: worldY,
+                        type: type,
+                        amount: 10000,
+                        maxAmount: 10000,
+                        occupied: false
+                    });
+                }
+            }
+        }
+        console.log(`Generated ${this.resourceNodes.length} resource nodes`);
+    }
+    spawnCommanders() {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log('Spawning commanders...');
+            // Find spawn positions for commanders
+            const blueSpawn = this.findSpawnPosition(0.2, 0.5);
+            const redSpawn = this.findSpawnPosition(0.8, 0.5);
+            if (!blueSpawn || !redSpawn) {
+                throw new Error('Could not find valid spawn positions for commanders');
+            }
+            // Create commanders
+            const blueCommander = new unit_js_1.Unit(blueSpawn.x, blueSpawn.y, 'blue', unitTypes_js_1.UNIT_TYPES.commander, this);
+            const redCommander = new unit_js_1.Unit(redSpawn.x, redSpawn.y, 'red', unitTypes_js_1.UNIT_TYPES.commander, this);
+            this.entityManager.addUnit(blueCommander);
+            this.entityManager.addUnit(redCommander);
+            // Add Computronium cores to commanders (they are advanced units)
+            this.computroniumManagers.blue.addCore(blueCommander, 1.0); // Full efficiency
+            this.computroniumManagers.red.addCore(redCommander, 1.0);
+            // Register commanders in command hierarchies (rank 5 = highest)
+            this.commandHierarchies.blue.registerEntity(blueCommander, 5);
+            this.commandHierarchies.red.registerEntity(redCommander, 5);
+            console.log('[TrikeShed] Added Computronium cores and C&C nodes to commanders');
+            this.gameState.addEvent('spawn', 'Commanders deployed to battlefield', 2);
+            console.log('Commanders spawned successfully');
+        });
+    }
+    findSpawnPosition(xRatio, yRatio) {
+        const targetX = gameConstants_js_1.WORLD_SIZE * xRatio;
+        const targetY = gameConstants_js_1.WORLD_SIZE * yRatio;
+        // Try to find a land position near the target
+        for (let radius = 0; radius < 200; radius += 20) {
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+                const x = targetX + Math.cos(angle) * radius;
+                const y = targetY + Math.sin(angle) * radius;
+                const tileX = Math.floor(x / gameConstants_js_1.TILE_SIZE);
+                const tileY = Math.floor(y / gameConstants_js_1.TILE_SIZE);
+                if (tileX >= 0 && tileX < gameConstants_js_1.GRID_SIZE && tileY >= 0 && tileY < gameConstants_js_1.GRID_SIZE &&
+                    this.terrain[tileX] && this.terrain[tileX][tileY].type === gameConstants_js_1.TERRAIN_TYPES.LAND) {
+                    return { x, y };
+                }
+            }
+        }
+        return null;
+    }
+    gameLoop(timestamp) {
+        if (this.gameState.paused || this.gameState.winner) {
+            return false;
+        }
+        // Calculate delta time
+        const deltaTime = this.lastFrameTime > 0 ? (timestamp - this.lastFrameTime) / 1000 : 1 / 60;
+        this.lastFrameTime = timestamp;
+        // Update game time
+        this.gameState.gameTime += deltaTime;
+        // Update resource income (old system, to be replaced by new logic below)
+        // this.updateResourceIncome();
+        // --- New Resource Generation Logic ---
+        // TODO: This is a placeholder. Actual income rates should be calculated based on game logic (buildings, tech, etc.)
+        // Assuming player IDs are 0 for blue and 1 for red for this conceptual integration.
+        const playerIds = { blue: 0, red: 1 };
+        for (const team of ['blue', 'red']) {
+            const playerId = playerIds[team];
+            if (playerId === undefined)
+                continue;
+            // Placeholder income values per tick (deltaTime dependent)
+            const massIncomePerTick = (this.resources[team].massIncome / 60) * deltaTime; // Example: Convert per-minute to per-tick
+            const energyIncomePerTick = (this.resources[team].energyIncome / 60) * deltaTime;
+            // Add other resource incomes (Computronium, Ferrite, Crylithium) if they generate over time
+            // const computroniumIncomePerTick = (this.resources[team].computroniumIncome / 60) * deltaTime;
+            let currentPlayerResources = this.gameState.getPlayerResourcesState();
+            if (massIncomePerTick > 0) {
+                currentPlayerResources = (0, resourceManager_js_1.addPlayerResource)(currentPlayerResources, playerId, resourceManager_js_1.PlayerResourceType.Mass, massIncomePerTick);
+            }
+            if (energyIncomePerTick > 0) {
+                currentPlayerResources = (0, resourceManager_js_1.addPlayerResource)(currentPlayerResources, playerId, resourceManager_js_1.PlayerResourceType.Energy, energyIncomePerTick);
+            }
+            // if (computroniumIncomePerTick > 0) {
+            //    currentPlayerResources = addPlayerResource(currentPlayerResources, playerId, PlayerResourceType.Computronium, computroniumIncomePerTick);
+            // }
+            // ... and for Ferrite, Crylithium if they have passive income.
+            this.gameState.setPlayerResourcesState(currentPlayerResources);
+            // console.log(`Player ${playerId} (${team}) resources updated. Mass: ${getPlayerResource(currentPlayerResources, playerId, PlayerResourceType.Mass)}`);
+        }
+        // --- End of New Resource Generation Logic ---
+        // Update Computronium systems
+        this.updateComputroniumSystems(deltaTime);
+        // Update Command Hierarchies
+        this.updateCommandHierarchies(deltaTime);
+        // Update all entities
+        this.entityManager.update(this, deltaTime);
+        // Check win conditions
+        this.checkWinConditions();
+        // Check if we should stop recording
+        if (this.RECORD_AI_DECISIONS && this.gameState.gameTime >= this.RECORD_AI_DECISIONS_DURATION_SECONDS) {
+            this.gameState.winner = "RECORDING_COMPLETE";
+            return false;
+        }
+        return true;
+    }
+    updateResourceIncome() {
+        // Calculate income based on buildings
+        for (const team of ['blue', 'red']) {
+            this.resources[team].massIncome = 0;
+            this.resources[team].energyIncome = 0;
+            this.resources[team].computroniumIncome = 0;
+            for (const building of this.entityManager.buildings) {
+                if (building.team === team && building.type.resourceGeneration) {
+                    const income = building.type.resourceGeneration.amount * 60; // per minute
+                    if (building.type.resourceGeneration.type === 'mass') {
+                        this.resources[team].massIncome += income;
+                    }
+                    else if (building.type.resourceGeneration.type === 'energy') {
+                        this.resources[team].energyIncome += income;
+                    }
+                }
+            }
+            // Computronium income from cores
+            const computroniumManager = this.computroniumManagers[team];
+            const stats = computroniumManager.getGenerationStats();
+            if (stats) {
+                this.resources[team].computroniumIncome = stats.currentRate * 60; // per minute
+            }
+        }
+    }
+    updateComputroniumSystems(deltaTime) {
+        // Update each team's computronium management
+        for (const team of ['blue', 'red']) {
+            const manager = this.computroniumManagers[team];
+            const generated = manager.update(deltaTime);
+            // Add generated computronium to team resources
+            this.resources[team].computronium += generated;
+            // Log significant computronium generation
+            if (generated > 0.1) {
+                console.log(`[${team.toUpperCase()}] Generated ${generated.toFixed(3)} computronium. Total: ${this.resources[team].computronium.toFixed(2)}`);
+            }
+        }
+        // Handle potential computational warfare between teams
+        this.handleComputationalWarfare();
+    }
+    handleComputationalWarfare() {
+        // Simple AI-driven computational warfare
+        for (const attackerTeam of ['blue', 'red']) {
+            const defenderTeam = attackerTeam === 'blue' ? 'red' : 'blue';
+            const attacker = this.computroniumManagers[attackerTeam];
+            const defender = this.computroniumManagers[defenderTeam];
+            // Randomly launch PoW attacks if attacker has enough capability
+            if (attacker.powAttackCapability > 0 && this.seedRandom.random() < 0.001) { // 0.1% chance per frame
+                const intensity = Math.min(3, attacker.powAttackCapability);
+                if (attacker.launchPowAttack(defender, intensity)) {
+                    this.gameState.addEvent('computational_warfare', `${attackerTeam.toUpperCase()} launches computational attack on ${defenderTeam.toUpperCase()}!`, 2);
+                }
+            }
+        }
+    }
+    updateCommandHierarchies(deltaTime) {
+        // Update each team's command hierarchy
+        for (const team of ['blue', 'red']) {
+            const hierarchy = this.commandHierarchies[team];
+            hierarchy.update(deltaTime);
+            // Periodically issue strategic commands
+            if (this.gameState.gameTime % 5 < deltaTime) { // Every 5 seconds
+                this.issueStrategicCommands(team);
+            }
+        }
+    }
+    issueStrategicCommands(team) {
+        const hierarchy = this.commandHierarchies[team];
+        const enemyTeam = team === 'blue' ? 'red' : 'blue';
+        // Find enemy units to target
+        const enemyUnits = this.entityManager.units.filter(u => u.team === enemyTeam && u.hp > 0);
+        if (enemyUnits.length > 0) {
+            // Issue attack command to nearest enemy
+            const randomEnemy = enemyUnits[Math.floor(this.seedRandom.random() * enemyUnits.length)];
+            const success = hierarchy.issueStrategicCommand('attack', {
+                target: randomEnemy
+            });
+            if (success) {
+                console.log(`[C&C] ${team.toUpperCase()} hierarchy issued attack command on ${randomEnemy.type}`);
+            }
+        }
+        else {
+            // No enemies, issue patrol command
+            hierarchy.issueStrategicCommand('move', {
+                target: {
+                    x: this.seedRandom.random() * gameConstants_js_1.WORLD_SIZE,
+                    y: this.seedRandom.random() * gameConstants_js_1.WORLD_SIZE
+                }
+            });
+        }
+    }
+    checkWinConditions() {
+        if (this.gameState.winner)
+            return;
+        const blueCommander = this.entityManager.units.find(u => u.team === 'blue' && u.type === unitTypes_js_1.UNIT_TYPES.commander);
+        const redCommander = this.entityManager.units.find(u => u.team === 'red' && u.type === unitTypes_js_1.UNIT_TYPES.commander);
+        if (!blueCommander && !redCommander) {
+            this.gameState.winner = 'DRAW';
+            this.gameState.addEvent('game_over', 'Both commanders destroyed - Draw!', 3);
+        }
+        else if (!blueCommander) {
+            this.gameState.winner = 'RED';
+            this.gameState.addEvent('game_over', 'Red team wins! Blue commander destroyed!', 3);
+        }
+        else if (!redCommander) {
+            this.gameState.winner = 'BLUE';
+            this.gameState.addEvent('game_over', 'Blue team wins! Red commander destroyed!', 3);
+        }
+    }
+}
+exports.Simulation = Simulation;
+// Utility function for time formatting
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}

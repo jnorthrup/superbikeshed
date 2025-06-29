@@ -1,0 +1,1 @@
+kscript <(echo 'println("command substitution works as well")') arg u ments

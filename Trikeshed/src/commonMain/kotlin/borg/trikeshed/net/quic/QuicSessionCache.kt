@@ -1,6 +1,9 @@
 package borg.trikeshed.net.quic
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/feat/core-serialization-impl
 interface QuicSessionCache {
     fun getSession(serverAddress: String, port: Int): QuicSessionData?
     fun storeSession(serverAddress: String, port: Int, sessionData: QuicSessionData)

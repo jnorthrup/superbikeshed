@@ -1,4 +1,5 @@
 plugins {
+<<<<<<< HEAD
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.versions)
@@ -6,12 +7,20 @@ plugins {
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
+=======
+    kotlin("multiplatform")
+    id("com.github.ben-manes.versions") version "0.51.0"
+}
+
+@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+>>>>>>> origin/feat/core-serialization-impl
 
 repositories {
     mavenCentral()
 }
 
 kotlin {
+<<<<<<< HEAD
     jvmToolchain(21)
 
     // JVM - Primary trading platform
@@ -89,6 +98,44 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
             "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
         )
+=======
+    jvm()
+    // wasmJs {
+    //     browser()
+    //     nodejs()
+    // }
+    
+    // Example test for platform tuple
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+    }
+    
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":Trikeshed"))
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+        jvmMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+        }
+        jvmTest.dependencies {
+            implementation(kotlin("test-junit5"))
+            implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+        }
+>>>>>>> origin/feat/core-serialization-impl
     }
 }
 
@@ -102,6 +149,7 @@ tasks.register<JavaExec>("runJvm") {
     dependsOn("jvmMainClasses")
     group = "application"
     description = "Run Moneyfan interactive trading demo on JVM"
+<<<<<<< HEAD
     classpath = kotlin.targets["jvm"]
         .compilations["main"]
         .output.allOutputs +
@@ -109,3 +157,10 @@ tasks.register<JavaExec>("runJvm") {
     mainClass.set("moneyfan.MainJvmKt")
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
+=======
+    classpath = kotlin.targets["jvm"].compilations["main"].output.allOutputs + 
+                 (kotlin.targets["jvm"].compilations["main"].runtimeDependencyFiles ?: files())
+    mainClass.set("moneyfan.MainJvmKt")
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+}
+>>>>>>> origin/feat/core-serialization-impl

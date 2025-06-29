@@ -2,14 +2,30 @@
 
 package borg.trikeshed.parse.json
 
+<<<<<<< HEAD
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
+=======
+import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Either
+import kotlin.jvm.JvmInline
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.play
+import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.α
+>>>>>>> origin/feat/core-serialization-impl
 
 /**
  * TrikeShed JSON Scanner - Production Implementation
  * Compliant with CLAUDE.md type system and Kotlin 2.1.0
+<<<<<<< HEAD
  *
+=======
+ * 
+>>>>>>> origin/feat/core-serialization-impl
  * Uses tensor-first columnar processing with zero-cost abstractions
  * Implements taxonomical typealiases for semantic clarity
  */
@@ -26,6 +42,7 @@ typealias JsonBooleanValue = Boolean
 typealias JsonNullValue = Nothing?
 
 // Core JSON Processing Types
+<<<<<<< HEAD
 typealias JsonTokenType = UByte
 typealias JsonTokenPosition = Join<JsonPosition, JsonLength>
 typealias JsonToken = Join<JsonTokenType, JsonTokenPosition>
@@ -36,11 +53,25 @@ typealias JsonStructuralChar = Join<JsonChar, JsonPosition>
 typealias JsonStructuralSeries = Indexed<JsonStructuralChar>
 typealias JsonNestingLevel = Join<JsonDepth, JsonPosition>
 typealias JsonNestingSeries = Indexed<JsonNestingLevel>
+=======
+typealias JsonCharSeries = Series<JsonChar>
+typealias JsonTokenType = UByte
+typealias JsonTokenPosition = Join<JsonPosition, JsonLength>
+typealias JsonToken = Join<JsonTokenType, JsonTokenPosition>
+typealias JsonTokenSeries = Series<JsonToken>
+
+// Structural Analysis Types  
+typealias JsonStructuralChar = Join<JsonChar, JsonPosition>
+typealias JsonStructuralSeries = Series<JsonStructuralChar>
+typealias JsonNestingLevel = Join<JsonDepth, JsonPosition>
+typealias JsonNestingSeries = Series<JsonNestingLevel>
+>>>>>>> origin/feat/core-serialization-impl
 
 // Value Extraction Types
 typealias JsonValueBounds = Join<JsonPosition, JsonPosition> // start j end
 typealias JsonValueType = UByte
 typealias JsonValue = Join<JsonValueType, JsonValueBounds>
+<<<<<<< HEAD
 typealias JsonValueSeries = Indexed<JsonValue>
 
 // Error Handling Types
@@ -49,11 +80,20 @@ value class JsonError(
     val message: String,
 )
 typealias JsonResult<T> = Result<T>
+=======
+typealias JsonValueSeries = Series<JsonValue>
+
+// Error Handling Types
+@JvmInline
+value class JsonError(val message: String)
+typealias JsonResult<T> = Either<JsonError, T>
+>>>>>>> origin/feat/core-serialization-impl
 
 /**
  * JSON Token Types - Encoded as UByte for performance
  */
 object JsonTokenTypes {
+<<<<<<< HEAD
     const val LBRACE: JsonTokenType = 1u // {
     const val RBRACE: JsonTokenType = 2u // }
     const val LBRACKET: JsonTokenType = 3u // [
@@ -66,6 +106,20 @@ object JsonTokenTypes {
     const val FALSE: JsonTokenType = 10u // false
     const val NULL: JsonTokenType = 11u // null
     const val WHITESPACE: JsonTokenType = 12u // \t\n\r space
+=======
+    const val LBRACE: JsonTokenType = 1u        // {
+    const val RBRACE: JsonTokenType = 2u        // }
+    const val LBRACKET: JsonTokenType = 3u      // [
+    const val RBRACKET: JsonTokenType = 4u      // ]
+    const val COLON: JsonTokenType = 5u         // :
+    const val COMMA: JsonTokenType = 6u         // ,
+    const val STRING: JsonTokenType = 7u        // "..."
+    const val NUMBER: JsonTokenType = 8u        // 123, 123.45
+    const val TRUE: JsonTokenType = 9u          // true
+    const val FALSE: JsonTokenType = 10u        // false
+    const val NULL: JsonTokenType = 11u         // null
+    const val WHITESPACE: JsonTokenType = 12u   // \t\n\r space
+>>>>>>> origin/feat/core-serialization-impl
 }
 
 /**
@@ -82,13 +136,21 @@ object JsonValueTypes {
 
 /**
  * TrikeShed JSON Scanner - Core Implementation
+<<<<<<< HEAD
  * Uses Indexed<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
  */
 object TrikeShedJsonScanner {
+=======
+ * Uses Series<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
+ */
+object TrikeShedJsonScanner {
+    
+>>>>>>> origin/feat/core-serialization-impl
     /**
      * Scan JSON string into token series using α transforms
      */
     fun scan(jsonString: JsonStringValue): JsonResult<JsonTokenSeries> {
+<<<<<<< HEAD
         if (jsonString.isEmpty()) return Result.success(emptyIndexed())
 
         val chars = jsonString.toList().toIdx()
@@ -103,6 +165,22 @@ object TrikeShedJsonScanner {
         var pos = 0
 
         while (pos < chars.a) {
+=======
+        if (jsonString.isEmpty()) return Either.right(emptySeries())
+        
+        val chars = jsonString.toCharArray().toSeries()
+        return Either.right(tokenize(chars))
+    }
+    
+    /**
+     * Tokenize character series using α transform - the ONLY transformation operator
+     */
+    private fun tokenize(chars: JsonCharSeries): JsonTokenSeries {
+        val tokens = mutableListOf<JsonToken>()
+        var pos = 0
+
+        while (pos < chars.size) {
+>>>>>>> origin/feat/core-serialization-impl
             val token = scanNextToken(chars, pos)
             tokens.add(token)
             pos += token.b.b.coerceAtLeast(1) // Advance by token length, ensuring progress
@@ -112,11 +190,16 @@ object TrikeShedJsonScanner {
         return tokenArray.size j tokenArray::get
     }
 
+<<<<<<< HEAD
     private inline fun scanNextToken(
         chars: Indexed<JsonChar>,
         pos: JsonPosition,
     ): JsonToken {
         val char = chars.b(pos)
+=======
+    private inline fun scanNextToken(chars: JsonCharSeries, pos: JsonPosition): JsonToken {
+        val char = chars[pos]
+>>>>>>> origin/feat/core-serialization-impl
         return when {
             char.isWhitespace() -> scanWhitespace(chars, pos)
             char == '{' -> JsonTokenTypes.LBRACE j (pos j 1)
@@ -133,6 +216,7 @@ object TrikeShedJsonScanner {
             else -> JsonTokenTypes.WHITESPACE j (pos j 1) // Skip unknown chars
         }
     }
+<<<<<<< HEAD
 
     /**
      * Scan whitespace using Join composition
@@ -143,10 +227,20 @@ object TrikeShedJsonScanner {
     ): JsonToken {
         var pos = start
         while (pos < chars.a && chars.b(pos).isWhitespace()) {
+=======
+    
+    /**
+     * Scan whitespace using Join composition
+     */
+    private fun scanWhitespace(chars: JsonCharSeries, start: JsonPosition): JsonToken {
+        var pos = start
+        while (pos < chars.size && chars[pos].isWhitespace()) {
+>>>>>>> origin/feat/core-serialization-impl
             pos++
         }
         return JsonTokenTypes.WHITESPACE j (start j (pos - start))
     }
+<<<<<<< HEAD
 
     /**
      * Scan JSON string with proper escape handling
@@ -160,6 +254,18 @@ object TrikeShedJsonScanner {
 
         while (pos < chars.a) {
             val char = chars.b(pos)
+=======
+    
+    /**
+     * Scan JSON string with proper escape handling
+     */
+    private fun scanString(chars: JsonCharSeries, start: JsonPosition): JsonToken {
+        var pos = start + 1 // Skip opening quote
+        var escaped = false
+        
+        while (pos < chars.size) {
+            val char = chars[pos]
+>>>>>>> origin/feat/core-serialization-impl
             if (escaped) {
                 escaped = false
             } else if (char == '\\') {
@@ -170,6 +276,7 @@ object TrikeShedJsonScanner {
             }
             pos++
         }
+<<<<<<< HEAD
 
         return JsonTokenTypes.STRING j (start j (pos - start))
     }
@@ -205,10 +312,45 @@ object TrikeShedJsonScanner {
         return JsonTokenTypes.NUMBER j (start j (pos - start))
     }
 
+=======
+        
+        return JsonTokenTypes.STRING j (start j (pos - start))
+    }
+    
+    /**
+     * Scan JSON number (integer or decimal)
+     */
+    private fun scanNumber(chars: JsonCharSeries, start: JsonPosition): JsonToken {
+        var pos = start
+        
+        // Handle negative sign
+        if (pos < chars.size && chars[pos] == '-') pos++
+        
+        // Scan integer part
+        while (pos < chars.size && chars[pos].isDigit()) pos++
+        
+        // Scan decimal part
+        if (pos < chars.size && chars[pos] == '.') {
+            pos++
+            while (pos < chars.size && chars[pos].isDigit()) pos++
+        }
+        
+        // Scan exponent part
+        if (pos < chars.size && (chars[pos] == 'e' || chars[pos] == 'E')) {
+            pos++
+            if (pos < chars.size && (chars[pos] == '+' || chars[pos] == '-')) pos++
+            while (pos < chars.size && chars[pos].isDigit()) pos++
+        }
+        
+        return JsonTokenTypes.NUMBER j (start j (pos - start))
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     /**
      * Scan JSON literal (true, false, null)
      */
     private fun scanLiteral(
+<<<<<<< HEAD
         chars: Indexed<JsonChar>,
         start: JsonPosition,
         literal: String,
@@ -218,11 +360,22 @@ object TrikeShedJsonScanner {
         return if (end <= chars.a &&
             literal.withIndex().all { (i, c) -> chars[start + i] == c }
         ) {
+=======
+        chars: JsonCharSeries, 
+        start: JsonPosition, 
+        literal: String, 
+        tokenType: JsonTokenType
+    ): JsonToken {
+        val end = start + literal.length
+        return if (end <= chars.size && 
+                   literal.withIndex().all { (i, c) -> chars[start + i] == c }) {
+>>>>>>> origin/feat/core-serialization-impl
             tokenType j (start j literal.length)
         } else {
             JsonTokenTypes.WHITESPACE j (start j 1) // Invalid literal, skip
         }
     }
+<<<<<<< HEAD
 
     /**
      * Extract structural characters using α transform
@@ -243,6 +396,28 @@ object TrikeShedJsonScanner {
             char j bounds.a
         }
 
+=======
+    
+    /**
+     * Extract structural characters using α transform
+     */
+    fun extractStructuralChars(tokens: JsonTokenSeries): JsonStructuralSeries {
+        return tokens.α { token ->
+            val (type, bounds) = token
+            val char = when (type) {
+                JsonTokenTypes.LBRACE -> '{'
+                JsonTokenTypes.RBRACE -> '}'
+                JsonTokenTypes.LBRACKET -> '['
+                JsonTokenTypes.RBRACKET -> ']'
+                JsonTokenTypes.COLON -> ':'
+                JsonTokenTypes.COMMA -> ','
+                else -> ' ' // Non-structural
+            }
+            char j bounds.a
+        }
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     /**
      * Analyze nesting levels using α transforms
      */
@@ -263,6 +438,7 @@ object TrikeShedJsonScanner {
             }
         }
     }
+<<<<<<< HEAD
 
     /**
      * Extract values from token series using α transforms
@@ -283,21 +459,50 @@ object TrikeShedJsonScanner {
                     JsonTokenTypes.NULL -> JsonValueTypes.NULL
                     else -> JsonValueTypes.NULL
                 }
+=======
+    
+    /**
+     * Extract values from token series using α transforms
+     */
+    fun extractValues(tokens: JsonTokenSeries, jsonString: JsonStringValue): JsonValueSeries {
+        return tokens.α { token ->
+            val (type, bounds) = token
+            val valueType = when (type) {
+                JsonTokenTypes.LBRACE -> JsonValueTypes.OBJECT
+                JsonTokenTypes.LBRACKET -> JsonValueTypes.ARRAY
+                JsonTokenTypes.STRING -> JsonValueTypes.STRING
+                JsonTokenTypes.NUMBER -> JsonValueTypes.NUMBER
+                JsonTokenTypes.TRUE, JsonTokenTypes.FALSE -> JsonValueTypes.BOOLEAN
+                JsonTokenTypes.NULL -> JsonValueTypes.NULL
+                else -> JsonValueTypes.NULL
+            }
+>>>>>>> origin/feat/core-serialization-impl
             val startPos = bounds.a
             val endPos = startPos + bounds.b
             valueType j (startPos j endPos)
         }
+<<<<<<< HEAD
 
+=======
+    }
+    
+>>>>>>> origin/feat/core-serialization-impl
     /**
      * Get string value from bounds using zero-cost abstraction
      */
     inline fun getStringValue(
+<<<<<<< HEAD
         jsonString: JsonStringValue,
         bounds: JsonValueBounds,
+=======
+        jsonString: JsonStringValue, 
+        bounds: JsonValueBounds
+>>>>>>> origin/feat/core-serialization-impl
     ): JsonStringValue {
         val (start, end) = bounds
         return jsonString.substring(start, minOf(end, jsonString.length))
     }
+<<<<<<< HEAD
 
     /**
      * Parse number value with proper error handling
@@ -336,11 +541,48 @@ object TrikeShedJsonScanner {
         tokens: JsonTokenSeries,
         targetType: JsonTokenType,
     ): JsonTokenSeries = tokens.play.filter { it.a == targetType }.toIdx()
+=======
+    
+    /**
+     * Parse number value with proper error handling
+     */
+    fun parseNumberValue(jsonString: JsonStringValue, bounds: JsonValueBounds): JsonResult<JsonNumberValue> {
+        return try {
+            val str = getStringValue(jsonString, bounds)
+            Either.right(str.toDouble())
+        } catch (e: NumberFormatException) {
+            Either.left(JsonError("Invalid number format"))
+        }
+    }
+    
+    /**
+     * Parse boolean value
+     */
+    fun parseBooleanValue(jsonString: JsonStringValue, bounds: JsonValueBounds): JsonBooleanValue {
+        val str = getStringValue(jsonString, bounds)
+        return str == "true"
+    }
+    
+    /**
+     * Materialize tokens to List using play operator - gateway to AbstractList
+     */
+    fun materializeTokens(tokens: JsonTokenSeries): List<JsonToken> {
+        return tokens.play.toList()
+    }
+    
+    /**
+     * Filter tokens by type using α transform
+     */
+    fun filterTokensByType(tokens: JsonTokenSeries, targetType: JsonTokenType): JsonTokenSeries {
+        return tokens.play.filter { it.a == targetType }.toSeries()
+    }
+>>>>>>> origin/feat/core-serialization-impl
 }
 
 /**
  * Extension functions for convenient JSON processing
  */
+<<<<<<< HEAD
 fun JsonStringValue.scanJson(): JsonResult<JsonTokenSeries> = TrikeShedJsonScanner.scan(this)
 
 fun JsonTokenSeries.extractStructural(): JsonStructuralSeries = TrikeShedJsonScanner.extractStructuralChars(this)
@@ -357,6 +599,26 @@ private fun <T> Array<T>.toIdx(): Indexed<T> = size j ::get
 private fun <T> List<T>.toIdx(): Indexed<T> = size j ::get
 
 private fun <T> emptyIndexed(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+=======
+fun JsonStringValue.scanJson(): JsonResult<JsonTokenSeries> = 
+    TrikeShedJsonScanner.scan(this)
+
+fun JsonTokenSeries.extractStructural(): JsonStructuralSeries = 
+    TrikeShedJsonScanner.extractStructuralChars(this)
+
+fun JsonStructuralSeries.analyzeNesting(): JsonNestingSeries = 
+    TrikeShedJsonScanner.analyzeNesting(this)
+
+fun JsonTokenSeries.extractValues(jsonString: JsonStringValue): JsonValueSeries = 
+    TrikeShedJsonScanner.extractValues(this, jsonString)
+
+/**
+ * Utility functions for Series operations
+ */
+private fun <T> Array<T>.toSeries(): Series<T> = size j { i -> this[i] }
+private fun <T> List<T>.toSeries(): Series<T> = size j { i -> this[i] }
+private fun <T> emptySeries(): Series<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+>>>>>>> origin/feat/core-serialization-impl
 
 /**
  * Example usage demonstrating TrikeShed patterns
@@ -364,21 +626,37 @@ private fun <T> emptyIndexed(): Indexed<T> = 0 j { throw IndexOutOfBoundsExcepti
 object JsonScannerExample {
     fun demonstrateScanning() {
         val jsonText = """{"name":"TrikeShed","version":1.0,"active":true}"""
+<<<<<<< HEAD
 
         // Scan using α transforms and Join composition
         val scanResult = jsonText.scanJson()
 
         scanResult.fold(
             onSuccess = { tokens ->
+=======
+        
+        // Scan using α transforms and Join composition
+        val scanResult = jsonText.scanJson()
+        
+        when (scanResult) {
+            is Either.Right -> {
+                val tokens = scanResult.value
+                
+>>>>>>> origin/feat/core-serialization-impl
                 // Extract structural information using α transforms
                 val structural = tokens.extractStructural()
                 val nesting = structural.analyzeNesting()
                 val values = tokens.extractValues(jsonText)
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> origin/feat/core-serialization-impl
                 // Use play operator only for final materialization
                 println("Tokens: ${tokens.play.toList()}")
                 println("Nesting levels: ${nesting.play.toList()}")
                 println("Values: ${values.play.toList()}")
+<<<<<<< HEAD
             },
             onFailure = { error ->
                 println("Scan error: ${error.message}")
@@ -386,3 +664,12 @@ object JsonScannerExample {
         )
     }
 }
+=======
+            }
+            is Either.Left -> {
+                println("Scan error: ${scanResult.value.message}")
+            }
+        }
+    }
+}
+>>>>>>> origin/feat/core-serialization-impl

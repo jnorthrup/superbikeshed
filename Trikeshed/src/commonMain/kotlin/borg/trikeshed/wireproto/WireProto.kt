@@ -1,5 +1,6 @@
 package borg.trikeshed.wireproto
 
+<<<<<<< HEAD
 
 import borg.trikeshed.lib.*
 
@@ -16,4 +17,9 @@ class WireProto {
         // Placeholder implementation
         throw NotImplementedError("Decoding not implemented")
     }
+=======
+interface WireProto {
+    fun pack(data: ByteArray): ByteArray
+    fun unpack(data: ByteArray): ByteArray
+>>>>>>> origin/feat/core-serialization-impl
 } 

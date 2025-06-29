@@ -1,6 +1,9 @@
 package borg.trikeshed.net.quic
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/feat/core-serialization-impl
 import borg.trikeshed.net.quic.QuicConfig.Companion.DEFAULT_STREAM_BUFFER_SIZE
 import borg.trikeshed.net.quic.QuicConfig.Companion.STREAM_ID_HEADER_SIZE
 import kotlinx.coroutines.CoroutineScope
@@ -259,7 +262,11 @@ class QuicConnection(
         // 2. Perform a TLS 1.3 handshake over UDP to establish keys.
         // 3. Negotiate transport parameters.
         // 4. Store the session ticket for future 0-RTT.
+<<<<<<< HEAD
         val newSocket = PlatformDatagramSocket.create()
+=======
+        val newSocket = PlatformDatagramSocket()
+>>>>>>> origin/feat/core-serialization-impl
         newSocket.connect(serverAddr)
         return newSocket
     }
@@ -271,13 +278,18 @@ class QuicConnection(
         // 2. Use the cached session ticket to encrypt initial data (0-RTT).
         // 3. Send initial data along with handshake packets.
         // 4. Handle server rejecting 0-RTT (fallback to 1-RTT).
+<<<<<<< HEAD
         val newSocket = PlatformDatagramSocket.create()
+=======
+        val newSocket = PlatformDatagramSocket()
+>>>>>>> origin/feat/core-serialization-impl
         newSocket.connect(serverAddr)
         // Here you would use session.ticket and session.transportParams
         return newSocket
     }
 
     /**
+<<<<<<< HEAD
      * Get stream by ID
      */
     fun getStream(streamId: Long): QuicStream? {
@@ -292,6 +304,8 @@ class QuicConnection(
     }
 
     /**
+=======
+>>>>>>> origin/feat/core-serialization-impl
      * Closes the connection and all associated resources.
      */
     suspend fun close() {

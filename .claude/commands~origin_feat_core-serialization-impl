@@ -1,0 +1,71 @@
+# Concurrent Claude Execution Commands
+# Ground Rules: Per-directory write isolation, 2-factor reach analysis before 1-factor changes
+
+## Directory-Isolated Agents
+# Each agent owns one directory, cannot write to siblings
+
+[k2script-agent]
+description = "k2script improvements and AI features"
+scope = "k2script/**"
+restrictions = "read-only: Trikeshed/**, nexus/**, moneyfan/**"
+command = "Implement AI-powered features and annotation parser improvements in k2script directory only"
+
+[nexus-agent] 
+description = "nexus architectural rebuild"
+scope = "nexus/**"
+restrictions = "read-only: Trikeshed/**, k2script/**, moneyfan/**"
+command = "Rebuild nexus agent architecture using k2script patterns, nexus directory only"
+
+[moneyfan-agent]
+description = "trading architecture improvements" 
+scope = "moneyfan/**"
+restrictions = "read-only: Trikeshed/**, k2script/**, nexus/**"
+command = "Enhance trading bot with TrikeShed data structures, moneyfan directory only"
+
+[flatton-agent]
+description = "JSON scanner modernization"
+scope = "flatton/**" 
+restrictions = "read-only: Trikeshed/**, kotlinx-serialization-scanner/**"
+command = "Replace SimdJsonScanner with kotlinx-serialization-scanner, flatton directory only"
+
+[boingDemo-agent]
+description = "multiplatform demo improvements"
+scope = "boingDemo/**"
+restrictions = "read-only: Trikeshed/**"
+command = "Complete native audio implementation, boingDemo directory only"
+
+[spacegraph-agent]
+description = "graph database enhancements"
+scope = "spacegraph/**"
+restrictions = "read-only: Trikeshed/**"
+command = "Enhance graph operations with TrikeShed patterns, spacegraph directory only"
+
+## Sequential-Only Agents
+# These require exclusive access due to Factor 2 reach
+
+[core-types-agent]
+description = "resolve core types duplication"
+scope = "Trikeshed/src/commonMain/kotlin/borg/trikeshed/lib/"
+restrictions = "exclusive access required"
+command = "Consolidate duplicate type definitions across all modules"
+
+[build-agent]
+description = "gradle build verification"  
+scope = "**/build.gradle.kts, gradle/**"
+restrictions = "exclusive access required"
+command = "Verify and fix build configuration across all modules"
+
+## Conflict Monitor
+[monitor-agent]
+description = "detect and prevent concurrent conflicts"
+scope = "read-only: **"
+restrictions = "no write access"
+command = "Monitor for file conflicts and trigger emergency stops if needed"
+
+## Usage Examples:
+# claude-code --command k2script-agent
+# claude-code --command nexus-agent  
+# claude-code --command monitor-agent &  # Run in background
+
+## Emergency Stop Protocol:
+# If monitor-agent detects conflicts, all agents must pause and coordinate

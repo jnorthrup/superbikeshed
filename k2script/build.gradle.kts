@@ -1,7 +1,17 @@
+<<<<<<< HEAD
 import java.util.Locale
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+=======
+import java.util.Locale // Added for toLowerCase
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget // Moved import to top
+
+plugins {
+    kotlin("multiplatform") version "2.1.21"
+>>>>>>> origin/feat/core-serialization-impl
     `maven-publish`
     signing
 }
@@ -20,8 +30,14 @@ kotlin {
             useJUnitPlatform()
         }
     }
+<<<<<<< HEAD
     wasmJs {
         browser()
+=======
+    js(IR) {
+        browser()
+        nodejs()
+>>>>>>> origin/feat/core-serialization-impl
         binaries.executable()
     }
     // Platform detection for native target
@@ -49,10 +65,16 @@ kotlin {
                 implementation("com.konghq:unirest-java:3.14.2")
                 implementation("org.semver4j:semver4j:4.3.0")
                 // implementation(project(":Trikeshed")) // Temporarily disabled due to compilation issues
+<<<<<<< HEAD
                 // implementation(project(":kotlin-entity-scanner")) // Only in JVM
             }
         }
 
+=======
+            }
+        }
+        
+>>>>>>> origin/feat/core-serialization-impl
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
@@ -60,7 +82,11 @@ kotlin {
                 implementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
             }
         }
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> origin/feat/core-serialization-impl
         val jvmMain by getting {
             dependencies {
                 implementation("commons-cli:commons-cli:1.5.0")
@@ -86,6 +112,7 @@ kotlin {
                 implementation("org.apache.maven:maven-core:3.9.6")
                 implementation("org.apache.maven:maven-model:3.9.6")
                 implementation("org.apache.maven:maven-artifact:3.9.6")
+<<<<<<< HEAD
                 implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-script-runtime:2.1.21")
                 implementation("org.jetbrains.kotlin:kotlin-main-kts:2.1.21")
@@ -93,6 +120,11 @@ kotlin {
             }
         }
 
+=======
+            }
+        }
+        
+>>>>>>> origin/feat/core-serialization-impl
         val jvmTest by getting {
             dependencies {
                 implementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
@@ -102,6 +134,7 @@ kotlin {
                 implementation(kotlin("script-runtime"))
             }
         }
+<<<<<<< HEAD
 
         val wasmJsMain by getting {
             dependencies {
@@ -112,6 +145,19 @@ kotlin {
         val wasmJsTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+=======
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+            }
+        }
+        
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+>>>>>>> origin/feat/core-serialization-impl
             }
         }
     }
@@ -129,7 +175,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
             "-Xno-source-roots-assertions",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
             "-Xopt-in=kotlin.RequiresOptIn",
+<<<<<<< HEAD
             "-Xopt-in=kotlin.ExperimentalStdlibApi",
+=======
+            "-Xopt-in=kotlin.ExperimentalStdlibApi"
+>>>>>>> origin/feat/core-serialization-impl
         )
     }
 }
@@ -152,11 +202,15 @@ val createKscriptLayout by tasks.register<Copy>("createKscriptLayout") {
     }
     from("setup.py")
     from("package.json")
+<<<<<<< HEAD
     destinationDir =
         layout.buildDirectory
             .dir("kscript")
             .get()
             .asFile
+=======
+    destinationDir = layout.buildDirectory.dir("kscript").get().asFile
+>>>>>>> origin/feat/core-serialization-impl
 }
 
 val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
@@ -177,11 +231,15 @@ val createK2scriptLayout by tasks.register<Copy>("createK2scriptLayout") {
     }
     from("setup.py")
     from("package.json")
+<<<<<<< HEAD
     destinationDir =
         layout.buildDirectory
             .dir("k2script")
             .get()
             .asFile
+=======
+    destinationDir = layout.buildDirectory.dir("k2script").get().asFile
+>>>>>>> origin/feat/core-serialization-impl
 }
 
 val packageK2scriptDistribution by tasks.register<Zip>("packageK2scriptDistribution") {
@@ -210,14 +268,24 @@ publishing {
             groupId = project.group.toString()
             artifactId = project.name
             version = adjustVersion(project.version.toString())
+<<<<<<< HEAD
 
             artifact(tasks.named("jvmJar"))
 
+=======
+            
+            artifact(tasks.named("jvmJar"))
+            
+>>>>>>> origin/feat/core-serialization-impl
             pom {
                 name.set("kscript")
                 description.set("KScript - easy scripting with Kotlin")
                 url.set("https://github.com/kscripting/kscript")
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> origin/feat/core-serialization-impl
                 licenses {
                     license {
                         name.set("MIT License")
@@ -244,14 +312,22 @@ publishing {
             }
         }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/feat/core-serialization-impl
     repositories {
         maven {
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             val adjustedVersion = adjustVersion(project.version.toString())
             url = uri(if (adjustedVersion.endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> origin/feat/core-serialization-impl
             credentials {
                 username = project.findProperty("sonatype.user") as String? ?: System.getenv("SONATYPE_USER")
                 password = project.findProperty("sonatype.password") as String? ?: System.getenv("SONATYPE_PASSWORD")
@@ -260,21 +336,33 @@ publishing {
     }
 }
 
+<<<<<<< HEAD
 // signing {
 //     sign(publishing.publications["mavenJava"])
 // }
+=======
+signing {
+    sign(publishing.publications["mavenJava"])
+}
+>>>>>>> origin/feat/core-serialization-impl
 
 fun adjustVersion(archiveVersion: String): String {
     var newVersion = archiveVersion.lowercase(Locale.ROOT)
     val temporaryVersion = newVersion.substringBeforeLast(".")
+<<<<<<< HEAD
 
     if (temporaryVersion.endsWith("-RC", true) ||
         temporaryVersion.endsWith("-BETA", true) ||
         temporaryVersion.endsWith("-ALPHA", true) ||
+=======
+    
+    if (temporaryVersion.endsWith("-RC", true) || temporaryVersion.endsWith("-BETA", true) || temporaryVersion.endsWith("-ALPHA", true) ||
+>>>>>>> origin/feat/core-serialization-impl
         temporaryVersion.endsWith("-SNAPSHOT", true)
     ) {
         newVersion = temporaryVersion.substringBeforeLast("-") + "-SNAPSHOT"
     }
+<<<<<<< HEAD
 
     return newVersion
 }
@@ -319,3 +407,8 @@ java -jar "${'$'}DIR/${jarFile.name}" "$@"
         jarFile.copyTo(file("${layout.buildDirectory.get().asFile}/bin/${jarFile.name}"), overwrite = true)
     }
 }
+=======
+    
+    return newVersion
+}
+>>>>>>> origin/feat/core-serialization-impl

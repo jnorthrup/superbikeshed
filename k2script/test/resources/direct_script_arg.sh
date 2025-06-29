@@ -1,0 +1,1 @@
+kscript 'println("kotlin rocks")'

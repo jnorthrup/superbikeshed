@@ -1,5 +1,6 @@
 package borg.trikeshed.nio.spi
 
+<<<<<<< HEAD
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.nio.*
@@ -47,10 +48,23 @@ interface NioServiceProvider {
     /**
      * Get the attention delegate for this provider
      */
+=======
+import borg.trikeshed.nio.PlatformByteBuffer
+import borg.trikeshed.nio.PlatformChannel
+
+/**
+ * Service Provider Interface for NIO implementations
+ */
+interface NioServiceProvider {
+    fun createBuffer(capacity: Int): PlatformByteBuffer
+    fun wrapBuffer(array: ByteArray, offset: Int = 0, length: Int = array.size): PlatformByteBuffer
+    fun createChannel(): PlatformChannel
+>>>>>>> origin/feat/core-serialization-impl
     fun getAttentionDelegate(): AttentionDelegate
 }
 
 /**
+<<<<<<< HEAD
  * Interface for monitoring and logging NIO operations
  */
 interface AttentionDelegate {
@@ -74,3 +88,13 @@ interface AttentionDelegate {
      */
     fun onOperationError(operation: String, error: Throwable, details: String = "")
 }
+=======
+ * Attention delegate for monitoring NIO operations
+ */
+interface AttentionDelegate {
+    fun onBufferAllocated(capacity: Int, duration: Long)
+    fun onBufferWrapped(arraySize: Int, offset: Int, length: Int, duration: Long)
+    fun onChannelCreated(type: String, config: Map<String, Any>)
+    fun onIoOperation(operation: String, bytes: Int, duration: Long)
+} 
+>>>>>>> origin/feat/core-serialization-impl
