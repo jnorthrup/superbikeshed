@@ -1,8 +1,8 @@
 package nexus
 
-import nexus.flow.runNexusFlow
+import nexus.runtime.NexusRuntime
 
 actual suspend fun runInteractivePlatform() {
-    // Use the new flow-based interactive system
-    runNexusFlow()
+    // Use the ultimate Nexus Runtime with all advanced features
+    NexusRuntime.runInteractive()
 }
