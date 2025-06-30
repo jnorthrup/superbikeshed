@@ -1,7 +1,7 @@
 package borg.trikeshed.ksp
 
-<<<<<<< HEAD
 import kotlin.annotation.AnnotationTarget.*
+import kotlin.reflect.KClass
 
 /**
  * Marks a class for DSL generation by TrikeShedDslProcessor.
@@ -36,13 +36,12 @@ import kotlin.annotation.AnnotationTarget.*
 annotation class GenerateDsl
 
 /**
- * Generates efficient Series extension functions for a data class.
  * Creates specialized map, filter, and fold operations that work directly
  * with the packed representations when possible.
  */
 @Target(CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class GenerateSeriesExtensions
+typealias GenerateSeriesExtensions = GenerateSeriesExtensionsV2
 
 /**
  * Generates utility functions for enum classes including:
@@ -52,7 +51,7 @@ annotation class GenerateSeriesExtensions
  */
 @Target(CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class GenerateEnumUtilities
+typealias GenerateEnumUtilities = GenerateEnumUtilitiesV2
 
 /**
  * Generates a builder pattern for data classes with:
@@ -175,8 +174,6 @@ annotation class Capability(
     val category: String = "GENERAL",
     val required: Boolean = false
 )
-=======
-import kotlin.reflect.KClass
 
 /**
  * Marker annotation to generate optimized j overloads for primitive type combinations
@@ -306,4 +303,7 @@ annotation class GenerateTestUtilities(
     val includeMocking: Boolean = true,
     val packageName: String = "borg.trikeshed.generated"
 )
->>>>>>> origin/feat/core-serialization-impl
+
+// Type aliases for duplicate annotation classes to resolve redeclaration errors
+typealias GenerateSeriesExtensionsV2 = GenerateSeriesExtensions
+typealias GenerateEnumUtilitiesV2 = GenerateEnumUtilities
