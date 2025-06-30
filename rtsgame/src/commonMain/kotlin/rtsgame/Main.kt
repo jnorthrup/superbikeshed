@@ -1,6 +1,5 @@
 package rtsgame
 
-<<<<<<< HEAD
 import rtsgame.core.*
 import rtsgame.codec.*
 import rtsgame.systems.*
@@ -8,6 +7,10 @@ import rtsgame.terrain.*
 import rtsgame.pathfinding.*
 import borg.trikeshed.lib.*
 import kotlin.random.*
+import com.rtsgame.shared.entity.Entity
+import com.rtsgame.shared.game.GameState
+import com.rtsgame.shared.map.Position
+import rtsgame.demo.startSpaceGraphHttpServer
 
 /**
  * Main entry point for RTS simulation
@@ -16,6 +19,9 @@ import kotlin.random.*
 suspend fun main() {
     println("RTS Simulation Starting...")
     
+    // Start SpaceGraph HTTP server
+    startSpaceGraphHttpServer(8080)
+
     // Create deterministic simulation
     val seed = 12345L
     val random = DeterministicRandom(seed)
@@ -81,129 +87,4 @@ suspend fun main() {
     })
     
     println("Final state checksum calculated")
-}
-
-/**
- * Test pathfinding system independently  
- */
-fun testPathfinding() {
-    val seed = 42L
-    val random = DeterministicRandom(seed)
-    val terrain = TerrainSystem(random)
-    terrain.generateTerrain(seed)
-    
-    val pathfinder = AStar(terrain)
-    
-    // Test path from corner to corner
-    val path = pathfinder.findPath(50.0, 50.0, 750.0, 750.0) as borg.trikeshed.lib.Indexed<Pair<Double, Double>>?
-    
-    if (path != null && path.size > 0) {
-        println("Pathfinding test passed - found path with ${path.size} waypoints")
-        
-        // Print first few waypoints
-        val waypoints = minOf(5, path.size)
-        repeat(waypoints) { i: Int ->
-            val (x, y) = path[i]
-            println("  Waypoint $i: ($x, $y)")
-        }
-    } else {
-        println("Pathfinding test failed - no path found")
-=======
-import com.rtsgame.shared.entity.Entity
-import com.rtsgame.shared.game.GameState
-import com.rtsgame.shared.map.Position
-import rtsgame.core.*
-import rtsgame.demo.startSpaceGraphHttpServer
-
-class RTSGameEngine {
-    private var gameState = GameState(
-        entities = Series.of(0) { throw IndexOutOfBoundsException() }
-    )
-    
-    fun initialize(): GameState {
-        // Create initial game state
-        val initialEntities = listOf(
-            Entity(
-                id = EntityId("unit_001"),
-                position = Position(100f, 100f),
-                health = Health(100f),
-                playerId = PlayerId(1)
-            ),
-            Entity(
-                id = EntityId("unit_002"),
-                position = Position(200f, 200f),
-                health = Health(80f),
-                playerId = PlayerId(2)
-            )
-        )
-        
-        gameState = GameState(
-            entities = Series.of(initialEntities.size) { i -> initialEntities[i] }
-        )
-        
-        return gameState
-    }
-    
-    fun tick(): GameState {
-        gameState = gameState.advance()
-        return gameState
-    }
-    
-    fun getState(): GameState = gameState
-}
-
-expect fun platformMain()
-
-fun startGame(): RTSGameEngine {
-    val engine = RTSGameEngine()
-    engine.initialize()
-    return engine
-}
-
-fun demonstrateGame() {
-    println("RTS Game Demonstration")
-    val engine = startGame()
-    
-    repeat(5) { i ->
-        val state = engine.tick()
-        println("Tick ${state.tick.value}: ${state.entities.play.size} entities")
-        state.entities.play.forEachIndexed { index, entity ->
-            println("  Entity $index: ${entity.id.value} at (${entity.position.x}, ${entity.position.y})")
-        }
->>>>>>> origin/feat/core-serialization-impl
-    }
-}
-
-/**
-<<<<<<< HEAD
- * Test RequestFactory codec independently
- */
-fun testCodec() {
-    val originalRequest = RTSRequest.MoveUnit(
-        unitId = 42,
-        x = 100.5,
-        y = 200.7,
-        frameNumber = 1337L,
-        timestamp = 22.28
-    )
-    
-    // Encode and decode
-    val encoded = RTSCodec.encodeRequest(originalRequest)
-    val decoded = RTSCodec.decodeRequest(encoded)
-    
-    if (decoded is RTSRequest.MoveUnit && 
-        decoded.unitId == originalRequest.unitId &&
-        decoded.x == originalRequest.x &&
-        decoded.y == originalRequest.y) {
-        println("Codec test passed - round trip successful")
-    } else {
-        println("Codec test failed - data corruption")
-    }
-=======
- * Main entry point for RTS game
- */
-suspend fun main() {
-    // Start SpaceGraph HTTP server
-    startSpaceGraphHttpServer(8080)
->>>>>>> origin/feat/core-serialization-impl
 }

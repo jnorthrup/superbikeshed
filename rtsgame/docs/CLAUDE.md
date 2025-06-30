@@ -123,17 +123,11 @@ npm run build                 # Production build
 - AI systems in `js/ai/`
 - Configuration isolated in `js/config/`
 <<<<<<< HEAD
-- TypeScript core architecture in `src/trikeshed/`
-
-### Documentation
-- Comprehensive design docs in `/docs/`
-- Architecture overview in `docs/architecture.md`
-=======
 - Core TrikeShed (Kotlin) architecture is in the `trikeshed-core` project.
 
 ### Documentation
 - Comprehensive design docs in `/docs/`
 - Architecture overview (Note: `docs/architecture.md` currently not found - consider creating or updating this reference).
->>>>>>> origin/feat/core-serialization-impl
+
 - Game design document in `docs/the-rts-concepts.md`
 - Implementation guides for complex systems

@@ -31,8 +31,8 @@ data class HttpRequest(
     fun toByteArray(): ByteArray {
         val startLine = "${method.name} ${path.value} ${version.value}\r\n"
         val headersStr = StringBuilder()
-        (0 until headers.a).forEach { i ->
-            val header = headers.b(i)
+        (0 until headers.size).forEach { i ->
+            val header = headers[i]
             headersStr.append("${header.a.value}: ${header.b.value}\r\n")
         }
         val finalHeaders = headersStr.toString()
@@ -90,8 +90,8 @@ data class HttpResponse(
     fun toByteArray(): ByteArray {
         val startLine = "${version.value} ${status.value} ${reasonPhrase.value}\r\n"
         val headersStr = StringBuilder()
-        (0 until headers.a).forEach { i ->
-            val header = headers.b(i)
+        (0 until headers.size).forEach { i ->
+            val header = headers[i]
             headersStr.append("${header.a.value}: ${header.b.value}\r\n")
         }
         val finalHeaders = headersStr.toString()
@@ -152,8 +152,8 @@ object HttpUtils {
     }
     
     fun buildHeaderString(headers: Series<Join<HttpHeaderName, HttpHeaderValue>>): String {
-        return (0 until headers.a).joinToString("\r\n") { i ->
-            val join = headers.b(i)
+        return (0 until headers.size).joinToString("\r\n") { i ->
+            val join = headers[i]
             "${join.a.value}: ${join.b.value}"
         }
     }

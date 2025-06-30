@@ -1,8 +1,6 @@
 package borg.trikeshed.services
-<<<<<<< HEAD
+
 import kotlinx.datetime.Clock
-
-
 import borg.trikeshed.lib.*
 import borg.trikeshed.reactor.http.HttpServerContext
 import kotlin.coroutines.CoroutineContext
@@ -23,13 +21,13 @@ internal class RequestFactoryServiceImpl(
     // Request counter for statistical packing
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
-        // Convert Indexed<Byte> directly to String
+    override fun process(requestPayload: Series<Byte>): Series<Byte> {
+        // Convert Series<Byte> directly to String
         val requestJson = requestPayload.play.toList().toByteArray().decodeToString()
         
         return try {
             // Use context for statistical packing optimization
-            val sweetSpot = context.registerPacker(requestPayload.a)
+            val sweetSpot = context.registerPacker(requestPayload.size)
             val serviceClass = "ReactorService"
             val methodName = "process"
 
@@ -37,93 +35,41 @@ internal class RequestFactoryServiceImpl(
             val responseJson = buildString {
                 append("""{"success":true,"service":"$serviceClass","method":"$methodName","timestamp":${++requestCounter},"context":"${context.ioModel}"}""")
             }
-            responseJson.encodeToByteArray().toIdx()
-
-        } catch (e: Exception) {
-            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toIdx()
-=======
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.j
-import borg.trikeshed.lib.α
-import borg.trikeshed.lib.play
-import borg.trikeshed.lib.toSeries
-import borg.trikeshed.lib.*
-import borg.trikeshed.lib.bridge.*
-import kotlin.jvm.JvmInline
-import kotlinx.coroutines.flow.Flow
-
-/**
- * BrokeShed Implementation of RequestFactoryService 
- * This is alien GWT technology that belongs in BrokeShed, not TrikeShed core
- * 
- * Processes GWT RequestFactory calls using TrikeShed's native Series<T> and Join<A,B> patterns.
- */
-internal class RequestFactoryServiceImpl : RequestFactoryService {
-    // Maps service class names to their locator functions
-    private val serviceLocators = mutableMapOf<String, () -> Any>()
-    
-    // Maps method names to their validator functions
-    private val methodValidators = mutableMapOf<String, (Any) -> Boolean>()
-
-    // Cached service instances for better performance
-    private val serviceInstances = mutableMapOf<String, Any>()
-    
-    // Simple counter for demo purposes (replaces system time)
-    private var requestCounter = 0L
-
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
-        val requestJson = requestPayload.play.joinToString("") { it.toInt().toChar().toString() }
-        
-        return try {
-            // Simple demo implementation - just process any payload and return success
-            val serviceClass = "DemoService"
-            val methodName = "process"
-
-            // Serialize the result using basic JSON
-            val responseJson = buildString {
-                append("""{"success":true,"service":"$serviceClass","method":"$methodName","timestamp":${++requestCounter}}""")
-            }
             responseJson.encodeToByteArray().toSeries()
 
         } catch (e: Exception) {
             createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toSeries()
->>>>>>> origin/feat/core-serialization-impl
         }
     }
 
     override fun registerServiceLocator(serviceClass: String, locator: () -> Any) {
         serviceLocators[serviceClass] = locator
-<<<<<<< HEAD
         // Register in context trait graph
         val service = getServiceInstance(serviceClass)
         if (service is CoroutineContext.Element) {
             val traitGraph = serviceClass j service
-            val newTraitGraph = (context.traitGraph.a + 1) j { i: Int ->
-                if (i < context.traitGraph.a) context.traitGraph.b(i) else traitGraph
+            val newTraitGraph = (context.traitGraph.size + 1) j { i: Int ->
+                if (i < context.traitGraph.size) context.traitGraph[i] else traitGraph
             }
             context.copy(traitGraph = newTraitGraph)
         }
-=======
->>>>>>> origin/feat/core-serialization-impl
     }
 
     override fun registerMethodValidator(methodName: String, validator: (Any) -> Boolean) {
         methodValidators[methodName] = validator
     }
 
-<<<<<<< HEAD
-    override suspend fun invokeService(serviceName: String, data: Indexed<Byte>): Indexed<Byte> {
+    override suspend fun invokeService(serviceName: String, data: Series<Byte>): Series<Byte> {
         // Use context lifecycle control for service invocation
         return context.createLifecycleControl(borg.trikeshed.reactor.http.LifecyclePhase.PROCESS).let { control ->
-            var result: Indexed<Byte> = 0 j { 0.toByte() }
+            var result: Series<Byte> = emptySeries()
             control.execute {
                 // Get service using statistical packing
                 val service = getServiceInstance(serviceName)
                 result = if (service != null) {
                     processServiceCall(service, data)
                 } else {
-                    createErrorResponse(404, "Service not found: $serviceName").encodeToByteArray().toIdx()
+                    createErrorResponse(404, "Service not found: $serviceName").encodeToByteArray().toSeries()
                 }
             }
             result
@@ -142,7 +88,7 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
     /**
      * Process service call using concurrent mapreduce when applicable
      */
-    private suspend fun processServiceCall(service: Any, data: Indexed<Byte>): Indexed<Byte> {
+    private suspend fun processServiceCall(service: Any, data: Series<Byte>): Series<Byte> {
         return when (service) {
             is DealService -> service.process(data)
             else -> {
@@ -152,7 +98,7 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
                     mapper = { byte: Byte -> byte.toInt() },
                     reducer = { a: Int, b: Int -> a + b },
                     identity = 0
-                ).toString().encodeToByteArray().toIdx()
+                ).toString().encodeToByteArray().toSeries()
             }
         }
     }
@@ -161,13 +107,13 @@ internal class RequestFactoryServiceImpl : RequestFactoryService {
      * Create error response with reactor context info
      */
     private fun createErrorResponse(code: Int, message: String): String {
-        return """{"success":false,"error":"$message","code":$code,"ioModel":"${context.ioModel}","timestamp":${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}}"""
+        return """{"success":false,"error":"$message","code":$code,"ioModel":"${context.ioModel}","timestamp":${Clock.System.now().toEpochMilliseconds()}}"""
     }
 
     /**
-     * Convert ByteArray to Indexed<Byte> using j pattern
+     * Convert ByteArray to Series<Byte> using j pattern
      */
-    private fun ByteArray.toIdx(): Indexed<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
 }
 
 /**
@@ -180,9 +126,9 @@ internal class ReactorDealService(
     override val key: CoroutineContext.Key<*>
         get() = DealService.Key
 
-    override suspend fun process(data: Indexed<Byte>): Indexed<Byte> {
+    override suspend fun process(data: Series<Byte>): Series<Byte> {
         // Use statistical packing for deal processing
-        val sweetSpot = context.registerPacker(data.a)
+        val sweetSpot = context.registerPacker(data.size)
         
         // Demo processing using concurrent mapreduce
         val processedValue = context.mapReduce(
@@ -202,21 +148,8 @@ internal class ReactorDealService(
         return """{"dealId":"$dealId","status":"active","ioModel":"${context.ioModel}"}"""
     }
     
-    override fun createDeal(dealData: Indexed<Byte>): String {
-        val dealId = "deal_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
-        return """{"created":"$dealId","size":${dealData.a},"ioModel":"${context.ioModel}"}"""
+    override fun createDeal(dealData: Series<Byte>): String {
+        val dealId = "deal_${Clock.System.now().toEpochMilliseconds()}"
+        return """{"created":"$dealId","size":${dealData.size},"ioModel":"${context.ioModel}"}"""
     }
 }
-=======
-    override suspend fun invokeService(serviceName: String, data: ByteArray): ByteArray {
-        // TODO: Implement actual service invocation logic
-        return createErrorResponse(501, "Service invocation not implemented").encodeToByteArray()
-    }
-
-    private fun createErrorResponse(code: Int, message: String): String {
-        return """{"success":false,"error":"$message","code":$code}"""
-    }
-
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
-} 
->>>>>>> origin/feat/core-serialization-impl

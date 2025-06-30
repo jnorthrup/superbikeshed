@@ -1,9 +1,5 @@
 package borg.trikeshed.net.quic
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/feat/core-serialization-impl
 data class QuicConfig(
     // Existing parameters
     val streamBufferSize: Int? = null,

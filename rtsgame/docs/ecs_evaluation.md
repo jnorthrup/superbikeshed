@@ -62,15 +62,12 @@ Corresponding systems could manage these components:
 *   **`ResourceSystem`**: Manages `ResourceGenerationComponent` and updates global player resources.
 *   **`AISystem` / `StrategicAISystem` / `TacticalAISystem`**: Reads various components (`Position`, `Health`, `Combat`, `AIState`) and generates commands or updates AIState/target components.
 *   **`StuckDetectionSystem`**: Updates `StuckDetectionComponent`.
-<<<<<<< HEAD
-=======
 *   **`FormationSystem`**: Manages formation behavior:
     *   Updates `FormationComponent` properties based on formation commands
     *   Calculates formation offsets and ideal positions
     *   Handles formation transitions and rotations
     *   Manages leader-follower relationships
     *   Applies steering behaviors for formation maintenance
->>>>>>> origin/feat/core-serialization-impl
 *   **`RenderSystem`**: Reads `PositionComponent`, `RenderableComponent`, `HealthComponent` (for health bars), `ShieldComponent` (for shield effects) to draw entities. This is already handled by `webglRenderer.js` which iterates entities and reads their properties.
 *   **`SelectionSystem`**: Manages `SelectableComponent` based on user input.
 

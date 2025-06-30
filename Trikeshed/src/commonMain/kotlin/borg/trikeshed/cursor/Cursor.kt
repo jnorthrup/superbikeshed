@@ -1,22 +1,21 @@
 package borg.trikeshed.cursor
 
+import borg.trikeshed.lib.ColumnMeta
 import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.RowVec
 import borg.trikeshed.lib.Series
 
 /**
- * RowVec - Single row as Series of value-meta pairs
- */
-typealias RowVec = Series<Join<Any?, () -> ColumnMeta>>
-
-/**
  * Cursor - Series of RowVec (functional composition)
+ * Note: RowVec and ColumnMeta are already defined in CoreTypes.kt
  */
 typealias Cursor = Series<RowVec>
 
 /**
- * Cursor interface for platform-specific implementations
+ * CursorInterface - Platform-specific cursor implementations
+ * Renamed from Cursor to avoid naming conflict with the typealias
  */
-interface Cursor {
-    val a: Int
-    val b: (Int) -> RowVec
-} 
+interface CursorInterface {
+    val size: Int
+    operator fun get(index: Int): RowVec
+}

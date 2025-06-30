@@ -1,18 +1,10 @@
 package borg.trikeshed.net.quic
 
-<<<<<<< HEAD
-
 import borg.trikeshed.lib.*
 import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.PlatformInetSocketAddress
 import kotlinx.coroutines.channels.Channel
 import kotlin.concurrent.Volatile
-=======
-import borg.trikeshed.nio.PlatformByteBuffer
-import borg.trikeshed.nio.PlatformInetSocketAddress
-import kotlinx.coroutines.channels.Channel
-import kotlin.jvm.Volatile
->>>>>>> origin/feat/core-serialization-impl
 
 /**
  * Represents a QUIC stream

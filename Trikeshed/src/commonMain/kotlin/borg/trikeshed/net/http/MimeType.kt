@@ -1,9 +1,5 @@
 package borg.trikeshed.net.http
 
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/feat/core-serialization-impl
 /**
  * Port of RelaxFactory's comprehensive MimeType enum.
  * Provides a mapping from common file extensions to their corresponding

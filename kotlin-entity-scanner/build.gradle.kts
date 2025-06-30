@@ -15,25 +15,14 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-<<<<<<< HEAD
-                // No dependencies needed
-            }
-        }
-
-=======
                 implementation(project(":Trikeshed"))
             }
         }
         
->>>>>>> origin/feat/core-serialization-impl
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/feat/core-serialization-impl
