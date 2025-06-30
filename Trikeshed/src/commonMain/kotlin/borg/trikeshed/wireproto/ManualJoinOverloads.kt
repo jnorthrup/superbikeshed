@@ -1,19 +1,3 @@
-<<<<<<< HEAD
-package borg.trikeshed.wireproto
-
-
-import borg.trikeshed.lib.*
-
-/**
- * Minimal placeholder manual join overloads for compilation
- */
-object ManualJoinOverloads {
-    infix fun Int.j(other: Int): Join<Int, Int> = this j other
-    infix fun Int.j(other: String): Join<Int, String> = this j other
-    infix fun String.j(other: Int): Join<String, Int> = this j other
-    infix fun String.j(other: String): Join<String, String> = this j other
-} 
-=======
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 package borg.trikeshed.wireproto
@@ -191,28 +175,37 @@ fun demoRegisterJoins() {
  * Serialize RegisterJoin to wire format with maximum efficiency
  */
 fun <A, B> RegisterJoin<A, B>.toWireBytes(): UByteArray {
-    val payload = buildWirePayload {
-        writeString("RegisterJoin")
-        writeFixed32((word and 0xFFFFFFFF).toInt())
-        writeFixed32((word shr 32).toInt())
+    // Simple serialization of the packed word
+    val buffer = UByteArray(8)
+    var w = word
+    for (i in 0..7) {
+        buffer[i] = (w and 0xFF).toUByte()
+        w = w shr 8
     }
-    
-    val message = TrikeShedWireMessage.create("RegisterJoin", payload)
-    return TrikeShedWireSerializer.serializeMessage(message)
+    return buffer
 }
 
 /**
  * Deserialize wire format to RegisterJoin
  */
 fun UByteArray.toRegisterJoin(): RegisterJoin<*, *> {
-    val message = TrikeShedWireSerializer.deserializeMessage(this)
-    require(message.messageType == "RegisterJoin") { "Expected RegisterJoin message" }
-    
-    val reader = WireReader(message.payload)
-    val typeName = reader.readString()
-    val low = reader.readFixed32().toLong() and 0xFFFFFFFF
-    val high = reader.readFixed32().toLong() shl 32
-    
-    return RegisterJoin<Any, Any>(low or high)
+    require(size >= 8) { "RegisterJoin requires 8 bytes" }
+    var word = 0L
+    for (i in 7 downTo 0) {
+        word = (word shl 8) or (this[i].toLong() and 0xFF)
+    }
+    return RegisterJoin<Any, Any>(word)
 }
->>>>>>> origin/feat/core-serialization-impl
+
+// === COMPATIBILITY OVERLOADS ===
+
+/**
+ * Minimal placeholder manual join overloads for compilation
+ */
+object ManualJoinOverloads {
+    // These provide fallback for non-primitive types
+    infix fun <A, B> A.j(other: B): Join<A, B> = object : Join<A, B> {
+        override val a: A = this@j
+        override val b: B = other
+    }
+}

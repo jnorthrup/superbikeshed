@@ -1,40 +1,3 @@
-<<<<<<< HEAD
-package borg.trikeshed.wireproto
-
-
-import borg.trikeshed.lib.*
-
-/**
- * Minimal placeholder TrikeShed wire protocol for compilation
- */
-class TrikeShedWireProto {
-    fun serialize(data: Any): Indexed<Byte> {
-        // Placeholder implementation
-        return 0 j { throw NoSuchElementException() }
-    }
-    
-    fun <T> deserialize(data: Indexed<Byte>): T {
-        // Placeholder implementation
-        throw NotImplementedError("Deserialization not implemented")
-    }
-}
-
-// Minimal data structures
-data class WireIoMemento(
-    val id: String,
-    val data: Indexed<Byte>
-)
-
-fun <T> T.toWireBytes(): Indexed<Byte> {
-    // Placeholder implementation
-    return 0 j { throw NoSuchElementException() }
-}
-
-fun <T> Indexed<Byte>.toIoMemento(): WireIoMemento {
-    // Placeholder implementation
-    return WireIoMemento("placeholder", this)
-} 
-=======
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 package borg.trikeshed.wireproto
@@ -149,318 +112,335 @@ object TrikeShedWireSerializer {
     }
     
     /**
-     * Deserialize wire format to IoMemento
+     * Deserialize IoMemento from wire format
      */
     fun deserialize(data: UByteArray): borg.trikeshed.isam.meta.IOMemento {
         val message = deserializeMessage(data)
         require(message.messageType == "IoMemento") { "Expected IoMemento message" }
-        
         val wireMemento = deserializeWireMemento(message.payload)
         return wireMemento.toIoMemento()
     }
     
     /**
-     * Serialize Series<T> to wire format with type information
+     * Serialize Series<T> with type information
      */
-    inline fun <reified T> serializeSeries(series: Series<T>): UByteArray {
-        val payload = buildWirePayload {
-            writeString(T::class.simpleName ?: "Unknown")
-            writeVarInt(series.size)
-            
-            // Serialize elements
-            for (i in 0 until series.size) {
-                writeElement(series[i])
+    fun <T> serializeSeries(series: Series<T>): UByteArray {
+        val buffer = mutableListOf<UByte>()
+        
+        // Write size as varint
+        buffer.addAll(encodeVarint(series.size))
+        
+        // Write each element based on type
+        for (i in 0 until series.size) {
+            val element = series[i]
+            when (element) {
+                is Byte -> {
+                    buffer.add(0x01u) // Type marker for Byte
+                    buffer.add(element.toUByte())
+                }
+                is Int -> {
+                    buffer.add(0x02u) // Type marker for Int
+                    buffer.addAll(encodeVarint(element))
+                }
+                is Long -> {
+                    buffer.add(0x03u) // Type marker for Long
+                    buffer.addAll(encodeVarlong(element))
+                }
+                is String -> {
+                    buffer.add(0x04u) // Type marker for String
+                    val bytes = element.encodeToByteArray()
+                    buffer.addAll(encodeVarint(bytes.size))
+                    buffer.addAll(bytes.map { it.toUByte() })
+                }
+                is Double -> {
+                    buffer.add(0x05u) // Type marker for Double
+                    buffer.addAll(element.toRawBits().toUByteArray())
+                }
+                else -> {
+                    buffer.add(0xFFu) // Unknown type marker
+                    // Could extend for more types
+                }
             }
         }
         
-        val message = TrikeShedWireMessage.create("Series", payload)
-        return serializeMessage(message)
+        return buffer.toUByteArray()
     }
     
-    /**
-     * Serialize Series<Int> with optimal packing strategy
-     */
-    fun serializeIntSeries(series: Series<Int>, useOptimalPacking: Boolean = true): UByteArray {
-        return if (useOptimalPacking) {
-            val packed = series.pack("optimal")
-            packed.toWireBytes()
-        } else {
-            serializeSeries(series)
-        }
-    }
+    // === INTERNAL SERIALIZATION HELPERS ===
     
-    /**
-     * Deserialize wire format to Series<T>
-     */
-    inline fun <reified T> deserializeSeries(data: UByteArray): Series<T> {
-        val message = deserializeMessage(data)
-        require(message.messageType == "Series") { "Expected Series message" }
+    private fun serializeMessage(message: TrikeShedWireMessage): UByteArray {
+        val buffer = mutableListOf<UByte>()
         
-        val reader = WireReader(message.payload)
-        val typeName = reader.readString()
-        val size = reader.readVarInt()
+        // Version
+        buffer.add(message.version.version)
         
-        val elements = mutableListOf<T>()
-        repeat(size) {
-            elements.add(reader.readElement<T>())
-        }
+        // Message type length and data
+        val typeBytes = message.messageType.encodeToByteArray()
+        buffer.addAll(encodeVarint(typeBytes.size))
+        buffer.addAll(typeBytes.map { it.toUByte() })
         
-        return size j { i -> elements[i] }
+        // Payload length and data
+        buffer.addAll(encodeVarint(message.payload.size))
+        buffer.addAll(message.payload.toList())
+        
+        // Checksum
+        buffer.addAll(message.checksum.crc32.toUByteArray())
+        
+        return buffer.toUByteArray()
     }
     
-    // === INTERNAL SERIALIZATION ===
-    
-    private fun serializeWireMemento(memento: WireIoMemento): UByteArray {
-        return buildWirePayload {
-            writeOptionalString(memento.name)
-            writeOptionalString(memento.type)
-            writeOptionalInt(memento.width)
-            writeOptionalBoolean(memento.nullable)
-            writeOptionalString(memento.encoding)
-            writeOptionalString(memento.format)
-        }
-    }
-    
-    private fun deserializeWireMemento(data: UByteArray): WireIoMemento {
-        val reader = WireReader(data)
-        return WireIoMemento(
-            name = reader.readOptionalString(),
-            type = reader.readOptionalString(),
-            width = reader.readOptionalInt(),
-            nullable = reader.readOptionalBoolean(),
-            encoding = reader.readOptionalString(),
-            format = reader.readOptionalString()
-        )
-    }
-    
-    fun serializeMessage(message: TrikeShedWireMessage): UByteArray {
-        return buildWirePayload {
-            writeByte(message.version.version)
-            writeString(message.messageType)
-            writeVarInt(message.payload.size)
-            writeByteArray(message.payload.toByteArray())
-            writeFixed32(message.checksum.crc32.toInt())
-        }
-    }
-    
-    fun deserializeMessage(data: UByteArray): TrikeShedWireMessage {
-        val reader = WireReader(data)
-        val version = WireVersion(reader.readByte())
-        val messageType = reader.readString()
-        val payloadLength = reader.readVarInt()
-        val payload = reader.readByteArray(payloadLength).toUByteArray()
-        val checksum = WireChecksum(reader.readFixed32().toUInt())
+    private fun deserializeMessage(data: UByteArray): TrikeShedWireMessage {
+        var offset = 0
+        
+        // Version
+        val version = WireVersion(data[offset++])
+        
+        // Message type
+        val (typeLength, typeLengthBytes) = decodeVarint(data, offset)
+        offset += typeLengthBytes
+        val messageType = data.sliceArray(offset until offset + typeLength)
+            .toByteArray().decodeToString()
+        offset += typeLength
+        
+        // Payload
+        val (payloadLength, payloadLengthBytes) = decodeVarint(data, offset)
+        offset += payloadLengthBytes
+        val payload = data.sliceArray(offset until offset + payloadLength)
+        offset += payloadLength
+        
+        // Checksum
+        val checksumBytes = data.sliceArray(offset until offset + 4)
+        val checksum = WireChecksum(checksumBytes.toUInt())
         
         return TrikeShedWireMessage(version, messageType, payload, checksum)
     }
-}
-
-// === WIRE PAYLOAD BUILDER ===
-
-class WirePayloadBuilder {
-    private val buffer = mutableListOf<UByte>()
     
-    fun writeByte(value: UByte) {
-        buffer.add(value)
+    private fun serializeWireMemento(memento: WireIoMemento): UByteArray {
+        val buffer = mutableListOf<UByte>()
+        
+        // Serialize each field with presence flags
+        var flags = 0u
+        if (memento.name != null) flags = flags or 0x01u
+        if (memento.type != null) flags = flags or 0x02u
+        if (memento.width != null) flags = flags or 0x04u
+        if (memento.nullable != null) flags = flags or 0x08u
+        if (memento.encoding != null) flags = flags or 0x10u
+        if (memento.format != null) flags = flags or 0x20u
+        
+        buffer.add(flags.toUByte())
+        
+        // Serialize present fields
+        memento.name?.let {
+            val bytes = it.encodeToByteArray()
+            buffer.addAll(encodeVarint(bytes.size))
+            buffer.addAll(bytes.map { b -> b.toUByte() })
+        }
+        
+        memento.type?.let {
+            val bytes = it.encodeToByteArray()
+            buffer.addAll(encodeVarint(bytes.size))
+            buffer.addAll(bytes.map { b -> b.toUByte() })
+        }
+        
+        memento.width?.let {
+            buffer.addAll(encodeVarint(it))
+        }
+        
+        memento.nullable?.let {
+            buffer.add(if (it) 1u else 0u)
+        }
+        
+        memento.encoding?.let {
+            val bytes = it.encodeToByteArray()
+            buffer.addAll(encodeVarint(bytes.size))
+            buffer.addAll(bytes.map { b -> b.toUByte() })
+        }
+        
+        memento.format?.let {
+            val bytes = it.encodeToByteArray()
+            buffer.addAll(encodeVarint(bytes.size))
+            buffer.addAll(bytes.map { b -> b.toUByte() })
+        }
+        
+        return buffer.toUByteArray()
     }
     
-    fun writeVarInt(value: Int) {
+    private fun deserializeWireMemento(data: UByteArray): WireIoMemento {
+        var offset = 0
+        
+        val flags = data[offset++]
+        
+        var name: String? = null
+        var type: String? = null
+        var width: Int? = null
+        var nullable: Boolean? = null
+        var encoding: String? = null
+        var format: String? = null
+        
+        if ((flags.toUInt() and 0x01u) != 0u) {
+            val (length, lengthBytes) = decodeVarint(data, offset)
+            offset += lengthBytes
+            name = data.sliceArray(offset until offset + length).toByteArray().decodeToString()
+            offset += length
+        }
+        
+        if ((flags.toUInt() and 0x02u) != 0u) {
+            val (length, lengthBytes) = decodeVarint(data, offset)
+            offset += lengthBytes
+            type = data.sliceArray(offset until offset + length).toByteArray().decodeToString()
+            offset += length
+        }
+        
+        if ((flags.toUInt() and 0x04u) != 0u) {
+            val (value, bytes) = decodeVarint(data, offset)
+            offset += bytes
+            width = value
+        }
+        
+        if ((flags.toUInt() and 0x08u) != 0u) {
+            nullable = data[offset++] != 0u.toUByte()
+        }
+        
+        if ((flags.toUInt() and 0x10u) != 0u) {
+            val (length, lengthBytes) = decodeVarint(data, offset)
+            offset += lengthBytes
+            encoding = data.sliceArray(offset until offset + length).toByteArray().decodeToString()
+            offset += length
+        }
+        
+        if ((flags.toUInt() and 0x20u) != 0u) {
+            val (length, lengthBytes) = decodeVarint(data, offset)
+            offset += lengthBytes
+            format = data.sliceArray(offset until offset + length).toByteArray().decodeToString()
+            offset += length
+        }
+        
+        return WireIoMemento(name, type, width, nullable, encoding, format)
+    }
+    
+    // === VARINT ENCODING ===
+    
+    private fun encodeVarint(value: Int): List<UByte> {
+        val result = mutableListOf<UByte>()
         var v = value
         while (v >= 0x80) {
-            buffer.add(((v and 0x7F) or 0x80).toUByte())
+            result.add(((v and 0x7F) or 0x80).toUByte())
             v = v ushr 7
         }
-        buffer.add(v.toUByte())
+        result.add(v.toUByte())
+        return result
     }
     
-    fun writeFixed32(value: Int) {
-        repeat(4) { i ->
-            buffer.add(((value shr (i * 8)) and 0xFF).toUByte())
-        }
-    }
-    
-    fun writeString(str: String) {
-        val bytes = str.encodeToByteArray()
-        writeVarInt(bytes.size)
-        bytes.forEach { buffer.add(it.toUByte()) }
-    }
-    
-    fun writeByteArray(bytes: ByteArray) {
-        bytes.forEach { buffer.add(it.toUByte()) }
-    }
-    
-    fun writeOptionalString(str: String?) {
-        if (str != null) {
-            writeByte(1u)
-            writeString(str)
-        } else {
-            writeByte(0u)
-        }
-    }
-    
-    fun writeOptionalInt(value: Int?) {
-        if (value != null) {
-            writeByte(1u)
-            writeVarInt(value)
-        } else {
-            writeByte(0u)
-        }
-    }
-    
-    fun writeOptionalBoolean(value: Boolean?) {
-        if (value != null) {
-            writeByte(1u)
-            writeByte(if (value) 1u else 0u)
-        } else {
-            writeByte(0u)
-        }
-    }
-    
-    inline fun <reified T> writeElement(element: T) {
-        when (element) {
-            is String -> {
-                writeByte(1u) // String type marker
-                writeString(element)
-            }
-            is Int -> {
-                writeByte(2u) // Int type marker
-                writeVarInt(element)
-            }
-            is Long -> {
-                writeByte(3u) // Long type marker
-                writeFixed32((element and 0xFFFFFFFF).toInt())
-                writeFixed32((element shr 32).toInt())
-            }
-            is Boolean -> {
-                writeByte(4u) // Boolean type marker
-                writeByte(if (element) 1u else 0u)
-            }
-            is Double -> {
-                writeByte(5u) // Double type marker
-                val bits = element.toBits()
-                writeFixed32((bits and 0xFFFFFFFF).toInt())
-                writeFixed32((bits shr 32).toInt())
-            }
-            else -> {
-                writeByte(255u) // Generic type marker
-                writeString(element.toString())
-            }
-        }
-    }
-    
-    fun build(): UByteArray = buffer.toUByteArray()
-}
-
-inline fun buildWirePayload(block: WirePayloadBuilder.() -> Unit): UByteArray {
-    val builder = WirePayloadBuilder()
-    builder.block()
-    return builder.build()
-}
-
-// === WIRE READER ===
-
-class WireReader(private val data: UByteArray) {
-    private var position = 0
-    
-    fun readByte(): UByte {
-        require(position < data.size) { "Unexpected end of data" }
-        return data[position++]
-    }
-    
-    fun readVarInt(): Int {
+    private fun decodeVarint(data: UByteArray, offset: Int): Pair<Int, Int> {
         var result = 0
         var shift = 0
-        while (position < data.size) {
-            val byte = data[position++].toInt()
-            result = result or ((byte and 0x7F) shl shift)
-            if ((byte and 0x80) == 0) break
+        var bytesRead = 0
+        
+        while (true) {
+            val byte = data[offset + bytesRead]
+            result = result or ((byte.toInt() and 0x7F) shl shift)
+            bytesRead++
+            if ((byte.toInt() and 0x80) == 0) break
             shift += 7
         }
+        
+        return result to bytesRead
+    }
+    
+    private fun encodeVarlong(value: Long): List<UByte> {
+        val result = mutableListOf<UByte>()
+        var v = value
+        while (v >= 0x80) {
+            result.add(((v and 0x7F) or 0x80).toUByte())
+            v = v ushr 7
+        }
+        result.add(v.toUByte())
         return result
     }
     
-    fun readFixed32(): Int {
-        require(position + 4 <= data.size) { "Not enough data for fixed32" }
-        var result = 0
-        repeat(4) { i ->
-            result = result or (data[position++].toInt() shl (i * 8))
-        }
-        return result
+    // === UTILITY EXTENSIONS ===
+    
+    private fun Long.toUByteArray(): UByteArray {
+        return ubyteArrayOf(
+            (this shr 56).toUByte(),
+            (this shr 48).toUByte(),
+            (this shr 40).toUByte(),
+            (this shr 32).toUByte(),
+            (this shr 24).toUByte(),
+            (this shr 16).toUByte(),
+            (this shr 8).toUByte(),
+            this.toUByte()
+        )
     }
     
-    fun readString(): String {
-        val length = readVarInt()
-        return readByteArray(length).decodeToString()
+    private fun UInt.toUByteArray(): UByteArray {
+        return ubyteArrayOf(
+            (this shr 24).toUByte(),
+            (this shr 16).toUByte(),
+            (this shr 8).toUByte(),
+            this.toUByte()
+        )
     }
     
-    fun readByteArray(length: Int): ByteArray {
-        require(position + length <= data.size) { "Not enough data for byte array" }
-        val result = ByteArray(length)
-        repeat(length) { i ->
-            result[i] = data[position++].toByte()
-        }
-        return result
-    }
-    
-    fun readOptionalString(): String? {
-        return if (readByte() == 1.toUByte()) readString() else null
-    }
-    
-    fun readOptionalInt(): Int? {
-        return if (readByte() == 1.toUByte()) readVarInt() else null
-    }
-    
-    fun readOptionalBoolean(): Boolean? {
-        return if (readByte() == 1.toUByte()) readByte() == 1.toUByte() else null
-    }
-    
-    inline fun <reified T> readElement(): T {
-        val typeMarker = readByte()
-        return when (typeMarker.toInt()) {
-            1 -> readString() as T
-            2 -> readVarInt() as T
-            3 -> {
-                val low = readFixed32().toLong() and 0xFFFFFFFF
-                val high = readFixed32().toLong() shl 32
-                (low or high) as T
-            }
-            4 -> (readByte() == 1.toUByte()) as T
-            5 -> {
-                val low = readFixed32().toLong() and 0xFFFFFFFF
-                val high = readFixed32().toLong() shl 32
-                Double.fromBits(low or high) as T
-            }
-            255 -> readString() as T
-            else -> throw IllegalArgumentException("Unknown type marker: $typeMarker")
-        }
+    private fun UByteArray.toUInt(): UInt {
+        require(size == 4) { "UInt requires 4 bytes" }
+        return (this[0].toUInt() shl 24) or
+               (this[1].toUInt() shl 16) or
+               (this[2].toUInt() shl 8) or
+               this[3].toUInt()
     }
 }
 
-// === CONVENIENCE EXTENSIONS ===
+// === EXTENSION FUNCTIONS FOR TRIKESHED TYPES ===
 
 /**
- * Serialize IoMemento to wire bytes
+ * Convert Series<Byte> to wire bytes
  */
-fun borg.trikeshed.isam.meta.IOMemento.toWireBytes(): UByteArray =
-    TrikeShedWireSerializer.serialize(this)
+fun Series<Byte>.toWireBytes(): UByteArray {
+    val buffer = UByteArray(this.size) { i ->
+        this[i].toUByte()
+    }
+    return buffer
+}
 
 /**
- * Deserialize wire bytes to IoMemento  
+ * Convert UByteArray to Series<Byte>
  */
-fun UByteArray.toIoMemento(): borg.trikeshed.isam.meta.IOMemento =
-    TrikeShedWireSerializer.deserialize(this)
+fun UByteArray.toBytesSeries(): Series<Byte> {
+    return this.size j { i: Int -> this[i].toByte() }
+}
 
 /**
- * Serialize Series<T> to wire bytes
+ * Convert IoMemento to wire format
  */
-inline fun <reified T> Series<T>.toWireBytes(): UByteArray =
-    TrikeShedWireSerializer.serializeSeries(this)
+fun borg.trikeshed.isam.meta.IOMemento.toWireBytes(): UByteArray {
+    return TrikeShedWireSerializer.serialize(this)
+}
 
 /**
- * Deserialize wire bytes to Series<T>
+ * Create IoMemento from wire bytes
  */
-inline fun <reified T> UByteArray.toSeries(): Series<T> =
-    TrikeShedWireSerializer.deserializeSeries(this)
+fun UByteArray.toIoMemento(): borg.trikeshed.isam.meta.IOMemento {
+    return TrikeShedWireSerializer.deserialize(this)
+}
 
-expect fun pack(data: ByteArray): ByteArray
->>>>>>> origin/feat/core-serialization-impl
+// === COMPATIBILITY WITH MINIMAL INTERFACE ===
+
+/**
+ * TrikeShed wire protocol main class for compatibility
+ */
+class TrikeShedWireProto {
+    fun serialize(data: Any): Series<Byte> {
+        return when (data) {
+            is borg.trikeshed.isam.meta.IOMemento -> data.toWireBytes().toBytesSeries()
+            is Series<*> -> TrikeShedWireSerializer.serializeSeries(data).toBytesSeries()
+            else -> emptySeries()
+        }
+    }
+    
+    fun <T> deserialize(data: Series<Byte>): T {
+        val bytes = UByteArray(data.size) { i -> data[i].toUByte() }
+        @Suppress("UNCHECKED_CAST")
+        return bytes.toIoMemento() as T
+    }
+}

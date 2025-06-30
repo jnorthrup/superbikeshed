@@ -1,7 +1,5 @@
 package borg.trikeshed.nio.spi
 
-<<<<<<< HEAD
-
 import borg.trikeshed.lib.*
 import borg.trikeshed.nio.*
 
@@ -19,6 +17,11 @@ interface NioServiceProvider {
      * Create a platform-specific byte buffer
      */
     fun createBuffer(capacity: Int): PlatformByteBuffer
+    
+    /**
+     * Wrap a byte array in a platform-specific buffer
+     */
+    fun wrapBuffer(array: ByteArray, offset: Int = 0, length: Int = array.size): PlatformByteBuffer
     
     /**
      * Create a platform-specific channel
@@ -48,23 +51,10 @@ interface NioServiceProvider {
     /**
      * Get the attention delegate for this provider
      */
-=======
-import borg.trikeshed.nio.PlatformByteBuffer
-import borg.trikeshed.nio.PlatformChannel
-
-/**
- * Service Provider Interface for NIO implementations
- */
-interface NioServiceProvider {
-    fun createBuffer(capacity: Int): PlatformByteBuffer
-    fun wrapBuffer(array: ByteArray, offset: Int = 0, length: Int = array.size): PlatformByteBuffer
-    fun createChannel(): PlatformChannel
->>>>>>> origin/feat/core-serialization-impl
     fun getAttentionDelegate(): AttentionDelegate
 }
 
 /**
-<<<<<<< HEAD
  * Interface for monitoring and logging NIO operations
  */
 interface AttentionDelegate {
@@ -76,25 +66,19 @@ interface AttentionDelegate {
     /**
      * Called after a NIO operation completes
      */
-    fun afterOperation(operation: String, durationMs: Long, success: Boolean, details: String = "")
+    fun afterOperation(operation: String, result: String = "", error: Throwable? = null)
     
     /**
-     * Called when a slow operation is detected
+     * Called when attention is transferred between components
      */
-    fun onSlowOperation(operation: String, durationMs: Long, threshold: Long, details: String = "")
-    
-    /**
-     * Called when an operation fails
-     */
-    fun onOperationError(operation: String, error: Throwable, details: String = "")
+    fun attentionTransferred(from: String, to: String, reason: String = "")
 }
-=======
- * Attention delegate for monitoring NIO operations
+
+/**
+ * Default no-op implementation of AttentionDelegate
  */
-interface AttentionDelegate {
-    fun onBufferAllocated(capacity: Int, duration: Long)
-    fun onBufferWrapped(arraySize: Int, offset: Int, length: Int, duration: Long)
-    fun onChannelCreated(type: String, config: Map<String, Any>)
-    fun onIoOperation(operation: String, bytes: Int, duration: Long)
-} 
->>>>>>> origin/feat/core-serialization-impl
+object NoOpAttentionDelegate : AttentionDelegate {
+    override fun beforeOperation(operation: String, details: String) {}
+    override fun afterOperation(operation: String, result: String, error: Throwable?) {}
+    override fun attentionTransferred(from: String, to: String, reason: String) {}
+}

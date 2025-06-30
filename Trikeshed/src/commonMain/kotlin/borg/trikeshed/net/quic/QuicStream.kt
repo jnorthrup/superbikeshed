@@ -45,7 +45,6 @@ class QuicStream(
             println("Stream $id window updated to $currentStreamFlowControlWindow (Max data: $newMaxData)")
         }
     }
-<<<<<<< HEAD
 
     /**
      * Write bytes to stream using TrikeShed Indexed<Byte>
@@ -53,7 +52,7 @@ class QuicStream(
     suspend fun writeBytes(data: Indexed<Byte>): Boolean {
         if (closed) return false
         // Convert Indexed<Byte> to ByteArray for platform buffer
-        val bytes = ByteArray(data.a) { i -> data[i] }
+        val bytes = ByteArray(data.size) { i -> data[i] }
         val buffer = PlatformByteBuffer.wrap(bytes)
         // Implementation would send via QUIC connection
         return true
@@ -125,6 +124,4 @@ class QuicStream(
             internalReceiveChannel.send(buffer)
         }
     }
-=======
->>>>>>> origin/feat/core-serialization-impl
 } 
