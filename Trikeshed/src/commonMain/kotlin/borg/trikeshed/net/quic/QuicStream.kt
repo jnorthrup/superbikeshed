@@ -1,6 +1,5 @@
 package borg.trikeshed.net.quic
 
-
 import borg.trikeshed.lib.*
 import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.nio.PlatformInetSocketAddress
@@ -53,7 +52,7 @@ class QuicStream(
     suspend fun writeBytes(data: Indexed<Byte>): Boolean {
         if (closed) return false
         // Convert Indexed<Byte> to ByteArray for platform buffer
-        val bytes = ByteArray(data.a) { i -> data[i] }
+        val bytes = ByteArray(data.size) { i -> data[i] }
         val buffer = PlatformByteBuffer.wrap(bytes)
         // Implementation would send via QUIC connection
         return true

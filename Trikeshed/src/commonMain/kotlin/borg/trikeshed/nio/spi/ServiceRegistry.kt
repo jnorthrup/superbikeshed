@@ -1,6 +1,5 @@
 package borg.trikeshed.nio.spi
 
-
 import borg.trikeshed.lib.*
 
 /**
@@ -67,6 +66,11 @@ object ServiceRegistry {
         providers.clear()
         defaultProvider = null
     }
+    
+    /**
+     * List all provider IDs
+     */
+    fun listProviders(): Set<String> = providers.keys.toSet()
     
     /**
      * Auto-discover and register platform-specific providers

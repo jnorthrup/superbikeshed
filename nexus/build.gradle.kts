@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    id("com.google.devtools.ksp") version "2.1.21-2.0.2"
+    // id("com.google.devtools.ksp") version "2.1.21-2.0.2" // Temporarily disabled
     `maven-publish`
     signing
 }
@@ -11,9 +11,27 @@ version = "1.0-SNAPSHOT"
 
 kotlin {
     jvmToolchain(21)
+    
     jvm {
-        // JVM only for now
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
     }
+    
+    // Platform detection for native target
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    val isMacOS = hostOs == "Mac OS X"
+    val isLinux = hostOs == "Linux"
+    val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+
+    when {
+        isMacOS && isArm64 -> macosArm64()
+        isMacOS -> macosX64()
+        isLinux && isArm64 -> linuxArm64()
+        isLinux -> linuxX64()
+    }
+    
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -23,6 +41,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
                 implementation(project(":Trikeshed"))
+                implementation(project(":k2script"))
             }
         }
         val commonTest by getting {
@@ -39,21 +58,37 @@ kotlin {
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":Trikeshed"))
+                implementation(project(":k2script"))
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+                implementation(kotlin("test-junit"))
             }
         }
     }
 }
 
-dependencies {
-    add("kspJvm", project(":ksp-processors"))
-    add("kspCommonMainMetadata", project(":ksp-processors"))
+// KSP dependencies temporarily disabled during merge
+// dependencies {
+//     add("kspJvm", project(":ksp-processors"))
+//     add("kspCommonMainMetadata", project(":ksp-processors"))
+// }
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
-            "-Xskip-metadata-version-check"
+            "-Xskip-metadata-version-check",
+            "-Xno-call-assertions",
+            "-Xno-param-assertions",
+            "-Xno-receiver-assertions",
+            "-Xno-source-roots-assertions"
         )
     }
 }
@@ -130,4 +165,8 @@ afterEvaluate {
             }
         }
     }
-} 
+}
+
+// IntelliJ Project Enumerator integration
+// The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
+// If additional dependencies are needed, add them here.

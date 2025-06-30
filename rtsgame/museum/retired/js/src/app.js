@@ -1,0 +1,440 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// Define gameContext as a global object for the game
+let gameContext = window.gameContext || {};
+if (!window.gameContext) {
+    window.gameContext = gameContext;
+    // Get the canvas element and its 2D rendering context, add them to gameContext
+    window.gameContext.canvas = gameContext.canvas || document.getElementById('gameCanvas');
+    if (window.gameContext.canvas) {
+        // Set canvas to full screen
+        const resizeCanvas = () => {
+            window.gameContext.canvas.width = window.innerWidth;
+            window.gameContext.canvas.height = window.innerHeight;
+            if (gameContext.camera) {
+                gameContext.camera.canvasWidth = window.innerWidth;
+                gameContext.camera.canvasHeight = window.innerHeight;
+            }
+        };
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        console.log("Main game canvas initialized successfully in main.js!");
+    }
+    else {
+        console.error("Main game canvas element not found!");
+    }
+    // Minimap functionality removed
+    // Initialize core game functions if they aren't already
+    // window.gameContext.initGame = initGame; // OLD
+    // window.gameContext.gameLoop = gameLoop; // OLD
+    // Initialize input handling function
+    if (!window.gameContext.initInputHandling) {
+        window.gameContext.initInputHandling = inputHandler_js_1.initInputHandling;
+    }
+}
+// Import necessary modules
+const inputManager_js_1 = require("./input/inputManager.js"); // NEW: Import InputManager
+const supcomCamera_js_1 = require("./input/supcomCamera.js"); // NEW: Import SupCom camera
+const inputHandler_js_1 = require("./input/inputHandler.js");
+// import { gameLoop, initGame } from './core/game.js'; // OLD: To be replaced
+const simulation_js_1 = require("./core/simulation.js");
+const recordingUtils_js_1 = require("./core/recordingUtils.js");
+const simulationConfig_js_1 = require("./config/simulationConfig.js");
+const battleJournal_js_1 = __importDefault(require("./ai/battleJournal.js")); // Import battleJournal
+const effect_js_1 = require("./core/entities/effect.js"); // Import Effect class
+const caption_js_1 = require("./core/entities/caption.js"); // Import Caption class
+const threeRenderer_js_1 = require("./rendering/threeRenderer.js"); // Import Three.js renderer
+// Minimap functionality removed
+const modernUIManager_js_1 = require("./ui/modernUIManager.js"); // NEW: Import Modern UI Manager
+const calloutManager_js_1 = require("./ui/calloutManager.js");
+const spacegraphExporter_1 = require("./visualization/spacegraphExporter");
+// Initial game setup
+// Initialize gameContext properties for the first time
+gameContext.battleJournal = battleJournal_js_1.default; // Assign battleJournal to gameContext
+gameContext.Effect = effect_js_1.Effect; // Assign Effect class to gameContext
+gameContext.Caption = caption_js_1.Caption; // Assign Caption class to gameContext
+gameContext.units = [];
+gameContext.buildings = [];
+gameContext.effects = [];
+gameContext.captions = [];
+gameContext.projectiles = [];
+gameContext.terrain = []; // Initialize terrain
+gameContext.resourceNodes = []; // Initialize resource nodes
+gameContext.pathfindingGrid = []; // Initialize pathfinding grid
+gameContext.resources = { blue: {}, red: {} }; // Initialize resources
+// Camera constants (some might be duplicates from SIMULATION_CONFIG, consolidate if necessary)
+const ZOOM_FACTOR = 1.2;
+const MIN_ZOOM_APP = 0.01; // Renamed to avoid conflict if SIMULATION_CONFIG has MIN_ZOOM
+const MAX_ZOOM_APP = 50.0; // Renamed
+const CAMERA_SMOOTHING = 0.15;
+const MOMENTUM_DECAY = 0.95;
+const MAX_STRATEGIC_ZOOM_APP = 2.0; // Renamed
+const MIN_TACTICAL_ZOOM_APP = 8.0; // Renamed
+const MAX_TACTICAL_ANGLE_APP = 45; // Renamed
+const KEYBOARD_MOVE_SPEED = 1500; // Adjusted for world units per second (approx)
+const MODIFIER_SPEED_MULTIPLIER = 3;
+gameContext.camera = {
+    x: simulationConfig_js_1.SIMULATION_CONFIG.CAMERA_START_X || 2500, // Center of 5000x5000 world
+    y: simulationConfig_js_1.SIMULATION_CONFIG.CAMERA_START_Y || 2500, // Center of 5000x5000 world
+    zoom: simulationConfig_js_1.SIMULATION_CONFIG.CAMERA_START_ZOOM || 0.5, // Zoom out to see more terrain
+    targetX: simulationConfig_js_1.SIMULATION_CONFIG.CAMERA_START_X || 2500, // From main_simulation.js
+    targetY: simulationConfig_js_1.SIMULATION_CONFIG.CAMERA_START_Y || 2500, // From main_simulation.js
+    targetZoom: simulationConfig_js_1.SIMULATION_CONFIG.CAMERA_START_ZOOM || 0.5, // From main_simulation.js
+    velocityX: 0, // From main_simulation.js
+    velocityY: 0, // From main_simulation.js
+    velocityZoom: 0, // From main_simulation.js
+    isDragging: false, // From main_simulation.js
+    lastMouseX: 0, // From main_simulation.js
+    lastMouseY: 0, // From main_simulation.js
+    angle: 0, // Top-down view, no tilt
+    targetAngle: 0, // Top-down view, no tilt
+    rotation: 0, // Standard top-down view, no rotation
+    targetRotation: 0, // Keep camera fixed without rotation
+    canvasWidth: window.innerWidth,
+    canvasHeight: window.innerHeight,
+    minZoom: MIN_ZOOM_APP, // Use new constant
+    maxZoom: MAX_ZOOM_APP, // Use new constant
+    autoCamera: true, // This was from the old app.js camera, might be overridden by new controls
+    cameraTarget: null, // This was from the old app.js camera
+    cameraTimer: 0, // This was from the old app.js camera
+};
+gameContext.gameState = {
+    paused: false,
+    gameTime: 0,
+    winner: null,
+    events: [],
+    fpvMode: false,
+    aimingGrenade: false
+};
+// Initialize the Three.js renderer - this is now async
+// gameContext.renderer = initThreeRenderer(gameContext.canvas); // Old synchronous call
+// Initialize the enhanced journaling system
+const recordingUtils_js_2 = require("./core/recordingUtils.js");
+const strategicAI_js_1 = require("./ai/strategicAI.js"); // Import StrategicAI for AI logic.
+// Initialize the random seed system using native Math.random()
+// For production, you might want a more robust seed generation or a fixed seed for reproducibility.
+gameContext.GAME_SEED = simulationConfig_js_1.SIMULATION_CONFIG.GAME_SEED || battleJournal_js_1.default.seed;
+// Replaced Math.seedrandom with a simple wrapper around Math.random for browser compatibility
+gameContext.seedRandom = {
+    random: function () { return Math.random(); },
+    init: function (seed) { }
+};
+// Initialize simulation parameters from config
+gameContext.RECORD_AI_DECISIONS = simulationConfig_js_1.SIMULATION_CONFIG.RECORD_AI_DECISIONS;
+gameContext.RECORD_AI_DECISIONS_DURATION_SECONDS = 10; // Set to exactly 10 seconds for this simulation
+gameContext.HEADLESS_MODE = simulationConfig_js_1.SIMULATION_CONFIG.HEADLESS_MODE;
+gameContext.JOURNALING_MODE = simulationConfig_js_1.SIMULATION_CONFIG.JOURNALING_MODE;
+gameContext.JOURNALING_TIMEOUT = simulationConfig_js_1.SIMULATION_CONFIG.JOURNALING_TIMEOUT_SECONDS;
+// Initialize the enhanced journaling system with current game context
+(0, recordingUtils_js_2.initializeRecordingSystem)();
+// Start a random seed recording based on configured duration if not using full journaling
+if (gameContext.JOURNALING_MODE !== 'FULL') {
+    (0, recordingUtils_js_1.startRandomSeedRecording)(gameContext, gameContext.RECORD_AI_DECISIONS_DURATION_SECONDS);
+}
+// Initialize SelectionManager
+const selectionManager_js_1 = __importDefault(require("./ui/selectionManager.js"));
+const borderLayout_js_1 = require("./ui/borderLayout.js"); // Import WindowManager
+gameContext.selectionManager = new selectionManager_js_1.default(gameContext); // Pass gameContext to manager
+// Initialize WindowManager and allow drawing
+gameContext.windowManager = new borderLayout_js_1.WindowManager();
+gameContext.allowWindowDrawing = true;
+// Initialize Modern UI Manager
+let modernUIManager = null;
+// Initialize SupCom camera (will be done after renderer is ready)
+let supcomCamera = null;
+// Comprehensive HMR protection - prevent multiple initialization
+if (window.gameInitialized) {
+    console.log("Game already initialized, skipping duplicate initialization due to HMR");
+    // Early exit to prevent duplicate initialization
+    if (module.hot) {
+        module.hot.decline(); // Disable HMR for this module to prevent reloading
+    }
+}
+else {
+    window.gameInitialized = true;
+    // Stop any existing animation loops
+    if (window.gameAnimationId) {
+        cancelAnimationFrame(window.gameAnimationId);
+        window.gameAnimationId = null;
+    }
+    // Initialize input handling and start the game - only run once
+    (() => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            if (!gameContext.HEADLESS_MODE) {
+                console.log("Initializing Three.js renderer...");
+                gameContext.renderer = yield (0, threeRenderer_js_1.initThreeRenderer)(gameContext.canvas); // New asynchronous call
+                console.log("Three.js renderer initialized asynchronously.");
+                // initInputHandling(gameContext); // Old input handling - review if it conflicts or can be merged/removed
+                // For now, new handlers will be added.
+                // Initialize SupCom camera system
+                supcomCamera = new supcomCamera_js_1.SupComCamera(gameContext);
+                console.log("SupCom camera system initialized");
+                // NEW: Clear all existing windows on game launch when not in headless mode
+                if (gameContext.windowManager && Array.isArray(gameContext.windowManager.windows)) {
+                    gameContext.windowManager.windows = [];
+                }
+                else if (gameContext.windowManager) {
+                    console.warn("windowManager.windows is not a directly clearable array. Cannot auto-clear windows on startup.");
+                }
+                // Initialize the game state
+                // initGame(gameContext); // OLD: This is now handled by Simulation constructor and init()
+                // Prepare context for the new Simulation engine
+                // This context should only contain what the simulation core truly needs.
+                // Other properties on the global gameContext (like renderer, camera, UI managers)
+                // will remain on the global gameContext for UI/rendering layers to use.
+                const simulationCoreContext = {
+                    GAME_SEED: gameContext.GAME_SEED,
+                    seedRandom: gameContext.seedRandom, // The object with init/random methods
+                    HEADLESS_MODE: gameContext.HEADLESS_MODE,
+                    RECORD_AI_DECISIONS: gameContext.RECORD_AI_DECISIONS,
+                    RECORD_AI_DECISIONS_DURATION_SECONDS: gameContext.RECORD_AI_DECISIONS_DURATION_SECONDS,
+                    battleJournal: gameContext.battleJournal,
+                    // resourceNodes are used by Engineer AI. If this AI logic moves into simulation, it might get this via context.
+                    // For now, passing it if unit logic (performSupportRole) still expects it on the passed context.
+                    resourceNodes: gameContext.resourceNodes,
+                    // Effect and Caption classes are now imported directly by Unit/Building where needed.
+                    // No longer passing gameContext.Effect or gameContext.Caption to Simulation.
+                };
+                const simulation = new simulation_js_1.Simulation(simulationCoreContext);
+                yield simulation.init(); // Initialize simulation state, terrain, entities
+                // After simulation initializes and terrain is ready, create the Three.js terrain mesh
+                if (gameContext.renderer && (simulation === null || simulation === void 0 ? void 0 : simulation.terrain)) {
+                    gameContext.renderer.updateTerrain(simulation.terrain); // Explicitly create/update terrain after init
+                }
+                // Hide the loading overlay once simulation is initialized
+                const loadingOverlay = document.getElementById('loading');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+                // Make the simulation instance globally accessible for debugging or specific UI interactions.
+                // This helps bridge the gap if some parts of UI still expect a global way to access sim state.
+                window.simulation = simulation;
+                // Expose gameState and entityManager for SpaceGraph exporter
+                window.gameState = simulation.gameState;
+                window.entityManager = simulation.entityManager;
+                // Instantiate StrategicAI for the 'red' team and attach to simulation
+                // This creates the main AI logic controller for the 'red' team.
+                // It's attached to the simulation object to be accessible by other game systems (e.g., rendering, input).
+                simulation.strategicAI = new strategicAI_js_1.StrategicAI('red');
+                console.log("StrategicAI instance created for team 'red'.");
+                // Create and store InputManager instance
+                const inputManager = new inputManager_js_1.InputManager(simulation);
+                gameContext.inputManager = inputManager; // Make it available to initInputHandling via gameContext
+                // Initialize Modern UI Manager
+                modernUIManager = new modernUIManager_js_1.ModernUIManager(gameContext);
+                console.log("Modern RTS UI initialized.");
+                gameContext.playerTeam = 'blue'; // Define playerTeam for simulated trigger
+                gameContext.calloutManager = new calloutManager_js_1.CalloutManager(gameContext);
+                gameContext.calloutManager.init();
+                // Start the game loop
+                console.log("Starting game loop with new Simulation engine...");
+                let lastFrameTime = 0;
+                let lastSpacegraphUpdate = 0; // For SpaceGraph periodic update
+                const SPACEGRAPH_UPDATE_INTERVAL = 1000; // milliseconds (e.g., once per second)
+                function animate(timestamp) {
+                    const deltaTime = lastFrameTime > 0 ? (timestamp - lastFrameTime) / 1000 : (1 / 60); // seconds
+                    lastFrameTime = timestamp;
+                    if (gameContext.calloutManager) {
+                        gameContext.calloutManager.update(deltaTime);
+                    }
+                    // SIMULATED TRIGGER FOR TESTING - REMOVE FOR PRODUCTION
+                    if (simulation && simulation.gameState) {
+                        if (!simulation.gameState.lastCalloutTestTime)
+                            simulation.gameState.lastCalloutTestTime = 0;
+                        const currentTimeForCallout = simulation.gameState.gameTime || 0;
+                        if (currentTimeForCallout > simulation.gameState.lastCalloutTestTime + 20) { // Every 20 game seconds
+                            if (gameContext.calloutManager) {
+                                let playerBuilding = null;
+                                if (simulation.entityManager && simulation.entityManager.buildings) {
+                                    playerBuilding = simulation.entityManager.buildings.find(b => b.team === gameContext.playerTeam && b.hp > 0);
+                                }
+                                const calloutData = {
+                                    type: 'BASE_UNDER_ATTACK',
+                                    title: 'TEST: Base Under Attack!',
+                                    priority: 1,
+                                    duration: 15000
+                                };
+                                if (playerBuilding) {
+                                    calloutData.message = `Your ${(playerBuilding.type && playerBuilding.type.name) || 'building'} at (${Math.round(playerBuilding.x)}, ${Math.round(playerBuilding.y)}) is under attack!`;
+                                    calloutData.location = { x: playerBuilding.x, y: playerBuilding.y };
+                                    calloutData.targetEntityId = playerBuilding.id;
+                                }
+                                else {
+                                    calloutData.message = 'You are under attack (simulated at default location)!';
+                                    calloutData.location = { x: 2500, y: 2500 };
+                                }
+                                gameContext.calloutManager.addCallout(calloutData);
+                            }
+                            simulation.gameState.lastCalloutTestTime = currentTimeForCallout;
+                        }
+                    }
+                    // END SIMULATED TRIGGER
+                    // Update SpaceGraph visualization periodically
+                    if (timestamp - lastSpacegraphUpdate > SPACEGRAPH_UPDATE_INTERVAL) {
+                        lastSpacegraphUpdate = timestamp;
+                        if (window.gameState && window.entityManager && typeof window.updateRtsSpaceGraph === 'function') {
+                            try {
+                                // console.log("Attempting to update SpaceGraph data...");
+                                const graphData = (0, spacegraphExporter_1.exportGameStateToSpaceGraphData)(window.gameState, window.entityManager);
+                                window.updateRtsSpaceGraph(graphData);
+                                // console.log("SpaceGraph data sent for update.");
+                            }
+                            catch (e) {
+                                console.error("Error updating SpaceGraph data:", e);
+                            }
+                        }
+                    }
+                    // Add battle detection and camera adjustment
+                    if (simulation.entityManager && simulation.entityManager.units && Array.isArray(simulation.entityManager.units)) {
+                        const battlingUnits = simulation.entityManager.units.filter(unit => unit && (unit.state === 'attacking' || (unit.health !== undefined && unit.maxHealth !== undefined && unit.health < unit.maxHealth)));
+                        if (battlingUnits.length > 0) {
+                            const battleCenterX = battlingUnits.reduce((sum, unit) => sum + (unit.x || 0), 0) / battlingUnits.length;
+                            const battleCenterY = battlingUnits.reduce((sum, unit) => sum + (unit.y || 0), 0) / battlingUnits.length;
+                            gameContext.camera.targetX = battleCenterX;
+                            gameContext.camera.targetY = battleCenterY;
+                            gameContext.camera.targetZoom = Math.max(2.0, gameContext.camera.targetZoom); // Zoom in slightly for focus
+                        }
+                    }
+                    // Update SupCom camera system
+                    if (supcomCamera) {
+                        supcomCamera.update(deltaTime);
+                    }
+                    // Update the main simulation (entities, game logic)
+                    const continueLoop = simulation.gameLoop(timestamp); // timestamp is still used by sim's internal deltaTime
+                    // Update Strategic AI instance.
+                    if (simulation.strategicAI) {
+                        // The StrategicAI's update method handles its internal logic, including
+                        // processing player interaction events and generating new predictions.
+                        // It requires the main simulation object (as gameContext), its own team ID,
+                        // and access to the current game state (units, buildings, resources).
+                        simulation.strategicAI.update(simulation, // Pass the entire simulation object as gameContext
+                        simulation.strategicAI.team, // The AI's own team
+                        simulation.entityManager.units, // Global list of units
+                        simulation.entityManager.buildings, // Global list of buildings
+                        simulation.resources // Global resources object
+                        );
+                    }
+                    // Render the current state if not in headless mode
+                    if (!gameContext.HEADLESS_MODE && gameContext.renderer) {
+                        try {
+                            // Camera is already updated by updateCameraLogic which calls renderer.updateCamera
+                            // gameContext.renderer.updateCamera(gameContext.camera); // This is now done in updateCameraLogic
+                            // Renderer takes the simulation instance to get entities/state, 
+                            // and the global gameContext for other UI related info like camera.
+                            gameContext.renderer.render(simulation, gameContext);
+                        }
+                        catch (e) {
+                            console.error("Error during WebGL rendering in main loop:", e);
+                        }
+                        // Update Modern UI Manager
+                        if (modernUIManager) {
+                            // Add extra safety checks to prevent filter errors
+                            const units = (simulation.entityManager && Array.isArray(simulation.entityManager.units)) ? simulation.entityManager.units : [];
+                            const buildings = (simulation.entityManager && Array.isArray(simulation.entityManager.buildings)) ? simulation.entityManager.buildings : [];
+                            const uiContext = Object.assign(Object.assign({}, gameContext), { units: units, buildings: buildings, resources: simulation.resources || { blue: {}, red: {} }, gameState: simulation.gameState || gameContext.gameState, terrain: simulation.terrain || null, resourceNodes: simulation.resourceNodes || [] });
+                            modernUIManager.update(uiContext);
+                        }
+                    }
+                    // Check if the simulation or other logic determined the game should end
+                    if (!continueLoop || (simulation.gameState.winner && simulation.gameState.winner !== "RECORDING_COMPLETE")) {
+                        console.log("Game loop terminated.");
+                        if (simulation.gameState.winner === "RECORDING_COMPLETE" && gameContext.battleJournal && gameContext.battleJournal.isRecording) {
+                            const recording = gameContext.battleJournal.stopRecording();
+                            // TODO: Implement logic for sending/saving the recording data
+                            console.log("Recording stopped in main.js due to RECORDING_COMPLETE state.");
+                            // Example: sendRecordingToServer(recording); 
+                        }
+                        // Perform any other cleanup or end-game display logic here
+                        return; // Stop requesting new frames
+                    }
+                    window.gameAnimationId = requestAnimationFrame(animate);
+                }
+                window.gameAnimationId = requestAnimationFrame(animate);
+            }
+        }
+        catch (error) {
+            console.error("Error during initialization:", error);
+            // Hide loading overlay even on error
+            const loadingOverlay = document.getElementById('loading');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+                loadingOverlay.innerHTML = '<div style="color: red;">Error loading game. Please refresh the page.</div>';
+                loadingOverlay.style.display = 'block';
+            }
+        }
+    }))(); // Close the async IIFE
+} // Close the HMR protection if block
+// import { GameEngine } from './core/gameEngine';
+// Moved these imports to prevent issues - they're not currently used anyway
+// import { ThreeRenderer } from './rendering/threeRenderer';
+// import { UIManager } from './ui/uiManager';
+// import { GameInitializer } from './core/gameInitializer.js';
+// Commented out problematic Game class that uses non-existent imports
+/*
+class Game {
+    constructor() {
+        // Initialize core systems
+        // this.rng = new DeterministicRNG(Date.now()); // Old TrikeShed
+        this.rng = { next: () => Math.random() }; // Placeholder for now
+        // this.gameState = new GameState( // Old TrikeShed
+        //     TensorOps.create([1000, 1000], null) // 1000x1000 world grid // Old TrikeShed
+        // );
+        this.gameState = createTensor([1000,1000], () => null); // Using updated import
+        const myJoin = trikeJ(1, 2); // Using updated import (aliased j to trikeJ)
+        console.log("Conceptual join from trikeshed-ts:", myJoin); // Updated log
+        
+        // Initialize subsystems
+        // this.engine = new GameEngine(this.gameState, this.rng); // GameEngine might need update for new TrikeShedCore
+        this.renderer = new ThreeRenderer();
+        this.input = new InputManager();
+        this.ui = new UIManager();
+        
+        // Bind update loop
+        this.update = this.update.bind(this);
+        this.lastTime = 0;
+        
+        // Start game loop
+        requestAnimationFrame(this.update);
+    }
+    
+    update(currentTime) {
+        const deltaTime = (currentTime - this.lastTime) / 1000;
+        this.lastTime = currentTime;
+        
+        // Update game state
+        this.engine.update(deltaTime);
+        
+        // Render frame
+        this.renderer.render(this.gameState);
+        
+        // Update UI
+        this.ui.update(this.gameState);
+        
+        // Continue game loop
+        requestAnimationFrame(this.update);
+    }
+}
+
+// Initialize game when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.game = new Game();
+});
+
+// Initialize the game
+const gameInitializer = new GameInitializer();
+gameInitializer.initialize().catch(error => {
+    console.error("Failed to initialize game:", error);
+});
+*/

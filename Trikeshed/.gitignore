@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Trikeshed specific ignores
 
 # Development artifacts
@@ -28,3 +29,26 @@ coverage/
 # OS artifacts
 .DS_Store
 Thumbs.db
+=======
+gradle
+.idea
+.gradle
+build
+docs/
+tmp/
+.vscode/
+
+<<<<<<< HEAD
+.kotlin/
+=======
+.kotlin
+.idea
+.gradle
+gradle
+gradlew
+gradlew.bat
+
+>>>>>>> posixish
+.aider*
+.env
+>>>>>>> origin/feat/core-serialization-impl

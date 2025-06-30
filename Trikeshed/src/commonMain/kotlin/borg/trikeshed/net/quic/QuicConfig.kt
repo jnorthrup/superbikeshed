@@ -1,6 +1,5 @@
 package borg.trikeshed.net.quic
 
-
 data class QuicConfig(
     // Existing parameters
     val streamBufferSize: Int? = null,

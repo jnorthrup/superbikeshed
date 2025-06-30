@@ -1,5 +1,14 @@
+<<<<<<< HEAD
 # CLAUDE.md
 
+=======
+> **Note: This document may be outdated and refer to a previous version of the rtsgame project (likely TypeScript/JavaScript-based). The current project has been significantly refactored to Kotlin Multiplatform with WebGPU. Please cross-reference with the main `rtsgame/README.md` for the latest project information.**
+
+# CLAUDE.md
+
+> **Unified Planning**: See `/todo/rtsgame_todos.md` for consolidated RTS game development tasks
+
+>>>>>>> origin/feat/core-serialization-impl
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Essential Development Commands
@@ -25,7 +34,11 @@ npm run build                 # Production build
 ## Core Architecture
 
 ### TrikeShed Data Architecture
+<<<<<<< HEAD
 - **Location**: `src/trikeshed/core.ts`
+=======
+- **Location**: Core TrikeShed (Kotlin) logic resides in the `trikeshed-core` project. Key types like `Join`, `Series` are defined within `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/`.
+>>>>>>> origin/feat/core-serialization-impl
 - **Purpose**: Deterministic tensor-based data system for immutable state management
 - **Key Types**: `Join<A,B>`, `Twin<T>`, `Tensor`, `Series`
 - **Critical for**: Replay capability, deterministic simulation, cache-optimized data structures
@@ -94,6 +107,10 @@ npm run build                 # Production build
 - All randomness must use seeded RNG (`js/core/deterministicRNG.js`)
 - State changes must be immutable for replay capability
 - No direct state mutation - use TrikeShed patterns
+<<<<<<< HEAD
+=======
+- In JavaScript/TypeScript code, this means favoring immutable data structures and pure functions (functions that do not have side effects and return new state instead of modifying existing state), especially for game state logic.
+>>>>>>> origin/feat/core-serialization-impl
 
 ### Performance Considerations
 - Cache-friendly data structures preferred
@@ -105,10 +122,12 @@ npm run build                 # Production build
 - Core game logic in `js/core/`
 - AI systems in `js/ai/`
 - Configuration isolated in `js/config/`
-- TypeScript core architecture in `src/trikeshed/`
+<<<<<<< HEAD
+- Core TrikeShed (Kotlin) architecture is in the `trikeshed-core` project.
 
 ### Documentation
 - Comprehensive design docs in `/docs/`
-- Architecture overview in `docs/architecture.md`
+- Architecture overview (Note: `docs/architecture.md` currently not found - consider creating or updating this reference).
+
 - Game design document in `docs/the-rts-concepts.md`
 - Implementation guides for complex systems

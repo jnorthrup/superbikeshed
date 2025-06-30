@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
+    id("com.github.ben-manes.versions")
 }
 
 group = "borg.trikeshed"
@@ -17,6 +18,12 @@ kotlin {
 
     wasmJs {
         browser()
+        binaries.executable()
+    }
+
+    js(IR) {
+        browser()
+        nodejs()
         binaries.executable()
     }
 
@@ -38,6 +45,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(project(":Trikeshed"))
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines.core)
@@ -60,6 +68,12 @@ kotlin {
         val wasmJsMain by getting {
             dependencies {
                 implementation(libs.kotlinx.coroutines.core)
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
             }
         }
 

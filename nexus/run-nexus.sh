@@ -76,13 +76,13 @@ EOF
             echo "   🎯 Foundation attention: Demonstrating compositional patterns"
             sleep 1
             
-            echo -e "\n🔄 Distributing 10% attention to Meta-Development"
+            echo -e "
+🔄 Distributing 10% attention to Meta-Development"
             echo "   🎯 Meta attention: Coordinating system integration"
             sleep 1
             
-            echo -e "\n🌀 Attention convergence: Allowing abstractions to fulfill main()'s desires..."
-            
-            echo -e "\n📊 Demonstrating causality chain patterns:"
+            echo -e "
+🌀 Attention convergence: Allowing abstractions to fulfill main()'s desires..."
             echo "   1. K2Script (cue ball) → initiates execution"
             sleep 1
             echo "   2. Router → dispatches messages through handlers"

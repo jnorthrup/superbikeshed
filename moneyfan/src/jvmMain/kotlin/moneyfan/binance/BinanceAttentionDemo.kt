@@ -1,0 +1,57 @@
+package moneyfan.binance
+
+import moneyfan.attention.*
+import kotlinx.coroutines.*
+
+/**
+ * Binance attention ingest demo with real-time data processing
+ */
+suspend fun runBinanceAttentionDemo() {
+    println("🔥 Binance Attention Ingest - Live Market Data")
+    println("=" .repeat(60))
+    
+    val ingest = BinanceAttentionIngest()
+    val aggregator = AcapulcoAttentionAggregator()
+    
+    // Add major crypto pairs for attention tracking
+    ingest.addSymbolForAttention("BTCUSDT", 0.005) // 0.5% threshold
+    ingest.addSymbolForAttention("ETHUSDT", 0.01)  // 1% threshold  
+    ingest.addSymbolForAttention("ADAUSDT", 0.02)  // 2% threshold
+    ingest.addSymbolForAttention("SOLUSDT", 0.015) // 1.5% threshold
+    
+    var updateCount = 0
+    
+    try {
+        // Start the data ingest and process for 15 seconds
+        withTimeoutOrNull(15000) {
+            ingest.startIngest().collect { ticker ->
+                updateCount++
+                
+                if (updateCount % 10 == 0) { // Show every 10th update
+                    println("\n📊 Binance Update #${updateCount/10}")
+                    println("${ticker.symbol.value}: ${ticker.price.value.format(2)} " +
+                           "(${if(ticker.priceChangePercent >= 0) "+" else ""}${ticker.priceChangePercent.format(3)}%) " +
+                           "Vol: ${ticker.volume.value.format(0)}")
+                    
+                    // Show attention state
+                    val attentionTicker = ingest.getAttentionTicker()
+                    val focus = attentionTicker.getCurrentFocus()
+                    val (focusSymbol, focusSpan) = focus
+                    println("🎯 Attention Focus: ${focusSymbol.value} (${focusSpan.millis}ms)")
+                }
+                
+                if (updateCount >= 200) { // Stop after 200 updates
+                    ingest.stop()
+                    return@collect
+                }
+            }
+        }
+    } catch (e: Exception) {
+        println("⚠️  Ingest stopped: ${e.message}")
+    }
+    
+    println("\n✅ Processed $updateCount Binance updates with attention filtering")
+    ingest.stop()
+}
+
+private fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)

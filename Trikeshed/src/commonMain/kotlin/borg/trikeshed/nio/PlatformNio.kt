@@ -1,7 +1,8 @@
 package borg.trikeshed.nio
 
-
 import borg.trikeshed.lib.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /**
  * Platform-agnostic NIO abstractions for Trikeshed
@@ -9,6 +10,7 @@ import borg.trikeshed.lib.*
 
 /**
  * Platform-agnostic byte buffer abstraction
+ * This abstracts java.nio.ByteBuffer.
  */
 expect class PlatformByteBuffer {
     companion object {
@@ -17,10 +19,12 @@ expect class PlatformByteBuffer {
     }
     
     fun put(byte: Byte): PlatformByteBuffer
+    fun put(src: ByteArray): PlatformByteBuffer
     fun put(src: ByteArray, offset: Int, length: Int): PlatformByteBuffer
     fun putLong(value: Long): PlatformByteBuffer
-    fun getLong(): Long
+    fun get(): Byte
     fun get(dst: ByteArray): PlatformByteBuffer
+    fun getLong(): Long
     fun flip(): PlatformByteBuffer
     fun clear(): PlatformByteBuffer
     fun rewind(): PlatformByteBuffer
@@ -37,9 +41,11 @@ expect class PlatformByteBuffer {
 
 /**
  * Platform-agnostic internet socket address
+ * This abstracts java.net.InetSocketAddress.
  */
 expect class PlatformInetSocketAddress {
     constructor(host: String, port: Int)
+    constructor(address: PlatformInetAddress, port: Int)
     
     val hostName: String
     val hostString: String
@@ -49,21 +55,44 @@ expect class PlatformInetSocketAddress {
 }
 
 /**
+ * Platform-agnostic internet address
+ * This abstracts java.net.InetAddress.
+ */
+expect class PlatformInetAddress {
+    companion object {
+        fun getLocalHost(): PlatformInetAddress
+    }
+    // Add other necessary methods/properties if needed, e.g., getHostAddress()
+}
+
+/**
+ * Platform-agnostic socket address
+ * This abstracts java.net.SocketAddress.
+ */
+expect abstract class PlatformSocketAddress
+
+/**
  * Platform-agnostic datagram packet
+ * This abstracts java.net.DatagramPacket.
  */
 expect class PlatformDatagramPacket {
+    constructor(data: ByteArray, length: Int)
+    constructor(data: ByteArray, length: Int, address: PlatformSocketAddress)
     constructor(data: ByteArray, length: Int, address: PlatformInetSocketAddress)
     constructor(data: ByteArray, offset: Int, length: Int, address: PlatformInetSocketAddress)
     
     val data: ByteArray
-    val length: Int
+    var length: Int
     val offset: Int
-    val address: PlatformInetSocketAddress
+    val address: PlatformSocketAddress?
+    val socketAddress: PlatformInetSocketAddress?
+    val port: Int
     val packet: Any  // Platform-specific packet type
 }
 
 /**
  * Platform-agnostic datagram socket
+ * This abstracts java.net.DatagramSocket.
  */
 expect class PlatformDatagramSocket {
     companion object {
@@ -81,12 +110,30 @@ expect class PlatformDatagramSocket {
     val isClosed: Boolean
     val localAddress: PlatformInetSocketAddress?
     val remoteAddress: PlatformInetSocketAddress?
+    val remoteSocketAddress: PlatformSocketAddress?
+    val inetAddress: PlatformInetAddress?
+    val port: Int
 }
 
 /**
  * Platform-agnostic channel abstraction
+ * This abstracts java.nio.channels.Channel.
  */
 expect class PlatformChannel {
-    fun isOpen(): Boolean
+    fun read(buffer: PlatformByteBuffer): Int
+    fun write(buffer: PlatformByteBuffer): Int
     fun close()
+    fun isOpen(): Boolean
+    val isOpen: Boolean
 }
+
+/**
+ * Platform-agnostic socket exception
+ */
+expect class PlatformSocketException(message: String?) : Exception
+
+/**
+ * Platform-agnostic current time in milliseconds
+ * This abstracts System.currentTimeMillis().
+ */
+expect fun platformCurrentTimeMillis(): Long

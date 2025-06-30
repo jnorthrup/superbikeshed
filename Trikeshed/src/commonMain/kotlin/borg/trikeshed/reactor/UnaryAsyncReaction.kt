@@ -1,6 +1,9 @@
 package borg.trikeshed.reactor
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/feat/core-serialization-impl
 import borg.trikeshed.lib.Join
 
 /**
@@ -20,4 +23,8 @@ interface UnaryAsyncReaction {
      * @return A Join of (interest, nextReaction) to continue the chain, or null to terminate
      */
     operator fun invoke(key: SelectionKey): Join<Int, UnaryAsyncReaction>?
+<<<<<<< HEAD
 }
+=======
+} 
+>>>>>>> origin/feat/core-serialization-impl

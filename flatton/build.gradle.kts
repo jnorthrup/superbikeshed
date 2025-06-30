@@ -33,6 +33,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(project(":Trikeshed"))
                 implementation(project(":kotlinx-serialization-scanner"))
                 implementation(libs.kotlinx.coroutines.core)
             }
@@ -101,7 +102,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         freeCompilerArgs.addAll(
             "-Xskip-prerelease-check",
             "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
-            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi",
+            "-Xopt-in=kotlinx.cinterop.ExperimentalForeignApi"
         )
     }
 }

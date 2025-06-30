@@ -1,0 +1,85 @@
+name: Build and Deploy RTS Game
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggers
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+  build-and-deploy:
+    needs: validate  # Only run if validate job succeeds
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+          GITHUB_PAGES: true
+
+      - name: Run Tests
+        run: |
+          if grep -q '"test":' package.json; then
+            npm test
+          fi
+
+      - name: Check Bundle Size
+        run: |
+          SIZE=$(du -k rtsgame/dist/*.js | sort -nr | head -n1 | cut -f1)
+          if [ $SIZE -gt 5000 ]; then
+            echo "Bundle size exceeds 5MB limit"
+            exit 1
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: rtsgame/dist
+          branch: gh-pages
+          clean: true
+          commit-message: "Deploy RTS Game to GitHub Pages [skip ci]"
+
+      - name: Create Release Tag
+        if: success()
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

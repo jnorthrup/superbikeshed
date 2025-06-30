@@ -27,6 +27,7 @@ kotlin {
     val isLinux = hostOs == "Linux"
     val isWindows = hostOs == "Windows"
     val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
+
     when {
         isMacOS && isArm64 -> macosArm64()
         isMacOS -> macosX64()

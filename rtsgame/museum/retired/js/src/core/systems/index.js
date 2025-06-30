@@ -1,0 +1,24 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CommandAndControlSystem = exports.BreachUISystem = exports.BreachVisualizationSystem = exports.ResourceSystem = exports.WeaponSystem = exports.ShieldSystem = exports.ProofOfWorkSystem = exports.ComputroniumSystem = exports.CombatSystem = exports.MovementSystem = void 0;
+// js/core/systems/index.js
+var movementSystem_js_1 = require("./movementSystem.js");
+Object.defineProperty(exports, "MovementSystem", { enumerable: true, get: function () { return movementSystem_js_1.MovementSystem; } });
+var combatSystem_js_1 = require("./combatSystem.js");
+Object.defineProperty(exports, "CombatSystem", { enumerable: true, get: function () { return combatSystem_js_1.CombatSystem; } });
+var computroniumSystem_js_1 = require("./computroniumSystem.js");
+Object.defineProperty(exports, "ComputroniumSystem", { enumerable: true, get: function () { return computroniumSystem_js_1.ComputroniumSystem; } });
+var proofOfWorkSystem_js_1 = require("./proofOfWorkSystem.js");
+Object.defineProperty(exports, "ProofOfWorkSystem", { enumerable: true, get: function () { return proofOfWorkSystem_js_1.ProofOfWorkSystem; } });
+var shieldSystem_js_1 = require("./shieldSystem.js");
+Object.defineProperty(exports, "ShieldSystem", { enumerable: true, get: function () { return shieldSystem_js_1.ShieldSystem; } });
+var weaponSystem_js_1 = require("./weaponSystem.js");
+Object.defineProperty(exports, "WeaponSystem", { enumerable: true, get: function () { return weaponSystem_js_1.WeaponSystem; } });
+var resourceSystem_js_1 = require("./resourceSystem.js");
+Object.defineProperty(exports, "ResourceSystem", { enumerable: true, get: function () { return resourceSystem_js_1.ResourceSystem; } });
+var breachVisualizationSystem_js_1 = require("./breachVisualizationSystem.js");
+Object.defineProperty(exports, "BreachVisualizationSystem", { enumerable: true, get: function () { return breachVisualizationSystem_js_1.BreachVisualizationSystem; } });
+var breachUISystem_js_1 = require("./breachUISystem.js");
+Object.defineProperty(exports, "BreachUISystem", { enumerable: true, get: function () { return breachUISystem_js_1.BreachUISystem; } });
+var commandAndControlSystem_js_1 = require("./commandAndControlSystem.js");
+Object.defineProperty(exports, "CommandAndControlSystem", { enumerable: true, get: function () { return commandAndControlSystem_js_1.CommandAndControlSystem; } });

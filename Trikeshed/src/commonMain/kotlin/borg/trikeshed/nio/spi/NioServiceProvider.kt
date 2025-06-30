@@ -1,6 +1,5 @@
 package borg.trikeshed.nio.spi
 
-
 import borg.trikeshed.lib.*
 import borg.trikeshed.nio.*
 
@@ -18,6 +17,11 @@ interface NioServiceProvider {
      * Create a platform-specific byte buffer
      */
     fun createBuffer(capacity: Int): PlatformByteBuffer
+    
+    /**
+     * Wrap a byte array in a platform-specific buffer
+     */
+    fun wrapBuffer(array: ByteArray, offset: Int = 0, length: Int = array.size): PlatformByteBuffer
     
     /**
      * Create a platform-specific channel
@@ -62,15 +66,19 @@ interface AttentionDelegate {
     /**
      * Called after a NIO operation completes
      */
-    fun afterOperation(operation: String, durationMs: Long, success: Boolean, details: String = "")
+    fun afterOperation(operation: String, result: String = "", error: Throwable? = null)
     
     /**
-     * Called when a slow operation is detected
+     * Called when attention is transferred between components
      */
-    fun onSlowOperation(operation: String, durationMs: Long, threshold: Long, details: String = "")
-    
-    /**
-     * Called when an operation fails
-     */
-    fun onOperationError(operation: String, error: Throwable, details: String = "")
+    fun attentionTransferred(from: String, to: String, reason: String = "")
+}
+
+/**
+ * Default no-op implementation of AttentionDelegate
+ */
+object NoOpAttentionDelegate : AttentionDelegate {
+    override fun beforeOperation(operation: String, details: String) {}
+    override fun afterOperation(operation: String, result: String, error: Throwable?) {}
+    override fun attentionTransferred(from: String, to: String, reason: String) {}
 }

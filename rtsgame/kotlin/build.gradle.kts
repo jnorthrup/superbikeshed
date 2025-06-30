@@ -7,7 +7,12 @@ kotlin {
     jvm {
         jvmToolchain(21)
     }
-    // re-add wasm
+    
+    js(IR) {
+        browser()
+        nodejs()
+    }
+    
     val hostOs = System.getProperty("os.name")
     val hostArch = System.getProperty("os.arch")
     when {
@@ -26,7 +31,7 @@ kotlin {
             }
         }
     }
-
+    
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -36,10 +41,16 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
             }
         }
-
+        
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+            }
+        }
+        
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
             }
         }
     }

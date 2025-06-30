@@ -1,6 +1,10 @@
 package borg.trikeshed.reactor
 
+import borg.trikeshed.nio.platformCurrentTimeMillis
+
 typealias Interest = Int
+
+expect fun currentTimeMillis(): Long
 
 sealed class AsyncReaction {
     object Continue : AsyncReaction()

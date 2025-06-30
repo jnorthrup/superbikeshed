@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Gradle build artifacts
 build/
 .gradle/
@@ -27,6 +28,18 @@ gradle-wrapper.jar
 .vscode/
 
 # OS-specific files
+=======
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+>>>>>>> origin/feat/core-serialization-impl
 .DS_Store
 .DS_Store?
 ._*
@@ -35,6 +48,7 @@ gradle-wrapper.jar
 ehthumbs.db
 Thumbs.db
 
+<<<<<<< HEAD
 # Node.js artifacts
 node_modules/
 yarn.lock
@@ -45,11 +59,94 @@ npm-debug.log*
 # Python artifacts
 venv/
 venv_new/
+=======
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Build outputs
+dist/
+build/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# JetBrains IDEs
+.idea/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/
+
+# Gradle
+.gradle/
+gradle-app.setting
+
+# Maven
+target/
+
+# SBT
+.sbt
+
+# Metals (Scala)
+.metals/
+.bloop/
+
+# Python
+>>>>>>> origin/feat/core-serialization-impl
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+<<<<<<< HEAD
 .env
 .venv
 
@@ -169,3 +266,48 @@ htmlcov/
 .kotlin/
 .idea/
 .aider*
+=======
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Lock files that can be regenerated
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Test artifacts
+test-results/
+test-output/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Runtime configuration
+.vscode/settings.json
+.aider.tags.cache.v4/cache.db
+.aider.tags.cache.v4/a9/28/dec0b99c4a30164bd43a232b776d.val
+.aider.tags.cache.v4/ac/3a/5a37af97adc81205249b4a9a06fd.val
+.aider.tags.cache.v4/b9/ff/27308213adcbbf47fd16bce8264a.val
+.aider.chat.history.md
+.aider.input.history
+.kotlin
+ 
+>>>>>>> origin/feat/core-serialization-impl

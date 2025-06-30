@@ -1,6 +1,5 @@
 package borg.trikeshed.net.http
 
-
 /**
  * Port of RelaxFactory's comprehensive MimeType enum.
  * Provides a mapping from common file extensions to their corresponding
