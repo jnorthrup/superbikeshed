@@ -1,33 +1,21 @@
 package borg.trikeshed.reactor.http
-<<<<<<< HEAD
-import kotlinx.datetime.Clock
-
-
-import borg.trikeshed.lib.* 
-import borg.trikeshed.nio.* 
-=======
 
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.datetime.formatRfc1123
 import borg.trikeshed.lib.datetime.getCurrentDateTime
 import borg.trikeshed.lib.j
->>>>>>> origin/feat/core-serialization-impl
+import borg.trikeshed.nio.ByteBuffer
+import borg.trikeshed.nio.ByteBufferFactory
 import borg.trikeshed.reactor.*
 
 class HttpStateMachine(private val socket: ClientChannel, private val buffer: ByteBuffer) {
     private val responseHeaders = mutableMapOf<String, String>()
 
     fun parseRequest(): Join<Interest, UnaryAsyncReaction>? {
-<<<<<<< HEAD
-        // TODO: Implement buffer.flip() for ByteBuffer
-
-        // Simplified parsing - just return a basic response
-        val response = generateMotdResponse(emptyMap())
-=======
         buffer.flip()
 
         // Parse request line
-        val requestLine = extractLineFromBuffer(buffer, 0, buffer.position()) 
+        val requestLine = extractLineFromBuffer(buffer, 0, buffer.position) 
             ?: return OP_READ j { parseRequest() }
         
         // Parse headers
@@ -35,44 +23,10 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
 
         // Generate MOTD response
         val response = generateMotdResponse(headers)
->>>>>>> origin/feat/core-serialization-impl
         return writeResponse(response)
     }
 
     private fun writeResponse(response: String): Join<Interest, UnaryAsyncReaction>? {
-<<<<<<< HEAD
-        val responseBytes = response.encodeToByteArray()
-        val responseBuffer = PlatformByteBuffer.wrap(responseBytes, 0, responseBytes.size)
-        
-        // Return write interest with async reaction
-        return Join(
-            1 shl 2, // OP_WRITE
-            object : UnaryAsyncReaction {
-                override fun invoke(key: SelectionKey): Join<Int, UnaryAsyncReaction>? {
-                    return try {
-                        // TODO: Implement socket.write() for ClientChannel
-                        
-                        if (responseBuffer.hasRemaining()) {
-                            // More data to write, register for write again
-                            // TODO: Implement key.interestOps() for SelectionKey
-                            Join(1 shl 2, this)
-                        } else {
-                            // All data written, close connection
-                            // TODO: Implement socket.close() for ClientChannel
-                            null
-                        }
-                    } catch (e: Exception) {
-                        println("Error writing response: ${e.message}")
-                        // TODO: Implement socket.close() for ClientChannel
-                        null
-                    }
-                }
-            }
-        )
-    }
-
-    private fun generateMotdResponse(headers: Map<String, String>): String {
-=======
         val responseBuffer = ByteBufferFactory.wrap(response.toByteArray())
         return OP_WRITE j { key:Int ->
             socket.write(responseBuffer)
@@ -90,18 +44,13 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
         val iso8601 = "${currentTime.year}-${currentTime.month}-${currentTime.day}T${currentTime.hour}:${currentTime.minute}:${currentTime.second}Z"
         val rfc1123 = formatRfc1123(currentTime)
 
->>>>>>> origin/feat/core-serialization-impl
         val headersEcho = headers.entries.joinToString("\n") { (k, v) -> "$k: $v" }
         val responseBody = """
             <html>
             <body>
                 <h1>Message of the Day</h1>
-<<<<<<< HEAD
-                <p>Current time: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}</p>
-=======
                 <p>ISO 8601: $iso8601</p>
                 <p>RFC 1123: $rfc1123</p>
->>>>>>> origin/feat/core-serialization-impl
                 <h2>Received Headers:</h2>
                 <pre>$headersEcho</pre>
             </body>
@@ -115,8 +64,51 @@ class HttpStateMachine(private val socket: ClientChannel, private val buffer: By
         val responseHeadersFormatted = responseHeaders.entries.joinToString("\r\n") { (k, v) -> "$k: $v" }
         return "HTTP/1.1 200 OK\r\n$responseHeadersFormatted\r\n\r\n$responseBody"
     }
-<<<<<<< HEAD
+
+    // Helper function to extract a line from the buffer
+    private fun extractLineFromBuffer(buffer: ByteBuffer, start: Int, end: Int): String? {
+        val bytes = ByteArray(buffer.remaining())
+        val originalPosition = buffer.position
+        buffer.position = start
+        
+        var lineEnd = -1
+        for (i in start until minOf(end, buffer.limit)) {
+            val b = buffer.get()
+            bytes[i - start] = b
+            if (i > start && bytes[i - start - 1] == '\r'.code.toByte() && b == '\n'.code.toByte()) {
+                lineEnd = i - start - 1
+                break
+            }
+        }
+        
+        buffer.position = originalPosition
+        
+        return if (lineEnd >= 0) {
+            bytes.decodeToString(0, lineEnd)
+        } else {
+            null
+        }
+    }
+
+    // Helper function to parse headers from the buffer
+    private fun parseHeaders(buffer: ByteBuffer): Map<String, String> {
+        val headers = mutableMapOf<String, String>()
+        val bytes = ByteArray(buffer.remaining())
+        buffer.get(bytes)
+        
+        val lines = bytes.decodeToString().split("\r\n")
+        for (i in 1 until lines.size) {
+            val line = lines[i]
+            if (line.isBlank()) break
+            
+            val colonIndex = line.indexOf(':')
+            if (colonIndex > 0) {
+                val name = line.substring(0, colonIndex).trim()
+                val value = line.substring(colonIndex + 1).trim()
+                headers[name] = value
+            }
+        }
+        
+        return headers
+    }
 }
-=======
-}
->>>>>>> origin/feat/core-serialization-impl
