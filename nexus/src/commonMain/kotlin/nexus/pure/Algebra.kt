@@ -1,7 +1,5 @@
 package nexus.pure
 
-import borg.trikeshed.lib.*
-
 /**
  * Algebraic data types and type classes for pure functional tools
  */

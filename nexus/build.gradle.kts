@@ -40,8 +40,8 @@ kotlin {
                 implementation(libs.kotlinx.serialization.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
-                implementation(project(":Trikeshed"))
-                implementation(project(":k2script"))
+                // implementation(project(":Trikeshed"))  // Temporarily disabled for pure functional system
+                // implementation(project(":k2script"))   // Temporarily disabled for pure functional system
             }
         }
         val commonTest by getting {
@@ -57,8 +57,8 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(kotlin("reflect"))
                 implementation(libs.kotlinx.serialization.json)
-                implementation(project(":Trikeshed"))
-                implementation(project(":k2script"))
+                // implementation(project(":Trikeshed"))  // Temporarily disabled
+                // implementation(project(":k2script"))   // Temporarily disabled
             }
         }
         val jvmTest by getting {

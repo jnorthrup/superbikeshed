@@ -1,7 +1,5 @@
 package nexus.pure
 
-import borg.trikeshed.lib.*
-
 /**
  * Free monad interpreter for pure functional effects
  */

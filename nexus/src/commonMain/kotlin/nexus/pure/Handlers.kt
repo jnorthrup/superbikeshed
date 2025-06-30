@@ -1,7 +1,5 @@
 package nexus.pure
 
-import borg.trikeshed.lib.*
-
 /**
  * Comprehensive effect handlers for different execution contexts
  */

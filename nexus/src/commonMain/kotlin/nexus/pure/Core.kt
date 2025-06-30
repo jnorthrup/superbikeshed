@@ -1,7 +1,5 @@
 package nexus.pure
 
-import borg.trikeshed.lib.*
-
 /**
  * Pure functional core for Nexus
  * 

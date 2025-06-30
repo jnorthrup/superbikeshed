@@ -1,7 +1,5 @@
 package nexus.pure
 
-import borg.trikeshed.lib.*
-
 /**
  * Pure functional effects system with algebraic effect handlers
  */

@@ -1,3 +1,4 @@
+# Canonical version catalog for the Trikeshed-Monorepo. All plugin and dependency versions must be managed here.
 [versions]
 kotlin = "2.1.21"
 coroutines = "1.10.2"
