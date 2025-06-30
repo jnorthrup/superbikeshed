@@ -122,7 +122,8 @@ object Nexus {
     }
 }
 
-// Platform-specific function to be implemented per platform
+// Platform-specific functions to be implemented per platform
+expect fun getPlatformName(): String
 expect suspend fun runInteractivePlatform()
 
 // Main function for application entry point

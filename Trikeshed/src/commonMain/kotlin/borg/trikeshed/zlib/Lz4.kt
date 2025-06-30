@@ -34,4 +34,9 @@ expect object Lz4 {
      * Returns a Pair of (compressedSize, uncompressedSize).
      */
     fun parseFrameHeader(input: Indexed<Byte>): Pair<Long, Long>
+
+    /**
+     * Reads a variable-length integer (VLQ) from the input.
+     */
+    fun readVLQ(input: Indexed<Byte>, offset: Int): Pair<Long, Int>
 }

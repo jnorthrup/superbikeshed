@@ -40,11 +40,7 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
                 // LZ4 Frame Format Magic Number: 0x184D2204
                 if (chunk[i] == 0x04.toByte() && chunk[i + 1] == 0x22.toByte() && chunk[i + 2] == 0x4D.toByte() && chunk[i + 3] == 0x18.toByte()) {
                     // Found an LZ4 frame
-                    // To get the actual compressed size, we need to read the entire frame.
-                    // This is not ideal for very large files, but necessary with current LZ4-java API.
-                    // In a real-world scenario, we might need a more sophisticated LZ4 frame parser.
-                    val frameBytes = httpClient.fetchRange(url, compressedOffset + i, compressedOffset + i + 1000000) // Read a large chunk to get the frame
-                    val (actualCompressedSize, uncompressedSize) = Lz4.parseFrameHeader(frameBytes.toSeries())
+                    val (actualCompressedSize, uncompressedSize) = Lz4.parseFrameHeader(chunk.toSeries().drop(i))
 
                     entries.add(
                         Lz4FrameIndexEntry(
@@ -62,6 +58,7 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
                 }
             }
             compressedOffset += chunk.size
+        }
         }
 
         return entries.toSeries()

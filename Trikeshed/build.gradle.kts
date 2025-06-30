@@ -1,6 +1,5 @@
 plugins {
     kotlin("multiplatform")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 group = "borg.trikeshed"
@@ -12,16 +11,12 @@ repositories {
 
 kotlin {
     jvm()
+
     sourceSets {
-        val jvmMain by getting {
+        commonMain {
             dependencies {
-                implementation("com.github.luben:zstd-jni:1.5.2-5")
-                implementation("org.lz4:lz4-java:1.8.0")
+                implementation(kotlin("stdlib"))
             }
         }
     }
-}
-
-dependencies {
-    implementation(kotlin("stdlib"))
 }
