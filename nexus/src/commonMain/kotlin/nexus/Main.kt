@@ -24,6 +24,7 @@ object Nexus {
                 args[0] == "--help" || args[0] == "-h" -> showHelp()
                 args[0] == "--version" || args[0] == "-v" -> showVersion()
                 args[0] == "--ai" -> executeAITask(args.drop(1).toTypedArray())
+                args[0] == "--interactive" || args[0] == "-i" -> runInteractive()
                 else -> executeTask(args)
             }
         } catch (e: Exception) {
@@ -41,12 +42,14 @@ object Nexus {
             
             Commands:
               --ai <prompt>     Execute AI-powered task using LiteLLM
+              --interactive, -i Run interactive LLM mode with tools
               --help, -h        Show this help
               --version, -v     Show version
               
             Examples:
               nexus --ai "analyze the current codebase and suggest improvements"
               nexus --ai "create a summary of recent changes"
+              nexus --interactive
         """.trimIndent())
     }
     
@@ -112,7 +115,15 @@ object Nexus {
         // TODO: Implement task execution logic
         println("Nexus: Task execution pattern established")
     }
+    
+    private suspend fun runInteractive() {
+        // Platform-specific implementation
+        runInteractivePlatform()
+    }
 }
+
+// Platform-specific function to be implemented per platform
+expect suspend fun runInteractivePlatform()
 
 // Main function for application entry point
 fun main(args: Array<String>) = Nexus.main(args)
