@@ -8,6 +8,9 @@ import kotlin.jvm.JvmInline
 import kotlin.reflect.KClassifier
 
 /** note to AI, this is the single source of truth and you will be deleting all other files and rewriting them when they redefine these types.
+ * 
+ * despite the above we had ai add back Series as the first class Index; Series is like List, Shunned.  as a suffix MetaSeries is distinct
+ * 
  * # TrikeShed Metaclass Architecture
  *
  * TrikeShed implements a **compositional metaclass system** where types are constructed through
@@ -312,17 +315,14 @@ typealias MetaSeries<A, T> = Join<A, (A) -> T>
  *
  * // Transformation
  * val strings = numbers α { it.toString() }  // ["0", "1", "4", "9", ...]
- * ```
- */
-typealias Series<T> = Join<Int, (Int) -> T>
-
-/**
+    ``` 
+ 
  * ## Indexed<T> - Alias for Series<T>
  *
  * Indexed<T> is maintained as an alias to Series<T> for backward compatibility
  * during the MetaSeries → Indexed migration as specified in CLAUDE.md.
  */
-typealias Indexed<T> = Series<T>
+typealias Indexed<T> = Join<Int, (Int) -> T>
 
 /**
  * ## LongSeries<T> - Long-Indexed Series Metaclass
@@ -339,7 +339,7 @@ typealias Indexed<T> = Series<T>
  * //                      └─────────────── Series size
  * ```
  */
-typealias LongSeries<T> = Join<Long, (Long) -> T>
+typealias LongSeries<T> = Join<Long, (Long) -> T>//todo rename
 
 /**
  * ## Twin<T> - Pair of same type

@@ -152,6 +152,16 @@
 - [ ] **Merkle DAG**: Complete implementation of IPFS Merkle DAG for file storage
 - [ ] **Peer Discovery**: mDNS and DHT-based peer discovery mechanisms
 
+### Implement Trikeshed sweeping protocol tree:
+- Define base protocol interfaces (Protocol, TransportProtocol, ApplicationProtocol, etc.)
+- Create hierarchical protocol abstraction for broad protocol families (HTTP, TCP, UDP, WebSocket, etc.)
+- Integrate command-line argument adapters for system tools (openssl, aria2, apache, nginx, netty, couchdb, ipfs, etc.) as protocol leaf nodes or utility branches
+- For hard protocols (CouchDB, IPFS, QUIC, etc.), implement diamond relationships (multiple inheritance/composition) to allow shared features and cross-protocol utilities
+- Use only minimal required Trikeshed modules to minimize footprint
+- No new naming conventions for diamond manifestations unless explicitly specified
+- All orchestration and control via stdio as the minimum interface
+- Record protocol and architectural decisions in claude.db for continuity
+
 ---
 
 ## Component Development

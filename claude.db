@@ -1,0 +1,3 @@
+# Protocol and Architectural Decision Log
+
+- 2024-06-25: Established the starting protocol for Trikeshed's sweeping protocol tree. The protocol tree is a hierarchical abstraction layer for protocols, with diamond relationships for hard protocols (CouchDB, IPFS, QUIC, etc.). No new naming conventions for diamond manifestations unless explicitly specified. All orchestration and control via stdio as the minimum interface. This decision is the baseline for future protocol and adapter work. 

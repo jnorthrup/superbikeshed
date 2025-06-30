@@ -3,6 +3,9 @@
 package borg.entityscanner
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Indexed as Series
+import borg.trikeshed.lib.ByteIndexed
+import borg.trikeshed.lib.CharIndexed
 
 /**
  * Token Classification Stairway - Hierarchical Inline Class System
@@ -48,8 +51,8 @@ value class CharPosition(val index: Int)
 // Level 1 Compositions
 typealias ClassifiedChar = Join<RawChar, CharClass>
 typealias PositionedChar = Join<ClassifiedChar, CharPosition>
-typealias CharSeries = Series<PositionedChar>
-
+typealias CharIndexed = borg.trikeshed.lib.CharIndexed<PositionedChar>
+ 
 // ==== LEVEL 2: LEXICAL TOKEN CLASSIFICATION ====
 
 @JvmInline
@@ -92,7 +95,16 @@ value class TokenBounds(val packed: Long) {
 // Level 2 Compositions
 typealias ClassifiedToken = Join<LexicalToken, TokenType>
 typealias BoundedToken = Join<ClassifiedToken, TokenBounds>
-typealias TokenSeries = Series<BoundedToken>
+
+/**
+ * Canonical TrikeShed token stream: functional, lazily-accessed sequence of tokens.
+ */
+typealias TokenIndexed = Indexed<BoundedToken>
+
+/**
+ * For small, materialized token sets (register-packing, hot paths).
+ */
+typealias TokenArray = Array<BoundedToken>
 
 // ==== LEVEL 3: SYNTACTIC CLASSIFICATION ====
 
@@ -167,7 +179,7 @@ value class VisibilityToken(val access: UByte) {
 // Level 3 Compositions  
 typealias ClassifiedSyntax = Join<SyntaxToken, ScopeLevel>
 typealias VisibleSyntax = Join<ClassifiedSyntax, VisibilityToken>
-typealias SyntaxSeries = Series<VisibleSyntax>
+typealias SyntaxIndexed = borg.trikeshed.lib.ByteIndexed<VisibleSyntax>
 
 // ==== LEVEL 4: SEMANTIC ENTITY CLASSIFICATION ====
 
@@ -236,7 +248,7 @@ value class ContextToken(val context: UByte) {
 // Level 4 Compositions
 typealias ClassifiedEntity = Join<EntityToken, RoleToken>
 typealias ContextualEntity = Join<ClassifiedEntity, ContextToken>
-typealias EntitySeries = Series<ContextualEntity>
+typealias EntityIndexed = borg.trikeshed.lib.ByteIndexed<ContextualEntity>
 
 // ==== LEVEL 5: GRAPH NODE CLASSIFICATION ====
 
@@ -266,7 +278,7 @@ value class ConfidenceToken(val confidence: UByte) // 0-255 confidence score
 // Level 5 Compositions
 typealias ClassifiedGraphNode = Join<GraphNodeToken, DependencyToken>
 typealias ConfidentGraphNode = Join<ClassifiedGraphNode, ConfidenceToken>
-typealias GraphNodeSeries = Series<ConfidentGraphNode>
+typealias GraphNodeIndexed = borg.trikeshed.lib.ByteIndexed<ConfidentGraphNode>
 
 // ==== STAIRWAY TRANSFORMATION ENGINE ====
 
@@ -280,7 +292,7 @@ object TokenStairway {
      * Step 1: Character Classification
      * Raw characters → Classified characters with positions
      */
-    fun classifyChars(source: String): CharSeries {
+    fun classifyChars(source: String): CharIndexed {
         return source.length j { i ->
             val char = RawChar(source[i])
             val charClass = classifyChar(char.value)
@@ -293,7 +305,7 @@ object TokenStairway {
      * Step 2: Lexical Tokenization
      * Classified characters → Lexical tokens with types and bounds
      */
-    fun charsToTokens(chars: CharSeries): TokenSeries = chars.α { posChar ->
+    fun charsToTokens(chars: CharIndexed): TokenIndexed = chars.α { posChar ->
         val (classifiedChar, position) = posChar
         val (rawChar, charClass) = classifiedChar
         
@@ -309,7 +321,7 @@ object TokenStairway {
      * Step 3: Syntactic Classification
      * Lexical tokens → Syntactic elements with scope and visibility
      */
-    fun tokensToSyntax(tokens: TokenSeries): SyntaxSeries {
+    fun tokensToSyntax(tokens: TokenIndexed): SyntaxIndexed {
         val syntaxList = mutableListOf<VisibleSyntax>()
         var currentScopeDepth: UByte = 0u
         val activeVisibilityModifiers = mutableListOf<VisibilityToken>()
@@ -359,7 +371,7 @@ object TokenStairway {
      * Step 4: Entity Recognition
      * Syntactic elements → Semantic entities with roles and context
      */
-    fun syntaxToEntities(syntaxSeries: SyntaxSeries): EntitySeries {
+    fun syntaxToEntities(syntaxSeries: SyntaxIndexed): EntityIndexed {
         val entityList = mutableListOf<ContextualEntity>()
         var currentPackageContext = false
         var currentImportContext = false
@@ -454,7 +466,7 @@ object TokenStairway {
      * Step 5: Graph Node Generation
      * Semantic entities → Graph nodes with dependencies and confidence
      */
-    fun entitiesToGraph(entities: EntitySeries): GraphNodeSeries = entities.α { contextualEntity ->
+    fun entitiesToGraph(entities: EntityIndexed): GraphNodeIndexed = entities.α { contextualEntity ->
         val (classifiedEntity, context) = contextualEntity
         val (entityToken, roleToken) = classifiedEntity
         
@@ -669,7 +681,7 @@ object TokenStairway {
 /**
  * Extension functions for easy stairway traversal
  */
-fun String.scanToGraph(): GraphNodeSeries {
+fun String.scanToGraph(): GraphNodeIndexed {
     val chars = TokenStairway.classifyChars(this)
     val tokens = TokenStairway.charsToTokens(chars)
     val syntax = TokenStairway.tokensToSyntax(tokens)
@@ -677,24 +689,24 @@ fun String.scanToGraph(): GraphNodeSeries {
     return TokenStairway.entitiesToGraph(entities)
 }
 
-fun String.scanToEntities(): EntitySeries {
+fun String.scanToEntities(): EntityIndexed {
     val chars = TokenStairway.classifyChars(this)
     val tokens = TokenStairway.charsToTokens(chars)
     val syntax = TokenStairway.tokensToSyntax(tokens)
     return TokenStairway.syntaxToEntities(syntax)
 }
 
-fun CharSeries.extractTokens(): TokenSeries = TokenStairway.charsToTokens(this)
-fun TokenSeries.extractSyntax(): SyntaxSeries = TokenStairway.tokensToSyntax(this)
-fun SyntaxSeries.extractEntities(): EntitySeries = TokenStairway.syntaxToEntities(this)
-fun EntitySeries.extractGraph(): GraphNodeSeries = TokenStairway.entitiesToGraph(this)
+fun CharIndexed.extractTokens(): TokenIndexed = TokenStairway.charsToTokens(this)
+fun TokenIndexed.extractSyntax(): SyntaxIndexed = TokenStairway.tokensToSyntax(this)
+fun SyntaxIndexed.extractEntities(): EntityIndexed = TokenStairway.syntaxToEntities(this)
+fun EntityIndexed.extractGraph(): GraphNodeIndexed = TokenStairway.entitiesToGraph(this)
 
 /**
  * Materialization functions using play operator - gateway to stdlib
  */
-fun GraphNodeSeries.materializeGraphNodes(): List<ConfidentGraphNode> = this.play.toList()
-fun EntitySeries.materializeEntities(): List<ContextualEntity> = this.play.toList()
-fun TokenSeries.materializeTokens(): List<BoundedToken> = this.play.toList()
+fun GraphNodeIndexed.materializeGraphNodes(): List<ConfidentGraphNode> = this.play.toList()
+fun EntityIndexed.materializeEntities(): List<ContextualEntity> = this.play.toList()
+fun TokenIndexed.materializeTokens(): List<BoundedToken> = this.play.toList()
 
 /**
  * Example usage demonstrating the complete stairway
@@ -727,4 +739,49 @@ object TokenStairwayExample {
         println("Tokens: ${tokens.play.toList().size}")
         println("Characters: ${chars.size}")
     }
+}
+
+/**
+ * Enum for ergonomic, pattern-matchable token types.
+ */
+enum class TokenTypeEnum {
+    KEYWORD,
+    IDENTIFIER,
+    OPERATOR,
+    LITERAL_STRING,
+    LITERAL_NUMBER,
+    LITERAL_BOOLEAN,
+    PUNCTUATION,
+    COMMENT,
+    ANNOTATION,
+    PACKAGE_NAME,
+    IMPORT_PATH,
+    TYPE_NAME,
+    DEPENDENCY_COORD,
+    WHITESPACE,
+    NEWLINE,
+    UNKNOWN
+}
+
+/**
+ * Map TokenType value class to TokenTypeEnum for ergonomic use.
+ */
+fun TokenType.toEnum(): TokenTypeEnum = when (this.category) {
+    1u -> TokenTypeEnum.KEYWORD
+    2u -> TokenTypeEnum.IDENTIFIER
+    3u -> TokenTypeEnum.OPERATOR
+    4u -> TokenTypeEnum.LITERAL_STRING
+    5u -> TokenTypeEnum.LITERAL_NUMBER
+    6u -> TokenTypeEnum.LITERAL_BOOLEAN
+    7u -> TokenTypeEnum.PUNCTUATION
+    8u -> TokenTypeEnum.COMMENT
+    9u -> TokenTypeEnum.ANNOTATION
+    10u -> TokenTypeEnum.PACKAGE_NAME
+    11u -> TokenTypeEnum.IMPORT_PATH
+    12u -> TokenTypeEnum.TYPE_NAME
+    13u -> TokenTypeEnum.DEPENDENCY_COORD
+    14u -> TokenTypeEnum.WHITESPACE
+    15u -> TokenTypeEnum.NEWLINE
+    16u -> TokenTypeEnum.UNKNOWN
+    else -> TokenTypeEnum.UNKNOWN
 }

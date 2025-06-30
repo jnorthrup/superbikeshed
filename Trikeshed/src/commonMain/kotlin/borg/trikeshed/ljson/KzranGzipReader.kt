@@ -353,18 +353,50 @@ class InMemoryKzranCache : KzranIndexCache {
     }
 }
 
+
+import borg.trikeshed.zlib.Zlib
+
 /**
- * Placeholder for zlib inflater with bit-level control
+ * Wrapper for Zlib inflater to fit into the KzranGzipReader
  */
 class ZlibInflater {
-    fun setInput(data: ByteArray) {}
-    fun setDictionary(dict: ByteArray) {}
-    fun setBitOffset(offset: Int) {}
-    fun needsInput(): Boolean = true
-    fun inflate(output: ByteArray): Int = 0
-    fun finished(): Boolean = true
+    private var input: ByteArray = ByteArray(0)
+    private var finished = false
+    private var bytesProcessed = 0
+
+    fun setInput(data: ByteArray) {
+        input = data
+        finished = false
+        bytesProcessed = 0
+    }
+
+    fun setDictionary(dict: ByteArray) {
+        // The Zlib implementation doesn't support dictionaries in this simplified wrapper
+    }
+
+    fun setBitOffset(offset: Int) {
+        // The Zlib implementation doesn't support bit-level offsets in this simplified wrapper
+    }
+
+    fun needsInput(): Boolean = input.isEmpty()
+
+    fun inflate(output: ByteArray): Int {
+        if (finished) return 0
+        val decompressed = Zlib.decompress(input.toSeries())
+        val toCopy = min(output.size, decompressed.a)
+        for (i in 0 until toCopy) {
+            output[i] = decompressed[i]
+        }
+        finished = true
+        bytesProcessed = input.size
+        return toCopy
+    }
+
+    fun finished(): Boolean = finished
+
     fun getBitOffset(): Int = 0
 }
+
 
 /**
  * JSON object wrapper

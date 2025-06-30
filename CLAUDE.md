@@ -1,11 +1,13 @@
-## AI EXECUTION PROTOCOL: PRECISION TOOL ONLY
+# AI EXECUTION PROTOCOL: PRECISION TOOL ONLY
+
   coretypes is the sole source of truth and radiates correction outward and is immutable and without error.  
- 
+
 **EXECUTION ONLY**: Claude is a precision execution tool. Claude does not have architectural opinions, creative insights, or "fresh perspectives." Claude executes exactly what is specified.
 
-### SAFETY GATES - MANDATORY ESCALATION
+## SAFETY GATES - MANDATORY ESCALATION
 
 **HIGH-RISK OPERATION DETECTED** - Executive approval required for:
+
 - Changes to core infrastructure (Trikeshed, build systems, type systems)
 - Architectural modifications or "improvements"
 - Refactoring of existing patterns
@@ -13,6 +15,7 @@
 - "Fresh perspectives" or "remarkable outcomes"
 
 **SAFETY TRIGGERS** - These keywords force immediate escalation:
+
 - `RISK_ASSESSMENT_REQUIRED` - Before any architectural change
 - `EXECUTIVE_APPROVAL_NEEDED` - Before modifying core systems
 - `DESTRUCTIVE_OPERATION_DETECTED` - Before breaking working code
@@ -53,7 +56,22 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 The top-level `build.gradle.kts` includes the `com.github.ben-manes.versions` plugin for dependency version management and `ktlint` to enforce prefix lambda parameters. The `kotlin-multiplatform` plugin is used for all multiplatform projects.
 
-## RUNTIME MEMORY
+### Gradle Hierarchy Template
+
+GRADLE IS OFFLIMITS TO AI WITHOUT EXPLICIT PERMISSION
+
+**1.   `build.gradle.kts`**
+
+plugins {
+alias(libs.plugins.versions) apply false//top level only
+alias(libs.plugins.kotlin.multiplatform)   //all child level only
+}
+
+**2. Version Catalog: `gradle/libs.versions.toml`** 
+ 
+
+ 3 Targets: jvm,wasm,local-native-posix 3
+  
 
 - for loops in kotlin are the gold standard of performance intent and foreach is something else
 - when running gradle "--console=plain --no-daemon "
@@ -63,10 +81,11 @@ The top-level `build.gradle.kts` includes the `com.github.ben-manes.versions` pl
 
 ## Migration Memories
 
-- **Shunned Classes Memory**:
-  - Defer use of `List<T>`
-  - Defer use of `Pair<A,B>`
-  - Prefer `Series<T>`, `primitive array`, `Join<A,B>` instead
+- **Shunned Classes Memory**:  - Defer use of
+ `Pair<A,B>` //Join instead
+ `List<T>` //mutable arrays, return .toIdx() 
+ `Series<T>` // Indexed<T>
+ `ByteBuffer` //{Int,Char}Indexed
 
 ## Memory: Code Cleaning Liberties
 
@@ -74,7 +93,7 @@ The top-level `build.gradle.kts` includes the `com.github.ben-manes.versions` pl
 
 ## Memory: Museum Preservation
 
-- museums outside of compilation are the last ditch when you cannot fix something and OUR RULES PREVENT DELETING CODE AND RANDOM "CLEANING"
+- museums outside of compilation created only by user permission.  90% bugs come from infix type inference fails and dual named leacy classes
 
 ## Memory: Project Documentation and Markdown
 
@@ -91,7 +110,7 @@ The top-level `build.gradle.kts` includes the `com.github.ben-manes.versions` pl
 - All Series extension functions work automatically with Indexed alias
 - Eventually IntelliJ inline when ready to make permanent
 - This prevents system shock and dueling architect AIs during transition
- 
+
 ## Safety Features
 
 - **2-Factor Reach Analysis**: Check direct + transitive impact before changes
