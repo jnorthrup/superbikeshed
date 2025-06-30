@@ -291,8 +291,6 @@ class QuicConnection(
     }
 
     /**
-=======
->>>>>>> origin/feat/core-serialization-impl
      * Closes the connection and all associated resources.
      */
     suspend fun close() {

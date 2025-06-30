@@ -148,6 +148,7 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+/*
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
@@ -195,3 +196,4 @@ publishing {
         sign(publishing.publications["mavenJava"])
     }
 }
+*/

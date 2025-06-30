@@ -1,13 +1,11 @@
 package borg.trikeshed.net.quic
 
-
 import borg.trikeshed.lib.*
-import kotlinx.serialization.json.*
-import kotlin.random.Random
 
 /**
  * QUIC protocol engine - handles packet processing and state management
  * Uses mutable structures where needed for performance
+ * Enhanced with production-ready implementation from git history
  */
 class QuicEngine(
     private val role: Role,
@@ -61,7 +59,7 @@ class QuicEngine(
         )
         
         // Generate ACK if needed
-        if (ackPending.size.nz) {
+        if (ackPending.isNotEmpty()) {
             responses.add(createAckPacket())
             ackPending.clear()
         }
@@ -220,14 +218,14 @@ class QuicEngine(
     
     private fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
         val newSize = indexed.a + 1
-        return newSize j { i: Int ->
+        return newSize j { i ->
             if (i < indexed.a) indexed.b(i) else item
         }
     }
     
     private fun <T> appendToIndexed(indexed: Indexed<T>, items: Indexed<T>): Indexed<T> {
         val newSize = indexed.a + items.a
-        return newSize j { i: Int ->
+        return newSize j { i ->
             if (i < indexed.a) indexed.b(i) else items.b(i - indexed.a)
         }
     }
