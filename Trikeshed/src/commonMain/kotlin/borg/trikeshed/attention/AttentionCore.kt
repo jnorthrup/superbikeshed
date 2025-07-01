@@ -1,7 +1,6 @@
 package borg.trikeshed.attention
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series as Indexed  
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 import kotlinx.coroutines.flow.Flow

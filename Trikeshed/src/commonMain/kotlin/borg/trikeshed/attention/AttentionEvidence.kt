@@ -1,7 +1,6 @@
 package borg.trikeshed.attention
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series as Indexed
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 import kotlin.jvm.JvmInline
@@ -66,17 +65,10 @@ typealias AttentionEvidence = Join<HistoricalEvidence, ByteEvidence>
 
 // Symmetrical dispatch outcome - both A and B improve the result
 sealed class AttentionOutcome {
-    @JvmInline
-    value class OptimalTorrent(val confidence: Double) : AttentionOutcome()
-    
-    @JvmInline
-    value class OptimalHTTP(val confidence: Double) : AttentionOutcome()
-    
-    @JvmInline
-    value class OptimalLocal(val confidence: Double) : AttentionOutcome()
-    
-    @JvmInline
-    value class OptimalDHT(val confidence: Double) : AttentionOutcome()
+    data class OptimalTorrent(val confidence: Double) : AttentionOutcome()
+    data class OptimalHTTP(val confidence: Double) : AttentionOutcome()
+    data class OptimalLocal(val confidence: Double) : AttentionOutcome()
+    data class OptimalDHT(val confidence: Double) : AttentionOutcome()
 }
 
 // Double-dispatch through Join<A,B> pattern
