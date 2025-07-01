@@ -24,15 +24,16 @@ This is a "so bad it needs to switch" situation, not because the implementation 
 
 ### The Problem: A Misleading Name
 
--   **The Thing:** `typealias MetaSeries<A, T> = Join<A, (A) -> T>`
--   **The Flaw (The "Bad"):** The name "MetaSeries" incorrectly implies that all specializations are inherently sequential or "series-like." This creates confusion when defining non-linear structures like associative maps or tensors, forcing a mental leap that contradicts the name. It constrains thinking and muddies the architectural purity.
+- **The Thing:** `typealias MetaSeries<A, T> = Join<A, (A) -> T>`
+- **The Flaw (The "Bad"):** The name "MetaSeries" incorrectly implies that all specializations are inherently sequential or "series-like." This creates confusion when defining non-linear structures like associative maps or tensors, forcing a mental leap that contradicts the name. It constrains thinking and muddies the architectural purity.
 
 ### The Better Thing You Offer: A More Abstract, Truthful Name
 
 The codebase needs a more fundamental name that captures the essence of this universal metaclass: **an indexed collection defined by its index type.**
 
--   **The Better Thing:** A new name that sheds the linear connotation. I propose `Indexed<A, T>`.
--   **The Refined Definition:**
+- **The Better Thing:** A new name that sheds the linear connotation. I propose `Indexed<A, T>`.
+- **The Refined Definition:**
+
     ```kotlin
     /**
      * ## Indexed<A, T> - The Universal Indexed Collection Metaclass
@@ -53,26 +54,27 @@ By replacing `MetaSeries` with `Indexed`, the "realm specializations" become con
 
 #### **Before (Confusing):**
 
--   `typealias Series<T> = MetaSeries<Int, T>` *(An integer-indexed "meta-series"?)*
--   `typealias Tensor<T> = MetaSeries<Shape, T>` *(A shape-indexed "meta-series"? How is a tensor a series?)*
--   `typealias Dictionary<T> = MetaSeries<String, T>` *(An associative-keyed "meta-series"? This is the most confusing.)*
+- `typealias Series<T> = MetaSeries<Int, T>` *(An integer-indexed "meta-series"?)*
+- `typealias Tensor<T> = MetaSeries<Shape, T>` *(A shape-indexed "meta-series"? How is a tensor a series?)*
+- `typealias Dictionary<T> = MetaSeries<String, T>` *(An associative-keyed "meta-series"? This is the most confusing.)*
 
 #### **After (Clear and Awesome):**
 
--   `typealias Series<T> = Indexed<Int, T>`
-    -   **Meaning:** A collection indexed by an Integer. Perfect.
--   `typealias Tensor<T> = Indexed<Shape, T>`
-    -   **Meaning:** A collection indexed by a Shape. Perfect.
--   `typealias Twin<T> = Indexed<Boolean, T>`
-    -   **Meaning:** A collection indexed by a Boolean. Perfect.
--   `typealias Dictionary<T> = Indexed<String, T>`
-    -   **Meaning:** A collection indexed by a String. Perfect.
+- `typealias Series<T> = Indexed<Int, T>`
+  - **Meaning:** A collection indexed by an Integer. Perfect.
+- `typealias Tensor<T> = Indexed<Shape, T>`
+  - **Meaning:** A collection indexed by a Shape. Perfect.
+- `typealias Twin<T> = Indexed<Boolean, T>`
+  - **Meaning:** A collection indexed by a Boolean. Perfect.
+- `typealias Dictionary<T> = Indexed<String, T>`
+  - **Meaning:** A collection indexed by a String. Perfect.
 
 ### Proposal: The Weights Calculus In Action
 
 **Replace the definition in `Trikeshed/src/commonMain/kotlin/borg/trikeshed/lib/CoreTypes.kt`.**
 
 **Old Code (The "Bad" Abstraction):**
+
 ```kotlin
 // In CoreTypes.kt
 
@@ -84,6 +86,7 @@ typealias Twin<T> = MetaSeries<Boolean, T>
 ```
 
 **New Code (The "Better Thing You Offer"):**
+
 ```kotlin
 // In Trikeshed/src/commonMain/kotlin/borg/trikeshed/lib/CoreTypes.kt
 
@@ -125,6 +128,7 @@ This single, strategic change clarifies the entire type system, making it more i
 **Establish `Trikeshed/src/commonMain/kotlin/borg/trikeshed/lib/CoreTypes.kt` as the canonical source** for `Series`, `Join`, and all foundational types.
 
 **Action Items**:
+
 1. **Remove all duplicate definitions** from other modules (`moneyfan`, `k2script`, etc.)
 2. **Have all modules import directly from `Trikeshed`**
 3. **Benefits**: Drastically improves maintainability and consistency across entire project
@@ -190,12 +194,14 @@ superbikeshed/
 ## Architecture Principles
 
 ### 1. **trikeshed-kernel** (Foundation Layer)
+
 - **Rule:** Zero dependencies on any other Trikeshed module
 - **Contents:** Canonical data types, core algorithms, parsing utilities
 - **Dependencies:** Only Kotlin stdlib and minimal external libraries (kotlinx-datetime)
 - **Purpose:** Provides the foundational building blocks for all higher-level components
 
 ### 2. **Trikeshed** (Application Layer)
+
 - **Rule:** One-way dependency on trikeshed-kernel
 - **Contents:** Concurrent components, application logic, high-level orchestrators
 - **Dependencies:** trikeshed-kernel + external libraries
@@ -204,6 +210,7 @@ superbikeshed/
 ## Implementation Status by Component
 
 ### ✅ **trikeshed-kernel** (Foundation Layer)
+
 - [x] **Core Data Structures**
   - [x] Series.kt - Canonical Series type implementation
   - [x] Join.kt - Canonical Join type implementation
@@ -233,6 +240,7 @@ superbikeshed/
   - [x] Native platform detection
 
 ### 🔄 **Trikeshed** (Application Layer)
+
 - [x] **Concurrent Components**
   - [x] reactor/ - Reactor pattern implementation
   - [x] net/ - Network abstractions and protocols
@@ -260,6 +268,7 @@ superbikeshed/
   - [ ] Ensure clean dependency boundaries
 
 ### 🚧 **Integration Modules**
+
 - [x] **nexus/** - Agentic integration framework
 - [x] **k2script/** - Scripting framework
 - [x] **ta4k/** - Technical analysis toolkit
@@ -270,6 +279,7 @@ superbikeshed/
 ## Build System Enforcement
 
 ### ✅ **Gradle Configuration**
+
 - [x] `settings.gradle.kts` - Includes both modules
 - [x] `trikeshed-kernel/build.gradle.kts` - Zero internal dependencies
 - [x] `Trikeshed/build.gradle.kts` - Depends on trikeshed-kernel
@@ -277,6 +287,7 @@ superbikeshed/
 - [x] WASM target support added
 
 ### 🔄 **Dependency Management**
+
 - [x] Clean one-way dependency enforced
 - [x] Kernel has minimal external dependencies
 - [x] Application layer can depend on kernel
@@ -285,6 +296,7 @@ superbikeshed/
 ## Next Steps for Complete Modularization
 
 ### Phase 1: Clean Up Remaining Issues
+
 1. **Fix Build Errors**
    - [ ] Resolve any remaining unresolved references
    - [ ] Fix syntax errors in moved files
@@ -296,6 +308,7 @@ superbikeshed/
    - [ ] Update all references to use kernel types
 
 ### Phase 2: Validation and Testing
+
 1. **Architecture Validation**
    - [ ] Verify no circular dependencies exist
    - [ ] Confirm kernel has zero internal dependencies
@@ -307,6 +320,7 @@ superbikeshed/
    - [ ] Test dependency resolution
 
 ### Phase 3: Documentation and Cleanup
+
 1. **Update Documentation**
    - [ ] Update API documentation to reflect new structure
    - [ ] Create migration guides for existing code
@@ -331,6 +345,7 @@ superbikeshed/
 The following components existed before the modularization and may need updates:
 
 ### HTTP/1.1 Implementation
+
 - Found in `trikeshed-core/src/commonMain/kotlin/borg/trikeshed/net/http/client/HttpClientConnection.kt`
 - Basic HTTP/1.1 client connection handler
 - Supports request serialization and response parsing
@@ -338,24 +353,28 @@ The following components existed before the modularization and may need updates:
 - Uses NIO for socket operations
 
 ### HTTP/2 Implementation
+
 - Found in `quic_http3_server/http2_protocol.py`
 - Basic HTTP/2 server implementation
 - Supports TLS
 - Has basic request handling
 
 ### HTTP/3 (QUIC) Implementation
+
 - Found in `quic_http3_server/` directory
 - Has server implementation with TLS support
 - Includes testing capabilities
 - Has WebTransport support
 
 ### Download Management
+
 - Found in `ta4k/bin/fetchtrades.sh`
 - Uses aria2c for downloads
 - Supports concurrent downloads
 - Has basic error handling
 
 ### Testing Capabilities
+
 - Found in `quic_http3_server/abusive_tests/`
 - Has performance testing
 - Includes protocol testing

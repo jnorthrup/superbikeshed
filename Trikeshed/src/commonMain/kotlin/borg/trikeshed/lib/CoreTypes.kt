@@ -606,6 +606,20 @@ fun <T> Array<T>.toSeries(): Series<T> = this.size j { i -> this[i] }
 fun <T> Series<T>.toList(): List<T> = this.play.toList()
 inline fun <reified T> Series<T>.toArray(): Array<T> = this.play.toList().toTypedArray()
 
+// === INDEXED TYPEALIASES ===
+
+/**
+ * ByteIndexed - Optimized Indexed<Byte> for protocol processing
+ * Maximized for minimal forward scans and token fragment transformation
+ */
+typealias ByteIndexed = Indexed<Byte>
+
+/**
+ * CharIndexed - Optimized Indexed<Char> for text processing
+ * Maximized for string operations and character-level transformations
+ */
+typealias CharIndexed = Indexed<Char>
+
 // Special case for primitive arrays
 fun Series<Byte>.toArray(): ByteArray = ByteArray(this.size) { this[it] }
 fun IntArray.toSeries(): Series<Int> = size j { this[it] }
@@ -884,3 +898,11 @@ infix fun <T> T.d(other: T): T {
 
 expect fun assert(value: Boolean)
 expect fun assert(value: Boolean, lazyMessage: () -> Any)
+
+// === PROTOCOL PROCESSING OPTIMIZED TYPES ===
+
+// Protocol processing optimized types with Indexed suffix
+typealias ByteIndexed = Indexed<Byte>
+typealias CharIndexed = Indexed<Char>
+typealias ByteIndexedBuffer = borg.trikeshed.lib.ByteIndexedBuffer
+typealias CharIndexedBuffer = borg.trikeshed.lib.CharIndexedBuffer

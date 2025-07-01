@@ -115,17 +115,20 @@ The module fully adheres to TrikeShed patterns:
 ## Integration Points
 
 ### K2Script
+
 - Extract `@DependsOn` annotations and Maven coordinates
 - Parse `@file:Import` statements
 - Generate dependency graphs for project analysis
 - Support shebang detection
 
 ### SpaceGraph
+
 - Generate graph nodes with confidence scores
 - Create dependency relationships for visualization
 - Export entity metadata for interactive exploration
 
 ### IDE Features
+
 - Real-time entity indexing
 - Call graph generation
 - Dependency analysis

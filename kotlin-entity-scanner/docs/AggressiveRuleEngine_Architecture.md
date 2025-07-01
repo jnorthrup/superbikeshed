@@ -201,7 +201,7 @@ class IntegrationTest {
 
 - **Graph-Driven Context:** The router *is* the executable `CoroutineContext` graph.
 - **Automated Dispatch:** The scanner and bridge do the wiring for you.
-- **Decoupling:** The caller only needs to know the *routing key* (a string), not the actual function or object instance. 
+- **Decoupling:** The caller only needs to know the *routing key* (a string), not the actual function or object instance.
 
 ---
 
@@ -417,11 +417,11 @@ fun main() = runBlocking {
 
 This revised architecture is superior because:
 
-*   **It is Philosophically Consistent:** The router is not an alien construct. It *is* a `Join` of a `Series` and a nullable parent. It is built with the `j` operator and manipulated with `α`.
-*   **It is Functionally Pure:** The router builder produces an immutable `RouteTable`. The transformation from static analysis to `RouteTable` is a pure function.
-*   **It is More Powerful:** We can now manipulate `RouteTable`s themselves as first-class `Series` objects. We could `combine()` two tables, `.α` transform them to add logging middleware, or `.filter()` them based on security policies.
+- **It is Philosophically Consistent:** The router is not an alien construct. It *is* a `Join` of a `Series` and a nullable parent. It is built with the `j` operator and manipulated with `α`.
+- **It is Functionally Pure:** The router builder produces an immutable `RouteTable`. The transformation from static analysis to `RouteTable` is a pure function.
+- **It is More Powerful:** We can now manipulate `RouteTable`s themselves as first-class `Series` objects. We could `combine()` two tables, `.α` transform them to add logging middleware, or `.filter()` them based on security policies.
 
-This is the true "Jedi levitation"—using the system's own foundational laws to elegantly and powerfully achieve the desired outcome. 
+This is the true "Jedi levitation"—using the system's own foundational laws to elegantly and powerfully achieve the desired outcome.
 
 ---
 
@@ -438,6 +438,7 @@ This architecture obliterates the `Series`/`Cursor` conflict at its root. The co
 This is the carrier of intent.
 
 **File: `Trikeshed/src/commonMain/kotlin/borg/trikeshed/ccek/CCEK.kt`**
+
 ```kotlin
 package borg.trikeshed.ccek
 
@@ -478,6 +479,7 @@ data class Knowledge(
 The server and its handlers are simple vessels waiting to be filled with specificity by the CCEK.
 
 **File: `Trikeshed/src/commonMain/kotlin/borg/trikeshed/net/http/HttpServer.kt`**
+
 ```kotlin
 package borg.trikeshed.net.http
 
@@ -506,6 +508,7 @@ class HttpServer(private val handler: CcekHttpHandler) {
 `main` is not just an entry point; it is the **Chief Specificity Officer**. It assesses the incoming request and assembles the *perfect* CCEK for the job.
 
 **File: `Trikeshed/src/commonMain/kotlin/borg/trikeshed/Main.kt`**
+
 ```kotlin
 package borg.trikeshed
 
@@ -599,10 +602,10 @@ object MainOrchestrator {
 
 ### The E2E Flow Explained
 
-1.  A request arrives at the orchestrator (`main`).
-2.  `main()` analyzes the request's intent (e.g., path `/process/series`).
-3.  It **assembles a CCEK**, creating the specific payload (`Series` or `Cursor`) and bundling the specific rules (`.α` transform or `.rowCount`) for that payload type.
-4.  It **pumps this CCEK** into the generic server handler.
-5.  The handler receives the CCEK. It doesn't know or care if the payload is a `Series` or a `Cursor`. It only knows it has a payload and a `Series` of rules to apply to it. It executes blindly and confidently.
+1. A request arrives at the orchestrator (`main`).
+2. `main()` analyzes the request's intent (e.g., path `/process/series`).
+3. It **assembles a CCEK**, creating the specific payload (`Series` or `Cursor`) and bundling the specific rules (`.α` transform or `.rowCount`) for that payload type.
+4. It **pumps this CCEK** into the generic server handler.
+5. The handler receives the CCEK. It doesn't know or care if the payload is a `Series` or a `Cursor`. It only knows it has a payload and a `Series` of rules to apply to it. It executes blindly and confidently.
 
-The `Series`/`Cursor` conflict never occurs because the specificity provided by the CCEK makes the operation unambiguous. This is the **radian of attention** in action—a directed, contextual flow of intent that illuminates a single, correct path of execution. 
+The `Series`/`Cursor` conflict never occurs because the specificity provided by the CCEK makes the operation unambiguous. This is the **radian of attention** in action—a directed, contextual flow of intent that illuminates a single, correct path of execution.

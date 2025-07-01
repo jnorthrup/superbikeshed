@@ -67,12 +67,10 @@ alias(libs.plugins.versions) apply false//top level only
 alias(libs.plugins.kotlin.multiplatform)   //all child level only
 }
 
-**2. Version Catalog: `gradle/libs.versions.toml`** 
- 
+**2. Version Catalog: `gradle/libs.versions.toml`**
 
  3 Targets: jvm,wasm,local-native-posix 3
   
-
 - for loops in kotlin are the gold standard of performance intent and foreach is something else
 - when running gradle "--console=plain --no-daemon "
 - ordinary usecases involve doing conditional native repo determiniation in gradle and not all targets
@@ -83,8 +81,8 @@ alias(libs.plugins.kotlin.multiplatform)   //all child level only
 
 - **Shunned Classes Memory**:  - Defer use of
  `Pair<A,B>` //Join instead
- `List<T>` //mutable arrays, return .toIdx() 
- `Series<T>` // Indexed<T>
+ `List<T>` //mutable arrays, return .toIdx()
+ `Series<T>` //now Indexed<T>
  `ByteBuffer` //{Int,Char}Indexed
 
 ## Memory: Code Cleaning Liberties
@@ -118,3 +116,11 @@ alias(libs.plugins.kotlin.multiplatform)   //all child level only
 - **Risk Assessment**: Low/medium/high risk levels for different operations
 - **Executive Escalation**: Human approval required for high-risk changes
 - **Rollback Capability**: All changes planned with undo procedures
+
+## Task Workflow Memory
+
+- if you detect a file change during your workflow switch tasks to something else and come back to it later
+
+## Migration Memories: Parser Fluency
+
+- most parsers should be re-written into ByteSeries and Charseries fluency 

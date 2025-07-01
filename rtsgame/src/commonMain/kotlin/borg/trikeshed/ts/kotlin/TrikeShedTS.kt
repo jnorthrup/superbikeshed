@@ -12,10 +12,7 @@ import borg.trikeshed.lib.*
  * Using the existing Join<A, B> from borg.trikeshed.lib
  */
 
-/**
- * Series - A sequence type (using Indexed<T> from TrikeShed)
- */
-typealias Series<T> = Indexed<T>
+
 
 /**
  * Create a Series instance

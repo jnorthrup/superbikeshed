@@ -19,15 +19,6 @@ dependencyResolutionManagement {
         mavenCentral()
         google()
     }
-    versionCatalogs {
-        create("libs") {
-            version("kotlin", "2.1.21")
-            version("coroutines", "1.8.0")
-            version("datetime", "0.5.0")
-            version("serialization", "1.6.2")
-            version("junit", "5.9.2")
-        }
-    }
 }
 
 rootProject.name = "Trikeshed-Monorepo"
