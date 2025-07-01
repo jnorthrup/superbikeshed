@@ -279,11 +279,7 @@ class CCEKEngine(
             for (step in pipeline.steps) {
                 currentControl = currentControl.copy(phase = step.phase)
                 
-                currentData = when (step) {
-                    is ValidationStep -> executeValidation(currentData, step)
-                    is TransformationStep -> executeTransformation(currentData, step)
-                    is SerializationStep -> executeSerialization(currentData, step)
-                }
+                currentData = executeStep(currentData, step)
             }
             
             currentControl = currentControl.copy(phase = ExecutionPhase.COMPLETE)
@@ -507,4 +503,103 @@ suspend fun executeCCEK(
 ): ExecutionResult {
     val engine = CCEKEngine(control, context, environment, knowledge)
     return engine.execute(data, pipeline)
+}
+
+// === PROTOCOL CHORD SHEET - METASERIES CONTROLLERS ===
+
+// Step execution chord - maps step types to execution functions
+private val stepExecutionChord: MetaSeries<PipelineStep, suspend (Any) -> Any> =
+    ValidationStep() j { step ->
+        when (step) {
+            is ValidationStep -> { data -> executeValidation(data, step) }
+            is TransformationStep -> { data -> executeTransformation(data, step) }
+            is SerializationStep -> { data -> executeSerialization(data, step) }
+            else -> { data -> data } // Default chord
+        }
+    }
+
+// Serialization format chord - maps formats to serialization functions
+private val serializationFormatChord: MetaSeries<SerializationFormat, (Any) -> Any> =
+    SerializationFormat.JSON j { format ->
+        when (format) {
+            SerializationFormat.JSON -> { data -> serializeToJson(data) }
+            SerializationFormat.PROTOBUF -> { data -> serializeToProtobuf(data) }
+            SerializationFormat.CUSTOM -> { data -> serializeCustom(data, "") }
+        }
+    }
+
+// Constraint validation chord - maps validation types to validation functions
+private val constraintValidationChord: MetaSeries<ConstraintValidation, (Any, Constraint) -> Unit> =
+    ConstraintValidation.FieldRequired("") j { validation ->
+        when (validation) {
+            is ConstraintValidation.FieldRequired -> { data, constraint -> 
+                // Validate field is present
+            }
+            is ConstraintValidation.FieldUnique -> { data, constraint -> 
+                // Validate field uniqueness
+            }
+            is ConstraintValidation.FieldRange -> { data, constraint -> 
+                // Validate field range
+            }
+            is ConstraintValidation.Custom -> { data, constraint -> 
+                // Execute custom validation expression
+            }
+        }
+    }
+
+// Rule condition chord - maps conditions to evaluation functions
+private val ruleConditionChord: MetaSeries<RuleCondition, (Any) -> Boolean> =
+    RuleCondition.FieldEquals("", "") j { condition ->
+        when (condition) {
+            is RuleCondition.FieldEquals -> { data -> true } // Placeholder
+            is RuleCondition.FieldMatches -> { data -> true } // Placeholder
+            is RuleCondition.And -> { data -> condition.conditions.all { evaluateCondition(data, it) } }
+            is RuleCondition.Or -> { data -> condition.conditions.any { evaluateCondition(data, it) } }
+            is RuleCondition.Not -> { data -> !evaluateCondition(data, condition.condition) }
+        }
+    }
+
+// Transformation action chord - maps actions to transformation functions
+private val transformationActionChord: MetaSeries<TransformationAction, (Any) -> Any> =
+    TransformationAction.SetField("", "") j { action ->
+        when (action) {
+            is TransformationAction.SetField -> { data -> data } // Placeholder
+            is TransformationAction.TransformField -> { data -> data } // Placeholder
+            is TransformationAction.AddField -> { data -> data } // Placeholder
+            is TransformationAction.RemoveField -> { data -> data } // Placeholder
+            is TransformationAction.Sequence -> { data ->
+                var result = data
+                for (seqAction in action.actions) {
+                    result = applyAction(result, seqAction)
+                }
+                result
+            }
+        }
+    }
+
+// === REFACTORED EXECUTION USING CHORD SHEET ===
+
+private suspend fun executeStep(data: Any, step: PipelineStep): Any {
+    // Use the step execution chord - like playing a chord on guitar
+    return stepExecutionChord.b(step)(data)
+}
+
+private suspend fun executeSerialization(data: Any, step: SerializationStep): Any {
+    // Use the serialization format chord
+    return serializationFormatChord.b(step.format)(data)
+}
+
+private fun validateConstraint(data: Any, constraint: Constraint) {
+    // Use the constraint validation chord
+    constraintValidationChord.b(constraint.validation)(data, constraint)
+}
+
+private fun evaluateCondition(data: Any, condition: RuleCondition): Boolean {
+    // Use the rule condition chord
+    return ruleConditionChord.b(condition)(data)
+}
+
+private fun applyAction(data: Any, action: TransformationAction): Any {
+    // Use the transformation action chord
+    return transformationActionChord.b(action)(data)
 } 

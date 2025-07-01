@@ -62,7 +62,7 @@ data class StraceAnalysis(
 interface StraceAttention {
     val summary: String
     val attentionWeights: Map<String, Double>
-    val dataPatterns: List<DataPattern>
+    val dataPatterns: List<DataPatternInfo>
     val llmPrompt: String
     
     suspend fun monitorWithAttention(command: String): Flow<StraceEvent>
@@ -80,7 +80,7 @@ data class StraceEvent(
     val error: String?
 )
 
-data class DataPattern(
+data class DataPatternInfo(
     val pattern: String,
     val dataSize: Int,
     val confidence: Double
@@ -89,14 +89,14 @@ data class DataPattern(
 data class AttentionAnalysis(
     val summary: String,
     val attentionWeights: Map<String, Double>,
-    val dataPatterns: List<DataPattern>
+    val dataPatterns: List<DataPatternInfo>
 )
 
 expect class StraceSummary(
     totalSyscalls: Int,
     uniqueSyscalls: Int,
     duration: Long,
-    patterns: List<DataPattern>
+    patterns: List<DataPatternInfo>
 )
 
 /**

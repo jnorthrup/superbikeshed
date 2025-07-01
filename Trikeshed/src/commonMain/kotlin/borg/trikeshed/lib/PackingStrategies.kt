@@ -628,3 +628,173 @@ fun <A, B> A.jp(
  * Forced non-packing j operator for when you want raw Join
  */
 infix fun <A, B> A.jn(b: B): Join<A, B> = this j b
+
+// === PACKING CHORD SHEET - METASERIES CONTROLLERS ===
+
+// Strategy detection chord - maps strategy types to detection functions
+private val strategyDetectionChord: MetaSeries<PackingStrategy, (Any?, Any?) -> Boolean> =
+    PackingStrategy.MINIMAL j { strategy ->
+        when (strategy) {
+            PackingStrategy.MINIMAL -> { a, b -> canDiagonalPack(a, b) }
+            PackingStrategy.STANDARD -> { a, b -> canPrefixedPack(a, b) || canRangeOffsetPack(a, b) }
+            PackingStrategy.AGGRESSIVE -> { a, b -> canPalettePack(a, b) || canMultiClusterPack(a, b) }
+            PackingStrategy.EXPERIMENTAL -> { a, b -> true } // Try everything
+        }
+    }
+
+// Diagonal packing chord - maps value types to diagonal packing functions
+private val diagonalPackingChord: MetaSeries<Join<Any?, Any?>, () -> Boolean> =
+    (1 j 2) j { (a, b) ->
+        when {
+            a is Int && b is Int -> {
+                val aLong = a.toLong()
+                val bLong = b.toLong()
+                aLong >= 0 && aLong <= 0xFFFFFFFFL && 
+                bLong >= 0 && bLong <= 0xFFFFFFFFL
+            }
+            a is Long && b is Long -> {
+                a >= 0 && b >= 0 && a <= 0x7FFFFFFFL && b <= 0x7FFFFFFFL
+            }
+            a is String && b is String -> {
+                a.length <= 4 && b.length <= 4
+            }
+            else -> false
+        }
+    }
+
+// Prefixed packing chord - maps value types to prefixed packing functions
+private val prefixedPackingChord: MetaSeries<Join<Any?, Any?>, () -> Boolean> =
+    (1 j 2) j { (a, b) ->
+        when {
+            a is Byte && b is Long -> true
+            a is Short && b is Long -> true
+            a is Int && b is Long -> a >= 0 && a <= 0xFF
+            a is String && b is String -> {
+                (a.length <= 2 && b.length > 2) || (b.length <= 2 && a.length > 2)
+            }
+            else -> false
+        }
+    }
+
+// Range offset packing chord - maps value types to range offset functions
+private val rangeOffsetPackingChord: MetaSeries<Join<Any?, Any?>, () -> Boolean> =
+    (1 j 2) j { (a, b) ->
+        when {
+            a is Array<*> && b is Long -> {
+                a.a > 0 && a.all { it is Number }
+            }
+            a is Indexed<*> && b is Long -> {
+                a.a > 0 && (0 until a.a).all { a.b(it) is Number }
+            }
+            else -> false
+        }
+    }
+
+// Relative increment packing chord - maps value types to relative increment functions
+private val relativeIncrementPackingChord: MetaSeries<Join<Any?, Any?>, () -> Boolean> =
+    (1 j 2) j { (a, b) ->
+        when {
+            a is Array<*> && b is Long -> {
+                a.a > 1 && a.all { it is Number }
+            }
+            a is Indexed<*> && b is Long -> {
+                a.a > 1 && (0 until a.a).all { a.b(it) is Number }
+            }
+            else -> false
+        }
+    }
+
+// Palette packing chord - maps value types to palette packing functions
+private val palettePackingChord: MetaSeries<Join<Any?, Any?>, () -> Boolean> =
+    (1 j 2) j { (a, b) ->
+        when {
+            a is Array<*> && b is Long -> {
+                a.a > 0 && a.toSet().a < a.a * 0.8 // Has duplicates
+            }
+            a is Indexed<*> && b is Long -> {
+                a.a > 0 && {
+                    val uniqueCount = (0 until a.a).map { a.b(it) }.toSet().a
+                    uniqueCount < a.a * 0.8
+                }()
+            }
+            else -> false
+        }
+    }
+
+// Multi-cluster packing chord - maps value types to multi-cluster functions
+private val multiClusterPackingChord: MetaSeries<Join<Any?, Any?>, () -> Boolean> =
+    (1 j 2) j { (a, b) ->
+        when {
+            a is Array<*> && b is Long -> {
+                a.a > 10 && a.toSet().a > 3
+            }
+            a is Indexed<*> && b is Long -> {
+                a.a > 10 && (0 until a.a).map { a.b(it) }.toSet().a > 3
+            }
+            else -> false
+        }
+    }
+
+// Packing execution chord - maps strategy types to packing functions
+private val packingExecutionChord: MetaSeries<PackingStrategy, (Any?, Any?) -> Either<Any, PackedResult>> =
+    PackingStrategy.MINIMAL j { strategy ->
+        when (strategy) {
+            PackingStrategy.MINIMAL -> { a, b -> 
+                if (canDiagonalPack(a, b)) Either.right(DiagonalPacked(packDiagonal(a, b)))
+                else Either.left("Cannot diagonal pack")
+            }
+            PackingStrategy.STANDARD -> { a, b ->
+                when {
+                    canPrefixedPack(a, b) -> packPrefixed(a, b).let { Either.right(PrefixedPacked(it.first, it.second)) }
+                    canRangeOffsetPack(a, b) -> packRangeOffset(a, b).let { Either.right(RangeOffsetPacked(it.first, it.second)) }
+                    canRelativeIncrementPack(a, b) -> packRelativeIncrement(a, b).let { Either.right(RelativeIncrementPacked(it.first, it.second)) }
+                    else -> Either.left("No standard packing strategy applicable")
+                }
+            }
+            PackingStrategy.AGGRESSIVE -> { a, b ->
+                when {
+                    canPalettePack(a, b) -> packPalette(a, b).let { Either.right(PalettePacked(it.first, it.second)) }
+                    canMultiClusterPack(a, b) -> packMultiCluster(a, b).let { Either.right(MultiClusterPacked(it.first, it.second)) }
+                    else -> Either.left("No aggressive packing strategy applicable")
+                }
+            }
+            PackingStrategy.EXPERIMENTAL -> { a, b ->
+                // Try all strategies in order
+                when {
+                    canDiagonalPack(a, b) -> Either.right(DiagonalPacked(packDiagonal(a, b)))
+                    canPrefixedPack(a, b) -> packPrefixed(a, b).let { Either.right(PrefixedPacked(it.first, it.second)) }
+                    canRangeOffsetPack(a, b) -> packRangeOffset(a, b).let { Either.right(RangeOffsetPacked(it.first, it.second)) }
+                    canRelativeIncrementPack(a, b) -> packRelativeIncrement(a, b).let { Either.right(RelativeIncrementPacked(it.first, it.second)) }
+                    canPalettePack(a, b) -> packPalette(a, b).let { Either.right(PalettePacked(it.first, it.second)) }
+                    canMultiClusterPack(a, b) -> packMultiCluster(a, b).let { Either.right(MultiClusterPacked(it.first, it.second)) }
+                    else -> Either.left("No experimental packing strategy applicable")
+                }
+            }
+        }
+    }
+
+// === REFACTORED PACKING USING CHORD SHEET ===
+
+private fun <A, B> canDiagonalPack(a: A, b: B): Boolean {
+    return diagonalPackingChord.b(a j b)()
+}
+
+private fun <A, B> canPrefixedPack(a: A, b: B): Boolean {
+    return prefixedPackingChord.b(a j b)()
+}
+
+private fun <A, B> canRangeOffsetPack(a: A, b: B): Boolean {
+    return rangeOffsetPackingChord.b(a j b)()
+}
+
+private fun <A, B> canRelativeIncrementPack(a: A, b: B): Boolean {
+    return relativeIncrementPackingChord.b(a j b)()
+}
+
+private fun <A, B> canPalettePack(a: A, b: B): Boolean {
+    return palettePackingChord.b(a j b)()
+}
+
+private fun <A, B> canMultiClusterPack(a: A, b: B): Boolean {
+    return multiClusterPackingChord.b(a j b)()
+}

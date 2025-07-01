@@ -64,9 +64,21 @@ val <T> Indexed<T>.infinite: Indexed<T>
     }
 
 /**
- * Index by enum
+ * Enum-driven domain-specific MetaSeries controller
+ * Enums can drive domain-specific MetaSeries controllers for type-safe domain operations
  */
-operator fun <S, E : Enum<E>> Indexed<S>.get(e: E): S = b(e.ordinal)
+typealias EnumMetaSeries<E, T> = MetaSeries<E, T>
+
+/**
+ * Create an enum-driven MetaSeries controller
+ */
+fun <E : Enum<E>, T> E.metaSeries(domainOperation: (E) -> T): EnumMetaSeries<E, T> = 
+    this j domainOperation
+
+/**
+ * Domain-specific indexing through enum-driven MetaSeries
+ */
+fun <S, E : Enum<E>> Indexed<S>.getByEnum(e: E): S = b(e.ordinal)
 
 /**
  * Convert Indexed to List

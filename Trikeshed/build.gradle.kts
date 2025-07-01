@@ -22,20 +22,29 @@ kotlin {
     val hostOs = System.getProperty("os.name")
     when {
         hostOs == "Mac OS X" -> {
+            val sdkPath = project.providers.exec {
+                commandLine("xcrun", "--sdk", "macosx", "--show-sdk-path")
+            }.standardOutput.asText.get().trim()
             macosX64 {
                 binaries {
                     executable()
                 }
-                compilations.getByName("main").cinterops.create("kqueue") {
-                    defFile = file("src/nativeInterop/cinterop/kqueue.def")
+                compilations.getByName("main").cinterops {
+                    val kqueue by creating {
+                        defFile("src/nativeInterop/cinterop/kqueue.def")
+                        compilerOpts.add("-I$sdkPath/usr/include")
+                    }
                 }
             }
             macosArm64 {
                 binaries {
                     executable()
                 }
-                compilations.getByName("main").cinterops.create("kqueue") {
-                    defFile = file("src/nativeInterop/cinterop/kqueue.def")
+                compilations.getByName("main").cinterops {
+                    val kqueue by creating {
+                        defFile("src/nativeInterop/cinterop/kqueue.def")
+                        compilerOpts.add("-I$sdkPath/usr/include")
+                    }
                 }
             }
         }

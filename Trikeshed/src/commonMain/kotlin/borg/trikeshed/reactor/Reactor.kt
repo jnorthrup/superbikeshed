@@ -7,6 +7,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.max
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.MetaSeries
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.net.socks.socksIngress
+import borg.trikeshed.net.socks.socksEgress
 
 // Placeholder IO dispatcher for commonMain - uses Default dispatcher
 val PlaceholderIO: CoroutineDispatcher = Dispatchers.Default
@@ -396,3 +401,224 @@ data class QuicEvent(
     val data: Indexed<Byte> = emptyIndexed(),
     val error: String? = null
 )
+
+// === PROTOCOL CHANNEL INGRESS/EGRESS CONTEXT SELECTION CHORD SHEET ===
+
+// Channel type selection chord - maps channel types to context selection functions
+private val channelTypeSelectionChord: MetaSeries<SelectableChannel, () -> CoroutineContext> =
+    object : SelectableChannel {} j { channel ->
+        when (channel) {
+            is borg.trikeshed.reactor.socks.SocksChannel -> { 
+                { channel.createSocksContext() }
+            }
+            is borg.trikeshed.reactor.http.HttpChannel -> { 
+                { channel.createHttpContext() }
+            }
+            is borg.trikeshed.reactor.quic.QuicChannel -> { 
+                { channel.createQuicContext() }
+            }
+            is borg.trikeshed.reactor.ipc.IpcChannel -> { 
+                { channel.createIpcContext() }
+            }
+            else -> { 
+                { Dispatchers.IO }
+            }
+        }
+    }
+
+// Protocol routing chord - maps protocol types to routing functions
+private val protocolRoutingChord: MetaSeries<EventType, (SelectionKey, CoroutineContext) -> AsyncReaction?> =
+    EventType.DATA j { eventType ->
+        when (eventType) {
+            EventType.DATA -> { key, context ->
+                // Route data events based on context
+                when {
+                    context.socksIngress != null -> createSocksIngressReaction(key, context)
+                    context.socksEgress != null -> createSocksEgressReaction(key, context)
+                    else -> createDefaultDataReaction(key, context)
+                }
+            }
+            EventType.CONTROL -> { key, context ->
+                createControlReaction(key, context)
+            }
+            EventType.ERROR -> { key, context ->
+                createErrorReaction(key, context)
+            }
+            EventType.CONNECT -> { key, context ->
+                createConnectReaction(key, context)
+            }
+            EventType.DISCONNECT -> { key, context ->
+                createDisconnectReaction(key, context)
+            }
+            EventType.MESSAGE -> { key, context ->
+                createMessageReaction(key, context)
+            }
+            EventType.REQUEST -> { key, context ->
+                createRequestReaction(key, context)
+            }
+            EventType.RESPONSE -> { key, context ->
+                createResponseReaction(key, context)
+            }
+            EventType.BROADCAST -> { key, context ->
+                createBroadcastReaction(key, context)
+            }
+            EventType.TIMEOUT -> { key, context ->
+                createTimeoutReaction(key, context)
+            }
+        }
+    }
+
+// Context composition chord - maps context elements to composition functions
+private val contextCompositionChord: MetaSeries<Join<CoroutineContext, CoroutineContext>, () -> CoroutineContext> =
+    (Dispatchers.IO j Dispatchers.Default) j { (base, additional) ->
+        { base + additional }
+    }
+
+// Ingress channel selection chord - maps ingress types to channel selection functions
+private val ingressChannelSelectionChord: MetaSeries<String, (CoroutineContext) -> borg.trikeshed.reactor.socks.SocksIngressChannel?> =
+    "socks" j { protocol ->
+        when (protocol) {
+            "socks" -> { context -> context.socksIngress }
+            "http" -> { context -> context.socksIngress } // HTTP can use SOCKS ingress
+            "quic" -> { context -> context.socksIngress } // QUIC can use SOCKS ingress
+            else -> { _ -> null }
+        }
+    }
+
+// Egress channel selection chord - maps egress types to channel selection functions
+private val egressChannelSelectionChord: MetaSeries<String, (CoroutineContext) -> borg.trikeshed.reactor.socks.SocksEgressChannel?> =
+    "socks" j { protocol ->
+        when (protocol) {
+            "socks" -> { context -> context.socksEgress }
+            "http" -> { context -> context.socksEgress } // HTTP can use SOCKS egress
+            "quic" -> { context -> context.socksEgress } // QUIC can use SOCKS egress
+            else -> { _ -> null }
+        }
+    }
+
+// === REFACTORED CONTEXT SELECTION USING CHORD SHEET ===
+
+private fun selectChannelContext(channel: SelectableChannel): CoroutineContext {
+    return channelTypeSelectionChord.b(channel)()
+}
+
+private fun routeProtocolEvent(eventType: EventType, key: SelectionKey, context: CoroutineContext): AsyncReaction? {
+    return protocolRoutingChord.b(eventType)(key, context)
+}
+
+private fun composeContexts(base: CoroutineContext, additional: CoroutineContext): CoroutineContext {
+    return contextCompositionChord.b(base j additional)()
+}
+
+private fun selectIngressChannel(protocol: String, context: CoroutineContext): borg.trikeshed.reactor.socks.SocksIngressChannel? {
+    return ingressChannelSelectionChord.b(protocol)(context)
+}
+
+private fun selectEgressChannel(protocol: String, context: CoroutineContext): borg.trikeshed.reactor.socks.SocksEgressChannel? {
+    return egressChannelSelectionChord.b(protocol)(context)
+}
+
+// === REACTION CREATION FUNCTIONS ===
+
+private fun createSocksIngressReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            val ingress = context.socksIngress
+            if (ingress != null) {
+                val data = ingress.receive()
+                // Process SOCKS ingress data
+            }
+        }
+    }
+}
+
+private fun createSocksEgressReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            val egress = context.socksEgress
+            if (egress != null) {
+                // Send data through SOCKS egress
+            }
+        }
+    }
+}
+
+private fun createDefaultDataReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Default data processing
+        }
+    }
+}
+
+private fun createControlReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Control event processing
+        }
+    }
+}
+
+private fun createErrorReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Error event processing
+        }
+    }
+}
+
+private fun createConnectReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Connection event processing
+        }
+    }
+}
+
+private fun createDisconnectReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Disconnection event processing
+        }
+    }
+}
+
+private fun createMessageReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Message event processing
+        }
+    }
+}
+
+private fun createRequestReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Request event processing
+        }
+    }
+}
+
+private fun createResponseReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Response event processing
+        }
+    }
+}
+
+private fun createBroadcastReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Broadcast event processing
+        }
+    }
+}
+
+private fun createTimeoutReaction(key: SelectionKey, context: CoroutineContext): AsyncReaction {
+    return object : AsyncReaction {
+        override suspend fun execute() {
+            // Timeout event processing
+        }
+    }
+}

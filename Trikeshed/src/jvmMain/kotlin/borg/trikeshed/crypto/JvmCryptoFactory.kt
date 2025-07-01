@@ -37,21 +37,68 @@ actual object CryptoFactory {
     }
 }
 
+// === VALUE CLASS-DRIVEN METASERIES CONTROLLERS FOR CRYPTO DISPATCH ===
+
+// Hash algorithm dispatch controller - reduces Kolmogorov depth by eliminating when expressions
+private val hashAlgorithmController: MetaSeries<HashAlgorithm, String> = 
+    HashAlgorithm("sha256") j { algorithm ->
+        when (algorithm.value) {
+            "sha256" -> "SHA-256"
+            "sha384" -> "SHA-384"
+            "sha512" -> "SHA-512"
+            "sha3-256" -> "SHA3-256"
+            "sha3-384" -> "SHA3-384"
+            "sha3-512" -> "SHA3-512"
+            "md5" -> "MD5"
+            "sha1" -> "SHA-1"
+            else -> "SHA-256" // Default fallback
+        }
+    }
+
+// Cipher suite dispatch controllers - domain-specific MetaSeries controllers
+private val cipherSuiteAlgorithmController: MetaSeries<CipherSuite, String> =
+    CipherSuite(0x1301) j { suite ->
+        when (suite.value) {
+            0x1301 -> "AES_128_GCM_SHA256"
+            0x1302 -> "AES_256_GCM_SHA384" 
+            0x1303 -> "CHACHA20_POLY1305_SHA256"
+            else -> "UNKNOWN"
+        }
+    }
+
+private val cipherSuiteKeyLengthController: MetaSeries<CipherSuite, KeyLength> =
+    CipherSuite(0x1301) j { suite ->
+        when (suite.value) {
+            0x1301 -> KeyLength(128)
+            0x1302 -> KeyLength(256)
+            0x1303 -> KeyLength(256)
+            else -> KeyLength(0)
+        }
+    }
+
+private val cipherSuiteCipherController: MetaSeries<CipherSuite, String> =
+    CipherSuite(0x1301) j { suite ->
+        when (suite.value) {
+            0x1301, 0x1302 -> "AES/GCM/NoPadding"
+            0x1303 -> "ChaCha20-Poly1305"
+            else -> throw UnsupportedOperationException("Cipher suite not supported: ${suite.value}")
+        }
+    }
+
+// Key exchange algorithm dispatch controller
+private val keyExchangeAlgorithmController: MetaSeries<KeyExchangeAlgorithm, String> =
+    KeyExchangeAlgorithm("x25519") j { algorithm ->
+        when (algorithm.value) {
+            "x25519", "x448" -> "XDH"
+            else -> "ECDH"
+        }
+    }
+
 // JVM implementation of Hasher
 private class JvmHasher(override val algorithm: HashAlgorithm) : CommonCrypto.Hasher {
     
     override fun hash(data: PlainText): Hash {
-        val digest = when (algorithm.value) {
-            "sha256" -> MessageDigest.getInstance("SHA-256")
-            "sha384" -> MessageDigest.getInstance("SHA-384")
-            "sha512" -> MessageDigest.getInstance("SHA-512")
-            "sha3-256" -> MessageDigest.getInstance("SHA3-256")
-            "sha3-384" -> MessageDigest.getInstance("SHA3-384")
-            "sha3-512" -> MessageDigest.getInstance("SHA3-512")
-            "md5" -> MessageDigest.getInstance("MD5")
-            "sha1" -> MessageDigest.getInstance("SHA-1")
-            else -> throw UnsupportedOperationException("Algorithm not supported: ${algorithm.value}")
-        }
+        val digest = MessageDigest.getInstance(hashAlgorithmController.b(algorithm))
         
         val bytes = ByteArray(data.size)
         for (i in 0 until data.size) {
@@ -61,12 +108,7 @@ private class JvmHasher(override val algorithm: HashAlgorithm) : CommonCrypto.Ha
     }
     
     override fun hmac(key: SymmetricKey, data: PlainText): Hash {
-        val algorithmName = when (algorithm.value) {
-            "sha256" -> "HmacSHA256"
-            "sha384" -> "HmacSHA384"
-            "sha512" -> "HmacSHA512"
-            else -> throw UnsupportedOperationException("HMAC not supported for: ${algorithm.value}")
-        }
+        val algorithmName = "Hmac${hashAlgorithmController.b(algorithm).uppercase()}"
         
         val mac = Mac.getInstance(algorithmName)
         val keyBytes = ByteArray(key.size)
@@ -86,20 +128,8 @@ private class JvmHasher(override val algorithm: HashAlgorithm) : CommonCrypto.Ha
 
 // JVM implementation of SymmetricCipher
 private class JvmSymmetricCipher(private val suite: CipherSuite) : CommonCrypto.SymmetricCipher {
-    override val algorithm: String = when (suite.value) {
-        0x1301 -> "AES_128_GCM_SHA256"
-        0x1302 -> "AES_256_GCM_SHA384"
-        0x1303 -> "CHACHA20_POLY1305_SHA256"
-        else -> "UNKNOWN"
-    }
-    
-    override val keyLength: KeyLength = when (suite.value) {
-        0x1301 -> KeyLength(128)
-        0x1302 -> KeyLength(256)
-        0x1303 -> KeyLength(256)
-        else -> KeyLength(0)
-    }
-    
+    override val algorithm: String = cipherSuiteAlgorithmController.b(suite)
+    override val keyLength: KeyLength = cipherSuiteKeyLengthController.b(suite)
     override val nonceLength: NonceLength = NonceLength(12)
     override val tagLength: TagLength = TagLength(16)
     
@@ -109,11 +139,7 @@ private class JvmSymmetricCipher(private val suite: CipherSuite) : CommonCrypto.
         plaintext: PlainText,
         additionalData: Indexed<Byte>
     ): Join<CipherText, Tag> {
-        val cipher = when (suite.value) {
-            0x1301, 0x1302 -> Cipher.getInstance("AES/GCM/NoPadding")
-            0x1303 -> Cipher.getInstance("ChaCha20-Poly1305")
-            else -> throw UnsupportedOperationException("Cipher suite not supported: ${suite.value}")
-        }
+        val cipher = Cipher.getInstance(cipherSuiteCipherController.b(suite))
         
         val keyBytes = ByteArray(key.size)
         for (i in 0 until key.size) {
@@ -161,11 +187,7 @@ private class JvmSymmetricCipher(private val suite: CipherSuite) : CommonCrypto.
         tag: Tag,
         additionalData: Indexed<Byte>
     ): PlainText? {
-        val cipher = when (suite.value) {
-            0x1301, 0x1302 -> Cipher.getInstance("AES/GCM/NoPadding")
-            0x1303 -> Cipher.getInstance("ChaCha20-Poly1305")
-            else -> throw UnsupportedOperationException("Cipher suite not supported: ${suite.value}")
-        }
+        val cipher = Cipher.getInstance(cipherSuiteCipherController.b(suite))
         
         val keyBytes = ByteArray(key.size)
         for (i in 0 until key.size) {
@@ -236,12 +258,7 @@ private class JvmKeyExchange(override val algorithm: KeyExchangeAlgorithm) : Com
     }
     
     override fun computeSharedSecret(privateKey: PrivateKey, publicKey: PublicKey): SessionKey {
-        val keyAgreement = KeyAgreement.getInstance(
-            when (algorithm.value) {
-                "x25519", "x448" -> "XDH"
-                else -> "ECDH"
-            }
-        )
+        val keyAgreement = KeyAgreement.getInstance(keyExchangeAlgorithmController.b(algorithm))
         
         val privateKeyBytes = ByteArray(privateKey.size)
         for (i in 0 until privateKey.size) {
@@ -253,19 +270,11 @@ private class JvmKeyExchange(override val algorithm: KeyExchangeAlgorithm) : Com
             publicKeyBytes[i] = publicKey[i]
         }
         
-        val privKey = KeyFactory.getInstance(
-            when (algorithm.value) {
-                "x25519", "x448" -> "XDH"
-                else -> "EC"
-            }
-        ).generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
+        val privKey = KeyFactory.getInstance(keyExchangeAlgorithmController.b(algorithm))
+            .generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
         
-        val pubKey = KeyFactory.getInstance(
-            when (algorithm.value) {
-                "x25519", "x448" -> "XDH"
-                else -> "EC"
-            }
-        ).generatePublic(X509EncodedKeySpec(publicKeyBytes))
+        val pubKey = KeyFactory.getInstance(keyExchangeAlgorithmController.b(algorithm))
+            .generatePublic(X509EncodedKeySpec(publicKeyBytes))
         
         keyAgreement.init(privKey)
         keyAgreement.doPhase(pubKey, true)

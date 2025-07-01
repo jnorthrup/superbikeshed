@@ -245,4 +245,121 @@ object Socks5Simple {
         println("   Total Scans: $totalScans")
         println("   Average Scans per Step: ${totalScans / 2}")
     }
+
+    // === SOCKS CHORD SHEET - METASERIES CONTROLLERS ===
+
+    // Address type parsing chord - maps address types to parsing functions
+    private val addressTypeParsingChord: MetaSeries<Byte, (ByteIndexedBuffer) -> Pair<ByteIndexed, Int>?> =
+        ATYP_IPV4 j { addressType ->
+            when (addressType) {
+                ATYP_IPV4 -> { buffer ->
+                    if (buffer.rem < 6) null else {
+                        val address = 4 j { i -> buffer.get }
+                        val portHigh = buffer.get.toInt() and 0xFF
+                        val portLow = buffer.get.toInt() and 0xFF
+                        val port = (portHigh shl 8) or portLow
+                        address to port
+                    }
+                }
+                ATYP_DOMAINNAME -> { buffer ->
+                    if (buffer.rem < 1) null else {
+                        val domainLength = buffer.get.toInt() and 0xFF
+                        if (buffer.rem < domainLength + 2) null else {
+                            val domain = domainLength j { i -> buffer.get }
+                            val portHigh = buffer.get.toInt() and 0xFF
+                            val portLow = buffer.get.toInt() and 0xFF
+                            val port = (portHigh shl 8) or portLow
+                            domain to port
+                        }
+                    }
+                }
+                ATYP_IPV6 -> { buffer ->
+                    if (buffer.rem < 18) null else {
+                        val address = 16 j { i -> buffer.get }
+                        val portHigh = buffer.get.toInt() and 0xFF
+                        val portLow = buffer.get.toInt() and 0xFF
+                        val port = (portHigh shl 8) or portLow
+                        address to port
+                    }
+                }
+                else -> { _ -> null }
+            }
+        }
+
+    // Handshake response chord - maps method types to response functions
+    private val handshakeResponseChord: MetaSeries<Byte, (Int) -> Byte> =
+        AUTH_METHOD_NO_AUTH j { method ->
+            { index ->
+                when (index) {
+                    0 -> SOCKS_VERSION_5
+                    1 -> method
+                    else -> 0x00
+                }
+            }
+        }
+
+    // Request response chord - maps response components to response functions
+    private val requestResponseChord: MetaSeries<Pair<Byte, Byte>, (Int, ByteIndexed, Int) -> Byte> =
+        (REPLY_SUCCESS to ATYP_IPV4) j { (reply, addressType) ->
+            { index, boundAddress, boundPort ->
+                val headerSize = 4 // VER + REP + RSV + ATYP
+                val addressSize = boundAddress.a
+                when {
+                    index == 0 -> SOCKS_VERSION_5
+                    index == 1 -> reply
+                    index == 2 -> 0x00 // Reserved
+                    index == 3 -> addressType
+                    index < headerSize + addressSize -> boundAddress[index - headerSize]
+                    else -> {
+                        val portIndex = index - headerSize - addressSize
+                        when (portIndex) {
+                            0 -> (boundPort shr 8).toByte()
+                            1 -> (boundPort and 0xFF).toByte()
+                            else -> 0x00
+                        }
+                    }
+                }
+            }
+        }
+
+    // IP address conversion chord - maps address sizes to conversion functions
+    private val ipAddressConversionChord: MetaSeries<Int, (ByteIndexed) -> String> =
+        4 j { size ->
+            { address ->
+                when (size) {
+                    4 -> address.toArray().joinToString(".") { (it.toInt() and 0xFF).toString() }
+                    else -> address.toDebugString()
+                }
+            }
+        }
+
+    // === REFACTORED SOCKS USING CHORD SHEET ===
+
+    private fun parseAddressType(buffer: ByteIndexedBuffer, addressType: Byte): Pair<ByteIndexed, Int>? {
+        return addressTypeParsingChord.b(addressType)(buffer)
+    }
+
+    private fun createHandshakeResponseBytes(method: Byte): ByteIndexed {
+        return 2 j { i -> handshakeResponseChord.b(method)(i) }
+    }
+
+    private fun createRequestResponseBytes(
+        reply: Byte,
+        addressType: Byte,
+        boundAddress: ByteIndexed,
+        boundPort: Int
+    ): ByteIndexed {
+        val headerSize = 4
+        val addressSize = boundAddress.a
+        val portSize = 2
+        val totalSize = headerSize + addressSize + portSize
+        
+        return totalSize j { i -> 
+            requestResponseChord.b(reply to addressType)(i, boundAddress, boundPort)
+        }
+    }
+
+    private fun ByteIndexed.toIpAddressString(): String {
+        return ipAddressConversionChord.b(a)(this)
+    }
 } 

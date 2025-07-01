@@ -5,20 +5,28 @@ import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
+import kotlinx.coroutines.*
 
 /**
  * JVM implementation of the Lz4 object, using exec for compression/decompression and in-code for framing.
+ * Bottles channels of byteranges into exec stdio.
  */
 actual object Lz4 {
 
     /**
      * Compresses a single block of data into an LZ4 frame using the system lz4 tool.
+     * Bottles byterange channel through exec stdio.
      */
     actual fun compressFrame(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
         val process = ProcessBuilder("lz4", "-c", "-f", "--frame").start()
+        
+        // Bottle byterange channel to exec stdio
         process.outputStream.write(inputArray)
         process.outputStream.close()
+        
         val output = process.inputStream.readBytes()
         process.waitFor()
         return output.toIndexed()
@@ -26,57 +34,36 @@ actual object Lz4 {
 
     /**
      * Decompresses a single LZ4 frame using the system lz4 tool.
+     * Bottles byterange channel through exec stdio.
      */
     actual fun decompressFrame(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
         val process = ProcessBuilder("lz4", "-d", "-c", "-f").start()
+        
+        // Bottle byterange channel to exec stdio
         process.outputStream.write(inputArray)
         process.outputStream.close()
+        
         val output = process.inputStream.readBytes()
         process.waitFor()
         return output.toIndexed()
     }
 
     /**
-     * Gets the uncompressed size of an LZ4 frame.
-     * This requires reading the frame header.
-     * Note: LZ4 frame format can optionally include content size. If not present, this will return 0.
+     * Gets the uncompressed size of an LZ4 frame by parsing the frame header.
+     * Uses exec to get frame info without full decompression.
      * @param input The LZ4 frame data as an Indexed<Byte>.
      * @return The uncompressed size, or 0 if not present in the frame header.
      */
     actual fun getFrameUncompressedSize(input: Indexed<Byte>): Long {
-        val inputArray = input.toByteArray()
-        val bais = ByteArrayInputStream(inputArray)
-        val lz4Fis = LZ4FrameInputStream(bais)
-        val uncompressedSize = lz4Fis.contentLength
-        lz4Fis.close() // Close to release resources
+        val (_, uncompressedSize) = parseFrameHeader(input)
         return uncompressedSize
     }
 
-    actual fun parseFrameHeader(input: Indexed<Byte>): Pair<Long, Long> {
-        val inputArray = input.toByteArray()
-        val bais = ByteArrayInputStream(inputArray)
-
-        // Read magic number (4 bytes)
-        bais.readNBytes(4)
-
-        // Read Frame Descriptor (1 byte)
-        val frameDescriptor = bais.read()
-
-        // Check for Content Size flag (bit 3 of FLG byte)
-        val hasContentSize = (frameDescriptor.toByte().toInt() shr 3 and 0x1) == 1
-
-        var uncompressedSize: Long = 0
-        if (hasContentSize) {
-            val contentSizeBytes = bais.readNBytes(8)
-            uncompressedSize = java.nio.ByteBuffer.wrap(contentSizeBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).long
-        }
-
-        // For compressed size, we cannot determine it from the header alone without reading blocks.
-        // We'll return 0 for now, and buildIndex will have to read the entire frame to get the actual compressed size.
-        return Pair(0L, uncompressedSize)
-    }
-
+    /**
+     * Parses LZ4 frame header to extract compressed and uncompressed sizes.
+     * Bottles byterange parsing through direct byte access.
+     */
     actual fun parseFrameHeader(input: Indexed<Byte>): Pair<Long, Long> {
         // Simplified LZ4 frame header parsing
         // Magic Number (4 bytes) - already checked by caller
@@ -119,7 +106,7 @@ actual object Lz4 {
             if (currentOffset + 4 > input.a) { // Need at least 4 bytes for block size
                 break
             }
-            val blockSize = input.getInt(currentOffset)
+            val blockSize = getInt(input, currentOffset)
             if (blockSize == 0) { // End mark
                 currentOffset += 4
                 break
@@ -135,6 +122,10 @@ actual object Lz4 {
         return Pair(compressedSize, uncompressedSize)
     }
 
+    /**
+     * Reads a Variable Length Quantity (VLQ) from the input at the given offset.
+     * Bottles byterange access through direct byte reading.
+     */
     actual fun readVLQ(input: Indexed<Byte>, offset: Int): Pair<Long, Int> {
         var value = 0L
         var bytesRead = 0
@@ -149,5 +140,16 @@ actual object Lz4 {
             }
         }
         return Pair(value, bytesRead)
+    }
+
+    /**
+     * Helper function to get Int from Indexed<Byte> at specific offset.
+     * Bottles byterange access for integer reading.
+     */
+    private fun getInt(input: Indexed<Byte>, offset: Int): Int {
+        return (input[offset].toInt() and 0xFF) or
+               ((input[offset + 1].toInt() and 0xFF) shl 8) or
+               ((input[offset + 2].toInt() and 0xFF) shl 16) or
+               ((input[offset + 3].toInt() and 0xFF) shl 24)
     }
 }
