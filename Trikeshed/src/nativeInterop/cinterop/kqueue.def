@@ -1,0 +1,3 @@
+headers = <sys/event.h>
+headerFilter = <sys/event.h>
+package = borg.trikeshed.kqueue

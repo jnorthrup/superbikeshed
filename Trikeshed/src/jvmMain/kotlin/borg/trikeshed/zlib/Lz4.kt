@@ -2,7 +2,6 @@ package borg.trikeshed.zlib
 
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
-import borg.trikeshed.lib.toSeries
 import net.jpountz.lz4.LZ4Factory
 import net.jpountz.lz4.LZ4FrameInputStream
 import net.jpountz.lz4.LZ4FrameOutputStream
@@ -27,7 +26,7 @@ actual object Lz4 {
         LZ4FrameOutputStream(baos).use { lz4Fos ->
             lz4Fos.write(inputArray)
         }
-        return baos.toByteArray().toSeries()
+        return baos.toByteArray().toIndexed()
     }
 
     /**
@@ -42,7 +41,7 @@ actual object Lz4 {
         LZ4FrameInputStream(bais).use { lz4Fis ->
             lz4Fis.copyTo(baos)
         }
-        return baos.toByteArray().toSeries()
+        return baos.toByteArray().toIndexed()
     }
 
     /**

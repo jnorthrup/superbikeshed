@@ -1,0 +1,3 @@
+headers = /usr/include/liburing.h
+headerFilter = /usr/include/liburing.h
+package = borg.trikeshed.liburing

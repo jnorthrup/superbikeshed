@@ -7,6 +7,10 @@ plugins {
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
+repositories {
+    mavenCentral()
+}
+
 kotlin {
     jvm()
     wasmJs { 
@@ -18,12 +22,40 @@ kotlin {
     val hostOs = System.getProperty("os.name")
     when {
         hostOs == "Mac OS X" -> {
-            macosX64()
-            macosArm64()
+            macosX64 {
+                binaries {
+                    executable()
+                }
+                compilations.getByName("main").cinterops.create("kqueue") {
+                    defFile = file("src/nativeInterop/cinterop/kqueue.def")
+                }
+            }
+            macosArm64 {
+                binaries {
+                    executable()
+                }
+                compilations.getByName("main").cinterops.create("kqueue") {
+                    defFile = file("src/nativeInterop/cinterop/kqueue.def")
+                }
+            }
         }
         hostOs == "Linux" -> {
-            linuxX64()
-            linuxArm64()
+            linuxX64 {
+                binaries {
+                    executable()
+                }
+                compilations.getByName("main").cinterops.create("liburing") {
+                    defFile = file("src/nativeInterop/cinterop/liburing.def")
+                }
+            }
+            linuxArm64 {
+                binaries {
+                    executable()
+                }
+                compilations.getByName("main").cinterops.create("liburing") {
+                    defFile = file("src/nativeInterop/cinterop/liburing.def")
+                }
+            }
         }
     }
     
@@ -42,9 +74,7 @@ kotlin {
         }
         
         jvmTest {
-            dependencies {
-                implementation(kotlin("test-junit5"))
-            }
+            // Removed explicit dependency on kotlin("test-junit5") to resolve conflict
         }
         
         // Native source sets configuration is handled automatically by Kotlin's hierarchy template

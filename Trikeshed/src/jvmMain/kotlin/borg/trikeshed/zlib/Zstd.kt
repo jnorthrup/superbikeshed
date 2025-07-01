@@ -2,7 +2,6 @@ package borg.trikeshed.zlib
 
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
-import borg.trikeshed.lib.toSeries
 import com.github.luben.zstd.Zstd as ZstdJni
 
 /**
@@ -18,7 +17,7 @@ actual object Zstd {
     actual fun compress(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
         val outputArray = ZstdJni.compress(inputArray)
-        return outputArray.toSeries()
+        return outputArray.toIndexed()
     }
 
     /**
@@ -30,7 +29,7 @@ actual object Zstd {
         val inputArray = input.toByteArray()
         val decompressedSize = ZstdJni.decompressedSize(inputArray).toInt()
         val outputArray = ZstdJni.decompress(inputArray, decompressedSize)
-        return outputArray.toSeries()
+        return outputArray.toIndexed()
     }
 
     /**

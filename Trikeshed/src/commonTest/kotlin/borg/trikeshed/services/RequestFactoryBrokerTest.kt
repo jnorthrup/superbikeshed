@@ -230,7 +230,7 @@ class RequestFactoryBrokerTest {
             """.trimIndent()
             
             runBlocking {
-                client.handleResponse(responseJson.encodeToByteArray().toSeries())
+                client.handleResponse(responseJson.encodeToByteArray().toIndexed())
             }
         }
     }
@@ -287,7 +287,7 @@ class RequestFactoryBrokerTest {
             """.trimIndent()
             
             runBlocking {
-                val response = server.handleRequest(requestJson.encodeToByteArray().toSeries())
+                val response = server.handleRequest(requestJson.encodeToByteArray().toIndexed())
                 assertNotNull(response)
             }
         }
@@ -310,7 +310,7 @@ class RequestFactoryBrokerTest {
             """.trimIndent()
             
             runBlocking {
-                val response = server.handleRequest(requestJson.encodeToByteArray().toSeries())
+                val response = server.handleRequest(requestJson.encodeToByteArray().toIndexed())
                 assertNotNull(response)
                 // Should generate EntityCreated response
             }
@@ -336,7 +336,7 @@ class RequestFactoryBrokerTest {
             """.trimIndent()
             
             runBlocking {
-                val response = server.handleRequest(requestJson.encodeToByteArray().toSeries())
+                val response = server.handleRequest(requestJson.encodeToByteArray().toIndexed())
                 // Should fail with version mismatch or entity not found
                 assertNotNull(response)
             }
@@ -361,7 +361,7 @@ class RequestFactoryBrokerTest {
             """.trimIndent()
             
             runBlocking {
-                val response = server.handleRequest(requestJson.encodeToByteArray().toSeries())
+                val response = server.handleRequest(requestJson.encodeToByteArray().toIndexed())
                 // Should fail with entity not found
                 assertNotNull(response)
             }
@@ -377,7 +377,7 @@ class RequestFactoryBrokerTest {
             val malformedJson = "{ invalid json }"
             
             runBlocking {
-                val response = server.handleRequest(malformedJson.encodeToByteArray().toSeries())
+                val response = server.handleRequest(malformedJson.encodeToByteArray().toIndexed())
                 // Should return failure response
                 assertNotNull(response)
             }
@@ -399,7 +399,7 @@ class RequestFactoryBrokerTest {
             """.trimIndent()
             
             runBlocking {
-                val response = server.handleRequest(requestJson.encodeToByteArray().toSeries())
+                val response = server.handleRequest(requestJson.encodeToByteArray().toIndexed())
                 // Should return failure response
                 assertNotNull(response)
             }
@@ -549,12 +549,12 @@ class RequestFactoryBrokerTest {
                 }
                 
                 override suspend fun receive(): Series<Byte> {
-                    return "{}".encodeToByteArray().toSeries()
+                    return "{}".encodeToByteArray().toIndexed()
                 }
             }
             
             runBlocking {
-                mockTransport.send("test".encodeToByteArray().toSeries())
+                mockTransport.send("test".encodeToByteArray().toIndexed())
                 val response = mockTransport.receive()
                 assertNotNull(response)
             }
@@ -596,7 +596,7 @@ class RequestFactoryBrokerTest {
 
     class MockTransport : RequestFactoryBroker.Transport {
         private val sentData = mutableListOf<Series<Byte>>()
-        private var responseData: Series<Byte> = "{}".encodeToByteArray().toSeries()
+        private var responseData: Series<Byte> = "{}".encodeToByteArray().toIndexed()
         
         override suspend fun send(data: Series<Byte>) {
             sentData.add(data)

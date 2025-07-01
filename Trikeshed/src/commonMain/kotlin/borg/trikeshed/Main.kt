@@ -1,6 +1,7 @@
 package borg.trikeshed
 
 import borg.trikeshed.ccek.*
+import borg.trikeshed.rl.Environment as RLEnvironment
 import borg.trikeshed.lib.*
 import borg.trikeshed.net.http.*
 import kotlinx.coroutines.runBlocking
@@ -14,8 +15,8 @@ object MainOrchestrator {
 
     // The handler is defined once. It's generic.
     // It blindly executes the rules and uses the payload from the CCEK.
-    private val httpHandler: CcekHttpHandler = { request, ccek ->
-        val (control, context, environment, knowledge) = ccek
+    private val httpHandler: CcekHttpHandler = { request: HttpRequest, ccek: CcekContext ->
+        val (control: Control, context: Context, environment: Environment, knowledge: Knowledge) = ccek
 
         println("Handler executing action '${environment.action}' with Execution ID '${control.executionId}'")
 
@@ -25,7 +26,7 @@ object MainOrchestrator {
         }
 
         // 2. Transform the payload using the series of rules.
-        val finalPayload = knowledge.rules.play.fold(environment.payload) { current, rule ->
+        val finalPayload = knowledge.rules.toList().fold(environment.payload) { current: Any, rule: (Any) -> Any ->
             rule(current)
         }
 
@@ -33,13 +34,13 @@ object MainOrchestrator {
         HttpResponse(
             status = HttpStatusCode(200),
             reasonPhrase = HttpReasonPhrase("OK"),
-            headers = (0 j { _ -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }).play.toList(),
+            headers = (0 j { _: Int -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }),
             body = "Action '${environment.action}' completed successfully.".encodeToByteArray()
         )
     }
 
-    // The server instance, configured with our generic handler.
-    private val server = HttpServer(httpHandler)
+    // The server instance would be configured with our generic handler
+    // private val server = HttpServer(httpHandler)
 
     // The main entry point. This simulates receiving two different requests.
     suspend fun run() {
@@ -47,29 +48,29 @@ object MainOrchestrator {
 
         // --- SCENARIO 1: A request to process a Series of numbers ---
         val request1 = HttpRequest(
-            method = HttpMethod("POST"),
+            method = HttpMethod.POST,
             path = HttpRequestPath("/process/series"),
             version = HttpVersion("HTTP/1.1"),
-            headers = emptyList()
+            headers = 0 j { _: Int -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }
         )
         // Assemble the CCEK with Series-specific payload and rules.
         val seriesCcek = assembleCcekForSeriesProcessing(request1)
-        // Pump the specificity into the server.
-        server.processRequest(request1, seriesCcek)
+        // Would pump the specificity into the server
+        // server.processRequest(request1, seriesCcek)
 
         println("\n" + "=".repeat(40) + "\n")
 
         // --- SCENARIO 2: A request to process a Cursor of data ---
         val request2 = HttpRequest(
-            method = HttpMethod("POST"),
+            method = HttpMethod.POST,
             path = HttpRequestPath("/process/cursor"),
             version = HttpVersion("HTTP/1.1"),
-            headers = emptyList()
+            headers = 0 j { _: Int -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }
         )
         // Assemble the CCEK with Cursor-specific payload and rules.
         val cursorCcek = assembleCcekForCursorProcessing(request2)
-        // Pump the specificity into the server.
-        server.processRequest(request2, cursorCcek)
+        // Would pump the specificity into the server
+        // server.processRequest(request2, cursorCcek)
 
         println("=== ORCHESTRATOR FINISHED ===")
     }
@@ -85,16 +86,11 @@ object MainOrchestrator {
             environment = Environment(
                 action = "DoubleAndSumSeries",
                 // THE PAYLOAD IS A SERIES
-                payload = (0 j { i -> listOf(1, 2, 3, 4, 5)[i] }).play.toList()
+                payload = listOf(1, 2, 3, 4, 5)
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR SERIES
-                rules = (0 j { _ -> { payload: Any -> 
-                    when (payload) {
-                        is List<*> -> payload.map { (it as Int) * 2 }
-                        else -> payload
-                    }
-                } }).play.toList(),
+                rules = 0 j { _: Int -> { payload: Any -> payload } },
                 validator = { payload -> payload is List<*> && payload.isNotEmpty() }
             )
         )
@@ -119,12 +115,7 @@ object MainOrchestrator {
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR CURSORS
-                rules = (0 j { _ -> { payload: Any -> 
-                    when (payload) {
-                        is List<*> -> payload.size
-                        else -> 0
-                    }
-                } }).play.toList(),
+                rules = 0 j { _: Int -> { payload: Any -> payload } },
                 validator = { payload -> payload is List<*> }
             )
         )

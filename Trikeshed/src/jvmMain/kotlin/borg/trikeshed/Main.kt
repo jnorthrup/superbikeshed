@@ -122,7 +122,7 @@ private fun createDealService(): DealService = object : DealService {
         val matching = deals.values.filter { 
             it.product.contains(query, ignoreCase = true) 
         }
-        return matching.toSeries()
+        return matching.toIndexed()
     }
 
     override suspend fun persistDeal(deal: DealProxy): CouchTxProxy {
@@ -135,7 +135,7 @@ private fun createDealService(): DealService = object : DealService {
     }
 
     override suspend fun getVendors(): Series<VendorProxy> =
-        vendors.toSeries()
+        vendors.toIndexed()
 }
 
 fun showUsage() {

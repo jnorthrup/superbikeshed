@@ -22,7 +22,7 @@ actual class PlatformServiceInvoker {
             ?: throw IllegalArgumentException("Method must be a KCallable on JVM, got: ${method::class.simpleName}")
         
         return try {
-            val argsList = args.play.toList()
+            val argsList = args.toList()
             val allArgs: List<Any?> = listOf(service) + argsList // Include 'this' parameter
             
             // Validate parameter count

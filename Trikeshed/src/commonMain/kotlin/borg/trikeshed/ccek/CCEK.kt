@@ -1,7 +1,5 @@
 package borg.trikeshed.ccek
 
-import borg.trikeshed.lib.Series
-
 /**
  * CCEK (Control, Context, Environment, Knowledge)
  * The "Radian of Attention" that carries specificity and intent from the
@@ -14,21 +12,37 @@ data class CcekContext(
     val knowledge: Knowledge
 )
 
-data class Control(val executionId: String)
-data class Context(val sourceIp: String, val securityToken: String?)
-
-// The Environment carries the specific "payload" and action.
-// The handler receives this and knows exactly what to do.
+/**
+ * Environment - represents the execution environment
+ */
 data class Environment(
     val action: String,
-    val payload: Any // This could be a Cursor, a Series, or any other TrikeShed type
+    val payload: Any
 )
 
-// The Knowledge contains the rules for this specific operation.
+/**
+ * Control - represents execution control
+ */
+data class Control(
+    val executionId: String
+)
+
+/**
+ * Context - represents execution context  
+ */
+data class Context(
+    val sessionId: String
+)
+
+/**
+ * Knowledge - represents the domain knowledge and data schema
+ */
 data class Knowledge(
-    val rules: Series<(Any) -> Any>, // A series of transformation functions
+    val rules: Indexed<(Any) -> Any>,
     val validator: (Any) -> Boolean
 )
+
+typealias CcekHttpHandler = suspend (borg.trikeshed.net.http.HttpRequest, CcekContext) -> borg.trikeshed.net.http.HttpResponse
 
 // === CORE CCEK TYPES ===
 
@@ -50,25 +64,6 @@ data class Context(
     val userId: String? = null,
     val metadata: Map<String, String> = emptyMap(),
     val timestamp: Long = System.currentTimeMillis()
-)
-
-/**
- * Environment - represents the runtime environment and configuration
- */
-data class Environment(
-    val platform: String,
-    val version: String,
-    val config: Map<String, Any> = emptyMap(),
-    val capabilities: Set<String> = emptySet()
-)
-
-/**
- * Knowledge - represents the domain knowledge and data schema
- */
-data class Knowledge(
-    val schema: DataSchema,
-    val rules: List<TransformationRule> = emptyList(),
-    val constraints: List<Constraint> = emptyList()
 )
 
 // === EXECUTION PHASES ===

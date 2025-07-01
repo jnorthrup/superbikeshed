@@ -45,9 +45,7 @@ kotlin {
         }
         
         jvmTest {
-            dependencies {
-                implementation(kotlin("test-junit5"))
-            }
+            // Removed explicit dependency on kotlin("test-junit5") to resolve conflict
         }
     }
 }

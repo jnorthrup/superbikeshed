@@ -56,9 +56,7 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 - The top-level `build.gradle.kts` includes ONLY the `com.github.ben-manes.versions` plugin for dependency version management and all versions ingradle not toml.  
 - The child projects contain ONLY `kotlin-multiplatform` plugin and no versions
-- our gradle should always defer to superbikeshed/ gradle for versions info and not alter them.  our targets are common,conditionally-local-native,wasm,jvm
-
-
+- our gradle should always defer to superbikeshed/ gradle for versions info and not alter them.  our targets are common,conditionally-local-native,wasm,jvm 
 
 - for loops in kotlin are the gold standard of performance intent and foreach is something else
 - when running gradle "--console=plain --no-daemon "
@@ -71,16 +69,16 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 - **Shunned Classes Memory**:  - Defer use of
  `Pair<A,B>` //Join instead
  `List<T>` //mutable arrays, or at least return .toIdx()
- `Series<T>` //now Indexed<T>what version did you install howcome 
+ `Series<T>` //now Indexed<T>  
  `ByteBuffer` //{Int,Char}Indexed
 
 ## Memory: Code Cleaning Liberties
 
 - if it wasn't mentioned before we do not tolerate "cleaning" liberties at all.  we need all our code and we paid you for all our code and do not give rights of disposal.  you may move code to a musem area and we will find a model that can do your job for you later and delete you when we have time.  that is all
+ 
+ no museums period
 
-## Memory: Museum Preservation
-
-- museums outside of compilation created only by user permission.  90% bugs come from infix type inference fails and dual named leacy classes
+ no disabling during compiles
 
 ## Memory: Project Documentation and Markdown
 
@@ -113,3 +111,7 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 ## Migration Memories: Parser Fluency
 
 - most parsers should be re-written into bbcursive
+
+## Code Writing Memory
+
+- if you are writing new code, it must have complete type info around any infix like our j
