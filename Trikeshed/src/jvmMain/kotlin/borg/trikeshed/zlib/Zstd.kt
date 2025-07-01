@@ -1,5 +1,6 @@
 package borg.trikeshed.zlib
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
 
