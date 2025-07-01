@@ -82,7 +82,7 @@ object MainOrchestrator {
         println("Orchestrator: Assembling CCEK for a SERIES operation.")
         return CcekContext(
             control = Control("exec_series_123"),
-            context = Context(sourceIp = "127.0.0.1", securityToken = "token_valid"),
+            context = Context(sessionId = "session_series_123"),
             environment = Environment(
                 action = "DoubleAndSumSeries",
                 // THE PAYLOAD IS A SERIES
@@ -107,7 +107,7 @@ object MainOrchestrator {
         println("Orchestrator: Assembling CCEK for a CURSOR operation.")
         return CcekContext(
             control = Control("exec_cursor_456"),
-            context = Context(sourceIp = "127.0.0.1", securityToken = "token_valid"),
+            context = Context(sessionId = "session_series_123"),
             environment = Environment(
                 action = "CountCursorRows",
                 // THE PAYLOAD IS A CURSOR

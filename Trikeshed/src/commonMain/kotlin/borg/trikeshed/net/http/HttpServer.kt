@@ -10,6 +10,7 @@ import borg.trikeshed.io.*
 import borg.trikeshed.net.http.HttpParser
 import kotlin.jvm.JvmInline
 import kotlinx.coroutines.*
+import borg.trikeshed.ccek.AsyncChannelContext
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
 
@@ -370,4 +371,12 @@ fun createRequestFactoryHandler(requestFactoryService: RequestFactoryService): H
         },
         body = responsePayload
     )
+}
+
+// Example: Use context-driven channel for request handling
+suspend fun handleRequestWithContext(request: HttpRequest): HttpResponse {
+    val channel = coroutineContext[AsyncChannelContext.AsyncChannelKey]
+    // Use channel for I/O if present, otherwise fallback
+    // ... protocol logic ...
+    return HttpResponse(/* ... */)
 }

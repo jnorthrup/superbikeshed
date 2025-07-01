@@ -1,16 +1,26 @@
 package borg.trikeshed.ccek
 
+import borg.trikeshed.lib.*
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
+
 /**
- * CCEK (Control, Context, Environment, Knowledge)
+ * CCEK (Control, Context, Environment, Knowledge) + CoroutineContextElementKey
  * The "Radian of Attention" that carries specificity and intent from the
  * orchestrator (`main`) to the execution handler. It IS the DSL.
+ * 
+ * Extended to support io_uring batch operations and channel chaining.
  */
 data class CcekContext(
     val control: Control,
     val context: Context,
     val environment: Environment,
     val knowledge: Knowledge
-)
+) : CoroutineContext.Element {
+    override val key = CcekContextKey
+    
+    companion object CcekContextKey : CoroutineContext.Key<CcekContext>
+}
 
 /**
  * Environment - represents the execution environment
@@ -42,29 +52,92 @@ data class Knowledge(
     val validator: (Any) -> Boolean
 )
 
-typealias CcekHttpHandler = suspend (borg.trikeshed.net.http.HttpRequest, CcekContext) -> borg.trikeshed.net.http.HttpResponse
+// === IO_URING CCEK EXTENSIONS ===
+
+/**
+ * io_uring batch operation context element
+ */
+data class UringBatchContext(
+    val batchSize: Int = 32,
+    val ringFd: Int,
+    val sqeDepth: Int = 4096,
+    val cqeDepth: Int = 8192
+) : CoroutineContext.Element {
+    override val key = UringBatchKey
+    
+    companion object UringBatchKey : CoroutineContext.Key<UringBatchContext>
+}
+
+/**
+ * Channel chain context for SOCKS5 relay operations
+ */
+data class ChannelChainContext(
+    val channels: Indexed<AsyncChannelContext>
+) : CoroutineContext.Element {
+    override val key = ChannelChainKey
+    
+    companion object ChannelChainKey : CoroutineContext.Key<ChannelChainContext>
+    
+    /**
+     * Chain another channel
+     */
+    infix fun chain(channel: AsyncChannelContext): ChannelChainContext {
+        val newChannels = Array(channels.a + 1) { i ->
+            if (i < channels.a) channels.b(i) else channel
+        }
+        return ChannelChainContext(newChannels.size j newChannels::get)
+    }
+}
+
+/**
+ * Async channel context
+ */
+data class AsyncChannelContext(
+    val channelId: String,
+    val fd: Int,
+    val type: ChannelType,
+    val localAddr: String,
+    val remoteAddr: String
+) : CoroutineContext.Element {
+    override val key = AsyncChannelKey
+    
+    companion object AsyncChannelKey : CoroutineContext.Key<AsyncChannelContext>
+    
+    enum class ChannelType {
+        TCP_SERVER, TCP_CLIENT, UDP, UNIX_DOMAIN
+    }
+}
+
+/**
+ * Get CCEK context from coroutine context
+ */
+suspend fun ccekContext(): CcekContext? = 
+    coroutineContext[CcekContext.CcekContextKey]
+
+/**
+ * Get io_uring batch context
+ */
+suspend fun uringBatch(): UringBatchContext? =
+    coroutineContext[UringBatchContext.UringBatchKey]
+
+/**
+ * Get channel chain
+ */
+suspend fun channelChain(): ChannelChainContext? =
+    coroutineContext[ChannelChainContext.ChannelChainKey]
+
+/**
+ * Execute with CCEK + io_uring context
+ */
+suspend fun <T> withCCEKUring(
+    ccek: CcekContext,
+    uring: UringBatchContext,
+    block: suspend CoroutineScope.() -> T
+): T = withContext(ccek + uring, block)
 
 // === CORE CCEK TYPES ===
-
-/**
- * Control - represents the flow control and execution context
- */
-data class Control(
-    val phase: ExecutionPhase = ExecutionPhase.INIT,
-    val priority: Int = 0,
-    val timeout: Long? = null,
-    val retryCount: Int = 0
-)
-
-/**
- * Context - represents the current execution context and state
- */
-data class Context(
-    val sessionId: String,
-    val userId: String? = null,
-    val metadata: Map<String, String> = emptyMap(),
-    val timestamp: Long = System.currentTimeMillis()
-)
+// (Using the original definitions at the top of the file)
+// Control and Context are already defined above
 
 // === EXECUTION PHASES ===
 

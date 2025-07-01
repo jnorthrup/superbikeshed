@@ -300,6 +300,7 @@ data class KexInit(
             return KexInitParser.parse(payload.toByteIndexedBuffer())
         }
     }
+}
 
 /**
  * SSH Key Exchange DH Reply Message
@@ -579,28 +580,14 @@ class SSHConnection(
      * Send SSH packet
      */
     private suspend fun sendPacket(payload: SSHPayload) {
-        val packet = SSHPacket.createPacket(payload, crypto = crypto)
-        
-        // Encrypt packet if keys are established
-        val encoded = if (sessionContext.encryptionKey != null) {
-            encryptPacket(packet)
+        val egress = coroutineContext.socksEgress
+        if (egress != null) {
+            val bytes = payload.toBytes()
+            egress.send(bytes)
         } else {
-            packet.encode()
+            val stream = sshStream ?: return
+            stream.internalSendChannel.send(payload.toBytes())
         }
-        
-        // Send via transport
-        coroutineContext.socksEgress?.send(encoded) ?: sshStream?.writeBytes(encoded)
-        
-        // Increment sequence number
-        sessionContext.sequenceNumberOut = PacketSequence(sessionContext.sequenceNumberOut.value + 1u)
-    }
-    
-    /**
-     * Encrypt packet
-     */
-    private fun encryptPacket(packet: SSHPacket): Indexed<Byte> {
-        // Simplified - would use actual encryption
-        return packet.encode()
     }
     
     /**

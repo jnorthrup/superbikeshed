@@ -5,10 +5,10 @@ import borg.trikeshed.net.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.couchdb.*
-import borg.trikeshed.k2script.*
-import borg.trikeshed.rts.*
-import borg.trikeshed.distributed.*
-import borg.trikeshed.jetsam.*
+// import borg.trikeshed.k2script.*
+// import borg.trikeshed.rts.*
+// import borg.trikeshed.distributed.*
+// import borg.trikeshed.jetsam.*
 import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
@@ -137,16 +137,16 @@ class RouteContext(val args: Array<String>) {
     }
     
     // K2Script servlets
-    fun servlets(block: ServletConfig.() -> Unit): ServletContainer {
+    /* fun servlets(block: ServletConfig.() -> Unit): ServletContainer {
         val config = ServletConfig().apply(block)
         return ServletContainer(
             scriptRoot = config.scriptRoot,
             cacheScripts = config.cacheScripts
         )
-    }
+    } */
     
     // RTS game host
-    suspend fun rts(block: RTSConfig.() -> Unit): RTSNetworkHost {
+    /* suspend fun rts(block: RTSConfig.() -> Unit): RTSNetworkHost {
         val config = RTSConfig().apply(block)
         return RTSNetworkHost(
             tickRate = config.tickRate,
@@ -154,7 +154,7 @@ class RouteContext(val args: Array<String>) {
             port = config.port,
             enableRollback = config.enableRollback
         )
-    }
+    } */
     
     // Distributed storage
     suspend fun distributed(block: DistributedConfig.() -> Unit): DistributedStorage {
@@ -168,16 +168,16 @@ class RouteContext(val args: Array<String>) {
     }
     
     // Jetsam gossip
-    fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
+    /* fun gossip(block: suspend JetsamGossipManager.() -> Unit) {
         runBlocking {
             JetsamGossipManager.block()
         }
-    }
+    } */
     
     // Cursor operations
-    fun cursor(data: DatabaseCursor, block: CursorContext.() -> Unit) {
+    /* fun cursor(data: DatabaseCursor, block: CursorContext.() -> Unit) {
         CursorContext(data).block()
-    }
+    } */
     
     // Utilities
     fun arg(index: Int, default: String = ""): String = args.getOrNull(index) ?: default
@@ -226,13 +226,13 @@ class DistributedConfig {
     var couchUrl = "http://localhost:5984"
 }
 
-class CursorContext(private val cursor: DatabaseCursor) {
+/* class CursorContext(private val cursor: DatabaseCursor) {
     fun show() = cursor.show()
     fun head(n: Int = 5) = cursor.head(n)
     fun at(index: Int) = cursor at index
     fun get(vararg columns: String) = cursor.get(*columns)
     val meta get() = cursor.meta
-}
+} */
 
 /**
  * Main entry point using DSL
