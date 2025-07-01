@@ -11,6 +11,8 @@ import borg.trikeshed.net.ssh.SSHPacketParser
 import borg.trikeshed.net.ssh.KexInitParser
 import borg.trikeshed.net.ssh.KexDhReplyParser
 import borg.trikeshed.net.ssh.SftpPacketParser
+import borg.trikeshed.net.socks.socksIngress
+import borg.trikeshed.net.socks.socksEgress
 
 // === SSH TAXONOMICAL TYPEALIASES ===
 
@@ -457,8 +459,10 @@ class SSHConnection(
      * Receive SSH packet
      */
     private suspend fun receivePacket(): SSHPacket? {
-        val stream = sshStream ?: return null
-        val byteBuffer = stream.internalReceiveChannel.receive()
+        val byteBuffer = coroutineContext.socksIngress?.receive() ?: run {
+            val stream = sshStream ?: return null
+            stream.internalReceiveChannel.receive()
+        }
         if (byteBuffer.remaining() == 0) return null
 
         val rawBytes = byteBuffer.array().size j { i: Int -> byteBuffer.array()[i] }
@@ -585,7 +589,7 @@ class SSHConnection(
         }
         
         // Send via transport
-        sshStream?.writeBytes(encoded)
+        coroutineContext.socksEgress?.send(encoded) ?: sshStream?.writeBytes(encoded)
         
         // Increment sequence number
         sessionContext.sequenceNumberOut = PacketSequence(sessionContext.sequenceNumberOut.value + 1u)

@@ -80,7 +80,7 @@ This document details the major protocol and service implementation goals, with 
 
 ---
 
-## 6. HTTP/3 over QUIC: QPACK, Frame Handling
+## 6. HTTP/3: QPACK, Frame Handling
 
 **Description:**
 - HTTP/2 semantics over QUIC, QPACK header compression
@@ -176,4 +176,28 @@ This document details the major protocol and service implementation goals, with 
 - [ ] Set up CI/CD for all targets
 - [ ] Add exhaustive test coverage
 - [ ] Fix all compilation/test errors as they arise
-- [ ] Enforce zero-error policy before merging 
+- [ ] Enforce zero-error policy before merging
+
+---
+
+## 13. Generic Protocol Ingress/Egress with CoroutineContext and Metaseries
+
+**Description:**
+- Establish a standardized pattern for injecting ingress and egress channels into protocol implementations using Kotlin CoroutineContext.
+- Leverage factories and double dispatch for flexible channel provision based on context.
+- Utilize `metaseries` as a codex for defining and managing protocol-specific channel types and their associated metadata.
+
+**Rationale:**
+- Enhances testability by allowing easy mocking and substitution of network I/O.
+- Promotes modularity and separation of concerns, decoupling protocol logic from underlying transport.
+- Facilitates dynamic protocol behavior based on runtime context (e.g., SOCKS proxy, encryption layers).
+- Provides a clear, extensible mechanism for defining and discovering protocol-specific I/O capabilities.
+
+**TODO:**
+- [ ] Define a generic `ProtocolChannelFactory` interface that takes `CoroutineContext` and returns `SocksIngressChannel` and `SocksEgressChannel` (or more generic `ProtocolIngressChannel`/`ProtocolEgressChannel`).
+- [ ] Implement concrete `ProtocolChannelFactory` for various transports (e.g., direct TCP, QUIC, SOCKS).
+- [ ] Develop a `MetaseriesCodex` to register and discover `ProtocolChannelFactory` implementations based on protocol identifiers and context attributes.
+- [ ] Refactor existing protocol implementations (e.g., SSH, HTTP) to consume channels from the `CoroutineContext` via the `MetaseriesCodex`.
+- [ ] Implement double dispatch mechanism within protocol operations to select appropriate channel handling based on the `CoroutineContext`.
+- [ ] Create comprehensive unit and integration tests for the `ProtocolChannelFactory` and `MetaseriesCodex`.
+- [ ] Document the new ingress/egress pattern and its usage for future protocol development.

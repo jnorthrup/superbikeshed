@@ -243,3 +243,6 @@ test-output/
 .aider.chat.history.md
 .aider.input.history
 .kotlin
+
+# Ignore Gradle build output directory
+build

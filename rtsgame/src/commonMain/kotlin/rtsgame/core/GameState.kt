@@ -93,4 +93,15 @@ class GameState {
         projectiles.clear()
         captions.clear()
     }
+    
+    fun addEvent(type: String, message: String, priority: Int, position: Pair<Double, Double>) {
+        effects.add(mapOf(
+            "type" to type,
+            "message" to message,
+            "priority" to priority,
+            "x" to position.first,
+            "y" to position.second,
+            "time" to gameTime
+        ))
+    }
 }

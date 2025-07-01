@@ -1,62 +1,66 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 plugins {
-    kotlin("multiplatform")
-    id("io.gitlab.arturbosch.detekt")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.detekt)
 }
 
 group = "borg.trikeshed"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
 kotlin {
     jvm()
+    wasmJs { 
+        browser()
+        nodejs()
+    }
     
-    // Configure native targets for macOS and Linux
-    // This will create macosX64, macosArm64, linuxX64, linuxArm64 targets
-    // based on the host OS and architecture.
+    // Native targets based on host OS
     val hostOs = System.getProperty("os.name")
-    val isMac = hostOs == "Mac OS X"
-    val isLinux = hostOs == "Linux"
-    val isArm64 = System.getProperty("os.arch") == "aarch64"
-
-    if (isMac) {
-        macosX64()
-        macosArm64()
-    } else if (isLinux) {
-        linuxX64()
-        linuxArm64()
+    when {
+        hostOs == "Mac OS X" -> {
+            macosX64()
+            macosArm64()
+        }
+        hostOs == "Linux" -> {
+            linuxX64()
+            linuxArm64()
+        }
     }
     
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
-                implementation(kotlin("stdlib"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.datetime)
             }
         }
-        val jvmMain by getting {
-            dependsOn(commonMain)
-        }
-        val nativeMain by getting {
-            dependsOn(commonMain)
-        }
-        val commonTest by getting {
+        
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        val jvmTest by getting {
-            dependsOn(jvmMain)
+        
+        jvmTest {
             dependencies {
                 implementation(kotlin("test-junit5"))
             }
         }
-        val nativeTest by getting {
-            dependsOn(nativeMain)
-            dependencies {
-                implementation(kotlin("test"))
-            }
+        
+        // Native source sets
+        val nativeMain by creating {
+            dependsOn(commonMain.get())
+        }
+        
+        val nativeTest by creating {
+            dependsOn(commonTest.get())
+        }
+        
+        // Configure native targets
+        targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+            compilations["main"].defaultSourceSet.dependsOn(nativeMain)
+            compilations["test"].defaultSourceSet.dependsOn(nativeTest)
         }
     }
 }

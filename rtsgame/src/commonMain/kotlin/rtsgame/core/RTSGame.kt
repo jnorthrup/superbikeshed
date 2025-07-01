@@ -74,7 +74,7 @@ class GameEngine {
             pos = Position(200f, 150f),
             localHealth = LocalHealth(75f),
             maxHp = 100f,
-            spd = Sff,
+            spd = 5f,
             localPlayerId = LocalPlayerId(2),
             entityName = "Beta"
         )
@@ -93,7 +93,7 @@ class GameEngine {
         return GameState(
             entities = entitiesMap,
             resources = resources, // Added resources to GameState
-            currentTime = currentTimeMillis() / 1000 // Assuming currentTime is a Long timestamp
+            currentTime = Platform.getCurrentTime() / 1000 // Assuming currentTime is a Long timestamp
         )
     }
     

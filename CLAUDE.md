@@ -54,35 +54,24 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 ### BUILD CONVENTIONS
 
-The top-level `build.gradle.kts` includes the `com.github.ben-manes.versions` plugin for dependency version management and `ktlint` to enforce prefix lambda parameters. The `kotlin-multiplatform` plugin is used for all multiplatform projects.
+- The top-level `build.gradle.kts` includes ONLY the `com.github.ben-manes.versions` plugin for dependency version management and all versions ingradle not toml.  
+- The child projects contain ONLY `kotlin-multiplatform` plugin and no versions
+- our gradle should always defer to superbikeshed/ gradle for versions info and not alter them.  our targets are common,conditionally-local-native,wasm,jvm
 
-### Gradle Hierarchy Template
 
-GRADLE IS OFFLIMITS TO AI WITHOUT EXPLICIT PERMISSION
 
-**1.   `build.gradle.kts`**
-
-plugins {
-alias(libs.plugins.versions) apply false//top level only
-alias(libs.plugins.kotlin.multiplatform)   //all child level only
-}
-
-**2. Version Catalog: `gradle/libs.versions.toml`**
-
- 3 Targets: jvm,wasm,local-native-posix 3
-  
 - for loops in kotlin are the gold standard of performance intent and foreach is something else
 - when running gradle "--console=plain --no-daemon "
 - ordinary usecases involve doing conditional native repo determiniation in gradle and not all targets
-- our gradle should always defer to superbikeshed/ gradle for versions info and not alter them.  our targets are common,conditionally-local-native,wasm,jvm
+
 - most of the time you just copy trikeshed gradle for a new project
 
 ## Migration Memories
 
 - **Shunned Classes Memory**:  - Defer use of
  `Pair<A,B>` //Join instead
- `List<T>` //mutable arrays, return .toIdx()
- `Series<T>` //now Indexed<T>
+ `List<T>` //mutable arrays, or at least return .toIdx()
+ `Series<T>` //now Indexed<T>what version did you install howcome 
  `ByteBuffer` //{Int,Char}Indexed
 
 ## Memory: Code Cleaning Liberties
