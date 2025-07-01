@@ -551,6 +551,23 @@ dependencies {
 }
 ```
 
+## Modularization and Manual Control
+
+Each major component is now a separate, manually controlled subproject:
+
+- `tika-attention/` — Apache Tika + OCR, XML config, heap tuning
+- `stanford-nlp-blackboard/` — NLP/graph curation, entity extraction, concept lattice
+- `audio-transcription/` — Whisper.cpp, MP3→WAV→text, streaming/batch
+- `torrent-dht-attention/` — Piece-level HTTP/torrent access, catalog-at-ingest
+- `concept-lattice-store/` — Taxonomical, cross-document, temporal knowledge graph
+- `document-orchestrator/` — Lightweight coordinator, explicit composition
+
+Each is independently buildable, importable, and resource-bounded. No auto-wiring; all orchestration is explicit.
+
+## Attention Classifier and Double Dispatch
+
+Attention and predication are now handled via inline, compile-time double dispatch, normalized to `Twin<Long>` and using method overloading for zero runtime overhead. This enables type-safe, zero-cost composition and predication for all document and corpus access patterns.
+
 ## Conclusion
 
 This architecture provides a comprehensive document processing pipeline that can handle diverse document types from distributed sources, extract meaningful concepts, and build a queryable knowledge graph. The attention-based design ensures efficient resource usage while the modular pipeline allows for easy extension and customization.
