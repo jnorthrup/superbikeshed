@@ -1,5 +1,5 @@
 plugins {
-    // kotlin("multiplatform")  // Temporarily commented out for testing
+    kotlin("multiplatform")
     id("io.gitlab.arturbosch.detekt")
 }
 

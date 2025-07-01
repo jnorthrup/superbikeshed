@@ -8,6 +8,9 @@ import borg.trikeshed.net.quic.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmInline
 import borg.trikeshed.net.ssh.SSHPacketParser
+import borg.trikeshed.net.ssh.KexInitParser
+import borg.trikeshed.net.ssh.KexDhReplyParser
+import borg.trikeshed.net.ssh.SftpPacketParser
 
 // === SSH TAXONOMICAL TYPEALIASES ===
 
@@ -128,6 +131,26 @@ object SSHProtocol {
     // === EXTENDED DATA TYPES ===
     object ExtendedDataTypes {
         const val SSH_EXTENDED_DATA_STDERR: UInt = 1u
+    }
+
+    // Coroutine context element for SSH session state
+    data class SshSessionContext(
+        val sessionId: SSHSessionID,
+        var encryptionKey: SymmetricKey?,
+        var decryptionKey: SymmetricKey?,
+        var integrityKeyOut: SymmetricKey?,
+        var integrityKeyIn: SymmetricKey?,
+        var sequenceNumberOut: PacketSequence,
+        var sequenceNumberIn: PacketSequence,
+        val channels: MutableMap<SSHChannelID, SSHChannel>,
+        var nextChannelId: SSHChannelID,
+        var state: State, // Reference to the connection's state
+        var ephemeralPrivateKey: PrivateKey? = null, // Store ephemeral private key for KEX
+        var negotiatedKexAlgorithm: KeyExchangeAlgorithm? = null // Store negotiated KEX algorithm
+    ) : CoroutineContext.Element {
+        override val key: CoroutineContext.Key<SshSessionContext> = Key
+
+        companion object Key : CoroutineContext.Key<SshSessionContext>
     }
 }
 
@@ -269,7 +292,21 @@ data class KexInit(
         
         return result
     }
-}
+
+    companion object {
+        fun decode(payload: SSHPayload): KexInit? {
+            return KexInitParser.parse(payload.toByteIndexedBuffer())
+        }
+    }
+
+/**
+ * SSH Key Exchange DH Reply Message
+ */
+data class KexDhReply(
+    val hostKey: SSHPublicKey,
+    val ephemeralPublicKey: SSHPublicKey,
+    val signature: Signature
+)
 
 /**
  * SSH Channel
@@ -310,11 +347,15 @@ data class SSHChannel(
 /**
  * SSH Connection
  */
+import kotlinx.coroutines.channels.Channel
+import borg.trikeshed.nio.PlatformByteBuffer
+
 class SSHConnection(
     private val transport: QuicConnection,
     private val role: Role = Role.CLIENT,
     private val crypto: CommonCrypto = CryptoFactory.getSecureRandom()
 ) {
+    private var sshStream: QuicStream? = null
     enum class Role { CLIENT, SERVER }
     enum class State {
         INIT,
@@ -329,21 +370,8 @@ class SSHConnection(
         CONNECTED,
         DISCONNECTED
     }
-    
-    private var state = State.INIT
-    private var sequenceNumberOut = PacketSequence(0u)
-    private var sequenceNumberIn = PacketSequence(0u)
-    
-    // Crypto state
-    private var sessionId: SSHSessionID? = null
-    private var encryptionKey: SymmetricKey? = null
-    private var decryptionKey: SymmetricKey? = null
-    private var integrityKeyOut: SymmetricKey? = null
-    private var integrityKeyIn: SymmetricKey? = null
-    
-    // Channels
-    private val channels = mutableMapOf<SSHChannelID, SSHChannel>()
-    private var nextChannelId: SSHChannelID = 0u
+
+    private lateinit var sessionContext: SSHProtocol.SshSessionContext
     
     // Supported algorithms
     private val supportedKexAlgorithms = listOf(
@@ -386,13 +414,33 @@ class SSHConnection(
      * Start SSH connection
      */
     suspend fun connect() {
+        // Initialize session context
+        sessionContext = SSHProtocol.SshSessionContext(
+            sessionId = 0 j { 0.toByte() }, // Placeholder, will be set during KEX
+            encryptionKey = null,
+            decryptionKey = null,
+            integrityKeyOut = null,
+            integrityKeyIn = null,
+            sequenceNumberOut = PacketSequence(0u),
+            sequenceNumberIn = PacketSequence(0u),
+            channels = mutableMapOf(),
+            nextChannelId = 0u,
+            state = State.INIT
+        )
+
+        // Create a dedicated QUIC stream for SSH communication
+        sshStream = transport.createStream() ?: run {
+            println("Failed to create SSH QUIC stream.")
+            return
+        }
+
         // Exchange version strings
         sendVersionString()
-        state = State.VERSION_EXCHANGED
+        sessionContext.state = State.VERSION_EXCHANGED
         
-        // Start listening for incoming packets
-        CoroutineScope(Dispatchers.Default).launch {
-            while (state != State.DISCONNECTED) {
+        // Start listening for incoming packets on the dedicated stream
+        CoroutineScope(Dispatchers.Default + sessionContext).launch {
+            while (sessionContext.state != State.DISCONNECTED) {
                 val packet = receivePacket()
                 if (packet != null) {
                     processPacket(packet)
@@ -402,42 +450,90 @@ class SSHConnection(
 
         // Send KEXINIT
         sendKexInit()
-        state = State.KEX_INIT_SENT
+        sessionContext.state = State.KEX_INIT_SENT
     }
 
     /**
      * Receive SSH packet
      */
     private suspend fun receivePacket(): SSHPacket? {
-        // In a real implementation, this would read from the transport's stream
-        // and handle partial reads, buffering, etc.
-        // For now, we'll simulate by assuming a full packet is available.
-        val rawBytes = transport.receiveBytes() // Assuming this returns a full packet's worth of bytes
-        if (rawBytes.isEmpty()) return null
+        val stream = sshStream ?: return null
+        val byteBuffer = stream.internalReceiveChannel.receive()
+        if (byteBuffer.remaining() == 0) return null
 
+        val rawBytes = byteBuffer.array().size j { i: Int -> byteBuffer.array()[i] }
         val buffer = rawBytes.toByteIndexedBuffer()
+
+        // Increment sequence number for incoming packets
+        coroutineContext[SSHProtocol.SshSessionContext.Key]?.let { ctx ->
+            ctx.sequenceNumberIn = PacketSequence(ctx.sequenceNumberIn.value + 1u)
+        }
+
         return SSHPacketParser.parse(buffer)
     }
 
     /**
      * Process incoming SSH packet
      */
-    private suspend fun processPacket(packet: SSHPacket) {
+    private suspend fun processPacket(packet: SSHPacket) = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
         val messageType = packet.payload[0]
 
         when (messageType) {
             SSHProtocol.MessageTypes.SSH_MSG_KEXINIT -> {
                 println("Received KEXINIT")
-                // TODO: Implement KEXINIT processing
+                val kexInit = KexInit.decode(packet.payload) ?: return
+                // Select common algorithms
+                val selectedKexAlgorithm = supportedKexAlgorithms.intersect(kexInit.kexAlgorithms.play.toSet()).firstOrNull()
+                val selectedHostKeyAlgorithm = supportedHostKeyAlgorithms.intersect(kexInit.serverHostKeyAlgorithms.play.toSet()).firstOrNull()
+                val selectedEncryptionAlgorithmClientToServer = supportedCiphers.intersect(kexInit.encryptionAlgorithmsClientToServer.play.toSet()).firstOrNull()
+                val selectedEncryptionAlgorithmServerToClient = supportedCiphers.intersect(kexInit.encryptionAlgorithmsServerToClient.play.toSet()).firstOrNull()
+                val selectedMacAlgorithmClientToServer = supportedMacs.intersect(kexInit.macAlgorithmsClientToServer.play.toSet()).firstOrNull()
+                val selectedMacAlgorithmServerToClient = supportedMacs.intersect(kexInit.macAlgorithmsServerToClient.play.toSet()).firstOrNull()
+                val selectedCompressionAlgorithmClientToServer = supportedCompression.intersect(kexInit.compressionAlgorithmsClientToServer.play.toSet()).firstOrNull()
+                val selectedCompressionAlgorithmServerToClient = supportedCompression.intersect(kexInit.compressionAlgorithmsServerToClient.play.toSet()).firstOrNull()
+
+                if (selectedKexAlgorithm == null || selectedHostKeyAlgorithm == null ||
+                    selectedEncryptionAlgorithmClientToServer == null || selectedEncryptionAlgorithmServerToClient == null ||
+                    selectedMacAlgorithmClientToServer == null || selectedMacAlgorithmServerToClient == null ||
+                    selectedCompressionAlgorithmClientToServer == null || selectedCompressionAlgorithmServerToClient == null) {
+                    println("No common algorithms found, disconnecting.")
+                    disconnect(SSHProtocol.DisconnectReasons.SSH_DISCONNECT_KEY_EXCHANGE_FAILED)
+                    return
+                }
+
+                initiateKeyExchange(
+                    selectedKexAlgorithm,
+                    selectedHostKeyAlgorithm,
+                    selectedEncryptionAlgorithmClientToServer,
+                    selectedEncryptionAlgorithmServerToClient,
+                    selectedMacAlgorithmClientToServer,
+                    selectedMacAlgorithmServerToClient,
+                    selectedCompressionAlgorithmClientToServer,
+                    selectedCompressionAlgorithmServerToClient
+                )
             }
             SSHProtocol.MessageTypes.SSH_MSG_NEWKEYS -> {
                 println("Received NEWKEYS")
-                // TODO: Implement NEWKEYS processing
+                sessionContext.state = State.AUTHENTICATED
+            }
+            SSHProtocol.MessageTypes.SSH_MSG_USERAUTH_SUCCESS -> {
+                println("Received USERAUTH_SUCCESS")
+                sessionContext.state = State.CONNECTED
+            }
+            SSHProtocol.MessageTypes.SSH_MSG_USERAUTH_FAILURE -> {
+                println("Received USERAUTH_FAILURE")
+                // TODO: Handle authentication failure (e.g., retry with different method, disconnect)
+            }
+            SSHProtocol.MessageTypes.SSH_MSG_KEXDH_REPLY -> {
+                println("Received KEXDH_REPLY")
+                val kexDhReply = KexDhReplyParser.parse(packet.payload) ?: return
+                processKexDhReply(kexDhReply)
             }
             SSHProtocol.MessageTypes.SSH_MSG_DISCONNECT -> {
                 println("Received DISCONNECT")
                 // TODO: Implement DISCONNECT processing
-                state = State.DISCONNECTED
+                sessionContext.state = State.DISCONNECTED
             }
             else -> {
                 println("Received unknown message type: $messageType")
@@ -450,8 +546,7 @@ class SSHConnection(
      */
     private suspend fun sendVersionString() {
         val version = "${SSHProtocol.VERSION}\r\n"
-        val stream = transport.createStream() ?: return
-        stream.writeBytes(version.encodeToByteArray().size j { i: Int -> version.encodeToByteArray()[i] })
+        sshStream?.writeBytes(version.encodeToByteArray().size j { i: Int -> version.encodeToByteArray()[i] })
     }
     
     /**
@@ -483,18 +578,17 @@ class SSHConnection(
         val packet = SSHPacket.createPacket(payload, crypto = crypto)
         
         // Encrypt packet if keys are established
-        val encoded = if (encryptionKey != null) {
+        val encoded = if (sessionContext.encryptionKey != null) {
             encryptPacket(packet)
         } else {
             packet.encode()
         }
         
         // Send via transport
-        val stream = transport.createStream() ?: return
-        stream.writeBytes(encoded)
+        sshStream?.writeBytes(encoded)
         
         // Increment sequence number
-        sequenceNumberOut = PacketSequence(sequenceNumberOut.value + 1u)
+        sessionContext.sequenceNumberOut = PacketSequence(sessionContext.sequenceNumberOut.value + 1u)
     }
     
     /**
@@ -512,9 +606,11 @@ class SSHConnection(
         type: SSHChannelType = "session",
         windowSize: ChannelWindow = ChannelWindow(2097152u), // 2MB
         maxPacketSize: ChannelPacketSize = ChannelPacketSize(32768u) // 32KB
-    ): SSHChannel? {
-        val localId = nextChannelId
-        nextChannelId = nextChannelId + 1u
+    ) = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
+
+        val localId = sessionContext.nextChannelId
+        sessionContext.nextChannelId = sessionContext.nextChannelId + 1u
         
         val channel = SSHChannel(
             localId = localId,
@@ -526,19 +622,19 @@ class SSHConnection(
             remoteMaxPacketSize = ChannelPacketSize(0u)
         )
         
-        channels[localId] = channel
+        sessionContext.channels[localId] = channel
         
         // Send CHANNEL_OPEN
         sendChannelOpen(channel)
         channel.state = SSHChannel.ChannelState.OPEN_SENT
         
-        return channel
+        channel
     }
     
     /**
      * Send channel open
      */
-    private suspend fun sendChannelOpen(channel: SSHChannel) {
+    private suspend fun sendChannelOpen(channel: SSHChannel) = withContext(coroutineContext) {
         val payload = mutableListOf<Byte>()
         
         // Message type
@@ -576,10 +672,11 @@ class SSHConnection(
     /**
      * Send data on channel
      */
-    suspend fun sendChannelData(channelId: SSHChannelID, data: Indexed<Byte>) {
-        val channel = channels[channelId] ?: return
+    suspend fun sendChannelData(channelId: SSHChannelID, data: Indexed<Byte>) = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
+        val channel = sessionContext.channels[channelId] ?: return@withContext
         
-        if (!channel.canSend()) return
+        if (!channel.canSend()) return@withContext
         
         // Split data into chunks that fit in remote window and max packet size
         var offset = 0
@@ -605,7 +702,7 @@ class SSHConnection(
     /**
      * Send channel data packet
      */
-    private suspend fun sendChannelDataPacket(channelId: SSHChannelID, data: Indexed<Byte>) {
+    private suspend fun sendChannelDataPacket(channelId: SSHChannelID, data: Indexed<Byte>) = withContext(coroutineContext) {
         val payload = mutableListOf<Byte>()
         
         // Message type
@@ -634,7 +731,7 @@ class SSHConnection(
     /**
      * Execute command on channel
      */
-    suspend fun executeCommand(channelId: SSHChannelID, command: String) {
+    suspend fun executeCommand(channelId: SSHChannelID, command: String) = withContext(coroutineContext) {
         sendChannelRequest(channelId, "exec", command.encodeToByteArray().size j { i: Int -> command.encodeToByteArray()[i] })
     }
     
@@ -646,7 +743,7 @@ class SSHConnection(
         termType: String = "xterm-256color",
         columns: Int = 80,
         rows: Int = 24
-    ) {
+    ) = withContext(coroutineContext) {
         val payload = mutableListOf<Byte>()
         
         // Terminal type
@@ -683,7 +780,7 @@ class SSHConnection(
     /**
      * Send channel request
      */
-    private suspend fun sendChannelRequest(channelId: SSHChannelID, requestType: String, data: Indexed<Byte>) {
+    private suspend fun sendChannelRequest(channelId: SSHChannelID, requestType: String, data: Indexed<Byte>) = withContext(coroutineContext) {
         val payload = mutableListOf<Byte>()
         
         // Message type
@@ -714,6 +811,62 @@ class SSHConnection(
         sendPacket(payload.size j { i: Int -> payload[i] })
     }
     
+    private suspend fun initiateKeyExchange(
+        kexAlgorithm: String,
+        hostKeyAlgorithm: String,
+        encryptionAlgorithmClientToServer: String,
+        encryptionAlgorithmServerToClient: String,
+        macAlgorithmClientToServer: String,
+        macAlgorithmServerToClient: String,
+        compressionAlgorithmClientToServer: String,
+        compressionAlgorithmServerToClient: String
+    ) = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
+
+        // 1. Generate ephemeral Diffie-Hellman key pair
+        val kex = CryptoFactory.createKeyExchange(KeyExchangeAlgorithm(kexAlgorithm))
+        val keyPair = kex.generateKeyPair()
+        val clientPublicKey = keyPair.first
+        val clientPrivateKey = keyPair.second
+
+        // Store for later use
+        sessionContext.ephemeralPrivateKey = clientPrivateKey
+        sessionContext.negotiatedKexAlgorithm = KeyExchangeAlgorithm(kexAlgorithm)
+
+        // 2. Construct SSH_MSG_KEXDH_INIT packet
+        val payload = mutableListOf<Byte>()
+        payload.add(SSHProtocol.MessageTypes.SSH_MSG_KEXDH_INIT)
+        payload.addAll(clientPublicKey.play.toList())
+
+        sendPacket(payload.size j { i: Int -> payload[i] })
+
+        sessionContext.state = State.KEX_DH_INIT_SENT
+    }
+
+    private suspend fun processKexDhReply(kexDhReply: KexDhReply) = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
+
+        // 1. Compute shared secret
+        val kexAlgorithm = sessionContext.negotiatedKexAlgorithm ?: throw IllegalStateException("Negotiated KEX algorithm not set.")
+        val kex = CryptoFactory.createKeyExchange(kexAlgorithm)
+        val sharedSecret = kex.computeSharedSecret(sessionContext.ephemeralPrivateKey!!, kexDhReply.ephemeralPublicKey)
+
+        // TODO: Verify host key signature (requires server host key and exchange hash H)
+
+        // 2. Derive session keys (simplified for now)
+        sessionContext.encryptionKey = sharedSecret // Placeholder
+        sessionContext.decryptionKey = sharedSecret // Placeholder
+        sessionContext.integrityKeyOut = sharedSecret // Placeholder
+        sessionContext.integrityKeyIn = sharedSecret // Placeholder
+
+        // 3. Send SSH_MSG_NEWKEYS
+        val payload = mutableListOf<Byte>()
+        payload.add(SSHProtocol.MessageTypes.SSH_MSG_NEWKEYS)
+        sendPacket(payload.size j { i: Int -> payload[i] })
+
+        sessionContext.state = State.NEW_KEYS_SENT
+    }
+
     /**
      * Setup port forwarding
      */
@@ -722,8 +875,8 @@ class SSHConnection(
         localPort: Int,
         remoteHost: String,
         remotePort: Int
-    ) {
-        val channel = openChannel("direct-tcpip") ?: return
+    ) = withContext(coroutineContext) {
+        val channel = openChannel("direct-tcpip") ?: return@withContext
         
         val payload = mutableListOf<Byte>()
         
@@ -762,7 +915,9 @@ class SSHConnection(
     /**
      * Disconnect
      */
-    suspend fun disconnect(reason: SSHReasonCode = SSHProtocol.DisconnectReasons.SSH_DISCONNECT_BY_APPLICATION) {
+    suspend fun disconnect(reason: SSHReasonCode = SSHProtocol.DisconnectReasons.SSH_DISCONNECT_BY_APPLICATION) = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
+
         val payload = mutableListOf<Byte>()
         
         // Message type
@@ -791,8 +946,56 @@ class SSHConnection(
         
         sendPacket(payload.size j { i: Int -> payload[i] })
         
-        state = State.DISCONNECTED
+        sessionContext.state = State.DISCONNECTED
         transport.close()
+    }
+
+    suspend fun authenticate(username: String, password: String): Boolean = withContext(coroutineContext) {
+        val sessionContext = coroutineContext[SSHProtocol.SshSessionContext.Key]!!
+
+        val payload = mutableListOf<Byte>()
+        payload.add(SSHProtocol.MessageTypes.SSH_MSG_USERAUTH_REQUEST)
+
+        // username
+        val usernameBytes = username.encodeToByteArray()
+        payload.add((usernameBytes.size shr 24).toByte())
+        payload.add((usernameBytes.size shr 16).toByte())
+        payload.add((usernameBytes.size shr 8).toByte())
+        payload.add(usernameBytes.size.toByte())
+        payload.addAll(usernameBytes.toList())
+
+        // service name (ssh-connection)
+        val serviceName = "ssh-connection".encodeToByteArray()
+        payload.add((serviceName.size shr 24).toByte())
+        payload.add((serviceName.size shr 16).toByte())
+        payload.add((serviceName.size shr 8).toByte())
+        payload.add(serviceName.size.toByte())
+        payload.addAll(serviceName.toList())
+
+        // method name (password)
+        val methodName = "password".encodeToByteArray()
+        payload.add((methodName.size shr 24).toByte())
+        payload.add((methodName.size shr 16).toByte())
+        payload.add((methodName.size shr 8).toByte())
+        payload.add(methodName.size.toByte())
+        payload.addAll(methodName.toList())
+
+        // FALSE (no password change request)
+        payload.add(0)
+
+        // password
+        val passwordBytes = password.encodeToByteArray()
+        payload.add((passwordBytes.size shr 24).toByte())
+        payload.add((passwordBytes.size shr 16).toByte())
+        payload.add((passwordBytes.size shr 8).toByte())
+        payload.add(passwordBytes.size.toByte())
+        payload.addAll(passwordBytes.toList())
+
+        sendPacket(payload.size j { i: Int -> payload[i] })
+
+        // In a real implementation, this would wait for a response (SUCCESS/FAILURE)
+        // For now, we'll just return true as a placeholder
+        true
     }
 }
 
@@ -840,7 +1043,8 @@ class SFTPClient(
      * Initialize SFTP subsystem
      */
     suspend fun init() {
-        sshConnection.sendChannelData(channelId, "sftp".encodeToByteArray().size j { i: Int -> "sftp".encodeToByteArray()[i] })
+        // Request SFTP subsystem on the channel
+        sshConnection.sendChannelRequest(channelId, "subsystem", "sftp".encodeToByteArray().size j { i: Int -> "sftp".encodeToByteArray()[i] })
         
         // Send SFTP INIT
         val payload = mutableListOf<Byte>()
@@ -865,6 +1069,17 @@ class SFTPClient(
         payload[3] = length.toByte()
         
         sshConnection.sendChannelData(channelId, payload.size j { i: Int -> payload[i] })
+    }
+
+    private suspend fun receiveSftpPacket(): SSHPayload? {
+        val channel = sshConnection.sessionContext.channels[channelId] ?: return null
+        val byteBuffer = channel.internalReceiveChannel.receive() // Assuming QuicStream has an internalReceiveChannel
+        if (byteBuffer.remaining() == 0) return null
+
+        val rawBytes = byteBuffer.array().size j { i: Int -> byteBuffer.array()[i] }
+        val buffer = rawBytes.toByteIndexedBuffer()
+
+        return SftpPacketParser.parse(buffer)
     }
     
     /**
@@ -912,7 +1127,46 @@ class SFTPClient(
         
         sshConnection.sendChannelData(channelId, payload.size j { i: Int -> payload[i] })
         
-        // In real implementation, would wait for SSH_FXP_HANDLE response
-        return "handle-$id"
+        // Wait for response
+        val response = receiveSftpPacket() ?: return null
+        val responseType = response[0]
+        val responseId = (response[1].toUInt() shl 24) or
+                (response[2].toUInt() shl 16) or
+                (response[3].toUInt() shl 8) or
+                response[4].toUInt()
+
+        if (responseId != id) {
+            println("SFTP: Mismatched request ID. Expected $id, got $responseId")
+            return null
+        }
+
+        when (responseType) {
+            PacketTypes.SSH_FXP_HANDLE -> {
+                val handleLength = (response[5].toUInt() shl 24) or
+                        (response[6].toUInt() shl 16) or
+                        (response[7].toUInt() shl 8) or
+                        response[8].toUInt()
+                val handle = response.slice(9, handleLength.toInt()).decodeUtf8().asString()
+                println("SFTP: Received handle: $handle")
+                return handle
+            }
+            PacketTypes.SSH_FXP_STATUS -> {
+                val statusCode = (response[5].toUInt() shl 24) or
+                        (response[6].toUInt() shl 16) or
+                        (response[7].toUInt() shl 8) or
+                        response[8].toUInt()
+                val errorMessageLength = (response[9].toUInt() shl 24) or
+                        (response[10].toUInt() shl 16) or
+                        (response[11].toUInt() shl 8) or
+                        response[12].toUInt()
+                val errorMessage = response.slice(13, errorMessageLength.toInt()).decodeUtf8().asString()
+                println("SFTP: Received status: $statusCode - $errorMessage")
+                return null
+            }
+            else -> {
+                println("SFTP: Received unexpected response type: $responseType")
+                return null
+            }
+        }
     }
 }

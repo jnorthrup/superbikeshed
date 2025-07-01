@@ -123,4 +123,4 @@ alias(libs.plugins.kotlin.multiplatform)   //all child level only
 
 ## Migration Memories: Parser Fluency
 
-- most parsers should be re-written into ByteSeries and Charseries fluency 
+- most parsers should be re-written into bbcursive
