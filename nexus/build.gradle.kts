@@ -167,6 +167,14 @@ afterEvaluate {
     }
 }
 
+gradle.buildFinished { buildResult ->
+    if (buildResult.failure != null) {
+        println("BUILD FAILED: Errors were detected during the build process.")
+    } else {
+        println("BUILD SUCCEEDED: No errors detected during the build process.")
+    }
+}
+
 // IntelliJ Project Enumerator integration
 // The code from tools/intellij-project-enumerator is now part of this build under src/main/kotlin/nexus/enumerator/intellij
 // If additional dependencies are needed, add them here.

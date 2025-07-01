@@ -1,5 +1,6 @@
 plugins {
-    kotlin("multiplatform")
+    // kotlin("multiplatform")  // Temporarily commented out for testing
+    id("io.gitlab.arturbosch.detekt")
 }
 
 group = "borg.trikeshed"

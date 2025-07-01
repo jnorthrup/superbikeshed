@@ -7,6 +7,7 @@ import borg.trikeshed.crypto.*
 import borg.trikeshed.net.quic.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmInline
+import borg.trikeshed.net.ssh.SSHPacketParser
 
 // === SSH TAXONOMICAL TYPEALIASES ===
 
@@ -278,7 +279,7 @@ data class SSHChannel(
     val remoteId: SSHChannelID,
     val type: SSHChannelType,
     val localWindow: ChannelWindow,
-    val remoteWindow: ChannelWindow,
+    var remoteWindow: ChannelWindow,
     val localMaxPacketSize: ChannelPacketSize,
     val remoteMaxPacketSize: ChannelPacketSize,
     var state: ChannelState = ChannelState.INIT
@@ -295,6 +296,10 @@ data class SSHChannel(
     
     fun adjustWindow(bytes: UInt) {
         // Adjust window size for flow control
+    }
+
+    fun adjustRemoteWindow(bytes: UInt) {
+        remoteWindow = ChannelWindow(remoteWindow.bytes - bytes)
     }
     
     fun canSend(): Boolean {
@@ -385,9 +390,59 @@ class SSHConnection(
         sendVersionString()
         state = State.VERSION_EXCHANGED
         
+        // Start listening for incoming packets
+        CoroutineScope(Dispatchers.Default).launch {
+            while (state != State.DISCONNECTED) {
+                val packet = receivePacket()
+                if (packet != null) {
+                    processPacket(packet)
+                }
+            }
+        }
+
         // Send KEXINIT
         sendKexInit()
         state = State.KEX_INIT_SENT
+    }
+
+    /**
+     * Receive SSH packet
+     */
+    private suspend fun receivePacket(): SSHPacket? {
+        // In a real implementation, this would read from the transport's stream
+        // and handle partial reads, buffering, etc.
+        // For now, we'll simulate by assuming a full packet is available.
+        val rawBytes = transport.receiveBytes() // Assuming this returns a full packet's worth of bytes
+        if (rawBytes.isEmpty()) return null
+
+        val buffer = rawBytes.toByteIndexedBuffer()
+        return SSHPacketParser.parse(buffer)
+    }
+
+    /**
+     * Process incoming SSH packet
+     */
+    private suspend fun processPacket(packet: SSHPacket) {
+        val messageType = packet.payload[0]
+
+        when (messageType) {
+            SSHProtocol.MessageTypes.SSH_MSG_KEXINIT -> {
+                println("Received KEXINIT")
+                // TODO: Implement KEXINIT processing
+            }
+            SSHProtocol.MessageTypes.SSH_MSG_NEWKEYS -> {
+                println("Received NEWKEYS")
+                // TODO: Implement NEWKEYS processing
+            }
+            SSHProtocol.MessageTypes.SSH_MSG_DISCONNECT -> {
+                println("Received DISCONNECT")
+                // TODO: Implement DISCONNECT processing
+                state = State.DISCONNECTED
+            }
+            else -> {
+                println("Received unknown message type: $messageType")
+            }
+        }
     }
     
     /**
@@ -541,7 +596,7 @@ class SSHConnection(
             sendChannelDataPacket(channel.remoteId, chunk)
             
             // Adjust window
-            // TODO: Fix this val reassignment - channel.remoteWindow should be var or use different approach
+            channel.adjustRemoteWindow(chunkSize.toUInt())
             
             offset += chunkSize
         }
