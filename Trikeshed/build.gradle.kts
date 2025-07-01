@@ -1,8 +1,7 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.detekt)
+    kotlin("multiplatform")
 }
 
 group = "borg.trikeshed"
@@ -31,8 +30,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
             }
         }
         
@@ -48,19 +47,6 @@ kotlin {
             }
         }
         
-        // Native source sets
-        val nativeMain by creating {
-            dependsOn(commonMain.get())
-        }
-        
-        val nativeTest by creating {
-            dependsOn(commonTest.get())
-        }
-        
-        // Configure native targets
-        targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
-            compilations["main"].defaultSourceSet.dependsOn(nativeMain)
-            compilations["test"].defaultSourceSet.dependsOn(nativeTest)
-        }
+        // Native source sets configuration is handled automatically by Kotlin's hierarchy template
     }
 }

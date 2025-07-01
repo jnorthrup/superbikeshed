@@ -1,8 +1,7 @@
 plugins {
-    alias(libs.plugins.versions) apply false
-    alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.detekt) apply false
+    id("com.github.ben-manes.versions") version "0.51.0"
+    kotlin("multiplatform") version "2.1.21" apply false
+    kotlin("plugin.serialization") version "2.1.21" apply false
 }
 
 allprojects {
