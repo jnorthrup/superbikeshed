@@ -997,6 +997,23 @@ class SSHConnection(
         // For now, we'll just return true as a placeholder
         true
     }
+
+    suspend fun executeRsync(command: String): String = withContext(coroutineContext) {
+        val channel = openChannel("session") ?: return@withContext "Error: Could not open channel."
+        val channelId = channel.localId
+
+        // Execute the rsync command
+        executeCommand(channelId, command)
+
+        // Read output from the channel (stdout and stderr)
+        val output = StringBuilder()
+        while (true) {
+            val received = channel.internalReceiveChannel.receive()
+            if (received.remaining() == 0) break // End of stream
+            output.append(received.array().decodeToString())
+        }
+        output.toString()
+    }
 }
 
 /**
@@ -1064,7 +1081,7 @@ class SFTPClient(
         // Update length
         val length = payload.size - 4
         payload[0] = (length shr 24).toByte()
-        payload[1] = (length shr 16).toByte()
+        payload[1] = (length shr 16).toByte())
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
@@ -1169,4 +1186,127 @@ class SFTPClient(
             }
         }
     }
+}
+
+/**
+ * SSH SCP Client
+ */
+import borg.trikeshed.io.PlatformFileIO
+import borg.trikeshed.io.PlatformFileIOImpl
+
+class SCPClient(
+    private val sshConnection: SSHConnection,
+    private val channelId: SSHChannelID,
+    private val fileIO: PlatformFileIO = PlatformFileIOImpl()
+) {
+    suspend fun upload(localPath: String, remotePath: String) {
+        println("SCP: Uploading $localPath to $remotePath")
+        val channel = sshConnection.openChannel("session") ?: return
+        val channelId = channel.localId
+
+        // Request exec subsystem for SCP
+        sshConnection.executeCommand(channelId, "scp -t $remotePath")
+
+        // Wait for SCP ready signal (0 byte)
+        val ready = channel.internalReceiveChannel.receive().array()[0]
+        if (ready.toInt() != 0) {
+            println("SCP: Server not ready for upload.")
+            return
+        }
+
+        // Send file information (C0644 <length> <filename>)
+        val fileContent = fileIO.readFile(localPath) ?: run {
+            println("SCP: Could not read local file $localPath")
+            return
+        }
+        val fileName = localPath.substringAfterLast("/")
+        val fileInfo = "C0644 ${fileContent.size} $fileName\n".encodeToByteArray()
+        sshConnection.sendChannelData(channelId, fileInfo.size j { i: Int -> fileInfo[i] })
+
+        // Wait for ACK
+        val ack1 = channel.internalReceiveChannel.receive().array()[0]
+        if (ack1.toInt() != 0) {
+            println("SCP: Server did not acknowledge file info.")
+            return
+        }
+
+        // Send file content
+        sshConnection.sendChannelData(channelId, fileContent.size j { i: Int -> fileContent[i] })
+
+        // Wait for ACK
+        val ack2 = channel.internalReceiveChannel.receive().array()[0]
+        if (ack2.toInt() != 0) {
+            println("SCP: Server did not acknowledge file content.")
+            return
+        }
+
+        // Send end of transfer (E)
+        val endTransfer = "E\n".encodeToByteArray()
+        sshConnection.sendChannelData(channelId, endTransfer.size j { i: Int -> endTransfer[i] })
+
+        // Wait for final ACK
+        val finalAck = channel.internalReceiveChannel.receive().array()[0]
+        if (finalAck.toInt() != 0) {
+            println("SCP: Server did not acknowledge end of transfer.")
+            return
+        }
+
+        println("SCP: Upload complete.")
+    }
+
+    suspend fun download(remotePath: String, localPath: String) {
+        println("SCP: Downloading $remotePath to $localPath")
+        val channel = sshConnection.openChannel("session") ?: return
+        val channelId = channel.localId
+
+        // Request exec subsystem for SCP
+        sshConnection.executeCommand(channelId, "scp -f $remotePath")
+
+        // Send ACK to server to signal ready for file info
+        sshConnection.sendChannelData(channelId, 0.toByte().size j { 0.toByte() })
+
+        // Receive file information (C0644 <length> <filename>)
+        val fileInfoBuffer = channel.internalReceiveChannel.receive()
+        val fileInfo = fileInfoBuffer.array().decodeToString()
+        println("SCP: Received file info: $fileInfo")
+
+        val parts = fileInfo.trim().split(" ")
+        if (parts.size < 3 || parts[0][0] != 'C') {
+            println("SCP: Invalid file info received.")
+            return
+        }
+        val mode = parts[0].substring(1) // e.g., 0644
+        val length = parts[1].toLong()
+        val filename = parts[2]
+
+        // Send ACK for file info
+        sshConnection.sendChannelData(channelId, 0.toByte().size j { 0.toByte() })
+
+        // Receive file content
+        val fileContentBuffer = channel.internalReceiveChannel.receive()
+        val fileContent = fileContentBuffer.array().size j { i: Int -> fileContentBuffer.array()[i] }
+        println("SCP: Received ${fileContent.a} bytes for $filename.")
+
+        if (!fileIO.writeFile(localPath, fileContent)) {
+            println("SCP: Failed to write file to $localPath")
+            return
+        }
+
+        // Send ACK for file content
+        sshConnection.sendChannelData(channelId, 0.toByte().size j { 0.toByte() })
+
+        // Receive end of transfer (E)
+        val endTransferBuffer = channel.internalReceiveChannel.receive()
+        val endTransfer = endTransferBuffer.array()[0]
+        if (endTransfer.toInt() != 0) {
+            println("SCP: Unexpected byte at end of transfer: $endTransfer")
+            return
+        }
+
+        // Send final ACK
+        sshConnection.sendChannelData(channelId, 0.toByte().size j { 0.toByte() })
+
+        println("SCP: Download complete.")
+    }
+}
 }
