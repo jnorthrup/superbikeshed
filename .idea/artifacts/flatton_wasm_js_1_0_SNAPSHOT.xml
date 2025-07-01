@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="flatton-wasm-js-1.0-SNAPSHOT">
-    <output-path>$PROJECT_DIR$/flatton/build/libs</output-path>
-    <root id="archive" name="flatton-wasm-js-1.0-SNAPSHOT.jar">
-      <element id="module-output" name="Trikeshed-Monorepo.flatton.wasmJsMain" />
-    </root>
-  </artifact>
-</component>
