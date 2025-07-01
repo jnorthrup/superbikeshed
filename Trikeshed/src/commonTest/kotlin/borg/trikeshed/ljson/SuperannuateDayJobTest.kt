@@ -168,7 +168,7 @@ class SuperannuateDayJobTest {
     }
     
     @Test
-    fun testTimeSeriesResampling() = runBlocking {
+    fun testTimeIndexedResampling() = runBlocking {
         // Extract date column and resample by month
         val dateCol = 2
         

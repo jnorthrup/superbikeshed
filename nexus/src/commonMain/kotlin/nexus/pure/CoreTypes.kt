@@ -66,4 +66,4 @@ fun <T> emptyArray(): Array<T> = arrayOf()
 fun <T> arrayOf(vararg elements: T): Array<T> = arrayOf(*elements)
 
 // Series type alias for backwards compatibility
-typealias Series<T> = Indexed<T>
+// typealias Series<T> = Indexed<T> // EXTINCT per CLAUDE.md Series Type Extinction Policy

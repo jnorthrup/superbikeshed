@@ -12,7 +12,7 @@ interface RequestFactoryService {
     /**
      * Process a RequestFactory call and return response payload
      */
-    fun process(requestPayload: Series<Byte>): Series<Byte>
+    fun process(requestPayload: Indexed<Byte>): Indexed<Byte>
     
     /**
      * Register a service locator for dependency injection
@@ -27,7 +27,7 @@ interface RequestFactoryService {
     /**
      * Invoke a service method asynchronously
      */
-    suspend fun invokeService(serviceName: String, data: Series<Byte>): Series<Byte>
+    suspend fun invokeService(serviceName: String, data: Indexed<Byte>): Indexed<Byte>
 }
 
 /**
@@ -42,7 +42,7 @@ interface DealService : kotlin.coroutines.CoroutineContext.Element {
     /**
      * Process a deal request
      */
-    suspend fun process(data: Series<Byte>): Series<Byte>
+    suspend fun process(data: Indexed<Byte>): Indexed<Byte>
     
     /**
      * Get deal information
@@ -52,15 +52,15 @@ interface DealService : kotlin.coroutines.CoroutineContext.Element {
     /**
      * Create a new deal
      */
-    fun createDeal(dealData: Series<Byte>): String
+    fun createDeal(dealData: Indexed<Byte>): String
 }
 
 /**
  * Empty service marker for lightweight service containers
  */
 object EmptyRequestFactoryService : RequestFactoryService {
-    override fun process(requestPayload: Series<Byte>): Series<Byte> = emptySeries()
+    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> = emptyIndexed()
     override fun registerServiceLocator(serviceClass: String, locator: () -> Any) {}
     override fun registerMethodValidator(methodName: String, validator: (Any) -> Boolean) {}
-    override suspend fun invokeService(serviceName: String, data: Series<Byte>): Series<Byte> = emptySeries()
+    override suspend fun invokeService(serviceName: String, data: Indexed<Byte>): Indexed<Byte> = emptyIndexed()
 }

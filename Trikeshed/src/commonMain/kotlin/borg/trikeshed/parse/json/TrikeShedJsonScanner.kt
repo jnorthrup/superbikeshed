@@ -24,23 +24,23 @@ typealias JsonBooleanValue = Boolean
 typealias JsonNullValue = Nothing?
 
 // Core JSON Processing Types
-typealias JsonCharSeries = Series<JsonChar>
+typealias JsonCharIndexed = Indexed<JsonChar>
 typealias JsonTokenType = UByte
 typealias JsonTokenPosition = Join<JsonPosition, JsonLength>
 typealias JsonToken = Join<JsonTokenType, JsonTokenPosition>
-typealias JsonTokenSeries = Series<JsonToken>
+typealias JsonTokenIndexed = Indexed<JsonToken>
 
 // Structural Analysis Types  
 typealias JsonStructuralChar = Join<JsonChar, JsonPosition>
-typealias JsonStructuralSeries = Series<JsonStructuralChar>
+typealias JsonStructuralIndexed = Indexed<JsonStructuralChar>
 typealias JsonNestingLevel = Join<JsonDepth, JsonPosition>
-typealias JsonNestingSeries = Series<JsonNestingLevel>
+typealias JsonNestingIndexed = Indexed<JsonNestingLevel>
 
 // Value Extraction Types
 typealias JsonValueBounds = Join<JsonPosition, JsonPosition> // start j end
 typealias JsonValueType = UByte
 typealias JsonValue = Join<JsonValueType, JsonValueBounds>
-typealias JsonValueSeries = Series<JsonValue>
+typealias JsonValueIndexed = Indexed<JsonValue>
 
 // Error Handling Types
 @JvmInline
@@ -79,24 +79,24 @@ object JsonValueTypes {
 
 /**
  * TrikeShed JSON Scanner - Core Implementation
- * Uses Series<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
+ * Uses Indexed<T> and Join<A,B> exclusively - no List<T> or Pair<A,B>
  */
 object TrikeShedJsonScanner {
     
     /**
      * Scan JSON string into token series using α transforms
      */
-    fun scan(jsonString: JsonStringValue): JsonResult<JsonTokenSeries> {
-        if (jsonString.isEmpty()) return Either.right(emptySeries())
+    fun scan(jsonString: JsonStringValue): JsonResult<JsonTokenIndexed> {
+        if (jsonString.isEmpty()) return Either.right(emptyIndexed())
         
-        val chars = jsonString.toCharArray().toSeries()
+        val chars = jsonString.toCharArray().toIndexed()
         return Either.right(tokenize(chars))
     }
     
     /**
      * Tokenize character series using α transform - the ONLY transformation operator
      */
-    private fun tokenize(chars: JsonCharSeries): JsonTokenSeries {
+    private fun tokenize(chars: JsonCharIndexed): JsonTokenIndexed {
         val tokens = mutableListOf<JsonToken>()
         var pos = 0
 
@@ -110,7 +110,7 @@ object TrikeShedJsonScanner {
         return tokenArray.size j tokenArray::get
     }
 
-    private inline fun scanNextToken(chars: JsonCharSeries, pos: JsonPosition): JsonToken {
+    private inline fun scanNextToken(chars: JsonCharIndexed, pos: JsonPosition): JsonToken {
         val char = chars[pos]
         return when {
             char.isWhitespace() -> scanWhitespace(chars, pos)
@@ -132,7 +132,7 @@ object TrikeShedJsonScanner {
     /**
      * Scan whitespace using Join composition
      */
-    private fun scanWhitespace(chars: JsonCharSeries, start: JsonPosition): JsonToken {
+    private fun scanWhitespace(chars: JsonCharIndexed, start: JsonPosition): JsonToken {
         var pos = start
         while (pos < chars.size && chars[pos].isWhitespace()) {
             pos++
@@ -143,7 +143,7 @@ object TrikeShedJsonScanner {
     /**
      * Scan JSON string with proper escape handling
      */
-    private fun scanString(chars: JsonCharSeries, start: JsonPosition): JsonToken {
+    private fun scanString(chars: JsonCharIndexed, start: JsonPosition): JsonToken {
         var pos = start + 1 // Skip opening quote
         var escaped = false
         
@@ -166,7 +166,7 @@ object TrikeShedJsonScanner {
     /**
      * Scan JSON number (integer or decimal)
      */
-    private fun scanNumber(chars: JsonCharSeries, start: JsonPosition): JsonToken {
+    private fun scanNumber(chars: JsonCharIndexed, start: JsonPosition): JsonToken {
         var pos = start
         
         // Handle negative sign
@@ -195,7 +195,7 @@ object TrikeShedJsonScanner {
      * Scan JSON literal (true, false, null)
      */
     private fun scanLiteral(
-        chars: JsonCharSeries, 
+        chars: JsonCharIndexed, 
         start: JsonPosition, 
         literal: String, 
         tokenType: JsonTokenType
@@ -212,7 +212,7 @@ object TrikeShedJsonScanner {
     /**
      * Extract structural characters using α transform
      */
-    fun extractStructuralChars(tokens: JsonTokenSeries): JsonStructuralSeries {
+    fun extractStructuralChars(tokens: JsonTokenIndexed): JsonStructuralIndexed {
         return tokens.α { token ->
             val (type, bounds) = token
             val char = when (type) {
@@ -231,7 +231,7 @@ object TrikeShedJsonScanner {
     /**
      * Analyze nesting levels using α transforms
      */
-    fun analyzeNesting(structuralChars: JsonStructuralSeries): JsonNestingSeries {
+    fun analyzeNesting(structuralChars: JsonStructuralIndexed): JsonNestingIndexed {
         var depth = 0
         return structuralChars.α { (char, pos) ->
             when (char) {
@@ -252,7 +252,7 @@ object TrikeShedJsonScanner {
     /**
      * Extract values from token series using α transforms
      */
-    fun extractValues(tokens: JsonTokenSeries, jsonString: JsonStringValue): JsonValueSeries {
+    fun extractValues(tokens: JsonTokenIndexed, jsonString: JsonStringValue): JsonValueIndexed {
         return tokens.α { token ->
             val (type, bounds) = token
             val valueType = when (type) {
@@ -304,39 +304,39 @@ object TrikeShedJsonScanner {
     /**
      * Materialize tokens to List using play operator - gateway to AbstractList
      */
-    fun materializeTokens(tokens: JsonTokenSeries): List<JsonToken> {
+    fun materializeTokens(tokens: JsonTokenIndexed): List<JsonToken> {
         return tokens.play.toList()
     }
     
     /**
      * Filter tokens by type using α transform
      */
-    fun filterTokensByType(tokens: JsonTokenSeries, targetType: JsonTokenType): JsonTokenSeries {
-        return tokens.play.filter { it.a == targetType }.toList().toSeries()
+    fun filterTokensByType(tokens: JsonTokenIndexed, targetType: JsonTokenType): JsonTokenIndexed {
+        return tokens.play.filter { it.a == targetType }.toList().toIndexed()
     }
 }
 
 /**
  * Extension functions for convenient JSON processing
  */
-fun JsonStringValue.scanJson(): JsonResult<JsonTokenSeries> = 
+fun JsonStringValue.scanJson(): JsonResult<JsonTokenIndexed> = 
     TrikeShedJsonScanner.scan(this)
 
-fun JsonTokenSeries.extractStructural(): JsonStructuralSeries = 
+fun JsonTokenIndexed.extractStructural(): JsonStructuralIndexed = 
     TrikeShedJsonScanner.extractStructuralChars(this)
 
-fun JsonStructuralSeries.analyzeNesting(): JsonNestingSeries = 
+fun JsonStructuralIndexed.analyzeNesting(): JsonNestingIndexed = 
     TrikeShedJsonScanner.analyzeNesting(this)
 
-fun JsonTokenSeries.extractValues(jsonString: JsonStringValue): JsonValueSeries = 
+fun JsonTokenIndexed.extractValues(jsonString: JsonStringValue): JsonValueIndexed = 
     TrikeShedJsonScanner.extractValues(this, jsonString)
 
 /**
- * Utility functions for Series operations
+ * Utility functions for Indexed operations
  */
-private fun <T> Array<T>.toSeries(): Series<T> = size j { i -> this[i] }
-private fun <T> List<T>.toSeries(): Series<T> = size j { i -> this[i] }
-private fun <T> emptySeries(): Series<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
+private fun <T> Array<T>.toIndexed(): Indexed<T> = size j { i -> this[i] }
+private fun <T> List<T>.toIndexed(): Indexed<T> = size j { i -> this[i] }
+private fun <T> emptyIndexed(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /**
  * Example usage demonstrating TrikeShed patterns

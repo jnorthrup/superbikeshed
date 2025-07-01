@@ -1,9 +1,9 @@
 package borg.trikeshed.torrent
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.ByteSeries
-import borg.trikeshed.lib.IntSeries
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.ByteIndexed
+import borg.trikeshed.lib.IntIndexed
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 import kotlinx.coroutines.*
@@ -43,12 +43,12 @@ sealed class TorrentKettle {
         ) : ChunkStrategy()
         
         data class RandomAccess(
-            val hotspots: IntSeries,  // Frequently accessed pieces
+            val hotspots: IntIndexed,  // Frequently accessed pieces
             val cacheSize: Int = 20
         ) : ChunkStrategy()
         
         data class Selective(
-            val fileIndexes: IntSeries,
+            val fileIndexes: IntIndexed,
             val priorityMap: Join<PieceIndex, Int>  // Piece -> Priority
         ) : ChunkStrategy()
         
@@ -92,7 +92,7 @@ sealed class TorrentKettle {
      */
     data class Piece(
         val index: PieceIndex,
-        val data: ByteSeries,
+        val data: ByteIndexed,
         val hash: PieceHash,
         val verified: Boolean
     )
@@ -104,7 +104,7 @@ sealed class TorrentKettle {
         data class Have(val piece: PieceIndex) : PeerMessage()
         data class Bitfield(val pieces: BooleanArray) : PeerMessage()
         data class Request(val piece: PieceIndex, val offset: Int, val length: Int) : PeerMessage()
-        data class Block(val piece: PieceIndex, val offset: Int, val data: ByteSeries) : PeerMessage()
+        data class Block(val piece: PieceIndex, val offset: Int, val data: ByteIndexed) : PeerMessage()
         object Choke : PeerMessage()
         object Unchoke : PeerMessage()
         object Interested : PeerMessage()
@@ -129,7 +129,7 @@ class StreamingKettle(
     /**
      * Stream pieces starting from a specific position
      */
-    fun streamFrom(startPiece: PieceIndex): Flow<ByteSeries> = flow {
+    fun streamFrom(startPiece: PieceIndex): Flow<ByteIndexed> = flow {
         playheadPiece = startPiece
         val strategy = ChunkStrategy.Sequential(startPiece)
         
@@ -137,7 +137,7 @@ class StreamingKettle(
             // Prefetch ahead of playhead
             launch {
                 while (isActive) {
-                    val prefetchRange: IntSeries = (playheadPiece until minOf(
+                    val prefetchRange: IntIndexed = (playheadPiece until minOf(
                         playheadPiece + strategy.bufferAhead,
                         totalPieces
                     )) j { it }
@@ -212,7 +212,7 @@ class StreamingKettle(
         }
     }
     
-    private suspend fun requestPieces(pieces: IntSeries) {
+    private suspend fun requestPieces(pieces: IntIndexed) {
         // Distribute piece requests among peers
         val availablePeers = peerBoxes.values.filter { 
             it.outputChannel.trySend(PeerMessage.Interested).isSuccess 
@@ -256,17 +256,17 @@ class RandomAccessKettle(
     /**
      * Fetch a specific byte range, potentially spanning multiple pieces
      */
-    suspend fun fetchRange(startByte: ByteOffset, endByte: ByteOffset): ByteSeries {
+    suspend fun fetchRange(startByte: ByteOffset, endByte: ByteOffset): ByteIndexed {
         val startPiece: PieceIndex = (startByte / pieceSize).toInt()
         val endPiece: PieceIndex = (endByte / pieceSize).toInt()
         
-        val pieces: Series<Piece> = (startPiece..endPiece) j { pieceIdx ->
+        val pieces: Indexed<Piece> = (startPiece..endPiece) j { pieceIdx ->
             fetchPiece(pieceIdx)
         }
         
         // Combine pieces and extract requested byte range
         val totalSize: Int = pieces.a * pieceSize
-        val result: ByteSeries = totalSize j { byteIdx ->
+        val result: ByteIndexed = totalSize j { byteIdx ->
             val pieceIdx = byteIdx / pieceSize
             val offsetInPiece = byteIdx % pieceSize
             pieces[pieceIdx].data[offsetInPiece]

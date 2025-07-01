@@ -135,7 +135,7 @@ class HttpConnectionHandler(
             val requestString = requestBytes.decodeToString()
 
             // Use RFC7230 parser
-            val requestMessage = HttpParser.parseHttpMessage(requestString.toSeries())
+            val requestMessage = HttpParser.parseHttpMessage(requestString.toIndexed())
             if (requestMessage == null) {
                 sendErrorResponse(400, "Bad Request")
                 return
@@ -243,7 +243,7 @@ private fun HttpResponse(
     )
 }
 
-private fun String.toSeries(): Series<Char> = this.length j { this[it] }
+private fun String.toIndexed(): Indexed<Char> = this.length j { this[it] }
 
 
 // ===== CONNECTION MANAGEMENT (RFC 7230 Section 6) =====
@@ -320,7 +320,7 @@ object ChunkedTransferEncoder {
     
     fun decodeChunked(input: ByteArray): ByteArray? {
         val inputChars = input.map { it.toInt().toChar() }
-        val chunkedBody = HttpParser.parseChunkedBody(inputChars.toSeries()) ?: return null
+        val chunkedBody = HttpParser.parseChunkedBody(inputChars.toIndexed()) ?: return null
         
         val allData = mutableListOf<Byte>()
         chunkedBody.chunks.`play`.forEach { chunk ->
@@ -333,8 +333,8 @@ object ChunkedTransferEncoder {
 
 // ===== UTILITY EXTENSIONS =====
 
-private fun ByteArray.toSeries(): Series<Byte> = size j { this[it] }
-private fun List<Char>.toSeries(): Series<Char> = size j { this[it] }
+private fun ByteArray.toIndexed(): Indexed<Byte> = size j { this[it] }
+private fun List<Char>.toIndexed(): Indexed<Char> = size j { this[it] }
 
 
 // ===== CCEK SERVICE HANDLERS =====
@@ -356,9 +356,9 @@ fun createBatchHandler(dealService: DealService): HttpHandler = { request ->
 
 fun createRequestFactoryHandler(requestFactoryService: RequestFactoryService): HttpHandler = { request ->
     // Delegate to CCEK RequestFactoryService
-    val requestBodySeries = request.body.size j { request.body[it] }
-    val responsePayloadSeries = requestFactoryService.process(requestBodySeries)
-    val responsePayload = responsePayloadSeries.play.toList().toByteArray()
+    val requestBodyIndexed = request.body.size j { request.body[it] }
+    val responsePayloadIndexed = requestFactoryService.process(requestBodyIndexed)
+    val responsePayload = responsePayloadIndexed.play.toList().toByteArray()
     HttpResponse(
         status = HttpStatusCode(200),
         reasonPhrase = HttpReasonPhrase("OK"),

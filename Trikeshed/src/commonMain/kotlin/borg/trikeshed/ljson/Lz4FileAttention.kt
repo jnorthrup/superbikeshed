@@ -1,8 +1,8 @@
 package borg.trikeshed.ljson
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.toIndexed
 import borg.trikeshed.zlib.Lz4
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -26,9 +26,9 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
      * Builds an index of LZ4 frames in a remote file.
      *
      * @param url The URL of the remote LZ4-compressed file.
-     * @return A Series of Lz4FrameIndexEntry objects.
+     * @return A Indexed of Lz4FrameIndexEntry objects.
      */
-    suspend fun buildIndex(url: String): Series<Lz4FrameIndexEntry> {
+    suspend fun buildIndex(url: String): Indexed<Lz4FrameIndexEntry> {
         val entries = mutableListOf<Lz4FrameIndexEntry>()
         var compressedOffset = 0L
         var uncompressedOffset = 0L
@@ -40,7 +40,7 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
                 // LZ4 Frame Format Magic Number: 0x184D2204
                 if (chunk[i] == 0x04.toByte() && chunk[i + 1] == 0x22.toByte() && chunk[i + 2] == 0x4D.toByte() && chunk[i + 3] == 0x18.toByte()) {
                     // Found an LZ4 frame
-                    val (actualCompressedSize, uncompressedSize) = Lz4.parseFrameHeader(chunk.toSeries().drop(i))
+                    val (actualCompressedSize, uncompressedSize) = Lz4.parseFrameHeader(chunk.toIndexed().drop(i))
 
                     entries.add(
                         Lz4FrameIndexEntry(
@@ -61,7 +61,7 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
         }
         }
 
-        return entries.toSeries()
+        return entries.toIndexed()
     }
 
     /**
@@ -73,7 +73,7 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
      * @param length The number of bytes to read.
      * @return A Flow of Indexed<Byte> containing the decompressed data.
      */
-    suspend fun readRange(url: String, index: Series<Lz4FrameIndexEntry>, startOffset: Long, length: Long): Flow<Indexed<Byte>> = flow {
+    suspend fun readRange(url: String, index: Indexed<Lz4FrameIndexEntry>, startOffset: Long, length: Long): Flow<Indexed<Byte>> = flow {
         val endOffset = startOffset + length
 
         // Find the frames that cover the requested range
@@ -84,7 +84,7 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
         for (frame in relevantFrames) {
             // Fetch the entire LZ4 frame
             val compressedData = httpClient.fetchRange(url, frame.compressedOffset, frame.compressedOffset + frame.compressedSize)
-            val decompressedData = Lz4.decompressFrame(compressedData.toSeries())
+            val decompressedData = Lz4.decompressFrame(compressedData.toIndexed())
 
             // Calculate the portion of the decompressed data that falls within the requested range
             val relativeStart = maxOf(0L, startOffset - frame.uncompressedOffset)

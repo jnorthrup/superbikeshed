@@ -7,7 +7,7 @@ import borg.trikeshed.lib.*
  * Represents a path through JSON structure using either string keys (for objects) or integer indices (for arrays)
  */
 typealias JsPathElement = Either<String, Int>
-typealias JsPath = Series<JsPathElement>
+typealias JsPath = Indexed<JsPathElement>
 
 /**
  * JsPath builder and utility functions
@@ -20,14 +20,14 @@ object JsPathBuilder {
      */
     fun fromString(path: String): JsPath {
         val elements: List<JsPathElement> = path.split(".").map { Either.Left(it) }
-        return elements.toSeries()
+        return elements.toIndexed()
     }
     
     /**
      * Create a JsPath from a list of path components
      */
     fun fromComponents(vararg components: JsPathElement): JsPath {
-        return components.toSeries()
+        return components.toIndexed()
     }
     
     /**
@@ -54,7 +54,7 @@ object JsPathBuilder {
         paths.forEach { path ->
             path.play.forEach { combined.add(it) }
         }
-        return combined.toSeries()
+        return combined.toIndexed()
     }
 }
 
@@ -70,7 +70,7 @@ fun JsPath.take(n: Int): JsPath = minOf(n, size) j { i -> this[i] }
  */
 fun String.toJsPath(): JsPath = JsPathBuilder.fromString(this)
 fun Int.toJsPath(): JsPath = JsPathBuilder.index(this)
-fun List<JsPathElement>.toJsPath(): JsPath = toSeries()
+fun List<JsPathElement>.toJsPath(): JsPath = toIndexed()
 
 /**
  * JsPath operators for easy path construction

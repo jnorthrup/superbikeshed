@@ -233,7 +233,7 @@ open class EventReactor<T>(
     /**
      * Register multiple event handlers
      */
-    fun on(types: Series<EventType>, handler: EventHandler<T>) {
+    fun on(types: Indexed<EventType>, handler: EventHandler<T>) {
         for (i in 0 until types.size) {
             on(types[i], handler)
         }
@@ -393,6 +393,6 @@ class QuicReactor : EventReactor<QuicEvent>("quic-reactor") {
 data class QuicEvent(
     val connectionId: String = "",
     val streamId: Long = 0,
-    val data: Series<Byte> = emptySeries(),
+    val data: Indexed<Byte> = emptyIndexed(),
     val error: String? = null
 )

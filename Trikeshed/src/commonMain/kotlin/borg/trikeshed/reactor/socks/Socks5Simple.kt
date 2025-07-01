@@ -169,7 +169,7 @@ object Socks5Simple {
         println("   Input: 0x05 0x02 0x00 0x02")
         
         val handshakeData = byteArrayOf(0x05, 0x02, 0x00, 0x02)
-        val buffer = ByteIndexedBuffer(handshakeData.toSeries())
+        val buffer = ByteIndexedBuffer(handshakeData.toIndexed())
         
         val result = parseHandshake(buffer)
         if (result != null) {
@@ -192,7 +192,7 @@ object Socks5Simple {
             0x7F, 0x00, 0x00, 0x01,  // 127.0.0.1
             0x00, 0x50               // Port 80
         )
-        val buffer = ByteIndexedBuffer(requestData.toSeries())
+        val buffer = ByteIndexedBuffer(requestData.toIndexed())
         
         val result = parseRequest(buffer)
         if (result != null) {
@@ -220,7 +220,7 @@ object Socks5Simple {
         
         // Handshake
         val handshakeData = byteArrayOf(0x05, 0x02, 0x00, 0x02)
-        val handshakeBuffer = ByteIndexedBuffer(handshakeData.toSeries())
+        val handshakeBuffer = ByteIndexedBuffer(handshakeData.toIndexed())
         val handshakeResult = parseHandshake(handshakeBuffer)
         
         if (handshakeResult != null) {
@@ -234,7 +234,7 @@ object Socks5Simple {
             0x7F, 0x00, 0x00, 0x01,  // 127.0.0.1
             0x00, 0x50               // Port 80
         )
-        val requestBuffer = ByteIndexedBuffer(requestData.toSeries())
+        val requestBuffer = ByteIndexedBuffer(requestData.toIndexed())
         val requestResult = parseRequest(requestBuffer)
         
         if (requestResult != null) {

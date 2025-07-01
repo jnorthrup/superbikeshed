@@ -1,7 +1,7 @@
 package borg.trikeshed.compression
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
 /**
  * Represents a Huffman code, consisting of a value (the decoded symbol)
@@ -18,7 +18,7 @@ data class HuffmanCode(val value: Int, val length: Int)
  * This table is designed for direct lookup based on the initial bits read from the stream.
  *
  * @param maxBits The maximum number of bits a code in this table can have.
- * @param lookupTable An Indexed (Series) of HuffmanCode, where the index corresponds to the
+ * @param lookupTable An Indexed (Indexed) of HuffmanCode, where the index corresponds to the
  *                    bit pattern read from the stream. The size of this table is 2^maxBits.
  *                    Entries might be null or point to a special 'incomplete' code if more bits
  *                    are needed for a longer code.

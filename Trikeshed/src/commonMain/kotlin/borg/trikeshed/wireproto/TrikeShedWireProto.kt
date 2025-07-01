@@ -122,9 +122,9 @@ object TrikeShedWireSerializer {
     }
     
     /**
-     * Serialize Series<T> with type information
+     * Serialize Indexed<T> with type information
      */
-    fun <T> serializeSeries(series: Series<T>): UByteArray {
+    fun <T> serializeIndexed(series: Indexed<T>): UByteArray {
         val buffer = mutableListOf<UByte>()
         
         // Write size as varint
@@ -394,9 +394,9 @@ object TrikeShedWireSerializer {
 // === EXTENSION FUNCTIONS FOR TRIKESHED TYPES ===
 
 /**
- * Convert Series<Byte> to wire bytes
+ * Convert Indexed<Byte> to wire bytes
  */
-fun Series<Byte>.toWireBytes(): UByteArray {
+fun Indexed<Byte>.toWireBytes(): UByteArray {
     val buffer = UByteArray(this.size) { i ->
         this[i].toUByte()
     }
@@ -404,9 +404,9 @@ fun Series<Byte>.toWireBytes(): UByteArray {
 }
 
 /**
- * Convert UByteArray to Series<Byte>
+ * Convert UByteArray to Indexed<Byte>
  */
-fun UByteArray.toBytesSeries(): Series<Byte> {
+fun UByteArray.toBytesIndexed(): Indexed<Byte> {
     return this.size j { i: Int -> this[i].toByte() }
 }
 
@@ -430,15 +430,15 @@ fun UByteArray.toIoMemento(): borg.trikeshed.isam.meta.IOMemento {
  * TrikeShed wire protocol main class for compatibility
  */
 class TrikeShedWireProto {
-    fun serialize(data: Any): Series<Byte> {
+    fun serialize(data: Any): Indexed<Byte> {
         return when (data) {
-            is borg.trikeshed.isam.meta.IOMemento -> data.toWireBytes().toBytesSeries()
-            is Series<*> -> TrikeShedWireSerializer.serializeSeries(data).toBytesSeries()
-            else -> emptySeries()
+            is borg.trikeshed.isam.meta.IOMemento -> data.toWireBytes().toBytesIndexed()
+            is Indexed<*> -> TrikeShedWireSerializer.serializeIndexed(data).toBytesIndexed()
+            else -> emptyIndexed()
         }
     }
     
-    fun <T> deserialize(data: Series<Byte>): T {
+    fun <T> deserialize(data: Indexed<Byte>): T {
         val bytes = UByteArray(data.size) { i -> data[i].toUByte() }
         @Suppress("UNCHECKED_CAST")
         return bytes.toIoMemento() as T

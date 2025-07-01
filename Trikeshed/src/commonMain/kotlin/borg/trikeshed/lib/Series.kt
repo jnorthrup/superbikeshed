@@ -1,6 +1,6 @@
 package borg.trikeshed.lib
 
-// All core Series types are now in brokeshed CoreTypes.kt
-// This file is kept for any TrikeShed-specific Series extensions
+// All core Indexed types are now in brokeshed CoreTypes.kt
+// This file is kept for any TrikeShed-specific Indexed extensions
 
 // TrikeShed-specific extensions can be added here if needed

@@ -1,8 +1,8 @@
 package borg.trikeshed.ljson
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.toIndexed
 import borg.trikeshed.zlib.Zstd
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -26,9 +26,9 @@ class ZstdFileAttention(private val httpClient: HttpRangeClient) {
      * Builds an index of Zstd frames in a remote file.
      *
      * @param url The URL of the remote Zstd-compressed file.
-     * @return A Series of ZstdFrameIndexEntry objects.
+     * @return A Indexed of ZstdFrameIndexEntry objects.
      */
-    suspend fun buildIndex(url: String): Series<ZstdFrameIndexEntry> {
+    suspend fun buildIndex(url: String): Indexed<ZstdFrameIndexEntry> {
         val entries = mutableListOf<ZstdFrameIndexEntry>()
         var compressedOffset = 0L
         var uncompressedOffset = 0L
@@ -41,7 +41,7 @@ class ZstdFileAttention(private val httpClient: HttpRangeClient) {
             while (i < chunk.size - 4) {
                 if (chunk[i] == 0x28.toByte() && chunk[i + 1] == 0xB5.toByte() && chunk[i + 2] == 0x2F.toByte() && chunk[i + 3] == 0xFD.toByte()) {
                     // Found a Zstd frame
-                    val frameHeader = chunk.toSeries().drop(i)
+                    val frameHeader = chunk.toIndexed().drop(i)
                     val frameSize = Zstd.getDecompressedSize(frameHeader.toByteArray()).toLong()
                     val compressedSize = Zstd.findFrameCompressedSize(frameHeader.toByteArray()).toLong()
 
@@ -63,7 +63,7 @@ class ZstdFileAttention(private val httpClient: HttpRangeClient) {
             compressedOffset += chunk.size
         }
 
-        return entries.toSeries()
+        return entries.toIndexed()
     }
 
     /**
@@ -75,7 +75,7 @@ class ZstdFileAttention(private val httpClient: HttpRangeClient) {
      * @param length The number of bytes to read.
      * @return A Flow of Indexed<Byte> containing the decompressed data.
      */
-    suspend fun readRange(url: String, index: Series<ZstdFrameIndexEntry>, startOffset: Long, length: Long): Flow<Indexed<Byte>> = flow {
+    suspend fun readRange(url: String, index: Indexed<ZstdFrameIndexEntry>, startOffset: Long, length: Long): Flow<Indexed<Byte>> = flow {
         val endOffset = startOffset + length
 
         // Find the frames that cover the requested range
@@ -85,7 +85,7 @@ class ZstdFileAttention(private val httpClient: HttpRangeClient) {
 
         for (frame in relevantFrames) {
             val compressedData = httpClient.fetchRange(url, frame.compressedOffset, frame.compressedOffset + frame.compressedSize)
-            val decompressedData = Zstd.decompress(compressedData.toSeries())
+            val decompressedData = Zstd.decompress(compressedData.toIndexed())
 
             // Calculate the portion of the decompressed data that falls within the requested range
             val relativeStart = maxOf(0L, startOffset - frame.uncompressedOffset)

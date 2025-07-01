@@ -407,3 +407,10 @@ The following components existed before the modularization and may need updates:
    - [ ] Performance optimizations
 
 The new modular architecture provides a solid foundation for future development while maintaining backward compatibility and improving code organization.
+
+## Series Type Extinction Policy
+
+- The `Series<T>` typealias and all `Series`-suffixed typealiases are **extinct** and must not be preserved or reintroduced in any code, documentation, or advice.
+- The **only** exception is `MetaSeries`, which is permitted for legacy or architectural reasons.
+- All new and updated code must use `Indexed<T>` and the import alias `import borg.trikeshed.lib.Series as Indexed` where required.
+- Any advice, code, or documentation suggesting direct use of `Series<T>` or any `Series`-suffixed typealias (other than `MetaSeries`) is incorrect and must be corrected or removed.

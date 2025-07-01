@@ -9,8 +9,8 @@ interface WireProto {
     fun pack(data: ByteArray): ByteArray
     fun unpack(data: ByteArray): ByteArray
     
-    fun encode(data: Any): Series<Byte>
-    fun <T> decode(data: Series<Byte>): T
+    fun encode(data: Any): Indexed<Byte>
+    fun <T> decode(data: Indexed<Byte>): T
 }
 
 /**
@@ -27,12 +27,12 @@ class DefaultWireProto : WireProto {
         return data
     }
     
-    override fun encode(data: Any): Series<Byte> {
+    override fun encode(data: Any): Indexed<Byte> {
         // Placeholder implementation
-        return emptySeries()
+        return emptyIndexed()
     }
     
-    override fun <T> decode(data: Series<Byte>): T {
+    override fun <T> decode(data: Indexed<Byte>): T {
         // Placeholder implementation
         throw NotImplementedError("Decoding not implemented")
     }

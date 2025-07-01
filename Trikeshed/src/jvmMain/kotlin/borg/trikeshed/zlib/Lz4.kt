@@ -2,46 +2,38 @@ package borg.trikeshed.zlib
 
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
-import net.jpountz.lz4.LZ4Factory
-import net.jpountz.lz4.LZ4FrameInputStream
-import net.jpountz.lz4.LZ4FrameOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
 /**
- * Actual JVM implementation of the Lz4 object, using LZ4 frame format.
+ * JVM implementation of the Lz4 object, using exec for compression/decompression and in-code for framing.
  */
 actual object Lz4 {
 
-    private val factory = LZ4Factory.fastestInstance()
-
     /**
-     * Compresses a single block of data into an LZ4 frame.
-     * @param input The data to compress as an Indexed<Byte>.
-     * @return The compressed LZ4 frame as an Indexed<Byte>.
+     * Compresses a single block of data into an LZ4 frame using the system lz4 tool.
      */
     actual fun compressFrame(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
-        val baos = ByteArrayOutputStream()
-        LZ4FrameOutputStream(baos).use { lz4Fos ->
-            lz4Fos.write(inputArray)
-        }
-        return baos.toByteArray().toIndexed()
+        val process = ProcessBuilder("lz4", "-c", "-f", "--frame").start()
+        process.outputStream.write(inputArray)
+        process.outputStream.close()
+        val output = process.inputStream.readBytes()
+        process.waitFor()
+        return output.toIndexed()
     }
 
     /**
-     * Decompresses a single LZ4 frame.
-     * @param input The LZ4 frame data as an Indexed<Byte>.
-     * @return The decompressed data as an Indexed<Byte>.
+     * Decompresses a single LZ4 frame using the system lz4 tool.
      */
     actual fun decompressFrame(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
-        val bais = ByteArrayInputStream(inputArray)
-        val baos = ByteArrayOutputStream()
-        LZ4FrameInputStream(bais).use { lz4Fis ->
-            lz4Fis.copyTo(baos)
-        }
-        return baos.toByteArray().toIndexed()
+        val process = ProcessBuilder("lz4", "-d", "-c", "-f").start()
+        process.outputStream.write(inputArray)
+        process.outputStream.close()
+        val output = process.inputStream.readBytes()
+        process.waitFor()
+        return output.toIndexed()
     }
 
     /**

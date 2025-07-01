@@ -67,7 +67,7 @@ val UInt.z: Boolean get() = 0U == this
 val ULong.z: Boolean get() = 0UL == this
 infix fun <T> T.d(other: T): T { println(other); return this }
 
-infix fun <A, B> A.j(b: B): Join<A, B> = Join.invoke(this, b)
+infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
 
 expect fun assert(value: Boolean)
 expect fun assert(value: Boolean, lazyMessage: () -> Any)
@@ -111,7 +111,7 @@ object _m {
 
 inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = this.a j { index: Int -> xform(this.b(index)) }
 
-// === IterableSeries and play button ===
+// === IterableIndexed and play button ===
 
 @JvmInline
 value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s {
@@ -123,4 +123,15 @@ value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s
 }
 
 val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
- 
+
+val <T> Indexed<T>.size: Int get() = a
+
+fun ByteArray.toIndexed(): Indexed<Byte> = Indexed(this.size) { i -> this[i] }
+
+@Deprecated("Use 0 j { error(\"Empty Indexed Access Violation at index \\$it\") } instead")
+val <T> emptyIndexed: Indexed<T> get() = Indexed(0) { error("Empty Indexed Access Violation at index $it") }
+
+@Deprecated("Use .toIndexed() instead")
+fun ByteArray.toIdx(): Indexed<Byte> = this.toIndexed()
+@Deprecated("Use .toIndexed() instead")
+fun IntArray.toIdx(): Indexed<Int> = Indexed(this.size) { i -> this[i] }

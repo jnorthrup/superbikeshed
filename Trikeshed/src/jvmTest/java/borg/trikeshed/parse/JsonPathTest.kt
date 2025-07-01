@@ -3,7 +3,7 @@ package borg.trikeshed.parse
 import borg.trikeshed.common.collections._l
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.toIndexed
 import borg.trikeshed.parse.json.JsPath
 import borg.trikeshed.parse.json.JsonParser.index
 import borg.trikeshed.parse.json.JsonParser.jsPath
@@ -17,7 +17,7 @@ class JsonPathTest {
     fun `test depth correctness and robustness with empty arrays`() {
         var json = "[0,[],[1],[[[ ]]]]"
         var d = mutableListOf<Int>()
-        var elem = index(json.toSeries(), d)
+        var elem = index(json.toIndexed(), d)
         assertEquals(0, d[0])
         assertEquals(1, d[1])
         assertEquals(1, d[2])
@@ -26,7 +26,7 @@ class JsonPathTest {
 
         json = """[0, {}, [1], {"1": {"2": {"3": {"4": 1}}}}]"""
         d = mutableListOf()
-        elem = index(json.toSeries(), d)
+        elem = index(json.toIndexed(), d)
         assertEquals(0, d[0])
         assertEquals(1, d[1])
         assertEquals(1, d[2])
@@ -36,7 +36,7 @@ class JsonPathTest {
             |: {"2": { "3 ": { "4" : 1} }} } ] 
             |""".trimMargin()
         d = mutableListOf()
-        elem = index(json.toSeries(), d)
+        elem = index(json.toIndexed(), d)
         assertEquals(0, d[0])
         assertEquals(1, d[1])
         assertEquals(1, d[2])
@@ -44,14 +44,14 @@ class JsonPathTest {
 
         json = """ [ 0,1 , 2 ,   3]"""
         d = mutableListOf()
-        elem = index(json.toSeries(), d)
+        elem = index(json.toIndexed(), d)
         assertEquals(0, d[0])
         assertEquals(0, d[1])
         assertEquals(0, d[2])
         assertEquals(0, d[3])
         json = """ [ 0,1 , 2 ,   [ [[ [3]] ]] ] """
         d = mutableListOf()
-        elem = index(json.toSeries(), d)
+        elem = index(json.toIndexed(), d)
         assertEquals(0, d[0])
         assertEquals(0, d[1])
         assertEquals(0, d[2])
@@ -61,7 +61,7 @@ class JsonPathTest {
     @Test
     fun `test the simplest path and some misc whitespace`() {
         run {
-            val src = ("""[0,1,2,3]""").toSeries()
+            val src = ("""[0,1,2,3]""").toIndexed()
             val depths = mutableListOf<Int>()
             val element = index(src, depths)
             val path: JsPath = _l[0].toJsPath
@@ -71,7 +71,7 @@ class JsonPathTest {
             assertEquals(expected, result)
         }
         run {
-            val src = (""" [0 , 1,2 , 3 ] """).toSeries()
+            val src = (""" [0 , 1,2 , 3 ] """).toIndexed()
             val depths = mutableListOf<Int>()
             val element = index(src, depths)
             val path: JsPath = _l[0].toJsPath
@@ -82,7 +82,7 @@ class JsonPathTest {
     }
     @Test
     fun test0() {
-        val src = ("""[0]""").toSeries()
+        val src = ("""[0]""").toIndexed()
         val element = index(src)
         val path: JsPath = _l[0].toJsPath
         val expected = 0.0
@@ -90,13 +90,13 @@ class JsonPathTest {
         assertEquals(expected, result)
 
     }
-    @Test fun test00() { val src = ("""{"0":0}""").toSeries()
+    @Test fun test00() { val src = ("""{"0":0}""").toIndexed()
         val result = jsPath(index(src) j src, _l[0].toJsPath, true, mutableListOf())
         assertEquals(0.0, result) }
 
     @Test
     fun test1() {
-        val src = ("""{"a":{"b":[1,2,3,4,5],"c":"hi","d":true},"e":false}""").toSeries()
+        val src = ("""{"a":{"b":[1,2,3,4,5],"c":"hi","d":true},"e":false}""").toIndexed()
         val element = index(src)
         val path: JsPath = _l["a", "b", 2].toJsPath
         val result = jsPath(element j src, path, true, mutableListOf())
@@ -108,7 +108,7 @@ class JsonPathTest {
     //tests the use of index on jsObj
     @Test
     fun test2() {
-        val src = ("""{"a":{"b":[1,2,3,4,{"meh":[4,3,2,1]}],"c":"hi","d":true},"e":false}""").toSeries()
+        val src = ("""{"a":{"b":[1,2,3,4,{"meh":[4,3,2,1]}],"c":"hi","d":true},"e":false}""").toIndexed()
         val element = index(src)
         val path: JsPath = _l[("a"), ("b"), (4), 0, (1)].toJsPath
         val result = jsPath(element j src, path, true, mutableListOf())
@@ -117,19 +117,19 @@ class JsonPathTest {
     }
     @Test
     fun `handle empty jsarray`() {
-        val src = ("""[0,[],[1],[[[ ]]]] """).toSeries()
+        val src = ("""[0,[],[1],[[[ ]]]] """).toIndexed()
         val element = index(src)
         val path: JsPath = _l[3,0,0].toJsPath
         val result = jsPath(element j src, path, true, mutableListOf())
         if (result is Join<*,*>) {
             val r = result
-            if(r.a!=0) fail("result.a is not an empty Series")
+            if(r.a!=0) fail("result.a is not an empty Indexed")
         }
     }
 
     @Test
     fun `handle empty jsObject`() {
-        val src = ("""[0,[],[1],[[{ }]]] """).toSeries()
+        val src = ("""[0,[],[1],[[{ }]]] """).toIndexed()
         val element = index(src)
         val path: JsPath = _l[3, 0, 0].toJsPath
         val result = jsPath(element j src, path, true, mutableListOf())
@@ -145,7 +145,7 @@ class JsonPathTest {
     @Test
     fun `test body 0 name`() {
 
-        val src = systemJson.toSeries()
+        val src = systemJson.toIndexed()
         val element = index(src)
         val path: JsPath = _l["bodies", 0, "name"].toJsPath
         val result = jsPath(element j src, path, true, mutableListOf())

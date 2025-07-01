@@ -1,8 +1,8 @@
 package borg.trikeshed.ljson
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.toIndexed
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -25,18 +25,18 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
      * Fetches and parses the central directory of a remote zip file.
      *
      * @param url The URL of the remote zip file.
-     * @return A Series of ZipEntry objects, representing the files in the archive.
+     * @return A Indexed of ZipEntry objects, representing the files in the archive.
      */
     suspend fun streamCentralDirectory(url: String): Flow<ZipEntry> {
         val fileSize = httpClient.fetchRange(url, 0, 0).size.toLong()
         val eocdBuffer = httpClient.fetchRange(url, fileSize - EOCD_RECORD_SIZE, fileSize)
 
-        val eocdOffset = findEocdRecord(eocdBuffer.toSeries())
+        val eocdOffset = findEocdRecord(eocdBuffer.toIndexed())
         if (eocdOffset == -1L) {
             throw IllegalStateException("EOCD record not found in the last 64KB of the file.")
         }
 
-        val eocd = parseEocd(eocdBuffer.toSeries().drop(eocdOffset.toInt()))
+        val eocd = parseEocd(eocdBuffer.toIndexed().drop(eocdOffset.toInt()))
 
         return flow {
             var offset = 0L
@@ -56,7 +56,7 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
                         break
                     }
 
-                    val entry = parseCentralDirectoryEntry(currentBytes.toSeries().drop(chunkOffset))
+                    val entry = parseCentralDirectoryEntry(currentBytes.toIndexed().drop(chunkOffset))
                     val entrySize = 46 + entry.fileName.length
 
                     if (currentBytes.size - chunkOffset < entrySize) { // Not enough bytes for the full entry
@@ -73,23 +73,23 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
         }
     }
 
-    suspend fun getCentralDirectory(url: String): Series<ZipEntry> {
+    suspend fun getCentralDirectory(url: String): Indexed<ZipEntry> {
         val entries = mutableListOf<ZipEntry>()
         streamCentralDirectory(url).collect { entries.add(it) }
-        return entries.toSeries()
+        return entries.toIndexed()
     }
 
     suspend fun extractFile(url: String, entry: ZipEntry): Indexed<Byte> {
         val localHeaderBuffer = httpClient.fetchRange(url, entry.localHeaderOffset, entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE)
-        val localHeader = parseLocalFileHeader(localHeaderBuffer.toSeries())
+        val localHeader = parseLocalFileHeader(localHeaderBuffer.toIndexed())
 
         val compressedDataOffset = entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE + localHeader.fileNameLength + localHeader.extraFieldLength
         val compressedData = httpClient.fetchRange(url, compressedDataOffset, compressedDataOffset + entry.compressedSize)
 
-        return Zlib.decompress(compressedData.toSeries())
+        return Zlib.decompress(compressedData.toIndexed())
     }
 
-    private fun parseLocalFileHeader(headerData: Series<Byte>): LocalFileHeader {
+    private fun parseLocalFileHeader(headerData: Indexed<Byte>): LocalFileHeader {
         return LocalFileHeader(
             fileNameLength = headerData.getShort(26),
             extraFieldLength = headerData.getShort(28)
@@ -101,7 +101,7 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
         val extraFieldLength: Short
     )
 
-    private fun findEocdRecord(buffer: Series<Byte>): Long {
+    private fun findEocdRecord(buffer: Indexed<Byte>): Long {
         for (i in buffer.size - EOCD_RECORD_SIZE downTo 0) {
             if (buffer[i] == 0x50.toByte() && buffer[i + 1] == 0x4b.toByte() && buffer[i + 2] == 0x05.toByte() && buffer[i + 3] == 0x06.toByte()) {
                 return i.toLong()
@@ -110,7 +110,7 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
         return -1L
     }
 
-    private fun parseEocd(eocdData: Series<Byte>): EocdRecord {
+    private fun parseEocd(eocdData: Indexed<Byte>): EocdRecord {
         return EocdRecord(
             diskNumber = eocdData.getShort(4),
             startDiskNumber = eocdData.getShort(6),
@@ -122,7 +122,7 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
         )
     }
 
-    private fun parseCentralDirectory(directoryData: Series<Byte>): Series<ZipEntry> {
+    private fun parseCentralDirectory(directoryData: Indexed<Byte>): Indexed<ZipEntry> {
         val entries = mutableListOf<ZipEntry>()
         var offset = 0
         while (offset < directoryData.size) {
@@ -130,10 +130,10 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
             entries.add(entry)
             offset += 46 + entry.fileName.length // 46 is the fixed size of a central directory entry
         }
-        return entries.toSeries()
+        return entries.toIndexed()
     }
 
-    private fun parseCentralDirectoryEntry(entryData: Series<Byte>): ZipEntry {
+    private fun parseCentralDirectoryEntry(entryData: Indexed<Byte>): ZipEntry {
         val fileNameLength = entryData.getShort(28)
         val extraFieldLength = entryData.getShort(30)
         val fileCommentLength = entryData.getShort(32)
@@ -166,12 +166,12 @@ class RemoteFileAttention(private val httpClient: HttpRangeClient) {
         private const val LOCAL_FILE_HEADER_SIZE = 30
     }
 
-    // Helper functions to read little-endian values from a Series<Byte>
-    private fun Series<Byte>.getShort(offset: Int): Short {
+    // Helper functions to read little-endian values from a Indexed<Byte>
+    private fun Indexed<Byte>.getShort(offset: Int): Short {
         return ((this[offset + 1].toInt() and 0xFF) shl 8 or (this[offset].toInt() and 0xFF)).toShort()
     }
 
-    private fun Series<Byte>.getInt(offset: Int): Int {
+    private fun Indexed<Byte>.getInt(offset: Int): Int {
         return ((this[offset + 3].toInt() and 0xFF) shl 24 or
                 ((this[offset + 2].toInt() and 0xFF) shl 16) or
                 ((this[offset + 1].toInt() and 0xFF) shl 8) or

@@ -41,7 +41,7 @@ object Socks5Demo {
         println("   Input: 0x05 0x02 0x00 0x02")
         
         val handshakeData = byteArrayOf(0x05, 0x02, 0x00, 0x02)
-        val buffer = ByteIndexedBuffer(handshakeData.toSeries())
+        val buffer = ByteIndexedBuffer(handshakeData.toIndexed())
         
         val request = Socks5Evolution.parseHandshakeRequest(buffer)
         if (request != null) {
@@ -67,7 +67,7 @@ object Socks5Demo {
             0x7F, 0x00, 0x00, 0x01,  // 127.0.0.1
             0x00, 0x50               // Port 80
         )
-        val buffer = ByteIndexedBuffer(requestData.toSeries())
+        val buffer = ByteIndexedBuffer(requestData.toIndexed())
         
         val request = Socks5Evolution.parseSocksRequest(buffer)
         if (request != null) {
@@ -100,7 +100,7 @@ object Socks5Demo {
         // Step 1: Handshake
         println("   Step 1: Handshake")
         val handshakeData = byteArrayOf(0x05, 0x02, 0x00, 0x02)
-        val handshakeBuffer = ByteIndexedBuffer(handshakeData.toSeries())
+        val handshakeBuffer = ByteIndexedBuffer(handshakeData.toIndexed())
         
         val handshakeRequest = Socks5Evolution.parseHandshakeRequest(handshakeBuffer)
         if (handshakeRequest != null) {
@@ -118,7 +118,7 @@ object Socks5Demo {
             0x7F, 0x00, 0x00, 0x01,  // 127.0.0.1
             0x00, 0x50               // Port 80
         )
-        val requestBuffer = ByteIndexedBuffer(requestData.toSeries())
+        val requestBuffer = ByteIndexedBuffer(requestData.toIndexed())
         
         val socksRequest = Socks5Evolution.parseSocksRequest(requestBuffer)
         if (socksRequest != null) {
@@ -175,7 +175,7 @@ object Socks5Demo {
         println("   $type Address:")
         println("     Input: ${data.joinToString(", ") { "0x%02X".format(it.toInt() and 0xFF) }}")
         
-        val buffer = ByteIndexedBuffer(data.toSeries())
+        val buffer = ByteIndexedBuffer(data.toIndexed())
         val request = Socks5Evolution.parseSocksRequest(buffer)
         
         if (request != null) {

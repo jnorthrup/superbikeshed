@@ -7,7 +7,7 @@ import borg.trikeshed.lib.Indexed
 
 typealias Bucket<T> = MutableList<T>
 
-open class HashSeriesSet<T : Any> : SeriesSet<T> {
+open class HashIndexedSet<T : Any> : SeriesSet<T> {
     open var buckets: Array<Bucket<T>> = createBuckets(16)
     private var _size: Int = 0
 
@@ -37,9 +37,9 @@ open class HashSeriesSet<T : Any> : SeriesSet<T> {
         (element.hashCode() and 0x7FFFFFFF) % buckets.size
 
     companion object {
-        class MutableHashSeriesSet<T : Any>(
-            private val theSet: HashSeriesSet<T> = HashSeriesSet<T>(),
-        ) : MutableSeriesSet<T> {
+        class MutableHashIndexedSet<T : Any>(
+            private val theSet: HashIndexedSet<T> = HashIndexedSet<T>(),
+        ) : MutableIndexedSet<T> {
 
             override val size: Int get() = theSet._size
             
@@ -125,11 +125,11 @@ open class HashSeriesSet<T : Any> : SeriesSet<T> {
 
 interface SeriesSet<T> : Set<T>
 
-interface MutableSeriesSet<T> : SeriesSet<T>, MutableSet<T>
+interface MutableIndexedSet<T> : SeriesSet<T>, MutableSet<T>
 
 // Example usage
 fun main1() {
-    val testSet = HashSeriesSet.Companion.MutableHashSeriesSet<Int>()
+    val testSet = HashIndexedSet.Companion.MutableHashIndexedSet<Int>()
     testSet.add(10)
     testSet.add(20)
     testSet.add(30)

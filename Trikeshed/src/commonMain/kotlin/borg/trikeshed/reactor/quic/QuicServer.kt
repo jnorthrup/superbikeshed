@@ -1,6 +1,6 @@
 package borg.trikeshed.reactor.quic
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.s_
 import borg.trikeshed.lib.toArray
 import kotlinx.coroutines.channels.Channel
@@ -97,7 +97,7 @@ class QuicStream(val streamId: Long, private val connection: QuicConnection) {
 
     suspend fun read(): ByteBuffer = incoming.receive()
 
-    suspend fun readAll(): Series<Byte> {
+    suspend fun readAll(): Indexed<Byte> {
         val bytes = mutableListOf<Byte>()
         // This is a simplified version. A real version would handle stream termination.
         val buffer = read()
@@ -107,7 +107,7 @@ class QuicStream(val streamId: Long, private val connection: QuicConnection) {
         return borg.trikeshed.lib.s_(elements = bytes.toByteArray())
     }
 
-    fun write(data: Series<Byte>) {
+    fun write(data: Indexed<Byte>) {
         // Simplified: assumes data fits in one buffer
         val bytes = data.toArray()
         connection.send(streamId, ByteBuffer.wrap(bytes))

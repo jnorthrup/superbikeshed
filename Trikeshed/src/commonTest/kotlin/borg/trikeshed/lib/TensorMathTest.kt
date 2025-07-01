@@ -6,8 +6,8 @@ class TensorMathTest {
 
     @Test
     fun testTensorAddition() {
-        val tensor1 = TensorSeries(3) { it.toDouble() }
-        val tensor2 = TensorSeries(3) { (it + 1).toDouble() }
+        val tensor1 = TensorIndexed(3) { it.toDouble() }
+        val tensor2 = TensorIndexed(3) { (it + 1).toDouble() }
         
         val result = tensor1 + tensor2
         assertEquals(1.0, result(0), 0.001)
@@ -17,8 +17,8 @@ class TensorMathTest {
 
     @Test
     fun testTensorSubtraction() {
-        val tensor1 = TensorSeries(3) { (it + 2).toDouble() }
-        val tensor2 = TensorSeries(3) { it.toDouble() }
+        val tensor1 = TensorIndexed(3) { (it + 2).toDouble() }
+        val tensor2 = TensorIndexed(3) { it.toDouble() }
         
         val result = tensor1 - tensor2
         assertEquals(2.0, result(0), 0.001)
@@ -28,8 +28,8 @@ class TensorMathTest {
 
     @Test
     fun testTensorMultiplication() {
-        val tensor1 = TensorSeries(3) { (it + 1).toDouble() }
-        val tensor2 = TensorSeries(3) { 2.0 }
+        val tensor1 = TensorIndexed(3) { (it + 1).toDouble() }
+        val tensor2 = TensorIndexed(3) { 2.0 }
         
         val result = tensor1 * tensor2
         assertEquals(2.0, result(0), 0.001)
@@ -39,8 +39,8 @@ class TensorMathTest {
 
     @Test
     fun testTensorDivision() {
-        val tensor1 = TensorSeries(3) { (it + 2).toDouble() }
-        val tensor2 = TensorSeries(3) { 2.0 }
+        val tensor1 = TensorIndexed(3) { (it + 2).toDouble() }
+        val tensor2 = TensorIndexed(3) { 2.0 }
         
         val result = tensor1 / tensor2
         assertEquals(1.0, result(0), 0.001)
@@ -50,7 +50,7 @@ class TensorMathTest {
 
     @Test
     fun testScalarAddition() {
-        val tensor = TensorSeries(3) { it.toDouble() }
+        val tensor = TensorIndexed(3) { it.toDouble() }
         val result = tensor + 5.0
         
         assertEquals(5.0, result(0), 0.001)
@@ -60,7 +60,7 @@ class TensorMathTest {
 
     @Test
     fun testScalarSubtraction() {
-        val tensor = TensorSeries(3) { (it + 5).toDouble() }
+        val tensor = TensorIndexed(3) { (it + 5).toDouble() }
         val result = tensor - 2.0
         
         assertEquals(3.0, result(0), 0.001)
@@ -70,7 +70,7 @@ class TensorMathTest {
 
     @Test
     fun testScalarMultiplication() {
-        val tensor = TensorSeries(3) { (it + 1).toDouble() }
+        val tensor = TensorIndexed(3) { (it + 1).toDouble() }
         val result = tensor * 3.0
         
         assertEquals(3.0, result(0), 0.001)
@@ -80,7 +80,7 @@ class TensorMathTest {
 
     @Test
     fun testScalarDivision() {
-        val tensor = TensorSeries(3) { (it + 3).toDouble() }
+        val tensor = TensorIndexed(3) { (it + 3).toDouble() }
         val result = tensor / 2.0
         
         assertEquals(1.5, result(0), 0.001)
@@ -90,7 +90,7 @@ class TensorMathTest {
 
     @Test
     fun testUnaryMinus() {
-        val tensor = TensorSeries(3) { (it + 1).toDouble() }
+        val tensor = TensorIndexed(3) { (it + 1).toDouble() }
         val result = -tensor
         
         assertEquals(-1.0, result(0), 0.001)
@@ -100,21 +100,21 @@ class TensorMathTest {
 
     @Test
     fun testSum() {
-        val tensor = TensorSeries(4) { (it + 1).toDouble() }
+        val tensor = TensorIndexed(4) { (it + 1).toDouble() }
         val result = tensor.sum()
         assertEquals(10.0, result, 0.001) // 1 + 2 + 3 + 4 = 10
     }
 
     @Test
     fun testMean() {
-        val tensor = TensorSeries(4) { (it + 1).toDouble() }
+        val tensor = TensorIndexed(4) { (it + 1).toDouble() }
         val result = tensor.mean()
         assertEquals(2.5, result, 0.001) // (1 + 2 + 3 + 4) / 4 = 2.5
     }
 
     @Test
     fun testSqrt() {
-        val tensor = TensorSeries(3) { (it + 1).toDouble() }
+        val tensor = TensorIndexed(3) { (it + 1).toDouble() }
         val result = tensor.sqrt()
         
         assertEquals(1.0, result(0), 0.001) // sqrt(1) = 1
@@ -124,8 +124,8 @@ class TensorMathTest {
 
     @Test
     fun testShapeMismatchThrowsException() {
-        val tensor1 = TensorSeries(3) { it.toDouble() }
-        val tensor2 = TensorSeries(4) { it.toDouble() }
+        val tensor1 = TensorIndexed(3) { it.toDouble() }
+        val tensor2 = TensorIndexed(4) { it.toDouble() }
         
         assertFailsWith<IllegalArgumentException> {
             tensor1 + tensor2
@@ -152,7 +152,7 @@ class TensorMathTest {
 
     @Test
     fun testEmptyTensorMean() {
-        val tensor = TensorSeries(0) { it.toDouble() }
+        val tensor = TensorIndexed(0) { it.toDouble() }
         val result = tensor.mean()
         assertEquals(0.0, result, 0.001)
     }

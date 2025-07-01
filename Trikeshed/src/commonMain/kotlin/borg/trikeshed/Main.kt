@@ -46,15 +46,15 @@ object MainOrchestrator {
     suspend fun run() {
         println("=== ORCHESTRATOR STARTING ===")
 
-        // --- SCENARIO 1: A request to process a Series of numbers ---
+        // --- SCENARIO 1: A request to process a Indexed of numbers ---
         val request1 = HttpRequest(
             method = HttpMethod.POST,
             path = HttpRequestPath("/process/series"),
             version = HttpVersion("HTTP/1.1"),
             headers = 0 j { _: Int -> HttpHeaderName("Content-Type") j HttpHeaderValue("text/plain") }
         )
-        // Assemble the CCEK with Series-specific payload and rules.
-        val seriesCcek = assembleCcekForSeriesProcessing(request1)
+        // Assemble the CCEK with Indexed-specific payload and rules.
+        val seriesCcek = assembleCcekForIndexedProcessing(request1)
         // Would pump the specificity into the server
         // server.processRequest(request1, seriesCcek)
 
@@ -76,15 +76,15 @@ object MainOrchestrator {
     }
 
     /**
-     * Assembles a CCEK specifically for a Series processing task.
+     * Assembles a CCEK specifically for a Indexed processing task.
      */
-    private fun assembleCcekForSeriesProcessing(request: HttpRequest): CcekContext {
+    private fun assembleCcekForIndexedProcessing(request: HttpRequest): CcekContext {
         println("Orchestrator: Assembling CCEK for a SERIES operation.")
         return CcekContext(
             control = Control("exec_series_123"),
             context = Context(sessionId = "session_series_123"),
             environment = Environment(
-                action = "DoubleAndSumSeries",
+                action = "DoubleAndSumIndexed",
                 // THE PAYLOAD IS A SERIES
                 payload = listOf(1, 2, 3, 4, 5)
             ),

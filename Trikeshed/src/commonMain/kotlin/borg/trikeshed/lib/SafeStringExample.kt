@@ -48,7 +48,7 @@ object SafeStringExample {
         val buffer = data.toCharIndexedBuffer()
         
         // Compare with "GET" without creating String
-        val getMethod = "GET".toSeries()
+        val getMethod = "GET".toIndexed()
         return buffer.startsWith(getMethod)
     }
     

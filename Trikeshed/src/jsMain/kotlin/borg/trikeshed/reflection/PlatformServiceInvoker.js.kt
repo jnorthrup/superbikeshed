@@ -1,6 +1,6 @@
 package borg.trikeshed.reflection
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed as Indexed
 
 // JavaScript platform service invoker using dynamic reflection
 actual class PlatformServiceInvoker {
@@ -26,7 +26,7 @@ actual class PlatformServiceInvoker {
         }
     }
 
-    actual fun callMethod(method: Any, service: Any, args: Series<Any?>): Any? {
+    actual fun callMethod(method: Any, service: Any, args: Indexed<Any?>): Any? {
         return try {
             val jsMethod = method.asDynamic()
             val jsService = service.asDynamic()

@@ -43,7 +43,7 @@ object GrpcParser {
     /**
      * Parse wire fields into message graph
      */
-    fun parse(fields: WireFieldSeries, bytes: Indexed<Byte>): WireResult<MessageGraph> {
+    fun parse(fields: WireFieldIndexed, bytes: Indexed<Byte>): WireResult<MessageGraph> {
         if (fields.a == 0) return Result.success(emptyIndexed())
         
         return try {
@@ -57,7 +57,7 @@ object GrpcParser {
     /**
      * Build hierarchical message graph from flat field series
      */
-    private fun buildMessageGraph(fields: WireFieldSeries, bytes: Indexed<Byte>): MessageGraph {
+    private fun buildMessageGraph(fields: WireFieldIndexed, bytes: Indexed<Byte>): MessageGraph {
         val nodes = mutableListOf<MessageNode>()
         val nodeIdCounter = AtomicCounter()
         
@@ -85,7 +85,7 @@ object GrpcParser {
      */
     private fun processFieldGroup(
         fieldNumber: WireFieldNumber,
-        fields: WireFieldSeries,
+        fields: WireFieldIndexed,
         bytes: Indexed<Byte>,
         parentId: MessageNodeId,
         nodes: MutableList<MessageNode>,
@@ -296,7 +296,7 @@ private class AtomicCounter {
 /**
  * Extension functions
  */
-fun WireFieldSeries.parse(bytes: Indexed<Byte>): WireResult<MessageGraph> = 
+fun WireFieldIndexed.parse(bytes: Indexed<Byte>): WireResult<MessageGraph> = 
     GrpcParser.parse(this, bytes)
 
 fun MessageGraph.extractSchema(): MessageSchema = 

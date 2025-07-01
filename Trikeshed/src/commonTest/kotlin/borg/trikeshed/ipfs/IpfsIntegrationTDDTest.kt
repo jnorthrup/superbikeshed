@@ -12,7 +12,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `Multihash should encode and decode correctly`() {
-        val testData = "hello world".encodeToByteArray().toSeries()
+        val testData = "hello world".encodeToByteArray().toIndexed()
         val hash = sha256(testData)
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         
@@ -48,7 +48,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `Multihash should support different hash types`() {
-        val testData = "test".encodeToByteArray().toSeries()
+        val testData = "test".encodeToByteArray().toIndexed()
         val hash = sha256(testData)
         
         val sha256Hash = Multihash(Multihash.HashType.SHA2_256, hash)
@@ -64,7 +64,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `CID should encode v0 with base58`() {
-        val hash = sha256("hello".encodeToByteArray().toSeries())
+        val hash = sha256("hello".encodeToByteArray().toIndexed())
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         val cid = CID(0, CID.Codec.DAG_PB, multihash)
         
@@ -74,7 +74,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `CID should encode v1 with base32`() {
-        val hash = sha256("hello".encodeToByteArray().toSeries())
+        val hash = sha256("hello".encodeToByteArray().toIndexed())
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         val cid = CID(1, CID.Codec.RAW, multihash)
         
@@ -84,7 +84,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `CID should reject invalid versions`() {
-        val hash = sha256("test".encodeToByteArray().toSeries())
+        val hash = sha256("test".encodeToByteArray().toIndexed())
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         
         assertFailsWith<IllegalArgumentException> {
@@ -95,7 +95,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `CID should support different codecs`() {
-        val hash = sha256("test".encodeToByteArray().toSeries())
+        val hash = sha256("test".encodeToByteArray().toIndexed())
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         
         val rawCid = CID(1, CID.Codec.RAW, multihash)
@@ -113,7 +113,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `IpfsBlock should store data with CID correctly`() {
-        val testData = "hello ipfs".encodeToByteArray().toSeries()
+        val testData = "hello ipfs".encodeToByteArray().toIndexed()
         val hash = sha256(testData)
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         val cid = CID(1, CID.Codec.RAW, multihash)
@@ -130,18 +130,18 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `IpfsBlock should support links for merkle DAG`() {
-        val testData = "parent node".encodeToByteArray().toSeries()
+        val testData = "parent node".encodeToByteArray().toIndexed()
         val hash = sha256(testData)
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         val parentCid = CID(1, CID.Codec.DAG_PB, multihash)
         
         // Create child links
-        val childHash1 = sha256("child1".encodeToByteArray().toSeries())
+        val childHash1 = sha256("child1".encodeToByteArray().toIndexed())
         val childMultihash1 = Multihash(Multihash.HashType.SHA2_256, childHash1)
         val childCid1 = CID(1, CID.Codec.RAW, childMultihash1)
         val link1 = IpfsLink("child1", childCid1, 100L)
         
-        val childHash2 = sha256("child2".encodeToByteArray().toSeries())
+        val childHash2 = sha256("child2".encodeToByteArray().toIndexed())
         val childMultihash2 = Multihash(Multihash.HashType.SHA2_256, childHash2)
         val childCid2 = CID(1, CID.Codec.RAW, childMultihash2)
         val link2 = IpfsLink("child2", childCid2, 200L)
@@ -160,8 +160,8 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `MerkleNode should serialize correctly`() {
-        val nodeData = "node data".encodeToByteArray().toSeries()
-        val childHash = sha256("child".encodeToByteArray().toSeries())
+        val nodeData = "node data".encodeToByteArray().toIndexed()
+        val childHash = sha256("child".encodeToByteArray().toIndexed())
         val childMultihash = Multihash(Multihash.HashType.SHA2_256, childHash)
         val childCid = CID(1, CID.Codec.RAW, childMultihash)
         
@@ -179,7 +179,7 @@ class IpfsIntegrationTDDTest {
     @Test
     fun `MerkleNode should handle empty data`() {
         val emptyData = 0 j { throw NoSuchElementException() }
-        val links = 1 j { "link" j CID(1, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, sha256("test".encodeToByteArray().toSeries()))) }
+        val links = 1 j { "link" j CID(1, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, sha256("test".encodeToByteArray().toIndexed()))) }
         
         val merkleNode = MerkleNode(emptyData, links)
         val serialized = merkleNode.serialize()
@@ -189,7 +189,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `MerkleNode should handle no links`() {
-        val nodeData = "standalone data".encodeToByteArray().toSeries()
+        val nodeData = "standalone data".encodeToByteArray().toIndexed()
         val emptyLinks = 0 j { throw NoSuchElementException() }
         
         val merkleNode = MerkleNode(nodeData, emptyLinks)
@@ -204,7 +204,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `PeerId should be generated from public key`() {
-        val publicKey = "test-public-key".encodeToByteArray().toSeries()
+        val publicKey = "test-public-key".encodeToByteArray().toIndexed()
         val peerId = PeerId.fromPublicKey(publicKey)
         
         assertNotNull(peerId)
@@ -213,7 +213,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `PeerId should encode to base58`() {
-        val testId = "test-peer-id".encodeToByteArray().toSeries()
+        val testId = "test-peer-id".encodeToByteArray().toIndexed()
         val peerId = PeerId(testId)
         
         val base58 = peerId.toBase58()
@@ -223,7 +223,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `PeerInfo should contain all required fields`() {
-        val testId = "peer-123".encodeToByteArray().toSeries()
+        val testId = "peer-123".encodeToByteArray().toIndexed()
         val peerId = PeerId(testId)
         val addresses = 2 j { i -> 
             if (i == 0) "/ip4/127.0.0.1/tcp/4001" 
@@ -290,7 +290,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `RoutingTable should add peers to correct buckets`() {
-        val localId = PeerId("local".encodeToByteArray().toSeries())
+        val localId = PeerId("local".encodeToByteArray().toIndexed())
         val routingTable = RoutingTable(localId)
         
         val peer1 = createTestPeerInfo("peer1")
@@ -300,12 +300,12 @@ class IpfsIntegrationTDDTest {
         routingTable.addPeer(peer2)
         
         // Should not add self
-        routingTable.addPeer(PeerInfo(localId, emptySeries(), emptySeries()))
+        routingTable.addPeer(PeerInfo(localId, emptyIndexed(), emptyIndexed()))
     }
 
     @Test
     fun `RoutingTable should find closest peers`() {
-        val localId = PeerId("local".encodeToByteArray().toSeries())
+        val localId = PeerId("local".encodeToByteArray().toIndexed())
         val routingTable = RoutingTable(localId)
         
         // Add several peers
@@ -314,7 +314,7 @@ class IpfsIntegrationTDDTest {
             routingTable.addPeer(peer)
         }
         
-        val targetId = PeerId("target".encodeToByteArray().toSeries())
+        val targetId = PeerId("target".encodeToByteArray().toIndexed())
         val closest = routingTable.findClosestPeers(targetId, 5)
         
         assertTrue(closest.a <= 5)
@@ -325,7 +325,7 @@ class IpfsIntegrationTDDTest {
     @Test
     fun `InMemoryIpfsStorage should store and retrieve blocks`() {
         val storage = InMemoryIpfsStorage()
-        val testData = "test data".encodeToByteArray().toSeries()
+        val testData = "test data".encodeToByteArray().toIndexed()
         val hash = sha256(testData)
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         val cid = CID(1, CID.Codec.RAW, multihash)
@@ -348,7 +348,7 @@ class IpfsIntegrationTDDTest {
     @Test
     fun `InMemoryIpfsStorage should delete blocks`() {
         val storage = InMemoryIpfsStorage()
-        val testData = "delete me".encodeToByteArray().toSeries()
+        val testData = "delete me".encodeToByteArray().toIndexed()
         val hash = sha256(testData)
         val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
         val cid = CID(1, CID.Codec.RAW, multihash)
@@ -375,7 +375,7 @@ class IpfsIntegrationTDDTest {
             
             // Add several blocks
             for (i in 1..5) {
-                val testData = "test data $i".encodeToByteArray().toSeries()
+                val testData = "test data $i".encodeToByteArray().toIndexed()
                 val hash = sha256(testData)
                 val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
                 val cid = CID(1, CID.Codec.RAW, multihash)
@@ -397,13 +397,13 @@ class IpfsIntegrationTDDTest {
         assertFailsWith<Exception> {
             val storage = MockIpfsStorage()
             val client = IpfsClient(
-                localPeerId = PeerId("client".encodeToByteArray().toSeries()),
+                localPeerId = PeerId("client".encodeToByteArray().toIndexed()),
                 quicEngine = null,
                 storage = storage
             )
             
             runBlocking {
-                val testData = "hello ipfs client".encodeToByteArray().toSeries()
+                val testData = "hello ipfs client".encodeToByteArray().toIndexed()
                 val cid = client.add(testData)
                 
                 val retrieved = client.get(cid)
@@ -421,7 +421,7 @@ class IpfsIntegrationTDDTest {
         assertFailsWith<Exception> {
             val storage = MockIpfsStorage()
             val client = IpfsClient(
-                localPeerId = PeerId("client".encodeToByteArray().toSeries()),
+                localPeerId = PeerId("client".encodeToByteArray().toIndexed()),
                 quicEngine = null,
                 storage = storage
             )
@@ -443,13 +443,13 @@ class IpfsIntegrationTDDTest {
         assertFailsWith<Exception> {
             val storage = MockIpfsStorage()
             val client = IpfsClient(
-                localPeerId = PeerId("client".encodeToByteArray().toSeries()),
+                localPeerId = PeerId("client".encodeToByteArray().toIndexed()),
                 quicEngine = null,
                 storage = storage
             )
             
             runBlocking {
-                val testData = "pin me".encodeToByteArray().toSeries()
+                val testData = "pin me".encodeToByteArray().toIndexed()
                 val cid = client.add(testData)
                 
                 // Pin the content
@@ -477,7 +477,7 @@ class IpfsIntegrationTDDTest {
         assertFailsWith<Exception> {
             val storage = MockIpfsStorage()
             val client = IpfsClient(
-                localPeerId = PeerId("client".encodeToByteArray().toSeries()),
+                localPeerId = PeerId("client".encodeToByteArray().toIndexed()),
                 quicEngine = null,
                 storage = storage
             )
@@ -493,7 +493,7 @@ class IpfsIntegrationTDDTest {
             }
             
             runBlocking {
-                val testData = "temporary data".encodeToByteArray().toSeries()
+                val testData = "temporary data".encodeToByteArray().toIndexed()
                 val cid = client.add(testData)
                 
                 // Garbage collect
@@ -510,7 +510,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `base58Encode should produce valid base58 strings`() {
-        val testData = "hello".encodeToByteArray().toSeries()
+        val testData = "hello".encodeToByteArray().toIndexed()
         val encoded = base58Encode(testData)
         
         assertTrue(encoded.isNotEmpty())
@@ -522,7 +522,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `base32Encode should produce valid base32 strings`() {
-        val testData = "hello".encodeToByteArray().toSeries()
+        val testData = "hello".encodeToByteArray().toIndexed()
         val encoded = base32Encode(testData)
         
         assertTrue(encoded.isNotEmpty())
@@ -531,7 +531,7 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `base64Encode should produce valid base64 strings`() {
-        val testData = "hello world".encodeToByteArray().toSeries()
+        val testData = "hello world".encodeToByteArray().toIndexed()
         val encoded = base64Encode(testData)
         
         assertTrue(encoded.isNotEmpty())
@@ -554,9 +554,9 @@ class IpfsIntegrationTDDTest {
 
     @Test
     fun `sha256 should produce consistent hashes - FAILING UNTIL REAL IMPLEMENTATION`() {
-        val testData1 = "hello".encodeToByteArray().toSeries()
-        val testData2 = "hello".encodeToByteArray().toSeries()
-        val testData3 = "world".encodeToByteArray().toSeries()
+        val testData1 = "hello".encodeToByteArray().toIndexed()
+        val testData2 = "hello".encodeToByteArray().toIndexed()
+        val testData3 = "world".encodeToByteArray().toIndexed()
         
         val hash1 = sha256(testData1)
         val hash2 = sha256(testData2)
@@ -582,13 +582,13 @@ class IpfsIntegrationTDDTest {
     // === HELPER FUNCTIONS ===
 
     private fun createTestPeerInfo(id: String): PeerInfo {
-        val peerId = PeerId(id.encodeToByteArray().toSeries())
+        val peerId = PeerId(id.encodeToByteArray().toIndexed())
         val addresses = 1 j { "/ip4/127.0.0.1/tcp/4001" }
         val protocols = 1 j { "/bitswap/1.2.0" }
         return PeerInfo(peerId, addresses, protocols)
     }
 
-    private fun Series<Byte>.toByteArray(): ByteArray {
+    private fun Indexed<Byte>.toByteArray(): ByteArray {
         val result = ByteArray(this.a)
         for (i in 0 until this.a) {
             result[i] = this.b(i)
@@ -596,9 +596,9 @@ class IpfsIntegrationTDDTest {
         return result
     }
 
-    private fun ByteArray.toSeries(): Series<Byte> = this.size j { this[it] }
+    private fun ByteArray.toIndexed(): Indexed<Byte> = this.size j { this[it] }
 
-    private fun <T> Series<T>.toList(): List<T> {
+    private fun <T> Indexed<T>.toList(): List<T> {
         val result = mutableListOf<T>()
         for (i in 0 until this.a) {
             result.add(this.b(i))
@@ -632,7 +632,7 @@ class IpfsIntegrationTDDTest {
         override suspend fun list(): Indexed<CID> {
             val cids = blocks.keys.map { cidString ->
                 // Simple CID reconstruction for mock
-                val hash = sha256(cidString.encodeToByteArray().toSeries())
+                val hash = sha256(cidString.encodeToByteArray().toIndexed())
                 val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
                 CID(1, CID.Codec.RAW, multihash)
             }
@@ -649,7 +649,7 @@ class IpfsIntegrationTDDTest {
         
         fun listPinned(): Indexed<CID> {
             val cids = pinnedBlocks.map { cidString ->
-                val hash = sha256(cidString.encodeToByteArray().toSeries())
+                val hash = sha256(cidString.encodeToByteArray().toIndexed())
                 val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
                 CID(1, CID.Codec.RAW, multihash)
             }
@@ -659,7 +659,7 @@ class IpfsIntegrationTDDTest {
         fun listUnpinned(): Indexed<CID> {
             val unpinnedKeys = blocks.keys.filter { !pinnedBlocks.contains(it) }
             val cids = unpinnedKeys.map { cidString ->
-                val hash = sha256(cidString.encodeToByteArray().toSeries())
+                val hash = sha256(cidString.encodeToByteArray().toIndexed())
                 val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
                 CID(1, CID.Codec.RAW, multihash)
             }
@@ -672,5 +672,5 @@ class IpfsIntegrationTDDTest {
     }
 
     // Mock empty series utility
-    private fun <T> emptySeries(): Series<T> = 0 j { throw NoSuchElementException("Empty series") }
+    private fun <T> emptyIndexed(): Indexed<T> = 0 j { throw NoSuchElementException("Empty series") }
 }

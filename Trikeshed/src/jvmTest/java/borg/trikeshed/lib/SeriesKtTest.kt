@@ -6,9 +6,9 @@ import kotlin.test.Test
 class SeriesKtTest {
 
     @Test
-    fun testStringToSeries() {
+    fun testStringToIndexed() {
         val s = "hello"
-        val series = s.toSeries()
+        val series = s.toIndexed()
         val s2 = series.asString()
         assert(s == s2)
 

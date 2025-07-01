@@ -18,7 +18,7 @@ inline operator fun <T> Tensor<T>.invoke(vararg coords: Int): T {
     return accessor(coords)
 }
 
-// For 1D tensors (Series-like)
+// For 1D tensors (Indexed-like)
 inline operator fun <T> Tensor<T>.invoke(index: Int): T {
     require(rank == 1) { "This tensor is not 1D (rank $rank)" }
     require(index >= 0 && index < shape[0]) { "Index $index out of bounds [0, ${shape[0]})" }

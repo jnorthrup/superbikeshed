@@ -40,11 +40,11 @@ inline infix fun <A, B> A.j(b: B) = Join.invoke(this, b)
 typealias MetaSeries<A, T> = Join<A, (A) -> T>
 
 // Realm specializations
-typealias Series<T> = MetaSeries<Int, T>
+// typealias Series<T> = MetaSeries<Int, T> // EXTINCT per CLAUDE.md Series Type Extinction Policy
 typealias Twin<T> = MetaSeries<Boolean, T>
 typealias Shape = Series<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
-typealias Series2<A, B> = MetaSeries<Int, Join<A, B>>
+// typealias Series2<A, B> = MetaSeries<Int, Join<A, B>> // EXTINCT per CLAUDE.md Series Type Extinction Policy
 
 // Series operations
 val <T> Series<T>.size: Int get() = a

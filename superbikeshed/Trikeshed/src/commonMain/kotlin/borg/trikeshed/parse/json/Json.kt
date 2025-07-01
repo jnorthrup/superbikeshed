@@ -1,6 +1,7 @@
 @file:Suppress("ControlFlowWithEmptyBody")
 
 package borg.trikeshed.parse.json
+import borg.trikeshed.lib.*
 
 import borg.trikeshed.common.collections.s_
 

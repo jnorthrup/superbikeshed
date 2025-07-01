@@ -26,16 +26,16 @@ class CouchRequestFactoryService(
     // Simple counter for demo purposes (replaces system time)
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
+    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
         val requestJson = requestPayload.play.joinToString("") { it.toInt().toChar().toString() }
         
         return try {
             // Simple demo implementation that uses CouchDB
             val response = handleSimpleRequest(requestJson)
-            CouchJsonParser.stringify(response).encodeToByteArray().toSeries()
+            CouchJsonParser.stringify(response).encodeToByteArray().toIndexed()
         } catch (e: Exception) {
             val error = mapOf("success" to false, "error" to (e.message ?: "Unknown error"))
-            CouchJsonParser.stringify(error).encodeToByteArray().toSeries()
+            CouchJsonParser.stringify(error).encodeToByteArray().toIndexed()
         }
     }
 
@@ -71,5 +71,5 @@ class CouchRequestFactoryService(
         return ByteArray(0)
     }
 
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toIndexed(): Indexed<Byte> = size j { index: Int -> this[index] }
 } 

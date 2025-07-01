@@ -316,7 +316,7 @@ fun createBoingDemoResponse(): String {
             <div class="layer">
                 <h3>🚀 TrikeShed CCEK</h3>
                 <p>Context-driven scopes</p>
-                <p>Series&lt;T&gt; and Join&lt;A,B&gt;</p>
+                <p>Indexed&lt;T&gt; and Join&lt;A,B&gt;</p>
                 <p>Arena allocators</p>
                 <code>scope j visitor α transform</code>
             </div>

@@ -1,11 +1,12 @@
 package borg.trikeshed.ljson
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.ByteSeries
-import borg.trikeshed.lib.IntSeries
-import borg.trikeshed.lib.toSeries
+// import borg.trikeshed.lib.Indexed // REMOVED per Indexed Extinction Policy
+import borg.trikeshed.lib.ByteIndexed
+import borg.trikeshed.lib.IntIndexed
+import borg.trikeshed.lib.toIndexed
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.File
@@ -37,7 +38,7 @@ class Aria2cAttention {
         val filePath: String,
         val startOffset: ByteOffset,
         val endOffset: ByteOffset,
-        val pieces: Series<TorrentPiece>
+        val pieces: Indexed<TorrentPiece>
     )
     
     /**
@@ -59,13 +60,13 @@ class Aria2cAttention {
         
         data class SelectFile(
             val gid: String,
-            val fileIndexes: IntSeries
+            val fileIndexes: IntIndexed
         ) : Aria2cMethod()
     }
     
     /**
      * Download specific pieces from a torrent that contain the requested byte range
-     * Returns ByteSeries with complete type information
+     * Returns ByteIndexed with complete type information
      */
     suspend fun fetchRange(
         torrentUrl: String,
@@ -73,7 +74,7 @@ class Aria2cAttention {
         startOffset: ByteOffset,
         endOffset: ByteOffset,
         outputDir: String = "/tmp/aria2c-attention"
-    ): ByteSeries = suspendCoroutine { continuation ->
+    ): ByteIndexed = suspendCoroutine { continuation ->
         
         val dir: File = File(outputDir)
         if (!dir.exists()) {
@@ -81,7 +82,7 @@ class Aria2cAttention {
         }
         
         // Build aria2c command with explicit types
-        val args: Series<String> = listOf(
+        val args: Indexed<String> = listOf(
             "aria2c",
             "--select-file=$filePath",
             "--piece-length=1M",
@@ -94,7 +95,7 @@ class Aria2cAttention {
             "--dir=$outputDir",
             "--console-log-level=warn",
             torrentUrl
-        ).toSeries()
+        ).toIndexed()
         
         val processBuilder: ProcessBuilder = ProcessBuilder(args.toList())
         val process: Process = processBuilder.start()
@@ -116,8 +117,8 @@ class Aria2cAttention {
                 
                 downloadedFile.delete()
                 
-                // Return as ByteSeries with explicit type in join
-                val result: ByteSeries = bytes.size j { i: Int -> bytes[i] }
+                // Return as ByteIndexed with explicit type in join
+                val result: ByteIndexed = bytes.size j { i: Int -> bytes[i] }
                 continuation.resume(result)
             } else {
                 throw RuntimeException("Downloaded file not found: $filePath")

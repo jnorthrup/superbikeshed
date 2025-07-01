@@ -118,7 +118,7 @@ private fun createDealService(): DealService = object : DealService {
 
     override suspend fun findDeal(id: String): DealProxy? = deals[id]
 
-    override suspend fun findDealsByProduct(query: String): Series<DealProxy> {
+    override suspend fun findDealsByProduct(query: String): Indexed<DealProxy> {
         val matching = deals.values.filter { 
             it.product.contains(query, ignoreCase = true) 
         }
@@ -134,7 +134,7 @@ private fun createDealService(): DealService = object : DealService {
         ))
     }
 
-    override suspend fun getVendors(): Series<VendorProxy> =
+    override suspend fun getVendors(): Indexed<VendorProxy> =
         vendors.toIndexed()
 }
 

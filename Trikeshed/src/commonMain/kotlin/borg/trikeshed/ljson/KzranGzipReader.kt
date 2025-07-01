@@ -382,7 +382,7 @@ class ZlibInflater {
 
     fun inflate(output: ByteArray): Int {
         if (finished) return 0
-        val decompressed = Zlib.decompress(input.toSeries())
+        val decompressed = Zlib.decompress(input.toIndexed())
         val toCopy = min(output.size, decompressed.a)
         for (i in 0 until toCopy) {
             output[i] = decompressed[i]

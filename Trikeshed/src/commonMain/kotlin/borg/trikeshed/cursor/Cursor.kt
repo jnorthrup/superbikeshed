@@ -11,12 +11,12 @@ import kotlin.random.Random
 import borg.trikeshed.isam.meta.IOMemento
 
 /**
- * TRIKESHED CURSOR IMPLEMENTATION - Series-Based Design
+ * TRIKESHED CURSOR IMPLEMENTATION - Indexed-Based Design
  *
  * Restores TrikeShed's original philosophy of functional composition:
- * - Cursor = Series<RowVec> (delegates to Series, doesn't inherit)
- * - RowVec = Series<Join<Value, Meta>> (preserves Join pattern)
- * - All operations through Series composition
+ * - Cursor = Indexed<RowVec> (delegates to Indexed, doesn't inherit)
+ * - RowVec = Indexed<Join<Value, Meta>> (preserves Join pattern)
+ * - All operations through Indexed composition
  * - Maintains TrikeShed's Join<Value, Meta> pattern for columnar data
  * - Enables 50k+ column scale through lazy evaluation
  *
@@ -41,39 +41,39 @@ import borg.trikeshed.isam.meta.IOMemento
 // ============================================================================
 
 /**
- * RowVec - Single row as Series of value-meta pairs
+ * RowVec - Single row as Indexed of value-meta pairs
  */
-typealias RowVec = Series<Join<Any?, () -> ColumnMeta>>
+typealias RowVec = Indexed<Join<Any?, () -> ColumnMeta>>
 
 /**
- * Cursor - Series of RowVec (functional composition)
+ * Cursor - Indexed of RowVec (functional composition)
  */
-typealias Cursor = Series<RowVec>
+typealias Cursor = Indexed<RowVec>
 
 /**
  * CursorWithMeta - Cursor with attached metadata (Join pattern)
  */
-typealias CursorWithMeta = Join<Cursor, Series<ColumnMeta>>
+typealias CursorWithMeta = Join<Cursor, Indexed<ColumnMeta>>
 
 // ============================================================================
-// CURSOR ACCESSORS (Series-Based)
+// CURSOR ACCESSORS (Indexed-Based)
 // ============================================================================
 
 // Cursor dimensions
 val Cursor.rows: Int get() = size
 val Cursor.cols: Int get() = if (size > 0) this[0].size else 0
 
-// Row access (delegates to Series)
+// Row access (delegates to Indexed)
 fun Cursor.row(index: Int): RowVec {
     require(index >= 0 && index < size) { "Row index $index out of bounds [0, $size)" }
     return this[index]
 }
 
-// Column access through Series composition
-fun Cursor.columns(): Series<Series<Any?>> = this.α { row -> row.α { it.a } }
+// Column access through Indexed composition
+fun Cursor.columns(): Indexed<Indexed<Any?>> = this.α { row -> row.α { it.a } }
 
 // ============================================================================
-// TRIKESHED CURSOR OPERATORS (Series-Based)
+// TRIKESHED CURSOR OPERATORS (Indexed-Based)
 // ============================================================================
 
 /**
@@ -203,7 +203,7 @@ fun Cursor.showRandom(n: Int = 5) {
 
 /** simple printout macro*/
 fun CursorWithMeta.show(range: IntRange = 0 until a.size) {
-    val meta: Series<ColumnMeta> = b
+    val meta: Indexed<ColumnMeta> = b
     println("rows:${a.size}" to meta.play.map { it.name })
     showValues(range)
 }
@@ -255,9 +255,9 @@ val CursorWithMeta.isHomomorphic: Boolean
 /**
  * Operator Cursor '/' Class<A>
  *
- * returns Series<Series<A?>>> where the meta is stripped out and the values are cast using
+ * returns Indexed<Indexed<A?>>> where the meta is stripped out and the values are cast using
  * "as?" A return only A values and null for non-A values
  */
-inline operator fun <A : Any, IR : Any?, SrInnr : Series<Join<A, *>>, SrOutr : Series<SrInnr>, RC : KClass<A?>> SrOutr.div(
+inline operator fun <A : Any, IR : Any?, SrInnr : Indexed<Join<A, *>>, SrOutr : Indexed<SrInnr>, RC : KClass<A?>> SrOutr.div(
     c: KClass<out A>,
-): Series<Series<A?>> = this α { it α Join<A, *>::a } α { it α { it } } α { it α { it } }
+): Indexed<Indexed<A?>> = this α { it α Join<A, *>::a } α { it α { it } } α { it α { it } }

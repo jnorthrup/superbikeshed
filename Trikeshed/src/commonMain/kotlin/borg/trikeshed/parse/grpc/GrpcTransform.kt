@@ -80,7 +80,7 @@ object GrpcTransform {
      */
     private fun transformGraphToMessage(
         graph: MessageGraph,
-        fields: WireFieldSeries,
+        fields: WireFieldIndexed,
         bytes: Indexed<Byte>
     ): ProtoMessage {
         val protoFields = mutableListOf<ProtoField>()

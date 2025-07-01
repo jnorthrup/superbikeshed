@@ -21,8 +21,8 @@ internal class RequestFactoryServiceImpl(
     // Request counter for statistical packing
     private var requestCounter = 0L
 
-    override fun process(requestPayload: Series<Byte>): Series<Byte> {
-        // Convert Series<Byte> directly to String
+    override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
+        // Convert Indexed<Byte> directly to String
         val requestJson = requestPayload.play.toList().toByteArray().decodeToString()
         
         return try {
@@ -35,10 +35,10 @@ internal class RequestFactoryServiceImpl(
             val responseJson = buildString {
                 append("""{"success":true,"service":"$serviceClass","method":"$methodName","timestamp":${++requestCounter},"context":"${context.ioModel}"}""")
             }
-            responseJson.encodeToByteArray().toSeries()
+            responseJson.encodeToByteArray().toIndexed()
 
         } catch (e: Exception) {
-            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toSeries()
+            createErrorResponse(500, e.message ?: "Unknown error").encodeToByteArray().toIndexed()
         }
     }
 
@@ -59,17 +59,17 @@ internal class RequestFactoryServiceImpl(
         methodValidators[methodName] = validator
     }
 
-    override suspend fun invokeService(serviceName: String, data: Series<Byte>): Series<Byte> {
+    override suspend fun invokeService(serviceName: String, data: Indexed<Byte>): Indexed<Byte> {
         // Use context lifecycle control for service invocation
         return context.createLifecycleControl(borg.trikeshed.reactor.http.LifecyclePhase.PROCESS).let { control ->
-            var result: Series<Byte> = emptySeries()
+            var result: Indexed<Byte> = emptyIndexed()
             control.execute {
                 // Get service using statistical packing
                 val service = getServiceInstance(serviceName)
                 result = if (service != null) {
                     processServiceCall(service, data)
                 } else {
-                    createErrorResponse(404, "Service not found: $serviceName").encodeToByteArray().toSeries()
+                    createErrorResponse(404, "Service not found: $serviceName").encodeToByteArray().toIndexed()
                 }
             }
             result
@@ -88,7 +88,7 @@ internal class RequestFactoryServiceImpl(
     /**
      * Process service call using concurrent mapreduce when applicable
      */
-    private suspend fun processServiceCall(service: Any, data: Series<Byte>): Series<Byte> {
+    private suspend fun processServiceCall(service: Any, data: Indexed<Byte>): Indexed<Byte> {
         return when (service) {
             is DealService -> service.process(data)
             else -> {
@@ -98,7 +98,7 @@ internal class RequestFactoryServiceImpl(
                     mapper = { byte: Byte -> byte.toInt() },
                     reducer = { a: Int, b: Int -> a + b },
                     identity = 0
-                ).toString().encodeToByteArray().toSeries()
+                ).toString().encodeToByteArray().toIndexed()
             }
         }
     }
@@ -111,9 +111,9 @@ internal class RequestFactoryServiceImpl(
     }
 
     /**
-     * Convert ByteArray to Series<Byte> using j pattern
+     * Convert ByteArray to Indexed<Byte> using j pattern
      */
-    private fun ByteArray.toSeries(): Series<Byte> = size j { index: Int -> this[index] }
+    private fun ByteArray.toIndexed(): Indexed<Byte> = size j { index: Int -> this[index] }
 }
 
 /**
@@ -126,7 +126,7 @@ internal class ReactorDealService(
     override val key: CoroutineContext.Key<*>
         get() = DealService.Key
 
-    override suspend fun process(data: Series<Byte>): Series<Byte> {
+    override suspend fun process(data: Indexed<Byte>): Indexed<Byte> {
         // Use statistical packing for deal processing
         val sweetSpot = context.registerPacker(data.size)
         
@@ -148,7 +148,7 @@ internal class ReactorDealService(
         return """{"dealId":"$dealId","status":"active","ioModel":"${context.ioModel}"}"""
     }
     
-    override fun createDeal(dealData: Series<Byte>): String {
+    override fun createDeal(dealData: Indexed<Byte>): String {
         val dealId = "deal_${Clock.System.now().toEpochMilliseconds()}"
         return """{"created":"$dealId","size":${dealData.size},"ioModel":"${context.ioModel}"}"""
     }

@@ -485,7 +485,7 @@ class PosixFile(
 
 
 
-        fun namedDirAndFile(file_path: String): borg.trikeshed.lib.Series<String> = file_path.lastIndexOf('/').let { tail ->
+        fun namedDirAndFile(file_path: String): borg.trikeshed.lib.Indexed<String> = file_path.lastIndexOf('/').let { tail ->
             if (tail == -1) borg.trikeshed.common.collections.s_["", file_path] else borg.trikeshed.common.collections.s_[
                 file_path.substring(0, tail),
                 file_path.substring(tail.inc())
@@ -496,7 +496,7 @@ class PosixFile(
 
         //todo: better FILE* handling
 
-        /** lean on getline to read a file into a sequence of CharSeries */
+        /** lean on getline to read a file into a sequence of CharIndexed */
         fun readLinesSeq(path: String): Sequence<String> = memScoped {
 
             val file = PosixFile(path)
@@ -509,7 +509,7 @@ class PosixFile(
                 while (true) {
                     read = getline(line.ptr, len.ptr, fp)
                     if (read == -1L) break
-                    yield(/*CharSeries*/line.value!!.toKString().trim())
+                    yield(/*CharIndexed*/line.value!!.toKString().trim())
                 }
                 free(line.value)
                 if (ferror(fp) != 0) {
@@ -520,7 +520,7 @@ class PosixFile(
 
         }
 
-        fun readLines(path: String): borg.trikeshed.lib.Series<String> = memScoped {
+        fun readLines(path: String): borg.trikeshed.lib.Indexed<String> = memScoped {
             val file = PosixFile(path)
             val fp = fdopen(file.fd, "r")
             val line: CPointerVarOf<CPointer<ByteVarOf<Byte>>> = alloc()
@@ -565,7 +565,7 @@ class PosixFile(
         /**
          * writes \n terminated lines to a file
          */
-        fun writeLines(filename: String, lines: borg.trikeshed.lib.Series<String>): Unit = memScoped {
+        fun writeLines(filename: String, lines: borg.trikeshed.lib.Indexed<String>): Unit = memScoped {
             val O_FLAGS = PosixOpenOpts.withFlags(PosixOpenOpts.O_Creat, PosixOpenOpts.O_Trunc, PosixOpenOpts.O_WrOnly)
             val file = PosixFile(filename, O_FLAGS)
             lines.forEach { line ->

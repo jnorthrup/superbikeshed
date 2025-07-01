@@ -544,11 +544,11 @@ class RequestFactoryBrokerTest {
         assertFailsWith<Exception> {
             // Transport is interface only - need implementations
             val mockTransport = object : RequestFactoryBroker.Transport {
-                override suspend fun send(data: Series<Byte>) {
+                override suspend fun send(data: Indexed<Byte>) {
                     // Mock implementation
                 }
                 
-                override suspend fun receive(): Series<Byte> {
+                override suspend fun receive(): Indexed<Byte> {
                     return "{}".encodeToByteArray().toIndexed()
                 }
             }
@@ -595,22 +595,22 @@ class RequestFactoryBrokerTest {
     // === MOCK IMPLEMENTATIONS FOR TDD ===
 
     class MockTransport : RequestFactoryBroker.Transport {
-        private val sentData = mutableListOf<Series<Byte>>()
-        private var responseData: Series<Byte> = "{}".encodeToByteArray().toIndexed()
+        private val sentData = mutableListOf<Indexed<Byte>>()
+        private var responseData: Indexed<Byte> = "{}".encodeToByteArray().toIndexed()
         
-        override suspend fun send(data: Series<Byte>) {
+        override suspend fun send(data: Indexed<Byte>) {
             sentData.add(data)
         }
         
-        override suspend fun receive(): Series<Byte> {
+        override suspend fun receive(): Indexed<Byte> {
             return responseData
         }
         
-        fun setResponse(data: Series<Byte>) {
+        fun setResponse(data: Indexed<Byte>) {
             responseData = data
         }
         
-        fun getSentData(): List<Series<Byte>> = sentData.toList()
+        fun getSentData(): List<Indexed<Byte>> = sentData.toList()
     }
 
     // Mock service invoker interface

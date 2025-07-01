@@ -1,13 +1,14 @@
 package borg.trikeshed.cursor
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.*
+// import borg.trikeshed.lib.Indexed // REMOVED per Indexed Extinction Policy
 import borg.trikeshed.cursor.RowVec
 
 class CursorVolume(
-    private val series: Series<Series<RowVec>>,
+    private val series: Indexed<Indexed<RowVec>>,
     private val cacheLineSize: Int = 64
 ) {
-    fun reconstitute(useCase: String): Series<RowVec> {
+    fun reconstitute(useCase: String): Indexed<RowVec> {
         return when (useCase) {
             "cache_aligned" -> alignToCacheLines()
             "sequential" -> optimizeForSequentialAccess()
@@ -16,7 +17,7 @@ class CursorVolume(
         }
     }
 
-    private fun alignToCacheLines(): Series<RowVec> {
+    private fun alignToCacheLines(): Indexed<RowVec> {
         // Align data to cache lines for optimal memory access
         return series.map { s ->
             s.map { row ->
@@ -31,7 +32,7 @@ class CursorVolume(
         }.flatten()
     }
 
-    private fun optimizeForSequentialAccess(): Series<RowVec> {
+    private fun optimizeForSequentialAccess(): Indexed<RowVec> {
         // Optimize for sequential access patterns
         return series.map { s ->
             s.map { row ->
@@ -41,7 +42,7 @@ class CursorVolume(
         }.flatten()
     }
 
-    private fun optimizeForRandomAccess(): Series<RowVec> {
+    private fun optimizeForRandomAccess(): Indexed<RowVec> {
         // Optimize for random access patterns
         return series.map { s ->
             s.map { row ->

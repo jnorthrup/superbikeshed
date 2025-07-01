@@ -1,6 +1,6 @@
 package borg.trikeshed.net.quic
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join  
 import borg.trikeshed.lib.`play`
 import kotlinx.coroutines.*
@@ -108,7 +108,7 @@ class LiveQuicIntegrationTest {
                 
                 try {
                     // QUIC connection lifecycle simulation
-                    val connectionPhases = Series.of(
+                    val connectionPhases = Indexed.of(
                         "HANDSHAKE_INITIAL_$clientId",
                         "HANDSHAKE_CRYPTO_$clientId",
                         "HANDSHAKE_FINISH_$clientId"

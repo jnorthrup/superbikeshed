@@ -4,6 +4,6 @@ package borg.trikeshed.lib
 /**
  * Empty Indexed singleton - represents an empty indexed sequence
  * 
- * Using the original EmptySeries name to maintain compatibility
+ * Using the original EmptyIndexed name to maintain compatibility
  */
-object EmptySeries : Indexed<Nothing> by (0 j { x: Int -> TODO("EmptySeries Access Violation at index $x") })
+object EmptyIndexed : Indexed<Nothing> by (0 j { x: Int -> TODO("EmptyIndexed Access Violation at index $x") })

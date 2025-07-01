@@ -1,5 +1,6 @@
 package borg.trikeshed.io
 
+import borg.trikeshed.lib.*
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.size
 import java.io.File

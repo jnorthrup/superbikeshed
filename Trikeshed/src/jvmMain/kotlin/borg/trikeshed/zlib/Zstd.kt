@@ -2,34 +2,35 @@ package borg.trikeshed.zlib
 
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
-import com.github.luben.zstd.Zstd as ZstdJni
 
 /**
- * Actual JVM implementation of the Zstd object.
+ * JVM implementation of the Zstd object, using exec for compression/decompression and in-code for framing.
  */
 actual object Zstd {
-
     /**
-     * Compresses the input data using the Zstd algorithm.
-     * @param input The data to compress as an Indexed<Byte>.
-     * @return The compressed data as an Indexed<Byte>.
+     * Compresses the input data using the system zstd tool.
      */
     actual fun compress(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
-        val outputArray = ZstdJni.compress(inputArray)
-        return outputArray.toIndexed()
+        val process = ProcessBuilder("zstd", "-c").start()
+        process.outputStream.write(inputArray)
+        process.outputStream.close()
+        val output = process.inputStream.readBytes()
+        process.waitFor()
+        return output.toIndexed()
     }
 
     /**
-     * Decompresses the input data using the Zstd algorithm.
-     * @param input The compressed data as an Indexed<Byte>.
-     * @return The decompressed data as an Indexed<Byte>.
+     * Decompresses the input data using the system zstd tool.
      */
     actual fun decompress(input: Indexed<Byte>): Indexed<Byte> {
         val inputArray = input.toByteArray()
-        val decompressedSize = ZstdJni.decompressedSize(inputArray).toInt()
-        val outputArray = ZstdJni.decompress(inputArray, decompressedSize)
-        return outputArray.toIndexed()
+        val process = ProcessBuilder("zstd", "-d", "-c").start()
+        process.outputStream.write(inputArray)
+        process.outputStream.close()
+        val output = process.inputStream.readBytes()
+        process.waitFor()
+        return output.toIndexed()
     }
 
     /**

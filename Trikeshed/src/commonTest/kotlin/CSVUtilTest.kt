@@ -53,7 +53,7 @@ class CSVUtilTest {
 
 
             /***
-             * CSV Cursors will be IoCharSeries, type evidence will be inferred on isam creation
+             * CSV Cursors will be IoCharIndexed, type evidence will be inferred on isam creation
              */
 
         }

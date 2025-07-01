@@ -1,10 +1,10 @@
 package borg.trikeshed.reflection
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
 // WASM-JS platform service invoker using registry pattern for host integration
 actual class PlatformServiceInvoker {
-    private val methodRegistry = mutableMapOf<Pair<String, String>, (Any, Series<Any?>) -> Any?>()
+    private val methodRegistry = mutableMapOf<Pair<String, String>, (Any, Indexed<Any?>) -> Any?>()
     private val hostMethodRegistry = mutableMapOf<Pair<String, String>, String>() // Maps to host function names
     
     actual fun findMethod(service: Any, methodName: String): Any? {
@@ -22,11 +22,11 @@ actual class PlatformServiceInvoker {
         return null
     }
 
-    actual fun callMethod(method: Any, service: Any, args: Series<Any?>): Any? {
+    actual fun callMethod(method: Any, service: Any, args: Indexed<Any?>): Any? {
         return when (method) {
             is Function2<*, *, *> -> {
                 try {
-                    (method as (Any, Series<Any?>) -> Any?)(service, args)
+                    (method as (Any, Indexed<Any?>) -> Any?)(service, args)
                 } catch (e: Exception) {
                     throw RuntimeException("Failed to invoke Kotlin method: ${e.message}", e)
                 }
@@ -44,7 +44,7 @@ actual class PlatformServiceInvoker {
     }
     
     // Registry methods
-    fun registerKotlinMethod(serviceClassName: String, methodName: String, implementation: (Any, Series<Any?>) -> Any?) {
+    fun registerKotlinMethod(serviceClassName: String, methodName: String, implementation: (Any, Indexed<Any?>) -> Any?) {
         methodRegistry[serviceClassName to methodName] = implementation
     }
     
@@ -53,7 +53,7 @@ actual class PlatformServiceInvoker {
     }
     
     // Placeholder for host method calls - would be implemented with actual WASM host bindings
-    private fun callHostMethod(hostFunctionName: String, service: Any, args: Series<Any?>): Any? {
+    private fun callHostMethod(hostFunctionName: String, service: Any, args: Indexed<Any?>): Any? {
         // This would use actual WASM imports to call host functions
         // For now, return a placeholder result
         println("WASM: Would call host method $hostFunctionName with ${args.size} arguments")

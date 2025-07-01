@@ -115,3 +115,14 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 ## Code Writing Memory
 
 - if you are writing new code, it must have complete type info around any infix like our j
+
+## Series Type Extinction Policy
+
+- The `Series<T>` typealias and all `Series`-suffixed typealiases are **extinct** and must not be preserved or reintroduced in any code, documentation, or advice.
+- The **only** exception is `MetaSeries`, which is permitted for legacy or architectural reasons.
+- All new and updated code must use `Indexed<T>` and the import alias `import borg.trikeshed.lib.Series as Indexed` where required.
+- Any advice, code, or documentation suggesting direct use of `Series<T>` or any `Series`-suffixed typealias (other than `MetaSeries`) is incorrect and must be corrected or removed.
+
+## Code Import Memory
+
+- in this code to avoid headaches, always import with wildcards until necessary to be specific

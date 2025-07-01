@@ -1,10 +1,10 @@
 package borg.trikeshed.io
 
-import borg.trikeshed.lib.LongSeries
+import borg.trikeshed.lib.LongIndexed
 import borg.trikeshed.lib.Usable
 import kotlin.Function1
 
-interface FileBuffer : LongSeries, Usable {
+interface FileBuffer : LongIndexed, Usable {
     val path: String
     val size: Long
     
@@ -17,7 +17,7 @@ expect class FileBuffer(
     initialOffset: Long,
     blkSize: Long,
     readOnly: Boolean
-) : LongSeries<Byte>, Usable {
+) : LongIndexed<Byte>, Usable {
     val filename: String
     val initialOffset: Long
     val blkSize: Long

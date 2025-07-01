@@ -4,9 +4,9 @@ import kotlin.math.min
 import borg.trikeshed.lib.j // Explicitly import the j infix function from this package
 
 /**
- * TensorSeries - Creates a 1D Tensor (equivalent to Series)
+ * TensorIndexed - Creates a 1D Tensor (equivalent to Indexed)
  */
-inline fun <T> TensorSeries(size: Int, noinline accessor: (Int) -> T): Tensor<T> {
+inline fun <T> TensorIndexed(size: Int, noinline accessor: (Int) -> T): Tensor<T> {
     require(size >= 0) { "Size must be non-negative" }
     return intArrayOf(size) j { coords -> accessor(coords[0]) }
 }
@@ -39,7 +39,7 @@ fun <T> List<List<T>>.toTensor(): Tensor<T> {
  */
 fun <T> List<T>.toTensor1D(): Tensor<T> {
     val size = this.size
-    return TensorSeries(size) { i -> this[i] }
+    return TensorIndexed(size) { i -> this[i] }
 }
 
 /**

@@ -7,20 +7,20 @@ import borg.trikeshed.lib.*
 // JSON Bridge - Merged implementation with full functionality
 
 typealias JsonBounds = Twin<Int>
-typealias JsonCommaIndices = Series<Int>
+typealias JsonCommaIndices = Indexed<Int>
 typealias JsonStructuralIndices = Join<JsonBounds, JsonCommaIndices>
-typealias JsonSegmentContent = Series<Char>
+typealias JsonSegmentContent = Indexed<Char>
 typealias JsonSegment = Join<JsonBounds, JsonSegmentContent>
-typealias JsonParseContext = Join<JsonStructuralIndices, Series<Char>>
+typealias JsonParseContext = Join<JsonStructuralIndices, Indexed<Char>>
 
 // JSON Implementation - Merged from both branches
 object Json {
-    fun parse(jsonString: String): Series<UByte> {
+    fun parse(jsonString: String): Indexed<UByte> {
         // Try LightningJson first, fall back to simple implementation
         return try {
             LightningJson.parseToBitmap(jsonString)
         } catch (e: Exception) {
-            createBitmapAsSeries(jsonString.encodeToByteArray().toUByteArray())
+            createBitmapAsIndexed(jsonString.encodeToByteArray().toUByteArray())
         }
     }
 
@@ -41,7 +41,7 @@ object Json {
         }
     }
 
-    fun extractValues(jsonString: String): Series<String> {
+    fun extractValues(jsonString: String): Indexed<String> {
         return try {
             LightningJson.extractValues(jsonString)
         } catch (e: Exception) {
@@ -49,7 +49,7 @@ object Json {
         }
     }
 
-    fun findStructuralIndices(jsonString: String): Series<Int> {
+    fun findStructuralIndices(jsonString: String): Indexed<Int> {
         return try {
             LightningJson.findStructuralIndices(jsonString)
         } catch (e: Exception) {
@@ -60,7 +60,7 @@ object Json {
                     indices.add(index)
                 }
             }
-            indices.toSeries()
+            indices.toIndexed()
         }
     }
 
@@ -88,7 +88,7 @@ object Json {
         } catch (e: Exception) {
             val indices = findStructuralIndices(jsonString)
             val bounds: JsonBounds = 0 j jsonString.length
-            val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toList().toSeries()
+            val commaIndices: JsonCommaIndices = indices.play.filter { jsonString[it] == ',' }.toList().toIndexed()
             bounds j commaIndices
         }
     }
@@ -105,7 +105,7 @@ object Json {
 }
 
 // JSON extension functions
-fun String.parseJson(): Series<UByte> = Json.parse(this)
+fun String.parseJson(): Indexed<UByte> = Json.parse(this)
 fun Any?.toJsonString(): String = Json.stringify(this)
 fun String.reifyJson(): Any? = Json.reify(this)
 fun String.indexJson(): JsonStructuralIndices = Json.index(this)
@@ -114,9 +114,9 @@ fun String.indexJson(): JsonStructuralIndices = Json.index(this)
 fun createJsonError(message: String): String = """{{"error":"$message"}}"""
 
 // Helper functions for compatibility
-fun createBitmapAsSeries(data: UByteArray): Series<UByte> = data.size j { data[it] }
+fun createBitmapAsIndexed(data: UByteArray): Indexed<UByte> = data.size j { data[it] }
 
-fun parseJsonToTensor(jsonString: String): Series<String> {
+fun parseJsonToTensor(jsonString: String): Indexed<String> {
     // Simple extraction - returns string values found in JSON
     val values = mutableListOf<String>()
     var inString = false
@@ -137,7 +137,7 @@ fun parseJsonToTensor(jsonString: String): Series<String> {
         }
     }
 
-    return values.toSeries()
+    return values.toIndexed()
 }
 
 // JsPath support

@@ -18,9 +18,6 @@
 ## Proven Architecture Patterns
 
 - Follow the successful `k2script` architectural patterns
-- Use working `LiteLLMClient` instead of broken provider concepts
-- Replace overly-abstract designs with concrete, working implementations
-- Build incrementally on proven foundations
 
 ## Agentic Intelligence Framework
 
@@ -28,9 +25,9 @@ This project implements agentic intelligence capabilities with TrikeShed integra
 
 ## Architecture Patterns
 
-- Use TrikeShed's `Series<T>` and `Join<A,B>` for data structures
+- Use TrikeShed's `Indexed<T>` and `Join<A,B>` for data structures
 - Prefer functional approaches over mutable state
-- Follow the global SuperBikeShed patterns from main CLAUDE.md
+- Follow the global SuperBikeShed patterns from borg.trikeshed.lib.CoreTypes 
 
 ## Key Components
 
@@ -39,9 +36,9 @@ This project implements agentic intelligence capabilities with TrikeShed integra
 - **Telemetry Systems**: Cross-platform event tracking
 - **Resource Management**: Efficient resource allocation
 
-## Development Guidelines
+## Shunned anti-patterns
 
 - All agent state should use TrikeShed data structures
-- Prefer `Series<T>` over `List<T>` for collections
-- Use `Join<A,B>` for key-value associations
-- Follow museum preservation rules - no arbitrary code deletion
+List<T> shunned - Indexed <T> -- only allowed when not escaping, return Indexed<T> anyways
+Series<T> shunned - Indexed <T>
+Pair shunned - Join<A,B>  ctor is `a j b` 

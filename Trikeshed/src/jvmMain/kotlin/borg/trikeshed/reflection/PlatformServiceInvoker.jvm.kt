@@ -1,6 +1,7 @@
-package borg.trikeshed.reflection
+ package borg.trikeshed.reflection
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.*
+// import borg.trikeshed.lib.Indexed // REMOVED per Indexed Extinction Policy
 import kotlin.reflect.KCallable
 import kotlin.reflect.full.members
 
@@ -17,9 +18,9 @@ actual class PlatformServiceInvoker {
         }
     }
 
-    actual fun callMethod(method: Any, service: Any, args: Series<Any?>): Any? {
+    actual fun callMethod(method: Any, service: Any, args: Indexed<Any?>): Any? {
         val kCallable = method as? KCallable<*> 
-            ?: throw IllegalArgumentException("Method must be a KCallable on JVM, got: ${method::class.simpleName}")
+            ?: throw IllegalArgumentException("Method must be a KCallable on JVM, got: \\${method::class.simpleName}")
         
         return try {
             val argsList = args.toList()
@@ -28,8 +29,8 @@ actual class PlatformServiceInvoker {
             // Validate parameter count
             if (kCallable.parameters.size != allArgs.size) {
                 throw IllegalArgumentException(
-                    "Parameter count mismatch: method expects ${kCallable.parameters.size} parameters, " +
-                    "got ${allArgs.size} (including receiver)"
+                    "Parameter count mismatch: method expects \\${kCallable.parameters.size} parameters, " +
+                    "got \\${allArgs.size} (including receiver)"
                 )
             }
             
@@ -37,7 +38,7 @@ actual class PlatformServiceInvoker {
         } catch (e: Exception) {
             when (e) {
                 is IllegalArgumentException -> throw e
-                else -> throw RuntimeException("Failed to invoke method '${kCallable.name}': ${e.message}", e)
+                else -> throw RuntimeException("Failed to invoke method '\\${kCallable.name}': \\${e.message}", e)
             }
         }
     }

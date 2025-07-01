@@ -20,9 +20,9 @@ class SimpleDayJobTest {
     }
     
     @Test
-    fun `Series realm specialization works`() {
-        // Series is MetaSeries<Int, T>
-        val numbers: Series<Int> = 10 j { i -> i * i }
+    fun `Indexed realm specialization works`() {
+        // Indexed is MetaSeries<Int, T>
+        val numbers: Indexed<Int> = 10 j { i -> i * i }
         
         assertEquals(10, numbers.size)
         assertEquals(9, numbers[3]) // 3 * 3 = 9
@@ -39,9 +39,9 @@ class SimpleDayJobTest {
     }
     
     @Test
-    fun `Series transformation with α operator`() {
-        val numbers: Series<Int> = 5 j { i -> i + 1 }
-        val doubled: Series<Int> = numbers α { it * 2 }
+    fun `Indexed transformation with α operator`() {
+        val numbers: Indexed<Int> = 5 j { i -> i + 1 }
+        val doubled: Indexed<Int> = numbers α { it * 2 }
         
         assertEquals(5, doubled.size)
         assertEquals(2, doubled[0])  // (0 + 1) * 2 = 2
@@ -67,8 +67,8 @@ class SimpleDayJobTest {
     }
     
     @Test
-    fun `Shape as Series of Int`() {
-        // Shape is Series<Int>
+    fun `Shape as Indexed of Int`() {
+        // Shape is Indexed<Int>
         val matrixShape: Shape = 3 j { i ->
             when (i) {
                 0 -> 5  // rows
@@ -83,7 +83,7 @@ class SimpleDayJobTest {
         assertEquals(4, matrixShape[1])   // 4 columns
         assertEquals(2, matrixShape[2])   // 2 depth
         
-        // Calculate volume using Series operations
+        // Calculate volume using Indexed operations
         var volume = 1
         for (i in 0 until matrixShape.size) {
             volume *= matrixShape[i]
@@ -116,7 +116,7 @@ class SimpleDayJobTest {
         val startTime = TimeSource.Monotonic.markNow()
         
         // Create a larger series for performance testing
-        val largeData: Series<Int> = 100_000 j { i -> i * 2 }
+        val largeData: Indexed<Int> = 100_000 j { i -> i * 2 }
         
         // Transform the data
         val processed = largeData α { it + 1 }
@@ -136,7 +136,7 @@ class SimpleDayJobTest {
     
     @Test
     fun `Play materialization for standard library integration`() {
-        val series: Series<String> = 5 j { i -> "value-$i" }
+        val series: Indexed<String> = 5 j { i -> "value-$i" }
         
         // Use play to materialize for standard library operations
         val materialized = series.play.map { it.uppercase() }.filter { it.contains("2") }
@@ -148,8 +148,8 @@ class SimpleDayJobTest {
     fun `Complex composition example`() {
         // Demonstrate complex composition using MetaSeries patterns
         
-        // Create a series of shapes (each shape is itself a Series<Int>)
-        val shapes: Series<Shape> = 3 j { i ->
+        // Create a series of shapes (each shape is itself a Indexed<Int>)
+        val shapes: Indexed<Shape> = 3 j { i ->
             val dimensions = i + 2 // 2D, 3D, 4D
             dimensions j { dim -> dim + 1 } // [1,2], [1,2,3], [1,2,3,4]
         }

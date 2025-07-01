@@ -4,7 +4,7 @@ package borg.trikeshed.lib
 /**
  * Mutable Indexed with operators
  * 
- * Adapted from MutableSeries to work with Indexed<T> instead of Indexed<T>
+ * Adapted from MutableIndexed to work with Indexed<T> instead of Indexed<T>
  */
 interface MutableIndexed<T> : Indexed<T> {
     operator fun set(index: Int, item: T)

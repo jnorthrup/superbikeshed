@@ -22,7 +22,7 @@ package borg.trikeshed.lib
  * and M(x) into the body.
  */
 
-// Primary alpha conversion for Indexed (née Series)
+// Primary alpha conversion for Indexed (née Indexed)
 inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = 
     a j { i -> xform(this.b(i)) }
 

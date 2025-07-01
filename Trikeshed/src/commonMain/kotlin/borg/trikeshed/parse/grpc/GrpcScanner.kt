@@ -28,18 +28,18 @@ typealias WireBytes = Indexed<Byte>
 typealias WireFieldTag = Join<WireFieldNumber, WireType>
 typealias WireFieldPosition = Join<WirePosition, WireLength>
 typealias WireField = Join<WireFieldTag, WireFieldPosition>
-typealias WireFieldSeries = Indexed<WireField>
+typealias WireFieldIndexed = Indexed<WireField>
 
 // Value Extraction Types
 typealias WireValueBounds = Join<WirePosition, WirePosition> // start j end
 typealias WireValueType = UByte
 typealias WireValue = Join<WireValueType, WireValueBounds>
-typealias WireValueSeries = Indexed<WireValue>
+typealias WireValueIndexed = Indexed<WireValue>
 
 // Message Structure Types
 typealias WireMessageBounds = Join<WirePosition, WireLength>
-typealias WireMessage = Join<WireFieldSeries, WireMessageBounds>
-typealias WireMessageSeries = Indexed<WireMessage>
+typealias WireMessage = Join<WireFieldIndexed, WireMessageBounds>
+typealias WireMessageIndexed = Indexed<WireMessage>
 
 // Error Handling Types
 @JvmInline
@@ -67,7 +67,7 @@ object GrpcScanner {
     /**
      * Scan wire format bytes into field series using α transforms
      */
-    fun scan(wireBytes: Indexed<Byte>): WireResult<WireFieldSeries> {
+    fun scan(wireBytes: Indexed<Byte>): WireResult<WireFieldIndexed> {
         if (wireBytes.a == 0) return Result.success(emptyIndexed())
         
         return try {
@@ -80,7 +80,7 @@ object GrpcScanner {
     /**
      * Parse wire fields from bytes
      */
-    private fun parseWireFields(bytes: Indexed<Byte>): WireFieldSeries {
+    private fun parseWireFields(bytes: Indexed<Byte>): WireFieldIndexed {
         val fields = mutableListOf<WireField>()
         var pos = 0
         
@@ -147,7 +147,7 @@ object GrpcScanner {
     /**
      * Extract field values using α transforms
      */
-    fun extractValues(fields: WireFieldSeries, bytes: Indexed<Byte>): WireValueSeries = 
+    fun extractValues(fields: WireFieldIndexed, bytes: Indexed<Byte>): WireValueIndexed = 
         fields.α { field ->
             val (fieldTag, fieldPos) = field
             val (fieldNumber, wireType) = fieldTag
@@ -225,7 +225,7 @@ object GrpcScanner {
     /**
      * Parse embedded message
      */
-    fun parseEmbeddedMessage(bytes: Indexed<Byte>, bounds: WireValueBounds): WireResult<WireFieldSeries> {
+    fun parseEmbeddedMessage(bytes: Indexed<Byte>, bounds: WireValueBounds): WireResult<WireFieldIndexed> {
         val (start, end) = bounds
         val length = end - start
         val messageBytes = length j { i: Int -> bytes.b(start + i) }
@@ -235,7 +235,7 @@ object GrpcScanner {
     /**
      * Group fields by field number using α transforms
      */
-    fun groupByFieldNumber(fields: WireFieldSeries): Indexed<Join<WireFieldNumber, WireFieldSeries>> {
+    fun groupByFieldNumber(fields: WireFieldIndexed): Indexed<Join<WireFieldNumber, WireFieldIndexed>> {
         val groups = mutableMapOf<WireFieldNumber, MutableList<WireField>>()
         
         for (i in 0 until fields.a) {
@@ -255,27 +255,27 @@ object GrpcScanner {
     /**
      * Materialize fields to List using play operator
      */
-    fun materializeFields(fields: WireFieldSeries): List<WireField> = fields.play.toList()
+    fun materializeFields(fields: WireFieldIndexed): List<WireField> = fields.play.toList()
     
     /**
      * Filter fields by wire type using α transform
      */
-    fun filterByWireType(fields: WireFieldSeries, targetType: WireType): WireFieldSeries =
+    fun filterByWireType(fields: WireFieldIndexed, targetType: WireType): WireFieldIndexed =
         fields.play.filter { it.a.b == targetType }.toIdx()
 }
 
 /**
  * Extension functions for convenient wire format processing
  */
-fun Indexed<Byte>.scanWire(): WireResult<WireFieldSeries> = GrpcScanner.scan(this)
+fun Indexed<Byte>.scanWire(): WireResult<WireFieldIndexed> = GrpcScanner.scan(this)
 
-fun WireFieldSeries.extractValues(bytes: Indexed<Byte>): WireValueSeries = 
+fun WireFieldIndexed.extractValues(bytes: Indexed<Byte>): WireValueIndexed = 
     GrpcScanner.extractValues(this, bytes)
 
-fun WireFieldSeries.groupByFieldNumber(): Indexed<Join<WireFieldNumber, WireFieldSeries>> =
+fun WireFieldIndexed.groupByFieldNumber(): Indexed<Join<WireFieldNumber, WireFieldIndexed>> =
     GrpcScanner.groupByFieldNumber(this)
 
-fun WireFieldSeries.filterByWireType(wireType: WireType): WireFieldSeries =
+fun WireFieldIndexed.filterByWireType(wireType: WireType): WireFieldIndexed =
     GrpcScanner.filterByWireType(this, wireType)
 
 /**

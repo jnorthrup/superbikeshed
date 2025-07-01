@@ -8,7 +8,7 @@ class RFC7230Test {
     
     @Test
     fun testHttpRequestLineParsing() {
-        val input = "GET /index.html HTTP/1.1\r\n\r\n".toCharSeries()
+        val input = "GET /index.html HTTP/1.1\r\n\r\n".toCharIndexed()
         val message = HttpParser.parseHttpMessage(input)
         
         assertNotNull(message)
@@ -22,7 +22,7 @@ class RFC7230Test {
     
     @Test
     fun testHttpStatusLineParsing() {
-        val input = "HTTP/1.1 200 OK\r\n\r\n".toCharSeries()
+        val input = "HTTP/1.1 200 OK\r\n\r\n".toCharIndexed()
         val message = HttpParser.parseHttpMessage(input)
         
         assertNotNull(message)
@@ -36,7 +36,7 @@ class RFC7230Test {
     
     @Test
     fun testHeaderFieldParsing() {
-        val headerLine = "Content-Type: application/json".toCharSeries()
+        val headerLine = "Content-Type: application/json".toCharIndexed()
         val headerField = HttpParser.parseHeaderField(headerLine)
         
         assertNotNull(headerField)
@@ -46,7 +46,7 @@ class RFC7230Test {
     
     @Test
     fun testHeaderFieldWithWhitespace() {
-        val headerLine = "Authorization:   Bearer token123   ".toCharSeries()
+        val headerLine = "Authorization:   Bearer token123   ".toCharIndexed()
         val headerField = HttpParser.parseHeaderField(headerLine)
         
         assertNotNull(headerField)
@@ -63,7 +63,7 @@ class RFC7230Test {
             Content-Length: 13
             
             {"name":"test"}
-        """.trimIndent().replace("\n", "\r\n").toCharSeries()
+        """.trimIndent().replace("\n", "\r\n").toCharIndexed()
         
         val message = HttpParser.parseHttpMessage(httpMessage)
         assertNotNull(message)
@@ -96,7 +96,7 @@ class RFC7230Test {
             0
             
             
-        """.trimIndent().replace("\n", "\r\n").toCharSeries()
+        """.trimIndent().replace("\n", "\r\n").toCharIndexed()
         
         val chunkedBody = HttpParser.parseChunkedBody(chunkedData)
         assertNotNull(chunkedBody)
@@ -158,7 +158,7 @@ class RFC7230Test {
             }
         }
         
-        val body = "{\"test\":true}".toByteArray().toSeries()
+        val body = "{\"test\":true}".toByteArray().toIndexed()
         
         val message = HttpMessage(
             startLine = requestLine,
@@ -177,7 +177,7 @@ class RFC7230Test {
     
     @Test
     fun testChunkedEncoding() {
-        val originalData = "Hello, World! This is a test message.".toByteArray().toSeries()
+        val originalData = "Hello, World! This is a test message.".toByteArray().toIndexed()
         val encoded = ChunkedTransferEncoder.encodeChunked(originalData)
         val decoded = ChunkedTransferEncoder.decodeChunked(encoded)
         
@@ -195,7 +195,7 @@ class RFC7230Test {
             Content-Length: 25
             
             {"username":"testuser"}
-        """.trimIndent().replace("\n", "\r\n").toCharSeries()
+        """.trimIndent().replace("\n", "\r\n").toCharIndexed()
         
         val message = HttpParser.parseHttpMessage(httpMessage)
         assertNotNull(message)
@@ -213,7 +213,7 @@ class RFC7230Test {
                 status = HttpStatusCode(200),
                 reasonPhrase = HttpReasonPhrase("OK"),
                 headers = 0 j { HttpHeaderName("") j HttpHeaderValue("") },
-                body = "Success".toByteArray().toSeries()
+                body = "Success".toByteArray().toIndexed()
             )
         }
         
@@ -222,14 +222,14 @@ class RFC7230Test {
     
     @Test
     fun testInvalidHttpMessage() {
-        val invalidMessage = "INVALID REQUEST LINE\r\n\r\n".toCharSeries()
+        val invalidMessage = "INVALID REQUEST LINE\r\n\r\n".toCharIndexed()
         val message = HttpParser.parseHttpMessage(invalidMessage)
         assertNull(message)
     }
     
     @Test
     fun testEmptyHeaderValue() {
-        val headerLine = "X-Custom-Header: ".toCharSeries()
+        val headerLine = "X-Custom-Header: ".toCharIndexed()
         val headerField = HttpParser.parseHeaderField(headerLine)
         
         assertNotNull(headerField)
@@ -237,6 +237,6 @@ class RFC7230Test {
         assertEquals("", headerField.b.value)
     }
     
-    private fun String.toCharSeries(): Series<Char> = length j { this[it] }
-    private fun ByteArray.toSeries(): Series<Byte> = size j { this[it] }
+    private fun String.toCharIndexed(): Indexed<Char> = length j { this[it] }
+    private fun ByteArray.toIndexed(): Indexed<Byte> = size j { this[it] }
 }

@@ -3,13 +3,14 @@ package borg.trikeshed.common.collections
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import borg.trikeshed.lib.*
 
 /** a mutable listView of a List which performs a copy to MutableList on first mutation.  not threadsafe or concurrent. */
-import borg.trikeshed.lib.Series
-import borg.trikeshed.lib.emptySeries
+import borg.trikeshed.lib.Indexed as Indexed
+import borg.trikeshed.lib.emptyIndexed
 
-class ListCowView<T>(private var list: Series<T> = emptySeries())
-class ListCowView<T>(private var list: Series<T> = emptySeries())
+class ListCowView<T>(private var list: Indexed<T> = 0 j { error("Empty Indexed Access Violation at index $it") })
+class ListCowView<T>(private var list: Indexed<T> = 0 j { error("Empty Indexed Access Violation at index $it") })
 class ListCowView<T>(private var list: List<T> = emptyList()) : List<T>, AbstractMutableList<T>() {
     //keep our inital list until a mutable operation, then replace with .toMutableList
    private var once: Mutex? = Mutex()

@@ -366,7 +366,7 @@ object Socks5Iterative {
         println("1. Iterative Fragment Parsing")
         
         val handshakeData = byteArrayOf(0x05, 0x02, 0x00, 0x02)
-        val buffer = ByteIndexedBuffer(handshakeData.toSeries())
+        val buffer = ByteIndexedBuffer(handshakeData.toIndexed())
         
         val fragment = parseFragment(buffer)
         println("   Fragment Type: ${fragment.fragmentType}")
@@ -385,15 +385,15 @@ object Socks5Iterative {
         
         // Add handshake fragment
         val handshakeData = byteArrayOf(0x05, 0x02, 0x00, 0x02)
-        val handshakeBuffer = ByteIndexedBuffer(handshakeData.toSeries())
+        val handshakeBuffer = ByteIndexedBuffer(handshakeData.toIndexed())
         fragments.add(parseFragment(handshakeBuffer))
         
         // Add request fragment
         val requestData = byteArrayOf(0x05, 0x01, 0x00, 0x01, 0x7F, 0x00, 0x00, 0x01, 0x00, 0x50)
-        val requestBuffer = ByteIndexedBuffer(requestData.toSeries())
+        val requestBuffer = ByteIndexedBuffer(requestData.toIndexed())
         fragments.add(parseFragment(requestBuffer))
         
-        val protocol = composeProtocol(fragments.toSeries())
+        val protocol = composeProtocol(fragments.toIndexed())
         println("   Total Fragments: ${protocol.fragments.a}")
         println("   Total Scans: ${protocol.totalScans}")
         println("   Final State: ${protocol.finalState}")
@@ -402,7 +402,7 @@ object Socks5Iterative {
     private fun demoStateMachineEvolution() {
         println("3. State Machine Evolution")
         
-        val buffer = ByteIndexedBuffer(byteArrayOf(0x05, 0x02, 0x00, 0x02).toSeries())
+        val buffer = ByteIndexedBuffer(byteArrayOf(0x05, 0x02, 0x00, 0x02).toIndexed())
         var currentState = ProtocolState.INITIAL
         
         val result = processProtocolEvolution(buffer, currentState)

@@ -5,8 +5,8 @@ import kotlin.test.*
 class TensorConstructionTest {
 
     @Test
-    fun testTensorSeries() {
-        val tensor = TensorSeries(3) { it * 2 }
+    fun testTensorIndexed() {
+        val tensor = TensorIndexed(3) { it * 2 }
         assertEquals(3, tensor.shape[0])
         assertEquals(0, tensor(0))
         assertEquals(2, tensor(1))
@@ -94,9 +94,9 @@ class TensorConstructionTest {
     }
 
     @Test
-    fun testTensorSeriesWithNegativeSize() {
+    fun testTensorIndexedWithNegativeSize() {
         assertFailsWith<IllegalArgumentException> {
-            TensorSeries(-1) { it }
+            TensorIndexed(-1) { it }
         }
     }
 
@@ -123,7 +123,7 @@ class TensorConstructionTest {
 
     @Test
     fun testTensorRank() {
-        val series = TensorSeries(3) { it }
+        val series = TensorIndexed(3) { it }
         assertEquals(1, series.rank)
         
         val cursor = TensorCursor(2, 3) { _, _ -> 0 }
@@ -132,7 +132,7 @@ class TensorConstructionTest {
 
     @Test
     fun testTensorTotalSize() {
-        val series = TensorSeries(3) { it }
+        val series = TensorIndexed(3) { it }
         assertEquals(3, series.totalSize)
         
         val cursor = TensorCursor(2, 3) { _, _ -> 0 }
@@ -141,7 +141,7 @@ class TensorConstructionTest {
 
     @Test
     fun testTensorAccessor() {
-        val tensor = TensorSeries(3) { it * 2 }
+        val tensor = TensorIndexed(3) { it * 2 }
         val accessor = tensor.accessor
         assertEquals(0, accessor(intArrayOf(0)))
         assertEquals(2, accessor(intArrayOf(1)))

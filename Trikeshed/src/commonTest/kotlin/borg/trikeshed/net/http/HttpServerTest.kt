@@ -51,7 +51,7 @@ class HttpServerTest {
         val config = HttpServerConfig(port = HttpServerPort(8081))
         val mockReactor = MockReactor()
         val mockHandler: CcekHttpHandler = { _, _ -> 
-            HttpResponse(HttpStatusCode(200), HttpReasonPhrase("OK"), emptySeries())
+            HttpResponse(HttpStatusCode(200), HttpReasonPhrase("OK"), emptyIndexed())
         }
         
         // This test will fail because HttpServer constructor expects real Reactor
@@ -122,7 +122,7 @@ class HttpServerTest {
         val version = HttpVersion("HTTP/1.1")
         
         // Test default keep-alive for HTTP/1.1
-        val emptyHeaders = emptySeries<Join<HttpFieldName, HttpFieldValue>>()
+        val emptyHeaders = emptyIndexed<Join<HttpFieldName, HttpFieldValue>>()
         assertTrue(manager.shouldKeepAlive(emptyHeaders, version))
         
         // Test explicit close
@@ -144,7 +144,7 @@ class HttpServerTest {
         val version = HttpVersion("HTTP/1.0")
         
         // Test default no keep-alive for HTTP/1.0
-        val emptyHeaders = emptySeries<Join<HttpFieldName, HttpFieldValue>>()
+        val emptyHeaders = emptyIndexed<Join<HttpFieldName, HttpFieldValue>>()
         assertFalse(manager.shouldKeepAlive(emptyHeaders, version))
         
         // Test explicit keep-alive
@@ -308,9 +308,9 @@ class HttpServerTest {
     // === TDD FAILING TESTS - STRING TO SERIES CONVERSION ===
 
     @Test
-    fun `String toSeries should convert string to character series`() {
+    fun `String toIndexed should convert string to character series`() {
         val text = "Hello"
-        val series = text.toSeries()
+        val series = text.toIndexed()
         
         assertEquals(5, series.size)
         assertEquals('H', series[0])
@@ -325,7 +325,7 @@ class HttpServerTest {
     private fun createTestRequest(
         method: String = "GET",
         path: String = "/",
-        headers: Series<Join<HttpHeaderName, HttpHeaderValue>> = emptySeries(),
+        headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>> = emptyIndexed(),
         body: ByteArray = byteArrayOf()
     ): HttpRequest {
         return HttpRequest(
@@ -349,14 +349,14 @@ class HttpServerTest {
     }
 
     class MockRequestFactoryService : RequestFactoryService {
-        override fun process(requestPayload: Series<Byte>): Series<Byte> {
+        override fun process(requestPayload: Indexed<Byte>): Indexed<Byte> {
             // Mock implementation - return empty JSON
-            return "{}".encodeToByteArray().toSeries()
+            return "{}".encodeToByteArray().toIndexed()
         }
         
         override fun registerServiceLocator(serviceClass: String, locator: () -> Any) {}
         override fun registerMethodValidator(methodName: String, validator: (Any) -> Boolean) {}
-        override suspend fun invokeService(serviceName: String, data: Series<Byte>): Series<Byte> = emptySeries()
+        override suspend fun invokeService(serviceName: String, data: Indexed<Byte>): Indexed<Byte> = emptyIndexed()
     }
 
     // Mock missing HTTP types for TDD
