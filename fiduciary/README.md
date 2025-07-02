@@ -9,11 +9,13 @@ The Fiduciary System is a dual-ledger, attention-driven document and knowledge p
 ## Core Architecture
 
 ### 1. Dual Ledger System
+
 - **DualLedgerSystem**: Synchronized public and private ledgers with atomic, auditable operations.
 - **FiduciaryCore**: Central orchestration, type-safe transaction processing, and subsystem integration.
 - **LedgerTypes**: Immutable, join-based indexed types for all financial primitives.
 
 ### 2. Modular Components
+
 - **BlackBox Module**: Secure, auditable, zero-knowledge operations.
 - **Coach Module**: AI-driven financial advisory, pattern recognition, and risk assessment.
 - **Private/Public Ledgers**: Encrypted, access-controlled private records and transparent, blockchain-ready public history.
@@ -21,6 +23,7 @@ The Fiduciary System is a dual-ledger, attention-driven document and knowledge p
 - **Attention Mechanisms**: All access and processing is modeled as normalized attention (`Twin<Long>` byte ranges), supporting efficient, partial, and distributed data access.
 
 ### 3. Document & Knowledge Processing Pipeline
+
 - **Ingestion**: Selective, attention-based extraction from ZIP, torrent, and tree sources.
 - **Extraction**: Apache Tika for text, metadata, and structure; Tesseract OCR for images; Whisper.cpp for audio.
 - **Analysis**: Stanford NLP for entity/concept extraction, relationship mapping, and subject matter graph construction.
@@ -89,4 +92,4 @@ All system flows are orchestrated declaratively, using type-safe, join-based map
 
 ---
 
-This README presents a cohesive, up-to-date picture of the Fiduciary System as implemented. All future enhancements are clearly separated. For full technical details, see the referenced markdowns and source files. 
+This README presents a cohesive, up-to-date picture of the Fiduciary System as implemented. All future enhancements are clearly separated. For full technical details, see the referenced markdowns and source files.

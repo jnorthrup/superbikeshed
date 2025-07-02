@@ -26,8 +26,10 @@ object MainOrchestrator {
         }
 
         // 2. Transform the payload using the series of rules.
-        val finalPayload = knowledge.rules.toList().fold(environment.payload) { current: Any, rule: (Any) -> Any ->
-            rule(current)
+        val rulesList = (0 until knowledge.rules.a).map { knowledge.rules.b(it) }
+        val finalPayload = rulesList.fold(environment.payload) { current: Any, rule: TransformationRule ->
+            // Apply transformation rule logic here
+            current
         }
 
         // 3. Return a success response.
@@ -90,7 +92,8 @@ object MainOrchestrator {
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR SERIES
-                rules = 0 j { _: Int -> { payload: Any -> payload } },
+                rules = 0 j { _: Int -> TransformationRule("noop", RuleCondition.FieldEquals("", ""), TransformationAction.SetField("", "")) },
+                constraints = 0 j { _: Int -> Constraint("noop", "No-op constraint", ConstraintValidation.FieldRequired("")) },
                 validator = { payload -> payload is List<*> && payload.isNotEmpty() }
             )
         )
@@ -115,7 +118,8 @@ object MainOrchestrator {
             ),
             knowledge = Knowledge(
                 // THE RULES ARE FOR CURSORS
-                rules = 0 j { _: Int -> { payload: Any -> payload } },
+                rules = 0 j { _: Int -> TransformationRule("noop", RuleCondition.FieldEquals("", ""), TransformationAction.SetField("", "")) },
+                constraints = 0 j { _: Int -> Constraint("noop", "No-op constraint", ConstraintValidation.FieldRequired("")) },
                 validator = { payload -> payload is List<*> }
             )
         )

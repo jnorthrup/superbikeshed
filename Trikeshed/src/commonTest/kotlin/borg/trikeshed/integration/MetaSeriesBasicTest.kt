@@ -3,6 +3,16 @@ package borg.trikeshed.integration
 import borg.trikeshed.lib.*
 import kotlin.test.*
 import kotlin.time.*
+import borg.trikeshed.ccek.CCEKChunkedDecodingChordSheet
+import borg.trikeshed.ccek.ChunkErrorType
+import borg.trikeshed.ccek.ChunkErrorRecoveryStrategy
+import borg.trikeshed.ccek.CCEKProtocolOrchestrator
+import borg.trikeshed.ccek.QuicCompressionContext
+import borg.trikeshed.ccek.CouchDBDocumentType
+import borg.trikeshed.ccek.CouchDBDocumentHandler
+import borg.trikeshed.ccek.IPFSBlockType
+import borg.trikeshed.ccek.IPFSBlockHandler
+import kotlin.test.assertNotNull
 
 /**
  * Basic MetaSeries functionality test that works with minimal dependencies.
@@ -234,5 +244,53 @@ class MetaSeriesBasicTest {
         assertTrue(intRealm is MetaSeries<Int, String>)
         assertTrue(boolRealm is MetaSeries<Boolean, String>)
         assertTrue(shapeRealm is MetaSeries<Shape, String>)
+    }
+}
+
+class ChunkErrorRecoveryChordTest {
+    @Test
+    fun testChunkErrorRecoveryChord() {
+        val sheet = CCEKChunkedDecodingChordSheet()
+        val chord = sheet.javaClass.getDeclaredField("chunkErrorRecoveryChord").apply { isAccessible = true }.get(sheet)
+            as (ChunkErrorType) -> (() -> ChunkErrorRecoveryStrategy)
+        
+        assertEquals(ChunkErrorRecoveryStrategy.RETRY_CHUNK, chord(ChunkErrorType.PARSE_ERROR)())
+        assertEquals(ChunkErrorRecoveryStrategy.SKIP_CHUNK, chord(ChunkErrorType.DECOMPRESSION_ERROR)())
+        assertEquals(ChunkErrorRecoveryStrategy.REPORT_ERROR, chord(ChunkErrorType.VALIDATION_ERROR)())
+        assertEquals(ChunkErrorRecoveryStrategy.ABORT_STREAM, chord(ChunkErrorType.CORRUPTION_ERROR)())
+    }
+}
+
+class ProtocolChordsTest {
+    @Test
+    fun testQuicCompressionChord() {
+        val orchestrator = CCEKProtocolOrchestrator()
+        val chord = orchestrator.javaClass.getDeclaredField("quicCompressionChord").apply { isAccessible = true }.get(orchestrator)
+            as (Long) -> (() -> QuicCompressionContext)
+        assertEquals(QuicCompressionContext.BIDIRECTIONAL, chord(0L)())
+        assertEquals(QuicCompressionContext.UNIDIRECTIONAL, chord(3L)())
+        assertEquals(QuicCompressionContext.DEFAULT, chord(5L)())
+    }
+
+    @Test
+    fun testCouchdbDocumentChord() {
+        val orchestrator = CCEKProtocolOrchestrator()
+        val chord = orchestrator.javaClass.getDeclaredField("couchdbDocumentChord").apply { isAccessible = true }.get(orchestrator)
+            as (CouchDBDocumentType) -> (() -> CouchDBDocumentHandler)
+        assertEquals(CouchDBDocumentHandler.DOCUMENT_HANDLER, chord(CouchDBDocumentType.DOCUMENT)())
+        assertEquals(CouchDBDocumentHandler.DESIGN_HANDLER, chord(CouchDBDocumentType.DESIGN)())
+        assertEquals(CouchDBDocumentHandler.ATTACHMENT_HANDLER, chord(CouchDBDocumentType.ATTACHMENT)())
+        assertEquals(CouchDBDocumentHandler.REVISION_HANDLER, chord(CouchDBDocumentType.REVISION)())
+        assertEquals(CouchDBDocumentHandler.DEFAULT_HANDLER, chord(CouchDBDocumentType.valueOf("UNKNOWN")))
+    }
+
+    @Test
+    fun testIpfsBlockChord() {
+        val orchestrator = CCEKProtocolOrchestrator()
+        val chord = orchestrator.javaClass.getDeclaredField("ipfsBlockChord").apply { isAccessible = true }.get(orchestrator)
+            as (IPFSBlockType) -> (() -> IPFSBlockHandler)
+        assertEquals(IPFSBlockHandler.DAG_PB_HANDLER, chord(IPFSBlockType.DAG_PB)())
+        assertEquals(IPFSBlockHandler.RAW_HANDLER, chord(IPFSBlockType.RAW)())
+        assertEquals(IPFSBlockHandler.DEFAULT_HANDLER, chord(IPFSBlockType.valueOf("UNKNOWN")))
     }
 }

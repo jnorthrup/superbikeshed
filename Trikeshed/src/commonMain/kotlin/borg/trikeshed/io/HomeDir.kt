@@ -1,12 +1,9 @@
 package borg.trikeshed.io
 
-
- val homedir: String by lazy { homedirGet }
 expect val homedirGet: String
+expect fun mktemp(): String
+expect fun rm(path: String): Boolean
+expect fun mkdir(path: String): Boolean
 
 /** emulates shell command*/
- expect fun mktemp():String
-
- expect fun rm (path:String):Boolean
- /* mkdir -p*/
- expect fun mkdir (path:String):Boolean
+ val homedir: String by lazy { homedirGet }

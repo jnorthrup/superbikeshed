@@ -53,3 +53,7 @@ kotlin {
         }
     }
 }
+
+tasks.withType<JavaExec> {
+    mainClass.set(System.getProperty("mainClass", "nexus.Main"))
+}

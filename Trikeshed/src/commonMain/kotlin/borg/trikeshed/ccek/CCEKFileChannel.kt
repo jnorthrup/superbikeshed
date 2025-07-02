@@ -1,7 +1,8 @@
 package borg.trikeshed.ccek
 
 import borg.trikeshed.io.PlatformFileIO
-import borg.trikeshed.io.PlatformFileIOImpl
+
+
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.net.socks.AsyncChannel
@@ -30,7 +31,7 @@ class CCEKFileChannel(
                 val offset = 0 // For simplicity, assume reading from start for now
                 val length = minOf(buffer.size, fileContent.a - offset)
                 if (length > 0) {
-                    fileContent.slice(offset, offset + length).toByteArray().copyInto(buffer, 0, 0, length)
+                                        fileContent.slice(offset, offset + length).toByteArray().copyInto(buffer, 0, 0, length)
                     length
                 } else {
                     -1 // End of file
@@ -65,7 +66,7 @@ class CCEKFileChannel(
                         val offset = op.offset.toInt()
                         val length = minOf(op.buffer.size, fileContent.a - offset)
                         if (length > 0) {
-                            fileContent.slice(offset, offset + length).toByteArray().copyInto(op.buffer, 0, 0, length)
+                                                fileContent.slice(offset, offset + length).toByteArray().copyInto(op.buffer, 0, 0, length)
                             length
                         } else {
                             -1 // End of file

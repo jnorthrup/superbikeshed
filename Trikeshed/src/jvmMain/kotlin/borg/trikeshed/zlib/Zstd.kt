@@ -59,8 +59,8 @@ actual object Zstd {
         // Zstd frame header format: Frame Header (2-14 bytes)
         if (input.a < 2) return 0L
         
-        val frameHeader = input[0].toInt() and 0xFF
-        val frameHeaderDescriptor = input[1].toInt() and 0xFF
+        val frameHeader = input.b(0).toInt() and 0xFF
+        val frameHeaderDescriptor = input.b(1).toInt() and 0xFF
         
         // Check if it's a Zstd frame
         if (frameHeader != 0x28 && frameHeader != 0x2E) return 0L
@@ -77,7 +77,7 @@ actual object Zstd {
         // Read content size (1-8 bytes)
         var shift = 0
         while (offset < input.a && shift < 56) {
-            val byte = input[offset].toInt() and 0xFF
+            val byte = input.b(offset).toInt() and 0xFF
             contentSize = contentSize or ((byte and 0x7F).toLong() shl shift)
             offset++
             shift += 7
@@ -98,8 +98,8 @@ actual object Zstd {
         // This is a simplified implementation that looks for frame boundaries
         if (input.a < 2) return 0L
         
-        val frameHeader = input[0].toInt() and 0xFF
-        val frameHeaderDescriptor = input[1].toInt() and 0xFF
+        val frameHeader = input.b(0).toInt() and 0xFF
+        val frameHeaderDescriptor = input.b(1).toInt() and 0xFF
         
         // Check if it's a Zstd frame
         if (frameHeader != 0x28 && frameHeader != 0x2E) return 0L
@@ -110,7 +110,7 @@ actual object Zstd {
         val hasContentSize = (frameHeaderDescriptor shr 3 and 0x1) == 1
         if (hasContentSize) {
             while (offset < input.a) {
-                val byte = input[offset].toInt() and 0xFF
+                val byte = input.b(offset).toInt() and 0xFF
                 offset++
                 if ((byte and 0x80) == 0) break
             }

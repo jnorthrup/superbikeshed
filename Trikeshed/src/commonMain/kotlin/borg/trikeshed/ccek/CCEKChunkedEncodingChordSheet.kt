@@ -32,45 +32,45 @@ class CCEKChunkedEncodingChordSheet {
     
     // Chunk encoding strategy chord - maps content types to encoding strategies
     private val chunkEncodingChord: MetaSeries<CouchDBContentType, () -> ChunkEncodingStrategy> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { ChunkEncodingStrategy.JSON_COMPRESSED }
-                CouchDBContentType.ATTACHMENT -> { ChunkEncodingStrategy.BINARY_COMPRESSED }
-                CouchDBContentType.DESIGN -> { ChunkEncodingStrategy.JSON_COMPRESSED }
-                CouchDBContentType.REVISION -> { ChunkEncodingStrategy.JSON_COMPRESSED }
-                CouchDBContentType.REPLICATION_LOG -> { ChunkEncodingStrategy.JSON_COMPRESSED }
-                CouchDBContentType.CHANGES_FEED -> { ChunkEncodingStrategy.JSON_STREAMING }
-                else -> { ChunkEncodingStrategy.JSON_COMPRESSED }
+                CouchDBContentType.DOCUMENT -> ChunkEncodingStrategy.JSON_COMPRESSED
+                CouchDBContentType.ATTACHMENT -> ChunkEncodingStrategy.BINARY_COMPRESSED
+                CouchDBContentType.DESIGN -> ChunkEncodingStrategy.JSON_COMPRESSED
+                CouchDBContentType.REVISION -> ChunkEncodingStrategy.JSON_COMPRESSED
+                CouchDBContentType.REPLICATION_LOG -> ChunkEncodingStrategy.JSON_COMPRESSED
+                CouchDBContentType.CHANGES_FEED -> ChunkEncodingStrategy.JSON_STREAMING
+                else -> ChunkEncodingStrategy.JSON_COMPRESSED
             }
-        }
+        } }
     
     // Chunk compression chord - maps content types to compression strategies
     private val chunkCompressionChord: MetaSeries<CouchDBContentType, () -> ChunkCompressionStrategy> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { ChunkCompressionStrategy.ZSTD }
-                CouchDBContentType.ATTACHMENT -> { ChunkCompressionStrategy.LZ4 }
-                CouchDBContentType.DESIGN -> { ChunkCompressionStrategy.ZSTD }
-                CouchDBContentType.REVISION -> { ChunkCompressionStrategy.ZSTD }
-                CouchDBContentType.REPLICATION_LOG -> { ChunkCompressionStrategy.ZSTD }
-                CouchDBContentType.CHANGES_FEED -> { ChunkCompressionStrategy.NONE }
-                else -> { ChunkCompressionStrategy.ZSTD }
+                CouchDBContentType.DOCUMENT -> ChunkCompressionStrategy.ZSTD
+                CouchDBContentType.ATTACHMENT -> ChunkCompressionStrategy.LZ4
+                CouchDBContentType.DESIGN -> ChunkCompressionStrategy.ZSTD
+                CouchDBContentType.REVISION -> ChunkCompressionStrategy.ZSTD
+                CouchDBContentType.REPLICATION_LOG -> ChunkCompressionStrategy.ZSTD
+                CouchDBContentType.CHANGES_FEED -> ChunkCompressionStrategy.NONE
+                else -> ChunkCompressionStrategy.ZSTD
             }
-        }
+        } }
     
     // Chunk boundary selection chord - maps content types to boundary strategies
     private val chunkBoundaryChord: MetaSeries<CouchDBContentType, () -> ChunkBoundaryStrategy> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { ChunkBoundaryStrategy.JSON_OBJECT }
-                CouchDBContentType.ATTACHMENT -> { ChunkBoundaryStrategy.FIXED_SIZE }
-                CouchDBContentType.DESIGN -> { ChunkBoundaryStrategy.JSON_OBJECT }
-                CouchDBContentType.REVISION -> { ChunkBoundaryStrategy.JSON_OBJECT }
-                CouchDBContentType.REPLICATION_LOG -> { ChunkBoundaryStrategy.JSON_OBJECT }
-                CouchDBContentType.CHANGES_FEED -> { ChunkBoundaryStrategy.JSON_LINE }
-                else -> { ChunkBoundaryStrategy.JSON_OBJECT }
+                CouchDBContentType.DOCUMENT -> ChunkBoundaryStrategy.JSON_OBJECT
+                CouchDBContentType.ATTACHMENT -> ChunkBoundaryStrategy.FIXED_SIZE
+                CouchDBContentType.DESIGN -> ChunkBoundaryStrategy.JSON_OBJECT
+                CouchDBContentType.REVISION -> ChunkBoundaryStrategy.JSON_OBJECT
+                CouchDBContentType.REPLICATION_LOG -> ChunkBoundaryStrategy.JSON_OBJECT
+                CouchDBContentType.CHANGES_FEED -> ChunkBoundaryStrategy.JSON_LINE
+                else -> ChunkBoundaryStrategy.JSON_OBJECT
             }
-        }
+        } }
     
     // Chunk header generation chord - maps encoding strategies to header generators
     private val chunkHeaderChord: MetaSeries<ChunkEncodingStrategy, () -> ChunkHeaderGenerator> =

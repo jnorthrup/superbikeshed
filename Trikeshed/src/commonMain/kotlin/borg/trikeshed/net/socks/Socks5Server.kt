@@ -33,6 +33,8 @@ data class Socks5ChannelElement(
  * Async channel interface with io_uring-first design
  */
 interface AsyncChannel {
+    val fd: Int
+
     // Batch operations for io_uring efficiency
     suspend fun readBatch(buffers: Indexed<ByteArray>): Indexed<Int>
     suspend fun writeBatch(buffers: Indexed<ByteArray>): Indexed<Int>
@@ -51,6 +53,10 @@ interface AsyncChannel {
     
     // Close channel
     fun close()
+
+    // For io_uring operations
+    suspend fun submitAndWait(sqeOps: Indexed<SqeOp>): Indexed<Int>
+    val completions: Channel<Any>
 }
 
 /**

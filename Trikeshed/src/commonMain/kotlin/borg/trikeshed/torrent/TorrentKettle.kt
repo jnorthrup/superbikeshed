@@ -214,16 +214,16 @@ class StreamingKettle(
     
     private suspend fun requestPieces(pieces: IntIndexed) {
         // Distribute piece requests among peers
-        val availablePeers = peerBoxes.values.filter { 
+        val availablePeers: Indexed<PeerBox> = peerBoxes.values.filter { 
             it.outputChannel.trySend(PeerMessage.Interested).isSuccess 
-        }
+        }.toIdx()
         
-        if (availablePeers.isEmpty()) return
+        if (availablePeers.a == 0) return
         
         for (i in 0 until pieces.a) {
-            val piece = pieces[i]
+            val piece: Int = pieces[i]
             if (!pieceBuffer.containsKey(piece)) {
-                val peer = availablePeers[i % availablePeers.size]
+                val peer: PeerBox = availablePeers[i % availablePeers.a]
                 peer.outputChannel.send(
                     PeerMessage.Request(piece, 0, pieceSize)
                 )
@@ -293,7 +293,7 @@ class RandomAccessKettle(
     
     private suspend fun requestPieceWithUring(index: PieceIndex): Piece {
         // TODO: Implement io_uring-based piece fetching
-        return Piece(index, ByteArray(pieceSize) j { it.toByte() }, ByteArray(20), true)
+        return Piece(index, ByteArray(pieceSize) { it.toByte() }, ByteArray(20), true)
     }
     
     private fun updateCache(index: PieceIndex, piece: Piece) {
@@ -307,7 +307,7 @@ class RandomAccessKettle(
         )
         
         if (pieceCache.size > strategy.cacheSize) {
-            val lru = accessHistory.first()
+            val lru: PieceIndex = accessHistory.first()
             pieceCache.remove(lru)
             accessHistory.removeAt(0)
         }

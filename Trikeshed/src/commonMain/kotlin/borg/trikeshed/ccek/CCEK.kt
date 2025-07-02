@@ -37,7 +37,8 @@ data class Environment(
  * Control - represents execution control
  */
 data class Control(
-    val executionId: String
+    val executionId: String,
+    val phase: ExecutionPhase = ExecutionPhase.INIT
 )
 
 /**
@@ -51,7 +52,8 @@ data class Context(
  * Knowledge - represents the domain knowledge and data schema
  */
 data class Knowledge(
-    val rules: Indexed<(Any) -> Any>,
+    val rules: Indexed<TransformationRule>,
+    val constraints: Indexed<Constraint>,
     val validator: (Any) -> Boolean
 )
 
@@ -282,7 +284,11 @@ class CCEKEngine(
             for (step in pipeline.steps) {
                 currentControl = currentControl.copy(phase = step.phase)
                 
-                currentData = executeStep(currentData, step)
+                currentData = when (step) {
+                    is ValidationStep -> executeValidation(currentData, step)
+                    is TransformationStep -> executeTransformation(currentData, step)
+                    is SerializationStep -> executeSerialization(currentData, step)
+                }
             }
             
             currentControl = currentControl.copy(phase = ExecutionPhase.COMPLETE)
@@ -296,7 +302,8 @@ class CCEKEngine(
     
     private suspend fun executeValidation(data: Any, step: ValidationStep): Any {
         // Apply validation rules from knowledge
-        knowledge.constraints.forEach { constraint ->
+        for (i in 0 until knowledge.constraints.a) {
+            val constraint = knowledge.constraints.b(i)
             validateConstraint(data, constraint)
         }
         return data
@@ -304,7 +311,8 @@ class CCEKEngine(
     
     private suspend fun executeTransformation(data: Any, step: TransformationStep): Any {
         // Apply transformation rules from knowledge
-        val sortedRules = knowledge.rules.sortedByDescending { it.priority }
+        val rulesList = (0 until knowledge.rules.a).map { knowledge.rules.b(it) }
+        val sortedRules = rulesList.sortedByDescending { it.priority }
         
         var transformedData = data
         for (rule in sortedRules) {
@@ -321,7 +329,7 @@ class CCEKEngine(
         return when (step.format) {
             SerializationFormat.JSON -> serializeToJson(data)
             SerializationFormat.PROTOBUF -> serializeToProtobuf(data)
-            SerializationFormat.CUSTOM -> serializeCustom(data, step.customFormat)
+            SerializationFormat.CUSTOM -> serializeCustom(data, step.customFormat ?: "")
         }
     }
     
@@ -393,12 +401,12 @@ class CCEKEngine(
         }
     }
     
-    private fun serializeToJson(data: Any): String {
+    private fun serializeToJson(data: Any): Any {
         // JSON serialization implementation
         return "{}" // Placeholder
     }
     
-    private fun serializeToProtobuf(data: Any): ByteArray {
+    private fun serializeToProtobuf(data: Any): Any {
         // Protobuf serialization implementation
         return ByteArray(0) // Placeholder
     }
@@ -499,7 +507,7 @@ fun ccekPipeline(name: String, block: CCEKDSL.() -> Unit): TransformationPipelin
 suspend fun executeCCEK(
     data: Any,
     pipeline: TransformationPipeline,
-    control: Control = Control(),
+    control: Control = Control(executionId = "default"),
     context: Context,
     environment: Environment,
     knowledge: Knowledge
@@ -514,8 +522,8 @@ suspend fun executeCCEK(
 private val stepExecutionChord: MetaSeries<PipelineStep, suspend (Any) -> Any> =
     ValidationStep() j { step ->
         when (step) {
-            is ValidationStep -> { data -> executeValidation(data, step) }
-            is TransformationStep -> { data -> executeTransformation(data, step) }
+            is ValidationStep -> { data -> data } // Validation handled in engine
+            is TransformationStep -> { data -> data } // Transformation handled in engine
             is SerializationStep -> { data -> executeSerialization(data, step) }
             else -> { data -> data } // Default chord
         }
@@ -525,9 +533,9 @@ private val stepExecutionChord: MetaSeries<PipelineStep, suspend (Any) -> Any> =
 private val serializationFormatChord: MetaSeries<SerializationFormat, (Any) -> Any> =
     SerializationFormat.JSON j { format ->
         when (format) {
-            SerializationFormat.JSON -> { data -> serializeToJson(data) }
-            SerializationFormat.PROTOBUF -> { data -> serializeToProtobuf(data) }
-            SerializationFormat.CUSTOM -> { data -> serializeCustom(data, "") }
+            SerializationFormat.JSON -> { data -> "{}" } // JSON serialization placeholder
+            SerializationFormat.PROTOBUF -> { data -> ByteArray(0) } // Protobuf placeholder
+            SerializationFormat.CUSTOM -> { data -> data } // Custom serialization placeholder
         }
     }
 

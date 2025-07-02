@@ -75,7 +75,7 @@ actual object Lz4 {
 
         var currentOffset = 4 // After magic number
 
-        val frameDescriptor = input[currentOffset++].toInt() and 0xFF
+        val frameDescriptor = input.b(currentOffset++).toInt() and 0xFF
 
         // FLG byte: Version (2 bits), Block Independence (1 bit), Block Checksum (1 bit), Content Size (1 bit), Content Checksum (1 bit), Dictionary (1 bit)
         val hasContentSize = (frameDescriptor shr 3 and 0x1) == 1
@@ -87,7 +87,7 @@ actual object Lz4 {
         if (hasContentSize) {
             val contentSizeBytes = ByteArray(8)
             for (i in 0 until 8) {
-                contentSizeBytes[i] = input[currentOffset++]
+                contentSizeBytes[i] = input.b(currentOffset++)
             }
             uncompressedSize = java.nio.ByteBuffer.wrap(contentSizeBytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).long
         }
@@ -131,7 +131,7 @@ actual object Lz4 {
         var bytesRead = 0
         var currentOffset = offset
         while (true) {
-            val byte = input[currentOffset].toInt() and 0xFF
+            val byte = input.b(currentOffset).toInt() and 0xFF
             value = value or ((byte and 0x7F).toLong() shl (bytesRead * 7))
             bytesRead++
             currentOffset++
@@ -147,9 +147,9 @@ actual object Lz4 {
      * Bottles byterange access for integer reading.
      */
     private fun getInt(input: Indexed<Byte>, offset: Int): Int {
-        return (input[offset].toInt() and 0xFF) or
-               ((input[offset + 1].toInt() and 0xFF) shl 8) or
-               ((input[offset + 2].toInt() and 0xFF) shl 16) or
-               ((input[offset + 3].toInt() and 0xFF) shl 24)
+        return (input.b(offset).toInt() and 0xFF) or
+               ((input.b(offset + 1).toInt() and 0xFF) shl 8) or
+               ((input.b(offset + 2).toInt() and 0xFF) shl 16) or
+               ((input.b(offset + 3).toInt() and 0xFF) shl 24)
     }
 }

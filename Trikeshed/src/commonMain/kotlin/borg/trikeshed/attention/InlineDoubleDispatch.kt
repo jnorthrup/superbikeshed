@@ -21,7 +21,7 @@ typealias NormalizedAttention = Twin<Long>  // start j end
 // Inline sources for second dispatch
 @JvmInline value class HTTP(val url: String)
 @JvmInline value class Torrent(val hash: Long)
-value class Local(val fd: Int)
+@JvmInline value class Local(val fd: Int)
 
 // Double dispatch through inline methods
 inline fun Sequential.fetch(source: HTTP): ByteArray = 

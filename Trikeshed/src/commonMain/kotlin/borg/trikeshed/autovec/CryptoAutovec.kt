@@ -714,7 +714,7 @@ inline fun crypto_aes_key_expand(
     
     // Copy original key
     for (i in 0 until keyBytes) {
-        expandedKeyBuffer[i] = key[i]
+        expandedKeyBuffer[i] = key.b(i)
     }
     
     // Expand key (simplified)

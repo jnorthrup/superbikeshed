@@ -515,4 +515,10 @@ object SocksUtils {
         // Simplified IPv6 serialization - in real implementation would handle full IPv6 format
         repeat(16) { buffer.add(0) }
     }
-} 
+}
+
+expect class JvmSocksFactory : SocksFactory
+expect class JvmSocksServer : SocksServer
+expect class JvmSocksClient : SocksClient
+expect class JvmSocksConnection : SocksConnection
+expect class JvmSocksFactoryFactory : SocksFactoryFactory 

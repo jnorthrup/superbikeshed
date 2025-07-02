@@ -11,10 +11,11 @@ object ProviderRegistry {
     
     /**
      * Get provider by name
-     * Supported: "nemotron", "nvidia", "openai", "anthropic", "ollama", "mock"
+     * Supported: "dgm", "nemotron", "nvidia", "openai", "anthropic", "ollama", "mock"
      */
     fun getProvider(name: String, apiKey: String? = null): LLMProvider {
         return when (name.lowercase()) {
+            "dgm", "darwin" -> DGMProvider()
             "nemotron", "nvidia" -> NemotronProvider(apiKey ?: System.getenv("NVIDIA_API_KEY") ?: System.getenv("HF_TOKEN") ?: "")
             "openai" -> OpenAIProvider(apiKey ?: System.getenv("OPENAI_API_KEY") ?: "")
             "anthropic", "claude" -> AnthropicProvider(apiKey ?: System.getenv("ANTHROPIC_API_KEY") ?: "")
@@ -29,10 +30,17 @@ object ProviderRegistry {
     
     /**
      * Auto-detect first available provider
-     * Priority: Nemotron (free) > Ollama (local) > OpenAI > Anthropic > Mock
+     * Priority: DGM (local) > Nemotron (free) > Ollama (local) > OpenAI > Anthropic > Mock
      */
     fun autoDetectProvider(): LLMProvider {
-        // Check Nemotron/NVIDIA first (free tier available)
+        // Check DGM first (Darwin Gödel Machine - advanced local AI)
+        val dgm = DGMProvider()
+        if (dgm.isAvailable()) {
+            println("[Nexus] Using Darwin Gödel Machine (DGM) provider")
+            return dgm
+        }
+        
+        // Check Nemotron/NVIDIA (free tier available)
         val nemotronKeys = listOf("NVIDIA_API_KEY", "HF_TOKEN")
         for (keyName in nemotronKeys) {
             System.getenv(keyName)?.let { key ->
