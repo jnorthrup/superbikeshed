@@ -19,8 +19,8 @@ class CCEKFileChannel(
 
     override val fd: Int = filePath.hashCode() // Simple hash for file descriptor
     override val isOpen: Boolean = true // Files are conceptually always open for read/write operations
-    override suspend fun localAddress(): String = filePath
-    override suspend fun remoteAddress(): String = "local"
+    override val localAddress: String = filePath
+    override val remoteAddress: String = "local"
 
     override suspend fun readBatch(buffers: Indexed<ByteArray>): Indexed<Int> {
         val results = mutableListOf<Int>()
@@ -30,7 +30,7 @@ class CCEKFileChannel(
                 val offset = 0 // For simplicity, assume reading from start for now
                 val length = minOf(buffer.size, fileContent.a - offset)
                 if (length > 0) {
-                                        fileContent.slice(offset, offset + length).toByteArray().copyInto(buffer, 0, 0, length)
+                    fileContent.slice(offset until offset + length).toByteArray().copyInto(buffer, 0, 0, length)
                     length
                 } else {
                     -1 // End of file
@@ -45,13 +45,17 @@ class CCEKFileChannel(
         val results = mutableListOf<Int>()
         for (i in 0 until buffers.a) {
             val buffer = buffers.b(i)
-            val success = fileIO.writeFile(filePath, buffer.size j buffer::get)
-            results.add(if (success) buffer.size else -1)
+            try {
+                fileIO.writeFile(filePath, buffer.size j buffer::get)
+                results.add(buffer.size)
+            } catch (e: Exception) {
+                results.add(-1)
+            }
         }
         return results.size j results::get
     }
 
-    override suspend fun close() {
+    override fun close() {
         // No explicit close needed for fileIO, as it's stateless
         // In a real scenario, if file handles were managed, they would be closed here.
     }
@@ -65,7 +69,7 @@ class CCEKFileChannel(
                         val offset = op.offset.toInt()
                         val length = minOf(op.buffer.size, fileContent.a - offset)
                         if (length > 0) {
-                                                fileContent.slice(offset, offset + length).toByteArray().copyInto(op.buffer, 0, 0, length)
+                            fileContent.slice(offset until offset + length).toByteArray().copyInto(op.buffer, 0, 0, length)
                             length
                         } else {
                             -1 // End of file
