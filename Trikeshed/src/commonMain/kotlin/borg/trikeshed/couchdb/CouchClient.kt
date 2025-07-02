@@ -12,11 +12,63 @@ import kotlin.uuid.ExperimentalUuidApi
 /**
  * URing-optimized CouchDB client with context-aware operations
  */
-class CouchClient(
-    private val baseUrl: String,
-    private val httpClient: HttpClient,
-    private val bufferPool: URingBufferPool = URingBufferPool()
-) {
+interface CouchClient {
+    enum class Transport { HTTP, QUIC }
+    
+    suspend fun getServerInfo(): JsonObject
+    suspend fun listDatabases(): Indexed<String>
+    suspend fun createDatabase(name: String): CouchResponse
+    suspend fun deleteDatabase(name: String): CouchResponse
+    suspend fun getDatabaseInfo(name: String): CouchDatabaseInfo
+    
+    suspend fun getDocument(dbName: String, docId: String): CouchDocument?
+    suspend fun putDocument(dbName: String, doc: CouchDocument): CouchResponse
+    suspend fun deleteDocument(dbName: String, docId: String, rev: String): CouchResponse
+    suspend fun bulkDocs(dbName: String, request: BulkDocsRequest): Indexed<CouchResponse>
+    
+    suspend fun queryView(
+        dbName: String,
+        designDoc: String,
+        viewName: String,
+        params: ViewQueryParams = ViewQueryParams()
+    ): ViewResponse<JsonElement, JsonElement>
+    
+    suspend fun getChanges(
+        dbName: String,
+        params: ChangesFeedParams = ChangesFeedParams()
+    ): ChangesResponse
+    
+    suspend fun replicate(request: ReplicationRequest): ReplicationResponse
+    suspend fun putDesignDocument(dbName: String, doc: DesignDocument): CouchResponse
+}
+    enum class Transport { HTTP, QUIC }
+    
+    suspend fun getServerInfo(): JsonObject
+    suspend fun listDatabases(): Indexed<String>
+    suspend fun createDatabase(name: String): CouchResponse
+    suspend fun deleteDatabase(name: String): CouchResponse
+    suspend fun getDatabaseInfo(name: String): CouchDatabaseInfo
+    
+    suspend fun getDocument(dbName: String, docId: String): CouchDocument?
+    suspend fun putDocument(dbName: String, doc: CouchDocument): CouchResponse
+    suspend fun deleteDocument(dbName: String, docId: String, rev: String): CouchResponse
+    suspend fun bulkDocs(dbName: String, request: BulkDocsRequest): Indexed<CouchResponse>
+    
+    suspend fun queryView(
+        dbName: String,
+        designDoc: String,
+        viewName: String,
+        params: ViewQueryParams = ViewQueryParams()
+    ): ViewResponse<JsonElement, JsonElement>
+    
+    suspend fun getChanges(
+        dbName: String,
+        params: ChangesFeedParams = ChangesFeedParams()
+    ): ChangesResponse
+    
+    suspend fun replicate(request: ReplicationRequest): ReplicationResponse
+    suspend fun putDesignDocument(dbName: String, doc: DesignDocument): CouchResponse
+}
     private val json = Json { ignoreUnknownKeys = true }
     
     /**
@@ -340,27 +392,7 @@ class CouchClient(
     }
 }
 
-/**
- * URing-optimized buffer pool for CouchDB operations
- */
-class URingBufferPool {
-    private val buffers = mutableListOf<ByteArray>()
-    private val bufferSize = 8192
-    
-    fun acquire(): ByteArray {
-        return buffers.removeFirstOrNull() ?: ByteArray(bufferSize)
-    }
-    
-    fun release(buffer: ByteArray) {
-        if (buffer.size == bufferSize) {
-            buffers.add(buffer)
-        }
-    }
-    
-    fun close() {
-        buffers.clear()
-    }
-}
+
 
 // Data classes for CouchDB operations
 @Serializable
@@ -448,20 +480,7 @@ data class CouchDocumentData(
     val data: Map<String, String> = emptyMap()
 )
 
-@Serializable
-data class CouchDatabaseInfo(
-    val dbName: String,
-    val docCount: Long,
-    val updateSeq: String,
-    val docDelCount: Long,
-    val purgeSeq: Long,
-    val compactRunning: Boolean,
-    val diskSize: Long,
-    val dataSize: Long,
-    val instanceStartTime: Long,
-    val diskFormatVersion: Int,
-    val committedUpdateSeq: Long
-)
+
 
 @Serializable
 data class CouchPutResult(
@@ -482,111 +501,6 @@ data class CouchSecurity(
     )
 }
 
-// HTTP Client implementation with URing optimization
-class HttpClient(
-    private val baseUrl: String,
-    private val timeout: Long,
-    private val bufferPool: URingBufferPool
-) {
-    suspend fun get(path: String): HttpResponse {
-        val request = HttpRequest(
-            method = HttpMethod.GET,
-            path = HttpRequestPath(path),
-            headers = mapOf(
-                "Host" to extractHost(baseUrl),
-                "Connection" to "keep-alive"
-            ).toHttpHeaders()
-        )
-        return request.send()
-    }
-    
-    suspend fun put(path: String, headers: Map<String, String>, body: ByteArray?): HttpResponse {
-        val requestHeaders = mutableMapOf<String, String>()
-        requestHeaders["Host"] = extractHost(baseUrl)
-        requestHeaders["Connection"] = "keep-alive"
-        requestHeaders.putAll(headers)
-        
-        val request = HttpRequest(
-            method = HttpMethod.PUT,
-            path = HttpRequestPath(path),
-            headers = requestHeaders.toHttpHeaders(),
-            body = body ?: byteArrayOf()
-        )
-        return request.send()
-    }
-    
-    suspend fun post(path: String, headers: Map<String, String>, body: ByteArray?): HttpResponse {
-        val requestHeaders = mutableMapOf<String, String>()
-        requestHeaders["Host"] = extractHost(baseUrl)
-        requestHeaders["Connection"] = "keep-alive"
-        requestHeaders.putAll(headers)
-        
-        val request = HttpRequest(
-            method = HttpMethod.POST,
-            path = HttpRequestPath(path),
-            headers = requestHeaders.toHttpHeaders(),
-            body = body ?: byteArrayOf()
-        )
-        return request.send()
-    }
-    
-    suspend fun delete(path: String): HttpResponse {
-        val request = HttpRequest(
-            method = HttpMethod.DELETE,
-            path = HttpRequestPath(path),
-            headers = mapOf(
-                "Host" to extractHost(baseUrl),
-                "Connection" to "keep-alive"
-            ).toHttpHeaders()
-        )
-        return request.send()
-    }
-    
-    fun close() {
-        // Close connection
-    }
-    
-    private fun extractHost(url: String): String {
-        return url.removePrefix("http://").removePrefix("https://").split("/")[0]
-    }
-}
 
-// Extension functions for JSON serialization
-fun CouchDocument.toJson(): ByteArray {
-    val jsonObject = buildJsonObject {
-        if (_id.isNotEmpty()) put("_id", JsonPrimitive(_id))
-        if (_rev.isNotEmpty()) put("_rev", JsonPrimitive(_rev))
-        if (_deleted) put("_deleted", JsonPrimitive(true))
-        data.forEach { (key, value) -> put(key, JsonPrimitive(value.toString())) }
-    }
-    return Json.encodeToString(JsonElement.serializer(), jsonObject).encodeToByteArray()
-}
 
-fun CouchDocumentData.toJson(): ByteArray {
-    val jsonObject = buildJsonObject {
-        put("_id", JsonPrimitive(id))
-        put("_rev", JsonPrimitive(rev))
-        data.forEach { (key, value) -> put(key, JsonPrimitive(value)) }
-    }
-    return Json.encodeToString(JsonElement.serializer(), jsonObject).encodeToByteArray()
-}
-
-fun CouchBulkRequest.toJson(): ByteArray {
-    return Json.encodeToString(CouchBulkRequest.serializer(), this).encodeToByteArray()
-}
-
-fun CouchReplicationRequest.toJson(): ByteArray {
-    return Json.encodeToString(CouchReplicationRequest.serializer(), this).encodeToByteArray()
-}
-
-fun CouchSecurity.toJson(): ByteArray {
-    return Json.encodeToString(CouchSecurity.serializer(), this).encodeToByteArray()
-}
-
-@Serializable
-data class CouchDocument(
-    val _id: String = "",
-    val _rev: String = "",
-    val _deleted: Boolean = false,
-    val data: Map<String, String> = emptyMap()
-) 
+ 

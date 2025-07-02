@@ -28,7 +28,29 @@ dependencyResolutionManagement {
 
 rootProject.name = "superbikeshed"
 
-include(":Trikeshed")
+// Core library - no async dependencies
+include(":trikeshed-lib")
+
+// Common utilities - no async dependencies  
+include(":trikeshed-common")
+
+// IO abstractions - minimal async, mostly interfaces
+include(":trikeshed-io")
+
+// Async modules that use Channel/Flow
+include(":trikeshed-reactor")
+include(":trikeshed-net")
+include(":trikeshed-torrent")
+include(":trikeshed-dht")
+include(":trikeshed-ipc")
+include(":trikeshed-ccek")
+include(":trikeshed-ljson")
+include(":trikeshed-strace")
+include(":trikeshed-couchdb")
+include(":trikeshed-ipfs")
+include(":trikeshed-services")
+
+// Application modules
 include(":rtsgame")
 include(":boingDemo")
 include(":fiduciary")

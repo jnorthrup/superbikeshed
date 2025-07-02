@@ -250,7 +250,40 @@ data class RewriteRule(
     val query: String? = null
 )
 
-// CouchDB client interface
+// Missing data classes for CouchDB operations
+sealed class CouchResult {
+    data class Success(val message: String) : CouchResult()
+    data class Error(val message: String) : CouchResult()
+}
+
+typealias CouchDocumentResult = Either<String, CouchDocumentData>
+
+@Serializable
+data class CouchDocumentData(
+    val id: String,
+    val rev: String,
+    val data: Map<String, String> = emptyMap()
+)
+
+@Serializable
+data class CouchPutResult(
+    val ok: Boolean,
+    val id: String,
+    val rev: String
+)
+
+@Serializable
+data class CouchSecurity(
+    val admins: SecurityObject = SecurityObject(),
+    val members: SecurityObject = SecurityObject()
+) {
+    @Serializable
+    data class SecurityObject(
+        val names: List<String> = emptyList(),
+        val roles: List<String> = emptyList()
+    )
+}
+
 interface CouchClient {
     enum class Transport { HTTP, QUIC }
     
@@ -279,4 +312,4 @@ interface CouchClient {
     
     suspend fun replicate(request: ReplicationRequest): ReplicationResponse
     suspend fun putDesignDocument(dbName: String, doc: DesignDocument): CouchResponse
-} 
+}

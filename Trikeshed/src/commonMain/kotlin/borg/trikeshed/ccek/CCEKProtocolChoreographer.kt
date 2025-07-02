@@ -1,398 +1,378 @@
 package borg.trikeshed.ccek
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib._i
-import borg.trikeshed.net.quic.*
-import borg.trikeshed.couchdb.*
-import borg.trikeshed.ipfs.*
+import borg.trikeshed.net.socks.*
 import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
 /**
- * CCKE Protocol Choreographer
+ * CCEK Protocol Choreographer
  * 
- * High-level choreography and coordination for multi-target CCKE processing
- * across QUIC, CouchDB, and IPFS protocols using MetaSeries chord sheets.
+ * Coordinates multiple protocols using MetaSeries chord sheets for dynamic protocol selection,
+ * priority management, and resource allocation. Handles ingress/egress threading through
+ * async channels with io_uring or liburing backends.
  */
 class CCEKProtocolChoreographer(
-    private val integrationService: CCEKProtocolIntegrationService = CCEKProtocolIntegrationService(),
-    private val orchestrator: CCEKProtocolOrchestrator = CCEKProtocolOrchestrator()
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
 ) {
     
-    // === CHOREOGRAPHY CHORD SHEET ===
+    // === PROTOCOL TYPE DEFINITIONS ===
     
-    // Choreography strategy selection chord - maps workflow types to choreography strategies
-    private val choreographyStrategyChord: MetaSeries<CCEKWorkflowType, (CCEKWorkflowType) -> ChoreographyStrategy> =
-        CCEKWorkflowType.SINGLE_PROTOCOL j { workflowType: CCEKWorkflowType ->
-            { when (workflowType) {
-                CCEKWorkflowType.SINGLE_PROTOCOL -> ChoreographyStrategy.SEQUENTIAL
-                CCEKWorkflowType.MULTI_PROTOCOL -> ChoreographyStrategy.PARALLEL
-                CCEKWorkflowType.PIPELINE -> ChoreographyStrategy.PIPELINE
-                CCEKWorkflowType.BATCH -> ChoreographyStrategy.BATCH
-                CCEKWorkflowType.STREAMING -> ChoreographyStrategy.STREAMING
-                else -> ChoreographyStrategy.DEFAULT
-            } }
+    enum class ProtocolType { QUIC, HTTP, SOCKS, CouchDB, SSH }
+    enum class ThreadingMode { ASYNC, LIBURING, STANDARD }
+    enum class ChannelDirection { INGRESS, EGRESS, BIDIRECTIONAL }
+    
+    data class ProtocolRoute(
+        val protocol: ProtocolType,
+        val threading: ThreadingMode,
+        val direction: ChannelDirection,
+        val priority: Int = 0
+    )
+    
+    // === CHORD SHEETS FOR PROTOCOL COORDINATION ===
+    
+    // Protocol scanning chord - maps protocols to their capabilities
+    private val protocolScanChord: MetaSeries<ProtocolType, (ProtocolType) -> ProtocolCapabilities> =
+        ProtocolType.QUIC j { protocol: ProtocolType ->
+            { p: ProtocolType -> // Explicitly define parameter p
+                when (p) {
+            { when (protocol) {
+                ProtocolType.QUIC -> ProtocolCapabilities(
+                    supportsAsync = true,
+                    supportsUring = true,
+                    defaultThreading = ThreadingMode.LIBURING,
+                    ingressLatency = 50,  // microseconds
+                    egressLatency = 30
+                )
+                ProtocolType.HTTP -> ProtocolCapabilities(
+                    supportsAsync = true,
+                    supportsUring = true,
+                    defaultThreading = ThreadingMode.ASYNC,
+                    ingressLatency = 100,
+                    egressLatency = 80
+                )
+                ProtocolType.SOCKS -> ProtocolCapabilities(
+                    supportsAsync = true,
+                    supportsUring = true,
+                    defaultThreading = ThreadingMode.LIBURING,
+                    ingressLatency = 20,
+                    egressLatency = 20
+                )
+                ProtocolType.CouchDB -> ProtocolCapabilities(
+                    supportsAsync = true,
+                    supportsUring = false,
+                    defaultThreading = ThreadingMode.ASYNC,
+                    ingressLatency = 200,
+                    egressLatency = 150
+                )
+                ProtocolType.SSH -> ProtocolCapabilities(
+                    supportsAsync = true,
+                    supportsUring = true,
+                    defaultThreading = ThreadingMode.ASYNC,
+                    ingressLatency = 80,
+                    egressLatency = 60
+                )
+            }}
         }
     
-    // Protocol coordination chord - maps protocol combinations to coordination strategies
-    private val protocolCoordinationChord: MetaSeries<Indexed<String>, () -> CoordinationStrategy> =
-        listOf("quic").let { list -> list.size j { idx -> list[idx] } } j { protocols ->
+    // Threading coordination chord - maps protocol combinations to optimal threading strategies
+    private val threadingCoordinationChord: MetaSeries<Indexed<ProtocolType>, () -> ThreadingStrategy> =
+        listOf(ProtocolType.QUIC).let { list -> list.size j { idx: Int -> list[idx] } } j { protocols: Indexed<ProtocolType> ->
             { when {
-                protocols.a == 1 -> CoordinationStrategy.SINGLE
-                (0 until protocols.a).any { i -> protocols.b(i) == "quic" } && 
-                    (0 until protocols.a).any { i -> protocols.b(i) == "couchdb" } -> CoordinationStrategy.QUIC_COUCHDB
-                (0 until protocols.a).any { i -> protocols.b(i) == "quic" } && 
-                    (0 until protocols.a).any { i -> protocols.b(i) == "ipfs" } -> CoordinationStrategy.QUIC_IPFS
-                (0 until protocols.a).any { i -> protocols.b(i) == "couchdb" } && 
-                    (0 until protocols.a).any { i -> protocols.b(i) == "ipfs" } -> CoordinationStrategy.COUCHDB_IPFS
-                protocols.a > 2 -> CoordinationStrategy.MULTI
-                else -> CoordinationStrategy.DEFAULT
-            } }
+                // Single protocol optimizations
+                protocols.a == 1 -> when (protocols.b(0)) {
+                    ProtocolType.QUIC -> ThreadingStrategy.DEDICATED_URING
+                    ProtocolType.SOCKS -> ThreadingStrategy.SHARED_URING  
+                    else -> ThreadingStrategy.ASYNC_POOL
+                }
+                
+                // Multi-protocol with io_uring support
+                protocols.play.all { protocolScanChord.b(it)().supportsUring } -> 
+                    ThreadingStrategy.MULTIPLEXED_URING
+                
+                // Mixed protocol support
+                protocols.play.any { protocolScanChord.b(it)().supportsUring } ->
+                    ThreadingStrategy.HYBRID_ASYNC_URING
+                    
+                // Fallback to async
+                else -> ThreadingStrategy.ASYNC_POOL
+            }}
         }
     
-    // Context orchestration chord - maps coordination strategies to context orchestration
-    private val contextOrchestrationChord: MetaSeries<CoordinationStrategy, () -> ContextOrchestration> =
-        CoordinationStrategy.SINGLE j { strategy ->
-            { when (strategy) {
-                CoordinationStrategy.SINGLE -> ContextOrchestration.SINGLE_CONTEXT
-                CoordinationStrategy.QUIC_COUCHDB -> ContextOrchestration.QUIC_COUCHDB_CONTEXT
-                CoordinationStrategy.QUIC_IPFS -> ContextOrchestration.QUIC_IPFS_CONTEXT
-                CoordinationStrategy.COUCHDB_IPFS -> ContextOrchestration.COUCHDB_IPFS_CONTEXT
-                CoordinationStrategy.MULTI -> ContextOrchestration.MULTI_CONTEXT
-                CoordinationStrategy.DEFAULT -> ContextOrchestration.DEFAULT_CONTEXT
-            } }
+    // Channel routing chord - maps direction and protocol to channel creation strategy
+    private val channelRoutingChord: MetaSeries<Join<ChannelDirection, ProtocolType>, () -> ChannelFactory> =
+        (ChannelDirection.INGRESS j ProtocolType.QUIC) j { directionProtocol: Join<ChannelDirection, ProtocolType> ->
+            { when (directionProtocol.a to directionProtocol.b) {
+                ChannelDirection.INGRESS to ProtocolType.QUIC -> ChannelFactory.QUIC_INGRESS
+                ChannelDirection.EGRESS to ProtocolType.QUIC -> ChannelFactory.QUIC_EGRESS
+                ChannelDirection.BIDIRECTIONAL to ProtocolType.QUIC -> ChannelFactory.QUIC_BIDIRECTIONAL
+                
+                ChannelDirection.INGRESS to ProtocolType.SOCKS -> ChannelFactory.SOCKS_INGRESS
+                ChannelDirection.EGRESS to ProtocolType.SOCKS -> ChannelFactory.SOCKS_EGRESS
+                ChannelDirection.BIDIRECTIONAL to ProtocolType.SOCKS -> ChannelFactory.SOCKS_BIDIRECTIONAL
+                
+                ChannelDirection.INGRESS to ProtocolType.HTTP -> ChannelFactory.HTTP_INGRESS
+                ChannelDirection.EGRESS to ProtocolType.HTTP -> ChannelFactory.HTTP_EGRESS
+                ChannelDirection.BIDIRECTIONAL to ProtocolType.HTTP -> ChannelFactory.HTTP_BIDIRECTIONAL
+                
+                else -> ChannelFactory.GENERIC_ASYNC
+            }}
         }
     
-    // === PUBLIC API ===
+    // === PUBLIC CHOREOGRAPHY API ===
     
     /**
-     * Choreograph multi-target CCKE processing
+     * Scan protocol requirements and choreograph optimal ingress/egress threading
      */
-    suspend fun choreograph(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        workflowType: CCEKWorkflowType = CCEKWorkflowType.MULTI_PROTOCOL,
+    suspend fun choreographProtocols(
+        protocols: List<ProtocolType>,
+        requiredDirections: List<ChannelDirection> = listOf(ChannelDirection.BIDIRECTIONAL),
         context: CoroutineContext = Dispatchers.Default
-    ): ChoreographedCCEKResult {
-        return withContext(context) {
-            val choreographyStrategy = choreographyStrategyChord.b(workflowType)()
-            val coordinationStrategy = protocolCoordinationChord.b(protocols)()
-            val contextOrchestration = contextOrchestrationChord.b(coordinationStrategy)()
-            
-            when (choreographyStrategy) {
-                ChoreographyStrategy.SEQUENTIAL -> choreographSequential(data, protocols, contextOrchestration)
-                ChoreographyStrategy.PARALLEL -> choreographParallel(data, protocols, contextOrchestration)
-                ChoreographyStrategy.PIPELINE -> choreographPipeline(data, protocols, contextOrchestration)
-                ChoreographyStrategy.BATCH -> choreographBatch(data, protocols, contextOrchestration)
-                ChoreographyStrategy.STREAMING -> choreographStreaming(data, protocols, contextOrchestration)
-                ChoreographyStrategy.DEFAULT -> choreographDefault(data, protocols, contextOrchestration)
-            }
-        }
-    }
-    
-    /**
-     * Choreograph QUIC-specific workflow
-     */
-    suspend fun choreographQUIC(
-        data: Indexed<Byte>,
-        streamIds: Indexed<QuicStreamId>,
-        frameTypes: Indexed<QuicFrameType> = _i[QuicFrameType.STREAM]
-    ): ChoreographedCCEKResult {
-        val results = streamIds.a j { i ->
-            val streamId = streamIds.b(i)
-            val frameType = if (i < frameTypes.a) frameTypes.b(i) else QuicFrameType.STREAM
-            orchestrator.processQUIC(data, frameType, streamId)
-        }
+    ): ChoreographyResult = withContext(context) {
         
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results,
-            strategy = ChoreographyStrategy.SEQUENTIAL,
-            orchestration = ContextOrchestration.QUIC_CONTEXT
-        )
-    }
-    
-    /**
-     * Choreograph CouchDB-specific workflow
-     */
-    suspend fun choreographCouchDB(
-        data: Indexed<Byte>,
-        documentTypes: Indexed<CouchDBDocumentType>,
-        operations: Indexed<CouchDBOperation> = _i[CouchDBOperation.READ]
-    ): ChoreographedCCEKResult {
-        val results = documentTypes.a j { i ->
-            val documentType = documentTypes.b(i)
-            val operation = if (i < operations.a) operations.b(i) else CouchDBOperation.READ
-            orchestrator.processCouchDB(data, documentType, operation)
-        }
+        // Step 1: Scan protocol capabilities
+        val capabilities = protocols.map { protocol ->
+            protocol to protocolScanChord.b(protocol)()
+        }.toMap()
         
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results,
-            strategy = ChoreographyStrategy.SEQUENTIAL,
-            orchestration = ContextOrchestration.COUCHDB_CONTEXT
-        )
-    }
-    
-    /**
-     * Choreograph IPFS-specific workflow
-     */
-    suspend fun choreographIPFS(
-        data: Indexed<Byte>,
-        blockTypes: Indexed<IPFSBlockType>,
-        contentTypes: Indexed<IPFSContentType> = _i[IPFSContentType.FILE]
-    ): ChoreographedCCEKResult {
-        val results = blockTypes.a j { i ->
-            val blockType = blockTypes.b(i)
-            val contentType = if (i < contentTypes.a) contentTypes.b(i) else IPFSContentType.FILE
-            orchestrator.processIPFS(data, blockType, contentType)
-        }
+        // Step 2: Determine optimal threading strategy
+        val protocolIndexed = protocols.size j protocols::get
+        val threadingStrategy = threadingCoordinationChord.b(protocolIndexed)()
         
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results,
-            strategy = ChoreographyStrategy.SEQUENTIAL,
-            orchestration = ContextOrchestration.IPFS_CONTEXT
-        )
-    }
-    
-    /**
-     * Choreograph cross-protocol workflow
-     */
-    suspend fun choreographCrossProtocol(
-        data: Indexed<Byte>,
-        workflow: CCEKCrossProtocolWorkflow
-    ): ChoreographedCCEKResult {
-        return when (workflow) {
-            is CCEKCrossProtocolWorkflow.QUIC_TO_COUCHDB -> {
-                val quicResult = orchestrator.processQUIC(data, workflow.quicFrameType, workflow.quicStreamId)
-                val couchdbResult = orchestrator.processCouchDB(data, workflow.couchdbDocumentType, workflow.couchdbOperation)
-                
-                ChoreographedCCEKResult.SUCCESS(
-                    results = _i[quicResult, couchdbResult],
-                    strategy = ChoreographyStrategy.PIPELINE,
-                    orchestration = ContextOrchestration.QUIC_COUCHDB_CONTEXT
-                )
-            }
-            
-            is CCEKCrossProtocolWorkflow.QUIC_TO_IPFS -> {
-                val quicResult = orchestrator.processQUIC(data, workflow.quicFrameType, workflow.quicStreamId)
-                val ipfsResult = orchestrator.processIPFS(data, workflow.ipfsBlockType, workflow.ipfsContentType)
-                
-                ChoreographedCCEKResult.SUCCESS(
-                    results = _i[quicResult, ipfsResult],
-                    strategy = ChoreographyStrategy.PIPELINE,
-                    orchestration = ContextOrchestration.QUIC_IPFS_CONTEXT
-                )
-            }
-            
-            is CCEKCrossProtocolWorkflow.COUCHDB_TO_IPFS -> {
-                val couchdbResult = orchestrator.processCouchDB(data, workflow.couchdbDocumentType, workflow.couchdbOperation)
-                val ipfsResult = orchestrator.processIPFS(data, workflow.ipfsBlockType, workflow.ipfsContentType)
-                
-                ChoreographedCCEKResult.SUCCESS(
-                    results = _i[couchdbResult, ipfsResult],
-                    strategy = ChoreographyStrategy.PIPELINE,
-                    orchestration = ContextOrchestration.COUCHDB_IPFS_CONTEXT
+        // Step 3: Create channel routing plan
+        val channelRoutes = mutableListOf<ChannelRoute>()
+        for (protocol in protocols) {
+            for (direction in requiredDirections) {
+                val factory = channelRoutingChord.b(direction j protocol)()
+                channelRoutes.add(
+                    ChannelRoute(
+                        protocol = protocol,
+                        direction = direction,
+                        factory = factory,
+                        threading = capabilities[protocol]?.defaultThreading ?: ThreadingMode.ASYNC
+                    )
                 )
             }
         }
-    }
-    
-    // === PRIVATE CHOREOGRAPHY METHODS ===
-    
-    private suspend fun choreographSequential(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        orchestration: ContextOrchestration
-    ): ChoreographedCCEKResult {
-        val results = protocols.a j { i ->
-            val protocol = protocols.b(i)
-            when (protocol) {
-                "quic" -> orchestrator.processQUIC(data, QuicFrameType.STREAM, 0L)
-                "couchdb" -> orchestrator.processCouchDB(data, CouchDBDocumentType.DOCUMENT, CouchDBOperation.READ)
-                "ipfs" -> orchestrator.processIPFS(data, IPFSBlockType.DAG_PB, IPFSContentType.FILE)
-                else -> CCEKResult.ERROR("Unknown protocol: $protocol", ProtocolTarget.DEFAULT)
-            }
+        
+        // Step 4: Optimize for liburing if available
+        val optimizedRoutes = if (threadingStrategy.usesUring) {
+            optimizeForUring(channelRoutes, capabilities)
+        } else {
+            channelRoutes
         }
         
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results,
-            strategy = ChoreographyStrategy.SEQUENTIAL,
-            orchestration = orchestration
+        ChoreographyResult(
+            threadingStrategy = threadingStrategy,
+            channelRoutes = optimizedRoutes.size j optimizedRoutes::get,
+            estimatedLatency = calculateEstimatedLatency(optimizedRoutes, capabilities),
+            capabilities = capabilities
         )
     }
     
-    private suspend fun choreographParallel(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        orchestration: ContextOrchestration
-    ): ChoreographedCCEKResult {
-        val results = coroutineScope {
-            (0 until protocols.a).map { i ->
-                val protocol = protocols.b(i)
-                async {
-                    when (protocol) {
-                        "quic" -> orchestrator.processQUIC(data, QuicFrameType.STREAM, 0L)
-                        "couchdb" -> orchestrator.processCouchDB(data, CouchDBDocumentType.DOCUMENT, CouchDBOperation.READ)
-                        "ipfs" -> orchestrator.processIPFS(data, IPFSBlockType.DAG_PB, IPFSContentType.FILE)
-                        else -> CCEKResult.ERROR("Unknown protocol: $protocol", ProtocolTarget.DEFAULT)
+    /**
+     * Execute the choreographed protocol setup
+     */
+    suspend fun executeChoreography(
+        result: ChoreographyResult,
+        context: CoroutineContext = Dispatchers.Default
+    ): ExecutionResult = withContext(context) {
+        
+        val channels = mutableListOf<AsyncChannel>()
+        val jobs = mutableListOf<Job>()
+        
+        try {
+            // Create channels based on routing plan
+            for (i in 0 until result.channelRoutes.a) {
+                val route = result.channelRoutes.b(i)
+                val channel = createChannelFromRoute(route)
+                channels.add(channel)
+                
+                // Start ingress/egress processing based on threading mode
+                val job = when (route.threading) {
+                    ThreadingMode.LIBURING -> scope.launch(context) {
+                        processUringChannel(channel, route)
+                    }
+                    ThreadingMode.ASYNC -> scope.launch(context) {
+                        processAsyncChannel(channel, route)
+                    }
+                    ThreadingMode.STANDARD -> scope.launch(context) {
+                        processStandardChannel(channel, route)
                     }
                 }
-            }.awaitAll()
-        }
-        
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results.size j { i -> results[i] },
-            strategy = ChoreographyStrategy.PARALLEL,
-            orchestration = orchestration
-        )
-    }
-    
-    private suspend fun choreographPipeline(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        orchestration: ContextOrchestration
-    ): ChoreographedCCEKResult {
-        var currentData = data
-        val results = mutableListOf<CCEKResult>()
-        
-        for (i in 0 until protocols.a) {
-            val protocol = protocols.b(i)
-            val result = when (protocol) {
-                "quic" -> orchestrator.processQUIC(currentData, QuicFrameType.STREAM, 0L)
-                "couchdb" -> orchestrator.processCouchDB(currentData, CouchDBDocumentType.DOCUMENT, CouchDBOperation.READ)
-                "ipfs" -> orchestrator.processIPFS(currentData, IPFSBlockType.DAG_PB, IPFSContentType.FILE)
-                else -> CCEKResult.ERROR("Unknown protocol: $protocol", ProtocolTarget.DEFAULT)
+                jobs.add(job)
             }
-            results.add(result)
             
-            // Use processed data for next stage (simplified)
-            currentData = when (result) {
-                is CCEKResult.SUCCESS -> currentData
-                is CCEKResult.ERROR -> currentData
-            }
-        }
-        
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results.size j { i -> results[i] },
-            strategy = ChoreographyStrategy.PIPELINE,
-            orchestration = orchestration
-        )
-    }
-    
-    private suspend fun choreographBatch(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        orchestration: ContextOrchestration
-    ): ChoreographedCCEKResult {
-        val batchItems = protocols.a j { i ->
-            val protocol = protocols.b(i)
-            CCEKBatchItem(
-                data = data,
-                protocol = protocol,
-                quicStreamId = if (protocol == "quic") 0L else null,
-                quicFrameType = if (protocol == "quic") QuicFrameType.STREAM else null,
-                couchdbDocumentType = if (protocol == "couchdb") CouchDBDocumentType.DOCUMENT else null,
-                couchdbOperation = if (protocol == "couchdb") CouchDBOperation.READ else null,
-                ipfsBlockType = if (protocol == "ipfs") IPFSBlockType.DAG_PB else null,
-                ipfsContentType = if (protocol == "ipfs") IPFSContentType.FILE else null
+            ExecutionResult.Success(
+                channels = channels.size j channels::get,
+                processingJobs = jobs.size j jobs::get
             )
+            
+        } catch (e: Exception) {
+            // Cleanup on failure
+            channels.forEach { it.close() }
+            jobs.forEach { it.cancel() }
+            ExecutionResult.Failure(e.message ?: "Unknown choreography execution error")
         }
-        
-        val results = integrationService.processBatch(batchItems)
-        
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results,
-            strategy = ChoreographyStrategy.BATCH,
-            orchestration = orchestration
-        )
     }
     
-    private suspend fun choreographStreaming(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        orchestration: ContextOrchestration
-    ): ChoreographedCCEKResult {
-        // Streaming implementation would process data in chunks
-        val results = protocols.a j { i ->
-            val protocol = protocols.b(i)
-            when (protocol) {
-                "quic" -> orchestrator.processQUIC(data, QuicFrameType.STREAM, 0L)
-                "couchdb" -> orchestrator.processCouchDB(data, CouchDBDocumentType.DOCUMENT, CouchDBOperation.READ)
-                "ipfs" -> orchestrator.processIPFS(data, IPFSBlockType.DAG_PB, IPFSContentType.FILE)
-                else -> CCEKResult.ERROR("Unknown protocol: $protocol", ProtocolTarget.DEFAULT)
+    // === PRIVATE IMPLEMENTATION ===
+    
+    private fun optimizeForUring(
+        routes: List<ChannelRoute>,
+        capabilities: Map<ProtocolType, ProtocolCapabilities>
+    ): List<ChannelRoute> {
+        return routes.map { route ->
+            val caps = capabilities[route.protocol]
+            if (caps?.supportsUring == true && route.threading != ThreadingMode.LIBURING) {
+                route.copy(threading = ThreadingMode.LIBURING)
+            } else {
+                route
             }
         }
+    }
+    
+    private fun calculateEstimatedLatency(
+        routes: List<ChannelRoute>,
+        capabilities: Map<ProtocolType, ProtocolCapabilities>
+    ): Long {
+        return routes.maxOfOrNull { route ->
+            val caps = capabilities[route.protocol] ?: return@maxOfOrNull 1000L
+            when (route.direction) {
+                ChannelDirection.INGRESS -> caps.ingressLatency
+                ChannelDirection.EGRESS -> caps.egressLatency
+                ChannelDirection.BIDIRECTIONAL -> maxOf(caps.ingressLatency, caps.egressLatency)
+            }
+        } ?: 1000L
+    }
+    
+    private suspend fun createChannelFromRoute(route: ChannelRoute): AsyncChannel {
+        // Placeholder - would integrate with actual channel factories
+        return object : AsyncChannel {
+            override val fd: Int = -1
+            override val localAddress: String = "placeholder"
+            override val remoteAddress: String = "placeholder"
+            override val isOpen: Boolean = true
+            
+            override suspend fun readBatch(buffers: Indexed<ByteArray>): Indexed<Int> =
+                buffers.a j { -1 }
+            override suspend fun writeBatch(buffers: Indexed<ByteArray>): Indexed<Int> =
+                buffers.a j { -1 }
+            override fun close() {}
+            override suspend fun submitAndWait(sqeOps: Indexed<SqeOp>): Indexed<Int> =
+                sqeOps.a j { -1 }
+        }
+    }
+    
+    private suspend fun processUringChannel(channel: AsyncChannel, route: ChannelRoute) {
+        // Process channel using io_uring batch operations
+        while (channel.isOpen) {
+            val buffers = Array(16) { ByteArray(65536) }
+            val indexedBuffers = buffers.size j buffers::get
+            
+            when (route.direction) {
+                ChannelDirection.INGRESS -> {
+                    val results = channel.readBatch(indexedBuffers)
+                    // Process ingress data
+                }
+                ChannelDirection.EGRESS -> {
+                    val results = channel.writeBatch(indexedBuffers)
+                    // Process egress data
+                }
+                ChannelDirection.BIDIRECTIONAL -> {
+                    // Handle both directions
+                    val readResults = channel.readBatch(indexedBuffers)
+                    val writeResults = channel.writeBatch(indexedBuffers)
+                }
+            }
+            delay(1) // Yield to other coroutines
+        }
+    }
+    
+    private suspend fun processAsyncChannel(channel: AsyncChannel, route: ChannelRoute) {
+        // Process channel using standard async operations
+        while (channel.isOpen) {
+            val buffer = ByteArray(65536)
+            when (route.direction) {
+                ChannelDirection.INGRESS -> {
+                    val result = channel.read(buffer)
+                    // Process ingress data
+                }
+                ChannelDirection.EGRESS -> {
+                    val result = channel.write(buffer)
+                    // Process egress data
+                }
+                ChannelDirection.BIDIRECTIONAL -> {
+                    // Handle both directions
+                    val readResult = channel.read(buffer)
+                    val writeResult = channel.write(buffer)
+                }
+            }
+            delay(1)
+        }
+    }
+    
+    private suspend fun processStandardChannel(channel: AsyncChannel, route: ChannelRoute) {
+        // Fallback processing for standard channels
+        processAsyncChannel(channel, route)
+    }
+    
+    // === SUPPORTING DATA CLASSES ===
+    
+    data class ProtocolCapabilities(
+        val supportsAsync: Boolean,
+        val supportsUring: Boolean,
+        val defaultThreading: ThreadingMode,
+        val ingressLatency: Long,
+        val egressLatency: Long
+    )
+    
+    enum class ThreadingStrategy {
+        DEDICATED_URING,     // Single protocol with dedicated io_uring
+        SHARED_URING,        // Multiple protocols sharing io_uring
+        MULTIPLEXED_URING,   // All protocols on multiplexed io_uring
+        HYBRID_ASYNC_URING,  // Mix of async and io_uring
+        ASYNC_POOL           // Pure async/coroutine pool
+    }
+    
+    enum class ChannelFactory {
+        QUIC_INGRESS, QUIC_EGRESS, QUIC_BIDIRECTIONAL,
+        SOCKS_INGRESS, SOCKS_EGRESS, SOCKS_BIDIRECTIONAL,
+        HTTP_INGRESS, HTTP_EGRESS, HTTP_BIDIRECTIONAL,
+        GENERIC_ASYNC
+    }
+    
+    data class ChannelRoute(
+        val protocol: ProtocolType,
+        val direction: ChannelDirection,
+        val factory: ChannelFactory,
+        val threading: ThreadingMode
+    )
+    
+    data class ChoreographyResult(
+        val threadingStrategy: ThreadingStrategy,
+        val channelRoutes: Indexed<ChannelRoute>,
+        val estimatedLatency: Long,
+        val capabilities: Map<ProtocolType, ProtocolCapabilities>
+    )
+    
+    sealed class ExecutionResult {
+        data class Success(
+            val channels: Indexed<AsyncChannel>,
+            val processingJobs: Indexed<Job>
+        ) : ExecutionResult()
         
-        return ChoreographedCCEKResult.SUCCESS(
-            results = results,
-            strategy = ChoreographyStrategy.STREAMING,
-            orchestration = orchestration
-        )
+        data class Failure(val error: String) : ExecutionResult()
     }
     
-    private suspend fun choreographDefault(
-        data: Indexed<Byte>,
-        protocols: Indexed<String>,
-        orchestration: ContextOrchestration
-    ): ChoreographedCCEKResult {
-        return choreographSequential(data, protocols, orchestration)
-    }
+    // Extension to check if strategy uses io_uring
+    private val ThreadingStrategy.usesUring: Boolean
+        get() = when (this) {
+            ThreadingStrategy.DEDICATED_URING,
+            ThreadingStrategy.SHARED_URING,
+            ThreadingStrategy.MULTIPLEXED_URING,
+            ThreadingStrategy.HYBRID_ASYNC_URING -> true
+            ThreadingStrategy.ASYNC_POOL -> false
+        }
 }
-
-// === CHOREOGRAPHY TYPES ===
-
-enum class CCEKWorkflowType {
-    SINGLE_PROTOCOL, MULTI_PROTOCOL, PIPELINE, BATCH, STREAMING
-}
-
-enum class ChoreographyStrategy {
-    SEQUENTIAL, PARALLEL, PIPELINE, BATCH, STREAMING, DEFAULT
-}
-
-enum class CoordinationStrategy {
-    SINGLE, QUIC_COUCHDB, QUIC_IPFS, COUCHDB_IPFS, MULTI, DEFAULT
-}
-
-enum class ContextOrchestration {
-    SINGLE_CONTEXT, QUIC_CONTEXT, COUCHDB_CONTEXT, IPFS_CONTEXT,
-    QUIC_COUCHDB_CONTEXT, QUIC_IPFS_CONTEXT, COUCHDB_IPFS_CONTEXT,
-    MULTI_CONTEXT, DEFAULT_CONTEXT
-}
-
-sealed class ChoreographedCCEKResult {
-    data class SUCCESS(
-        val results: Indexed<CCEKResult>,
-        val strategy: ChoreographyStrategy,
-        val orchestration: ContextOrchestration
-    ) : ChoreographedCCEKResult()
-    
-    data class ERROR(
-        val error: String,
-        val strategy: ChoreographyStrategy
-    ) : ChoreographedCCEKResult()
-}
-
-// === CROSS-PROTOCOL WORKFLOW TYPES ===
-
-sealed class CCEKCrossProtocolWorkflow {
-    data class QUIC_TO_COUCHDB(
-        val quicFrameType: QuicFrameType = QuicFrameType.STREAM,
-        val quicStreamId: QuicStreamId = 0L,
-        val couchdbDocumentType: CouchDBDocumentType = CouchDBDocumentType.DOCUMENT,
-        val couchdbOperation: CouchDBOperation = CouchDBOperation.READ
-    ) : CCEKCrossProtocolWorkflow()
-    
-    data class QUIC_TO_IPFS(
-        val quicFrameType: QuicFrameType = QuicFrameType.STREAM,
-        val quicStreamId: QuicStreamId = 0L,
-        val ipfsBlockType: IPFSBlockType = IPFSBlockType.DAG_PB,
-        val ipfsContentType: IPFSContentType = IPFSContentType.FILE
-    ) : CCEKCrossProtocolWorkflow()
-    
-    data class COUCHDB_TO_IPFS(
-        val couchdbDocumentType: CouchDBDocumentType = CouchDBDocumentType.DOCUMENT,
-        val couchdbOperation: CouchDBOperation = CouchDBOperation.READ,
-        val ipfsBlockType: IPFSBlockType = IPFSBlockType.DAG_PB,
-        val ipfsContentType: IPFSContentType = IPFSContentType.FILE
-    ) : CCEKCrossProtocolWorkflow()
-} 
