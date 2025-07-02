@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
+
 import borg.trikeshed.lib.*
 import borg.trikeshed.crypto.*
 import borg.trikeshed.net.quic.*
@@ -14,7 +16,6 @@ import borg.trikeshed.nio.PlatformByteBuffer
 import borg.trikeshed.io.PlatformFileIO
 import borg.trikeshed.io.PlatformFileIOImpl
 
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.ssh
 
 // === SSH TAXONOMICAL TYPEALIASES ===
@@ -299,7 +300,7 @@ data class KexInit(
     }
 
     companion object {
-        fun decode(payload: SSHPayload): KexInit? {
+        suspend fun decode(payload: SSHPayload): KexInit? {
             return KexInitParser.parse(payload.toByteIndexedBuffer())
         }
     }
