@@ -7,6 +7,8 @@ plugins {
 allprojects {
     repositories {
         mavenCentral()
+        google()
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven") }
     }
 }
 

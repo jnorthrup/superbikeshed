@@ -103,6 +103,9 @@ object _a {
 object _l {
     operator fun <T> get(vararg t: T): List<T> = listOf(*t)
 }
+object _i {
+    operator fun <T> get(vararg t: T) = t.size j { i :Int-> t[i] }
+}
 
 object _s {
     operator fun <T> get(vararg t: T): Set<T> = setOf(*t)

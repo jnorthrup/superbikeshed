@@ -243,9 +243,9 @@ class CCEKProtocolOrchestrator {
     
     private suspend fun applyCompression(data: Indexed<Byte>, strategy: PackingStrategies): Indexed<Byte> {
         return when (strategy) {
-            PackingStrategies.LZ4 -> PackingContext.LZ4.compress(data)
-            PackingStrategies.ZSTD -> PackingContext.ZSTD.compress(data)
-            PackingStrategies.BROTLI -> PackingContext.BROTLI.compress(data)
+            PackingStrategies.LZ4 -> execCompress("lz4", data)
+            PackingStrategies.ZSTD -> execCompress("zstd", data)
+            PackingStrategies.BROTLI -> execCompress("brotli", data)
             PackingStrategies.NONE -> data
         }
     }
@@ -423,4 +423,10 @@ sealed class CCEKResult {
         val error: String,
         val target: ProtocolTarget
     ) : CCEKResult()
+}
+
+private suspend fun execCompress(tool: String, data: Indexed<Byte>): Indexed<Byte> {
+    // Internalize framing, externalize compression via exec
+    // For now return data unchanged - implement exec later
+    return data
 } 

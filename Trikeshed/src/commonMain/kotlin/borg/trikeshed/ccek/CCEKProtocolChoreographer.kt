@@ -1,11 +1,13 @@
 package borg.trikeshed.ccek
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib._i
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.couchdb.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 /**
  * CCKE Protocol Choreographer
@@ -23,40 +25,43 @@ class CCEKProtocolChoreographer(
     // Choreography strategy selection chord - maps workflow types to choreography strategies
     private val choreographyStrategyChord: MetaSeries<CCEKWorkflowType, (CCEKWorkflowType) -> ChoreographyStrategy> =
         CCEKWorkflowType.SINGLE_PROTOCOL j { workflowType: CCEKWorkflowType ->
-            when (workflowType) {
-                CCEKWorkflowType.SINGLE_PROTOCOL -> { ChoreographyStrategy.SEQUENTIAL }
-                CCEKWorkflowType.MULTI_PROTOCOL -> { ChoreographyStrategy.PARALLEL }
-                CCEKWorkflowType.PIPELINE -> { ChoreographyStrategy.PIPELINE }
-                CCEKWorkflowType.BATCH -> { ChoreographyStrategy.BATCH }
-                CCEKWorkflowType.STREAMING -> { ChoreographyStrategy.STREAMING }
-                else -> { ChoreographyStrategy.DEFAULT }
-            }
+            { when (workflowType) {
+                CCEKWorkflowType.SINGLE_PROTOCOL -> ChoreographyStrategy.SEQUENTIAL
+                CCEKWorkflowType.MULTI_PROTOCOL -> ChoreographyStrategy.PARALLEL
+                CCEKWorkflowType.PIPELINE -> ChoreographyStrategy.PIPELINE
+                CCEKWorkflowType.BATCH -> ChoreographyStrategy.BATCH
+                CCEKWorkflowType.STREAMING -> ChoreographyStrategy.STREAMING
+                else -> ChoreographyStrategy.DEFAULT
+            } }
         }
     
     // Protocol coordination chord - maps protocol combinations to coordination strategies
     private val protocolCoordinationChord: MetaSeries<Indexed<String>, () -> CoordinationStrategy> =
-        listOf("quic").toIndexed() j { protocols ->
-            when {
-                protocols.size == 1 -> { CoordinationStrategy.SINGLE }
-                protocols.contains("quic") && protocols.contains("couchdb") -> { CoordinationStrategy.QUIC_COUCHDB }
-                protocols.contains("quic") && protocols.contains("ipfs") -> { CoordinationStrategy.QUIC_IPFS }
-                protocols.contains("couchdb") && protocols.contains("ipfs") -> { CoordinationStrategy.COUCHDB_IPFS }
-                protocols.size > 2 -> { CoordinationStrategy.MULTI }
-                else -> { CoordinationStrategy.DEFAULT }
-            }
+        listOf("quic").let { list -> list.size j { idx -> list[idx] } } j { protocols ->
+            { when {
+                protocols.a == 1 -> CoordinationStrategy.SINGLE
+                (0 until protocols.a).any { i -> protocols.b(i) == "quic" } && 
+                    (0 until protocols.a).any { i -> protocols.b(i) == "couchdb" } -> CoordinationStrategy.QUIC_COUCHDB
+                (0 until protocols.a).any { i -> protocols.b(i) == "quic" } && 
+                    (0 until protocols.a).any { i -> protocols.b(i) == "ipfs" } -> CoordinationStrategy.QUIC_IPFS
+                (0 until protocols.a).any { i -> protocols.b(i) == "couchdb" } && 
+                    (0 until protocols.a).any { i -> protocols.b(i) == "ipfs" } -> CoordinationStrategy.COUCHDB_IPFS
+                protocols.a > 2 -> CoordinationStrategy.MULTI
+                else -> CoordinationStrategy.DEFAULT
+            } }
         }
     
     // Context orchestration chord - maps coordination strategies to context orchestration
     private val contextOrchestrationChord: MetaSeries<CoordinationStrategy, () -> ContextOrchestration> =
         CoordinationStrategy.SINGLE j { strategy ->
-            when (strategy) {
-                CoordinationStrategy.SINGLE -> { ContextOrchestration.SINGLE_CONTEXT }
-                CoordinationStrategy.QUIC_COUCHDB -> { ContextOrchestration.QUIC_COUCHDB_CONTEXT }
-                CoordinationStrategy.QUIC_IPFS -> { ContextOrchestration.QUIC_IPFS_CONTEXT }
-                CoordinationStrategy.COUCHDB_IPFS -> { ContextOrchestration.COUCHDB_IPFS_CONTEXT }
-                CoordinationStrategy.MULTI -> { ContextOrchestration.MULTI_CONTEXT }
-                CoordinationStrategy.DEFAULT -> { ContextOrchestration.DEFAULT_CONTEXT }
-            }
+            { when (strategy) {
+                CoordinationStrategy.SINGLE -> ContextOrchestration.SINGLE_CONTEXT
+                CoordinationStrategy.QUIC_COUCHDB -> ContextOrchestration.QUIC_COUCHDB_CONTEXT
+                CoordinationStrategy.QUIC_IPFS -> ContextOrchestration.QUIC_IPFS_CONTEXT
+                CoordinationStrategy.COUCHDB_IPFS -> ContextOrchestration.COUCHDB_IPFS_CONTEXT
+                CoordinationStrategy.MULTI -> ContextOrchestration.MULTI_CONTEXT
+                CoordinationStrategy.DEFAULT -> ContextOrchestration.DEFAULT_CONTEXT
+            } }
         }
     
     // === PUBLIC API ===
@@ -68,7 +73,7 @@ class CCEKProtocolChoreographer(
         data: Indexed<Byte>,
         protocols: Indexed<String>,
         workflowType: CCEKWorkflowType = CCEKWorkflowType.MULTI_PROTOCOL,
-        context: CoroutineContext = Dispatchers.IO
+        context: CoroutineContext = Dispatchers.Default
     ): ChoreographedCCEKResult {
         return withContext(context) {
             val choreographyStrategy = choreographyStrategyChord.b(workflowType)()
@@ -92,7 +97,7 @@ class CCEKProtocolChoreographer(
     suspend fun choreographQUIC(
         data: Indexed<Byte>,
         streamIds: Indexed<QuicStreamId>,
-        frameTypes: Indexed<QuicFrameType> = Indexed(QuicFrameType.STREAM)
+        frameTypes: Indexed<QuicFrameType> = _i[QuicFrameType.STREAM]
     ): ChoreographedCCEKResult {
         val results = streamIds.a j { i ->
             val streamId = streamIds.b(i)
@@ -113,7 +118,7 @@ class CCEKProtocolChoreographer(
     suspend fun choreographCouchDB(
         data: Indexed<Byte>,
         documentTypes: Indexed<CouchDBDocumentType>,
-        operations: Indexed<CouchDBOperation> = Indexed(CouchDBOperation.READ)
+        operations: Indexed<CouchDBOperation> = _i[CouchDBOperation.READ]
     ): ChoreographedCCEKResult {
         val results = documentTypes.a j { i ->
             val documentType = documentTypes.b(i)
@@ -134,7 +139,7 @@ class CCEKProtocolChoreographer(
     suspend fun choreographIPFS(
         data: Indexed<Byte>,
         blockTypes: Indexed<IPFSBlockType>,
-        contentTypes: Indexed<IPFSContentType> = Indexed(IPFSContentType.FILE)
+        contentTypes: Indexed<IPFSContentType> = _i[IPFSContentType.FILE]
     ): ChoreographedCCEKResult {
         val results = blockTypes.a j { i ->
             val blockType = blockTypes.b(i)
@@ -162,7 +167,7 @@ class CCEKProtocolChoreographer(
                 val couchdbResult = orchestrator.processCouchDB(data, workflow.couchdbDocumentType, workflow.couchdbOperation)
                 
                 ChoreographedCCEKResult.SUCCESS(
-                    results = Indexed(quicResult, couchdbResult),
+                    results = _i[quicResult, couchdbResult],
                     strategy = ChoreographyStrategy.PIPELINE,
                     orchestration = ContextOrchestration.QUIC_COUCHDB_CONTEXT
                 )
@@ -173,7 +178,7 @@ class CCEKProtocolChoreographer(
                 val ipfsResult = orchestrator.processIPFS(data, workflow.ipfsBlockType, workflow.ipfsContentType)
                 
                 ChoreographedCCEKResult.SUCCESS(
-                    results = Indexed(quicResult, ipfsResult),
+                    results = _i[quicResult, ipfsResult],
                     strategy = ChoreographyStrategy.PIPELINE,
                     orchestration = ContextOrchestration.QUIC_IPFS_CONTEXT
                 )
@@ -184,7 +189,7 @@ class CCEKProtocolChoreographer(
                 val ipfsResult = orchestrator.processIPFS(data, workflow.ipfsBlockType, workflow.ipfsContentType)
                 
                 ChoreographedCCEKResult.SUCCESS(
-                    results = Indexed(couchdbResult, ipfsResult),
+                    results = _i[couchdbResult, ipfsResult],
                     strategy = ChoreographyStrategy.PIPELINE,
                     orchestration = ContextOrchestration.COUCHDB_IPFS_CONTEXT
                 )
@@ -222,7 +227,8 @@ class CCEKProtocolChoreographer(
         orchestration: ContextOrchestration
     ): ChoreographedCCEKResult {
         val results = coroutineScope {
-            protocols.map { protocol ->
+            (0 until protocols.a).map { i ->
+                val protocol = protocols.b(i)
                 async {
                     when (protocol) {
                         "quic" -> orchestrator.processQUIC(data, QuicFrameType.STREAM, 0L)
@@ -231,7 +237,7 @@ class CCEKProtocolChoreographer(
                         else -> CCEKResult.ERROR("Unknown protocol: $protocol", ProtocolTarget.DEFAULT)
                     }
                 }
-            }.toList().awaitAll()
+            }.awaitAll()
         }
         
         return ChoreographedCCEKResult.SUCCESS(

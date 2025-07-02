@@ -200,8 +200,8 @@ class CCEKChunkedEncodingChordSheet {
             
             // Apply compression if needed
             val compressedData = when (compressionStrategy) {
-                ChunkCompressionStrategy.ZSTD -> PackingContext.ZSTD.compress(chunkData)
-                ChunkCompressionStrategy.LZ4 -> PackingContext.LZ4.compress(chunkData)
+                ChunkCompressionStrategy.ZSTD -> execCompress("zstd", chunkData)
+                ChunkCompressionStrategy.LZ4 -> execCompress("lz4", chunkData)
                 ChunkCompressionStrategy.NONE -> chunkData
             }
             
@@ -229,6 +229,12 @@ class CCEKChunkedEncodingChordSheet {
             compressedSize = chunks.sumOf { it.data.size },
             chunkCount = chunks.size
         )
+    }
+    
+    private fun execCompress(tool: String, data: Indexed<Byte>): Indexed<Byte> {
+        // Internalize framing, externalize compression via exec
+        // For now return data unchanged - implement exec later
+        return data
     }
 }
 

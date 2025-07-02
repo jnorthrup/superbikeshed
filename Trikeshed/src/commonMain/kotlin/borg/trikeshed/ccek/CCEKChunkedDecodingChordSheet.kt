@@ -251,9 +251,14 @@ class CCEKChunkedDecodingChordSheet {
             }.let { list: List<ChunkValidationResult> -> list.size j { idx: Int -> list[idx] } }
             
             // Check for validation errors
-            val validationErrors = validationResults.filter { it is ChunkValidationResult.ERROR }
-            if (validationErrors.isNotEmpty()) {
-                return ChunkedDecodingResult.ERROR("Validation failed: ${validationErrors.size} chunks invalid")
+            var errorCount = 0
+            for (i in 0 until validationResults.a) {
+                if (validationResults.b(i) is ChunkValidationResult.ERROR) {
+                    errorCount++
+                }
+            }
+            if (errorCount > 0) {
+                return ChunkedDecodingResult.ERROR("Validation failed: $errorCount chunks invalid")
             }
             
             // Reassemble data based on strategy
@@ -346,10 +351,16 @@ class CCEKChunkedDecodingChordSheet {
     
     private suspend fun decompressChunk(data: Indexed<Byte>, strategy: ChunkDecompressionStrategy): Indexed<Byte> {
         return when (strategy) {
-            ChunkDecompressionStrategy.ZSTD -> PackingContext.ZSTD.decompress(data)
-            ChunkDecompressionStrategy.LZ4 -> PackingContext.LZ4.decompress(data)
+            ChunkDecompressionStrategy.ZSTD -> execDecompress("zstd", data)
+            ChunkDecompressionStrategy.LZ4 -> execDecompress("lz4", data)
             ChunkDecompressionStrategy.NONE -> data
         }
+    }
+    
+    private suspend fun execDecompress(tool: String, data: Indexed<Byte>): Indexed<Byte> {
+        // Internalize framing, externalize compression via exec
+        // For now return data unchanged - implement exec later
+        return data
     }
     
     private fun validateChunk(chunk: ChunkedChunk, strategy: ChunkValidationStrategy): ChunkValidationResult {
