@@ -13,11 +13,24 @@ actual suspend fun runInteractivePlatform() {
 }
 
 actual suspend fun executePlatformAITask(prompt: String) {
-    // For now, just echo the prompt - real AI integration will come later
-    println("Nexus AI Response:")
-    println("==================")
-    println("[Platform: JVM] Processing prompt: $prompt")
-    println("Note: AI integration pending k2script LiteLLMClient port to KMP")
+    println("Nexus: Executing AI task...")
+    
+    // Get available LLM provider
+    val provider = nexus.ai.providers.ProviderRegistry.autoDetectProvider()
+    
+    try {
+        val response = provider.complete(
+            prompt = prompt,
+            systemPrompt = "You are Nexus, an AI agent that helps with development tasks. Provide clear, actionable responses."
+        )
+        
+        println("Nexus AI Response:")
+        println("==================")
+        println(response)
+    } catch (e: Exception) {
+        println("Nexus AI Error: ${e.message}")
+        println("Tip: Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable, or run Ollama locally")
+    }
 }
 
 actual fun printError(message: String) {

@@ -14,16 +14,14 @@ import kotlinx.coroutines.channels.Channel
  */
 class CCEKFileChannel(
     val filePath: String,
-    private val fileIO: PlatformFileIO = PlatformFileIOImpl()
+    private val fileIO: PlatformFileIO
 ) : AsyncChannel {
 
     override val fd: Int = filePath.hashCode() // Simple hash for file descriptor
     override val isOpen: Boolean = true // Files are conceptually always open for read/write operations
-    override val localAddress: String = filePath
-    override val remoteAddress: String = "local"
+    override suspend fun localAddress(): String = filePath
+    override suspend fun remoteAddress(): String = "local"
 
-    // For file channels, batch operations might not be directly supported by underlying PlatformFileIO
-    // We'll simulate them by calling single read/write operations in a loop.
     override suspend fun readBatch(buffers: Indexed<ByteArray>): Indexed<Int> {
         val results = mutableListOf<Int>()
         for (i in 0 until buffers.a) {
@@ -32,7 +30,7 @@ class CCEKFileChannel(
                 val offset = 0 // For simplicity, assume reading from start for now
                 val length = minOf(buffer.size, fileContent.a - offset)
                 if (length > 0) {
-                    fileContent.slice(offset, offset + length).play.copyInto(buffer, 0, 0, length)
+                    fileContent.slice(offset, offset + length).toByteArray().copyInto(buffer, 0, 0, length)
                     length
                 } else {
                     -1 // End of file
@@ -53,17 +51,12 @@ class CCEKFileChannel(
         return results.size j results::get
     }
 
-    override suspend fun localAddress(): String = localAddress
-    override suspend fun remoteAddress(): String = remoteAddress
-
     override suspend fun close() {
         // No explicit close needed for fileIO, as it's stateless
         // In a real scenario, if file handles were managed, they would be closed here.
     }
 
     override suspend fun submitAndWait(sqeOps: Indexed<SqeOp>): Indexed<Int> {
-        // This is a simplified implementation. In a real io_uring integration,
-        // these operations would be submitted to the kernel.
         val results = mutableListOf<Int>()
         for (i in 0 until sqeOps.a) {
             when (val op = sqeOps.b(i)) {
@@ -72,7 +65,7 @@ class CCEKFileChannel(
                         val offset = op.offset.toInt()
                         val length = minOf(op.buffer.size, fileContent.a - offset)
                         if (length > 0) {
-                            fileContent.slice(offset, offset + length).play.copyInto(op.buffer, 0, 0, length)
+                            fileContent.slice(offset, offset + length).toByteArray().copyInto(op.buffer, 0, 0, length)
                             length
                         } else {
                             -1 // End of file
@@ -90,6 +83,5 @@ class CCEKFileChannel(
         return results.size j results::get
     }
 
-    override val completions: Channel<Any>
-        get() = Channel(Channel.UNLIMITED) // Not directly used for file operations in this simplified model
+    override val completions: Channel<Any> = Channel(Channel.UNLIMITED)
 }

@@ -18,17 +18,17 @@ class CCEKChunkedEncodingChordSheet {
     
     // Chunk size selection chord - maps content types to optimal chunk sizes
     private val chunkSizeChord: MetaSeries<CouchDBContentType, () -> Int> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { 8192 } // 8KB for documents
-                CouchDBContentType.ATTACHMENT -> { 65536 } // 64KB for attachments
-                CouchDBContentType.DESIGN -> { 4096 } // 4KB for design docs
-                CouchDBContentType.REVISION -> { 2048 } // 2KB for revisions
-                CouchDBContentType.REPLICATION_LOG -> { 16384 } // 16KB for replication
-                CouchDBContentType.CHANGES_FEED -> { 4096 } // 4KB for changes
-                else -> { 8192 } // Default 8KB
+                CouchDBContentType.DOCUMENT -> 8192
+                CouchDBContentType.ATTACHMENT -> 65536
+                CouchDBContentType.DESIGN -> 4096
+                CouchDBContentType.REVISION -> 2048
+                CouchDBContentType.REPLICATION_LOG -> 16384
+                CouchDBContentType.CHANGES_FEED -> 4096
+                else -> 8192
             }
-        }
+        } }
     
     // Chunk encoding strategy chord - maps content types to encoding strategies
     private val chunkEncodingChord: MetaSeries<CouchDBContentType, () -> ChunkEncodingStrategy> =
@@ -358,144 +358,138 @@ fun Indexed<CouchDBChange>.toJsonBytes(): Indexed<Byte> {
 
 // === CHUNK HEADER GENERATOR IMPLEMENTATIONS ===
 
-object ChunkHeaderGenerator {
-    fun COMPRESSED_JSON.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
-        return ChunkHeader(
-            size = size,
-            encoding = "application/json",
-            compression = "zstd",
-            contentType = "couchdb-document"
-        )
-    }
-    
-    fun COMPRESSED_BINARY.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
-        return ChunkHeader(
-            size = size,
-            encoding = "application/octet-stream",
-            compression = "lz4",
-            contentType = "couchdb-attachment"
-        )
-    }
-    
-    fun STREAMING_JSON.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
-        return ChunkHeader(
-            size = size,
-            encoding = "application/json",
-            compression = null,
-            contentType = "couchdb-changes"
-        )
-    }
-    
-    fun RAW_BINARY.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
-        return ChunkHeader(
-            size = size,
-            encoding = "application/octet-stream",
-            compression = null,
-            contentType = "couchdb-binary"
-        )
-    }
-    
-    fun DEFAULT.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
-        return ChunkHeader(
-            size = size,
-            encoding = "application/json",
-            compression = null,
-            contentType = "couchdb-default"
-        )
-    }
+fun ChunkHeaderGenerator.COMPRESSED_JSON.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
+    return ChunkHeader(
+        size = size,
+        encoding = "application/json",
+        compression = "zstd",
+        contentType = "couchdb-document"
+    )
+}
+
+fun ChunkHeaderGenerator.COMPRESSED_BINARY.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
+    return ChunkHeader(
+        size = size,
+        encoding = "application/octet-stream",
+        compression = "lz4",
+        contentType = "couchdb-attachment"
+    )
+}
+
+fun ChunkHeaderGenerator.STREAMING_JSON.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
+    return ChunkHeader(
+        size = size,
+        encoding = "application/json",
+        compression = null,
+        contentType = "couchdb-changes"
+    )
+}
+
+fun ChunkHeaderGenerator.RAW_BINARY.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
+    return ChunkHeader(
+        size = size,
+        encoding = "application/octet-stream",
+        compression = null,
+        contentType = "couchdb-binary"
+    )
+}
+
+fun ChunkHeaderGenerator.DEFAULT.generateHeader(size: Int, encoding: ChunkEncodingStrategy): ChunkHeader {
+    return ChunkHeader(
+        size = size,
+        encoding = "application/json",
+        compression = null,
+        contentType = "couchdb-default"
+    )
 }
 
 // === CHUNK TRAILER GENERATOR IMPLEMENTATIONS ===
 
-object ChunkTrailerGenerator {
-    fun JSON_DOCUMENT.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "document")
-        )
-    }
-    
-    fun BINARY_ATTACHMENT.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "attachment")
-        )
-    }
-    
-    fun JSON_DESIGN.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "design")
-        )
-    }
-    
-    fun JSON_REVISION.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "revision")
-        )
-    }
-    
-    fun JSON_REPLICATION.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "replication")
-        )
-    }
-    
-    fun JSON_CHANGES.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "changes")
-        )
-    }
-    
-    fun DEFAULT.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
-        return ChunkTrailer(
-            totalSize = totalSize,
-            chunkCount = chunkCount,
-            checksum = null,
-            metadata = mapOf("type" to "default")
-        )
-    }
+fun ChunkTrailerGenerator.JSON_DOCUMENT.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "document")
+    )
+}
+
+fun ChunkTrailerGenerator.BINARY_ATTACHMENT.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "attachment")
+    )
+}
+
+fun ChunkTrailerGenerator.JSON_DESIGN.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "design")
+    )
+}
+
+fun ChunkTrailerGenerator.JSON_REVISION.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "revision")
+    )
+}
+
+fun ChunkTrailerGenerator.JSON_REPLICATION.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "replication")
+    )
+}
+
+fun ChunkTrailerGenerator.JSON_CHANGES.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "changes")
+    )
+}
+
+fun ChunkTrailerGenerator.DEFAULT.generateTrailer(totalSize: Int, chunkCount: Int): ChunkTrailer {
+    return ChunkTrailer(
+        totalSize = totalSize,
+        chunkCount = chunkCount,
+        checksum = null,
+        metadata = mapOf("type" to "default")
+    )
 }
 
 // === CHUNK BOUNDARY STRATEGY IMPLEMENTATIONS ===
 
-object ChunkBoundaryStrategy {
-    fun JSON_OBJECT.determineBoundary(data: Indexed<Byte>, offset: Int, totalSize: Int): ChunkBoundary {
-        return ChunkBoundary(
-            type = ChunkBoundaryStrategy.JSON_OBJECT,
-            isLast = offset + data.size >= totalSize,
-            nextOffset = if (offset + data.size < totalSize) offset + data.size else null
-        )
-    }
-    
-    fun FIXED_SIZE.determineBoundary(data: Indexed<Byte>, offset: Int, totalSize: Int): ChunkBoundary {
-        return ChunkBoundary(
-            type = ChunkBoundaryStrategy.FIXED_SIZE,
-            isLast = offset + data.size >= totalSize,
-            nextOffset = if (offset + data.size < totalSize) offset + data.size else null
-        )
-    }
-    
-    fun JSON_LINE.determineBoundary(data: Indexed<Byte>, offset: Int, totalSize: Int): ChunkBoundary {
-        return ChunkBoundary(
-            type = ChunkBoundaryStrategy.JSON_LINE,
-            isLast = offset + data.size >= totalSize,
-            nextOffset = if (offset + data.size < totalSize) offset + data.size else null
-        )
-    }
+fun ChunkBoundaryStrategy.JSON_OBJECT.determineBoundary(data: Indexed<Byte>, offset: Int, totalSize: Int): ChunkBoundary {
+    return ChunkBoundary(
+        type = ChunkBoundaryStrategy.JSON_OBJECT,
+        isLast = offset + data.size >= totalSize,
+        nextOffset = if (offset + data.size < totalSize) offset + data.size else null
+    )
+}
+
+fun ChunkBoundaryStrategy.FIXED_SIZE.determineBoundary(data: Indexed<Byte>, offset: Int, totalSize: Int): ChunkBoundary {
+    return ChunkBoundary(
+        type = ChunkBoundaryStrategy.FIXED_SIZE,
+        isLast = offset + data.size >= totalSize,
+        nextOffset = if (offset + data.size < totalSize) offset + data.size else null
+    )
+}
+
+fun ChunkBoundaryStrategy.JSON_LINE.determineBoundary(data: Indexed<Byte>, offset: Int, totalSize: Int): ChunkBoundary {
+    return ChunkBoundary(
+        type = ChunkBoundaryStrategy.JSON_LINE,
+        isLast = offset + data.size >= totalSize,
+        nextOffset = if (offset + data.size < totalSize) offset + data.size else null
+    )
 } 

@@ -19,68 +19,68 @@ class CCEKChunkedDecodingChordSheet {
     
     // Chunk parsing strategy chord - maps content types to parsing strategies
     private val chunkParsingChord: MetaSeries<CouchDBContentType, () -> ChunkParsingStrategy> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { ChunkParsingStrategy.JSON_OBJECT }
-                CouchDBContentType.ATTACHMENT -> { ChunkParsingStrategy.BINARY_STREAM }
-                CouchDBContentType.DESIGN -> { ChunkParsingStrategy.JSON_OBJECT }
-                CouchDBContentType.REVISION -> { ChunkParsingStrategy.JSON_OBJECT }
-                CouchDBContentType.REPLICATION_LOG -> { ChunkParsingStrategy.JSON_OBJECT }
-                CouchDBContentType.CHANGES_FEED -> { ChunkParsingStrategy.JSON_LINE_STREAM }
-                else -> { ChunkParsingStrategy.JSON_OBJECT }
+                CouchDBContentType.DOCUMENT -> ChunkParsingStrategy.JSON_OBJECT
+                CouchDBContentType.ATTACHMENT -> ChunkParsingStrategy.BINARY_STREAM
+                CouchDBContentType.DESIGN -> ChunkParsingStrategy.JSON_OBJECT
+                CouchDBContentType.REVISION -> ChunkParsingStrategy.JSON_OBJECT
+                CouchDBContentType.REPLICATION_LOG -> ChunkParsingStrategy.JSON_OBJECT
+                CouchDBContentType.CHANGES_FEED -> ChunkParsingStrategy.JSON_LINE_STREAM
+                else -> ChunkParsingStrategy.JSON_OBJECT
             }
-        }
+        } }
     
     // Chunk decompression chord - maps compression types to decompression strategies
     private val chunkDecompressionChord: MetaSeries<String?, () -> ChunkDecompressionStrategy> =
-        "zstd" j { compression ->
+        "zstd" j { compression -> { 
             when (compression) {
-                "zstd" -> { ChunkDecompressionStrategy.ZSTD }
-                "lz4" -> { ChunkDecompressionStrategy.LZ4 }
-                null -> { ChunkDecompressionStrategy.NONE }
-                else -> { ChunkDecompressionStrategy.NONE }
+                "zstd" -> ChunkDecompressionStrategy.ZSTD
+                "lz4" -> ChunkDecompressionStrategy.LZ4
+                null -> ChunkDecompressionStrategy.NONE
+                else -> ChunkDecompressionStrategy.NONE
             }
-        }
+        } }
     
     // Chunk validation chord - maps content types to validation strategies
     private val chunkValidationChord: MetaSeries<CouchDBContentType, () -> ChunkValidationStrategy> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { ChunkValidationStrategy.JSON_SCHEMA }
-                CouchDBContentType.ATTACHMENT -> { ChunkValidationStrategy.CHECKSUM }
-                CouchDBContentType.DESIGN -> { ChunkValidationStrategy.JSON_SCHEMA }
-                CouchDBContentType.REVISION -> { ChunkValidationStrategy.JSON_SCHEMA }
-                CouchDBContentType.REPLICATION_LOG -> { ChunkValidationStrategy.JSON_SCHEMA }
-                CouchDBContentType.CHANGES_FEED -> { ChunkValidationStrategy.JSON_LINE }
-                else -> { ChunkValidationStrategy.NONE }
+                CouchDBContentType.DOCUMENT -> ChunkValidationStrategy.JSON_SCHEMA
+                CouchDBContentType.ATTACHMENT -> ChunkValidationStrategy.CHECKSUM
+                CouchDBContentType.DESIGN -> ChunkValidationStrategy.JSON_SCHEMA
+                CouchDBContentType.REVISION -> ChunkValidationStrategy.JSON_SCHEMA
+                CouchDBContentType.REPLICATION_LOG -> ChunkValidationStrategy.JSON_SCHEMA
+                CouchDBContentType.CHANGES_FEED -> ChunkValidationStrategy.JSON_LINE
+                else -> ChunkValidationStrategy.NONE
             }
-        }
+        } }
     
     // Chunk reassembly chord - maps content types to reassembly strategies
     private val chunkReassemblyChord: MetaSeries<CouchDBContentType, () -> ChunkReassemblyStrategy> =
-        CouchDBContentType.DOCUMENT j { contentType ->
+        CouchDBContentType.DOCUMENT j { contentType -> { 
             when (contentType) {
-                CouchDBContentType.DOCUMENT -> { ChunkReassemblyStrategy.BUFFER_COMPLETE }
-                CouchDBContentType.ATTACHMENT -> { ChunkReassemblyStrategy.STREAM_IMMEDIATE }
-                CouchDBContentType.DESIGN -> { ChunkReassemblyStrategy.BUFFER_COMPLETE }
-                CouchDBContentType.REVISION -> { ChunkReassemblyStrategy.BUFFER_COMPLETE }
-                CouchDBContentType.REPLICATION_LOG -> { ChunkReassemblyStrategy.BUFFER_COMPLETE }
-                CouchDBContentType.CHANGES_FEED -> { ChunkReassemblyStrategy.STREAM_IMMEDIATE }
-                else -> { ChunkReassemblyStrategy.BUFFER_COMPLETE }
+                CouchDBContentType.DOCUMENT -> ChunkReassemblyStrategy.BUFFER_COMPLETE
+                CouchDBContentType.ATTACHMENT -> ChunkReassemblyStrategy.STREAM_IMMEDIATE
+                CouchDBContentType.DESIGN -> ChunkReassemblyStrategy.BUFFER_COMPLETE
+                CouchDBContentType.REVISION -> ChunkReassemblyStrategy.BUFFER_COMPLETE
+                CouchDBContentType.REPLICATION_LOG -> ChunkReassemblyStrategy.BUFFER_COMPLETE
+                CouchDBContentType.CHANGES_FEED -> ChunkReassemblyStrategy.STREAM_IMMEDIATE
+                else -> ChunkReassemblyStrategy.BUFFER_COMPLETE
             }
-        }
+        } }
     
     // Chunk error recovery chord - maps error types to recovery strategies
     private val chunkErrorRecoveryChord: MetaSeries<ChunkErrorType, () -> ChunkErrorRecoveryStrategy> =
-        ChunkErrorType.PARSE_ERROR j { errorType ->
+        ChunkErrorType.PARSE_ERROR j { errorType -> { 
             when (errorType) {
-                ChunkErrorType.PARSE_ERROR -> { ChunkErrorRecoveryStrategy.RETRY_CHUNK }
-                ChunkErrorType.DECOMPRESSION_ERROR -> { ChunkErrorRecoveryStrategy.SKIP_CHUNK }
-                ChunkErrorType.VALIDATION_ERROR -> { ChunkErrorRecoveryStrategy.REPORT_ERROR }
-                ChunkErrorType.CORRUPTION_ERROR -> { ChunkErrorRecoveryStrategy.ABORT_STREAM }
-                else -> { ChunkErrorRecoveryStrategy.REPORT_ERROR }
+                ChunkErrorType.PARSE_ERROR -> ChunkErrorRecoveryStrategy.RETRY_CHUNK
+                ChunkErrorType.DECOMPRESSION_ERROR -> ChunkErrorRecoveryStrategy.SKIP_CHUNK
+                ChunkErrorType.VALIDATION_ERROR -> ChunkErrorRecoveryStrategy.REPORT_ERROR
+                ChunkErrorType.CORRUPTION_ERROR -> ChunkErrorRecoveryStrategy.ABORT_STREAM
+                else -> ChunkErrorRecoveryStrategy.REPORT_ERROR
             }
-        }
+        } }
     
     // === PUBLIC API ===
     
