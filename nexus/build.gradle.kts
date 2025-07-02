@@ -11,10 +11,9 @@ version = "1.0-SNAPSHOT"
 kotlin {
     jvm()
     wasmJs { 
-        browser()
-        nodejs()
         binaries.executable()
     }
+    
     
     // Native targets based on host OS
     val hostOs = System.getProperty("os.name")

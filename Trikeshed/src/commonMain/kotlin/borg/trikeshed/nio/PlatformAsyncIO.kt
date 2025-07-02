@@ -43,3 +43,4 @@ expect interface PlatformAsyncIO {
      */
     val isOpen: Boolean
 }
+

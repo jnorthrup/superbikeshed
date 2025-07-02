@@ -122,6 +122,4 @@ object MainOrchestrator {
     }
 }
 
-fun main() = runBlocking {
-    MainOrchestrator.run()
-} 
+ 

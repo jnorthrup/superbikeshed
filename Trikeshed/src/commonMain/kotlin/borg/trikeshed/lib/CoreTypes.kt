@@ -6,7 +6,7 @@ package borg.trikeshed.lib
 
 import borg.trikeshed.common.collections.ArrayCowView
 import kotlin.properties.Delegates
-import kotlin.jvm.JvmInline
+
 import kotlin.reflect.KClassifier
 import borg.trikeshed.lib.j
 
@@ -68,6 +68,13 @@ val ULong.z: Boolean get() = 0UL == this
 infix fun <T> T.d(other: T): T { println(other); return this }
 
 infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
+
+/**
+ * Reverse composition operator (◂) - Compose in reverse order
+ * f ◂ g means first f then g (opposite of traditional composition)
+ * (f ◂ g)(x) = g(f(x))
+ */
+infix fun <A, B, C> ((A) -> B).`◂`(g: (B) -> C): (A) -> C = { a: A -> g(this(a)) }
 
 expect fun assert(value: Boolean)
 expect fun assert(value: Boolean, lazyMessage: () -> Any)

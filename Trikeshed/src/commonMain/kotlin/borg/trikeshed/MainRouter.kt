@@ -2,17 +2,19 @@ package borg.trikeshed
 
 import borg.trikeshed.dsl.*
 import borg.trikeshed.net.*
+import borg.trikeshed.net.http.*
 import borg.trikeshed.net.quic.*
 import borg.trikeshed.ipfs.*
 import borg.trikeshed.couchdb.*
+import borg.trikeshed.io.*
 // import borg.trikeshed.k2script.*
 // import borg.trikeshed.rts.*
-// import borg.trikeshed.distributed.*
+import borg.trikeshed.distributed.*
 // import borg.trikeshed.jetsam.*
 import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
-import kotlin.jvm.JvmStatic
+
 
 /**
  * Main DSL Router - Single entry point to entire TrikeShed codebase
@@ -130,10 +132,14 @@ class RouteContext(val args: Array<String>) {
     // CouchDB - Production-ready implementation
     fun couch(block: CouchConfig.() -> Unit): CouchClient {
         val config = CouchConfig().apply(block)
-        return CouchClient(
-            baseUrl = config.url,
-            transport = config.transport
-        )
+        // TODO: Fix HttpClient creation - IOContext constructor is protected
+        // val ioContext = IOContext()
+        // val httpClient = HttpClient(ioContext)
+        // return CouchClient(
+        //     baseUrl = config.url,
+        //     httpClient = httpClient
+        // )
+        throw NotImplementedError("CouchClient creation needs IOContext fix")
     }
     
     // K2Script servlets
@@ -206,7 +212,6 @@ class IpfsConfig {
 
 class CouchConfig {
     var url = "http://localhost:5984"
-    var transport = CouchClient.Transport.HTTP
 }
 
 class ServletConfig {
@@ -237,7 +242,8 @@ class DistributedConfig {
 /**
  * Main entry point using DSL
  */
-fun main(args: Array<String>) = MainRouter.trikeshed(args) {
+suspend fun main(args: Array<String>) {
+    MainRouter.trikeshed(args) {
     
     // C10K server with static files and servlets
     route("server") {
@@ -247,24 +253,25 @@ fun main(args: Array<String>) = MainRouter.trikeshed(args) {
             enableQuic = true
         }
         
-        val servlets = servlets {
-            scriptRoot = "$staticRoot/servlets"
+        /* val servlets = servlets {
+            scriptRoot = "${server.staticRoot}/servlets"
             cacheScripts = true
-        }
+        } */
         
         server.start()
     }
     
     // RTS game host
     route("rts") {
-        val host = rts {
+        /* val host = rts {
             port = argInt(0, 7777)
             maxPlayers = argInt(1, 8)
             tickRate = 60
             enableRollback = true
         }
         
-        host.start()
+        host.start() */
+        println("RTS game host not yet implemented")
     }
     
     // IPFS node
@@ -277,7 +284,7 @@ fun main(args: Array<String>) = MainRouter.trikeshed(args) {
             )
         }
         
-        println("IPFS node started: ${client.localPeerId.toBase58()}")
+        println("IPFS node started: ${base58Encode(client.localPeerId.id)}")
     }
     
     // Distributed storage
@@ -318,8 +325,8 @@ fun main(args: Array<String>) = MainRouter.trikeshed(args) {
         
         when (arg(1)) {
             "list" -> {
-                val dbs = client.listDatabases()
-                println("Databases: ${dbs.a}")
+                // TODO: Implement listDatabases method in CouchClient
+                println("List databases not yet implemented")
             }
             "create" -> {
                 val dbName = arg(2, "test")
@@ -355,5 +362,6 @@ fun main(args: Array<String>) = MainRouter.trikeshed(args) {
               - Cursor operations
               - All TrikeShed lib types
         """.trimIndent())
+    }
     }
 } 

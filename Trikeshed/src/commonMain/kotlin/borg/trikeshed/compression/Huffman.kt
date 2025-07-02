@@ -1,7 +1,6 @@
 package borg.trikeshed.compression
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Indexed
 
 /**
  * Represents a Huffman code, consisting of a value (the decoded symbol)
@@ -25,7 +24,7 @@ data class HuffmanCode(val value: Int, val length: Int)
  */
 class HuffmanLookupTable(val maxBits: Int, val lookupTable: Indexed<HuffmanCode?>) {
     init {
-        require(lookupTable.size == (1 shl maxBits)) {
+        require(lookupTable.a == (1 shl maxBits)) {
             "Lookup table size must be 2^maxBits. Expected ${1 shl maxBits}, got ${lookupTable.size}"
         }
     }

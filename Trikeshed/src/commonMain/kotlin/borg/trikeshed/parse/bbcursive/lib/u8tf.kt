@@ -1,10 +1,7 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.lib.CharIndexedBuffer
-import borg.trikeshed.lib.toByteIndexedBuffer
-import borg.trikeshed.lib.decodeUtf8
-import borg.trikeshed.lib.encodeUtf8
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 /**
  * unique code completion for utf8
@@ -12,18 +9,20 @@ import borg.trikeshed.lib.encodeUtf8
 object u8tf {
     /**
      * utf8 encoder macro
+     * @param charseq
+     * @return
      */
-    fun c2b(charseq: CharSequence): ByteIndexedBuffer {
-        return charseq.toString().encodeUtf8().toByteIndexedBuffer()
+    fun c2b(charseq: String): ByteBuffer {
+        return StandardCharsets.UTF_8.encode(charseq)
     }
 
     /**
      * UTF8 decoder macro
      *
      * @param buffer
-     * @return deferred string translation decision
+     * @return defered  string translation decision
      */
-    fun b2c(buffer: ByteIndexedBuffer): CharSequence {
-        return buffer.decodeUtf8()
+    fun b2c(buffer: ByteBuffer): CharSequence {
+        return StandardCharsets.UTF_8.decode(buffer)
     }
 }

@@ -1,30 +1,33 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.std
-import borg.trikeshed.parse.bbcursive.UnaryOperator
-import kotlin.coroutines.coroutineContext // Import coroutineContext
+import java.nio.ByteBuffer
+import java.util.Arrays
+import java.util.function.UnaryOperator
+
+import bbcursive.std.bb
 
 /**
  * Created by jim on 1/17/16.
  */
-interface opt_ {
-    companion object {
-        suspend fun opt(vararg unaryOperators: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
-            return object : UnaryOperator<ByteIndexedBuffer> {
-                override fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
-                    val position = buffer.pos
-                    val r = std.bb(buffer, *unaryOperators)
-                    if (null == r) {
-                        buffer.pos(position)
-                    }
-                    return buffer
-                }
+object opt_ {
 
-                override fun toString(): String {
-                    return "opt:${unaryOperators.contentDeepToString()}"
-                }
+    fun opt(vararg unaryOperators: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+        return ByteBufferUnaryOperator(unaryOperators)
+    }
+
+    class ByteBufferUnaryOperator(private val allOrPrevious: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
+
+        override fun toString(): String {
+            return "opt:" + Arrays.deepToString(allOrPrevious)
+        }
+
+        override fun apply(buffer: ByteBuffer): ByteBuffer? {
+            val position = buffer.position()
+            val r = bb(buffer, *allOrPrevious)
+            if (null == r) {
+                buffer.position(position)
             }
+            return buffer
         }
     }
 }

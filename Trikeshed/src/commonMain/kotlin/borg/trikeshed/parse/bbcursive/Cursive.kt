@@ -1,6 +1,12 @@
 package borg.trikeshed.parse.bbcursive
 
 import borg.trikeshed.lib.ByteIndexedBuffer
+import borg.trikeshed.lib.decodeUtf8
+import borg.trikeshed.lib.get
+import borg.trikeshed.lib.pos
+import borg.trikeshed.lib.rem
+import borg.trikeshed.lib.rew
+import borg.trikeshed.lib.toByteIndexedBuffer
 import kotlin.jvm.JvmInline
 
 /**
@@ -9,7 +15,7 @@ import kotlin.jvm.JvmInline
 fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
     enum class pre : Cursive {
         duplicate {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.dup()
+            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.duplicate()
         },
         flip {
             override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.flip()
@@ -85,7 +91,8 @@ fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
             override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
                 while (target.hasRemaining && '\n' != target.get().toInt().toChar()) { }
                 return target
-            },
+            }
+        },
         back1 {
             override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.dec()
         },
@@ -128,7 +135,7 @@ fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
             override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.rew()
         },
         clear {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.clr()
+            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.clr
         },
         grow {
             override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = std.grow(target)
@@ -152,7 +159,7 @@ fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
          */
         pad0Until {
             override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                val limit = target.lim
+                val limit = target.limit
                 target.flip()
                 while (target.hasRemaining) {
                     target.put(0)

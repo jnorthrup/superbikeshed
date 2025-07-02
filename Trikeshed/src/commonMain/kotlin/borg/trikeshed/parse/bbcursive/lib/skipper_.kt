@@ -1,39 +1,35 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.std
-import borg.trikeshed.parse.bbcursive.Traits
-import borg.trikeshed.parse.bbcursive.UnaryOperator
-import borg.trikeshed.parse.bbcursive.SessionContext
-import kotlin.coroutines.coroutineContext
-import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
+import borg.trikeshed.ann.Skipper
+import borg.trikeshed.std
 
-// Assuming this annotation will be defined in Kotlin
-import borg.trikeshed.parse.bbcursive.ann.Skipper as SkipperAnn
+import java.nio.ByteBuffer
+import java.util.Arrays
+import java.util.function.UnaryOperator
 
-/**
- * Created by jim on 1/17/16.
- */
+import bbcursive.std.bb
+
+@Skipper
 interface skipper_ {
-    companion object {
-        @SkipperAnn
-        suspend fun skipper(vararg allOf: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
-            return object : UnaryOperator<ByteIndexedBuffer> {
-                override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
-                    val sessionContext = coroutineContext[SessionContext.Key]
-                        ?: throw IllegalStateException("SessionContext not found in CoroutineContext")
 
-                    sessionContext.flags.add(Traits.SKIPPER) // Add skipper trait
+    @Skipper
+    fun skipper(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+        return ByteBufferUnaryOperator(allOf)
 
-                    return std.bb(buffer, *allOf)
-                }
+    }
 
-                override fun toString(): String {
-                    return "skipper${allOf.contentDeepToString()}"
-                }
-            }
+    @Skipper
+    class ByteBufferUnaryOperator(private val allOf: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
+
+        override fun toString(): String {
+            return "skipper" + Arrays.deepToString(allOf)
+        }
+
+
+        override fun apply(buffer: ByteBuffer): ByteBuffer? {
+            std.flags.get().add(std.traits.skipper)
+
+            return bb(buffer, *allOf)
         }
     }
 }

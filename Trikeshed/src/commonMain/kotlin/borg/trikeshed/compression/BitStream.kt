@@ -1,7 +1,6 @@
 package borg.trikeshed.compression
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Indexed
 
 /**
  * A high-performance bit-level input stream designed to work with Trikeshed's Indexed<Byte> (Indexed<Byte>).
@@ -132,7 +131,7 @@ class BitStream(private val data: Indexed<Byte>) {
      * Checks if there are more bits available to read in the stream.
      */
     fun hasRemaining(): Boolean {
-        return bytePosition < data.size - 1 || (bytePosition == data.size - 1 && bitOffset < 8)
+        return bytePosition < data.a - 1 || (bytePosition == data.a - 1 && bitOffset < 8)
     }
 
     /**

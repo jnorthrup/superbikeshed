@@ -1,39 +1,34 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.std
-import borg.trikeshed.parse.bbcursive.Traits
-import borg.trikeshed.parse.bbcursive.UnaryOperator
-import borg.trikeshed.parse.bbcursive.SessionContext
-import kotlin.coroutines.coroutineContext
-import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
+import borg.trikeshed.ann.Backtracking
+import borg.trikeshed.std
 
-// Assuming these annotations will be defined in Kotlin
-import borg.trikeshed.parse.bbcursive.ann.Backtracking as BacktrackingAnn
+import java.nio.ByteBuffer
+import java.util.Arrays
+import java.util.function.UnaryOperator
 
-/**
- * Created by jim on 1/17/16.
- */
-interface backtrack_ {
-    companion object {
-        @BacktrackingAnn
-        suspend fun backtracker(vararg allOf: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
-            return object : UnaryOperator<ByteIndexedBuffer> {
-                override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
-                    val sessionContext = coroutineContext[SessionContext.Key]
-                        ?: throw IllegalStateException("SessionContext not found in CoroutineContext")
+import bbcursive.std.bb
 
-                    sessionContext.flags.add(Traits.SKIPPER) // Add skipper trait
+@Backtracking
+object backtrack_ {
 
-                    return std.bb(buffer, *allOf)
-                }
+    @Backtracking
+    fun backtracker(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+        return backTracker(allOf)
 
-                override fun toString(): String {
-                    return "backtracker${allOf.contentDeepToString()}"
-                }
-            }
+    }
+    @Backtracking
+    private class backTracker(private val allOf: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
+
+        override fun toString(): String {
+            return "backtracker" + Arrays.deepToString(allOf)
+        }
+
+
+        override fun apply(buffer: ByteBuffer): ByteBuffer? {
+            std.flags.get().add(std.traits.skipper)
+
+            return bb(buffer, *allOf)
         }
     }
 }

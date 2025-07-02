@@ -172,29 +172,36 @@ fun demoRegisterJoins() {
 // === WIRE PROTOCOL INTEGRATION ===
 
 /**
- * Serialize RegisterJoin to wire format with maximum efficiency
+ * Wire protocol serializer - softened to lambda-based definitions
  */
 fun <A, B> RegisterJoin<A, B>.toWireBytes(): UByteArray {
-    // Simple serialization of the packed word
-    val buffer = UByteArray(8)
-    var w = word
-    for (i in 0..7) {
-        buffer[i] = (w and 0xFF).toUByte()
-        w = w shr 8
+    // Lambda-based serialization for wire protocol flexibility
+    val serializer: (RegisterJoin<A, B>) -> UByteArray = { join ->
+        val buffer = UByteArray(8)
+        var w = join.word
+        for (i in 0..7) {
+            buffer[i] = (w and 0xFF).toUByte()
+            w = w shr 8
+        }
+        buffer
     }
-    return buffer
+    return serializer(this)
 }
 
 /**
- * Deserialize wire format to RegisterJoin
+ * Wire protocol deserializer - softened to lambda-based definitions
  */
 fun UByteArray.toRegisterJoin(): RegisterJoin<*, *> {
-    require(size >= 8) { "RegisterJoin requires 8 bytes" }
-    var word = 0L
-    for (i in 7 downTo 0) {
-        word = (word shl 8) or (this[i].toLong() and 0xFF)
+    // Lambda-based deserialization for wire protocol flexibility
+    val deserializer: (UByteArray) -> RegisterJoin<*, *> = { bytes ->
+        require(bytes.size >= 8) { "RegisterJoin requires 8 bytes" }
+        var word = 0L
+        for (i in 7 downTo 0) {
+            word = (word shl 8) or (bytes[i].toLong() and 0xFF)
+        }
+        RegisterJoin<Any, Any>(word)
     }
-    return RegisterJoin<Any, Any>(word)
+    return deserializer(this)
 }
 
 // === COMPATIBILITY OVERLOADS ===

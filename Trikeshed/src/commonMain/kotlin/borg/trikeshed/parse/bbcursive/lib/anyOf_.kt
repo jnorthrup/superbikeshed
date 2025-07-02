@@ -1,6 +1,8 @@
 package borg.trikeshed.parse.bbcursive.lib
 
 import borg.trikeshed.lib.ByteIndexedBuffer
+import borg.trikeshed.lib.decodeUtf8
+import borg.trikeshed.lib.toByteIndexedBuffer
 import borg.trikeshed.parse.bbcursive.Cursive
 import borg.trikeshed.parse.bbcursive.ParseResult
 import borg.trikeshed.parse.bbcursive.SessionContext
@@ -19,7 +21,10 @@ interface anyOf_ {
         val NONE_OF: Set<Traits> = emptySet() // Changed EnumSet.noneOf to emptySet()
 
         suspend fun anyOf(vararg anyOf: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
+
+
             return object : UnaryOperator<ByteIndexedBuffer> {
+
                 override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? { // Added suspend
                     val sessionContext = coroutineContext[SessionContext.Key]
                         ?: throw IllegalStateException("SessionContext not found in CoroutineContext")
@@ -27,34 +32,36 @@ interface anyOf_ {
                     var mark = buffer.pos
                     if (sessionContext.flags.contains(Traits.SKIPPER)) {
                         val apply = Cursive.pre.skipWs.invoke(buffer) // Changed apply to invoke
-                        buffer.pos(apply?.pos ?: mark) // Reset position if apply is null
-                        if (apply == null || !buffer.hasRemaining) { // Check apply for null
+                        val newBuffer = apply ?: buffer.pos(mark) // Reset position if apply is null
+                        if (newBuffer == null || !newBuffer.hasRemaining) {
                             return null
                         }
+                        buffer.pos(newBuffer.pos)
                     }
                     mark = buffer.pos
                     val offsets = intArrayOf(mark, mark)
                     val flaggs = arrayOf(NONE_OF)
+
 
                     val r = arrayOf<ByteIndexedBuffer?>(null)
                     val finalBuffer = arrayOf(buffer)
 
                     anyOf.asSequence() // Use asSequence for lazy evaluation
                         .map { op ->
-                            object : _edge<Set<Traits>, _edge<UnaryOperator<ByteIndexedBuffer>, Int>, _ptr>() { // Changed Integer to Int
+                            object : _edge<Set<Traits>, _edge<UnaryOperator<ByteIndexedBuffer>, Int>>() { // Changed Integer to Int
                                 private val currentBuffer = finalBuffer[0]
 
-                                override fun at(): _ptr = r$()
+                                override fun at(): Int = r$()
 
-                                override fun goTo(ptr: _ptr): _ptr {
+                                override fun goTo(ptr: Int): Int {
                                     throw Error("trifling with an immutable pointer")
                                 }
 
-                                override fun r$(): _ptr {
-                                    return _ptr().bind(currentBuffer.slice().pos(offsets[1]), offsets[0])
+                                override fun r$(): Int {
+                                    return currentBuffer?.pos ?: 0
                                 }
 
-                                override fun core(vararg e: _edge<Set<Traits>, _edge<UnaryOperator<ByteIndexedBuffer>, Int>, _ptr>): _edge<UnaryOperator<ByteIndexedBuffer>, Int> { // Changed Integer to Int
+                                override fun core(vararg e: _edge<Set<Traits>, _edge<UnaryOperator<ByteIndexedBuffer>, Int>>): _edge<UnaryOperator<ByteIndexedBuffer>, Int> { // Changed Integer to Int
                                     return object : _edge<UnaryOperator<ByteIndexedBuffer>, Int>() { // Changed Integer to Int
                                         override fun at(): Int = r$()
 
@@ -71,8 +78,8 @@ interface anyOf_ {
                         }
                         .filter { ed ->
                             val op = ed.core()?.core() // Access op from nested edge
-                            val newPosition = ed.location().location()
-                            val byteIndexedBuffer = ed.location().core()?.slice()?.pos(newPosition) // Null-safe calls
+                            val newPosition = ed.core()?.at() // Access newPosition from nested edge
+                            val byteIndexedBuffer = finalBuffer[0]?.duplicate()?.pos(newPosition ?: 0) // Null-safe calls
                             val res = op?.invoke(byteIndexedBuffer!!) // Changed apply to invoke, added !! for non-null assertion
 
                             if (res != null) {
@@ -87,28 +94,28 @@ interface anyOf_ {
                         ?.let { edge_ptr_edge ->
                             sessionContext.outbox(
                                 ParseResult(
-                                    finalBuffer[0],
+                                    finalBuffer[0]!!,
                                     edge_ptr_edge.core()?.core()!!, // Access op from nested edge
                                     offsets[0],
                                     offsets[1],
                                     flaggs[0]
                                 )
                             )
-                            r[0] = finalBuffer[0].pos(offsets[1])
+                            r[0] = finalBuffer[0]?.pos(offsets[1])
                         }
 
                     return r[0]
                 }
 
                 override fun toString(): String {
-                    return "any${anyOf.contentDeepToString()}"
+                    return "any" + anyOf.contentDeepToString()
                 }
             }
         }
 
-        @Backtracking // Assuming this annotation will be defined in Kotlin
+
         fun anyIn(s: CharSequence): UnaryOperator<ByteIndexedBuffer> {
-            val ints = s.chars().toArray() // Use toArray() for IntStream
+            val ints = s.chars().toArray()
             return object : UnaryOperator<ByteIndexedBuffer> {
                 override fun invoke(b: ByteIndexedBuffer): ByteIndexedBuffer? {
                     var r: ByteIndexedBuffer? = null
@@ -122,8 +129,8 @@ interface anyOf_ {
 
                 override fun toString(): String {
                     val sb = StringBuilder()
-                    ints.forEach { i -> sb.append(i.toChar()) }
-                    return "in[${sb}]"
+                    ints.forEach { i -> sb.append((i and 0xffff).toChar()) }
+                    return "in" + Arrays.deepToString(arrayOf(sb.toString()))
                 }
             }
         }

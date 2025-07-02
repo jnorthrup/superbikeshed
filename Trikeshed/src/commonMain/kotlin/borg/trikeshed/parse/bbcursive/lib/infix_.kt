@@ -1,32 +1,31 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.std
-import borg.trikeshed.parse.bbcursive.UnaryOperator
-import kotlin.coroutines.coroutineContext
-import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.hasAnnotation
+import borg.trikeshed.ann.Infix
+import borg.trikeshed.std
 
-// Assuming this annotation will be defined in Kotlin
-import borg.trikeshed.parse.bbcursive.ann.Infix as InfixAnn
+import java.nio.ByteBuffer
+import java.util.Arrays
+import java.util.function.UnaryOperator
 
-/**
- * Created by jim on 1/17/16.
- */
+@Infix
 interface infix_ {
-    companion object {
-        @InfixAnn
-        suspend fun infix(vararg allOf: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
-            return object : UnaryOperator<ByteIndexedBuffer> {
-                override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
-                    return std.bb(buffer, *allOf)
-                }
 
-                override fun toString(): String {
-                    return "infix${allOf.contentDeepToString()}"
-                }
-            }
+    @Infix
+    fun infix(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+        return ByteBufferUnaryOperator(allOf)
+
+    }
+
+    @Infix
+    class ByteBufferUnaryOperator(private val allOf: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
+
+        override fun toString(): String {
+            return "infix" + Arrays.deepToString(allOf)
+        }
+
+        override fun apply(buffer: ByteBuffer): ByteBuffer? {
+
+            return std.bb(buffer, *allOf)
         }
     }
 }

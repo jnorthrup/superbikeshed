@@ -4,18 +4,9 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.net.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.Contextual
 import kotlin.uuid.ExperimentalUuidApi
 
 /**
@@ -320,7 +311,7 @@ class CouchClient(
         val id = jsonObject["_id"]?.jsonPrimitive?.content ?: ""
         val rev = jsonObject["_rev"]?.jsonPrimitive?.content ?: ""
         val data = jsonObject.filterKeys { it !in listOf("_id", "_rev", "_deleted") }
-            .mapValues { (_, value) -> value.toString() }
+            .mapValues { (_, value) -> value.jsonPrimitive.content }
         return CouchDocumentData(id, rev, data)
     }
     

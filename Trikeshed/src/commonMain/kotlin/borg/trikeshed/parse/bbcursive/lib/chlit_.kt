@@ -4,18 +4,31 @@ import borg.trikeshed.lib.ByteIndexedBuffer
 import borg.trikeshed.parse.bbcursive.UnaryOperator
 
 /**
- * Created by jim on 1/17/16.
+char literal
  */
 object chlit_ {
     fun chlit(c: Char): UnaryOperator<ByteIndexedBuffer> {
-        return object : UnaryOperator<ByteIndexedBuffer> {
-            override fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
-                return if (buffer.hasRemaining && buffer.get().toInt().toChar() == c) buffer else null
-            }
+        return ByteBufferUnaryOperator(c)
+    }
 
-            override fun toString(): String {
-                return "chlit:$c"
+    fun chlit(s: CharSequence): UnaryOperator<ByteIndexedBuffer> {
+        return chlit(s[0])
+    }
+
+
+    private class ByteBufferUnaryOperator(private val c: Char) : UnaryOperator<ByteIndexedBuffer> {
+
+        override fun toString(): String {
+            return "c8'" +
+                    c + "'"
+        }
+
+        override fun invoke(buf: ByteIndexedBuffer): ByteIndexedBuffer? {
+            if (!buf.hasRemaining) {
+                return null
             }
+            val b = buf.get()
+            return if ((c.toInt() and 0xff) == (b.toInt() and 0xff)) buf else null
         }
     }
 }

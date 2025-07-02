@@ -162,7 +162,7 @@ inline fun couchdb_bulk_docs(
     return docs.a j { i: Int ->
         CouchDBBulkResult(
             ok = true,
-            id = docs[i].id,
+            id = docs.b(i).id,
             rev = "2-bulk",
             error = null,
             reason = null

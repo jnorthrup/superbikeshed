@@ -3,6 +3,8 @@ package borg.trikeshed.couchdb
 import borg.trikeshed.lib.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 
 /**
  * CouchDB Protocol Implementation
@@ -27,7 +29,7 @@ data class CouchDocument(
     @SerialName("_rev") val rev: String? = null,
     @SerialName("_deleted") val deleted: Boolean? = null,
     @SerialName("_attachments") val attachments: JsonObject? = null,
-    val data: JsonObject = JsonObject(emptyMap())
+    val data: Map<String, JsonElement> = emptyMap()
 ) {
     fun toJson(): JsonObject = buildJsonObject {
         id?.let { put("_id", it) }

@@ -1,44 +1,48 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.std
-import borg.trikeshed.parse.bbcursive.UnaryOperator
-import org.jetbrains.annotations.NotNull // Keep for now if needed for interop, otherwise remove
+import org.jetbrains.annotations.NotNull
+
+import java.nio.ByteBuffer
+import java.util.Arrays
+import java.util.function.UnaryOperator
+
+import bbcursive.std.bb
 
 /**
  * Created by jim on 1/17/16.
  */
-interface repeat_ {
-    companion object {
-        @NotNull
-        suspend fun repeat(vararg op: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
-            return object : UnaryOperator<ByteIndexedBuffer> {
-                override fun invoke(byteIndexedBuffer: ByteIndexedBuffer): ByteIndexedBuffer? {
-                    var mark = byteIndexedBuffer.pos
-                    var matches = 0
-                    var handle: ByteIndexedBuffer? = byteIndexedBuffer
-                    var last: ByteIndexedBuffer? = null
-                    while (handle?.hasRemaining == true) {
-                        last = handle
-                        handle = std.bb(last, *op)
-                        if (handle != null) {
-                            matches++
-                            mark = handle.pos
-                        } else {
-                            break
-                        }
-                    }
+object repeat_ {
 
-                    if (matches > 0 && last?.hasRemaining == true)
-                        last.pos(mark)
+    @NotNull
+    fun repeat(vararg op: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+        return object : UnaryOperator<ByteBuffer> {
 
-                    return if (matches > 0) last else null
+
+            override fun toString(): String {
+                return "rep:" + Arrays.deepToString(op)
+            }
+
+            override fun apply(byteBuffer: ByteBuffer): ByteBuffer? {
+                var mark = byteBuffer.position()
+                var matches = 0
+                var handle: ByteBuffer? = byteBuffer
+                var last: ByteBuffer? = null
+                while (handle != null && handle.hasRemaining()) {
+                    last = handle
+                    //                if (null != (handle=op.apply(handle))) {
+                    if (bb(last, *op) != null) {
+                        matches++
+                        mark = handle.position()
+                    } else
+                        break
                 }
 
-                override fun toString(): String {
-                    return "rep:${op.contentDeepToString()}"
-                }
+                if (matches > 0 && last != null && last.hasRemaining())
+                    last.position(mark)
+
+                return if (matches > 0) last else null
             }
         }
     }
+
 }

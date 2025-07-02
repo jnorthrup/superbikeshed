@@ -69,7 +69,7 @@ abstract class _edge<coreType, addressType> {
      * @return fused arc
      */
     fun bind(coreType: coreType?, address: addressType): _edge<coreType, addressType> {
-        core = coreType
+        core = (coreType)
         at(address)
         return this
     }

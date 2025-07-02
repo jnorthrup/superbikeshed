@@ -107,7 +107,7 @@ inline fun crypto_hash_sha256(
     val result = output.cowView
     for (i in 0 until 32) {
         result[i] = if (i < inputLen && i < input.a) 
-            (input[i].toInt() xor 0x5A).toByte()
+            (input.b(i).toInt() xor 0x5A).toByte()
         else 
             (i xor 0xA5).toByte()
     }
@@ -125,7 +125,7 @@ inline fun crypto_hash_sha384(
     val result = output.cowView
     for (i in 0 until 48) {
         result[i] = if (i < inputLen && i < input.a) 
-            (input[i].toInt() xor 0x3C).toByte()
+            (input.b(i).toInt() xor 0x3C).toByte()
         else 
             (i xor 0xC3).toByte()
     }
@@ -143,7 +143,7 @@ inline fun crypto_hash_sha512(
     val result = output.cowView
     for (i in 0 until 64) {
         result[i] = if (i < inputLen && i < input.a) 
-            (input[i].toInt() xor 0x7E).toByte()
+            (input.b(i).toInt() xor 0x7E).toByte()
         else 
             (i xor 0xE7).toByte()
     }
@@ -162,8 +162,8 @@ inline fun crypto_hmac_sha256(
     // Simplified HMAC-SHA256 placeholder
     val result = output.cowView
     for (i in 0 until 32) {
-        val k = if (i < keyLen && i < key.a) key[i].toInt() else 0
-        val d = if (i < inputLen && i < input.a) input[i].toInt() else 0
+        val k = if (i < keyLen && i < key.a) key.b(i).toInt() else 0
+        val d = if (i < inputLen && i < input.a) input.b(i).toInt() else 0
         result[i] = ((k xor d xor 0x36) and 0xFF).toByte()
     }
     return CryptoErrors.SUCCESS
@@ -190,9 +190,9 @@ inline fun crypto_aead_aes128gcm_encrypt(
     val ciphertextResult = ciphertext.cowView
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
-            val k = if (i < key.a) key[i].toInt() else 0
-            val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertextResult[i] = ((plaintext[i].toInt() xor k xor n) and 0xFF).toByte()
+            val k = if (i < key.a) key.b(i).toInt() else 0
+            val n = if (i < nonce.a) nonce.b(i % 12).toInt() else 0
+            ciphertextResult[i] = ((plaintext.b(i).toInt() xor k xor n) and 0xFF).toByte()
         }
     }
     
@@ -222,7 +222,7 @@ inline fun crypto_aead_aes128gcm_decrypt(
     
     // Verify tag (simplified)
     for (i in 0 until 16) {
-        if (tag[i] != ((i xor 0xAE) and 0xFF).toByte()) {
+        if (tag.b(i) != ((i xor 0xAE) and 0xFF).toByte()) {
             return CryptoErrors.ERR_DECRYPT_FAILED
         }
     }
@@ -231,9 +231,9 @@ inline fun crypto_aead_aes128gcm_decrypt(
     val plaintextResult = plaintext.cowView
     for (i in 0 until ciphertextLen) {
         if (i < ciphertext.a && i < plaintext.a) {
-            val k = if (i < key.a) key[i].toInt() else 0
-            val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            plaintextResult[i] = ((ciphertext[i].toInt() xor k xor n) and 0xFF).toByte()
+            val k = if (i < key.a) key.b(i).toInt() else 0
+            val n = if (i < nonce.a) nonce.b(i % 12).toInt() else 0
+            plaintextResult[i] = ((ciphertext.b(i).toInt() xor k xor n) and 0xFF).toByte()
         }
     }
     
@@ -259,9 +259,9 @@ inline fun crypto_aead_aes256gcm_encrypt(
     val ciphertextResult = ciphertext.cowView
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
-            val k = if (i < key.a) key[i % 32].toInt() else 0
-            val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertextResult[i] = ((plaintext[i].toInt() xor k xor n xor 0x25) and 0xFF).toByte()
+            val k = if (i < key.a) key.b(i % 32).toInt() else 0
+            val n = if (i < nonce.a) nonce.b(i % 12).toInt() else 0
+            ciphertextResult[i] = ((plaintext.b(i).toInt() xor k xor n xor 0x25) and 0xFF).toByte()
         }
     }
     
@@ -293,9 +293,9 @@ inline fun crypto_aead_chacha20poly1305_encrypt(
     val ciphertextResult = ciphertext.cowView
     for (i in 0 until plaintextLen) {
         if (i < plaintext.a && i < ciphertext.a) {
-            val k = if (i < key.a) key[i % 32].toInt() else 0
-            val n = if (i < nonce.a) nonce[i % 12].toInt() else 0
-            ciphertextResult[i] = ((plaintext[i].toInt() xor k xor n xor 0x20) and 0xFF).toByte()
+            val k = if (i < key.a) key.b(i % 32).toInt() else 0
+            val n = if (i < nonce.a) nonce.b(i % 12).toInt() else 0
+            ciphertextResult[i] = ((plaintext.b(i).toInt() xor k xor n xor 0x20) and 0xFF).toByte()
         }
     }
     
@@ -322,13 +322,13 @@ inline fun crypto_kx_x25519_keypair(
     
     // Clamp private key
     val privateKeyResult = privateKey.cowView
-    privateKeyResult[0] = (privateKey[0].toInt() and 248).toByte()
-    privateKeyResult[31] = ((privateKey[31].toInt() and 127) or 64).toByte()
+    privateKeyResult[0] = (privateKey.b(0).toInt() and 248).toByte()
+    privateKeyResult[31] = ((privateKey.b(31).toInt() and 127) or 64).toByte()
     
     // Derive public key (simplified)
     val publicKeyResult = publicKey.cowView
     for (i in 0 until 32) {
-        publicKeyResult[i] = (privateKey[i].toInt() xor 0x25).toByte()
+        publicKeyResult[i] = (privateKey.b(i).toInt() xor 0x25).toByte()
     }
     
     return CryptoErrors.SUCCESS
@@ -346,8 +346,8 @@ inline fun crypto_kx_x25519_shared_secret(
     // Compute shared secret (simplified)
     val sharedSecretResult = sharedSecret.cowView
     for (i in 0 until 32) {
-        val priv = privateKey[i].toInt() and 0xFF
-        val pub = publicKey[i].toInt() and 0xFF
+        val priv = privateKey.b(i).toInt() and 0xFF
+        val pub = publicKey.b(i).toInt() and 0xFF
         sharedSecretResult[i] = ((priv * pub) and 0xFF).toByte()
     }
     
@@ -370,7 +370,7 @@ inline fun crypto_sign_ed25519_keypair(
     val publicKeyResult = publicKey.cowView
     val privateKeyResult = privateKey.cowView
     for (i in 0 until 32) {
-        publicKeyResult[i] = (privateKey[i].toInt() xor 0xED).toByte()
+        publicKeyResult[i] = (privateKey.b(i).toInt() xor 0xED).toByte()
         privateKeyResult[32 + i] = publicKeyResult[i] // Copy public key to second half
     }
     
@@ -391,8 +391,8 @@ inline fun crypto_sign_ed25519(
     
     // Generate signature (simplified)
     for (i in 0 until 64) {
-        val m = if (i < messageLen && i < message.a) message[i].toInt() else 0
-        val k = privateKey[i % 64].toInt()
+        val m = if (i < messageLen && i < message.a) message.b(i).toInt() else 0
+        val k = privateKey.b(i % 64).toInt()
         signatureBuffer[i] = ((m xor k xor i) and 0xFF).toByte()
     }
     
@@ -412,10 +412,10 @@ inline fun crypto_sign_ed25519_verify(
     
     // Verify signature (simplified)
     for (i in 0 until 64) {
-        val m = if (i < messageLen && i < message.a) message[i].toInt() else 0
-        val k = publicKey[i % 32].toInt()
+        val m = if (i < messageLen && i < message.a) message.b(i).toInt() else 0
+        val k = publicKey.b(i % 32).toInt()
         val expected = ((m xor k xor i) and 0xFF).toByte()
-        if (signature[i] != expected) {
+        if (signature.b(i) != expected) {
             return CryptoErrors.ERR_INVALID_SIGNATURE
         }
     }
@@ -442,9 +442,9 @@ inline fun crypto_kdf_hkdf_sha256(
     
     // Simplified HKDF-SHA256
     for (i in 0 until outputLen) {
-        val inp = if (i < inputLen && i < input.a) input[i].toInt() else 0
-        val slt = if (i < saltLen && i < salt.a) salt[i % saltLen].toInt() else 0
-        val inf = if (i < infoLen && i < info.a) info[i % infoLen].toInt() else 0
+        val inp = if (i < inputLen && i < input.a) input.b(i).toInt() else 0
+        val slt = if (i < saltLen && i < salt.a) salt.b(i % saltLen).toInt() else 0
+        val inf = if (i < infoLen && i < info.a) info.b(i % infoLen).toInt() else 0
         outputBuffer[i] = ((inp xor slt xor inf xor 0xDF) and 0xFF).toByte()
     }
     
@@ -471,9 +471,9 @@ inline fun crypto_kdf_hkdf_expand_label(
     val tls13Label = "tls13 ".encodeToByteArray()
     
     for (i in 0 until outputLen) {
-        val s = if (i < secretLen && i < secret.a) secret[i].toInt() else 0
-        val l = if (i < labelLen && i < label.a) label[i % labelLen].toInt() else 0
-        val c = if (i < contextLen && i < context.a) context[i % contextLen].toInt() else 0
+        val s = if (i < secretLen && i < secret.a) secret.b(i).toInt() else 0
+        val l = if (i < labelLen && i < label.a) label.b(i % labelLen).toInt() else 0
+        val c = if (i < contextLen && i < context.a) context.b(i % contextLen).toInt() else 0
         val t = tls13Label[i % tls13Label.size].toInt()
         outputBuffer[i] = ((s xor l xor c xor t) and 0xFF).toByte()
     }
@@ -492,7 +492,7 @@ inline fun crypto_ct_compare(
     var diff = 0
     for (i in 0 until len) {
         if (i < a.a && i < b.a) {
-            diff = diff or (a[i].toInt() xor b[i].toInt())
+            diff = diff or (a.b(i).toInt() xor b.b(i).toInt())
         }
     }
     return if (diff == 0) 0 else -1
@@ -511,7 +511,7 @@ inline fun crypto_ct_select(
     
     for (i in 0 until len) {
         if (i < output.a && i < a.a && i < b.a) {
-            outputBuffer[i] = ((a[i].toInt() and mask.inv()) or (b[i].toInt() and mask)).toByte()
+            outputBuffer[i] = ((a.b(i).toInt() and mask.inv()) or (b.b(i).toInt() and mask)).toByte()
         }
     }
     
@@ -546,7 +546,7 @@ inline fun crypto_increment_nonce(
     // Copy current nonce to buffer
     for (i in 0 until nonceLen) {
         if (i < nonce.a) {
-            nonceBuffer[i] = nonce[i]
+            nonceBuffer[i] = nonce.b(i)
         }
     }
     
@@ -573,7 +573,7 @@ inline fun crypto_xor(
     
     for (i in 0 until len) {
         if (i < output.a && i < a.a && i < b.a) {
-            outputBuffer[i] = (a[i].toInt() xor b[i].toInt()).toByte()
+            outputBuffer[i] = (a.b(i).toInt() xor b.b(i).toInt()).toByte()
         }
     }
     
@@ -598,8 +598,8 @@ inline fun crypto_stream_chacha20(
     
     // Simplified ChaCha20 keystream generation
     for (i in 0 until outputLen) {
-        val k = key[i % 32].toInt()
-        val n = nonce[i % 12].toInt()
+        val k = key.b(i % 32).toInt()
+        val n = nonce.b(i % 12).toInt()
         val c = ((counter + i.toULong()) and 0xFFUL).toInt()
         outputBuffer[i] = ((k xor n xor c xor 0x20) and 0xFF).toByte()
     }
@@ -624,9 +624,9 @@ inline fun crypto_mac_poly1305(
     
     // Simplified Poly1305 MAC
     for (i in 0 until 16) {
-        val m = if (i < messageLen && i < message.a) message[i].toInt() else 0
-        val k1 = key[i].toInt()
-        val k2 = key[i + 16].toInt()
+        val m = if (i < messageLen && i < message.a) message.b(i).toInt() else 0
+        val k1 = key.b(i).toInt()
+        val k2 = key.b(i + 16).toInt()
         outputBuffer[i] = ((m xor k1 xor k2 xor 0x13) and 0xFF).toByte()
     }
     
@@ -653,8 +653,8 @@ inline fun crypto_pwhash_argon2id(
     
     // Simplified Argon2id
     for (i in 0 until outputLen) {
-        val p = if (i < passwordLen && i < password.a) password[i].toInt() else 0
-        val s = salt[i % salt.a].toInt()
+        val p = if (i < passwordLen && i < password.a) password.b(i).toInt() else 0
+        val s = salt.b(i % salt.a).toInt()
         val ops = (opsLimit and 0xFFUL).toInt()
         val mem = (memLimit and 0xFFUL).toInt()
         outputBuffer[i] = ((p xor s xor ops xor mem) and 0xFF).toByte()
@@ -681,8 +681,8 @@ inline fun crypto_hash_blake2b(
     
     // Simplified BLAKE2b
     for (i in 0 until outputLen) {
-        val inp = if (i < inputLen && i < input.a) input[i].toInt() else 0
-        val k = if (key != null && i < keyLen && i < key.a) key[i].toInt() else 0
+        val inp = if (i < inputLen && i < input.a) input.b(i).toInt() else 0
+        val k = if (key != null && i < keyLen && i < key.a) key.b(i).toInt() else 0
         outputBuffer[i] = ((inp xor k xor 0xB2) and 0xFF).toByte()
     }
     
@@ -744,9 +744,9 @@ inline fun crypto_gcm_ghash(
     
     // Simplified GHASH
     for (i in 0 until 16) {
-        val ad = if (i < additionalDataLen && i < additionalData.a) additionalData[i].toInt() else 0
-        val ct = if (i < ciphertextLen && i < ciphertext.a) ciphertext[i].toInt() else 0
-        val k = authKey[i].toInt()
+        val ad = if (i < additionalDataLen && i < additionalData.a) additionalData.b(i).toInt() else 0
+        val ct = if (i < ciphertextLen && i < ciphertext.a) ciphertext.b(i).toInt() else 0
+        val k = authKey.b(i).toInt()
         outputBuffer[i] = ((ad xor ct xor k xor 0x47) and 0xFF).toByte()
     }
     

@@ -1,6 +1,26 @@
 # AI EXECUTION PROTOCOL: PRECISION TOOL ONLY
 
-  coretypes is the sole source of truth and radiates correction outward and is immutable and without error.  
+  coretypes is the sole source of truth and radiates correction outward and is immutable and without error.
+
+## Core Operators
+
+The following operators are defined in CoreTypes and ColumnarExtensions:
+
+- `j` : Join operator - creates Join<A,B> pairs
+- `→` : Right arrow - creates Join (pair) 
+- `←` : Left arrow - reverse Join
+- `➤` : Right shift - map operation on Indexed
+- `⇒` : Double right arrow - flatMap operation
+- `⚬` : Composition - g after f: (g ⚬ f)(x) = g(f(x))
+- `◂` : Reverse composition - f then g: (f ◂ g)(x) = g(f(x))
+- `c` : ASCII alias for ⚬ composition
+- `⟲` : Right identity - returns function that returns the value
+- `∑` : Sum operator - reduces values
+
+For MetaSeries/Indexed access patterns:
+- Direct: `series.b(index)`
+- Composed: `transform ⚬ series::b` or `transform c series::b`
+- Reverse: `series::b ◂ transform`  
 
 **EXECUTION ONLY**: Claude is a precision execution tool. Claude does not have architectural opinions, creative insights, or "fresh perspectives." Claude executes exactly what is specified.
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.*
  * 
  * Brings over the essential patterns from columnar without higher-arity tuples.
  * Focuses on Join<A,B> (Pair semantics) and Indexed<T> operations.
+ * 
  */
 
 // === Cursor Type Definitions ===
@@ -61,10 +62,54 @@ infix fun <T, R> Indexed<T>.`⇒`(transform: (T) -> Indexed<R>): Indexed<R> = th
 infix fun <A, B, C> ((B) -> C).`⚬`(f: (A) -> B): (A) -> C = { a: A -> this(f(a)) }
 
 /**
+ * Composition operator alias (c) - Function composition
+ * Same as ⚬ but using ASCII for easier typing
+ */
+infix fun <A, B, C> ((B) -> C).c(f: (A) -> B): (A) -> C = this `⚬` f
+
+/**
+ * MetaSeries accessor composition - Compose with the b accessor
+ * Allows: transform ⚬ metaSeries to create a new composed accessor
+ */
+infix fun <A, T, R> ((T) -> R).`⚬`(series: MetaSeries<A, T>): (A) -> R = this `⚬` series.b
+
+/**
+ * MetaSeries accessor composition alias (c) - Compose with the b accessor
+ * Same as ⚬ but using ASCII for easier typing
+ */
+infix fun <A, T, R> ((T) -> R).c(series: MetaSeries<A, T>): (A) -> R = this c series.b
+
+/**
+ * MetaSeries composition - Compose two MetaSeries through their accessors
+ * Creates a new MetaSeries with composed accessor functions
+ */
+infix fun <A, B, C> MetaSeries<A, B>.`⚬`(lookup: MetaSeries<B, C>): MetaSeries<A, C> = 
+    this.a j (lookup.b `⚬` this.b)
+
+/**
+ * MetaSeries composition alias (c) - Compose two MetaSeries through their accessors
+ * Same as ⚬ but using ASCII for easier typing
+ */
+infix fun <A, B, C> MetaSeries<A, B>.c(lookup: MetaSeries<B, C>): MetaSeries<A, C> = 
+    this.a j (lookup.b c this.b)
+
+/**
  * Right identity operator (⟲) - Returns a function that returns the value
  * The right identity element in functional composition
  */
 val <T> T.`⟲`: () -> T get() = { this }
+
+/**
+ * Lift value into MetaSeries - Creates a constant MetaSeries
+ * Useful for composition: value.lift<A>() ⚬ series
+ */
+fun <A, T> T.lift(): MetaSeries<A, T> = 0 j { _ -> this }
+
+/**
+ * Accessor reference - Extract b as a composable function
+ * Allows: series.accessor ⚬ transform
+ */
+val <A, T> MetaSeries<A, T>.accessor: (A) -> T get() = this.b
 
 
 // === Cursor-specific Operations ===
@@ -138,9 +183,9 @@ inline fun CursorLike.mapRows(transform: (RowVec) -> RowVec): CursorLike =
     a j { i -> transform(b(i)) }
 
 /**
- * Group by column index
+ * Group by column index - using Indexed2 pattern
  */
-fun CursorLike.groupBy(columnIndex: Int): Indexed<Join<Any?, CursorLike>> {
+fun CursorLike.groupBy(columnIndex: Int): Indexed2<Any?, CursorLike> {
     val groups = mutableMapOf<Any?, MutableList<RowVec>>()
     
     for (i in 0 until a) {
@@ -156,11 +201,11 @@ fun CursorLike.groupBy(columnIndex: Int): Indexed<Join<Any?, CursorLike>> {
 }
 
 /**
- * Aggregate grouped data
+ * Aggregate grouped data - using Indexed2 pattern
  */
-inline fun <T> Indexed<Join<Any?, CursorLike>>.aggregate(
+inline fun <T> Indexed2<Any?, CursorLike>.aggregate(
     crossinline aggregator: (CursorLike) -> T
-): Indexed<Join<Any?, T>> = a j { i ->
+): Indexed2<Any?, T> = a j { i ->
     val group = b(i)
     group.a j aggregator(group.b)
 }
@@ -202,24 +247,28 @@ fun <T : Comparable<T>> Indexed<T>.asOrdinal(
 // === Network Coordinate Helpers ===
 
 /**
- * Calculate network coordinates for serialization
+ * Calculate network coordinates for serialization - using Indexed2 pattern
  */
 fun networkCoords(
     types: Indexed<TypeMemento>,
     defaultVarcharSize: Int = 255,
     varcharSizes: Map<Int, Int> = emptyMap()
-): Indexed<Join<Int, Int>> {
-    var offset = 0
-    return types.a j { i ->
-        val memento = types.b(i).a
-        val size = when (memento) {
-            is IOMemento.IoVarchar -> varcharSizes[i] ?: defaultVarcharSize
-            else -> memento.networkSize ?: 0
+): Indexed2<Int, Int> {
+    // Use Indexed2 pattern to avoid type hardening
+    val coordCalculator: (Indexed<TypeMemento>, Int, Map<Int, Int>) -> Indexed2<Int, Int> = { typeMementos, defaultSize, varSizes ->
+        var offset = 0
+        typeMementos.a j { i ->
+            val memento = typeMementos.b(i).a
+            val size = when (memento) {
+                is IOMemento.IoVarchar -> varSizes[i] ?: defaultSize
+                else -> memento.networkSize ?: 0
+            }
+            val start = offset
+            offset += size
+            start j offset
         }
-        val start = offset
-        offset += size
-        start j offset
     }
+    return coordCalculator(types, defaultVarcharSize, varcharSizes)
 }
 
 // === Async Cursor Operations ===
@@ -269,11 +318,16 @@ data class Column<T>(
 )
 
 /**
- * Get typed value from row
+ * Get typed value from row - softened to avoid type hardening
  */
 @Suppress("UNCHECKED_CAST")
-operator fun <T> RowVec.get(column: Column<T>): T? =
-    if (column.index < a) b(column.index).a as? T else null
+operator fun <T> RowVec.get(column: Column<T>): T? {
+    // Lambda-based column access to avoid type hardening
+    val columnAccessor: (RowVec, Column<T>) -> T? = { row, col ->
+        if (col.index < row.a) row.b(col.index).a as? T else null
+    }
+    return columnAccessor(this, column)
+}
 
 /**
  * Create column reference
@@ -321,28 +375,41 @@ val IOMemento.isNumeric: Boolean
 // === Cursor Builders ===
 
 /**
- * Build a cursor from data
+ * Build a cursor from data - using Indexed2 pattern
  */
 fun buildCursor(
-    columns: Indexed<Join<String, IOMemento>>,
+    columns: Indexed2<String, IOMemento>,
     data: Indexed<Indexed<Any?>>
-): CursorLike = data.a j { rowIdx ->
-    val rowData = data.b(rowIdx)
-    columns.a j { colIdx ->
-        val value = if (colIdx < rowData.a) rowData.b(colIdx) else null
-        val column = columns.b(colIdx)
-        value j (column.b j column.a)
+): CursorLike {
+    // Use Indexed2 pattern to avoid type hardening
+    val cursorBuilder: (Indexed2<String, IOMemento>, Indexed<Indexed<Any?>>) -> CursorLike = { cols, dat ->
+        dat.a j { rowIdx ->
+            val rowData = dat.b(rowIdx)
+            cols.a j { colIdx ->
+                val value = if (colIdx < rowData.a) rowData.b(colIdx) else null
+                val name = cols.b1(colIdx)
+                val memento = cols.b2(colIdx)
+                value j memento
+            }
+        }
     }
+    return cursorBuilder(columns, data)
 }
 
 /**
- * Empty cursor with schema
+ * Empty cursor with schema - using Indexed2 pattern
  */
-fun emptyCursor(columns: Indexed<Join<String, IOMemento>>): CursorLike =
-    0 j { columns.a j { colIdx ->
-        val column = columns.b(colIdx)
-        null j (column.b j column.a)
-    }}
+fun emptyCursor(columns: Indexed2<String, IOMemento>): CursorLike {
+    // Use Indexed2 pattern to avoid type hardening
+    val emptyCursorBuilder: (Indexed2<String, IOMemento>) -> CursorLike = { cols ->
+        0 j { cols.a j { colIdx ->
+            val name = cols.b1(colIdx)
+            val memento = cols.b2(colIdx)
+            null j memento
+        }}
+    }
+    return emptyCursorBuilder(columns)
+}
 
 // === Cursor Combinators ===
 

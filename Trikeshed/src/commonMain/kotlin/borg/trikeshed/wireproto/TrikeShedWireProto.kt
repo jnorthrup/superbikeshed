@@ -102,13 +102,17 @@ data class TrikeShedWireMessage(
 object TrikeShedWireSerializer {
     
     /**
-     * Serialize IoMemento to wire format
+     * Serialize IoMemento to wire format - softened to lambda-based definitions
      */
     fun serialize(memento: borg.trikeshed.isam.meta.IOMemento): UByteArray {
-        val wireMemento = WireIoMemento.fromIoMemento(memento)
-        val payload = serializeWireMemento(wireMemento)
-        val message = TrikeShedWireMessage.create("IoMemento", payload)
-        return serializeMessage(message)
+        // Lambda-based memento serialization for wire protocol flexibility
+        val mementoSerializer: (borg.trikeshed.isam.meta.IOMemento) -> UByteArray = { m ->
+            val wireMemento = WireIoMemento.fromIoMemento(m)
+            val payload = serializeWireMemento(wireMemento)
+            val message = TrikeShedWireMessage.create("IoMemento", payload)
+            serializeMessage(message)
+        }
+        return mementoSerializer(memento)
     }
     
     /**
@@ -122,71 +126,79 @@ object TrikeShedWireSerializer {
     }
     
     /**
-     * Serialize Indexed<T> with type information
+     * Serialize Indexed<T> with type information - softened to lambda-based definitions
      */
     fun <T> serializeIndexed(series: Indexed<T>): UByteArray {
-        val buffer = mutableListOf<UByte>()
-        
-        // Write size as varint
-        buffer.addAll(encodeVarint(series.size))
-        
-        // Write each element based on type
-        for (i in 0 until series.size) {
-            val element = series[i]
-            when (element) {
-                is Byte -> {
-                    buffer.add(0x01u) // Type marker for Byte
-                    buffer.add(element.toUByte())
-                }
-                is Int -> {
-                    buffer.add(0x02u) // Type marker for Int
-                    buffer.addAll(encodeVarint(element))
-                }
-                is Long -> {
-                    buffer.add(0x03u) // Type marker for Long
-                    buffer.addAll(encodeVarlong(element))
-                }
-                is String -> {
-                    buffer.add(0x04u) // Type marker for String
-                    val bytes = element.encodeToByteArray()
-                    buffer.addAll(encodeVarint(bytes.size))
-                    buffer.addAll(bytes.map { it.toUByte() })
-                }
-                is Double -> {
-                    buffer.add(0x05u) // Type marker for Double
-                    buffer.addAll(element.toRawBits().toUByteArray())
-                }
-                else -> {
-                    buffer.add(0xFFu) // Unknown type marker
-                    // Could extend for more types
+        // Lambda-based serialization for wire protocol flexibility
+        val serializer: (Indexed<T>) -> UByteArray = { indexed ->
+            val buffer = mutableListOf<UByte>()
+            
+            // Write size as varint
+            buffer.addAll(encodeVarint(indexed.size))
+            
+            // Write each element based on type
+            for (i in 0 until indexed.size) {
+                val element = indexed[i]
+                when (element) {
+                    is Byte -> {
+                        buffer.add(0x01u) // Type marker for Byte
+                        buffer.add(element.toUByte())
+                    }
+                    is Int -> {
+                        buffer.add(0x02u) // Type marker for Int
+                        buffer.addAll(encodeVarint(element))
+                    }
+                    is Long -> {
+                        buffer.add(0x03u) // Type marker for Long
+                        buffer.addAll(encodeVarlong(element))
+                    }
+                    is String -> {
+                        buffer.add(0x04u) // Type marker for String
+                        val bytes = element.encodeToByteArray()
+                        buffer.addAll(encodeVarint(bytes.size))
+                        buffer.addAll(bytes.map { it.toUByte() })
+                    }
+                    is Double -> {
+                        buffer.add(0x05u) // Type marker for Double
+                        buffer.addAll(element.toRawBits().toUByteArray())
+                    }
+                    else -> {
+                        buffer.add(0xFFu) // Unknown type marker
+                        // Could extend for more types
+                    }
                 }
             }
+            
+            buffer.toUByteArray()
         }
-        
-        return buffer.toUByteArray()
+        return serializer(series)
     }
     
     // === INTERNAL SERIALIZATION HELPERS ===
     
     private fun serializeMessage(message: TrikeShedWireMessage): UByteArray {
-        val buffer = mutableListOf<UByte>()
-        
-        // Version
-        buffer.add(message.version.version)
-        
-        // Message type length and data
-        val typeBytes = message.messageType.encodeToByteArray()
-        buffer.addAll(encodeVarint(typeBytes.size))
-        buffer.addAll(typeBytes.map { it.toUByte() })
-        
-        // Payload length and data
-        buffer.addAll(encodeVarint(message.payload.size))
-        buffer.addAll(message.payload.toList())
-        
-        // Checksum
-        buffer.addAll(message.checksum.crc32.toUByteArray())
-        
-        return buffer.toUByteArray()
+        // Lambda-based message serialization for wire protocol flexibility
+        val messageSerializer: (TrikeShedWireMessage) -> UByteArray = { msg ->
+            val buffer = mutableListOf<UByte>()
+            
+            // Version
+            buffer.add(msg.version.version)
+            
+            // Message type length and data
+            val typeBytes = msg.messageType.encodeToByteArray()
+            buffer.addAll(encodeVarint(typeBytes.size))
+            buffer.addAll(typeBytes.map { it.toUByte() })
+            
+            // Payload length and data
+            buffer.addAll(encodeVarint(msg.payload.size))
+            buffer.addAll(msg.payload.toList())
+            
+            // Checksum
+            buffer.addAll(msg.checksum.crc32.toUByteArray())
+            
+            buffer.toUByteArray()
+        }
+        return messageSerializer(message)
     }
     
     private fun deserializeMessage(data: UByteArray): TrikeShedWireMessage {

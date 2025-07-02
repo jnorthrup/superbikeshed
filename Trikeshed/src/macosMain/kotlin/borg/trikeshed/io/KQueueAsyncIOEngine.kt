@@ -2,6 +2,7 @@ package borg.trikeshed.io
 
 import kotlinx.cinterop.*
 import platform.posix.*
+import borg.trikeshed.kqueue.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.Flow
