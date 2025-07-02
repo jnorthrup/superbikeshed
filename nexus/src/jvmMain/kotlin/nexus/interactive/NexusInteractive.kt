@@ -1,7 +1,6 @@
 package nexus.interactive
 
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series as Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.α
 import borg.trikeshed.lib.toSeries

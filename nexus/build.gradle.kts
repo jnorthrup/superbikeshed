@@ -11,6 +11,8 @@ version = "1.0-SNAPSHOT"
 kotlin {
     jvm()
     wasmJs { 
+        browser()
+        nodejs()
         binaries.executable()
     }
     
@@ -32,6 +34,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":Trikeshed"))
+                implementation(project(":k2script"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
             }

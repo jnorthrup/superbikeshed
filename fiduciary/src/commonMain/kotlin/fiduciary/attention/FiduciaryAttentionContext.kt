@@ -3,7 +3,6 @@ package fiduciary.attention
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.Twin
-import borg.trikeshed.lib.Series as Indexed
 import borg.trikeshed.attention.NormalizedAttention
 import borg.trikeshed.attention.ContextualAttention
 import borg.trikeshed.io.IOContext

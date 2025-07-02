@@ -3,6 +3,7 @@ package borg.trikeshed.attention
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.Twin
+import kotlin.jvm.JvmInline
 
 /**
  * Inline compile-time double dispatch for attention predication

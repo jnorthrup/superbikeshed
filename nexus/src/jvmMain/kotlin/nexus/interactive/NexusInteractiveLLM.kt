@@ -3,7 +3,6 @@ package nexus.interactive
 import k2script.ai.llm.LiteLLMClient
 import k2script.ai.llm.LLMRequest
 import k2script.ai.llm.LLMResponse
-import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.Series as Indexed
 import borg.trikeshed.lib.Join
 import kotlinx.coroutines.*

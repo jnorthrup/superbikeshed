@@ -3,7 +3,6 @@ package borg.trikeshed.net.http
 
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series2
 import borg.trikeshed.lib.j
 import kotlin.jvm.JvmInline
 

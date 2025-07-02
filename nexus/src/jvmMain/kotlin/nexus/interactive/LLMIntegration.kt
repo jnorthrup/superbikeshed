@@ -2,7 +2,6 @@ package nexus.interactive
 
 import borg.trikeshed.lib.Either
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series as Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.toSeries
 import k2script.ai.llm.LiteLLMClient

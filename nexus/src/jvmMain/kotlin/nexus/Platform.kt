@@ -2,12 +2,30 @@ package nexus
 
 import nexus.pure.*
 import kotlinx.coroutines.runBlocking
+import kotlin.system.exitProcess
 
 actual fun getPlatformName(): String = "JVM"
 
 actual suspend fun runInteractivePlatform() {
-    // Use the pure functional interactive system
-    PureFunctionalNexus.main(arrayOf())
+    // Use the new interactive session (ported from Python)
+    val session = nexus.interactive.InteractiveSession()
+    session.start()
+}
+
+actual suspend fun executePlatformAITask(prompt: String) {
+    // For now, just echo the prompt - real AI integration will come later
+    println("Nexus AI Response:")
+    println("==================")
+    println("[Platform: JVM] Processing prompt: $prompt")
+    println("Note: AI integration pending k2script LiteLLMClient port to KMP")
+}
+
+actual fun printError(message: String) {
+    System.err.println(message)
+}
+
+actual fun exitProgram(code: Int) {
+    exitProcess(code)
 }
 
 // Main entry point
