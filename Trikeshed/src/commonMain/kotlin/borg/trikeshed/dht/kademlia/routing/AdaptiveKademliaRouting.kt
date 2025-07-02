@@ -207,7 +207,7 @@ class AdaptiveKademliaRouting(
         }
         
         // Sort by combined score (lower is better for distance-based metrics)
-        return weightedNodes
+        return weightedNodes.toList()
             .sortedBy { it.score }
             .take(count)
     }

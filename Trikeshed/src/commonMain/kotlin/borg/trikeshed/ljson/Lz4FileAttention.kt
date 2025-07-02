@@ -59,8 +59,6 @@ class Lz4FileAttention(private val httpClient: HttpRangeClient) {
             }
             compressedOffset += chunk.size
         }
-        }
-
         return entries.toIndexed()
     }
 

@@ -53,5 +53,5 @@ inline fun <T> fillTensor(shape: IntArray, value: T): Tensor<T> {
  * Creates a tensor with a specified shape and initializes elements using a generator function.
  */
 inline fun <T> generateTensor(shape: IntArray, noinline generator: (IntArray) -> T): Tensor<T> {
-    return shape j generator
+    return (shape to generator) as Tensor<T>
 }

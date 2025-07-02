@@ -237,18 +237,18 @@ class CCEKChunkedDecodingChordSheet {
             val chunks = parseChunkHeaders(chunkedData)
             
             // Decompress chunks
-            val decompressedChunks = chunks.a j { i ->
+            val decompressedChunks = (0 until chunks.a).map { i ->
                 val chunk = chunks.b(i)
                 val decompressionStrategy = chunkDecompressionChord.b(chunk.header.compression)()
                 val decompressedData = decompressChunk(chunk.data, decompressionStrategy)
                 chunk.copy(data = decompressedData)
-            }
+            }.toIndexed()
             
             // Validate chunks
-            val validationResults = decompressedChunks.a j { i ->
+            val validationResults = (0 until decompressedChunks.a).map { i ->
                 val chunk = decompressedChunks.b(i)
                 validateChunk(chunk, validationStrategy)
-            }
+            }.toIndexed()
             
             // Check for validation errors
             val validationErrors = validationResults.filter { it is ChunkValidationResult.ERROR }
@@ -300,7 +300,7 @@ class CCEKChunkedDecodingChordSheet {
             val sizeEnd = findLineEnd(chunkedData, offset)
             if (sizeEnd == -1) break
             
-            val sizeHex = chunkedData.slice(offset, sizeEnd).toString(Charsets.UTF_8)
+            val sizeHex = chunkedData.slice(offset, sizeEnd).toByteArray().decodeToString()
             val chunkSize = sizeHex.toIntOrNull(16) ?: break
             
             if (chunkSize == 0) {

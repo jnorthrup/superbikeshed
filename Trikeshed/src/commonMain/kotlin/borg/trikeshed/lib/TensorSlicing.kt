@@ -42,7 +42,7 @@ fun <T> Tensor<T>.reshape(vararg newShape: Int): Tensor<T> {
     val originalShape = this.shape
     val originalAccessor = this.accessor
 
-    return newShape j { newCoords ->
+    return (newShape to { newCoords: IntArray ->
         // Calculate linear index from newCoords
         var linearIndex = 0
         var multiplier = 1
@@ -59,7 +59,7 @@ fun <T> Tensor<T>.reshape(vararg newShape: Int): Tensor<T> {
             remainingIndex /= originalShape[i]
         }
         originalAccessor(oldCoords)
-    }
+    }) as Tensor<T>
 }
 
 /**

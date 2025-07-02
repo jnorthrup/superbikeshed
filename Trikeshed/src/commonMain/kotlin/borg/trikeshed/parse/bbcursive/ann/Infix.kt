@@ -1,5 +1,10 @@
 package borg.trikeshed.parse.bbcursive.ann
 
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+
+/**
+ *negates skipper
+ */
+@Retention(RetentionPolicy.RUNTIME)
 annotation class Infix

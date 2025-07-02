@@ -2,42 +2,33 @@ package borg.trikeshed.parse.json
 
 import kotlin.math.ceil
 
-@OptIn(ExperimentalUnsignedTypes::class)
-actual object JsonBitmapSimd {
+// Enum for structure types, with explicit 2-bit values
+enum class JsonStructureType(val bits: Int) {
+    None(0b00),
+    ScopeOpen(0b01),
+    ScopeClose(0b10),
+    Delimiter(0b11)
+}
 
-    // For now, use scalar implementation until Vector API is properly configured
-    private const val JS_UNCHANGED = 0; private const val JS_SCOPE_OPEN = 1
-    private const val JS_SCOPE_CLOSE = 2; private const val JS_VALUE_DELIM = 3
-    private const val LEXER_UNCHANGED = 0; private const val LEXER_QUOTE_INC = 1
-    private const val LEXER_ESCAPE_INC = 2
-
-    actual fun createBitmap(input: UByteArray): ULongArray {
+object JsonBitmapSimd {
+    fun createBitmap(input: UByteArray): ULongArray {
         val inputSize = input.size
         if (inputSize == 0) return ULongArray(0)
 
-        val outputSize = ceil(inputSize / 16.0).toInt()
+        val outputSize = ceil(inputSize / 32.0).toInt() // 32 entries per ULong (2 bits each)
         val output = ULongArray(outputSize)
 
         for (i in 0 until inputSize) {
             val byte = input[i]
-            
-            val jsState = when (byte.toInt().toChar()) {
-                '{', '[' -> JS_SCOPE_OPEN
-                '}', ']' -> JS_SCOPE_CLOSE
-                ',' -> JS_VALUE_DELIM
-                else -> JS_UNCHANGED
+            val structureType = when (byte.toInt().toChar()) {
+                '{', '[' -> JsonStructureType.ScopeOpen
+                '}', ']' -> JsonStructureType.ScopeClose
+                ':', ',' -> JsonStructureType.Delimiter
+                else -> JsonStructureType.None
             }
-            val lexerState = when (byte.toInt().toChar()) {
-                '"' -> LEXER_QUOTE_INC
-                '\\' -> LEXER_ESCAPE_INC
-                else -> LEXER_UNCHANGED
-            }
-            
-            val pixel = (jsState or (lexerState shl 2)).toULong()
-            
-            val ulongIndex = i / 16
-            val bitPosition = (i % 16) * 4
-            output[ulongIndex] = output[ulongIndex] or (pixel shl bitPosition)
+            val ulongIndex = i / 32
+            val bitPosition = (i % 32) * 2
+            output[ulongIndex] = output[ulongIndex] or (structureType.bits.toULong() shl bitPosition)
         }
         return output
     }

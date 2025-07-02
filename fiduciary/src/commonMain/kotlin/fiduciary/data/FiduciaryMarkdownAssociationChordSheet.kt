@@ -16,7 +16,8 @@ data class FiduciaryMarkdownDocument(
     val title: String,                // Title or heading
     val content: String,              // Full markdown content
     val topics: Indexed<String> = Indexed(0) { "" }, // Extracted topics/keywords
-    val associations: Indexed<String> = Indexed(0) { "" } // Related components, stages, or concepts
+    val associations: Indexed<String> = Indexed(0) { "" }, // Related components, stages, or concepts
+    val interest: Double = 0.0
 )
 
 data class AssociatedConcepts(

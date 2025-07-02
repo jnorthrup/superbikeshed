@@ -1,19 +1,18 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.ann.Infix
-import borg.trikeshed.std
-
+import borg.trikeshed.parse.bbcursive.ann.Infix
+import borg.trikeshed.parse.bbcursive.std
 import java.nio.ByteBuffer
 import java.util.Arrays
 import java.util.function.UnaryOperator
 
-@Infix
 interface infix_ {
-
     @Infix
-    fun infix(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
-        return ByteBufferUnaryOperator(allOf)
+    companion object {
+        fun infixAll(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+            return ByteBufferUnaryOperator(allOf)
 
+        }
     }
 
     @Infix

@@ -45,8 +45,7 @@ object MainOrchestrator {
     // private val server = HttpServer(httpHandler)
 
     // The main entry point. This simulates receiving two different requests.
-    suspend fun run() {
-        println("=== ORCHESTRATOR STARTING ===")
+    /*suspend fun main(args: Array<String>) {
 
         // --- SCENARIO 1: A request to process a Indexed of numbers ---
         val request1 = HttpRequest(
@@ -75,7 +74,7 @@ object MainOrchestrator {
         // server.processRequest(request2, cursorCcek)
 
         println("=== ORCHESTRATOR FINISHED ===")
-    }
+    }*/
 
     /**
      * Assembles a CCEK specifically for a Indexed processing task.

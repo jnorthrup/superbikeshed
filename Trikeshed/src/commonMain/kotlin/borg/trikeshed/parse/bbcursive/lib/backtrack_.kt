@@ -1,24 +1,23 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.ann.Backtracking
-import borg.trikeshed.std
-
+import borg.trikeshed.parse.bbcursive.ann.Backtracking
+import borg.trikeshed.parse.bbcursive.std
 import java.nio.ByteBuffer
 import java.util.Arrays
 import java.util.function.UnaryOperator
 
-import bbcursive.std.bb
+import borg.trikeshed.parse.bbcursive.std.bb
 
 @Backtracking
 object backtrack_ {
-
     @Backtracking
     fun backtracker(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
-        return backTracker(allOf)
+        return BackTracker(allOf)
 
     }
+
     @Backtracking
-    private class backTracker(private val allOf: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
+    private class BackTracker(private val allOf: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
 
         override fun toString(): String {
             return "backtracker" + Arrays.deepToString(allOf)

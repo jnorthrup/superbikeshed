@@ -6,8 +6,31 @@ import borg.trikeshed.lib.Twin
 import kotlin.jvm.JvmInline
 
 /**
- * Inline compile-time double dispatch for attention predication
- * Clean, normalized, no runtime overhead
+ * # Interest-Driven Dataflow and Competitive Query Planning (Normalized Settlement)
+ *
+ * This module models data access and transformation as a composable, competitive dataflow graph, where each "gate" (operator)
+ * projects data closer to a user-defined "interest" (query/goal). An "interest solver" (query planner/automated planner)
+ * selects and sequences gates, optimizing for cost and fidelity, drawing on principles from query optimization, dataflow systems,
+ * and multi-agent planning. The process is extensible, supporting new formats and codecs, and ultimately yields normalized,
+ * indexable outputs (plaintext, tags, hashes).
+ *
+ * ## Canonical Mapping
+ * - **Gates**: Operators in a dataflow/query plan (Selinger et al., Graefe, Aurora, D-Streams)
+ * - **Interest**: Query or goal state (databases, IR, planning)
+ * - **Interest Solver**: Query planner/automated planner (Selinger et al., Ghallab et al., RFC 2295)
+ * - **Competitive Game**: Cost-based plan selection, multi-agent optimization (Shoham & Leyton-Brown)
+ * - **Composable Pipelines**: Operator DAGs, extensible query plans (Aurora, Graefe)
+ * - **Final Output**: Materialized result, extracted features/metadata (Tika, ffmpeg, IR)
+ *
+ * ## Key Citations
+ * - Selinger et al., "Access Path Selection in a Relational Database Management System" (1979)
+ * - Graefe, "Query Evaluation Techniques for Large Databases" (1993)
+ * - Abadi et al., "Aurora: a new model and architecture for data stream management" (2003)
+ * - Zaharia et al., "Discretized Streams: Fault-Tolerant Streaming Computation at Scale" (2013)
+ * - Ghallab, Nau, Traverso, "Automated Planning: Theory and Practice" (2004)
+ * - Shoham & Leyton-Brown, "Multiagent Systems: Algorithmic, Game-Theoretic, and Logical Foundations" (2009)
+ * - RFC 2295, "Content Negotiation in HTTP"
+ * - Apache Tika documentation
  */
 
 // Normalized attention is just Twin<Long>
@@ -18,10 +41,11 @@ typealias NormalizedAttention = Twin<Long>  // start j end
 @JvmInline value class Random(val range: NormalizedAttention)  
 @JvmInline value class Sparse(val range: NormalizedAttention)
 
-// Inline sources for second dispatch
-@JvmInline value class HTTP(val url: String)
-@JvmInline value class Torrent(val hash: Long)
-@JvmInline value class Local(val fd: Int)
+// Sealed interface for runtime double dispatch
+sealed interface Source
+@JvmInline value class HTTP(val url: String) : Source
+@JvmInline value class Torrent(val hash: Long) : Source
+@JvmInline value class Local(val fd: Int) : Source
 
 // Double dispatch through inline methods
 inline fun Sequential.fetch(source: HTTP): ByteArray = 
@@ -69,6 +93,25 @@ fun sparse(start: Long, end: Long) = Sparse(start j end)
 fun http(url: String) = HTTP(url)
 fun torrent(hash: Long) = Torrent(hash)
 fun local(fd: Int) = Local(fd)
+
+// Centralized double dispatch for runtime flexibility
+inline fun Sequential.process(source: Source): ByteArray = when (source) {
+    is HTTP -> fetch(source)
+    is Torrent -> fetch(source)
+    is Local -> fetch(source)
+}
+
+inline fun Random.process(source: Source): ByteArray = when (source) {
+    is HTTP -> fetch(source)
+    is Torrent -> fetch(source)
+    is Local -> fetch(source)
+}
+
+inline fun Sparse.process(source: Source): ByteArray = when (source) {
+    is HTTP -> fetch(source)
+    is Torrent -> fetch(source)
+    is Local -> fetch(source)
+}
 
 // Usage - all resolved at compile time
 fun demo() {

@@ -14,16 +14,28 @@ import org.apache.tika.parser.ParseContext
  * Connects Tika, Stanford NLP, and attention mechanisms
  */
 
+/**
+ * ## Digital Asset Attention Types
+ *
+ * These types enable fiduciary tracking of online agreements, publications, API copyrights, and domain expirations.
+ * All actions must be parameterized by these explicit attention objects, in line with fiduciary principles.
+ *
+ * - [USPS API Reference](https://developers.usps.com/apis)
+ * - [Domain WHOIS](https://www.icann.org/resources/pages/whois-2018-03-17-en)
+ * - [Crossref Publications](https://www.crossref.org/)
+ */
+
 // Fiduciary-specific attention types
 @JvmInline value class DocumentAttention(val doc: Join<NormalizedAttention, String>)  // range j mimeType
 @JvmInline value class CorpusAttention(val corpus: Join<Indexed<DocumentAttention>, String>)  // docs j corpusId
 @JvmInline value class ConceptAttention(val concept: Join<DocumentAttention, Indexed<String>>)  // doc j concepts
 
 // Document sources with fiduciary context
-@JvmInline value class TikaSource(val tika: Join<String, ParseContext>)  // path j parseContext
-@JvmInline value class NLPSource(val nlp: Join<String, Map<String, Any>>)  // text j annotations
-@JvmInline value class OCRSource(val ocr: Join<ByteArray, String>)  // image j language
-@JvmInline value class AudioSource(val audio: Join<String, Int>)  // path j sampleRate
+sealed interface DocumentSource
+@JvmInline value class TikaSource(val tika: Join<String, ParseContext>) : DocumentSource  // path j parseContext
+@JvmInline value class NLPSource(val nlp: Join<String, Map<String, Any>>) : DocumentSource  // text j annotations
+@JvmInline value class OCRSource(val ocr: Join<ByteArray, String>) : DocumentSource  // image j language
+@JvmInline value class AudioSource(val audio: Join<String, Int>) : DocumentSource  // path j sampleRate
 
 // Fiduciary context - carries document processing state
 @JvmInline
@@ -48,154 +60,12 @@ value class PatrickDevineAttention(val pd: Join<CorpusAttention, Join<String, Bo
     val useRangeRequests: Boolean get() = pd.b.b
 }
 
-// Document processing double dispatch
-suspend inline fun DocumentAttention.extract(source: TikaSource): String {
-    val mimeType = doc.b
-    val range = doc.a
-    
-    return when {
-        mimeType.startsWith("text/") -> {
-            // Direct text extraction
-            "Extracted text from ${range.b - range.a} bytes"
-        }
-        mimeType.startsWith("application/pdf") -> {
-            // PDF extraction with Tika
-            "Extracted PDF content"
-        }
-        mimeType.startsWith("application/zip") -> {
-            // Zip entry extraction
-            "Extracted from zip entry"
-        }
-        else -> ""
-    }
-}
-
-suspend inline fun DocumentAttention.analyze(source: NLPSource): Indexed<String> {
-    // Stanford NLP analysis
-    val concepts = arrayOf("person", "organization", "location")
-    return concepts.size j concepts::get
-}
-
-suspend inline fun DocumentAttention.ocr(source: OCRSource): String {
-    // Tesseract OCR
-    return "OCR result for ${doc.a.b - doc.a.a} bytes"
-}
-
-suspend inline fun DocumentAttention.transcribe(source: AudioSource): String {
-    // Whisper transcription
-    return "Transcribed audio at ${source.audio.b}Hz"
-}
-
-// Corpus-level operations
-suspend inline fun CorpusAttention.buildIndex(): Join<Int, (Int) -> String> {
-    val documents = corpus.a
-    val index = Array(documents.a) { i ->
-        val doc = documents.b(i)
-        "${doc.doc.b}: ${doc.doc.a.b - doc.doc.a.a} bytes"
-    }
-    return index.size j index::get
-}
-
-// Fiduciary context constructors
-fun FiduciaryContext.document(start: Long, end: Long, mimeType: String): DocumentAttention =
-    DocumentAttention((start j end) j mimeType)
-
-fun FiduciaryContext.corpus(docs: Indexed<DocumentAttention>, id: String): CorpusAttention =
-    CorpusAttention(docs j id)
-
-fun FiduciaryContext.concepts(doc: DocumentAttention, concepts: Indexed<String>): ConceptAttention =
-    ConceptAttention(doc j concepts)
-
-// Source constructors
-fun FiduciaryContext.tika(path: String): TikaSource = 
-    TikaSource(path j parseContext)
-
-fun FiduciaryContext.nlp(text: String, annotations: Map<String, Any> = emptyMap()): NLPSource =
-    NLPSource(text j annotations)
-
-fun FiduciaryContext.ocr(image: ByteArray, language: String = "eng"): OCRSource =
-    OCRSource(image j language)
-
-fun FiduciaryContext.audio(path: String, sampleRate: Int = 16000): AudioSource =
-    AudioSource(path j sampleRate)
-
-// Key archive.org URLs of fiduciary interest
-object FiduciaryArchives {
-    // Patrick Devine corpus - primary fiduciary interest
-    const val PATRICK_DEVINE_MAIN = "https://archive.org/download/patrickdevine/patrickdevine.zip"
-    const val PATRICK_DEVINE_CALLS = "https://archive.org/download/patrickdevinecalls/Patrick%20Devine%20Calls.zip"
-    const val PATRICK_DEVINE_FILES = "https://archive.org/download/patrickdevinefiles/Patrick%20Devine%20files.zip"
-    
-    // Torrent files for distributed access
-    const val PATRICK_DEVINE_FILES_TORRENT = "https://archive.org/download/patrickdevinefiles/patrickdevinefiles_archive.torrent"
-    const val PATRICK_DEVINE_CALLS_TORRENT = "https://archive.org/download/patrickdevinecalls/patrickdevinecalls_archive.torrent"
-    
-    // 1215.org Common Law archive - second key fiduciary interest (full tree)
-    const val COMMON_LAW_1215_ROOT = "https://archive.org/download/1215-org-commonlaw/www.1215.org/"
-    const val COMMON_LAW_1215_ZIP = "https://archive.org/download/1215-org-commonlaw/1215-org-commonlaw.zip"
-    const val COMMON_LAW_1215_TORRENT = "https://archive.org/download/1215-org-commonlaw/1215-org-commonlaw_archive.torrent"
-}
-
-// Patrick Devine corpus builder with default URLs
-fun FiduciaryContext.patrickDevine(
-    useRangeRequests: Boolean = true,
-    includeTorrents: Boolean = false
-): Array<PatrickDevineAttention> {
-    
-    val zipUrls = if (includeTorrents) {
-        arrayOf(
-            FiduciaryArchives.PATRICK_DEVINE_MAIN,
-            FiduciaryArchives.PATRICK_DEVINE_CALLS,
-            FiduciaryArchives.PATRICK_DEVINE_FILES,
-            FiduciaryArchives.PATRICK_DEVINE_FILES_TORRENT,
-            FiduciaryArchives.PATRICK_DEVINE_CALLS_TORRENT
-        )
-    } else {
-        arrayOf(
-            FiduciaryArchives.PATRICK_DEVINE_MAIN,
-            FiduciaryArchives.PATRICK_DEVINE_CALLS,
-            FiduciaryArchives.PATRICK_DEVINE_FILES
-        )
-    }
-    
-    return Array(zipUrls.size) { i ->
-        val url = zipUrls[i]
-        val isTorrent = url.endsWith(".torrent")
-        val mimeType = if (isTorrent) "application/x-bittorrent" else "application/zip"
-        
-        val docs = Array(10) { j ->  // Mock 10 docs per archive
-            document(j * 1024L, (j + 1) * 1024L, "application/pdf")
-        }
-        val corpus = corpus(docs.size j docs::get, "patrick-devine-$i")
-        PatrickDevineAttention(corpus j (url j (useRangeRequests && !isTorrent)))
-    }
-}
-
 // Common Law 1215.org tree builder with torrent support
 @JvmInline
 value class CommonLawAttention(val law: Join<CorpusAttention, Join<String, Boolean>>) {
     val corpus: CorpusAttention get() = law.a
     val sourceUrl: String get() = law.b.a
     val isTreeStructure: Boolean get() = law.b.b
-}
-
-fun FiduciaryContext.commonLaw1215(
-    useTree: Boolean = true,
-    useTorrent: Boolean = false
-): CommonLawAttention {
-    val url = when {
-        useTorrent -> FiduciaryArchives.COMMON_LAW_1215_TORRENT
-        useTree -> FiduciaryArchives.COMMON_LAW_1215_ROOT
-        else -> FiduciaryArchives.COMMON_LAW_1215_ZIP
-    }
-    
-    // Common law documents are primarily HTML/text
-    val docs = Array(100) { i ->  // Estimate 100+ documents in tree
-        document(i * 5000L, (i + 1) * 5000L, "text/html")
-    }
-    
-    val corpus = corpus(docs.size j docs::get, "common-law-1215")
-    return CommonLawAttention(corpus j (url j (useTree && !useTorrent)))
 }
 
 // Tree traversal for Common Law archive
@@ -233,11 +103,11 @@ suspend fun demonstrateFiduciaryAttention(ioContext: IOContext) {
     val tikaSource = fidContext.tika("/path/to/document.pdf")
     
     // Extract content
-    val text = pdfDoc.extract(tikaSource)
+    val text = pdfDoc.process(tikaSource) as String
     
     // Analyze with NLP
     val nlpSource = fidContext.nlp(text)
-    val concepts = pdfDoc.analyze(nlpSource)
+    val concepts = pdfDoc.process(nlpSource) as Indexed<String>
     
     // Build Patrick Devine corpus
     val patrickUrls = arrayOf(
@@ -264,3 +134,198 @@ suspend fun demonstrateFiduciaryAttention(ioContext: IOContext) {
  * 4. Patrick Devine specific handling
  * 5. Seamless conversion to Trikeshed attention
  */
+
+/**
+ * ## FiduciaryContext Digital Asset Constructors
+ *
+ * These functions create attention objects for digital asset tracking.
+ */
+fun FiduciaryContext.agreementAttention(url: String, parties: List<String>, effectiveDate: String) =
+    DigitalAttention.AgreementAttention(url, parties, effectiveDate)
+
+fun FiduciaryContext.publicationAttention(doi: String, title: String, authors: List<String>) =
+    DigitalAttention.PublicationAttention(doi, title, authors)
+
+fun FiduciaryContext.apiCopyrightAttention(apiName: String, owner: String, license: String, expiry: String?) =
+    DigitalAttention.ApiCopyrightAttention(apiName, owner, license, expiry)
+
+fun FiduciaryContext.domainExpirationAttention(domain: String, registrar: String, expiry: String) =
+    DigitalAttention.DomainExpirationAttention(domain, registrar, expiry)
+
+sealed class DigitalAttention {
+    /**
+     * ### AgreementAttention
+     * Tracks online agreements, their parties, and effective dates.
+     */
+    data class AgreementAttention(
+        val url: String,
+        val parties: List<String>,
+        val effectiveDate: String // ISO date
+    ) : DigitalAttention()
+
+    /**
+     * ### PublicationAttention
+     * Tracks publications by DOI, title, and authors.
+     */
+    data class PublicationAttention(
+        val doi: String,
+        val title: String,
+        val authors: List<String>
+    ) : DigitalAttention()
+
+    /**
+     * ### ApiCopyrightAttention
+     * Tracks API copyright/license status and expiry.
+     */
+    data class ApiCopyrightAttention(
+        val apiName: String,
+        val owner: String,
+        val license: String,
+        val expiry: String? // ISO date, nullable
+    ) : DigitalAttention()
+
+    /**
+     * ### DomainExpirationAttention
+     * Tracks domain registrar and expiration date.
+     */
+    data class DomainExpirationAttention(
+        val domain: String,
+        val registrar: String,
+        val expiry: String // ISO date
+    ) : DigitalAttention()
+}
+
+/**
+ * ## Lattice of Discernment
+ *
+ * Represents a partially ordered set (lattice) of discernment categories or attention objects.
+ * Supports refinement, generalization, and reasoning about relationships between interests.
+ * Useful for fiduciary audit, compliance, and advanced attention routing.
+ *
+ * Example usage:
+ * ```kotlin
+ * val lattice = LatticeOfDiscernment<String>()
+ * lattice.addRelation("General", "Specific") // "Specific" refines "General"
+ * val isRefined = lattice.isRefinement("General", "Specific") // true
+ * ```
+ */
+class LatticeOfDiscernment<T> {
+    private val edges: MutableMap<T, MutableSet<T>> = mutableMapOf()
+
+    /**
+     * Add a refinement/generalization relation: child refines parent.
+     */
+    fun addRelation(parent: T, child: T) {
+        edges.getOrPut(parent) { mutableSetOf() }.add(child)
+    }
+
+    /**
+     * Check if b is a refinement (descendant) of a.
+     */
+    fun isRefinement(parent: T, child: T): Boolean {
+        if (parent == child) return true
+        val children = edges[parent] ?: return false
+        return children.any { it == child || isRefinement(it, child) }
+    }
+
+    /**
+     * Get all direct refinements (children) of a node.
+     */
+    fun refinements(parent: T): Set<T> = edges[parent] ?: emptySet()
+
+    /**
+     * Get all generalizations (ancestors) of a node.
+     */
+    fun generalizations(child: T): Set<T> = edges.filter { (_, v) -> child in v }.keys
+}
+
+/**
+ * ## Patrick Devine Archive Indexes in the Blackboard
+ *
+ * This system builds and stores two comprehensive indexes for the Patrick Devine archives:
+ * - `patrickdevine.zip`
+ * - `Patrick Devine Calls.zip`
+ *
+ * ### Process
+ * 1. **Fetch Central Directory:**
+ *    - Use HTTP range requests to fetch the ZIP central directory from the remote archive.
+ *    - Parse the central directory to enumerate all entries (filenames, offsets, sizes, etc.).
+ * 2. **Build Index:**
+ *    - Create a structured index of all entries, parameterized by attention objects for auditability.
+ * 3. **Store in Blackboard:**
+ *    - Serialize and store the index in the blackboard (e.g., CouchDB) under a well-known key:
+ *      - `patrickdevine_index`
+ *      - `patrickdevine_calls_index`
+ * 4. **Access for Downstream Processing:**
+ *    - The indexes are available for document attention, NLP, LDA, and other fiduciary processes.
+ *
+ * ### Benefits
+ * - No need to download the entire archive—just the central directory and, as needed, individual entries.
+ * - Full auditability and traceability—each entry in the index is parameterized by an attention object.
+ * - Efficient, scalable, and standards-based—leverages the public ZIP spec and HTTP range requests.
+ *
+ * ### Example (Pseudocode)
+ * ```kotlin
+ * // Fetch and index the central directory for a remote ZIP
+ * val index = fetchZipCentralDirectoryIndex("https://archive.org/download/patrickdevine/patrickdevine.zip")
+ * // Store in blackboard (e.g., CouchDB)
+ * blackboard.store("patrickdevine_index", index)
+ * ```
+ *
+ * ### Index Keys
+ * | Archive Name                  | Index Key in Blackboard         |
+ * |-------------------------------|---------------------------------|
+ * | patrickdevine.zip             | patrickdevine_index             |
+ * | Patrick Devine Calls.zip      | patrickdevine_calls_index       |
+ */
+
+/**
+ * ## Ingest and Scan Documents from Remote Zip (Range Requests)
+ *
+ * Downloads documents from a remote zip archive using HTTP range requests, extracts their content,
+ * and runs Stanford NLP (or a pluggable NLP agent) on the extracted text. Optionally, runs LDA topic modeling
+ * and stores the results in CouchDB records for later retrieval/analysis. Results are parameterized
+ * by explicit attention objects for full fiduciary traceability.
+ *
+ * This is a stub: actual HTTP, zip, NLP, LDA, and CouchDB integration should be implemented as needed.
+ *
+ * Example usage:
+ * ```kotlin
+ * val results = fidContext.ingestAndScanRemoteZip(
+ *     url = "https://archive.org/download/patrickdevine/patrickdevine.zip",
+ *     docIndices = 0..9,
+ *     nlpAgent = MyStanfordNlpAgent(),
+ *     ldaRunner = { text -> listOf("topic1", "topic2") },
+ *     storeLdaInCouch = true
+ * )
+ * ```
+ */
+suspend fun FiduciaryContext.ingestAndScanRemoteZip(
+    url: String,
+    docIndices: IntRange,
+    nlpAgent: (String) -> List<String> = { text -> listOf("NLP_RESULT_PLACEHOLDER") },
+    ldaRunner: ((String) -> List<String>)? = null,
+    storeLdaInCouch: Boolean = false,
+    couchDbStore: ((DocumentAttention, List<String>) -> Unit)? = null
+): List<Pair<DocumentAttention, List<String>>> {
+    // 1. Download document byte ranges from remote zip (stubbed)
+    val docs = docIndices.map { i ->
+        // In a real implementation, fetch the i-th file from the zip using HTTP range requests
+        val fakeText = "Extracted text for document $i from $url"
+        val docAttention = document(i * 1024L, (i + 1) * 1024L, "application/pdf")
+        docAttention to fakeText
+    }
+    // 2. Run NLP agent on each document's text
+    val nlpResults = docs.map { (docAttention, text) ->
+        val nlp = nlpAgent(text)
+        docAttention to nlp
+    }
+    // 3. Optionally run LDA and store in CouchDB
+    if (ldaRunner != null && storeLdaInCouch && couchDbStore != null) {
+        docs.forEach { (docAttention, text) ->
+            val ldaTopics = ldaRunner(text)
+            couchDbStore(docAttention, ldaTopics)
+        }
+    }
+    return nlpResults
+}

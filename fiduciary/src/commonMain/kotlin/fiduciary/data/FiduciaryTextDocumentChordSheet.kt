@@ -23,7 +23,8 @@ data class FiduciaryTextDocument(
     val zipFile: String,             // ZIP file name or path
     val fragmentRange: ZipFragmentRange, // Byte range in ZIP (start j end)
     val content: String? = null,     // Extracted text (optional, may be loaded on demand)
-    val metadata: Map<String, String> = emptyMap() // Optional metadata
+    val metadata: Map<String, String> = emptyMap(), // Optional metadata
+    val interest: Double = 0.0
 )
 
 // Indexed collection of fiduciary text documents

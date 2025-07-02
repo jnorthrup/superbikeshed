@@ -233,7 +233,7 @@ data class DesignDocument(
     val filters: Map<String, String> = emptyMap(),
     val validate_doc_update: String? = null,
     val rewrites: Indexed<RewriteRule> = emptyIndex(),
-    val options: JsonObject? = null
+    val options: @Contextual kotlinx.serialization.json.JsonObject? = null
 )
 
 @Serializable

@@ -205,10 +205,10 @@ actual class JvmSocksClient(
     }
     
     private fun parseResponse(data: Indexed<Byte>): SocksResponse {
-        val version = data[0]
-        val replyCode = data[1]
-        val reserved = data[2]
-        val addressType = data[3]
+        val version = data.b(0)
+        val replyCode = data.b(1)
+        val reserved = data.b(2)
+        val addressType = data.b(3)
         
         // Parse address and port based on address type
         val (bindAddress, bindPort) = when (addressType) {
@@ -222,22 +222,22 @@ actual class JvmSocksClient(
     }
     
     private fun parseIpv4Address(data: Indexed<Byte>, offset: Int): Pair<SocksBindAddress, SocksBindPort> {
-        val ip = "${data[offset] and 0xFF}.${data[offset + 1] and 0xFF}.${data[offset + 2] and 0xFF}.${data[offset + 3] and 0xFF}"
-        val port = ((data[offset + 4].toInt() and 0xFF) shl 8) or (data[offset + 5].toInt() and 0xFF)
+        val ip = "${data.b(offset).toInt() and 0xFF}.${data.b(offset + 1).toInt() and 0xFF}.${data.b(offset + 2).toInt() and 0xFF}.${data.b(offset + 3).toInt() and 0xFF}"
+        val port = ((data.b(offset + 4).toInt() and 0xFF) shl 8) or (data.b(offset + 5).toInt() and 0xFF)
         return SocksBindAddress(ip) to SocksBindPort(port)
     }
     
     private fun parseDomainName(data: Indexed<Byte>, offset: Int): Pair<SocksBindAddress, SocksBindPort> {
-        val domainLength = data[offset].toInt() and 0xFF
-        val domain = String(ByteArray(domainLength) { i -> data[offset + 1 + i] })
-        val port = ((data[offset + 1 + domainLength].toInt() and 0xFF) shl 8) or (data[offset + 2 + domainLength].toInt() and 0xFF)
+        val domainLength = data.b(offset).toInt() and 0xFF
+        val domain = String(ByteArray(domainLength) { i -> data.b(offset + 1 + i) })
+        val port = ((data.b(offset + 1 + domainLength).toInt() and 0xFF) shl 8) or (data.b(offset + 2 + domainLength).toInt() and 0xFF)
         return SocksBindAddress(domain) to SocksBindPort(port)
     }
     
     private fun parseIpv6Address(data: Indexed<Byte>, offset: Int): Pair<SocksBindAddress, SocksBindPort> {
         // Simplified IPv6 parsing
         val ip = "::1"
-        val port = ((data[offset + 16].toInt() and 0xFF) shl 8) or (data[offset + 17].toInt() and 0xFF)
+        val port = ((data.b(offset + 16).toInt() and 0xFF) shl 8) or (data.b(offset + 17).toInt() and 0xFF)
         return SocksBindAddress(ip) to SocksBindPort(port)
     }
 }

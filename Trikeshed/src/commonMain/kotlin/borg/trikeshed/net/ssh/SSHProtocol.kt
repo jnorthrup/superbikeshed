@@ -1,7 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
-package borg.trikeshed.net.ssh
-
-
 import borg.trikeshed.lib.*
 import borg.trikeshed.crypto.*
 import borg.trikeshed.net.quic.*
@@ -13,6 +9,13 @@ import borg.trikeshed.net.ssh.KexDhReplyParser
 import borg.trikeshed.net.ssh.SftpPacketParser
 import borg.trikeshed.net.socks.socksIngress
 import borg.trikeshed.net.socks.socksEgress
+import kotlinx.coroutines.channels.Channel
+import borg.trikeshed.nio.PlatformByteBuffer
+import borg.trikeshed.io.PlatformFileIO
+import borg.trikeshed.io.PlatformFileIOImpl
+
+@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
+package borg.trikeshed.net.ssh
 
 // === SSH TAXONOMICAL TYPEALIASES ===
 
@@ -172,7 +175,7 @@ data class SSHPacket(
         // Packet length (does not include MAC or packet length field itself)
         val length = 1 + payload.a + padding.a // padding_length + payload + padding
         packet.add((length shr 24).toByte())
-        packet.add((length shr 16).toByte())
+        payload[1] = (length shr 16).toByte()
         packet.add((length shr 8).toByte())
         packet.add(length.toByte())
         
@@ -350,8 +353,7 @@ data class SSHChannel(
 /**
  * SSH Connection
  */
-import kotlinx.coroutines.channels.Channel
-import borg.trikeshed.nio.PlatformByteBuffer
+
 
 class SSHConnection(
     private val transport: QuicConnection,
@@ -1072,7 +1074,7 @@ class SFTPClient(
         // Update length
         val length = payload.size - 4
         payload[0] = (length shr 24).toByte()
-        payload[1] = (length shr 16).toByte())
+        payload[1] = (length shr 16).toByte()
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
@@ -1182,8 +1184,7 @@ class SFTPClient(
 /**
  * SSH SCP Client
  */
-import borg.trikeshed.io.PlatformFileIO
-import borg.trikeshed.io.PlatformFileIOImpl
+
 
 class SCPClient(
     private val sshConnection: SSHConnection,
@@ -1299,5 +1300,4 @@ class SCPClient(
 
         println("SCP: Download complete.")
     }
-}
 }

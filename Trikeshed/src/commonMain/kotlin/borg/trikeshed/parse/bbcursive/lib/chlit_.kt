@@ -1,34 +1,27 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.UnaryOperator
+import borg.trikeshed.parse.bbcursive.std
+import java.nio.ByteBuffer
+import java.util.function.UnaryOperator
+
+import borg.trikeshed.parse.bbcursive.std.bb
 
 /**
-char literal
+ * Created by jim on 1/17/16.
  */
-object chlit_ {
-    fun chlit(c: Char): UnaryOperator<ByteIndexedBuffer> {
-        return ByteBufferUnaryOperator(c)
-    }
-
-    fun chlit(s: CharSequence): UnaryOperator<ByteIndexedBuffer> {
-        return chlit(s[0])
-    }
-
-
-    private class ByteBufferUnaryOperator(private val c: Char) : UnaryOperator<ByteIndexedBuffer> {
-
-        override fun toString(): String {
-            return "c8'" +
-                    c + "'"
-        }
-
-        override fun invoke(buf: ByteIndexedBuffer): ByteIndexedBuffer? {
-            if (!buf.hasRemaining) {
-                return null
+interface chlit_ {
+    companion object {
+        fun chlit(vararg chars: Char): UnaryOperator<ByteBuffer> {
+            return object : UnaryOperator<ByteBuffer> {
+                override fun apply(buffer: ByteBuffer): ByteBuffer? {
+                    var b: ByteBuffer? = null
+                    for (aChar in chars) {
+                        b = bb(buffer, advance.genericAdvance(aChar.code.toByte()))
+                        if (null == b) return null
+                    }
+                    return b
+                }
             }
-            val b = buf.get()
-            return if ((c.toInt() and 0xff) == (b.toInt() and 0xff)) buf else null
         }
     }
 }

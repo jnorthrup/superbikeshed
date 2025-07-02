@@ -22,7 +22,7 @@ class CCEKProtocolIntegrationService(
     
     // Protocol integration chord - maps protocol combinations to integration strategies
     private val protocolIntegrationChord: MetaSeries<Indexed<String>, () -> IntegrationStrategy> =
-        Indexed("quic") j { protocols ->
+        listOf("quic").toIndexed() j { protocols ->
             when {
                 protocols.contains("quic") && protocols.contains("couchdb") -> { IntegrationStrategy.QUIC_COUCHDB }
                 protocols.contains("quic") && protocols.contains("ipfs") -> { IntegrationStrategy.QUIC_IPFS }
@@ -233,10 +233,4 @@ data class CCEKBatchItem(
     val ipfsContentType: IPFSContentType? = null
 )
 
-// === EXTENDED CONTEXT TYPES ===
-
-enum class CCEKContext {
-    QUIC_CONTEXT, COUCHDB_CONTEXT, IPFS_CONTEXT,
-    QUIC_COUCHDB_CONTEXT, QUIC_IPFS_CONTEXT, COUCHDB_IPFS_CONTEXT,
-    DEFAULT_CONTEXT
-} 
+ 

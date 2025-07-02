@@ -1,5 +1,9 @@
 package borg.trikeshed.parse.bbcursive.ann
 
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+
+/**
+ * Created by jim on 1/18/16.
+ */@Retention(RetentionPolicy.RUNTIME)
 annotation class Skipper

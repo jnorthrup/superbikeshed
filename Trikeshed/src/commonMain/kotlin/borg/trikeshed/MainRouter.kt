@@ -13,7 +13,10 @@ import borg.trikeshed.distributed.*
 // import borg.trikeshed.jetsam.*
 import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
-import kotlinx.coroutines.*
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.Join
+
+
 
 
 /**
@@ -242,7 +245,7 @@ class DistributedConfig {
 /**
  * Main entry point using DSL
  */
-suspend fun main(args: Array<String>) {
+fun main(args: Array<String>) = runBlocking {
     MainRouter.trikeshed(args) {
     
     // C10K server with static files and servlets
@@ -278,9 +281,7 @@ suspend fun main(args: Array<String>) {
     route("ipfs") {
         val client = ipfs {
             peerId = PeerId(
-                "node_123".toByteArray().let {
-                    it.size j { i -> it[i] }
-                }
+                "node_123".encodeToByteArray().toIndexed()
             )
         }
         
@@ -291,9 +292,7 @@ suspend fun main(args: Array<String>) {
     route("distributed") {
         val storage = distributed {
             peerId = PeerId(
-                "dist_456".toByteArray().let {
-                    it.size j { i -> it[i] }
-                }
+                "dist_456".encodeToByteArray().toIndexed()
             )
             couchUrl = arg(0, "http://localhost:5984")
         }

@@ -35,6 +35,11 @@ kotlin {
                 implementation(project(":Trikeshed"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+                // Stanford CoreNLP for NLP processing (https://stanfordnlp.github.io/CoreNLP/)
+                implementation("edu.stanford.nlp:stanford-corenlp:4.5.10")
+                implementation("edu.stanford.nlp:stanford-corenlp:4.5.10:models")
+                implementation("edu.stanford.nlp:stanford-corenlp:4.5.10:models-english")
+                // Optionally, add models for other languages if needed
             }
         }
         

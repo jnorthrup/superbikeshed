@@ -4,30 +4,21 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import java.util.function.UnaryOperator
 
-import bbcursive.std.bb
+import borg.trikeshed.parse.bbcursive.std.bb
 
-/**
- * Created by jim on 1/17/16.
- */
-object opt_ {
+interface opt_ {
+    companion object {
+        fun opt(vararg allOrPrevious: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+            return object : UnaryOperator<ByteBuffer> {
+                override fun toString(): String {
+                    return "opt" + Arrays.deepToString(allOrPrevious)
+                }
 
-    fun opt(vararg unaryOperators: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
-        return ByteBufferUnaryOperator(unaryOperators)
-    }
-
-    class ByteBufferUnaryOperator(private val allOrPrevious: Array<out UnaryOperator<ByteBuffer>>) : UnaryOperator<ByteBuffer> {
-
-        override fun toString(): String {
-            return "opt:" + Arrays.deepToString(allOrPrevious)
-        }
-
-        override fun apply(buffer: ByteBuffer): ByteBuffer? {
-            val position = buffer.position()
-            val r = bb(buffer, *allOrPrevious)
-            if (null == r) {
-                buffer.position(position)
+                override fun apply(byteBuffer: ByteBuffer): ByteBuffer? {
+                    val bb = bb(byteBuffer, *allOrPrevious)
+                    return bb ?: byteBuffer
+                }
             }
-            return buffer
         }
     }
 }

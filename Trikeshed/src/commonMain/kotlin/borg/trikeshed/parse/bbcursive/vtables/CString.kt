@@ -1,13 +1,11 @@
 package borg.trikeshed.parse.bbcursive.vtables
 
-import borg.trikeshed.std
-
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
-import bbcursive.Cursive.pre.*
-import bbcursive.std.bb
-import bbcursive.std.str
+import borg.trikeshed.parse.bbcursive.Cursive.pre.*
+import borg.trikeshed.parse.bbcursive.std.bb
+import borg.trikeshed.parse.bbcursive.std.str
 
 /**
  * this class reads a null terminated string. the null is not included
@@ -26,7 +24,7 @@ class CString {
 
             val context = getContext()
             val at = context.at()
-            bb(std.cat(bb(at.core(), mark), StandardCharsets.UTF_8.encode(s)), duplicate, reset, slice, debug)//wordy, but not doing much
+            bb(bb(at.core(), mark), StandardCharsets.UTF_8.encode(s), duplicate, reset, slice, debug)//wordy, but not doing much
             return getContext().at()
         }
     }

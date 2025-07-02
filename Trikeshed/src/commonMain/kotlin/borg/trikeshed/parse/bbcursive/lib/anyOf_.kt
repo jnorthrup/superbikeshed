@@ -1,137 +1,165 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.lib.decodeUtf8
-import borg.trikeshed.lib.toByteIndexedBuffer
-import borg.trikeshed.parse.bbcursive.Cursive
-import borg.trikeshed.parse.bbcursive.ParseResult
-import borg.trikeshed.parse.bbcursive.SessionContext
-import borg.trikeshed.parse.bbcursive.Traits
-import borg.trikeshed.parse.bbcursive.UnaryOperator
+import borg.trikeshed.parse.bbcursive.Cursive.pre
+import borg.trikeshed.parse.bbcursive.ann.Backtracking
 import borg.trikeshed.parse.bbcursive.vtables._edge
 import borg.trikeshed.parse.bbcursive.vtables._ptr
-import kotlin.coroutines.coroutineContext
-import kotlin.streams.asSequence
+
+import java.nio.ByteBuffer
+import java.util.Arrays
+import java.util.EnumSet
+import java.util.Set
+import java.util.function.Consumer
+import java.util.function.Function
+import java.util.function.UnaryOperator
+import java.util.stream.IntStream
+
+import borg.trikeshed.parse.bbcursive.std.*
+import java.util.Arrays.binarySearch
+import java.util.Arrays.deepToString
 
 /**
  * Created by jim on 1/17/16.
  */
-interface anyOf_ {
-    companion object {
-        val NONE_OF: Set<Traits> = emptySet() // Changed EnumSet.noneOf to emptySet()
+object anyOf_ {
 
-        suspend fun anyOf(vararg anyOf: UnaryOperator<ByteIndexedBuffer>): UnaryOperator<ByteIndexedBuffer> {
+    val NONE_OF: EnumSet<std.traits> = EnumSet.noneOf(std.traits::class.java)
+
+    fun anyOf(vararg anyOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
 
 
-            return object : UnaryOperator<ByteIndexedBuffer> {
+        return object : UnaryOperator<ByteBuffer> {
 
-                override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? { // Added suspend
-                    val sessionContext = coroutineContext[SessionContext.Key]
-                        ?: throw IllegalStateException("SessionContext not found in CoroutineContext")
+            override fun toString(): String {
+                return "any" + deepToString(anyOf)
+            }
 
-                    var mark = buffer.pos
-                    if (sessionContext.flags.contains(Traits.SKIPPER)) {
-                        val apply = Cursive.pre.skipWs.invoke(buffer) // Changed apply to invoke
-                        val newBuffer = apply ?: buffer.pos(mark) // Reset position if apply is null
-                        if (newBuffer == null || !newBuffer.hasRemaining) {
-                            return null
-                        }
-                        buffer.pos(newBuffer.pos)
+            override fun apply(buffer: ByteBuffer): ByteBuffer? {
+                var mark = buffer.position()
+                if (flags.get().contains(std.traits.skipper)) {
+                    val apply = pre.skipWs.apply(buffer)
+                    buffer = apply ?: buffer.position(mark) as ByteBuffer
+                    if (!buffer.hasRemaining()) {
+                        return null
                     }
-                    mark = buffer.pos
-                    val offsets = intArrayOf(mark, mark)
-                    val flaggs = arrayOf(NONE_OF)
+                }
+                mark = buffer.position()
+                val offsets = intArrayOf(mark, mark)
+                val flaggs = arrayOf(NONE_OF)
 
 
-                    val r = arrayOf<ByteIndexedBuffer?>(null)
-                    val finalBuffer = arrayOf(buffer)
+                val r = arrayOf<ByteBuffer?>(null)
+                val finalBuffer = arrayOf(buffer)
 
-                    anyOf.asSequence() // Use asSequence for lazy evaluation
-                        .map { op ->
-                            object : _edge<Set<Traits>, _edge<UnaryOperator<ByteIndexedBuffer>, Int>>() { // Changed Integer to Int
-                                private val currentBuffer = finalBuffer[0]
+                Arrays.stream(anyOf)/*.parallel()*/
+                    .map(Function<UnaryOperator<ByteBuffer>, _edge<_edge<Set<std.traits>,
+                            _edge<UnaryOperator<ByteBuffer>, Int>>, _ptr>> {
+                        op ->
+                        object : _edge<_edge<Set<std.traits>, _edge<UnaryOperator<ByteBuffer>, Int>>, _ptr>() {
+                            private val buffer: ByteBuffer = finalBuffer[0]
 
-                                override fun at(): Int = r$()
+                            override fun at(): _ptr {
+                                return r$()
+                            }
 
-                                override fun goTo(ptr: Int): Int {
-                                    throw Error("trifling with an immutable pointer")
-                                }
+                            override fun goTo(ptr: _ptr): _ptr {
+                                throw Error("trifling with an immutable pointer")
+                            }
 
-                                override fun r$(): Int {
-                                    return currentBuffer?.pos ?: 0
-                                }
+                            /**
+                             * this binds a pointer to a pair of ByteBuffer and Integer.  note the bytebuffer
+                             * is mutated by this operation and will corrupt the source stream if this isn't
+                             * a slice or a duplicate
+                             *
+                             * @return the _ptr
+                             */
+                            override
 
-                                override fun core(vararg e: _edge<Set<Traits>, _edge<UnaryOperator<ByteIndexedBuffer>, Int>>): _edge<UnaryOperator<ByteIndexedBuffer>, Int> { // Changed Integer to Int
-                                    return object : _edge<UnaryOperator<ByteIndexedBuffer>, Int>() { // Changed Integer to Int
-                                        override fun at(): Int = r$()
+                            fun r$(): _ptr {
 
-                                        override fun goTo(integer: Int): Int {
-                                            throw Error("immutable")
+                                return _ptr().bind(
+                                    buffer.duplicate().position(offsets[1]) as ByteBuffer, offsets[0]) as _ptr
+                            }
+
+                            override fun core(vararg e: _edge<_edge<Set<std.traits>, _edge<UnaryOperator<ByteBuffer>, Int>>, _ptr>): _edge<Set<std.traits>, _edge<UnaryOperator<ByteBuffer>, Int>>? {
+                                return object : _edge<Set<std.traits>, _edge<UnaryOperator<ByteBuffer>, Int>>() {
+                                    override fun core(vararg e: _edge<Set<std.traits>, _edge<UnaryOperator<ByteBuffer>, Int>>): Set<std.traits> {
+                                        return flaggs[0]
+                                    }
+
+                                    override fun at(): _edge<UnaryOperator<ByteBuffer>, Int> {
+                                        return r$()
+                                    }
+
+                                    override fun goTo(unaryOperatorInteger_edge: _edge<UnaryOperator<ByteBuffer>, Int>): _edge<UnaryOperator<ByteBuffer>, Int> {
+                                        throw Error("cant move this")
+                                    }
+
+                                    override fun r$(): _edge<UnaryOperator<ByteBuffer>, Int> {
+                                        return object : _edge<UnaryOperator<ByteBuffer>, Int>() {
+                                            override fun at(): Int {
+                                                return r$()
+                                            }
+
+                                            override fun goTo(integer: Int): Int {
+                                                throw Error("immutable")
+                                            }
+
+                                            override fun core(vararg e: _edge<UnaryOperator<ByteBuffer>, Int>): UnaryOperator<ByteBuffer> {
+                                                return op
+                                            }
+
+                                            override fun r$(): Int {
+                                                return offsets[1]
+                                            }
                                         }
-
-                                        override fun r$(): Int = offsets[1]
-
-                                        override fun core(vararg e: _edge<UnaryOperator<ByteIndexedBuffer>, Int>): UnaryOperator<ByteIndexedBuffer> = op // Changed Integer to Int
                                     }
                                 }
                             }
                         }
-                        .filter { ed ->
-                            val op = ed.core()?.core() // Access op from nested edge
-                            val newPosition = ed.core()?.at() // Access newPosition from nested edge
-                            val byteIndexedBuffer = finalBuffer[0]?.duplicate()?.pos(newPosition ?: 0) // Null-safe calls
-                            val res = op?.invoke(byteIndexedBuffer!!) // Changed apply to invoke, added !! for non-null assertion
-
-                            if (res != null) {
-                                offsets[1] = res.pos
-                                flaggs[0] = sessionContext.flags.toSet() // Copy current flags
+                    }).filter(
+                        { ed ->
+                            val op = ed.core()!!.location()!!.core()
+                            val newPosition = ed.location()!!.location()
+                            val byteBuffer = ed.location()!!.core()!!.duplicate().position(newPosition) as ByteBuffer
+                            val res = op.apply(byteBuffer)
+                            if (null != res) {
+                                offsets[1] = res.position()
+                                flaggs[0] = EnumSet.copyOf(flags.get())
                                 true
-                            } else {
-                                false
-                            }
-                        }
-                        .firstOrNull() // Use firstOrNull instead of findFirst
-                        ?.let { edge_ptr_edge ->
-                            sessionContext.outbox(
-                                ParseResult(
-                                    finalBuffer[0]!!,
-                                    edge_ptr_edge.core()?.core()!!, // Access op from nested edge
-                                    offsets[0],
-                                    offsets[1],
-                                    flaggs[0]
-                                )
-                            )
-                            r[0] = finalBuffer[0]?.pos(offsets[1])
-                        }
+                            } else false
+                        })
+                    .findFirst().ifPresent(
+                        { edge_ptr_edge ->
+                            val edgeConsumer = outbox.get()
+                            edgeConsumer.accept(edge_ptr_edge)
+                            r[0] = finalBuffer[0].position(offsets[1]) as ByteBuffer
+                        })
 
-                    return r[0]
-                }
-
-                override fun toString(): String {
-                    return "any" + anyOf.contentDeepToString()
-                }
+                return r[0]
             }
         }
+    }
 
 
-        fun anyIn(s: CharSequence): UnaryOperator<ByteIndexedBuffer> {
-            val ints = s.chars().toArray()
-            return object : UnaryOperator<ByteIndexedBuffer> {
-                override fun invoke(b: ByteIndexedBuffer): ByteIndexedBuffer? {
-                    var r: ByteIndexedBuffer? = null
-                    if (b.hasRemaining) {
-                        val b1 = b.get()
-                        if (-1 < ints.binarySearch(b1.toInt())) // Use binarySearch on IntArray
-                            r = b
-                    }
-                    return r
+    @Backtracking
+    fun anyIn(s: CharSequence): UnaryOperator<ByteBuffer> {
+        val ints = s.chars().sorted().toArray()
+        return object : UnaryOperator<ByteBuffer> {
+            override fun toString(): String {
+                val b = StringBuilder()
+                IntStream.of(*ints).forEach { i -> b.append(i.toChar()) }
+                return "in" + Arrays.deepToString(arrayOf(b.toString()))
+            }
+
+            override fun apply(b: ByteBuffer): ByteBuffer? {
+                var r: ByteBuffer? = null
+                if (null != b && b.hasRemaining()) {
+                    val b1 = b.get()
+                    if (-1 < binarySearch(ints, b1.toInt() and 0xff))
+                        r = b
                 }
-
-                override fun toString(): String {
-                    val sb = StringBuilder()
-                    ints.forEach { i -> sb.append((i and 0xffff).toChar()) }
-                    return "in" + Arrays.deepToString(arrayOf(sb.toString()))
-                }
+                return r
             }
         }
     }

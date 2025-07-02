@@ -1,26 +1,31 @@
 package borg.trikeshed.parse.bbcursive.vtables
 
-import borg.trikeshed.lib.ByteIndexedBuffer
+import java.nio.ByteBuffer
 
 /**
  * pointer class -- approximation of c++ '*'
+ * <p>
+ * this class is not exactly a Pair, it is a ByteBuffer reference with a settable position() sensor designed only for DirectByteBuffer work.
  *
- * this class is not exactly a Pair, it is a ByteIndexedBuffer reference with a settable position() sensor designed only for DirectByteBuffer work.
+ * @author jim
  */
-class _ptr : _edge<ByteIndexedBuffer, Int>() { // Changed ByteBuffer to ByteIndexedBuffer, Integer to Int
+class _ptr : _edge<ByteBuffer, Int>() {
     override fun at(): Int {
         return r$()
     }
 
     /**
      * bb pos
+     *
+     * @param integer
+     * @return
      */
     override fun goTo(integer: Int): Int {
-        core()?.pos(integer) // Changed core().position(integer) to core()?.pos(integer)
+        core()!!.position(integer)
         return integer
     }
 
     override fun r$(): Int {
-        return core()?.pos ?: 0 // Changed core().position() to core()?.pos ?: 0
+        return core()!!.position()
     }
 }

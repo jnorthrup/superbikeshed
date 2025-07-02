@@ -1,21 +1,21 @@
 package borg.trikeshed.parse.bbcursive.lib
 
-import borg.trikeshed.ann.Skipper
-import borg.trikeshed.std
-
+import borg.trikeshed.parse.bbcursive.ann.Skipper
+import borg.trikeshed.parse.bbcursive.std
 import java.nio.ByteBuffer
 import java.util.Arrays
 import java.util.function.UnaryOperator
 
-import bbcursive.std.bb
+import borg.trikeshed.parse.bbcursive.std.bb
 
 @Skipper
 interface skipper_ {
 
     @Skipper
-    fun skipper(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
-        return ByteBufferUnaryOperator(allOf)
-
+    companion object {
+        fun skipperAll(vararg allOf: UnaryOperator<ByteBuffer>): UnaryOperator<ByteBuffer> {
+            return ByteBufferUnaryOperator(allOf)
+        }
     }
 
     @Skipper

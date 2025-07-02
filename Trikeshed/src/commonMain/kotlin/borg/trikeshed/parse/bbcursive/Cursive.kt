@@ -1,123 +1,184 @@
+import java.nio.ByteBuffer
+import borg.trikeshed.parse.bbcursive.std.bb
+import java.nio.BufferUnderflowException
+
 package borg.trikeshed.parse.bbcursive
 
-import borg.trikeshed.lib.ByteIndexedBuffer
-import borg.trikeshed.lib.decodeUtf8
-import borg.trikeshed.lib.get
-import borg.trikeshed.lib.pos
-import borg.trikeshed.lib.rem
-import borg.trikeshed.lib.rew
-import borg.trikeshed.lib.toByteIndexedBuffer
-import kotlin.jvm.JvmInline
-
 /**
- * some kind of less painful way to do byteIndexedBuffer operations and a few new ones thrown in.
+ * some kind of less painful way to do byteBuffer operations and a few new ones thrown in.
+ * <p/>
+ * evidence that this can be more terse than what jdk pre-8 allows:
+ * <pre>
+ *
+ * res.add(bb(nextChunk, rewind));
+ * res.add((ByteBuffer) nextChunk.rewind());
+ *
+ *
+ * </pre>
  */
-fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
-    enum class pre : Cursive {
+@FunctionalInterface
+fun interface Cursive { fun apply(target: ByteBuffer): ByteBuffer? }
+    enum class pre : UnaryOperator<ByteBuffer> {
         duplicate {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.duplicate()
-        },
-        flip {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.flip()
-        },
-        slice {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.slice()
-        },
-        mark {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.mk
-        },
-        reset {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.rew()
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.duplicate()
+            }
+        }, flip {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.flip() as ByteBuffer
+            }
+        }, slice {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.slice()
+            }
+        }, mark {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.mark() as ByteBuffer
+            }
+        }, reset {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.reset() as ByteBuffer
+            }
         },
         /**
          * exists in both pre and post Cursive atoms.
          */
         rewind {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.rew()
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.rewind() as ByteBuffer
+            }
         },
         /**
          * rewinds, dumps to console but returns unchanged buffer
          */
         debug {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
                 System.err.println("%%: " + std.str(target, duplicate, rewind))
                 return target
             }
-        },
-        ro {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.ro()
+        }, ro {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.asReadOnlyBuffer()
+            }
         },
 
         /**
-         * performs get until non-ws returned. then backtracks.by one.
-         *
+         * perfoms get until non-ws returned.  then backtracks.by one.
+         * <p/>
+         * <p/>
          * resets position and throws BufferUnderFlow if runs out of space before success
          */
+
+
         forceSkipWs {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                val position = target.pos
-                while (target.hasRemaining && target.get().toInt().toChar().isWhitespace());
-                if (!target.hasRemaining) {
-                    target.pos(position)
+            override fun apply(target: ByteBuffer): ByteBuffer? {
+                val position = target.position()
+
+                while (target.hasRemaining() && Character.isWhitespace(target.get().toInt()));
+                if (!target.hasRemaining()) {
+                    target.position(position)
                     throw BufferUnderflowException()
                 }
-                return std.bb(target, back1)!! // Assuming bb returns non-null here
+                return bb(target, back1)
             }
         },
         skipWs {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.skipWs
+            override fun apply(target: ByteBuffer): ByteBuffer? {
+                var rem: Boolean
+                var captured = false
+                var r: Boolean
+                while (run {
+                            rem = target.hasRemaining()
+                            rem && run {
+                                r = Character.isWhitespace(0xff and (target.mark() as ByteBuffer).get().toInt())
+                                captured = captured or r
+                                r
+                            }
+                        });
+                return if (captured && rem) target.reset() as ByteBuffer else if (captured) target else null
+            }
         },
         toWs {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                while (target.hasRemaining && !target.get().toInt().toChar().isWhitespace()) {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                while (target.hasRemaining() && !Character.isWhitespace(target.get().toInt())) {
                 }
                 return target
             }
         },
         /**
-         * @throws BufferUnderflowException if EOL was not reached
+         * @throws java.nio.BufferUnderflowException if EOL was not reached
          */
         forceToEol {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                while (target.hasRemaining && '\n' != target.get().toInt().toChar()) {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                while (target.hasRemaining() && '\n'.code != target.get().toInt()) {
                 }
-                if (!target.hasRemaining) {
+                if (!target.hasRemaining()) {
                     throw BufferUnderflowException()
                 }
                 return target
             }
         },
+        /**
+         * makes best-attempt at reaching eol or returns end of buffer
+         */
         toEol {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                while (target.hasRemaining && '\n' != target.get().toInt().toChar()) { }
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                while (target.hasRemaining() && '\n'.code != target.get().toInt()) { }
                 return target
             }
         },
         back1 {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.dec()
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                val position = target.position()
+                return (if (0 < position) target.position(position - 1) else target) as ByteBuffer
+            }
         },
         /**
          * reverses position _up to_ 2.
          */
         back2 {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.dec().dec()
-        },
-        /**
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                val position = target.position()
+                return (if (1 < position) target.position(position - 2) else bb(target, back1)) as ByteBuffer
+            }
+        }, /**
          * reduces the position of target until the character is non-white.
-         */
-        rtrim {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.rtrim
+         */rtrim {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                val start = target.position()
+                var i = start
+                while (0 <= --i && Character.isWhitespace(target.get(i).toInt())) {
+                }
+
+                return target.position(++i) as ByteBuffer
+            }
         },
 
         /**
          * noop
          */
         noop {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target
-        },
-        skipDigits {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                while (target.hasRemaining && Character.isDigit(target.get().toInt().toChar())) {
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target
+            }
+        }, skipDigits {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                while (target.hasRemaining() && Character.isDigit(target.get().toInt())) {
                 }
                 return target
             }
@@ -126,29 +187,44 @@ fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
 
     enum class post : Cursive {
         compact {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.compact() // Assuming compact method exists
-        },
-        reset {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.rew()
-        },
-        rewind {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.rew()
-        },
-        clear {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.clr
-        },
-        grow {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = std.grow(target)
-        },
-        ro {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer = target.ro()
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.compact()
+            }
+        }, reset {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.reset() as ByteBuffer
+            }
+        }, rewind {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.rewind() as ByteBuffer
+            }
+        }, clear {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.clear() as ByteBuffer
+            }
+
+        }, grow {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return std.grow(target)
+            }
+
+        }, ro {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                return target.asReadOnlyBuffer()
+            }
         },
         /**
          * fills remainder of buffer to 0's
          */
         pad0 {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                while (target.hasRemaining) {
+
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                while (target.hasRemaining()) {
                     target.put(0)
                 }
                 return target
@@ -158,17 +234,14 @@ fun interface Cursive : UnaryOperator<ByteIndexedBuffer> {
          * fills prior bytes to current position with 0's
          */
         pad0Until {
-            override fun invoke(target: ByteIndexedBuffer): ByteIndexedBuffer {
-                val limit = target.limit
+            override fun apply(target: ByteBuffer): ByteBuffer {
+                val limit = target.limit()
                 target.flip()
-                while (target.hasRemaining) {
+                while (target.hasRemaining()) {
                     target.put(0)
                 }
-                return target.lim(limit)
+                return target.limit(limit) as ByteBuffer
             }
         }
     }
 }
-
-// Placeholder for BufferUnderflowException, if not available in Kotlin Common
-class BufferUnderflowException : RuntimeException()

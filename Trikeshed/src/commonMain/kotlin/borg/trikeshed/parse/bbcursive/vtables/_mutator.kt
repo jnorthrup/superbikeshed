@@ -42,11 +42,11 @@ abstract class _mutator<endPojo> : Function<endPojo, _ptr> {
             return r$()
         }
 
-        fun apply(ptr: _ptr): endPojo {
+        fun apply(ptr: _ptr): endPojo? {
             return apply(ptr)
         }
     }
-    protected inner class StringifiedContext : _edge<String,ByteBufferContext>(){
+    protected inner class StringifiedContext : _edge<String, ByteBufferContext>(){
         override fun at(): ByteBufferContext? {
             return null
         }

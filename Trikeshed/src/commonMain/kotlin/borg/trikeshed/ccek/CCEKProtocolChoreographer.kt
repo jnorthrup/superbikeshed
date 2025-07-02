@@ -35,7 +35,7 @@ class CCEKProtocolChoreographer(
     
     // Protocol coordination chord - maps protocol combinations to coordination strategies
     private val protocolCoordinationChord: MetaSeries<Indexed<String>, () -> CoordinationStrategy> =
-        Indexed("quic") j { protocols ->
+        listOf("quic").toIndexed() j { protocols ->
             when {
                 protocols.size == 1 -> { CoordinationStrategy.SINGLE }
                 protocols.contains("quic") && protocols.contains("couchdb") -> { CoordinationStrategy.QUIC_COUCHDB }
@@ -222,9 +222,8 @@ class CCEKProtocolChoreographer(
         orchestration: ContextOrchestration
     ): ChoreographedCCEKResult {
         val results = coroutineScope {
-            protocols.a j { i ->
+            protocols.map { protocol ->
                 async {
-                    val protocol = protocols.b(i)
                     when (protocol) {
                         "quic" -> orchestrator.processQUIC(data, QuicFrameType.STREAM, 0L)
                         "couchdb" -> orchestrator.processCouchDB(data, CouchDBDocumentType.DOCUMENT, CouchDBOperation.READ)
@@ -232,7 +231,7 @@ class CCEKProtocolChoreographer(
                         else -> CCEKResult.ERROR("Unknown protocol: $protocol", ProtocolTarget.DEFAULT)
                     }
                 }
-            }.awaitAll()
+            }.toList().awaitAll()
         }
         
         return ChoreographedCCEKResult.SUCCESS(

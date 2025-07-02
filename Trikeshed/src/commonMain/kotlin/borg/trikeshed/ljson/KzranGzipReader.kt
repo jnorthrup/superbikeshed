@@ -1,5 +1,7 @@
 package borg.trikeshed.ljson
 
+import borg.trikeshed.zlib.Zlib
+
 
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
@@ -354,7 +356,8 @@ class InMemoryKzranCache : KzranIndexCache {
 }
 
 
-import borg.trikeshed.zlib.Zlib
+
+
 
 /**
  * Wrapper for Zlib inflater to fit into the KzranGzipReader

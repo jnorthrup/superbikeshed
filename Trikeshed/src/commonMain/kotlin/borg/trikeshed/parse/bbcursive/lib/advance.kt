@@ -13,27 +13,29 @@ class advance {
      * @param exemplar ussually name().getBytes(), but might be other value also.
      * @return null if no match -- rollback not done here use Narsive.$ for whitespace and rollback
      */
-    fun genericAdvance(vararg exemplar: Byte): UnaryOperator<ByteBuffer> {
+    companion object {
+        fun genericAdvance(vararg exemplar: Byte): UnaryOperator<ByteBuffer> {
 
-        return object : UnaryOperator<ByteBuffer> {
+            return object : UnaryOperator<ByteBuffer> {
 
-            private val bytes = exemplar
+                var bytes: ByteArray = exemplar.copyOf()
 
-            override fun toString(): String {
-                return asString()
-            }
-
-
-            fun asString(): String {
-                return "advance->" + String(bytes.toByteArray())
-            }
-
-            override fun apply(target: ByteBuffer): ByteBuffer? {
-                var c = 0
-                while (target.hasRemaining() && c < exemplar.size && exemplar[c] == target.get()) {
-                    c++
+                override fun toString(): String {
+                    return asString()
                 }
-                return if (c == exemplar.size) target else null
+
+
+                fun asString(): String {
+                    bytes = exemplar.copyOf()
+                    return "advance->" + String(bytes)
+                }
+
+                override fun apply(target: ByteBuffer): ByteBuffer? {
+                    var c = 0
+                    while (exemplar != null && target != null && target.hasRemaining() && c < exemplar.size && exemplar[c] == target.get())
+                        c++
+                    return if (!(target != null && c == exemplar.size)) null else target
+                }
             }
         }
     }
