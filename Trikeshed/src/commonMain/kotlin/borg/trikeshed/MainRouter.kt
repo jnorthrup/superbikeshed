@@ -243,9 +243,9 @@ class DistributedConfig {
 } */
 
 /**
- * Main entry point using DSL
+ * Alternative main entry point using DSL
  */
-fun main(args: Array<String>) = runBlocking {
+suspend fun trikeshedMain(args: Array<String>) {
     MainRouter.trikeshed(args) {
     
     // C10K server with static files and servlets
@@ -281,7 +281,7 @@ fun main(args: Array<String>) = runBlocking {
     route("ipfs") {
         val client = ipfs {
             peerId = PeerId(
-                "node_123".encodeToByteArray().toIndexed()
+                Indexed("node_123".encodeToByteArray().size) { i -> "node_123".encodeToByteArray()[i] }
             )
         }
         
@@ -292,7 +292,7 @@ fun main(args: Array<String>) = runBlocking {
     route("distributed") {
         val storage = distributed {
             peerId = PeerId(
-                "dist_456".encodeToByteArray().toIndexed()
+                Indexed("dist_456".encodeToByteArray().size) { i -> "dist_456".encodeToByteArray()[i] }
             )
             couchUrl = arg(0, "http://localhost:5984")
         }

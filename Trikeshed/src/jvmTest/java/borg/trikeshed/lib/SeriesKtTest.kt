@@ -1,5 +1,6 @@
 package borg.trikeshed.lib
 
+import borg.trikeshed.lib.Series as Indexed
 import kotlin.test.Test
 
 

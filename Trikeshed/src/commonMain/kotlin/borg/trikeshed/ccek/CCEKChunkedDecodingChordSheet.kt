@@ -6,7 +6,6 @@ import borg.trikeshed.couchdb.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
-import kotlin.text.Charsets // Explicit import for Charsets
 import borg.trikeshed.lib.PackingContext
 
 /**
@@ -211,7 +210,8 @@ class CCEKChunkedDecodingChordSheet {
                     when (chunkResult.result) {
                         is ChunkedDecodingResult.SUCCESS -> {
                             val changes = parseCouchDBChanges(chunkResult.result.data)
-                            changes.forEach { change ->
+                            for (i in 0 until changes.a) {
+                                val change = changes.b(i)
                                 emit(CouchDBChangeResult.SUCCESS(change))
                             }
                         }
@@ -242,13 +242,13 @@ class CCEKChunkedDecodingChordSheet {
                 val decompressionStrategy = chunkDecompressionChord.b(chunk.header.compression)()
                 val decompressedData = decompressChunk(chunk.data, decompressionStrategy)
                 chunk.copy(data = decompressedData)
-            }.toIndexed()
+            }.let { list: List<ChunkedChunk> -> list.size j { idx: Int -> list[idx] } }
             
             // Validate chunks
             val validationResults = (0 until decompressedChunks.a).map { i ->
                 val chunk = decompressedChunks.b(i)
                 validateChunk(chunk, validationStrategy)
-            }.toIndexed()
+            }.let { list: List<ChunkValidationResult> -> list.size j { idx: Int -> list[idx] } }
             
             // Check for validation errors
             val validationErrors = validationResults.filter { it is ChunkValidationResult.ERROR }
@@ -300,7 +300,9 @@ class CCEKChunkedDecodingChordSheet {
             val sizeEnd = findLineEnd(chunkedData, offset)
             if (sizeEnd == -1) break
             
-            val sizeHex = chunkedData.slice(offset, sizeEnd).toByteArray().decodeToString()
+            val sliced = chunkedData.slice(offset..sizeEnd)
+            val byteArray = ByteArray(sliced.a) { i -> sliced.b(i) }
+            val sizeHex = byteArray.decodeToString()
             val chunkSize = sizeHex.toIntOrNull(16) ?: break
             
             if (chunkSize == 0) {
@@ -313,7 +315,7 @@ class CCEKChunkedDecodingChordSheet {
             val dataEnd = dataStart + chunkSize
             
             // Extract chunk data
-            val chunkData = chunkedData.slice(dataStart, dataEnd)
+            val chunkData = chunkedData.slice(dataStart..dataEnd)
             
             // Skip \r\n after data
             val nextChunkStart = dataEnd + 2
@@ -407,12 +409,12 @@ class CCEKChunkedDecodingChordSheet {
     
     private fun parseCouchDBReplicationLog(data: Indexed<Byte>): CouchDBReplicationLog {
         // JSON parsing implementation
-        return CouchDBReplicationLog("", "", "", Indexed())
+        return CouchDBReplicationLog("", "", "", 0 j { _: Int -> error("Empty replication log") })
     }
     
     private fun parseCouchDBChanges(data: Indexed<Byte>): Indexed<CouchDBChange> {
         // JSON parsing implementation
-        return Indexed()
+        return 0 j { _: Int -> error("Empty parseCouchDBChanges implementation") }
     }
     
     // === VALIDATION METHODS ===
