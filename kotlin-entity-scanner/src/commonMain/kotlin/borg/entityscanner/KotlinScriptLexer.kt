@@ -193,14 +193,5 @@ object KotlinScriptLexer {
     }
 }
 
-// It's assumed that borg.trikeshed.lib will provide a way to convert List to Series.
-// If not, a utility like this would be needed:
-// package borg.trikeshed.lib
-// fun <T> List<T>.toSeries(): Series<T> = size j { i -> this[i] }
-
-// Placeholder for the converter, assuming it will be available in the TrikeShed library
-package borg.trikeshed.lib {
-    object ListToSeriesConverter {
-        fun <T> toSeries(list: List<T>): Series<T> = list.size j { index -> list[index] }
-    }
-}
+// Extension function to convert List to Series/Indexed
+fun <T> List<T>.toIndexed(): Indexed<T> = size j { i -> this[i] }

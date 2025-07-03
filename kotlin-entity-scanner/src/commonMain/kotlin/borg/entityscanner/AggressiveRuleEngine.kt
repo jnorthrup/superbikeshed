@@ -13,22 +13,20 @@ import borg.trikeshed.lib.*
 
 // ==== RULE ENTROPY SYSTEM ====
 
-@JvmInline
 value class RuleEntropy(val entropy: Double) // 0.0 to 4.0 (log2 scale)
 
-@JvmInline
 value class ActivationThreshold(val threshold: Double) // Dynamic activation threshold
 
-@JvmInline
 value class ChainLength(val length: Int) // How far to chain rules
 
-@JvmInline
 value class RulePriority(val priority: UByte) // 0-255 priority
 
 // High-entropy rule system
 typealias EntropyRule = Join<ParsingRule, Join<RuleEntropy, ActivationThreshold>>
 typealias PrioritizedRule = Join<EntropyRule, RulePriority>
+typealias Series<T> = Indexed<T> // Compatibility alias
 typealias RuleCluster = Series<PrioritizedRule>
+typealias GraphNodeSeries = Series<Series<Int>> // Graph adjacency representation
 
 // Chaining configuration
 typealias ChainConfig = Join<ChainLength, Join<RuleEntropy, ActivationThreshold>>
@@ -419,7 +417,6 @@ private fun createHighEntropyRule(
 
 // ==== CONTEXT ENUMS FOR TYPE SAFETY ====
 
-@JvmInline
 value class KeywordContext(val context: UByte) {
     companion object {
         const val TOP_LEVEL: UByte = 1u
@@ -428,7 +425,6 @@ value class KeywordContext(val context: UByte) {
     }
 }
 
-@JvmInline
 value class ModifierContext(val context: UByte) {
     companion object {
         const val FUNCTION: UByte = 1u
@@ -437,7 +433,6 @@ value class ModifierContext(val context: UByte) {
     }
 }
 
-@JvmInline
 value class ControlContext(val context: UByte) {
     companion object {
         const val EXPRESSION_OR_STATEMENT: UByte = 1u
@@ -446,7 +441,6 @@ value class ControlContext(val context: UByte) {
     }
 }
 
-@JvmInline
 value class TypeContext(val context: UByte) {
     companion object {
         const val ABSTRACT_TYPE: UByte = 1u
