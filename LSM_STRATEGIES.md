@@ -391,7 +391,7 @@ stateDiagram-v2
     
     state FIFO {
         [*] --> CheckTTL
-        CheckTTL --> DeleteExpired
+        CheckTTL --> DeleteExpired 
         DeleteExpired --> [*]
     }
 ```

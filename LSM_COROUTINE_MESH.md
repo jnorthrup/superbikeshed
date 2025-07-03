@@ -315,7 +315,7 @@ sequenceDiagram
     L1->>L2: Pass Continuation
     deactivate L1
     activate L2
-    L2->>L2: Archive Cold Data
+    L2->>L2: Archive Cold Data 
     deactivate L2
     
     C-->>L0: Compaction Complete

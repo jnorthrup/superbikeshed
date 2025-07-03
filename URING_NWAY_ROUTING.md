@@ -390,7 +390,7 @@ graph TB
     subgraph "io_uring Layer"
         subgraph "Ring 0 - CPU 0"
             T0 --> UR0[io_uring 0]
-            UR0 --> SQ0[SQ Ring 0]
+            UR0 --> SQ0[SQ Ring 0] 
             UR0 --> CQ0[CQ Ring 0]
         end
         
