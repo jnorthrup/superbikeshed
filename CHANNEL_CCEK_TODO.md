@@ -18,7 +18,7 @@ flowchart TD
         B -.->|suspendCoroutineUninterceptedOrReturn| G[Direct Continuation Access]
         C -.->|currentCoroutineContext + injection| H[Context Composition]
         D -.->|Channel allocation on demand| I[Lazy Resources]
-        E -.->|tailrec suspend fun| J[Tail Recursive Continuations]
+        E -.->|tailrec suspend fun| J[Tail Recursive Continuations] 
     end
 ```
 
@@ -28,57 +28,29 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph "CouchDB CCEK Channel Mating Surfaces"
-        %% Ingress Surface
-        A[HTTP Socket] -->|raw bytes| ING[Ingress Channel<ByteArray>]
-        ING -->|suspend| B{Control: BBCursive HTTP Parser}
+    subgraph "CouchDB CCEK Coroutine Flow"
+        A[HTTP Request] -->|suspend parse| B{Control: BBCursive Parser}
+        B -->|resume| C{Context: Session + DB Connection}
+        C -->|suspendCancellableCoroutine| D{Environment: Channel<CouchDoc>}
+        D -->|tailrec streaming| E{Knowledge: CouchDB Protocol Rules}
         
-        %% Control Phase - Request Parsing
-        B -->|GET /_changes| CHANGES{Changes Feed Handler}
-        B -->|POST /_bulk_docs| BULK{Bulk Doc Handler}
-        B -->|GET /db/doc| DOC{Document Handler}
+        E -->|yield doc 1| F1[Response Chunk 1]
+        E -->|yield doc 2| F2[Response Chunk 2]
+        E -->|yield doc n| FN[Response Chunk N]
         
-        %% Context Phase - DB Connection
-        CHANGES & BULK & DOC -->|continuation| C[CouchDB Context + Connection Pool]
+        F1 & F2 & FN -->|backpressure| G[HTTP Response Stream] 
         
-        %% Environment Phase - Channel Mating
-        C -->|mate produce| D1[Channel<ChangeEvent>]
-        C -->|mate consume| D2[Channel<BulkWrite>]
-        C -->|mate request/reply| D3[Channel<DocRequest>]
-        
-        %% Knowledge Phase - Protocol Handlers
-        D1 -->|"produce { 
-            while(hasChanges) {
-                send(change)
-                yield()
+        B -.->|"""suspendCoroutineUninterceptedOrReturn { cont ->
+            parser.parseAsync(request) { 
+                cont.resume(it) 
             }
-        }"| E1[Changes Streamer]
+            COROUTINE_SUSPENDED
+        }"""| BP[Parse Continuation]
         
-        D2 -->|"consumeEach { bulk ->
-            writeBatch(bulk)
-        }"| E2[Bulk Writer]
-        
-        D3 -->|"channelFlow {
-            send(readDoc(id))
-        }"| E3[Doc Reader]
-        
-        %% Egress Surface - Response Assembly
-        E1 & E2 & E3 -->|CouchDB responses| RESP[Response Formatter]
-        RESP -->|suspend serialize| EGR[Egress Channel<ByteArray>]
-        EGR -->|chunked encoding| HTTP[HTTP Socket]
-        
-        %% Mating Surface Details
-        D1 -.->|"Channel<ChangeEvent>(
-            capacity = CONFLATED,
-            onBufferOverflow = DROP_OLDEST
-        )"| MATE1[Changes Mating]
-        
-        C -.->|"coroutineScope {
-            val conn = connectionPool.acquire()
-            try { ... } finally {
-                connectionPool.release(conn)
-            }
-        }"| POOL[Connection Pooling]
+        D -.->|"Channel(
+            capacity = BUFFERED,
+            onBufferOverflow = SUSPEND
+        )"| DC[Adaptive Buffering]
     end
 ```
 
@@ -94,60 +66,30 @@ flowchart TD
 ## QUIC Service with Multiplexed Continuations
 
 ```mermaid
-flowchart TD
-    subgraph "QUIC CCEK Channel Mating Surfaces"
-        %% Ingress Surface - UDP Datagram
-        A[UDP Socket] -->|datagrams| ING[Ingress Channel<QuicPacket>]
-        ING -->|suspend decrypt| B{Control: QUIC Frame Parser}
+flowchart TD 
+    subgraph "QUIC CCEK Multiplexed Coroutines"
+        A[QUIC Datagram] -->|suspend| B{Control: Frame Parser}
         
-        %% Control Phase - Frame Demux
-        B -->|STREAM frame| STREAM{Stream Demuxer}
-        B -->|ACK frame| ACK{ACK Processor}
-        B -->|CRYPTO frame| CRYPTO{Crypto Handler}
+        B -->|stream 1| C1{Context: Stream 1 Context}
+        B -->|stream 2| C2{Context: Stream 2 Context}
+        B -->|stream n| CN{Context: Stream N Context}
         
-        %% Context Phase - Per-Stream Contexts
-        STREAM -->|"streamId lookup"| C[Stream Context Registry]
-        C -->|create/get| SC1[Stream 1 Context]
-        C -->|create/get| SC2[Stream 2 Context]
-        C -->|create/get| SCN[Stream N Context]
+        C1 -->|select| D{Environment: Multiplexed Channels}
+        C2 -->|select| D
+        CN -->|select| D
         
-        %% Environment Phase - Stream Channels
-        SC1 -->|mate| D1[Channel<StreamData> #1]
-        SC2 -->|mate| D2[Channel<StreamData> #2]
-        SCN -->|mate| DN[Channel<StreamData> #N]
+        D -->|"select {
+            channel1.onReceive { ... }
+            channel2.onReceive { ... }
+            channelN.onReceive { ... }
+        }"| E{Knowledge: Stream Priority}
         
-        %% Bidirectional Stream Mating
-        D1 <-->|"produce/consume"| APP1[App Handler 1]
-        D2 <-->|"produce/consume"| APP2[App Handler 2]
-        DN <-->|"produce/consume"| APPN[App Handler N]
+        E -->|continuation| F1[Stream 1 Data]
+        E -->|continuation| F2[Stream 2 Data]
+        E -->|continuation| FN[Stream N Data]
         
-        %% Knowledge Phase - Priority & Flow Control
-        APP1 & APP2 & APPN -->|prioritized| E{Priority Scheduler}
-        E -->|"select {
-            urgent.onReceive { ... }
-            normal.onReceive { ... }
-            bulk.onReceive { ... }
-        }"| MUX[Frame Multiplexer]
-        
-        %% Egress Surface
-        MUX -->|QUIC frames| PKT[Packet Builder]
-        PKT -->|suspend encrypt| EGR[Egress Channel<QuicPacket>]
-        EGR -->|datagrams| UDP[UDP Socket]
-        
-        %% Channel Mating Details
-        D1 -.->|"Channel<StreamData>(
-            capacity = windowSize,
-            onBufferOverflow = SUSPEND
-        )"| WIN1[Flow Control]
-        
-        C -.->|"ConcurrentHashMap<StreamId, 
-            StreamContext>()"| REG[Stream Registry]
-        
-        E -.->|"channelFlow {
-            launch { handleUrgent() }
-            launch { handleNormal() }
-            launch { handleBulk() }
-        }"| PRIO[Priority Handling]
+        D -.->|"fan-out coroutines"| FO[launch processStream id]
+        E -.->|"priority queue"| PQ[suspendCoroutine offer]
     end
 ```
 
@@ -242,51 +184,33 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph "SSH CCEK Channel Mating Surfaces"
-        %% Ingress Surface
-        A[TCP Socket] -->|raw bytes| ING[Ingress Channel<ByteArray>]
-        ING -->|suspend decrypt| B{Control: SSH Packet Parser}
+    subgraph "SSH CCEK Channel Multiplexing"
+        A[SSH Command] -->|suspend auth| B{Control: Auth State Machine}
+        B -->|continuation| C{Context: SSH Session Context}
         
-        %% Control Phase - Protocol State Machine
-        B -->|MSG_USERAUTH| AUTH{Auth State Machine}
-        B -->|MSG_CHANNEL_OPEN| CHAN{Channel Allocator}
+        C -->|channel request| D1[Environment: Shell Channel]
+        C -->|channel request| D2[Environment: SFTP Channel]
+        C -->|channel request| D3[Environment: Forward Channel]
         
-        %% Context Phase - Session Management
-        AUTH -->|continuation| C[Session Context + Keys]
-        CHAN -->|continuation| C
+        D1 -->|"channelFlow { }"| E1{Knowledge: Shell Protocol}
+        D2 -->|"channelFlow { }"| E2{Knowledge: SFTP Protocol}
+        D3 -->|"channelFlow { }"| E3{Knowledge: Port Forward}
         
-        %% Environment Phase - Channel Mating
-        C -->|mate| D1[Channel<ShellPacket>]
-        C -->|mate| D2[Channel<SFTPPacket>]
-        C -->|mate| D3[Channel<ForwardPacket>]
+        E1 -->|bidirectional| F1[Shell I/O]
+        E2 -->|bidirectional| F2[File Transfer]
+        E3 -->|bidirectional| F3[Port Forward]
         
-        %% Bidirectional Mating Surfaces
-        D1 <-->|"produce/consume"| SHELL[Shell Handler]
-        D2 <-->|"produce/consume"| SFTP[SFTP Handler]
-        D3 <-->|"produce/consume"| FWD[Forward Handler]
-        
-        %% Egress Surface
-        SHELL & SFTP & FWD -->|SSH packets| MUX[Multiplexer]
-        MUX -->|suspend encrypt| EGR[Egress Channel<ByteArray>]
-        EGR -->|raw bytes| SOCK[TCP Socket]
-        
-        %% Continuation Details
-        ING -.->|"Channel(BUFFERED)
-            .consumeEach { bytes ->
-                parser.feed(bytes)
-            }"| INFLOW[Ingress Flow]
+        B -.->|"suspendCancellableCoroutine { cont ->
+            sshClient.authenticate { result ->
+                if (result.isSuccess) cont.resume(session)
+                else cont.resumeWithException(...)
+            }
+        }"| AUTH[Auth Continuation]
         
         D1 -.->|"channelFlow {
-            val stdin = produce { ... }
-            val stdout = produce { ... }
-            // Mating surfaces
-        }"| MATE1[Shell Mating]
-        
-        MUX -.->|"select {
-            shell.onReceive { ... }
-            sftp.onReceive { ... }
-            forward.onReceive { ... }
-        }"| SELECT[Channel Select]
+            launch { // stdin reader }                   
+            launch { // stdout writer }
+        }"| BID[Bidirectional Flow]
     end
 ```
 
@@ -304,11 +228,11 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph "CouchDB+ISAM CCEK with io_uring"
-        A[CouchDB Query] -->|suspend| B{Control: Query Parser}
+        A[CouchDB Query] -->|suspend| B{Control: Query Parser} 
         B -->|continuation| C{Context: ISAM Index Context}
         
-        C -->|index lookup| D[ISAM B-Tree Navigation]
-        D -->|syscall boundary| E[io_uring SQE]
+        C -->|90° pivot| D[ISAM B-Tree Navigation] 
+        D -->|90° pivot| E[io_uring SQE]
         
         E -->|"io_uring_submit_and_wait"| F{Environment: Ring Buffer}
         F -->|CQE completion| G{Knowledge: Index Rules}
@@ -331,7 +255,7 @@ flowchart TD
         
         C -.->|"ISAM key paths"| ISAM1[Primary Index]
         C -.->|"ISAM key paths"| ISAM2[Secondary Index]
-        ISAM1 & ISAM2 -->|converge| D
+        ISAM1 & ISAM2 -->|90° merge| D
     end
 ```
 
@@ -341,7 +265,7 @@ flowchart TD
 - [ ] io_uring submission queue preparation
 - [ ] Continuation storage in SQE userData
 - [ ] CQE completion handler with continuation resume
-- [ ] Async boundary between index lookups and io_uring operations
+- [ ] 90° pivot points for index→io_uring transitions
 
 ---
 
@@ -349,12 +273,12 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph "CouchDB+IPFS CCEK with io_uring"
-        A[CouchDB Doc Request] -->|suspend| B{Control: CID Parser}
-        B -->|continuation| C{Context: IPFS DAG Context}
+    subgraph "CouchDB+IPFS CCEK with io_uring" 
+        A[CouchDB Doc Request] -->|suspend| B{Control: CID Parser} 
+        B -->|continuation| C{Context: IPFS DAG Context} 
         
-        C -->|resolve blocks| D[IPFS Block Resolution]
-        D -->|batch I/O| E[io_uring Multi-SQE]
+        C -->|90° pivot| D[IPFS Block Resolution]
+        D -->|90° pivot| E[io_uring Multi-SQE]
         
         E -->|"batch submit"| F{Environment: Ring Buffer Pool}
         F -->|parallel CQEs| G{Knowledge: Merkle DAG Rules}
@@ -378,13 +302,9 @@ flowchart TD
         C -.->|"IPFS paths"| IPFS1[Local Blocks]
         C -.->|"IPFS paths"| IPFS2[Remote Blocks]
         C -.->|"IPFS paths"| IPFS3[Pinned Blocks]
-        IPFS1 & IPFS2 & IPFS3 -->|merge| D
+        IPFS1 & IPFS2 & IPFS3 -->|90° converge| D
         
-        G -.->|"Merkle verification"| MV[suspendCoroutine { cont ->
-            verifyMerkleRoot { valid ->
-                cont.resume(valid)
-            }
-        }]
+        G -.->|"Merkle verification"| MV[SuspendCoroutine   ] 
     end
 ```
 
@@ -394,23 +314,23 @@ flowchart TD
 - [ ] io_uring batch submission for parallel block reads
 - [ ] Continuation-per-block with async/await coordination
 - [ ] Ring buffer pool for high-throughput operations
-- [ ] Async transitions from DAG resolution to io_uring I/O
+- [ ] 90° pivot points for DAG→io_uring transitions
 - [ ] Merkle tree verification with suspended continuations
 
 ---
 
 ## io_uring Integration Patterns
 
-### 1. Application to Kernel Boundary Pattern
+### 1. 90° Pivot Pattern
 ```kotlin
-// Application coroutine crosses into kernel space via io_uring
-suspend fun crossKernelBoundary(request: Request): Response {
-    // Application space: prepare request
+// Vertical flow (application logic) pivots to horizontal (io_uring)
+suspend fun pivotToUring(request: Request): Response {
+    // Vertical: application flow
     val prepared = prepareRequest(request)
     
-    // Cross boundary: suspend at syscall interface
+    // 90° pivot point
     return suspendCoroutineUninterceptedOrReturn { cont ->
-        // Kernel space: io_uring submission
+        // Horizontal: io_uring submission
         val sqe = ring.getSqe()
         sqe.prepareOp(prepared)
         sqe.userData = cont.asOpaque()
