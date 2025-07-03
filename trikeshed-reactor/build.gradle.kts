@@ -3,7 +3,6 @@ plugins {
 }
 
 group = "borg.trikeshed"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()

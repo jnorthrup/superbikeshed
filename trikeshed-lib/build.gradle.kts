@@ -3,7 +3,6 @@ plugins {
 }
 
 group = "borg.trikeshed"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -33,7 +32,7 @@ kotlin {
         commonMain {
             dependencies {
                 // Core library has minimal dependencies
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
             }
         }
         
