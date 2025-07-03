@@ -24,7 +24,7 @@ expect fun playSound(filePath: String)
 data class BoingBall(
     var x: Float, var y: Float, val radius: Float,
     var vx: Float = 250f, var vy: Float = 200f,
-    var rotation: Float = 0f, private val rotSpeed: Float = 180f,
+    var rotation: Float = 0f, val rotSpeed: Float = 180f,
     var justBounced: Boolean = false // New property
 )
 

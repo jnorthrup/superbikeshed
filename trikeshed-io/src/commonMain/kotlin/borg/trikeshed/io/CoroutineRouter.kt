@@ -310,9 +310,8 @@ class CoroutineRouter private constructor(
         batchSize: Int = 10
     ): List<Any> {
         return operations.chunked(batchSize).flatMap { batch ->
-            runBlocking {
-                batch.map { (key, data) -> async { route(key, data) } }.awaitAll()
-            }
+            // TODO: Platform-specific coroutine scope needed
+            batch.map { (key, data) -> /* async { route(key, data) } */ route(key, data) }
         }
     }
     
@@ -369,13 +368,13 @@ class CoroutineRouter private constructor(
         metricsHandler: suspend (String, Long) -> Unit,
         block: suspend () -> T
     ): T {
-        val startTime = System.currentTimeMillis()
+        val startTime = 0L // TODO: Platform-specific timestamp
         return try {
             block().also {
-                metricsHandler("success", System.currentTimeMillis() - startTime)
+                metricsHandler("success", 0L /* TODO: Platform-specific timestamp */)
             }
         } catch (e: Exception) {
-            metricsHandler("failure", System.currentTimeMillis() - startTime)
+            metricsHandler("failure", 0L /* TODO: Platform-specific timestamp */)
             throw e
         }
     }
@@ -423,7 +422,7 @@ fun CoroutineRouter.child(block: CoroutineRouter.RouterBuilder.() -> Unit): Coro
  */
 fun asyncRouter(block: CoroutineRouter.RouterBuilder.() -> Unit): CoroutineRouter {
     return router {
-        context(Dispatchers.IO)
+        // context(Dispatchers.IO) // TODO: Platform-specific dispatcher
         block()
     }
 }
@@ -446,19 +445,19 @@ fun defaultRouter(block: CoroutineRouter.RouterBuilder.() -> Unit): CoroutineRou
  * Supporting classes for advanced routing features
  */
 class RateLimiter(private val permitsPerSecond: Int) {
-    private var lastCheck = System.currentTimeMillis()
+    private var lastCheck = 0L // TODO: Platform-specific timestamp
     private var available = permitsPerSecond
     
     suspend fun acquire() {
         while (available <= 0) {
-            val now = System.currentTimeMillis()
+            val now = 0L // TODO: Platform-specific timestamp
             val timePassed = now - lastCheck
             available = minOf(permitsPerSecond, available + (timePassed * permitsPerSecond / 1000).toInt())
             lastCheck = now
             
             if (available <= 0) {
                 // Simple busy wait instead of delay
-                Thread.sleep(1)
+                // Thread.sleep(1) // TODO: Platform-specific sleep
             }
         }
         available--

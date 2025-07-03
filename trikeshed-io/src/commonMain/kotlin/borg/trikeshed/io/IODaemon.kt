@@ -77,7 +77,7 @@ data class IODaemonOperation(
     
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (this::class != other!!::class) return false
         
         other as IODaemonOperation
         
@@ -112,7 +112,7 @@ data class IODaemonResult(
     val bytesTransferred: Int,
     val error: Int = 0,
     val flags: Int = 0,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = 0L // TODO: Platform-specific timestamp
 ) {
     val isSuccess: Boolean get() = error == 0
     val isError: Boolean get() = error != 0

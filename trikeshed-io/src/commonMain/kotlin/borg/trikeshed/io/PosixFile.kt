@@ -1,8 +1,8 @@
 package borg.trikeshed.io
 
-import borg.trikeshed.lib.Usable
+// import borg.trikeshed.lib.Usable // TODO: Fix Usable dependency
 
-interface PosixFile : Usable {
+interface PosixFile { // TODO: Removed Usable inheritance
     val path: String?
     
     fun open()
@@ -11,6 +11,8 @@ interface PosixFile : Usable {
 
 typealias PosixOffset = Long
 
+// TODO: Fix expect/actual pattern - commented out for now
+/*
 expect class PosixFile(path: String?) : PosixFile {
     fun read64(buf: ByteArray): ULong
     fun write64(buf: ByteArray): ULong
@@ -22,7 +24,10 @@ expect class PosixFile(path: String?) : PosixFile {
         fun open(path: String?, flags: Int, mode: Int?): PosixFile
     }
 }
+*/
 
+// TODO: Fix expect/actual pattern for MappedPointer and constants
+/*
 expect class MappedPointer {
     fun getByte(index: Long): Byte
     fun putByte(index: Long, value: Byte)
@@ -30,5 +35,6 @@ expect class MappedPointer {
 }
 
 expect val SEEK_SET_CONSTANT: Int
-expect val O_RDONLY_FLAG: Int 
+expect val O_RDONLY_FLAG: Int
+*/ 
  

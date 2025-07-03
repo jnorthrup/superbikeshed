@@ -10,6 +10,8 @@ expect class MappedFile {
     fun put(index: Long, value: Byte)
 }
 
+// TODO: Fix expect/actual pattern - commented out actual class
+/*
 actual class MappedFile {
     val size: Long
     val backingStore: Any?
@@ -25,4 +27,5 @@ actual class MappedFile {
     }
     //todo:  remapping and seeking past 30 bits
     
-} 
+}
+*/ 

@@ -123,12 +123,16 @@ inline fun <T> errorToResult(result: SystemCallResult, value: T): Result<T> {
  * Get error message for error code
  * Platform-specific implementations provide actual messages
  */
-expect fun errorString(code: ErrorCode): ErrorMessage
+// TODO: Add platform-specific implementation
+// expect fun errorString(code: ErrorCode): ErrorMessage
+fun errorString(code: ErrorCode): ErrorMessage = "Error: $code"
 
 /**
  * Get error code from error key/name
  */
-expect fun errorFromKey(key: ErrorKey): ErrorCode
+// TODO: Add platform-specific implementation
+// expect fun errorFromKey(key: ErrorKey): ErrorCode
+fun errorFromKey(key: ErrorKey): ErrorCode = 0
 
 /**
  * Common error messages for fallback
@@ -231,10 +235,15 @@ class SystemCallException(
 /**
  * Exception with platform-specific error information
  */
-expect class PlatformException(
-    operation: String,
-    errorCode: ErrorCode
-) : Exception
+// TODO: Add platform-specific implementation
+// expect class PlatformException(
+//     operation: String,
+//     errorCode: ErrorCode
+// ) : Exception
+class PlatformException(
+    val operation: String,
+    val errorCode: ErrorCode
+) : Exception("$operation failed with error $errorCode")
 
 // === UTILITY FUNCTIONS ===
 
@@ -274,17 +283,23 @@ inline fun <T> retryOnInterrupt(maxRetries: Int = 3, block: () -> T): T {
 /**
  * Convert platform-specific error codes to common codes
  */
-expect fun platformToCommonError(platformError: Int): ErrorCode
+// TODO: Add platform-specific implementation
+// expect fun platformToCommonError(platformError: Int): ErrorCode
+fun platformToCommonError(platformError: Int): ErrorCode = platformError
 
 /**
  * Get last error code from platform
  */
-expect fun getLastError(): ErrorCode
+// TODO: Add platform-specific implementation
+// expect fun getLastError(): ErrorCode
+fun getLastError(): ErrorCode = 0
 
 /**
  * Set last error code on platform
  */
-expect fun setLastError(code: ErrorCode)
+// TODO: Add platform-specific implementation
+// expect fun setLastError(code: ErrorCode)
+fun setLastError(code: ErrorCode) { /* no-op */ }
 
 // === ERROR CODE BUILDERS ===
 

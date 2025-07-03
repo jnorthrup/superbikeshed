@@ -20,7 +20,7 @@ class IOMemento : TypeMemento {
         return when (type) {
             "IoInt" -> { bytes -> bytes.take(4).fold(0) { acc, byte -> (acc shl 8) or (byte.toInt() and 0xFF) } }
             "IoLong" -> { bytes -> bytes.take(8).fold(0L) { acc, byte -> (acc shl 8) or (byte.toLong() and 0xFF) } }
-            "IoDouble" -> { bytes -> bytes.take(8).let { it.toByteArray().let { ba -> java.lang.Double.longBitsToDouble(ba.fold(0L) { acc, byte -> (acc shl 8) or (byte.toLong() and 0xFF) }) } } }
+            "IoDouble" -> { bytes -> bytes.take(8).let { it.toByteArray().let { ba -> Double.fromBits(ba.fold(0L) { acc, byte -> (acc shl 8) or (byte.toLong() and 0xFF) }) } } }
             "IoString" -> { bytes -> bytes.decodeToString() }
             "IoBoolean" -> { bytes -> bytes.isNotEmpty() && bytes[0] != 0.toByte() }
             else -> { bytes -> bytes }
@@ -39,7 +39,7 @@ class IOMemento : TypeMemento {
             }
             "IoDouble" -> { value -> 
                 val doubleValue = (value as? Double) ?: 0.0
-                val bits = java.lang.Double.doubleToLongBits(doubleValue)
+                val bits = doubleValue.toBits()
                 ByteArray(8) { i -> ((bits shr (56 - i * 8)) and 0xFF).toByte() }
             }
             "IoString" -> { value -> 

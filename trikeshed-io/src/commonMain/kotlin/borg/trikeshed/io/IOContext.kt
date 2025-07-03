@@ -100,7 +100,7 @@ sealed class IOContext {
             capabilityArray.size j { i: Int -> capabilityArray[i] }
         
         override val coroutineContext: CoroutineContext = 
-            Dispatchers.IO + CoroutineName("uring-$id")
+            /* Dispatchers.IO + */ CoroutineName("uring-$id") // TODO: Platform-specific dispatcher
             
         override val scope: CoroutineScope = CoroutineScope(coroutineContext)
     }
@@ -127,7 +127,7 @@ sealed class IOContext {
             capabilityArray.size j { i: Int -> capabilityArray[i] }
         
         override val coroutineContext: CoroutineContext = 
-            Dispatchers.IO + CoroutineName("nio-$id")
+            /* Dispatchers.IO + */ CoroutineName("nio-$id") // TODO: Platform-specific dispatcher
             
         override val scope: CoroutineScope = CoroutineScope(coroutineContext)
     }
@@ -149,7 +149,7 @@ sealed class IOContext {
             capabilityArray.size j { i: Int -> capabilityArray[i] }
         
         override val coroutineContext: CoroutineContext = 
-            Dispatchers.IO + CoroutineName("kqueue-$id")
+            /* Dispatchers.IO + */ CoroutineName("kqueue-$id") // TODO: Platform-specific dispatcher
             
         override val scope: CoroutineScope = CoroutineScope(coroutineContext)
     }
@@ -174,7 +174,7 @@ sealed class IOContext {
             capabilityArray.size j { i: Int -> capabilityArray[i] }
         
         override val coroutineContext: CoroutineContext = 
-            Dispatchers.IO + CoroutineName("epoll-$id")
+            /* Dispatchers.IO + */ CoroutineName("epoll-$id") // TODO: Platform-specific dispatcher
             
         override val scope: CoroutineScope = CoroutineScope(coroutineContext)
     }
@@ -238,12 +238,12 @@ class IOContextManager {
         available: CapabilitySet, 
         required: CapabilitySet
     ): Boolean {
-        val availableSet: Set<IOCapability> = (0 until available.a).map { 
-            available[it] 
+        val availableSet: Set<IOCapability> = (0 until available.a.toInt()).map { 
+            available.b(it) 
         }.toSet()
         
-        for (i in 0 until required.a) {
-            if (!availableSet.contains(required[i])) {
+        for (i in 0 until required.a.toInt()) {
+            if (!availableSet.contains(required.b(i))) {
                 return false
             }
         }
@@ -254,31 +254,31 @@ class IOContextManager {
      * Create optimal context based on capability requirements
      */
     private fun createOptimalContext(required: CapabilitySet): IOContext {
-        val requiredSet: Set<IOCapability> = (0 until required.a).map { 
-            required[it] 
+        val requiredSet: Set<IOCapability> = (0 until required.a.toInt()).map { 
+            required.b(it) 
         }.toSet()
         
         return when {
             requiredSet.contains(IOCapability.Kernel.ZeroCopy) || 
             requiredSet.contains(IOCapability.Kernel.LinkedOperations) -> {
                 IOContext.UringContext(
-                    id = "uring-${System.nanoTime()}",
+                    id = "uring-${0L}", // TODO: Platform-specific nanoTime
                     ringSize = 512
                 )
             }
             requiredSet.contains(IOCapability.Kernel.EdgeTriggered) && isMacOS() -> {
                 IOContext.KqueueContext(
-                    id = "kqueue-${System.nanoTime()}"
+                    id = "kqueue-${0L}" // TODO: Platform-specific nanoTime
                 )
             }
             requiredSet.contains(IOCapability.Kernel.EdgeTriggered) && isLinux() -> {
                 IOContext.EpollContext(
-                    id = "epoll-${System.nanoTime()}"
+                    id = "epoll-${0L}" // TODO: Platform-specific nanoTime
                 )
             }
             else -> {
                 IOContext.NioContext(
-                    id = "nio-${System.nanoTime()}"
+                    id = "nio-${0L}" // TODO: Platform-specific nanoTime
                 )
             }
         }
@@ -315,10 +315,10 @@ class IOContextManager {
     }
     
     private fun isLinux(): Boolean = 
-        System.getProperty("os.name").lowercase().contains("linux")
+        false // TODO: Platform-specific OS detection
         
     private fun isMacOS(): Boolean = 
-        System.getProperty("os.name").lowercase().contains("mac")
+        false // TODO: Platform-specific OS detection
 }
 
 /**

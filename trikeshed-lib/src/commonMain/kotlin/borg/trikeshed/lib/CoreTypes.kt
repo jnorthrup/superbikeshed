@@ -4,7 +4,7 @@
 
 package borg.trikeshed.lib
 
-import borg.trikeshed.common.collections.ArrayCowView
+
 import kotlin.properties.Delegates
 
 import kotlin.reflect.KClassifier
@@ -76,8 +76,9 @@ infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  */
 infix fun <A, B, C> ((A) -> B).`◂`(g: (B) -> C): (A) -> C = { a: A -> g(this(a)) }
 
-expect fun assert(value: Boolean)
-expect fun assert(value: Boolean, lazyMessage: () -> Any)
+// TODO: Add expect/actual assert implementations for platform targets
+// expect fun assert(value: Boolean)
+// expect fun assert(value: Boolean, lazyMessage: () -> Any)
 
         @Suppress("UNCHECKED_CAST")
 inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l -> l.size j l::get } ?: error("Cannot convert to Indexed")
@@ -114,7 +115,6 @@ object _s {
 object _m {
     operator fun <K, V, P : Join<K, V>> get(p: List<P>): Map<K, V> = p.map { it.a to it.b }.toMap()
     operator fun <K, V, P : Join<K, V>> get(vararg p: P): Map<K, V> = mapOf(*p.map { it.a to it.b }.toTypedArray())
-    operator fun <A, B> get(vararg t: Join<A, B>): Map<A, B> = mapOf(*t.map { it.a to it.b })
 }
 
 // === Alpha (α) transformation operator ===
@@ -123,7 +123,7 @@ inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Index
 
 // === IterableIndexed and play button ===
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s {
     override fun iterator(): Iterator<A> = object : Iterator<A> {
         private var currentIndex = 0
@@ -136,64 +136,12 @@ val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 
 val <T> Indexed<T>.size: Int get() = a
 
-// COW (Copy-On-Write) view for mutable access
-val <T> Indexed<T>.cowView: MutableList<T> get() = object : MutableList<T> {
-    private val original = this@cowView
-    private var modified = false
-    private var cache: MutableList<T>? = null
-    
-    override val size: Int get() = original.a
-    override fun isEmpty(): Boolean = size == 0
-    override fun contains(element: T): Boolean = original.b.any { it == element }
-    override fun containsAll(elements: Collection<T>): Boolean = elements.all { contains(it) }
-    
-    override fun get(index: Int): T = original.b(index)
-    override fun set(index: Int, element: T): T {
-        if (!modified) {
-            cache = (0 until size).map { original.b(it) }.toMutableList()
-            modified = true
-        }
-        return cache!!.set(index, element)
-    }
-    
-    override fun add(element: T): Boolean = throw UnsupportedOperationException("Cannot add to Indexed view")
-    override fun add(index: Int, element: T) = throw UnsupportedOperationException("Cannot add to Indexed view")
-    override fun addAll(elements: Collection<T>): Boolean = throw UnsupportedOperationException("Cannot add to Indexed view")
-    override fun addAll(index: Int, elements: Collection<T>): Boolean = throw UnsupportedOperationException("Cannot add to Indexed view")
-    override fun remove(element: T): Boolean = throw UnsupportedOperationException("Cannot remove from Indexed view")
-    override fun removeAt(index: Int): T = throw UnsupportedOperationException("Cannot remove from Indexed view")
-    override fun removeAll(elements: Collection<T>): Boolean = throw UnsupportedOperationException("Cannot remove from Indexed view")
-    override fun retainAll(elements: Collection<T>): Boolean = throw UnsupportedOperationException("Cannot retain in Indexed view")
-    override fun clear() = throw UnsupportedOperationException("Cannot clear Indexed view")
-    
-    override fun indexOf(element: T): Int = (0 until size).find { original.b(it) == element } ?: -1
-    override fun lastIndexOf(element: T): Int = (size - 1 downTo 0).find { original.b(it) == element } ?: -1
-    override fun listIterator(): MutableListIterator<T> = listIterator(0)
-    override fun listIterator(index: Int): MutableListIterator<T> = object : MutableListIterator<T> {
-        private var currentIndex = index
-        override fun hasNext(): Boolean = currentIndex < size
-        override fun hasPrevious(): Boolean = currentIndex > 0
-        override fun next(): T = original.b(currentIndex++)
-        override fun previous(): T = original.b(--currentIndex)
-        override fun nextIndex(): Int = currentIndex
-        override fun previousIndex(): Int = currentIndex - 1
-        override fun set(element: T) = throw UnsupportedOperationException("Cannot set in iterator")
-        override fun add(element: T) = throw UnsupportedOperationException("Cannot add in iterator")
-        override fun remove() = throw UnsupportedOperationException("Cannot remove in iterator")
-    }
-    override fun subList(fromIndex: Int, toIndex: Int): MutableList<T> = throw UnsupportedOperationException("Cannot sublist Indexed view")
-    override fun iterator(): MutableIterator<T> = object : MutableIterator<T> {
-        private var currentIndex = 0
-        override fun hasNext(): Boolean = currentIndex < size
-        override fun next(): T = original.b(currentIndex++)
-        override fun remove() = throw UnsupportedOperationException("Cannot remove in iterator")
-    }
-}
 
-fun ByteArray.toIndexed(): Indexed<Byte> = Indexed(this.size) { i -> this[i] }
 
-@Deprecated("Use 0 j { error(\"Empty Indexed Access Violation at index \\$it\") } instead")
-val <T> emptyIndexed: Indexed<T> get() = Indexed(0) { error("Empty Indexed Access Violation at index $it") }
+
+
+@Deprecated("Use 0 j { /* custom error handling */ } instead")
+fun <T> emptyIndexed(): Indexed<T> = Indexed(0) { error("Empty Indexed Access Violation at index $it") }
 
 @Deprecated("Use .toIndexed() instead")
 fun ByteArray.toIdx(): Indexed<Byte> = this.toIndexed()

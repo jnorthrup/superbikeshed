@@ -2,8 +2,24 @@
 
 package borg.trikeshed.lib
 
-import borg.trikeshed.cursor.Cursor
-import kotlinx.coroutines.*
+import borg.trikeshed.lib.IOMemento.*
+import borg.trikeshed.lib.IOMemento
+import borg.trikeshed.lib.IoBoolean
+import borg.trikeshed.lib.IoByte
+import borg.trikeshed.lib.IoShort
+import borg.trikeshed.lib.IoInt
+import borg.trikeshed.lib.IoLong
+import borg.trikeshed.lib.IoFloat
+import borg.trikeshed.lib.IoDouble
+import borg.trikeshed.lib.IoChar
+import borg.trikeshed.lib.IoString
+import borg.trikeshed.lib.IoVarchar
+import borg.trikeshed.lib.IoLocalDate
+import borg.trikeshed.lib.IoLocalDateTime
+import borg.trikeshed.lib.IoInstant
+import kotlin.reflect.KClassifier
+
+
 
 /**
  * Columnar Extensions - Categorical expressions and cursor operations
@@ -103,7 +119,7 @@ val <T> T.`⟲`: () -> T get() = { this }
  * Lift value into MetaSeries - Creates a constant MetaSeries
  * Useful for composition: value.lift<A>() ⚬ series
  */
-fun <A, T> T.lift(): MetaSeries<A, T> = 0 j { _ -> this }
+fun <A, T> T.lift(): MetaSeries<A, T> = null as A j { _: A -> this }
 
 /**
  * Accessor reference - Extract b as a composable function
@@ -126,7 +142,7 @@ val CursorLike.width: Int
 val CursorLike.columnNames: Indexed<String?>
     get() = if (a > 0) {
         val firstRow = b(0)
-        firstRow.a j { i -> firstRow.b(i).b.b }
+        firstRow.a j { i: Int -> firstRow.b(i).b().a }
     } else {
         0 j { null }
     }
@@ -134,12 +150,12 @@ val CursorLike.columnNames: Indexed<String?>
 /**
  * Get column types from cursor
  */
-val CursorLike.columnTypes: Indexed<IOMemento>
+val CursorLike.columnTypes: Indexed<KClassifier>
     get() = if (a > 0) {
         val firstRow = b(0)
-        firstRow.a j { i -> firstRow.b(i).b.a }
+        firstRow.a j { i: Int -> firstRow.b(i).b().b }
     } else {
-        0 j { IOMemento.IoInt }
+        0 j { Int::class }
     }
 
 /**
@@ -159,7 +175,7 @@ fun CursorLike.select(vararg indices: Int): CursorLike = a j { rowIdx ->
  * Select columns by names
  */
 fun CursorLike.select(vararg names: String): CursorLike {
-    val nameToIndex = columnNames.mapIndexed { i, name -> name to i }.toMap()
+    val nameToIndex = columnNames.toList().mapIndexed { i: Int, name: String? -> name to i }.toMap()
     val indices = names.mapNotNull { nameToIndex[it] }.toIntArray()
     return select(*indices)
 }
@@ -179,7 +195,7 @@ inline fun CursorLike.where(predicate: (RowVec) -> Boolean): CursorLike {
 /**
  * Map over cursor rows
  */
-inline fun CursorLike.mapRows(transform: (RowVec) -> RowVec): CursorLike = 
+inline fun CursorLike.mapRows(crossinline transform: (RowVec) -> RowVec): CursorLike = 
     a j { i -> transform(b(i)) }
 
 /**
@@ -273,38 +289,7 @@ fun networkCoords(
 
 // === Async Cursor Operations ===
 
-/**
- * Process cursor rows in parallel batches
- */
-suspend fun <T> CursorLike.parallelMap(
-    batchSize: Int = 100,
-    transform: suspend (RowVec) -> T
-): Indexed<T> = coroutineScope {
-    val results = mutableListOf<Deferred<List<T>>>()
-    
-    for (start in 0 until a step batchSize) {
-        val end = minOf(start + batchSize, a)
-        val batch = async {
-            (start until end).map { i ->
-                transform(b(i))
-            }
-        }
-        results.add(batch)
-    }
-    
-    val allResults = results.flatMap { it.await() }
-    allResults.size j allResults::get
-}
 
-/**
- * Stream cursor rows
- */
-fun CursorLike.asFlow(): kotlinx.coroutines.flow.Flow<RowVec> = 
-    kotlinx.coroutines.flow.flow {
-        for (i in 0 until a) {
-            emit(b(i))
-        }
-    }
 
 // === Type-safe Column Access ===
 
@@ -324,7 +309,7 @@ data class Column<T>(
 operator fun <T> RowVec.get(column: Column<T>): T? {
     // Lambda-based column access to avoid type hardening
     val columnAccessor: (RowVec, Column<T>) -> T? = { row, col ->
-        if (col.index < row.a) row.b(col.index).a as? T else null
+        if (col.index < row.a) (row.b(col.index) as Join<Any?, () -> ColumnMeta>).a as? T else null
     }
     return columnAccessor(this, column)
 }
@@ -348,7 +333,7 @@ val IOMemento.networkSize: Int?
         is IOMemento.IoInt -> 4
         is IOMemento.IoLong -> 8
         is IOMemento.IoFloat -> 4
-        is IOMemento.IoDouble -> 8
+        is IoDouble -> 8
         is IOMemento.IoChar -> 2
         is IOMemento.IoString -> null // Variable length
         is IOMemento.IoVarchar -> null // Variable length
@@ -368,7 +353,7 @@ val IOMemento.isNumeric: Boolean
         is IOMemento.IoInt,
         is IOMemento.IoLong,
         is IOMemento.IoFloat,
-        is IOMemento.IoDouble -> true
+        is IoDouble -> true
         else -> false
     }
 
@@ -387,9 +372,9 @@ fun buildCursor(
             val rowData = dat.b(rowIdx)
             cols.a j { colIdx ->
                 val value = if (colIdx < rowData.a) rowData.b(colIdx) else null
-                val name = cols.b1(colIdx)
-                val memento = cols.b2(colIdx)
-                value j memento
+                val name = cols.b(colIdx).a
+                val memento = cols.b(colIdx).b
+                value j { Join(name, memento::class) }
             }
         }
     }
@@ -402,11 +387,13 @@ fun buildCursor(
 fun emptyCursor(columns: Indexed2<String, IOMemento>): CursorLike {
     // Use Indexed2 pattern to avoid type hardening
     val emptyCursorBuilder: (Indexed2<String, IOMemento>) -> CursorLike = { cols ->
-        0 j { cols.a j { colIdx ->
-            val name = cols.b1(colIdx)
-            val memento = cols.b2(colIdx)
-            null j memento
-        }}
+        0 j { _: Int ->
+            cols.a j { colIdx ->
+                val name = cols.b(colIdx).a as String
+                val memento = cols.b(colIdx).b as IOMemento
+                null j { Join(name, memento::class) }
+            }
+        }
     }
     return emptyCursorBuilder(columns)
 }
@@ -438,7 +425,7 @@ inline fun CursorLike.join(
             val rightRow = other.b(j)
             if (condition(leftRow, rightRow)) {
                 // Concatenate rows
-                val combinedRow = (leftRow.a + rightRow.a) j { idx ->
+                val combinedRow = (leftRow.a + rightRow.a) j { idx: Int ->
                     if (idx < leftRow.a) leftRow.b(idx) else rightRow.b(idx - leftRow.a)
                 }
                 joined.add(combinedRow)

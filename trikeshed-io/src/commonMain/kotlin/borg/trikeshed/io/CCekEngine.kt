@@ -1,7 +1,7 @@
 package borg.trikeshed.io
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.Serializable
+// import kotlinx.serialization.Serializable
 
 /**
  * CCekEngine - Compressed Communication Engine Kit
@@ -26,7 +26,7 @@ expect class CCekEngine {
     /**
      * Send serializable object with compression
      */
-    suspend fun <T> sendObject(target: String, obj: T): Int where T : Serializable
+    suspend fun <T> sendObject(target: String, obj: T): Int
     
     /**
      * Receive compressed data from a source
@@ -36,7 +36,7 @@ expect class CCekEngine {
     /**
      * Receive and deserialize object with decompression
      */
-    suspend fun <T> receiveObject(source: String, clazz: Class<T>): T? where T : Serializable
+    suspend fun <T> receiveObject(source: String): T?
     
     /**
      * Broadcast compressed data to multiple targets
@@ -71,7 +71,7 @@ expect class CCekEngine {
 /**
  * Represents a compressed message in the CCek system
  */
-@Serializable
+// @Serializable
 data class CCekMessage(
     val id: Long,
     val source: String,
@@ -80,12 +80,12 @@ data class CCekMessage(
     val compressedSize: Int,
     val originalSize: Int,
     val compressionRatio: Double,
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: Long = 0L, // TODO: Platform-specific timestamp
     val algorithm: CompressionAlgorithm = CompressionAlgorithm.ZSTD
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (this::class != other!!::class) return false
         
         other as CCekMessage
         
@@ -130,7 +130,7 @@ enum class CompressionAlgorithm(val id: Int, val algorithmName: String) {
 /**
  * Compression statistics
  */
-@Serializable
+// @Serializable
 data class CompressionStats(
     val totalMessages: Long = 0,
     val totalCompressedBytes: Long = 0,
@@ -153,7 +153,7 @@ data class CompressionStats(
 /**
  * CCek configuration
  */
-@Serializable
+// @Serializable
 data class CCekConfig(
     val compressionLevel: Int = 6,
     val bufferSize: Int = 8192,

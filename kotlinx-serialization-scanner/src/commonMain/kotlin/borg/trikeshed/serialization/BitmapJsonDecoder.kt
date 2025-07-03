@@ -14,13 +14,13 @@ import kotlinx.serialization.modules.SerializersModule
  * High-performance JSON decoder using TrikeShed's lightning bitmap scanning
  * Integrates with kotlinx-serialization for type-safe deserialization
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class JsonBitmapPosition(val value: Int)
 
-@JvmInline  
+@kotlin.jvm.JvmInline  
 value class JsonStructuralMask(val bits: Int)  // Changed to 32-bit for deterministic packing
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class JsonBitmapWord(val data: Int)  // Changed to 32-bit for deterministic packing
 
 typealias JsonBitmapArray = MetaSeries<Int, JsonBitmapWord>
@@ -38,23 +38,24 @@ class BitmapJsonDecoder(
     private var currentIndex: Int = 0
 ) : AbstractDecoder() {
     
-    // elementIndex is inherited from AbstractDecoder and managed by it.
+    // Track element index for composite decoding
+    var elementIndex: Int = 0
 
     // === Helper to get string for primitive values ===
     private fun getPrimitiveValueString(): String {
         // Assumes currentIndex points to the structural token *before* the primitive value (e.g., ':', '[', or ',')
-        val valueStartIndex = structuralIndices[currentIndex] + 1
+        val valueStartIndex = structuralIndices.b(currentIndex) + 1
 
         // The primitive value ends just before the next structural token
         val valueEndIndex = if (currentIndex + 1 < structuralIndices.size) {
-            structuralIndices[currentIndex + 1]
+            structuralIndices.b(currentIndex + 1)
         } else {
             input.length // Primitive is the last thing in the input
         }
 
         if (valueStartIndex >= input.length || valueStartIndex > valueEndIndex) {
              // Handles cases like `[,]` or `{"key":}` or `[1,]` where the last element is missing
-            throw SerializationException("Missing or empty primitive value after token at ${structuralIndices[currentIndex]} between $valueStartIndex and $valueEndIndex")
+            throw SerializationException("Missing or empty primitive value after token at ${structuralIndices.b(currentIndex)} between $valueStartIndex and $valueEndIndex")
         }
         return input.substring(valueStartIndex, valueEndIndex).trim()
     }
@@ -135,15 +136,15 @@ class BitmapJsonDecoder(
     }
     
     override fun decodeString(): String {
-        val openQuoteInputIndex = structuralIndices[currentIndex]
+        val openQuoteInputIndex = structuralIndices.b(currentIndex)
         if (input[openQuoteInputIndex] != '"') {
             throw SerializationException("Expected string starting with '\"' at $openQuoteInputIndex, found ${input[openQuoteInputIndex]}")
         }
 
-        if (currentIndex + 1 >= structuralIndices.size || input[structuralIndices[currentIndex + 1]] != '"') {
+        if (currentIndex + 1 >= structuralIndices.size || input[structuralIndices.b(currentIndex + 1)] != '"') {
             throw SerializationException("Missing closing quote in structuralIndices for string starting at $openQuoteInputIndex")
         }
-        val closeQuoteInputIndex = structuralIndices[currentIndex + 1]
+        val closeQuoteInputIndex = structuralIndices.b(currentIndex + 1)
 
         val valueStartInInput = openQuoteInputIndex + 1
         val valueEndInInput = closeQuoteInputIndex // exclusive end for subSequence/substring
@@ -228,14 +229,14 @@ class BitmapJsonDecoder(
         // If the current token is 'null', it's a null value. Otherwise, it's not null.
         // This assumes currentIndex points to the start of the value (or token before primitive).
         // For primitives, getPrimitiveValueString() would read "null".
-        // For strings, input[structuralIndices[currentIndex]] would be '"'.
+        // For strings, input[structuralIndices.b(currentIndex)] would be '"'.
         // For objects/arrays, it would be '{' or '['.
         // This is tricky because "null" is a primitive value.
 
         // A robust way: try to read "null" as a primitive. If it matches, it's null.
         // Peek ahead without advancing currentIndex yet.
-        val valueStartIndex = structuralIndices[currentIndex] + 1
-        val valueEndIndex = if (currentIndex + 1 < structuralIndices.size) structuralIndices[currentIndex + 1] else input.length
+        val valueStartIndex = structuralIndices.b(currentIndex) + 1
+        val valueEndIndex = if (currentIndex + 1 < structuralIndices.size) structuralIndices.b(currentIndex + 1) else input.length
         if (valueStartIndex < valueEndIndex && input.substring(valueStartIndex, valueEndIndex).trim() == "null") {
             return false // It is null
         }
@@ -252,7 +253,7 @@ class BitmapJsonDecoder(
     // === Composite Decoding ===
     
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
-        val currentTokenPos = structuralIndices[currentIndex]
+        val currentTokenPos = structuralIndices.b(currentIndex)
         val startChar = input[currentTokenPos]
 
         val expectedChar = when (descriptor.kind) {
@@ -269,13 +270,15 @@ class BitmapJsonDecoder(
 
         // Return a new decoder instance for the substructure, starting at the advanced index.
         // The new decoder will have its own elementIndex starting from 0.
-        return BitmapJsonDecoder(serializersModule, input, bitmapArray, structuralIndices, currentIndex)
+        val childDecoder = BitmapJsonDecoder(serializersModule, input, bitmapArray, structuralIndices, currentIndex)
+        childDecoder.elementIndex = 0
+        return childDecoder
     }
     
     override fun endStructure(descriptor: SerialDescriptor) {
         // This is called on the child decoder instance after all its elements are decoded.
         // currentIndex should now point to the closing bracket/brace of the structure.
-        val currentTokenPos = structuralIndices[currentIndex]
+        val currentTokenPos = structuralIndices.b(currentIndex)
         val endChar = input[currentTokenPos]
 
         val expectedChar = when (descriptor.kind) {
@@ -299,7 +302,7 @@ class BitmapJsonDecoder(
         // `elementIndex` (from AbstractDecoder) is the index of the *next* element to be decoded.
         // `currentIndex` (our internal state) points to the structural token that *starts* or *precedes* this next element.
 
-        val currentTokenAtIndex = structuralIndices[currentIndex]
+        val currentTokenAtIndex = structuralIndices.b(currentIndex)
         val char = input[currentTokenAtIndex]
 
         // First, check for end of structure markers ']' or '}'
@@ -315,7 +318,7 @@ class BitmapJsonDecoder(
                     if (char == ',') {
                         advanceToNextStructural() // Consume comma
                         // After comma, check if immediately followed by list terminator (e.g. trailing comma)
-                        if (currentIndex < structuralIndices.size && input[structuralIndices[currentIndex]] == ']') {
+                        if (currentIndex < structuralIndices.size && input[structuralIndices.b(currentIndex)] == ']') {
                             return CompositeDecoder.DECODE_DONE // Lenient: allow trailing comma
                         }
                     } else {
@@ -332,7 +335,7 @@ class BitmapJsonDecoder(
                         if (char == ',') {
                             advanceToNextStructural() // Consume comma
                             // After comma, check if immediately followed by object terminator (e.g. trailing comma)
-                             if (currentIndex < structuralIndices.size && input[structuralIndices[currentIndex]] == '}') {
+                             if (currentIndex < structuralIndices.size && input[structuralIndices.b(currentIndex)] == '}') {
                                 return CompositeDecoder.DECODE_DONE // Lenient: allow trailing comma
                             }
                         } else {
@@ -354,12 +357,12 @@ class BitmapJsonDecoder(
         }
 
         // If, after consuming delimiters, we are at the end of input or structure unexpectedly
-        if (currentIndex >= structuralIndices.size || input[structuralIndices[currentIndex]] == ']' || input[structuralIndices[currentIndex]] == '}') {
+        if (currentIndex >= structuralIndices.size || input[structuralIndices.b(currentIndex)] == ']' || input[structuralIndices.b(currentIndex)] == '}') {
             // This could happen if input ends abruptly after a comma/colon, or with trailing comma + end
             return CompositeDecoder.DECODE_DONE
         }
 
-        return elementIndex // Return the element index to be decoded. AbstractDecoder will increment it.
+        return elementIndex++ // Return the element index to be decoded and increment it.
     }
     
     // === Bitmap Navigation Helpers (internal) ===
@@ -386,6 +389,7 @@ object BitmapJsonFormat {
     fun createDecoder(input: String): BitmapJsonDecoder {
         val (bitmapArray, structuralIndices) = scanJsonStructure(input)
         return BitmapJsonDecoder(
+            serializersModule = EmptySerializersModule(),
             input = input,
             bitmapArray = bitmapArray, 
             structuralIndices = structuralIndices

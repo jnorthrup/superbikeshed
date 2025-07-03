@@ -3,7 +3,7 @@ package borg.trikeshed.zlib.internal
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
-import borg.trikeshed.lib.Series as IndexedAlias
+import borg.trikeshed.lib.Series as Indexed
 
 // DEFLATE Huffman code maximum lengths
 // Literal/Length codes can be up to 15 bits long
@@ -21,7 +21,7 @@ const val HUFFMAN_LOOKUP_BITS_DIST = MAX_BITS_DEFLATE_DIST
 
 // DEFLATE Length Codes Table
 // Each entry is a Join<BaseLength, ExtraBits>
-val LENGTH_CODES_TABLE: Indexed<Join<Int, Int>> = IndexedAlias(29) { i ->
+val LENGTH_CODES_TABLE: Indexed<Join<Int, Int>> = Indexed(29) { i ->
     when (i) {
         in 0..3 -> (i + 3) j 0
         4 -> 11 j 1

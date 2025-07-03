@@ -1,7 +1,8 @@
 package borg.trikeshed.zlib.internal
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series as IndexedAlias // Alias Series to Indexed
+import borg.trikeshed.lib.Series as Indexed
+import borg.trikeshed.lib.size
 
 /**
  * A high-performance bit-level input stream designed to work with Trikeshed's Indexed<Byte> (Series<Byte>).
@@ -55,7 +56,7 @@ class BitStream(private val data: Indexed<Byte>) {
                 throw IllegalStateException("Unexpected end of stream while peeking bits.")
             }
 
-            val currentByte = data[currentBytePos].toInt() and 0xFF // Ensure unsigned byte
+            val currentByte = data.b(currentBytePos).toInt() and 0xFF // Ensure unsigned byte
             val bitsRemainingInByte = 8 - currentBitOff
             val bitsToPeekThisPass = minOf(numBits - bitsPeeked, bitsRemainingInByte)
 
@@ -115,7 +116,7 @@ class BitStream(private val data: Indexed<Byte>) {
             throw IllegalStateException("Attempt to read byte beyond end of stream.")
         }
 
-        return data[bytePosition++].toInt() and 0xFF
+        return data.b(bytePosition++).toInt() and 0xFF
     }
 
     /**

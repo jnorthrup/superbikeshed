@@ -19,12 +19,12 @@ interface AsyncIOEngine {
     /**
      * Submit a read operation
      */
-    suspend fun read(handle: IOHandle, buffer: ByteArray, offset: Long): Int
+    suspend fun read(handle: Int, buffer: ByteArray, offset: Long): Int
     
     /**
      * Submit a write operation
      */
-    suspend fun write(handle: IOHandle, data: ByteArray, offset: Long): Int
+    suspend fun write(handle: Int, data: ByteArray, offset: Long): Int
     
     /**
      * Submit multiple operations and wait for completion
@@ -37,7 +37,7 @@ interface AsyncIOEngine {
     fun completedOperations(): Flow<IOResult>
     
     companion object {
-        fun create(): AsyncIOEngine
+        fun create(): AsyncIOEngine = TODO("Platform-specific implementation required")
     }
 }
 
@@ -47,7 +47,7 @@ interface AsyncIOEngine {
 data class IOOperation(
     val id: Long,
     val type: IOType,
-    val handle: IOHandle,
+    val handle: Int,
     val buffer: ByteArray,
     val offset: Long = 0
 ) {
@@ -57,7 +57,7 @@ data class IOOperation(
     
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+        if (this::class != other!!::class) return false
         
         other as IOOperation
         
@@ -94,5 +94,6 @@ data class IOResult(
 
 /**
  * I/O handle type
+ * TODO: Commented out to avoid conflict with IOHandle.kt interface
  */
-typealias IOHandle = Int 
+// typealias IOHandle = Int 

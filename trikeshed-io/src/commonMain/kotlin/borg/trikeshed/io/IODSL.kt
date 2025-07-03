@@ -17,8 +17,9 @@ class IODSL(private val daemon: IODaemon) {
     
     /**
      * Create a new I/O handle for a specific operation type
+     * TODO: Commented out due to IOHandle class conflict
      */
-    fun handle(type: IODaemonOperation.IODaemonOperationType): IOHandle = IOHandle(type, daemon)
+    // fun handle(type: IODaemonOperation.IODaemonOperationType): IOHandle = IOHandle(type, daemon)
     
     /**
      * Execute a batch of operations
@@ -137,7 +138,9 @@ class IOSession(
 
 /**
  * I/O Handle for specific operation types
+ * TODO: Remove duplicate IOHandle definition - conflicts with IOHandle.kt
  */
+/*
 class IOHandle(
     private val type: IODaemonOperation.IODaemonOperationType,
     private val daemon: IODaemon
@@ -159,6 +162,7 @@ class IOHandle(
         return daemon.submit(operation)
     }
 }
+*/
 
 /**
  * Batch builder for multiple operations

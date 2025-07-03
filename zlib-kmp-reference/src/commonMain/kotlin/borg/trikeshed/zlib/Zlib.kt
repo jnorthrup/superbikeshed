@@ -9,14 +9,16 @@ import borg.trikeshed.zlib.internal.ZlibException
  * Expected API for a Zlib (DEFLATE, GZIP, ZRAN) implementation in Kotlin Multiplatform.
  * This interface defines the core functionalities for compression, decompression, and random access.
  */
-expect object Zlib {
+object Zlib {
 
     /**
      * Compresses the input data using the DEFLATE algorithm.
      * @param input The data to compress as an Indexed<Byte>.
      * @return The compressed data as an Indexed<Byte>.
      */
-    fun compress(input: Indexed<Byte>): Indexed<Byte>
+    fun compress(input: Indexed<Byte>): Indexed<Byte> {
+        TODO("Compression not yet implemented")
+    }
 
     /**
      * Decompresses the input data using the DEFLATE algorithm.
@@ -86,14 +88,18 @@ expect object Zlib {
      * @param input The data to compress as an Indexed<Byte>.
      * @return The compressed data in GZIP format as an Indexed<Byte>.
      */
-    fun gzipCompress(input: Indexed<Byte>): Indexed<Byte>
+    fun gzipCompress(input: Indexed<Byte>): Indexed<Byte> {
+        TODO("GZIP compression not yet implemented")
+    }
 
     /**
      * Decompresses data from GZIP format.
      * @param input The GZIP compressed data as an Indexed<Byte>.
      * @return The decompressed data as an Indexed<Byte>.
      */
-    fun gzipDecompress(input: Indexed<Byte>): Indexed<Byte>
+    fun gzipDecompress(input: Indexed<Byte>): Indexed<Byte> {
+        TODO("GZIP decompression not yet implemented")
+    }
 
     /**
      * Creates a ZRAN index for a GZIP compressed stream, allowing for random access.
@@ -101,7 +107,9 @@ expect object Zlib {
      * @param gzipStream The GZIP compressed data as an Indexed<Byte>.
      * @return An object representing the ZRAN index.
      */
-    fun createZranIndex(gzipStream: Indexed<Byte>): ZranIndex
+    fun createZranIndex(gzipStream: Indexed<Byte>): ZranIndex {
+        TODO("ZRAN index creation not yet implemented")
+    }
 
     /**
      * Represents a ZRAN index, allowing random access into a GZIP stream.

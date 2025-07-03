@@ -1,12 +1,56 @@
 package com.example.boingdemo
 
-import kotlinx.browser.document
-import kotlinx.browser.window
-import org.w3c.dom.CanvasRenderingContext2D
-import org.w3c.dom.HTMLCanvasElement
 import kotlin.math.PI
 
+// External declarations for browser APIs
+external class HTMLCanvasElement {
+    var width: Int
+    var height: Int
+    fun getContext(contextId: String): CanvasRenderingContext2D?
+}
+
+external class CanvasRenderingContext2D {
+    var fillStyle: String
+    val canvas: HTMLCanvasElement
+    fun save()
+    fun restore()
+    fun translate(x: Double, y: Double)
+    fun rotate(angle: Double)
+    fun fillRect(x: Double, y: Double, width: Double, height: Double)
+    fun beginPath()
+    fun ellipse(x: Double, y: Double, radiusX: Double, radiusY: Double, rotation: Double, startAngle: Double, endAngle: Double)
+    fun fill()
+    fun moveTo(x: Double, y: Double)
+    fun arc(x: Double, y: Double, radius: Double, startAngle: Double, endAngle: Double)
+    fun closePath()
+}
+
+external object document {
+    fun getElementById(id: String): HTMLCanvasElement?
+}
+
+external object window {
+    var innerWidth: Int
+    var innerHeight: Int
+    var onresize: (() -> Unit)?
+    val performance: Performance
+    fun requestAnimationFrame(callback: (Double) -> Unit)
+}
+
+external class Performance {
+    fun now(): Double
+}
+
+external class Audio(src: String) {
+    fun play()
+}
+
+external object console {
+    fun error(message: String)
+}
+
 actual typealias EconoCanvas = CanvasRenderingContext2D
+
 private fun toCssColor(color: Int) = "#${(color and 0xFFFFFF).toString(16).padStart(6, '0')}"
 
 actual fun EconoCanvas.save() { this.save() }
@@ -27,10 +71,10 @@ actual fun EconoCanvas.drawArc(x: Float, y: Float, r: Float, startAngle: Float, 
 
 fun main() {
     runBoingDemo { onFrame ->
-        val canvasEl = document.getElementById("kmp-canvas") as HTMLCanvasElement
-        val context = canvasEl.getContext("2d") as EconoCanvas
+        val canvasEl = document.getElementById("kmp-canvas") ?: return@runBoingDemo
+        val context = canvasEl.getContext("2d") ?: return@runBoingDemo
         fun onResize() { canvasEl.width = window.innerWidth; canvasEl.height = window.innerHeight }
-        window.onresize = { onResize(); null }; onResize()
+        window.onresize = { onResize() }; onResize()
 
         var lastTime = window.performance.now()
         fun render(time: Double) {
@@ -44,14 +88,14 @@ fun main() {
 }
 
 // --- Audio Implementation ---
-private val audioCache = mutableMapOf<String, org.w3c.dom.Audio>()
+private val audioCache = mutableMapOf<String, Audio>()
 
 actual fun playSound(filePath: String) {
     try {
         val sound = audioCache.getOrPut(filePath) {
-            org.w3c.dom.Audio(filePath) // Assumes filePath is relative to where index.html is served
+            Audio(filePath) // Assumes filePath is relative to where index.html is served
         }
-        sound.play().catch { err -> console.error("Error playing sound $filePath: $err") }
+        sound.play()
     } catch (e: Exception) {
         console.error("Exception during sound playback setup for $filePath: ${e.message}")
     }
