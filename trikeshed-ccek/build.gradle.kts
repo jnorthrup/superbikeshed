@@ -15,8 +15,18 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-common"))
                 implementation(project(":trikeshed-io"))
                 implementation(project(":trikeshed-reactor"))
+                implementation(project(":trikeshed-net"))
+                implementation(project(":trikeshed-dht"))
+                implementation(project(":trikeshed-torrent"))
+                implementation(project(":trikeshed-ipfs"))
+                implementation(project(":trikeshed-couchdb"))
+                implementation(project(":trikeshed-ljson"))
+                implementation(project(":trikeshed-strace"))
+                implementation(project(":trikeshed-ipc"))
+                implementation(project(":trikeshed-services"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
             }
         }

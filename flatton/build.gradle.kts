@@ -32,7 +32,9 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(project(":Trikeshed"))
+                implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-common"))
+                implementation(project(":kotlinx-serialization-scanner"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
                 implementation(npm("source-map-support", "0.5.21"))
