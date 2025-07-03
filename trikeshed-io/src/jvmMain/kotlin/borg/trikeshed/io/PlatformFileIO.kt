@@ -1,9 +1,10 @@
 package borg.trikeshed.io
 
 import borg.trikeshed.lib.*
+import java.io.File
 
 /**
- * WasmJS implementation of PlatformFileIO
+ * JVM implementation of PlatformFileIO
  */
 actual interface PlatformFileIO {
     actual suspend fun readFile(path: String): Join<Int, (Int) -> Byte>?
@@ -13,14 +14,22 @@ actual interface PlatformFileIO {
 actual class PlatformFileIOImpl : PlatformFileIO {
     
     actual override suspend fun readFile(path: String): Join<Int, (Int) -> Byte>? {
-        // WasmJS file reading - limited in browser environment
-        // TODO: Implement using FileSystem Access API if available
-        return null
+        return try {
+            val bytes = File(path).readBytes()
+            bytes.size j { i: Int -> bytes[i] }
+        } catch (e: Exception) {
+            null
+        }
     }
     
     actual override suspend fun writeFile(path: String, content: Join<Int, (Int) -> Byte>): Boolean {
-        // WasmJS file writing - limited in browser environment
-        // TODO: Implement using FileSystem Access API if available
-        return false
+        return try {
+            val size = content.a
+            val bytes = ByteArray(size) { i -> content.b(i) }
+            File(path).writeBytes(bytes)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }

@@ -1,7 +1,7 @@
 package borg.trikeshed.zlib.internal
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Series as IndexedAlias
+Alias
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.size
 import borg.trikeshed.lib.get

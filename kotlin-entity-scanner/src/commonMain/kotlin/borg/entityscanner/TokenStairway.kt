@@ -11,7 +11,7 @@ import borg.trikeshed.lib.CharIndexed
  * Token Classification Stairway - Hierarchical Inline Class System
  * 
  * Each level adds semantic richness while maintaining zero-cost abstractions
- * Uses TrikeShed patterns: Series<T>, Join<A,B>, α transforms, taxonomical type aliases
+ * Uses TrikeShed patterns: Indexed<T>, Join<A,B>, α transforms, taxonomical type aliases
  */
 
 // ==== LEVEL 1: RAW CHARACTER CLASSIFICATION ====
