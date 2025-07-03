@@ -78,31 +78,31 @@ fun scoreStr(valueString: String): String {
 // MTD: Month to Date
 // QTD: Quarter to Date
 // YTD: Year to Date
-// These would require a Series-like data structure and date/time capabilities.
-// For now, they are stubs. `Any` is used as a placeholder for the DataFrame/Series type.
+// These would require a Indexed-like data structure and date/time capabilities.
+// For now, they are stubs. `Any` is used as a placeholder for the DataFrame/Indexed type.
 
 fun mtd(data: Any): Any {
     // Placeholder: Actual implementation needs date handling and data filtering
     // e.g., data.filter { it.date >= startOfMonth(currentDate()) }
-    println("WARN: mtd(data) is a stub and needs implementation based on ta4k's Series and Date types.")
+    println("WARN: mtd(data) is a stub and needs implementation based on ta4k's Indexed and Date types.")
     return data // Return input for now
 }
 
 fun qtd(data: Any): Any {
     // Placeholder: Actual implementation needs date handling and data filtering
-    println("WARN: qtd(data) is a stub and needs implementation based on ta4k's Series and Date types.")
+    println("WARN: qtd(data) is a stub and needs implementation based on ta4k's Indexed and Date types.")
     return data
 }
 
 fun ytd(data: Any): Any {
     // Placeholder: Actual implementation needs date handling and data filtering
-    println("WARN: ytd(data) is a stub and needs implementation based on ta4k's Series and Date types.")
+    println("WARN: ytd(data) is a stub and needs implementation based on ta4k's Indexed and Date types.")
     return data
 }
 
 // Placeholder for _prepare_returns, _prepare_prices, etc.
 // These are complex and heavily rely on pandas data manipulation.
-// Their translation will depend on the chosen Kotlin data structures (Series<T>, Join<A,B>)
+// Their translation will depend on the chosen Kotlin data structures (Indexed<T>, Join<A,B>)
 // and numerical capabilities.
 
 fun prepareReturns(data: Any, rf: Double = 0.0, nperiods: Int? = null): Any {
@@ -119,19 +119,19 @@ fun preparePrices(data: Any, base: Double = 1.0): Any {
 
 /**
  * Converts price series to returns. Stub.
- * Actual implementation will depend on ta4k's Series type.
+ * Actual implementation will depend on ta4k's Indexed type.
  */
 fun toReturns(prices: Any, rf: Double = 0.0): Any {
-    println("WARN: toReturns is a stub. Requires implementation with ta4k Series type.")
+    println("WARN: toReturns is a stub. Requires implementation with ta4k Indexed type.")
     return prices // Placeholder
 }
 
 /**
  * Converts returns series to price data. Stub.
- * Actual implementation will depend on ta4k's Series type and stats.compsum.
+ * Actual implementation will depend on ta4k's Indexed type and stats.compsum.
  */
 fun toPrices(returns: Any, base: Double = 100000.0): Any {
-    println("WARN: toPrices is a stub. Requires implementation with ta4k Series type and translated compsum.")
+    println("WARN: toPrices is a stub. Requires implementation with ta4k Indexed type and translated compsum.")
     return returns // Placeholder
 }
 
@@ -139,7 +139,7 @@ fun toPrices(returns: Any, base: Double = 100000.0): Any {
  * Converts returns series to log returns. Stub.
  */
 fun toLogReturns(returns: Any, rf: Double = 0.0, nperiods: Int? = null): Any {
-    println("WARN: toLogReturns is a stub. Requires implementation with ta4k Series type.")
+    println("WARN: toLogReturns is a stub. Requires implementation with ta4k Indexed type.")
     return returns // Placeholder
 }
 
@@ -152,10 +152,10 @@ fun logReturns(returns: Any, rf: Double = 0.0, nperiods: Int? = null): Any {
 
 /**
  * Aggregates returns based on date periods. Stub.
- * Actual implementation will depend on ta4k's Series type and date handling.
+ * Actual implementation will depend on ta4k's Indexed type and date handling.
  */
 fun aggregateReturns(returns: Any, period: String? = null, compounded: Boolean = true): Any {
-    println("WARN: aggregateReturns is a stub. Requires implementation with ta4k Series type.")
+    println("WARN: aggregateReturns is a stub. Requires implementation with ta4k Indexed type.")
     return returns // Placeholder
 }
 
@@ -182,7 +182,7 @@ fun prepareBenchmark(benchmark: Any? = null, period: String = "max", rf: Double 
  * Rebase all series to a given initial base. Stub.
  */
 fun rebase(prices: Any, base: Double = 100.0): Any {
-    println("WARN: rebase is a stub. Requires implementation with ta4k Series type.")
+    println("WARN: rebase is a stub. Requires implementation with ta4k Indexed type.")
     return prices // Placeholder
 }
 
@@ -190,7 +190,7 @@ fun rebase(prices: Any, base: Double = 100.0): Any {
  * Calculates excess returns. Stub.
  */
 fun toExcessReturns(returns: Any, rf: Any, nperiods: Int? = null): Any {
-    println("WARN: toExcessReturns is a stub. Requires implementation with ta4k Series type and appropriate rf handling.")
-    // In Python, rf could be float or Series. In Kotlin, this needs defined types.
+    println("WARN: toExcessReturns is a stub. Requires implementation with ta4k Indexed type and appropriate rf handling.")
+    // In Python, rf could be float or Indexed. In Kotlin, this needs defined types.
     return returns // Placeholder
 }

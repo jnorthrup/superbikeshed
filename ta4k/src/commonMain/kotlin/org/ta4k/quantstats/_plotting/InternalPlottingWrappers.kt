@@ -13,7 +13,7 @@ package org.ta4k.quantstats._plotting
 // These names match the public API often called via Pandas extensions or directly.
 
 fun snapshot(
-    returns: Any, // Replace Any with actual ta4k Series type
+    returns: Any, // Replace Any with actual ta4k Indexed type
     grayscale: Boolean = false,
     figsize: Pair<Int, Int>? = null, // Example: Pair(10, 8)
     title: String = "Portfolio Summary",
@@ -29,7 +29,7 @@ fun snapshot(
 }
 
 fun earnings(
-    returns: Any, // Replace Any with actual ta4k Series type
+    returns: Any, // Replace Any with actual ta4k Indexed type
     start_balance: Double = 100000.0,
     mode: String = "comp",
     grayscale: Boolean = false,
@@ -43,8 +43,8 @@ fun earnings(
 }
 
 fun returns(
-    returns: Any, // Series
-    benchmark: Any? = null, // Series?
+    returns: Any, // Indexed
+    benchmark: Any? = null, // Indexed?
     grayscale: Boolean = false,
     figsize: Pair<Int, Int>? = null,
     fontname: String = "Arial",
@@ -67,8 +67,8 @@ fun returns(
 // These were all exposed via "from quantstats._plotting.wrappers import *" in Python.
 
 fun monthlyHeatmap(
-    returns: Any, // Series
-    benchmark: Any? = null, // Series?
+    returns: Any, // Indexed
+    benchmark: Any? = null, // Indexed?
     annot_size: Int = 13,
     figsize: Pair<Int, Int>? = null,
     cbar: Boolean = true,

@@ -1,7 +1,7 @@
 package k2script.trikeshed.services
 
 import k2script.trikeshed.lib.*
-import borg.trikeshed.lib.Series as TrikeSeries
+import borg.trikeshed.lib.Indexed as TrikeSeries
 import kotlin.jvm.JvmInline
 
 /**

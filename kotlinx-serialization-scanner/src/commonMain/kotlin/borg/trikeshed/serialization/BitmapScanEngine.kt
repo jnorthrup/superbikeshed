@@ -28,7 +28,7 @@ value class CharacterBitmap(val mask: Int) {
 
 // Deterministic 32-bit packing - eliminates all casting issues
 typealias BitmapChunk = Int
-typealias BitmapSeries = MetaIndexed<Int, BitmapChunk>
+typealias BitmapSeries = MetaSeries<Int, BitmapChunk>
 
 /**
  * Platform-agnostic bitmap scanning implementation

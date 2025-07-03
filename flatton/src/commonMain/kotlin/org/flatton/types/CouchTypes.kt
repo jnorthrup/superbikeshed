@@ -96,8 +96,8 @@ data class CouchSecurity(
 )
 
 data class SecurityPrincipal(
-    val names: Series<String>,
-    val roles: Series<String>
+    val names: Indexed<String>,
+    val roles: Indexed<String>
 )
 
 data class CouchResponse(
@@ -110,7 +110,7 @@ data class CouchResponse(
 
 data class ViewQueryParams(
     val key: JsonElement? = null,
-    val keys: Series<JsonElement>? = null,
+    val keys: Indexed<JsonElement>? = null,
     val startKey: JsonElement? = null,
     val endKey: JsonElement? = null,
     val startKeyDocId: DocumentId? = null,
@@ -148,7 +148,7 @@ data class ViewResponse<K, V>(
     val totalRows: Int,
     val offset: Int,
     val updateSeq: String?,
-    val rows: Series<ViewRow<K, V>>
+    val rows: Indexed<ViewRow<K, V>>
 )
 
 data class ViewRow<K, V>(

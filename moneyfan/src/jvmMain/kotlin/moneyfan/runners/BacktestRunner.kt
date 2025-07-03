@@ -265,7 +265,7 @@ class BacktestRunner {
             candles.add(candle)
         }
         
-        return Series.of(candles.size) { candles[it] }
+        return Indexed.of(candles.size) { candles[it] }
     }
     
     private fun generateTicksFromCandles(candles: CandleSeries, symbol: String): TickSeries {
@@ -287,7 +287,7 @@ class BacktestRunner {
             }
         }
         
-        return Series.of(ticks.size) { ticks[it] }
+        return Indexed.of(ticks.size) { ticks[it] }
     }
 }
 

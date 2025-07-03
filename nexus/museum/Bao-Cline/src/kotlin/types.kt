@@ -2,7 +2,7 @@
 import kotlinx.serialization.Serializable
 import kotlin.js.JsExport
 import borg.trikeshed.lib.Join
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
 
 @JsExport
@@ -96,7 +96,7 @@ data class TaskEvent(
     val tokenUsage: TokenUsage? = null
 )
 
-typealias TaskHistory = Series<TaskEvent>
+typealias TaskHistory = Indexed<TaskEvent>
 
 @JsExport
 @Serializable
@@ -275,11 +275,11 @@ data class Response(val text: String)
 // Helper extension to bridge Join<A,B> to Pair<A,B> for destructuring
 fun <A, B> Join<A, B>.split(): Pair<A, B> = Pair(a, b)
 
-// Helper extension to add an item to a Series, returning a new Series
-fun <T> Series<T>.add(item: T): Series<T> = this + seriesOf(item)
+// Helper extension to add an item to a Indexed, returning a new Indexed
+fun <T> Indexed<T>.add(item: T): Indexed<T> = this + seriesOf(item)
 
 // Helper extension to bridge Join<A,B> to Pair<A,B> for destructuring
 fun <A, B> Join<A, B>.split(): Pair<A, B> = Pair(a, b)
 
-// Helper extension to add an item to a Series, returning a new Series
-fun <T> Series<T>.add(item: T): Series<T> = this + seriesOf(item)
+// Helper extension to add an item to a Indexed, returning a new Indexed
+fun <T> Indexed<T>.add(item: T): Indexed<T> = this + seriesOf(item)

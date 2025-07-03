@@ -185,7 +185,7 @@ suspend fun demonstrateTrikeShedPatterns() {
         }
     }
     
-    println("      📊 Series capabilities:")
+    println("      📊 Indexed capabilities:")
     for (i in 0 until capabilitySeries.size) {
         println("         ${i}: ${capabilitySeries[i]}")
         delay(500)

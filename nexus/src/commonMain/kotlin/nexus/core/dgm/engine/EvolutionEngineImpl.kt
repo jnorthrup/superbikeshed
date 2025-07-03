@@ -2,7 +2,7 @@ package nexus.core.dgm.engine
 
 import nexus.core.dgm.*
 import nexus.core.dgm.services.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlin.random.Random // For random selection strategies
 
@@ -23,10 +23,10 @@ class EvolutionEngineImpl(
             val initialEntryId: ArchiveEntryId = initialCommitHash
 
             val readmeFile = Join<FilePath, FileContent>("README.md", "# Initial DGM Archive Entry\nThis is the first entry in the DGM archive.")
-            val initialCodeSnapshot = Series.of(readmeFile)
+            val initialCodeSnapshot = Indexed.of(readmeFile)
 
             val parentEntryId: ArchiveEntryId = "null_parent" // Or some other sentinel
-            val tags = Series.of("initialization")
+            val tags = Indexed.of("initialization")
             val timestamp = TimestampUtils.now() // Assuming TimestampUtils is accessible
 
             val initialVersionMetadata = VersionMetadata(
@@ -41,14 +41,14 @@ class EvolutionEngineImpl(
             // This is a bit of a workaround due to current DgmStateService.saveArchiveEntry signature.
             val dummyTask = DgmTask(
                 Join(TaskId("init_task"), parentEntryId),
-                Join(BenchmarkId("init_benchmark"), Series.empty())
+                Join(BenchmarkId("init_benchmark"), Indexed.empty())
             )
             val dummyCandidate = ImprovementCandidate(
                 Join(dummyTask, initialCodeSnapshot),
-                Join(ProposerId("engine_init"), Series.of("Initial archive setup."))
+                Join(ProposerId("engine_init"), Indexed.of("Initial archive setup."))
             )
             val dummyValidation = ValidationResult(
-                Join(ValidationStatus("PASSED"), Series.empty<BenchmarkScore>()),
+                Join(ValidationStatus("PASSED"), Indexed.empty<BenchmarkScore>()),
                 "Initialization successful."
             )
 
@@ -70,7 +70,7 @@ class EvolutionEngineImpl(
             println("EvolutionEngine: Archive empty, initializing to select a parent.")
             return initializeArchive(context) // Initialize and return the first entry ID
         }
-        // Simple strategy: select the latest entry (last one in the Series)
+        // Simple strategy: select the latest entry (last one in the Indexed)
         // A more complex strategy could involve scores, tags, randomness, etc.
         val lastEntry = archive.lastOrNull() ?: error("Archive is not empty but could not retrieve the last entry.")
         println("EvolutionEngine: Selected parent entry: ${lastEntry.a}")
@@ -100,7 +100,7 @@ class EvolutionEngineImpl(
 
             val dgmTask = DgmTask(
                 Join(TaskId("task_${Random.nextInt(1000, 9999)}"), parentEntryId),
-                Join(benchmarkId, Series.empty()) // Empty parameters for now
+                Join(benchmarkId, Indexed.empty()) // Empty parameters for now
             )
             println("EvolutionEngine: Created DGM Task: ${dgmTask.a.a} for parent ${dgmTask.a.b} on benchmark ${dgmTask.b.a}")
 

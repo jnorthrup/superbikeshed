@@ -1,8 +1,8 @@
 package org.ta4k.quantstats.testdata
 
 import org.ta4k.quantstats.domain.*
-// import borg.trikeshed.Series // Import if Series construction is known
-// import borg.trikeshed.Join   // Import if Join construction is known for Series
+// import borg.trikeshed.Indexed // Import if Indexed construction is known
+// import borg.trikeshed.Join   // Import if Join construction is known for Indexed
 
 fun createMockKlines(): List<Kline> {
     return listOf(
@@ -24,12 +24,12 @@ fun createMockKlines(): List<Kline> {
     )
 }
 
-// Placeholder for creating a Trikeshed Series once its construction is clear
-// fun createMockKlineSeries(): borg.trikeshed.Series<Kline> {
+// Placeholder for creating a Trikeshed Indexed once its construction is clear
+// fun createMockKlineSeries(): borg.trikeshed.Indexed<Kline> {
 //     val klines = createMockKlines()
-//     // Actual construction of Series<Kline> will depend on Join's API
-//     // and how Series<T> = Join<Int, (Int) -> T> is instantiated.
+//     // Actual construction of Indexed<Kline> will depend on Join's API
+//     // and how Indexed<T> = Join<Int, (Int) -> T> is instantiated.
 //     // For example, if Join is data class Join<A,B>(val a: A, val b: B)
 //     // return borg.trikeshed.Join(klines.size) { index -> klines[index] }
-//     throw NotImplementedError("Series<Kline> construction depends on Join API details")
+//     throw NotImplementedError("Indexed<Kline> construction depends on Join API details")
 // }

@@ -1,6 +1,6 @@
 package k2script.api
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import java.io.File
 
 /**
@@ -24,9 +24,9 @@ interface ScriptEngine {
      * Parses the script file to extract its dependency declarations.
      *
      * @param scriptFile The .kts file to parse.
-     * @return A TrikeShed `Series` of dependency strings.
+     * @return A TrikeShed `Indexed` of dependency strings.
      */
-    fun parseDependencies(scriptFile: File): Series<String>
+    fun parseDependencies(scriptFile: File): Indexed<String>
 
     /**
      * Executes the script file with the given arguments.

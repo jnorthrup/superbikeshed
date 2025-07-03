@@ -4,7 +4,7 @@ import com.ta4k.core.model.Kline
 import com.ta4k.core.model.BigDecimal // Explicitly from ta4k.core.model
 import com.ta4k.indicators.RSIIndicator
 import com.ta4k.indicators.SMAIndicator
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.alpha
 import borg.trikeshed.lib.`play`
@@ -31,20 +31,20 @@ object DselInterfaceAugmented {
     val assetConfigs = mutableMapOf<String, DemoMoneyfanAssetConfig>()
 
     /**
-     * Generates a DSEL Series of [VisualGraphPointWithMoneyfanOutcome] by processing input Kline data,
+     * Generates a DSEL Indexed of [VisualGraphPointWithMoneyfanOutcome] by processing input Kline data,
      * calculating TA features, and applying Moneyfan logic.
      *
-     * @param klineSeries The input DSEL Series of Kline data.
+     * @param klineSeries The input DSEL Indexed of Kline data.
      * @param assetSymbol The symbol for the asset being processed (e.g., "BTC"). Used to manage Moneyfan asset configs.
-     * @return A DSEL Series of [VisualGraphPointWithMoneyfanOutcome]. Returns an empty series if input is empty.
+     * @return A DSEL Indexed of [VisualGraphPointWithMoneyfanOutcome]. Returns an empty series if input is empty.
      */
     fun generateAugmentedVisualData(
-        klineSeries: Series<Kline>,
+        klineSeries: Indexed<Kline>,
         assetSymbol: String
-    ): Series<VisualGraphPointWithMoneyfanOutcome> {
+    ): Indexed<VisualGraphPointWithMoneyfanOutcome> {
 
         if (klineSeries.size == 0) {
-            console.warn("DselInterfaceAugmented: Input klineSeries is empty. Returning empty Series.")
+            console.warn("DselInterfaceAugmented: Input klineSeries is empty. Returning empty Indexed.")
             return 0 j { throw IndexOutOfBoundsException("Accessing empty augmented data series.") }
         }
 
@@ -60,9 +60,9 @@ object DselInterfaceAugmented {
         val smaLongIndicator = SMAIndicator(klineSeries, longSmaPeriod)
         val rsiIndicator = RSIIndicator(klineSeries, rsiPeriod)
 
-        val smaShortValues: Series<BigDecimal?> = smaShortIndicator.values
-        val smaLongValues: Series<BigDecimal?> = smaLongIndicator.values
-        val rsiValues: Series<BigDecimal?> = rsiIndicator.values
+        val smaShortValues: Indexed<BigDecimal?> = smaShortIndicator.values
+        val smaLongValues: Indexed<BigDecimal?> = smaLongIndicator.values
+        val rsiValues: Indexed<BigDecimal?> = rsiIndicator.values
 
         // 2. DSEL Action: Combine Price, TA, and Moneyfan logic
         val augmentedPoints = mutableListOf<VisualGraphPointWithMoneyfanOutcome>()
@@ -152,7 +152,7 @@ object DselInterfaceAugmented {
                 )
             )
         }
-        // Convert the List to a DSEL Series for output
+        // Convert the List to a DSEL Indexed for output
         return augmentedPoints.toSeries() // Uses extension from DataHelper.kt
     }
 

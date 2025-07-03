@@ -41,7 +41,7 @@ value class LanguageLevel(val level: UByte) {
 
 // Kotlin-specific rule configurations
 typealias KotlinRule = Join<KotlinFeature, Join<LanguageLevel, PrioritizedRule>>
-typealias FeatureRuleSet = Series<KotlinRule>
+typealias FeatureRuleSet = Indexed<KotlinRule>
 
 // ==== COROUTINE FORWARD CHAINING RULES ====
 

@@ -1,6 +1,6 @@
 package borg.trikeshed.acapulco
 
-import borg.trikeshed.common.Series
+import borg.trikeshed.common.Indexed
 
 interface MarketDataSource {
     suspend fun nextTick(): MarketTick?

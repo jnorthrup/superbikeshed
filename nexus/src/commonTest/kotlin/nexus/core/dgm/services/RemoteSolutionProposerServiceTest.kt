@@ -1,7 +1,7 @@
 package nexus.core.dgm.services
 
 import nexus.core.dgm.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.*
@@ -53,12 +53,12 @@ class RemoteSolutionProposerServiceTest {
     private fun createDummyDgmTask(taskIdStr: String = "task_test_123"): DgmTask {
         return DgmTask(
             Join(TaskId(taskIdStr), ArchiveEntryId("parent_abc")),
-            Join(BenchmarkId("benchmark_def"), Series.of("param1", "param2"))
+            Join(BenchmarkId("benchmark_def"), Indexed.of("param1", "param2"))
         )
     }
 
     private fun createDummyCodeSnapshot(): CodeSnapshot {
-        return Series.of(
+        return Indexed.of(
             Join<FilePath, FileContent>("src/FileA.kt", "package com.example\n\nfun greet() = \"Hello\""),
             Join<FilePath, FileContent>("README.md", "# My Project")
         )
@@ -117,7 +117,7 @@ class RemoteSolutionProposerServiceTest {
         assertTrue(proposedSnapshot.any { it.a == "NEW_FILE.md" && it.b.contains("New Documentation") })
 
         assertEquals(pythonResult.langchainAgentConfig?.agentName ?: "unknown_python_agent", improvementCandidate.b.a) // ProposerId
-        assertEquals(Series.of("LLM successfully proposed changes."), improvementCandidate.b.b) // Rationale
+        assertEquals(Indexed.of("LLM successfully proposed changes."), improvementCandidate.b.b) // Rationale
     }
 
     @Test
@@ -147,7 +147,7 @@ class RemoteSolutionProposerServiceTest {
     @Test
     fun proposeSolutionHandlesEmptyCodeSnapshotInput() = runTest {
         val task = createDummyDgmTask()
-        val emptyParentCode = Series.empty<Join<FilePath, FileContent>>()
+        val emptyParentCode = Indexed.empty<Join<FilePath, FileContent>>()
 
         mockProposer.responseToReturn = ProposedChangesFromPython(
             task.a.a,

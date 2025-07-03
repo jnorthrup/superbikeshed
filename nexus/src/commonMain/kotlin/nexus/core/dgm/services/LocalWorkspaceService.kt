@@ -3,7 +3,7 @@ package nexus.core.dgm.services
 import nexus.core.dgm.CodeSnapshot
 import nexus.core.dgm.FilePath
 import nexus.core.dgm.FileContent
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 
 // KMP expect/actual for basic file system operations
@@ -12,7 +12,7 @@ expect object FileSystemUtils {
     fun createTempDirectory(prefix: String, context: CCEKContext): FilePath
     fun writeFile(filePath: FilePath, content: FileContent, context: CCEKContext)
     fun readFile(filePath: FilePath, context: CCEKContext): FileContent
-    fun listFilesRecursively(directoryPath: FilePath, context: CCEKContext): Series<FilePath>
+    fun listFilesRecursively(directoryPath: FilePath, context: CCEKContext): Indexed<FilePath>
     fun deleteDirectoryRecursively(directoryPath: FilePath, context: CCEKContext): Boolean
     fun joinPath(base: FilePath, vararg parts: String): FilePath
     fun getAbsolutePath(path: FilePath, context: CCEKContext): FilePath
@@ -50,10 +50,10 @@ internal actual object FileSystemUtils {
         return "" // Stub behavior
     }
 
-    actual fun listFilesRecursively(directoryPath: FilePath, context: CCEKContext): Series<FilePath> {
+    actual fun listFilesRecursively(directoryPath: FilePath, context: CCEKContext): Indexed<FilePath> {
         // Real implementation: Walk file tree and collect relative paths
         println("MockFileSystemUtils: Listing files in $directoryPath (returning empty series for stub)")
-        return Series.empty() // Stub behavior
+        return Indexed.empty() // Stub behavior
     }
 
     actual fun deleteDirectoryRecursively(directoryPath: FilePath, context: CCEKContext): Boolean {
@@ -139,7 +139,7 @@ class LocalWorkspaceService : WorkspaceService {
                 }
             }
         }
-        return Series.ofList(fileEntries)
+        return Indexed.ofList(fileEntries)
     }
 
     override suspend fun cleanupWorkspace(workspacePath: FilePath, context: CCEKContext) {

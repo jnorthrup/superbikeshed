@@ -1,7 +1,7 @@
 package nexus.core.dgm.services
 
 import nexus.core.dgm.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -46,7 +46,7 @@ class InMemoryDgmStateService : DgmStateService {
     override suspend fun loadArchive(context: CCEKContext): DgmArchive {
         return mutex.withLock {
             val entries = archive.entries.map { entry -> Join(entry.key, entry.value) }
-            Series.ofList(entries)
+            Indexed.ofList(entries)
         }
     }
 
@@ -57,12 +57,12 @@ class InMemoryDgmStateService : DgmStateService {
 
         val parentEntryId = candidate.a.a.a.b // ImprovementCandidate -> DgmTask -> parent ArchiveEntryId
         val commitHash = "simulated_hash_for_${newEntryId.take(8)}"
-        val tags = Series.ofList(listOf("improvement", validationResult.a.a.lowercase())) // status as a tag
+        val tags = Indexed.ofList(listOf("improvement", validationResult.a.a.lowercase())) // status as a tag
         val timestamp = TimestampUtils.now()
 
         val versionMetadata = VersionMetadata(
             Join(parentEntryId, commitHash), // Join<ParentArchiveEntryId, CommitHash>
-            Join(tags, timestamp)            // Join<Series<String>, Timestamp>
+            Join(tags, timestamp)            // Join<Indexed<String>, Timestamp>
         )
 
         val codeSnapshot = candidate.a.b // ImprovementCandidate -> CodeSnapshot

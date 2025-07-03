@@ -28,7 +28,7 @@ object KlineViewUtil {
 
         val curs: Cursor = c0.reversed()
         val openTimeColIndex = curs.meta.`play`.indexOfFirst { it.name == "Open_time" }.takeIf { it >= 0 } ?: 0
-        val copentime: Series<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
+        val copentime: Indexed<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
         val walletFreeCursor = tradingWallet.walletFree(assetKey, "USDT")
         val depthIntraCursor: Cursor = s_[
             s_[

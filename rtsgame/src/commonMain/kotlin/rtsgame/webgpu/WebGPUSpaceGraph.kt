@@ -16,8 +16,8 @@ typealias WebGPUContext = Join<Join<Context, Configuration>, Join<Environment, K
 
 data class Context(
     val device: GPUDevice,
-    val buffers: Series<GPUBuffer>,
-    val pipelines: Series<GPURenderPipeline>
+    val buffers: Indexed<GPUBuffer>,
+    val pipelines: Indexed<GPURenderPipeline>
 )
 
 data class Configuration(
@@ -32,7 +32,7 @@ data class Environment(
 )
 
 data class Knowledge(
-    val capabilities: Series<String>,
+    val capabilities: Indexed<String>,
     val limits: Map<String, Int>
 )
 
@@ -107,7 +107,7 @@ data class Matrix4(
  */
 expect class WebGPUSpaceGraph() {
     actual suspend fun initialize(): Boolean
-    actual fun createVertexBuffer(data: Series<VertexData>): BufferId
+    actual fun createVertexBuffer(data: Indexed<VertexData>): BufferId
     actual fun createUniformBuffer(data: UniformData): BufferId
     actual fun createRenderPipeline(vertexShader: String, fragmentShader: String): PipelineId
     actual fun updateBuffer(bufferId: BufferId, data: ByteArray)
@@ -116,8 +116,8 @@ expect class WebGPUSpaceGraph() {
 }
 
 data class RenderData(
-    val nodes: Series<SpaceGraphNode>,
-    val edges: Series<SpaceGraphEdge>,
+    val nodes: Indexed<SpaceGraphNode>,
+    val edges: Indexed<SpaceGraphEdge>,
     val camera: CameraState,
     val time: Float
 )
@@ -201,7 +201,7 @@ class CommonWebGPUSpaceGraph {
         return node.position j (size j color)
     }
     
-    private fun convertEdgeToVertex(edge: SpaceGraphEdge, nodes: Series<SpaceGraphNode>): VertexData {
+    private fun convertEdgeToVertex(edge: SpaceGraphEdge, nodes: Indexed<SpaceGraphNode>): VertexData {
         // Find source and target positions
         val sourceNode = nodes.play.find { it.id == edge.source }
         val targetNode = nodes.play.find { it.id == edge.target }
@@ -227,7 +227,7 @@ class CommonWebGPUSpaceGraph {
         return midpoint j (2f j color)
     }
     
-    private fun updateVertexBuffers(nodeVertices: Series<VertexData>, edgeVertices: Series<VertexData>) {
+    private fun updateVertexBuffers(nodeVertices: Indexed<VertexData>, edgeVertices: Indexed<VertexData>) {
         // Convert to byte arrays for GPU upload
         val nodeData = serializeVertexData(nodeVertices)
         val edgeData = serializeVertexData(edgeVertices)
@@ -253,7 +253,7 @@ class CommonWebGPUSpaceGraph {
         }
     }
     
-    private fun serializeVertexData(vertices: Series<VertexData>): ByteArray {
+    private fun serializeVertexData(vertices: Indexed<VertexData>): ByteArray {
         val data = ByteArray(vertices.play.size * 28) // 3 floats pos + 1 float size + 1 int color = 28 bytes
         var offset = 0
         

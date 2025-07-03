@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.toList
 import kotlin.coroutines.CoroutineContext
 
 // TrikeShed core types and helpers
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j // For Join infix constructor
 import borg.trikeshed.lib.seriesOf // For creating series easily
 import borg.trikeshed.lib.materialize
@@ -110,7 +110,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `discoverCapabilities should return expected capabilities`() = runBlocking {
         val (agent, _) = createAgent()
-        val expectedCapabilities: Series<Capability> = seriesOf(
+        val expectedCapabilities: Indexed<Capability> = seriesOf(
             "RunCommand" j seriesOf("command:String", "timeout:Int (ms)"),
             "ReadFile" j seriesOf("filePath:String"),
             "WriteFile" j seriesOf("filePath:String", "content:String")
@@ -193,7 +193,7 @@ class DefaultNexusAgentTest {
             "Step 2: Add new API endpoint.",
             "Step 3: Document changes."
         )
-        val expectedSolutions: Series<Solution> = seriesOf(expectedSol1, expectedSol2)
+        val expectedSolutions: Indexed<Solution> = seriesOf(expectedSol1, expectedSol2)
         val actualSolutions = agent.generateSolutions(problem, context)
         actualSolutions.shouldHaveSize(2)
         actualSolutions.shouldBe(expectedSolutions) { solA, solB ->
@@ -226,7 +226,7 @@ class DefaultNexusAgentTest {
     @Test
     fun `getSuggestions should return predefined suggestions`() = runBlocking {
         val (agent, _) = createAgent()
-        val expectedSuggestions: Series<ScoredSuggestion> = TensorSeries.fromList(
+        val expectedSuggestions: Indexed<ScoredSuggestion> = TensorSeries.fromList(
             listOf(
                 0.5 j "Suggestion for pattern: (code_smell - long_method - class_X)",
                 0.6 j "Suggestion for pattern: (performance_issue - database_query - entity_Y)",
@@ -304,7 +304,7 @@ class DefaultNexusAgentTest {
         val expectedAction2: Action = "RunTests" j seriesOf("scope:unit", "module:featureX")
         val expectedAction3: Action = "RequestReview" j seriesOf("reviewer:@teamLead", "crNumber:123")
 
-        val expectedPredictions: Series<PredictedAction> = TensorSeries.fromList(listOf(
+        val expectedPredictions: Indexed<PredictedAction> = TensorSeries.fromList(listOf(
             expectedAction1 j 0.75,
             expectedAction2 j 0.60,
             expectedAction3 j 0.85

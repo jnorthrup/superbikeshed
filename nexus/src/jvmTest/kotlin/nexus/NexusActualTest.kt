@@ -61,5 +61,5 @@ class NexusActualTest {
     }
 }
 
-// Helper to convert Series to List for testing
-fun <T> Series<T>.toList(): List<T> = this play { it }
+// Helper to convert Indexed to List for testing
+fun <T> Indexed<T>.toList(): List<T> = this play { it }

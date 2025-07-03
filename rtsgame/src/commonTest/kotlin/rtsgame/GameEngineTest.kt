@@ -96,11 +96,11 @@ class GameEngineTest {
     fun `series operations work correctly`() {
         val state = engine.tick()
         
-        // Test Series.play property
+        // Test Indexed.play property
         assertNotNull(state.entities.`play`)
         assertTrue(state.entities.`play`.isNotEmpty())
         
-        // Test Series size
+        // Test Indexed size
         assertTrue(state.entities.size > 0)
         assertEquals(state.entities.size, state.entities.`play`.size)
     }

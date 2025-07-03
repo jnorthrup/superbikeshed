@@ -177,7 +177,7 @@ def calculate_rsi(prices, period=14):
 
 # Volatility calculation
 def calculate_volatility(returns, window=20):
-    return pd.Series(returns).rolling(window).std()
+    return pd.Indexed(returns).rolling(window).std()
 
 # Configure for JVM integration
 INDICATORS_READY = True

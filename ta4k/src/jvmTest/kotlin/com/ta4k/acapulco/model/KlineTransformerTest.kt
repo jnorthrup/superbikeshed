@@ -2,7 +2,7 @@ package com.ta4k.acapulco.model
 
 import borg.trikeshed.cursor.Cursor
 import borg.trikeshed.isam.IsamDataFile
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import com.ta4k.core.model.Kline
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*

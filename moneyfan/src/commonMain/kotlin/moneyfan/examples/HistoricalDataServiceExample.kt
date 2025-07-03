@@ -4,7 +4,7 @@ import moneyfan.data.HistoricalDataService
 import moneyfan.io.MockFileContentProvider
 import moneyfan.models.Kline
 import moneyfan.models.TimestampEpochMillis
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.toList // Using toList and then forEach for simple iteration
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
@@ -110,12 +110,12 @@ suspend fun runHistoricalDataServiceExample() {
     println("\n--- HistoricalDataService Example Finished ---")
 }
 
-fun printKlines(klines: Series<Kline>) {
+fun printKlines(klines: Indexed<Kline>) {
     if (klines.isEmpty()) {
         println("No klines found or returned empty series.")
         return
     }
-    // Use toList() and then forEach for simple iteration as Series itself is not directly Iterable
+    // Use toList() and then forEach for simple iteration as Indexed itself is not directly Iterable
     // Alternatively, use klines.`play`.forEach { ... } if IterableSeries is preferred.
     klines.toList().forEachIndexed { index, kline ->
         println(

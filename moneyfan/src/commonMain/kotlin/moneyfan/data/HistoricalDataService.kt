@@ -2,7 +2,7 @@ package moneyfan.data
 
 import moneyfan.models.Kline
 import moneyfan.models.TimestampEpochMillis
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.emptySeries
 import moneyfan.io.BinanceDataArchiveReader
 import moneyfan.io.FileContentProvider
@@ -18,7 +18,7 @@ class HistoricalDataService(
     private val fileContentProvider: FileContentProvider
 ) {
     // In-memory cache for Kline series. Keyed by file path for simplicity.
-    private val klineCache = mutableMapOf<String, Series<Kline>>()
+    private val klineCache = mutableMapOf<String, Indexed<Kline>>()
     private val cacheMutex = Mutex()
 
     // Instantiate the archive reader with the provided file content provider.
@@ -38,14 +38,14 @@ class HistoricalDataService(
      * @param interval The kline interval (e.g., "1d").
      * @param startDate The start date of the desired data range.
      * @param endDate The end date of the desired data range.
-     * @return A `Series<Kline>` containing the requested data, or `emptySeries()` if not found or an error occurs.
+     * @return A `Indexed<Kline>` containing the requested data, or `emptySeries()` if not found or an error occurs.
      */
     suspend fun getHistoricalKlines(
         symbol: String,
         interval: String,
         startDate: LocalDate,
         endDate: LocalDate
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         // Simplified file path convention: uses only the year from startDate.
         // A more robust solution would handle multi-year ranges or more complex pathing.
         val year = startDate.year
@@ -67,7 +67,7 @@ class HistoricalDataService(
                 // If the cached series is already fully within the requested range (e.g. it was loaded for this exact range)
                 // or if the cache stores the entire file and we need to filter it now.
                 // For simplicity, the current BinanceDataArchiveReader.readKlinesFromCsvWithDateRange already filters.
-                // So, if we cache per file path, we are caching the *entire* file's content as a Series.
+                // So, if we cache per file path, we are caching the *entire* file's content as a Indexed.
                 // The filtering should happen *after* cache retrieval if the cache is per-file.
                 // Let's refine: cache the result of readKlinesFromCsv (entire file), then filter.
 
@@ -116,7 +116,7 @@ class HistoricalDataService(
         // 1. Load WHOLE file if not in cache (keyed by filePath).
         // 2. Filter the loaded/cached series for the specific date range.
 
-        val seriesToCache: Series<Kline>
+        val seriesToCache: Indexed<Kline>
         cacheMutex.withLock {
             // Double check cache in case another coroutine populated it while we were reading file
             if (klineCache.containsKey(filePath)) {

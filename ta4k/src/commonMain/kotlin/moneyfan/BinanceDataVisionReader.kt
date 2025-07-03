@@ -10,9 +10,9 @@ import borg.trikeshed.lib.Indexed
 expect class BinanceDataVisionReader() {
     companion object {
         /**
-         * Reads a Binance Data Vision archive file and returns a Series of Klines.
+         * Reads a Binance Data Vision archive file and returns a Indexed of Klines.
          * @param filePath Path to the archive file
-         * @return Series of Klines
+         * @return Indexed of Klines
          */
         fun readArchive(filePath: String): Indexed<Kline>
         
@@ -23,7 +23,7 @@ expect class BinanceDataVisionReader() {
          * @param startDate Start date in YYYY-MM format
          * @param endDate End date in YYYY-MM format
          * @param cacheDir Directory to cache downloaded files
-         * @return Series of Klines
+         * @return Indexed of Klines
          */
         suspend fun fetchKlines(
             symbol: String,
@@ -39,7 +39,7 @@ expect class BinanceDataVisionReader() {
          * @param interval Time interval
          * @param yearMonth Year and month in YYYY-MM format
          * @param cacheDir Cache directory
-         * @return Series of Klines
+         * @return Indexed of Klines
          */
         suspend fun fetchMonthKlines(
             symbol: String,
@@ -54,7 +54,7 @@ expect class BinanceDataVisionReader() {
          * @param interval Time interval
          * @param days Number of days to fetch
          * @param cacheDir Cache directory
-         * @return Series of Klines
+         * @return Indexed of Klines
          */
         suspend fun fetchDailyKlines(
             symbol: String,
@@ -66,16 +66,16 @@ expect class BinanceDataVisionReader() {
         /**
          * Combines multiple kline series into a single sorted series
          * @param klineIndexed List of kline series to combine
-         * @return Combined and sorted Series of Klines
+         * @return Combined and sorted Indexed of Klines
          */
         fun combineKlineSeries(klineIndexed: List<Indexed<Kline>>): Indexed<Kline>
         
         /**
          * Filters klines by time range
-         * @param klines Series of klines to filter
+         * @param klines Indexed of klines to filter
          * @param startTime Start time in milliseconds
          * @param endTime End time in milliseconds
-         * @return Filtered Series of Klines
+         * @return Filtered Indexed of Klines
          */
         fun filterKlinesByTimeRange(
             klines: Indexed<Kline>,

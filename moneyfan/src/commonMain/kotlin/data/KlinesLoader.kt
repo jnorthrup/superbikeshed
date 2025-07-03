@@ -1,27 +1,27 @@
 package data
 
-import com.google.trike.series.* // Star import for core Series types
+import com.google.trike.series.* // Star import for core Indexed types
 import com.google.trike.series.j // Explicit import for 'j' infix if not covered by star, or for clarity
 import com.google.trike.series.memseries.* // Star import for MemSeries and related utilities
 import com.google.trike.series.storage.* // Star import for IsamDataFile and other storage components
 
 /**
  * Loads Klines data (currently mocked), stores it in ISAM format, and reads it back.
- * This class adheres to CLAUDE.md guidelines by primarily using [Series] and [Cursor] types in its public APIs.
+ * This class adheres to CLAUDE.md guidelines by primarily using [Indexed] and [Cursor] types in its public APIs.
  * The structure of Klines data is defined by [klinesRecordMeta].
  */
 class KlinesLoader {
 
     /**
-     * Creates a small, fixed [Series<RowVec>] of mock kline data.
+     * Creates a small, fixed [Indexed<RowVec>] of mock kline data.
      * Each [RowVec] in the series conforms to the [klinesRecordMeta] structure.
      * This function is intended for testing and demonstration purposes. In a real-world scenario,
      * this method would parse data from a specified CSV file or another external data source.
      *
      * @param sourcePath The path to the data source (e.g., a CSV file path). Currently unused as data is mocked.
-     * @return A [Series<RowVec>] containing the mock Klines data.
+     * @return A [Indexed<RowVec>] containing the mock Klines data.
      */
-    fun loadKlinesCsv(sourcePath: String): Series<RowVec> {
+    fun loadKlinesCsv(sourcePath: String): Indexed<RowVec> {
         // Mock data, structured according to klinesRecordMeta (Timestamp, Open, High, Low, Close, Volume)
         val klinePointsData = listOf(
             listOf(1672531200000L, 100.0, 102.5, 99.5, 101.0, 1000.0), // Record 1
@@ -36,23 +36,23 @@ class KlinesLoader {
             MemSeries.ofJoins(joins) as RowVec // Each list of Joins is cast to a RowVec
         }
 
-        // A SeriesSchema is constructed from klinesRecordMeta to define the structure of the Series<RowVec>.
+        // A SeriesSchema is constructed from klinesRecordMeta to define the structure of the Indexed<RowVec>.
         // This schema is essential for creating a MemSeries of RowVecs.
         val seriesSchema = SeriesSchema(klinesRecordMeta)
         return MemSeries.ofRowVecs(seriesSchema, rowVecs)
     }
 
     /**
-     * Stores Klines data (a [Series<RowVec>]) to an ISAM (Indexed Sequential Access Method) file.
-     * The schema for the ISAM file is implicitly derived from the metadata of the input [klines] [Series].
+     * Stores Klines data (a [Indexed<RowVec>]) to an ISAM (Indexed Sequential Access Method) file.
+     * The schema for the ISAM file is implicitly derived from the metadata of the input [klines] [Indexed].
      * This metadata should originate from [klinesRecordMeta] to ensure consistency.
      * `IsamDataFile.write` handles the creation of both the data file and its associated metadata file (e.g., .meta).
      *
-     * @param klines The [Series<RowVec>] containing the Klines data to be stored.
+     * @param klines The [Indexed<RowVec>] containing the Klines data to be stored.
      * @param isamDataFilePath The path to the target ISAM data file.
      */
-    fun storeKlinesToIsam(klines: Series<RowVec>, isamDataFilePath: String) {
-        // The schema of the 'klines' Series (which should be based on klinesRecordMeta)
+    fun storeKlinesToIsam(klines: Indexed<RowVec>, isamDataFilePath: String) {
+        // The schema of the 'klines' Indexed (which should be based on klinesRecordMeta)
         // is used by IsamDataFile.write to structure the ISAM file and create its metadata.
         // The `varChars` map is empty as this Klines data does not use variable-length string types requiring explicit sizing.
         IsamDataFile.write(cursor = klines, datafilename = isamDataFilePath, varChars = emptyMap())

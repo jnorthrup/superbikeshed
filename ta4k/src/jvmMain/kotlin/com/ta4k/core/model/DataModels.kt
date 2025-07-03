@@ -67,12 +67,12 @@ data class Kline(
         LocalDateTime.ofInstant(closeTime, zoneOffset)
 }
 
-import borg.trikeshed.lib.Series // Import TrikeShed Series
+import borg.trikeshed.lib.Indexed // Import TrikeShed Indexed
 
 /**
- * Type alias for a time series of [Kline] objects, now using TrikeShed's Series.
+ * Type alias for a time series of [Kline] objects, now using TrikeShed's Indexed.
  */
-typealias KlineSeries = Series<Kline>
+typealias KlineSeries = Indexed<Kline>
 
 /**
  * Represents a trading pair.

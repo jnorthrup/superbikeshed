@@ -44,9 +44,9 @@ typealias GridCoord = Join<Int, Int>
 typealias Health = Join<HealthPoints, HealthPoints> // current, max
 typealias Weapon = Join<DamagePoints, Join<DamageType, Join<Range, Tick>>> // damage, type, range, cooldown
 typealias Armor = Join<ArmorType, Float> // type, reduction
-typealias ResourceStorage = Series<Join<ResourceType, ResourceAmount>>
-typealias CommandQueue = Series<Join<CommandType, Position>>
-typealias BuffSeries = Series<Join<EntityId, Join<Tick, Float>>> // source, expiry, modifier
+typealias ResourceStorage = Indexed<Join<ResourceType, ResourceAmount>>
+typealias CommandQueue = Indexed<Join<CommandType, Position>>
+typealias BuffSeries = Indexed<Join<EntityId, Join<Tick, Float>>> // source, expiry, modifier
 
 // Entity archetype compositions
 typealias EntityCore = Join<EntityId, Join<EntityType, Join<Position, PlayerId>>>
@@ -58,39 +58,39 @@ typealias Resource = Join<EntityCore, Join<ResourceType, ResourceAmount>>
 typealias Projectile = Join<MobileEntity, Join<Weapon, EntityId>> // target
 
 // Player state types
-typealias TechTree = Series<Join<EntityType, Boolean>> // unlocked
-typealias ResourceBank = Series<Join<ResourceType, ResourceAmount>>
+typealias TechTree = Indexed<Join<EntityType, Boolean>> // unlocked
+typealias ResourceBank = Indexed<Join<ResourceType, ResourceAmount>>
 typealias Population = Join<Int, Int> // current, max
 typealias PlayerState = Join<PlayerId, Join<ResourceBank, Join<TechTree, Population>>>
 
 // Map and spatial index types
-typealias TerrainGrid = Series<Series<TerrainType>>
-typealias FogGrid = Series<Series<FogState>>
-typealias SpatialHash = Join<Int, Series<EntityId>> // bucket -> entities
-typealias SpatialIndex = Series<SpatialHash>
+typealias TerrainGrid = Indexed<Indexed<TerrainType>>
+typealias FogGrid = Indexed<Indexed<FogState>>
+typealias SpatialHash = Join<Int, Indexed<EntityId>> // bucket -> entities
+typealias SpatialIndex = Indexed<SpatialHash>
 typealias PathNode = Join<GridCoord, Join<Float, GridCoord>> // pos, cost, parent
-typealias PathCache = Series<Join<Position, Series<Position>>> // start -> waypoints
+typealias PathCache = Indexed<Join<Position, Indexed<Position>>> // start -> waypoints
 
 // Game state kernel
-typealias EntityTable = Series<Join<EntityId, EntityCore>>
-typealias UnitTable = Series<Join<EntityId, Unit>>
-typealias BuildingTable = Series<Join<EntityId, Building>>
-typealias ProjectileTable = Series<Join<EntityId, Projectile>>
-typealias PlayerTable = Series<PlayerState>
+typealias EntityTable = Indexed<Join<EntityId, EntityCore>>
+typealias UnitTable = Indexed<Join<EntityId, Unit>>
+typealias BuildingTable = Indexed<Join<EntityId, Building>>
+typealias ProjectileTable = Indexed<Join<EntityId, Projectile>>
+typealias PlayerTable = Indexed<PlayerState>
 typealias WorldState = Join<Tick, Join<EntityTable, Join<PlayerTable, Join<TerrainGrid, FogGrid>>>>
 
 // Command and event types
-typealias Command = Join<PlayerId, Join<CommandType, Join<Series<EntityId>, Position>>>
+typealias Command = Join<PlayerId, Join<CommandType, Join<Indexed<EntityId>, Position>>>
 typealias GameEvent = Join<Tick, Join<EntityId, Join<EntityId, DamagePoints>>> // time, source, target, amount
-typealias CommandBuffer = Series<Command>
-typealias EventLog = Series<GameEvent>
+typealias CommandBuffer = Indexed<Command>
+typealias EventLog = Indexed<GameEvent>
 
 // Simulation functions as first-class types
 typealias EntityUpdater = (EntityCore, Tick) -> EntityCore
 typealias CombatResolver = (Unit, Unit, Tick) -> Join<DamagePoints, Boolean> // damage, hit
-typealias PathFinder = (Position, Position, TerrainGrid) -> Series<Position>
-typealias CollisionDetector = (Position, SpatialIndex) -> Series<EntityId>
-typealias VisionCalculator = (Position, Vision, TerrainGrid) -> Series<GridCoord>
+typealias PathFinder = (Position, Position, TerrainGrid) -> Indexed<Position>
+typealias CollisionDetector = (Position, SpatialIndex) -> Indexed<EntityId>
+typealias VisionCalculator = (Position, Vision, TerrainGrid) -> Indexed<GridCoord>
 typealias AIDecider = (PlayerState, WorldState) -> CommandBuffer
 
 // Core simulation kernel
@@ -145,7 +145,7 @@ object RTSKernel {
        return id j (type j (newPos j player))
    }
    
-   inline fun resolveCombat(entities: EntityTable, tick: Tick): Series<GameEvent> {
+   inline fun resolveCombat(entities: EntityTable, tick: Tick): Indexed<GameEvent> {
        // Find all units in weapon range and resolve attacks
        val events = mutableListOf<GameEvent>()
        // Combat resolution logic would go here
@@ -172,7 +172,7 @@ object RTSKernel {
    inline fun applyCommand(entity: EntityCore, cmd: CommandType, dest: Position): EntityCore = entity
    
    // Spatial query hot paths
-   inline fun rangeQuery(center: Position, radius: Range, index: SpatialIndex): Series<EntityId> {
+   inline fun rangeQuery(center: Position, radius: Range, index: SpatialIndex): Indexed<EntityId> {
        val gridSize = 32.0f // Cell size for spatial hash
        val minX = ((center.a.value - radius.value) / gridSize).toInt()
        val maxX = ((center.a.value + radius.value) / gridSize).toInt()
@@ -191,7 +191,7 @@ object RTSKernel {
    }
    
    // A* pathfinding kernel
-   inline fun findPath(start: Position, goal: Position, terrain: TerrainGrid): Series<Position> {
+   inline fun findPath(start: Position, goal: Position, terrain: TerrainGrid): Indexed<Position> {
        // Simplified A* - real implementation would use priority queue
        return 2 j { if (it == 0) start else goal }
    }
@@ -200,9 +200,9 @@ object RTSKernel {
 // Game loop entry point
 inline fun runRTSSimulation(
    initialWorld: WorldState,
-   commandStream: Series<Join<Tick, CommandBuffer>>,
+   commandStream: Indexed<Join<Tick, CommandBuffer>>,
    tickRate: Tick = Tick(16L) // 60 FPS
-): Series<WorldState> {
+): Indexed<WorldState> {
    return commandStream.size j { frame:Int ->
        val (frameTick, commands) = commandStream[frame]
        if (frame == 0) initialWorld

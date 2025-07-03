@@ -104,7 +104,7 @@ class SpaceGraphRTSDemo {
         ))
         
         return GameState(
-            entities = Series.of(entities.size) { i -> entities[i] },
+            entities = Indexed.of(entities.size) { i -> entities[i] },
             tick = GameTick(0)
         )
     }

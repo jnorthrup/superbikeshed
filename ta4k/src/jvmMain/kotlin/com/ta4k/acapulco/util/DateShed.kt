@@ -4,15 +4,15 @@
 package borg.trikeshed.acapulco.util // Adjusted package
 
 import borg.trikeshed.cursor.ColumnMeta
-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
+import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
 import borg.trikeshed.cursor.RowVec // Type alias for Series2<Any?, () -> ColumnMeta>
 import borg.trikeshed.cursor.at
 import borg.trikeshed.cursor.get
 import borg.trikeshed.cursor.meta
 import borg.trikeshed.cursor.SimpleCursor // Needs porting or replacement
 import borg.trikeshed.isam.meta.IOMemento
-import borg.trikeshed.lib.* // Imports Join, Series, j, α, etc.
-import borg.trikeshed.common.collections.s_ // Replaces _v for Series creation
+import borg.trikeshed.lib.* // Imports Join, Indexed, j, α, etc.
+import borg.trikeshed.common.collections.s_ // Replaces _v for Indexed creation
 import borg.trikeshed.acapulco.ml.DummySpec // Assuming ported
 import borg.trikeshed.acapulco.ml.featureRange // Assuming ported
 import borg.trikeshed.acapulco.ml.normalize // Assuming ported
@@ -35,7 +35,7 @@ object DateShed {
 
         // TODO: Port or reimplement 'categories' and 'DummySpec.KeepAll' for Trikeshed's Cursor
         // Placeholder: returning the componentized rowvec directly
-        // val combined = combine(bottom60, componentizedCursor) // combine needs Series<Series<T>>
+        // val combined = combine(bottom60, componentizedCursor) // combine needs Indexed<Indexed<T>>
         // return combined.categories(DummySpec.KeepAll) at 0 // 'categories' needs porting
 
         // Returning the first row of the componentized cursor for now
@@ -45,13 +45,13 @@ object DateShed {
     @JvmStatic
     @JvmName("componentize2")
     fun componentize(rowvec: RowVec): RowVec = (rowvec.left[0] as Instant).atOffset(ZoneOffset.UTC).let {
-        componentize(it).first // componentize returns Cursor (Series<RowVec>), get first row
+        componentize(it).first // componentize returns Cursor (Indexed<RowVec>), get first row
     }
 
     @JvmStatic
     @JvmName("componentize1")
-    fun componentize(td: OffsetDateTime): Cursor { // Returns Series<RowVec>
-        val meta: Series<ColumnMeta> = s_[
+    fun componentize(td: OffsetDateTime): Cursor { // Returns Indexed<RowVec>
+        val meta: Indexed<ColumnMeta> = s_[
             ColumnMeta("since017", IOMemento.IoInt),
             ColumnMeta("month", IOMemento.IoInt),
             ColumnMeta("dayOfMonth", IOMemento.IoInt),
@@ -59,8 +59,8 @@ object DateShed {
             ColumnMeta("hour", IOMemento.IoInt),
             ColumnMeta("minute", IOMemento.IoInt)
         ]
-        val data: Series<Series<Any>> = s_[ // Outer Series for rows (only 1 row here)
-            s_[ // Inner Series for columns in the row
+        val data: Indexed<Indexed<Any>> = s_[ // Outer Indexed for rows (only 1 row here)
+            s_[ // Inner Indexed for columns in the row
                 td.year - 2017,
                 td.month.ordinal,
                 td.dayOfMonth,
@@ -69,8 +69,8 @@ object DateShed {
                 td.minute
             ]
         ]
-        // TODO: Need a SimpleCursor implementation for Trikeshed or construct Series<RowVec> directly
-        // Constructing Series<RowVec> directly:
+        // TODO: Need a SimpleCursor implementation for Trikeshed or construct Indexed<RowVec> directly
+        // Constructing Indexed<RowVec> directly:
         return data.size j { rowIndex:Int ->
             val rowData = data[rowIndex]
             rowData.size j { colIndex:Int ->
@@ -84,9 +84,9 @@ object DateShed {
     /**
      * creates the full range of 60 minutes starting from the first second of 2017
      */
-    val bottom60: Cursor by lazy { // Cursor is Series<RowVec>
+    val bottom60: Cursor by lazy { // Cursor is Indexed<RowVec>
         60 j { y: Int -> // Row index
-            s_[ // Column Series (RowVec)
+            s_[ // Column Indexed (RowVec)
                 (y % 9) j { ColumnMeta("since017", IOMemento.IoInt) },
                 java.time.Month.values()[y % 12].ordinal j { ColumnMeta("month", IOMemento.IoInt) },
                 (y % 31 + 1) j { ColumnMeta("dayOfMonth", IOMemento.IoInt) },
@@ -96,19 +96,19 @@ object DateShed {
             ]
         }
     }
-    val scalarsBottom60: Series<ColumnMeta> by lazy { bottom60.meta } // Get meta from the cursor
+    val scalarsBottom60: Indexed<ColumnMeta> by lazy { bottom60.meta } // Get meta from the cursor
 
 
-    val bottom60DoubleRanges: Series<Twin<Double>> = run { // Use Series<Twin<Double>>
+    val bottom60DoubleRanges: Indexed<Twin<Double>> = run { // Use Indexed<Twin<Double>>
         val b = bottom60
         val numCols = scalarsBottom60.size
         numCols j { x:Int -> // Iterate through columns
-            // Extract the column as Series<Int>, then convert to Series<Double>
-            val columnIntSeries: Series<Int> = b α { row -> row.left[x] as Int }
-            val columnDoubleSeries: Series<Double> = columnIntSeries α { it.toDouble() }
+            // Extract the column as Indexed<Int>, then convert to Indexed<Double>
+            val columnIntSeries: Indexed<Int> = b α { row -> row.left[x] as Int }
+            val columnDoubleSeries: Indexed<Double> = columnIntSeries α { it.toDouble() }
 
-            // TODO: featureRange needs to be ported or reimplemented for Series<Double>
-             featureRange(columnDoubleSeries) // Assuming featureRange accepts Series<Double>
+            // TODO: featureRange needs to be ported or reimplemented for Indexed<Double>
+             featureRange(columnDoubleSeries) // Assuming featureRange accepts Indexed<Double>
             // Placeholder:
              0.0 j 1.0
         }
@@ -118,13 +118,13 @@ object DateShed {
      * rowvec.left[0] must be IoInstant type
      */
     @JvmStatic
-    fun normalizeInstant(td: Instant): Series<Double> { // Returns Series<Double>
+    fun normalizeInstant(td: Instant): Indexed<Double> { // Returns Indexed<Double>
         val crono = componentize(td.atOffset(ZoneOffset.UTC))
-        // Assuming componentize returns a Cursor (Series<RowVec>) with one row
-        val row: Series<Double> = crono.first.left α { todub(it) } // Get first row, extract left (values), convert to double
+        // Assuming componentize returns a Cursor (Indexed<RowVec>) with one row
+        val row: Indexed<Double> = crono.first.left α { todub(it) } // Get first row, extract left (values), convert to double
 
         val normies = bottom60DoubleRanges
-        val res: Series<Double> = normies.size j { x:Int ->
+        val res: Indexed<Double> = normies.size j { x:Int ->
              normies[x].normalize(row[x]) // Assuming normalize accepts (Twin<Double>, Double)
             // Placeholder:
              0.0

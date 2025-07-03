@@ -24,9 +24,8 @@ value class RulePriority(val priority: UByte) // 0-255 priority
 // High-entropy rule system
 typealias EntropyRule = Join<ParsingRule, Join<RuleEntropy, ActivationThreshold>>
 typealias PrioritizedRule = Join<EntropyRule, RulePriority>
-typealias Series<T> = Indexed<T> // Compatibility alias
-typealias RuleCluster = Series<PrioritizedRule>
-typealias GraphNodeSeries = Series<Series<Int>> // Graph adjacency representation
+typealias RuleCluster = Indexed<PrioritizedRule>
+typealias GraphNodeIndexed = Indexed<Indexed<Int>> // Graph adjacency representation
 
 // Chaining configuration
 typealias ChainConfig = Join<ChainLength, Join<RuleEntropy, ActivationThreshold>>
@@ -108,7 +107,7 @@ object AggressiveForwardChains {
         createHighEntropyRule("import_statement", 3.8, 0.95, 249u) { context, pos ->
             detectImportStatement(context, pos)
         }
-    ).toSeries()
+    ).toIdx()
     
     /**
      * Identifier and type resolution forward chain
@@ -143,7 +142,7 @@ object AggressiveForwardChains {
         createHighEntropyRule("annotation_param_forward", 2.9, 0.83, 188u) { context, pos ->
             detectAnnotationParameter(context, pos) && validateAnnotationUsage(context, pos)
         }
-    ).toSeries()
+    ).toIdx()
     
     /**
      * Expression and operator forward chain
@@ -172,7 +171,7 @@ object AggressiveForwardChains {
         createHighEntropyRule("array_access_forward", 2.4, 0.75, 158u) { context, pos ->
             detectArrayAccess(context, pos) && validateIndexExpression(context, pos)
         }
-    ).toSeries()
+    ).toIdx()
 }
 
 /**
@@ -208,7 +207,7 @@ object AggressiveBackwardChains {
         createHighEntropyRule("property_type_back", 3.0, 0.85, 251u) { context, pos ->
             validatePropertyType(context, pos) && resolvePropertyInitializer(context, pos)
         }
-    ).toSeries()
+    ).toIdx()
     
     /**
      * Scope and context validation backward chain
@@ -238,7 +237,7 @@ object AggressiveBackwardChains {
         createHighEntropyRule("import_scope_back", 2.8, 0.82, 236u) { context, pos ->
             validateImportScope(context, pos) && resolveImportConflicts(context, pos)
         }
-    ).toSeries()
+    ).toIdx()
     
     /**
      * Expression validation backward chain
@@ -263,7 +262,7 @@ object AggressiveBackwardChains {
         createHighEntropyRule("null_safety_back", 3.1, 0.87, 217u) { context, pos ->
             validateNullSafety(context, pos) && checkSmartCasts(context, pos)
         }
-    ).toSeries()
+    ).toIdx()
 }
 
 /**
@@ -278,7 +277,7 @@ object UltraAggressiveRuleEngine {
         source: KotlinSourceCode,
         maxIterations: Int = 10,
         convergenceThreshold: Double = 0.001
-    ): Join<GraphNodeSeries, RefinementSeries> {
+    ): Join<GraphNodeIndexed, RefinementIndexed> {
         
         var context = createEnhancedParseContext(source)
         var previousEntropy = 0.0
@@ -378,10 +377,10 @@ object UltraAggressiveRuleEngine {
     }
     
     private fun createEnhancedParseContext(source: String): ParseContext =
-        ParsePosition(0) j (source j emptySeries<ParseState>())
+        ParsePosition(0) j (source j emptyIndexed<ParseState>())
     
     private fun finalizeParsingResults(context: ParseContext): Join<GraphNodeSeries, RefinementSeries> =
-        emptySeries<ConfidentGraphNode>() j emptySeries<GraphRefinement>()
+        emptyIndexed<ConfidentGraphNode>() j emptyIndexed<GraphRefinement>()
     
     private fun applyRuleTransformation(
         context: ParseContext,
@@ -521,5 +520,5 @@ private fun checkSmartCasts(context: ParseContext, pos: Int): Boolean = false
 /**
  * Extension for ultra-aggressive parsing
  */
-fun KotlinSourceCode.parseWithMaxEntropy(): Join<GraphNodeSeries, RefinementSeries> =
+fun KotlinSourceCode.parseWithMaxEntropy(): Join<GraphNodeIndexed, RefinementIndexed> =
     UltraAggressiveRuleEngine.executeMaxEntropyChaining(this)

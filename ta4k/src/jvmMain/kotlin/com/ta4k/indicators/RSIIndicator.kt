@@ -1,7 +1,7 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -20,7 +20,7 @@ import java.math.RoundingMode
  * 6. Calculate RSI = 100 - (100 / (1 + RS))
  */
 class RSIIndicator(
-    private val klineSeries: Series<Kline>,
+    private val klineSeries: Indexed<Kline>,
     private val period: Int,
     private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
 ) {
@@ -139,10 +139,10 @@ class RSIIndicator(
 
     /**
      * Returns all calculated RSI values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val values: Series<BigDecimal?>
+    val values: Indexed<BigDecimal?>
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)

@@ -7,7 +7,7 @@ import borg.trikeshed.cursor.Cursor
 import borg.trikeshed.cursor.SimpleCursor
 import borg.trikeshed.cursors.TokenizedRow
 import borg.trikeshed.isam.IsamDataFile
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toSeries
 import borg.trikeshed.parse.CSVUtil
 import borg.trikeshed.parse.HistoryService

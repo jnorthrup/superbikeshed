@@ -76,7 +76,7 @@ class CouchReplicationConfigTest {
             source = sourceDb,
             target = targetDb,
             continuous = true,
-            docIds = Series.of(DocumentId("doc1"), DocumentId("doc2"))
+            docIds = Indexed.of(DocumentId("doc1"), DocumentId("doc2"))
         )
         val response = client.startReplication(config)
         assertTrue(response.ok)
@@ -91,7 +91,7 @@ class CouchReplicationConfigTest {
             continuous = true,
             userContext = ReplicationUserContext(
                 name = "testuser",
-                roles = Series.of("replicator")
+                roles = Indexed.of("replicator")
             )
         )
         val response = client.startReplication(config)

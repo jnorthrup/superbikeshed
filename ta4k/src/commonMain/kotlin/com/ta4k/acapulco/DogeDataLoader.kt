@@ -1,6 +1,6 @@
 package com.ta4k.acapulco
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import com.ta4k.core.model.Kline
 import java.time.Instant
 
@@ -18,13 +18,13 @@ class DogeDataLoader {
      * @param startTime Start time for historical data
      * @param endTime End time for historical data
      * @param timeframe Optional timeframe (defaults to 1h)
-     * @return Series of Klines for the specified period
+     * @return Indexed of Klines for the specified period
      */
     suspend fun loadHistoricalData(
         startTime: Instant,
         endTime: Instant,
         timeframe: String = DEFAULT_TIMEFRAME
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         val filePath = getDataFilePath(timeframe)
         val klines = KlineCsvParser.parseFile(filePath)
         return klines.filter { kline ->
@@ -37,12 +37,12 @@ class DogeDataLoader {
      * Load the last N periods of DOGE data.
      * @param n Number of periods to load
      * @param timeframe Optional timeframe (defaults to 1h)
-     * @return Series of Klines for the last N periods
+     * @return Indexed of Klines for the last N periods
      */
     suspend fun loadLastNPeriods(
         n: Int,
         timeframe: String = DEFAULT_TIMEFRAME
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         val filePath = getDataFilePath(timeframe)
         val klines = KlineCsvParser.parseFile(filePath)
         return klines.takeLast(n).sortedBy { it.openTimeMillis }.toSeries()

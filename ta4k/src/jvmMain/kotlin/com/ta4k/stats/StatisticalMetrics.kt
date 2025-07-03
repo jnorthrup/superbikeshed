@@ -1,6 +1,6 @@
 package com.ta4k.stats
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
@@ -20,7 +20,7 @@ class StatisticalMetrics {
     /**
      * Calculate the skewness of returns
      */
-    fun skew(returns: Series<BigDecimal>): BigDecimal {
+    fun skew(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val mean = returns.`play`.average()
@@ -41,7 +41,7 @@ class StatisticalMetrics {
     /**
      * Calculate the kurtosis of returns
      */
-    fun kurtosis(returns: Series<BigDecimal>): BigDecimal {
+    fun kurtosis(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val mean = returns.`play`.average()
@@ -63,7 +63,7 @@ class StatisticalMetrics {
     /**
      * Calculate the autocorrelation penalty
      */
-    fun autocorrPenalty(returns: Series<BigDecimal>): BigDecimal {
+    fun autocorrPenalty(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val returnsList = returns.`play`.toList()
@@ -86,8 +86,8 @@ class StatisticalMetrics {
      * Calculate the information ratio
      */
     fun informationRatio(
-        returns: Series<BigDecimal>,
-        benchmark: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
+        benchmark: Indexed<BigDecimal>,
         periods: Int = 252
     ): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
@@ -108,7 +108,7 @@ class StatisticalMetrics {
     /**
      * Calculate the R-squared value
      */
-    fun rSquared(returns: Series<BigDecimal>, benchmark: Series<BigDecimal>): BigDecimal {
+    fun rSquared(returns: Indexed<BigDecimal>, benchmark: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty() || benchmark.isEmpty()) return BigDecimal.ZERO
         
         val returnsList = returns.`play`.toList()

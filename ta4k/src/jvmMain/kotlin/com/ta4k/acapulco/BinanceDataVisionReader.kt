@@ -2,7 +2,7 @@ package borg.trikeshed.acapulco
 
 import com.ta4k.core.model.Kline
 import borg.trikeshed.acapulco.model.DataBinanceVision
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import kotlinx.coroutines.*
 import java.io.BufferedReader
@@ -26,11 +26,11 @@ actual class BinanceDataVisionReader {
         private val BASE_URL = "https://data.binance.vision/data/spot"
         
         /**
-         * Reads a Binance Data Vision archive file and returns a Series of Klines.
+         * Reads a Binance Data Vision archive file and returns a Indexed of Klines.
          * @param filePath Path to the archive file
-         * @return Series of Klines
+         * @return Indexed of Klines
          */
-        actual fun readArchive(filePath: String): Series<Kline> {
+        actual fun readArchive(filePath: String): Indexed<Kline> {
             val file = File(filePath)
             if (!file.exists()) {
                 throw IllegalArgumentException("Archive file not found: $filePath")
@@ -52,14 +52,14 @@ actual class BinanceDataVisionReader {
             startDate: String?,
             endDate: String?,
             cacheDir: String
-        ): Series<Kline> = withContext(Dispatchers.IO) {
+        ): Indexed<Kline> = withContext(Dispatchers.IO) {
             val cachePath = File(cacheDir.replace("~", System.getProperty("user.home")))
             cachePath.mkdirs()
             
             val symbolDir = File(cachePath, "klines/$interval/$symbol")
             symbolDir.mkdirs()
             
-            val klineSeries = mutableListOf<Series<Kline>>()
+            val klineSeries = mutableListOf<Indexed<Kline>>()
             
             // Determine date range
             val currentDate = if (endDate != null) endDate else {
@@ -91,7 +91,7 @@ actual class BinanceDataVisionReader {
             if (klineSeries.isNotEmpty()) {
                 combineKlineSeries(klineSeries)
             } else {
-                Series.of(0) { error("No klines fetched") }
+                Indexed.of(0) { error("No klines fetched") }
             }
         }
         
@@ -103,7 +103,7 @@ actual class BinanceDataVisionReader {
             interval: String,
             yearMonth: String,
             cacheDir: String
-        ): Series<Kline> = withContext(Dispatchers.IO) {
+        ): Indexed<Kline> = withContext(Dispatchers.IO) {
             val cachePath = File(cacheDir.replace("~", System.getProperty("user.home")))
             val symbolDir = File(cachePath, "klines/$interval/$symbol")
             symbolDir.mkdirs()
@@ -130,7 +130,7 @@ actual class BinanceDataVisionReader {
                 saveKlinesToCsv(extractedKlines, csvFile)
                 extractedKlines
             } else {
-                Series.of(0) { error("Failed to download $fileName") }
+                Indexed.of(0) { error("Failed to download $fileName") }
             }
         }
         
@@ -142,12 +142,12 @@ actual class BinanceDataVisionReader {
             interval: String,
             days: Int,
             cacheDir: String
-        ): Series<Kline> = withContext(Dispatchers.IO) {
+        ): Indexed<Kline> = withContext(Dispatchers.IO) {
             val cachePath = File(cacheDir.replace("~", System.getProperty("user.home")))
             val symbolDir = File(cachePath, "klines/$interval/$symbol")
             symbolDir.mkdirs()
             
-            val klineSeries = mutableListOf<Series<Kline>>()
+            val klineSeries = mutableListOf<Indexed<Kline>>()
             val endDate = java.time.LocalDate.now()
             
             // Fetch last N days
@@ -168,16 +168,16 @@ actual class BinanceDataVisionReader {
             if (klineSeries.isNotEmpty()) {
                 combineKlineSeries(klineSeries)
             } else {
-                Series.of(0) { error("No daily klines fetched") }
+                Indexed.of(0) { error("No daily klines fetched") }
             }
         }
         
         /**
          * Combines multiple kline series into a single sorted series
          */
-        actual fun combineKlineSeries(klineSeries: List<Series<Kline>>): Series<Kline> {
+        actual fun combineKlineSeries(klineSeries: List<Indexed<Kline>>): Indexed<Kline> {
             if (klineSeries.isEmpty()) {
-                return Series.of(0) { error("No kline series to combine") }
+                return Indexed.of(0) { error("No kline series to combine") }
             }
             
             if (klineSeries.size == 1) {
@@ -206,25 +206,25 @@ actual class BinanceDataVisionReader {
                 }
             }
             
-            return Series.of(uniqueKlines.size) { i -> uniqueKlines[i] }
+            return Indexed.of(uniqueKlines.size) { i -> uniqueKlines[i] }
         }
         
         /**
          * Filters klines by time range
          */
         actual fun filterKlinesByTimeRange(
-            klines: Series<Kline>,
+            klines: Indexed<Kline>,
             startTime: Long,
             endTime: Long
-        ): Series<Kline> {
+        ): Indexed<Kline> {
             val filteredKlines = klines.play.filter { kline ->
                 kline.openTimeMillis >= startTime && kline.openTimeMillis <= endTime
             }
             
-            return Series.of(filteredKlines.size) { i -> filteredKlines[i] }
+            return Indexed.of(filteredKlines.size) { i -> filteredKlines[i] }
         }
 
-        private fun readCsvArchive(file: File): Series<Kline> {
+        private fun readCsvArchive(file: File): Indexed<Kline> {
             val klines = mutableListOf<Kline>()
             
             file.bufferedReader().use { reader ->
@@ -243,14 +243,14 @@ actual class BinanceDataVisionReader {
                 }
             }
 
-            return Series.of(klines.size) { i -> klines[i] }
+            return Indexed.of(klines.size) { i -> klines[i] }
         }
 
-        private fun readZipArchive(file: File): Series<Kline> {
+        private fun readZipArchive(file: File): Indexed<Kline> {
             return extractZipArchive(file)
         }
         
-        private fun extractZipArchive(zipFile: File): Series<Kline> {
+        private fun extractZipArchive(zipFile: File): Indexed<Kline> {
             val klines = mutableListOf<Kline>()
             
             ZipInputStream(zipFile.inputStream()).use { zipStream ->
@@ -277,7 +277,7 @@ actual class BinanceDataVisionReader {
                 }
             }
 
-            return Series.of(klines.size) { i -> klines[i] }
+            return Indexed.of(klines.size) { i -> klines[i] }
         }
         
         private suspend fun downloadFile(url: String, filePath: String) {
@@ -303,7 +303,7 @@ actual class BinanceDataVisionReader {
             interval: String,
             dateStr: String,
             symbolDir: File
-        ): Series<Kline> {
+        ): Indexed<Kline> {
             val fileName = "${symbol}-${interval}-${dateStr}.zip"
             val zipFile = File(symbolDir, fileName)
             val csvFile = File(symbolDir, "${symbol}-${interval}-${dateStr}.csv")
@@ -320,7 +320,7 @@ actual class BinanceDataVisionReader {
                     downloadFile(url, zipFile.absolutePath)
                 } catch (e: Exception) {
                     // Daily files might not exist for all dates, return empty series
-                    return Series.of(0) { error("No data for $dateStr") }
+                    return Indexed.of(0) { error("No data for $dateStr") }
                 }
             }
             
@@ -331,11 +331,11 @@ actual class BinanceDataVisionReader {
                 saveKlinesToCsv(extractedKlines, csvFile)
                 extractedKlines
             } else {
-                Series.of(0) { error("No data for $dateStr") }
+                Indexed.of(0) { error("No data for $dateStr") }
             }
         }
         
-        private fun saveKlinesToCsv(klines: Series<Kline>, csvFile: File) {
+        private fun saveKlinesToCsv(klines: Indexed<Kline>, csvFile: File) {
             csvFile.bufferedWriter().use { writer ->
                 // Write header
                 writer.write("Open_time,Open,High,Low,Close,Volume,Close_time,Quote_asset_volume,Number_of_trades,Taker_buy_base_asset_volume,Taker_buy_quote_asset_volume,Ignore\n")

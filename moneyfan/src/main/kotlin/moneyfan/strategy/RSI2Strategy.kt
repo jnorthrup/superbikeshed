@@ -4,7 +4,7 @@ import com.ta4k.core.model.Kline
 import com.ta4k.indicators.RSIIndicator
 import com.ta4k.indicators.SMAIndicator
 import moneyfan.model.TradeSignal
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.b
 
 /**
@@ -18,14 +18,14 @@ class RSI2Strategy(
     private val rsiLowerThreshold: Int = 5,
     private val rsiUpperThreshold: Int = 95
 ) {
-    fun generateSignals(klines: Series<Kline>): Series<TradeSignal> {
+    fun generateSignals(klines: Indexed<Kline>): Indexed<TradeSignal> {
         // Create indicators
         val shortSma = SMAIndicator(klines, shortPeriod)
         val longSma = SMAIndicator(klines, longPeriod)
         val rsi = RSIIndicator(klines, rsiPeriod)
 
         // Generate signals
-        return Series.of(klines.size) { i ->
+        return Indexed.of(klines.size) { i ->
             if (i < longPeriod) {
                 TradeSignal.Hold
             } else {

@@ -2,7 +2,7 @@ package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
 import borg.trikeshed.lib.j      // Import infix j
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
 // kotlin.math.sqrt is not directly used by ATR, but was in the prompt. Removed for cleanliness.
@@ -10,10 +10,10 @@ import java.math.RoundingMode
 /**
  * Average True Range (ATR) indicator.
  * Measures market volatility.
- * Operates on a Trikethed [Series] of [Kline].
+ * Operates on a Trikethed [Indexed] of [Kline].
  */
 class ATRIndicator(
-    private val klineSeries: Series<Kline>, // Changed
+    private val klineSeries: Indexed<Kline>, // Changed
     private val period: Int
 ) {
     init {
@@ -31,7 +31,7 @@ class ATRIndicator(
 
     // Helper to get the first Kline from the series, returns null if series is empty.
     // Used to determine the scale for BigDecimal results, avoiding repeated checks.
-    private fun Series<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
+    private fun Indexed<Kline>.firstOrNull(): Kline? = if (this.size > 0) this[0] else null
 
     private fun ensureCalculatedUpTo(targetIndex: Int) {
         if (targetIndex < 0 || targetIndex >= klineSeries.size || targetIndex <= calculatedUpToIndex) {
@@ -125,10 +125,10 @@ class ATRIndicator(
 
     /**
      * Returns all calculated ATR values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val values: Series<BigDecimal?>
+    val values: Indexed<BigDecimal?>
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
@@ -141,10 +141,10 @@ class ATRIndicator(
 
     /**
      * Returns all calculated True Range values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val trueRangeValues: Series<BigDecimal?> // Renamed to trueRangeValues to distinguish from trueRangeResults list
+    val trueRangeValues: Indexed<BigDecimal?> // Renamed to trueRangeValues to distinguish from trueRangeResults list
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)

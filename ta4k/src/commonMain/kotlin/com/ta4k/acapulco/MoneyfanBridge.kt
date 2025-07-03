@@ -1,6 +1,6 @@
 package com.ta4k.acapulco
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.`play`
 import com.ta4k.acapulco.model.PortfolioRow
@@ -79,7 +79,7 @@ class MoneyfanBridge {
     }
     
     fun processTicks(symbol: String, ticks: List<MarketTick>): CandleSeries {
-        val tickSeries = borg.trikeshed.lib.Series.of(ticks.size) { i -> ticks[i] }
+        val tickSeries = borg.trikeshed.lib.Indexed.of(ticks.size) { i -> ticks[i] }
         return tradingEngine.processTickSeries(tickSeries)
     }
     

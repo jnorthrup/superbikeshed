@@ -1,7 +1,7 @@
 package strategies
 
 import kotlin.test.*
-import com.google.trike.series.* // Star import for Series, RowVec, Join, ColumnMeta, DataTypes
+import com.google.trike.series.* // Star import for Indexed, RowVec, Join, ColumnMeta, DataTypes
 import com.google.trike.series.memseries.* // Star import for MemSeries and related utilities
 import com.google.trike.series.DataTypes // Specifically for ColumnMeta type
 

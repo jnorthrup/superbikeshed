@@ -1,6 +1,6 @@
 package strategies
 
-import com.google.trike.series.* // Star import for Series, RowVec, etc.
+import com.google.trike.series.* // Star import for Indexed, RowVec, etc.
 import com.google.trike.series.memseries.* // Star import for MemSeries
 import kotlin.math.max // Standard Kotlin math function, specific import is fine
 import backtesting.TradingStrategyInterface // Specific import for the interface
@@ -11,7 +11,7 @@ import backtesting.TradingStrategyInterface // Specific import for the interface
  * SMA2 (Simple Moving Average over 2 periods), and SMA15 (Simple Moving Average over 15 periods)
  * to generate trading signals.
  *
- * Adheres to CLAUDE.md by using [Series] for data manipulation and in interfaces.
+ * Adheres to CLAUDE.md by using [Indexed] for data manipulation and in interfaces.
  */
 class CarlosRSI2Strategy : TradingStrategyInterface {
 
@@ -20,13 +20,13 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
      * This method adapts the original `generateSignal` logic to fit the [TradingStrategyInterface].
      *
      * @param currentPrice The current price for decision-making (e.g., the latest close price).
-     * @param historicalPrices A [Series<Double>] of historical prices up to (but not including) the current point.
+     * @param historicalPrices A [Indexed<Double>] of historical prices up to (but not including) the current point.
      * @param historicalDataPoint The full [RowVec] for the current data point, providing broader context if needed.
      * @return [TradingSignal] (BUY, SELL, or HOLD).
      */
     override fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
+        historicalPrices: Indexed<Double>,
         historicalDataPoint: RowVec // Currently unused, but available for future enhancements (e.g., volume data)
     ): TradingSignal {
         // For indicator calculation, the current price is appended to the historical prices
@@ -71,17 +71,17 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
      * Calculates RSI (Relative Strength Index) over a specified period.
      * For this strategy, period is 2 (RSI2).
      *
-     * CLAUDE.md suggests Series-native operations (e.g., `priceSeries.α(period)`).
-     * However, standard [Series] definitions may not directly support complex windowed
+     * CLAUDE.md suggests Indexed-native operations (e.g., `priceSeries.α(period)`).
+     * However, standard [Indexed] definitions may not directly support complex windowed
      * calculations like RSI's Wilder smoothing without iteration.
      * This implementation uses `.values.toList()` for pragmatic access to underlying data,
-     * performing calculations, and then wrapping the result in a new [Series<Double>].
-     * The primary API interaction remains with [Series] types.
+     * performing calculations, and then wrapping the result in a new [Indexed<Double>].
+     * The primary API interaction remains with [Indexed] types.
      *
-     * @param priceSeries The input [Series<Double>] of prices.
-     * @return A [Series<Double>] containing the calculated RSI values.
+     * @param priceSeries The input [Indexed<Double>] of prices.
+     * @return A [Indexed<Double>] containing the calculated RSI values.
      */
-    internal fun calculateRSI2(priceSeries: Series<Double>): Series<Double> {
+    internal fun calculateRSI2(priceSeries: Indexed<Double>): Indexed<Double> {
         val prices = priceSeries.values.toList()
         val period = 2 // RSI period for this strategy
 
@@ -135,17 +135,17 @@ class CarlosRSI2Strategy : TradingStrategyInterface {
     /**
      * Calculates Simple Moving Average (SMA).
      *
-     * CLAUDE.md suggests Series-native operations. Similar to RSI, complex windowing
-     * for SMA on a generic [Series] might require iteration. This implementation uses
-     * `.values.toList()` for direct data access and constructs a new [Series<Double>] for the result.
-     * The function signature and return type adhere to using [Series].
+     * CLAUDE.md suggests Indexed-native operations. Similar to RSI, complex windowing
+     * for SMA on a generic [Indexed] might require iteration. This implementation uses
+     * `.values.toList()` for direct data access and constructs a new [Indexed<Double>] for the result.
+     * The function signature and return type adhere to using [Indexed].
      *
-     * @param priceSeries The input [Series<Double>] of prices.
+     * @param priceSeries The input [Indexed<Double>] of prices.
      * @param period The period for SMA calculation.
-     * @return A [Series<Double>] of SMA values. The resulting series is shorter than the input
+     * @return A [Indexed<Double>] of SMA values. The resulting series is shorter than the input
      *         by `period - 1` elements.
      */
-    internal fun calculateSMA(priceSeries: Series<Double>, period: Int): Series<Double> {
+    internal fun calculateSMA(priceSeries: Indexed<Double>, period: Int): Indexed<Double> {
         val prices = priceSeries.values.toList()
         if (prices.size < period) {
             return MemSeries.empty(priceSeries.schema()) // Not enough data for even one SMA value

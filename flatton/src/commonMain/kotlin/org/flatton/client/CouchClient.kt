@@ -1,7 +1,7 @@
 package org.flatton.client
 
 import org.flatton.types.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
 interface CouchClient {
     suspend fun getDatabaseInfo(dbName: DatabaseName): CouchDatabaseInfo
@@ -13,7 +13,7 @@ interface CouchClient {
     suspend fun updateDocument(dbName: DatabaseName, doc: CouchDocument): CouchResponse
     suspend fun deleteDocument(dbName: DatabaseName, docId: DocumentId, rev: RevisionId): CouchResponse
     suspend fun copyDocument(dbName: DatabaseName, fromId: DocumentId, toId: DocumentId, toRev: RevisionId? = null): CouchResponse
-    suspend fun bulkDocs(dbName: DatabaseName, docs: Series<CouchDocument>, allOrNothing: Boolean = false): Series<CouchResponse>
+    suspend fun bulkDocs(dbName: DatabaseName, docs: Indexed<CouchDocument>, allOrNothing: Boolean = false): Indexed<CouchResponse>
 
     suspend fun getDesignDocument(dbName: DatabaseName, docId: DocumentId): CouchDesignDocument
     suspend fun saveDesignDocument(dbName: DatabaseName, doc: CouchDesignDocument): CouchResponse

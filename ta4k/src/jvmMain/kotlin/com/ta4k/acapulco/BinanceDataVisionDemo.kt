@@ -1,7 +1,7 @@
 package borg.trikeshed.acapulco
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -128,7 +128,7 @@ object BinanceDataVisionDemo {
         val attentionScore: Double
     )
     
-    private fun calculateAttentionMetrics(klines: Series<Kline>): AttentionMetrics {
+    private fun calculateAttentionMetrics(klines: Indexed<Kline>): AttentionMetrics {
         if (klines.size < 50) {
             return AttentionMetrics(1.0, 0.0, 0.0)
         }
@@ -173,20 +173,20 @@ object BinanceDataVisionDemo {
         return kotlin.math.sqrt(variance)
     }
     
-    private fun filterHighAttentionPeriods(klines: Series<Kline>, threshold: Double): Series<Kline> {
+    private fun filterHighAttentionPeriods(klines: Indexed<Kline>, threshold: Double): Indexed<Kline> {
         val klineList = klines.play
         val highAttentionKlines = mutableListOf<Kline>()
         
         // Use sliding window to identify high-attention periods
         for (i in 10 until klineList.size) {
             val window = klineList.subList(i - 10, i + 1)
-            val metrics = calculateAttentionMetrics(Series.of(window.size) { j -> window[j] })
+            val metrics = calculateAttentionMetrics(Indexed.of(window.size) { j -> window[j] })
             
             if (metrics.attentionScore >= threshold) {
                 highAttentionKlines.add(klineList[i])
             }
         }
         
-        return Series.of(highAttentionKlines.size) { i -> highAttentionKlines[i] }
+        return Indexed.of(highAttentionKlines.size) { i -> highAttentionKlines[i] }
     }
 } 

@@ -1,7 +1,7 @@
 package nexus.core.dgm.services
 
 import nexus.core.dgm.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 
 // Data structures for Kotlin-to-Python communication (as per design doc)
@@ -98,7 +98,7 @@ class RemoteBenchmarkValidationService(
         // Convert BenchmarkResultFromPython to the Kotlin native ValidationResult
         val validationStatus: ValidationStatus = resultFromPython.status
 
-        val benchmarkScores: Series<BenchmarkScore> = Series.ofList(
+        val benchmarkScores: Indexed<BenchmarkScore> = Indexed.ofList(
             resultFromPython.scores.map { Join(it.metricName, it.value) }
         )
 

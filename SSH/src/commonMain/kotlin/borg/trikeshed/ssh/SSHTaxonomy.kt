@@ -9,7 +9,7 @@ import kotlin.jvm.JvmInline
 
 // Transport layer taxonomy
 typealias SSHTransportState = Indexed<StateToken>
-typealias SSHPacketStream = Series<SSHPacket>
+typealias SSHPacketStream = Indexed<SSHPacket>
 typealias SSHByteStream = Indexed<Byte>
 typealias SSHTransportContext = Join<SSHTransportState, CoroutineContext>
 
@@ -27,13 +27,13 @@ typealias SSHCredential = Indexed<CredentialToken>
 typealias SSHAuthMethod = (SSHCredential, SSHAuthContext) -> SSHAuthResult
 typealias SSHAuthResult = Join<Boolean, SSHSessionID>
 typealias SSHAuthContext = Join<SSHTransportContext, SSHServerInfo>
-typealias SSHKnownHosts = Series<SSHHostKey>
+typealias SSHKnownHosts = Indexed<SSHHostKey>
 typealias SSHHostKey = Join<SSHHostname, SSHPublicKey>
 
 // Channel taxonomy
-typealias SSHChannelStream = Series<SSHChannelEvent>
+typealias SSHChannelStream = Indexed<SSHChannelEvent>
 typealias SSHChannelEvent = Join<SSHChannelID, ChannelData>
-typealias SSHChannelMultiplexer = (SSHChannelStream) -> Series<SSHChannel>
+typealias SSHChannelMultiplexer = (SSHChannelStream) -> Indexed<SSHChannel>
 typealias SSHChannelContext = Join<SSHChannelID, CoroutineContext>
 typealias SSHChannelID = UInt
 typealias SSHWindowSize = UInt
@@ -44,16 +44,16 @@ typealias SSHStateTransition = (SSHTransportState, SSHStateContext) -> SSHTransp
 typealias SSHStateGuard = (SSHTransportState, SSHStateContext) -> Boolean
 typealias SSHStateEffect = (SSHTransportState, SSHStateContext) -> Unit
 typealias SSHStateContext = Join<SSHTransportContext, SSHEventQueue>
-typealias SSHEventQueue = Series<SSHEvent>
+typealias SSHEventQueue = Indexed<SSHEvent>
 
 // Protocol negotiation taxonomy
 typealias SSHAlgorithmSet = Join<KEXAlgorithms, Join<CipherSuites, Join<MACAlgorithms, CompressionMethods>>>
 typealias SSHNegotiator = (SSHAlgorithmSet, SSHAlgorithmSet, SSHNegotiationContext) -> SSHAlgorithmSet
 typealias SSHNegotiationContext = Join<SSHTransportContext, SSHSecurityPolicy>
-typealias KEXAlgorithms = Series<SSHKexAlgorithm>
-typealias CipherSuites = Series<SSHCipherSuite>
-typealias MACAlgorithms = Series<SSHMacAlgorithm>
-typealias CompressionMethods = Series<SSHCompressionMethod>
+typealias KEXAlgorithms = Indexed<SSHKexAlgorithm>
+typealias CipherSuites = Indexed<SSHCipherSuite>
+typealias MACAlgorithms = Indexed<SSHMacAlgorithm>
+typealias CompressionMethods = Indexed<SSHCompressionMethod>
 
 // Session taxonomy
 typealias SSHSession = Join<SSHTransportState, Join<SSHChannelStream, SSHSessionContext>>
@@ -121,7 +121,7 @@ typealias SSHOriginPort = Int
 
 // Terminal taxonomy
 typealias SSHTerminalType = String
-typealias SSHTerminalModes = Series<SSHTerminalSetting>
+typealias SSHTerminalModes = Indexed<SSHTerminalSetting>
 typealias SSHTerminalSetting = Join<SSHTerminalMode, SSHTerminalValue>
 // SSHTerminalMode is now an enum in SSHProtocol.kt
 typealias SSHTerminalValue = UInt
@@ -138,7 +138,7 @@ typealias SSHExitStatus = Int
 typealias SSHExitSignal = Join<SSHSignal, Join<Boolean, SSHErrorMessage>>
 
 // Environment taxonomy
-typealias SSHEnvironment = Series<SSHEnvironmentVariable>
+typealias SSHEnvironment = Indexed<SSHEnvironmentVariable>
 typealias SSHEnvironmentVariable = Join<SSHVariableName, SSHVariableValue>
 typealias SSHVariableName = String
 typealias SSHVariableValue = String

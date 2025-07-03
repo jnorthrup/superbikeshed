@@ -3,7 +3,7 @@
 package borg.entityscanner
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.Indexed as Series
+import borg.trikeshed.lib.Indexed as Indexed
 import borg.trikeshed.lib.ByteIndexed
 import borg.trikeshed.lib.CharIndexed
 

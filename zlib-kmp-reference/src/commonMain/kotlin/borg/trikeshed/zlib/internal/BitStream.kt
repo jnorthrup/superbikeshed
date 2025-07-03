@@ -5,7 +5,7 @@ import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.size
 
 /**
- * A high-performance bit-level input stream designed to work with Trikeshed's Indexed<Byte> (Series<Byte>).
+ * A high-performance bit-level input stream designed to work with Trikeshed's Indexed<Byte> (Indexed<Byte>).
  * It provides efficient methods for reading bits and bytes, crucial for compression/decompression algorithms
  * like DEFLATE (zlib), where register packing and minimal overhead are paramount.
  *

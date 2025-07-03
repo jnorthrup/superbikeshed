@@ -1,7 +1,7 @@
 package nexus.core.dgm.services
 
 import nexus.core.dgm.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.*
@@ -51,17 +51,17 @@ class InMemoryDgmStateServiceTest {
         metricValue: Double = 1.0,
         logOutput: LogOutput = "Log for $archiveId"
     ): ArchivedImprovement {
-        val codeSnapshot = Series.of(Join(filePath, fileContent))
+        val codeSnapshot = Indexed.of(Join(filePath, fileContent))
         val dgmTask = DgmTask(
             Join(taskId, parentEntryId),
-            Join(benchmarkId, Series.empty<String>())
+            Join(benchmarkId, Indexed.empty<String>())
         )
         val improvementCandidate = ImprovementCandidate(
             Join(dgmTask, codeSnapshot),
-            Join(proposerId, Series.of("Rationale for $archiveId"))
+            Join(proposerId, Indexed.of("Rationale for $archiveId"))
         )
         val validationResult = ValidationResult(
-            Join(validationStatus, Series.of(Join(metricName, metricValue))),
+            Join(validationStatus, Indexed.of(Join(metricName, metricValue))),
             logOutput
         )
         return ArchivedImprovement(

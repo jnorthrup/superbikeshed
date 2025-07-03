@@ -12,8 +12,8 @@ actual class ForceLayout actual constructor(
     actual val spaceGraph: SpaceGraph,
     config: ForceLayoutSettings?
 ) {
-    actual var nodes: Series<BaseNode> = Series()
-    actual var edges: Series<Edge> = Series()
+    actual var nodes: Indexed<BaseNode> = Indexed()
+    actual var edges: Indexed<Edge> = Indexed()
     actual val velocities: MutableMap<String, Vector3D> = HashMap()
     actual val fixedNodes: MutableSet<BaseNode> = HashSet()
 
@@ -34,11 +34,11 @@ actual class ForceLayout actual constructor(
         }
     }
 
-// Replace MutableList with Series and use α transform
+// Replace MutableList with Indexed and use α transform
 nodes = nodes α { it + node }
-// Replace MutableList with Series and use α transform
+// Replace MutableList with Indexed and use α transform
 nodes = nodes α { it + node }
-// Replace MutableList with Series and use α transform
+// Replace MutableList with Indexed and use α transform
 nodes = nodes α { it + node }
     actual fun addNode(node: BaseNode) {
         if (nodes.none { it.id == node.id }) {
@@ -369,8 +369,8 @@ nodes = nodes α { it + node }
 
     actual fun dispose() {
         stop()
-        nodes = Series()
-        edges = Series()
+        nodes = Indexed()
+        edges = Indexed()
         velocities.clear()
         fixedNodes.clear()
         console.log("ForceLayout disposed.")

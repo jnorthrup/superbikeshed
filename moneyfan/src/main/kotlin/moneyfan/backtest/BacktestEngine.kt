@@ -1,6 +1,6 @@
 package moneyfan.backtest
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import com.ta4k.core.model.Kline
 import com.ta4k.core.model.TradingPair
 import moneyfan.model.TradeSignal
@@ -29,8 +29,8 @@ class BacktestEngine(
      */
     fun runBacktest(
         pair: TradingPair,
-        klines: Series<Kline>,
-        strategy: (Series<Kline>) -> Series<TradeSignal>
+        klines: Indexed<Kline>,
+        strategy: (Indexed<Kline>) -> Indexed<TradeSignal>
     ): BacktestResult {
         val signals = strategy(klines)
         var currentPosition: Position? = null

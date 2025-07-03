@@ -14,13 +14,13 @@ import borg.trikeshed.lib.*
 /**
  * Adds a new event to the task history.
  *
- * @param history The current task history (Series of TaskEvents).
+ * @param history The current task history (Indexed of TaskEvents).
  * @param event The new TaskEvent to add.
  * @return A new TaskHistory with the event added.
  */
 // @JsExport // Not needed if @file:JsExport is used and this is a top-level function
 fun addTaskEvent(history: TaskHistory, event: TaskEvent): TaskHistory {
-    // Uses the 'add' method defined in the Series class
+    // Uses the 'add' method defined in the Indexed class
     return history.add(event)
 }
 

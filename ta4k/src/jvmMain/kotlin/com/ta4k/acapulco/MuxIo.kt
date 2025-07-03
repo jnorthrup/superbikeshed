@@ -30,13 +30,13 @@ class MuxIo @JvmOverloads constructor(
     val timeWindow: Int = 14.days.inWholeMinutes.toInt(),
     val hzWidth: Int = Help.horizonDepthMinutes.value.toInt(),
 ) {
-    val cursHorizon: CirQlar<Series<RowVec>> = CirQlar(historySize)
+    val cursHorizon: CirQlar<Indexed<RowVec>> = CirQlar(historySize)
 
     init {
         logDebug { "Horizon window examples (0-19): ${(0 until 20).map { horizon(it, hzWidth, timeWindow) }}" }
     }
 
-    val allTime: Series<Series<RowVec>>
+    val allTime: Indexed<Indexed<RowVec>>
         get() {
             val currentHistorySize = min(historyViewSize, cursHorizon.size)
             if (currentHistorySize == 0) return emptySeries()
@@ -49,7 +49,7 @@ class MuxIo @JvmOverloads constructor(
             val startTime = System.currentTimeMillis()
             try {
                 coroutineScope {
-                    val rowsToOffer: Series<RowVec> = muxers.map { (assetKey, mux) ->
+                    val rowsToOffer: Indexed<RowVec> = muxers.map { (assetKey, mux) ->
                         async {
                             val (TC, CC) = assetKey
                             val baseCost = coins.pathValue(TC, CC)

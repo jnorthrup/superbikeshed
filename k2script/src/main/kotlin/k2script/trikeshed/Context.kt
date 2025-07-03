@@ -47,10 +47,10 @@ typealias Tensor<T> = Join<IntArray, (IntArray) -> T>
 
 /**
  * Legacy compatibility typealiases - point to proper TrikeShed types
- * Use Join<A,B> and Series<T> directly in new code
+ * Use Join<A,B> and Indexed<T> directly in new code
  */
 typealias Pai2<A, B> = Join<A, B>  // Legacy Pair -> Join
-typealias Vect0r<T> = Series<T>    // Legacy Vector -> Series
+typealias Vect0r<T> = Indexed<T>    // Legacy Vector -> Indexed
 
 /**
  * Hot/cold path optimization marker

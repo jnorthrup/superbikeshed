@@ -38,7 +38,7 @@ value class SpaceGraphNode(val nodeId: String) {
 }
 
 typealias TraceEntry = Join<TraceLevel, String>
-typealias TraceLog = Series<TraceEntry>
+typealias TraceLog = Indexed<TraceEntry>
 
 // MDI Window management
 data class MDIWindow(
@@ -77,7 +77,7 @@ class MDITraceLogger {
         // Store trace entry - no console output per CLAUDE.md compliance
     }
     
-    fun getTraceLog(): TraceLog = Series.of(traceBuffer.size) { traceBuffer[it] }
+    fun getTraceLog(): TraceLog = Indexed.of(traceBuffer.size) { traceBuffer[it] }
     
     fun clearLog() {
         traceBuffer.clear()
@@ -318,9 +318,9 @@ class MDIInterface {
     // Public interface for external systems
     fun getActiveWindow(): MDIWindow? = activeWindowId?.let { windows[it] }
     
-    fun getAllWindows(): Series<MDIWindow> {
+    fun getAllWindows(): Indexed<MDIWindow> {
         val windowList = windows.values.toList()
-        return Series.of(windowList.size) { windowList[it] }
+        return Indexed.of(windowList.size) { windowList[it] }
     }
     
     fun getTraceLog(): TraceLog = tracer.getTraceLog()
@@ -332,13 +332,13 @@ class MDIInterface {
         
         return MDIInterfaceState(
             activeWindowId = activeWindowId,
-            windows = Series.of(windowList.size) { windowList[it] },
+            windows = Indexed.of(windowList.size) { windowList[it] },
             recentTraces = recentTraces,
             spaceGraphNodeMappings = getSpaceGraphNodeMappings()
         )
     }
     
-    private fun getSpaceGraphNodeMappings(): Series<Join<SpaceGraphNode, String>> {
+    private fun getSpaceGraphNodeMappings(): Indexed<Join<SpaceGraphNode, String>> {
         val mappings = listOf(
             SpaceGraphNode.ATTENTION j "Attention Ticker",
             SpaceGraphNode.PORTFOLIO j "Portfolio Manager",
@@ -353,14 +353,14 @@ class MDIInterface {
             SpaceGraphNode.CLEAR j "Clear Trace",
             SpaceGraphNode.EXIT j "Exit Application"
         )
-        return Series.of(mappings.size) { mappings[it] }
+        return Indexed.of(mappings.size) { mappings[it] }
     }
 }
 
 data class MDIInterfaceState(
     val activeWindowId: String?,
-    val windows: Series<MDIWindow>,
+    val windows: Indexed<MDIWindow>,
     val recentTraces: TraceLog,
-    val spaceGraphNodeMappings: Series<Join<SpaceGraphNode, String>>
+    val spaceGraphNodeMappings: Indexed<Join<SpaceGraphNode, String>>
 )
 }

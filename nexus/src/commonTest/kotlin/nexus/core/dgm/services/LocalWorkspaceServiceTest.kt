@@ -3,7 +3,7 @@ package nexus.core.dgm.services
 import nexus.core.dgm.CodeSnapshot
 import nexus.core.dgm.FilePath
 import nexus.core.dgm.FileContent
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.*
@@ -17,7 +17,7 @@ internal actual object FileSystemUtils {
     private var tempDirCounter = 0
     private var mockTempBase = "/tmp/test_ws_"
     private val createdDirs = mutableSetOf<FilePath>()
-    private val existingFilesForListing = mutableMapOf<FilePath, Series<FilePath>>() // Dir -> List of files in it
+    private val existingFilesForListing = mutableMapOf<FilePath, Indexed<FilePath>>() // Dir -> List of files in it
     private val filesToExist = mutableSetOf<FilePath>()
 
 
@@ -61,17 +61,17 @@ internal actual object FileSystemUtils {
     }
 
     fun mockListFiles(directoryPath: FilePath, files: List<FilePath>) {
-        existingFilesForListing[directoryPath] = Series.ofList(files.map { joinPath(directoryPath, it) })
+        existingFilesForListing[directoryPath] = Indexed.ofList(files.map { joinPath(directoryPath, it) })
     }
 
-    actual fun listFilesRecursively(directoryPath: FilePath, context: CCEKContext): Series<FilePath> {
+    actual fun listFilesRecursively(directoryPath: FilePath, context: CCEKContext): Indexed<FilePath> {
         calls.add("listFilesRecursively $directoryPath")
         // Return files explicitly mocked for this directory, or all files under this path from fileContents for simplicity
         return existingFilesForListing[directoryPath] ?: run {
             val filesInDir = fileContents.keys
                 .filter { it.startsWith(directoryPath) && it != directoryPath }
                 .map { it } // Return absolute paths as if a real FS would
-            Series.ofList(filesInDir)
+            Indexed.ofList(filesInDir)
         }
     }
 
@@ -124,7 +124,7 @@ class LocalWorkspaceServiceTest {
     fun setupWorkspaceCreatesDirectoryAndWritesFiles() = runTest {
         val file1 = Join<FilePath, FileContent>("src/main.kt", "fun main() {}")
         val file2 = Join<FilePath, FileContent>("README.md", "# Test Project")
-        val parentCode = Series.of(file1, file2)
+        val parentCode = Indexed.of(file1, file2)
 
         val workspaceRoot = workspaceService.setupWorkspace(parentCode, testContext)
         val expectedWorkspaceRoot = FileSystemUtils.mockTempBasePath("dgm_ws_0")
@@ -149,7 +149,7 @@ class LocalWorkspaceServiceTest {
 
         val change1 = Join<FilePath, FileContent>("lib/utils.kt", "fun util() = true")
         val change2 = Join<FilePath, FileContent>("data/config.json", """{"key":"value"}""")
-        val changes = Series.of(change1, change2)
+        val changes = Indexed.of(change1, change2)
 
         val result = workspaceService.applyChanges(workspacePath, changes, testContext)
         assertTrue(result)

@@ -29,7 +29,7 @@ fun generateChartForSampleData(): String {
         allCandles.addAll(candles.play)
     }
     
-    val candleSeries = Series.of(allCandles.size) { i -> allCandles[i] }
+    val candleSeries = Indexed.of(allCandles.size) { i -> allCandles[i] }
     
     // Simulate trading
     symbols.forEach { symbol ->
@@ -49,7 +49,7 @@ fun generateChartForSampleData(): String {
     symbols.forEach { symbol ->
         val symbolCandles = allCandles.filter { it.symbol.value == symbol }
         if (symbolCandles.isNotEmpty()) {
-            val prices = Series.of(symbolCandles.size) { i -> symbolCandles[i].ohlcv.close }
+            val prices = Indexed.of(symbolCandles.size) { i -> symbolCandles[i].ohlcv.close }
             indicators["${symbol}_SMA"] = technicalAnalysis.simpleMovingAverage(prices, 10)
         }
     }

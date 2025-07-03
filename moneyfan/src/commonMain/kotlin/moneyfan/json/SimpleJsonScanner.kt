@@ -5,7 +5,7 @@ import borg.trikeshed.lib.*
 
 /**
  * Simplified JSON Scanner DSEL using TrikeShed patterns
- * Demonstrates Series<T> and Join<A,B> for JSON structure analysis
+ * Demonstrates Indexed<T> and Join<A,B> for JSON structure analysis
  */
 
 // Simple scanner results using TrikeShed types
@@ -16,7 +16,7 @@ typealias JsonStructure = Join<JsonBounds, Int> // bounds j elementCount
 object SimpleJsonScanner {
     
     fun scanStructure(jsonStr: String): JsonStructure {
-        val chars = Series.of(jsonStr.length) { jsonStr[it] }
+        val chars = Indexed.of(jsonStr.length) { jsonStr[it] }
         var depth = 0
         var start = -1
         var end = -1
@@ -40,8 +40,8 @@ object SimpleJsonScanner {
         return (start j end) j elementCount
     }
     
-    // Extract numeric values using Series transforms
-    fun extractNumbers(jsonStr: String): Series<Double> {
+    // Extract numeric values using Indexed transforms
+    fun extractNumbers(jsonStr: String): Indexed<Double> {
         val numbers = mutableListOf<Double>()
         var currentNumber = ""
         var inNumber = false
@@ -65,7 +65,7 @@ object SimpleJsonScanner {
             currentNumber.toDoubleOrNull()?.let { numbers.add(it) }
         }
         
-        return Series.of(numbers.size) { numbers[it] }
+        return Indexed.of(numbers.size) { numbers[it] }
     }
     
     // Trading-specific analysis
@@ -131,7 +131,7 @@ fun demonstrateTradingJsonScanner() {
     println("  Elements: ${candleAnalysis.elementCount}")
     println("  Numbers: ${candleAnalysis.numericValues}")
     
-    // Extract numbers using Series
+    // Extract numbers using Indexed
     val priceNumbers = SimpleJsonScanner.extractNumbers(priceJson)
     val candleNumbers = SimpleJsonScanner.extractNumbers(candleJson)
     

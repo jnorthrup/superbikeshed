@@ -65,5 +65,5 @@ fun <L, R> Either<L, R>.orElse(other: () -> Either<L, R>): Either<L, R> = when (
 fun <T> emptyArray(): Array<T> = arrayOf()
 fun <T> arrayOf(vararg elements: T): Array<T> = arrayOf(*elements)
 
-// Series type alias for backwards compatibility
-// typealias Series<T> = Indexed<T> // EXTINCT per CLAUDE.md Series Type Extinction Policy
+// Indexed type alias for backwards compatibility
+// typealias Indexed<T> = Indexed<T> // EXTINCT per CLAUDE.md Indexed Type Extinction Policy

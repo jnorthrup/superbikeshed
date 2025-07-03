@@ -4,7 +4,7 @@ import borg.trikeshed.lib.*
 import kotlinx.datetime.Instant
 
 /**
- * TrikeShed-based trading core using Series<T> and Join<A,B> patterns
+ * TrikeShed-based trading core using Indexed<T> and Join<A,B> patterns
  * Unified decimal system using Double for performance with precision tracking
  */
 
@@ -84,9 +84,9 @@ data class Candlestick(
     val vwap: Price = Price(0.0)
 )
 
-typealias TickSeries = Series<MarketTick>
-typealias CandleSeries = Series<Candlestick>
-typealias PriceSeries = Series<Price>
+typealias TickSeries = Indexed<MarketTick>
+typealias CandleSeries = Indexed<Candlestick>
+typealias PriceSeries = Indexed<Price>
 
 /**
  * Trading engine for processing market data with advanced algorithms
@@ -107,10 +107,10 @@ class TradingEngine {
         val candleData = mutableListOf<Candlestick>()
         
         if (ticks.play.isEmpty()) {
-            return Series.of(0) { candleData[it] }
+            return Indexed.of(0) { candleData[it] }
         }
         
-        // Group ticks by symbol and time window using Series.α transformation
+        // Group ticks by symbol and time window using Indexed.α transformation
         val groupedTicks = ticks.α { tick -> tick.symbol to tick }.play.groupBy { it.first }
         
         groupedTicks.forEach { (symbol, symbolPairs) ->
@@ -144,7 +144,7 @@ class TradingEngine {
             }
         }
         
-        return Series.of(candleData.size) { i -> candleData[i] }
+        return Indexed.of(candleData.size) { i -> candleData[i] }
     }
     
     private fun calculateVWAP(prices: List<Price>, volumes: List<Volume>): Price {
@@ -181,7 +181,7 @@ class TradingEngine {
             volatility = 0.95 * volatility + 0.05 * kotlin.math.abs(randomShock)
         }
         
-        return Series.of(ticks.size) { i -> ticks[i] }
+        return Indexed.of(ticks.size) { i -> ticks[i] }
     }
 }
 
@@ -206,27 +206,27 @@ class VolatilityTracker {
 }
 
 /**
- * Technical analysis indicators using Series transformations
+ * Technical analysis indicators using Indexed transformations
  */
 class TechnicalAnalysis {
     
     fun simpleMovingAverage(prices: PriceSeries, period: Int): PriceSeries {
         if (prices.size < period) {
-            return Series.of(0) { Price(0.0) }
+            return Indexed.of(0) { Price(0.0) }
         }
         
-        // Use Series.α for functional transformation
+        // Use Indexed.α for functional transformation
         val windows = prices.play.windowed(period) { window ->
             val sum = window.map { it.value }.sum()
             Price(sum / period)
         }
         
-        return Series.of(windows.size) { i -> windows[i] }
+        return Indexed.of(windows.size) { i -> windows[i] }
     }
     
     fun exponentialMovingAverage(prices: PriceSeries, period: Int): PriceSeries {
         if (prices.size < period) {
-            return Series.of(0) { Price(0.0) }
+            return Indexed.of(0) { Price(0.0) }
         }
         
         val emaData = mutableListOf<Price>()
@@ -238,13 +238,13 @@ class TechnicalAnalysis {
         var ema = initialSum / period
         emaData.add(Price(ema))
         
-        // Calculate remaining EMAs using Series transformation
+        // Calculate remaining EMAs using Indexed transformation
         for (i in period until priceList.size) {
             ema = (priceList[i].value - ema) * multiplier + ema
             emaData.add(Price(ema))
         }
         
-        return Series.of(emaData.size) { i -> emaData[i] }
+        return Indexed.of(emaData.size) { i -> emaData[i] }
     }
     
     fun bollingerBands(prices: PriceSeries, period: Int, stdDev: Decimal = 2.0): Join<PriceSeries, Join<PriceSeries, PriceSeries>> {
@@ -269,12 +269,12 @@ class TechnicalAnalysis {
             }
         }
         
-        return sma j (Series.of(upperBand.size) { i -> upperBand[i] } j Series.of(lowerBand.size) { i -> lowerBand[i] })
+        return sma j (Indexed.of(upperBand.size) { i -> upperBand[i] } j Indexed.of(lowerBand.size) { i -> lowerBand[i] })
     }
     
     fun rsi(prices: PriceSeries, period: Int = 14): PriceSeries {
         if (prices.size < period + 1) {
-            return Series.of(0) { Price(50.0) } // Neutral RSI
+            return Indexed.of(0) { Price(50.0) } // Neutral RSI
         }
         
         val priceChanges = prices.play.zipWithNext { prev, curr -> curr.value - prev.value }
@@ -301,7 +301,7 @@ class TechnicalAnalysis {
             rsiValues.add(Price(newRsi))
         }
         
-        return Series.of(rsiValues.size) { i -> rsiValues[i] }
+        return Indexed.of(rsiValues.size) { i -> rsiValues[i] }
     }
 }
 
@@ -318,7 +318,7 @@ data class Position(
 )
 
 data class PortfolioState(
-    val positions: Series<Position>,
+    val positions: Indexed<Position>,
     val cashBalance: Price,
     val totalValue: Price,
     val dayPnL: Price,
@@ -391,7 +391,7 @@ class PortfolioManager {
             position.copy(unrealizedPnL = unrealizedPnL)
         }
         
-        val positionSeries = Series.of(positionList.size) { i -> positionList[i] }
+        val positionSeries = Indexed.of(positionList.size) { i -> positionList[i] }
         
         val totalPositionValue = positionList.fold(0.0) { acc, position ->
             val currentPrice = currentPrices[position.symbol] ?: position.averagePrice

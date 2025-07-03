@@ -33,14 +33,14 @@ export function j<A, B>(a: A, b: B): Join<A, B> {
 }
 
 /**
- * Series - A sequence type
+ * Indexed - A sequence type
  */
-export type Series<T> = Join<number, (index: number) => T>;
+export type Indexed<T> = Join<number, (index: number) => T>;
 
 /**
- * Create a Series instance
+ * Create a Indexed instance
  */
-export function createSeries<T>(size: number, accessor: (index: number) => T): Series<T> {
+export function createSeries<T>(size: number, accessor: (index: number) => T): Indexed<T> {
     return j(size, accessor);
 }
 
@@ -71,14 +71,14 @@ export function createCursor<T>(shape: number[], accessor: (coords: number[]) =>
 /**
  * Alpha transform - Fundamental transformation
  */
-export function alpha<T, R>(series: Series<T>, transform: (value: T) => R): Series<R> {
+export function alpha<T, R>(series: Indexed<T>, transform: (value: T) => R): Indexed<R> {
     return createSeries(series.a, (i) => transform(series.b(i)));
 }
 
 /**
- * Materialize a Series to an array
+ * Materialize a Indexed to an array
  */
-export function materialize<T>(series: Series<T>): T[] {
+export function materialize<T>(series: Indexed<T>): T[] {
     const result: T[] = [];
     for (let i = 0; i < series.a; i++) {
         result.push(series.b(i));

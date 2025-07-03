@@ -78,8 +78,8 @@ external class GPUQueue {
 class WebGPUInterfaceWasm : WebGPUInterface {
     private var device: GPUDevice? = null
     private var initialized = false
-    private val buffers = Series<GPUBuffer?>(0) { null }
-    private val pipelines = Series<GPURenderPipeline?>(0) { null }
+    private val buffers = Indexed<GPUBuffer?>(0) { null }
+    private val pipelines = Indexed<GPURenderPipeline?>(0) { null }
     private var nextBufferId = 0
     private var nextPipelineId = 0
     
@@ -95,7 +95,7 @@ class WebGPUInterfaceWasm : WebGPUInterface {
         }
     }
     
-    override fun createVertexBuffer(data: Series<VertexData>): BufferId {
+    override fun createVertexBuffer(data: Indexed<VertexData>): BufferId {
         val bufferId = BufferId(nextBufferId++)
         val buffer = device?.createBuffer(js("""
             {
@@ -105,7 +105,7 @@ class WebGPUInterfaceWasm : WebGPUInterface {
             }
         """)) ?: return bufferId
         
-        // Convert Series<VertexData> to Float32Array
+        // Convert Indexed<VertexData> to Float32Array
         val floatData = Float32Array(data.size * 6)
         data.α { vertex ->
             val pos = vertex.a

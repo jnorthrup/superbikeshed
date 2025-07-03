@@ -1,18 +1,18 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path
-import borg.trikeshed.lib.j // For creating Series from results
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j // For creating Indexed from results
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
  * Average Directional Index (ADX) indicator.
  * Measures trend strength. It uses smoothed +DM, -DM, and TR.
- * Operates on a Trikethed [Series] of [Kline].
+ * Operates on a Trikethed [Indexed] of [Kline].
  */
 class ADXIndicator(
-    private val klineSeries: Series<Kline>, // Changed
+    private val klineSeries: Indexed<Kline>, // Changed
     private val period: Int
 ) {
     init {
@@ -186,7 +186,7 @@ class ADXIndicator(
         return if (index >= (2 * period - 1) && index < adxResults.size) adxResults[index]?.setScale(resultScale, RoundingMode.HALF_UP) else null
     }
 
-    val plusDISeries: Series<BigDecimal?>
+    val plusDISeries: Indexed<BigDecimal?>
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
@@ -194,7 +194,7 @@ class ADXIndicator(
             return klineSeries.size j { idx:Int -> this.getPlusDI(idx) }
         }
 
-    val minusDISeries: Series<BigDecimal?>
+    val minusDISeries: Indexed<BigDecimal?>
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
@@ -202,7 +202,7 @@ class ADXIndicator(
             return klineSeries.size j { idx:Int -> this.getMinusDI(idx) }
         }
 
-    val adxValueSeries: Series<BigDecimal?> // Renamed from adxSeries to avoid conflict with adxResults list
+    val adxValueSeries: Indexed<BigDecimal?> // Renamed from adxSeries to avoid conflict with adxResults list
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)

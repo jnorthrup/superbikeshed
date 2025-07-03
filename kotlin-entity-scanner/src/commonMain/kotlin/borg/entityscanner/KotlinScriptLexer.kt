@@ -1,11 +1,11 @@
 package borg.entityscanner
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 // import borg.trikeshed.lib.play // Not strictly needed in this file if toSeries is direct
 // Assuming this extension exists or can be added if List.toSeries() is not a general TrikeShed lib feature
 // For now, we'll assume it will be made available or is part of the TrikeShed setup.
-// fun <T> List<T>.toSeries(): Series<T> = size j { index -> this[index] }
+// fun <T> List<T>.toSeries(): Indexed<T> = size j { index -> this[index] }
 
 
 /**
@@ -125,7 +125,7 @@ object KotlinScriptLexer {
             }
         }
         // This requires a `toSeries()` extension on List<BoundedToken> to be available in scope.
-        // For example: fun <T> List<T>.toSeries(): Series<T> = size j { index -> this[index] }
+        // For example: fun <T> List<T>.toSeries(): Indexed<T> = size j { index -> this[index] }
         // This should ideally be part of the borg.trikeshed.lib or a common utility.
         return borg.trikeshed.lib.ListToSeriesConverter.toSeries(tokens) // Assuming a helper object for conversion
     }
@@ -193,5 +193,5 @@ object KotlinScriptLexer {
     }
 }
 
-// Extension function to convert List to Series/Indexed
+// Extension function to convert List to Indexed/Indexed
 fun <T> List<T>.toIndexed(): Indexed<T> = size j { i -> this[i] }

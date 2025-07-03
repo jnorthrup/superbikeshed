@@ -10,7 +10,7 @@ fun getTradingPeriods(periodsPerYear: Int = 252): Pair<Int, Int> {
     return Pair(periodsPerYear, halfYear)
 }
 
-// Placeholder for the main data series type (e.g., ta4k's Series<Double>)
+// Placeholder for the main data series type (e.g., ta4k's Indexed<Double>)
 // Using 'Any' for now in stubs for 'returns' and 'benchmark'.
 // Using Map<String, String> as a placeholder for the metrics result for a single series.
 // A more robust solution would involve a list of data classes or a custom MetricsTable class.
@@ -21,8 +21,8 @@ fun getTradingPeriods(periodsPerYear: Int = 252): Pair<Int, Int> {
  * The Python version returns a Pandas DataFrame. This Kotlin stub will aim for a Map.
  */
 fun metrics(
-    returns: Any, // Should be ta4k Series<Double>
-    benchmark: Any? = null, // Should be ta4k Series<Double>?
+    returns: Any, // Should be ta4k Indexed<Double>
+    benchmark: Any? = null, // Should be ta4k Indexed<Double>?
     rf: Double = 0.0,
     display: Boolean = true, // Controls if output is formatted for printing vs raw data
     mode: String = "basic", // "basic" or "full"
@@ -39,7 +39,7 @@ fun metrics(
     val (winYear, _) = getTradingPeriods(periodsPerYear)
 
     // In Python, returns and benchmark are prepared.
-    // In Kotlin, this preparation would be part of how Series<T> is handled or
+    // In Kotlin, this preparation would be part of how Indexed<T> is handled or
     // explicitly called using translated prepareReturns/prepareBenchmark.
     // For stubs, we assume 'returns' and 'benchmark' are already in a usable form.
 
@@ -56,7 +56,7 @@ fun metrics(
     if (compounded) {
         metricsMap["Cumulative Return %"] = (Stats.comp(df) * 100).toString()
     } else {
-        // metricsMap["Total Return %"] = (df.sum() * 100).toString() // df.sum() needs Series type
+        // metricsMap["Total Return %"] = (df.sum() * 100).toString() // df.sum() needs Indexed type
         metricsMap["Total Return %"] = "TODO (sum)"
     }
     metricsMap["CAGR %"] = (Stats.cagr(df, rf, compounded, periodsPerYear = winYear) * 100).toString()

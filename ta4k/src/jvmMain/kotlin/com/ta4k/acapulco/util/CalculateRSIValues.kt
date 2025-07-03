@@ -4,13 +4,13 @@
 package borg.trikeshed.acapulco.util // Adjusted package
 
 import borg.trikeshed.cursor.ColumnMeta
-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
+import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
 import borg.trikeshed.cursor.at
 import borg.trikeshed.cursor.get
 import borg.trikeshed.cursor.meta
 import borg.trikeshed.isam.meta.IOMemento
-import borg.trikeshed.lib.* // Imports Join, Series, j, α, etc.
-import borg.trikeshed.common.collections.s_ // Replaces _v for Series creation
+import borg.trikeshed.lib.* // Imports Join, Indexed, j, α, etc.
+import borg.trikeshed.common.collections.s_ // Replaces _v for Indexed creation
 import borg.trikeshed.acapulco.util.calcSmmaDown // Assuming ported
 import borg.trikeshed.acapulco.util.calcSmmaUp // Assuming ported
 import kotlin.math.max
@@ -18,7 +18,7 @@ import kotlin.math.max
 /** Calculating the RS
 The RSI indicator is based on the changes in the price action and not on the actual price itself . This is where the term Relative Strength (RS) comes from.
 Calculating the RS is quite simple. We need to divide the SMMA of the up changes by the SMMA of the down changes.
-Cursor["Open","Close"] -> Series<RowVec> ["Open", "Close"]
+Cursor["Open","Close"] -> Indexed<RowVec> ["Open", "Close"]
  */
 fun Cursor.rsi(depth: Int = 14): Cursor = run {
     // Assuming "Open" is at index 0 and "Close" is at index 1 after get
@@ -26,12 +26,12 @@ fun Cursor.rsi(depth: Int = 14): Cursor = run {
     val openColIndex = this.meta.`play`.indexOfFirst { it.name == "Open" }.takeIf { it >= 0 } ?: 0 // Fallback, adjust as needed
     val closeColIndex = this.meta.`play`.indexOfFirst { it.name == "Close" }.takeIf { it >= 0 } ?: 1 // Fallback, adjust as needed
 
-    val open: Series<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Series<Double>
-    val close: Series<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Series<Double>
+    val open: Indexed<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Indexed<Double>
+    val close: Indexed<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Indexed<Double>
 
     fun calculateRS(up: Double, dn: Double): Double = if (dn == 0.0) Double.POSITIVE_INFINITY else up / dn
 
-    this.size j { y: Int -> // Create a new Cursor (Series<RowVec>)
+    this.size j { y: Int -> // Create a new Cursor (Indexed<RowVec>)
         var accUp = 0.0
         var accDn = 0.0
         val rsiValue: Double = run {

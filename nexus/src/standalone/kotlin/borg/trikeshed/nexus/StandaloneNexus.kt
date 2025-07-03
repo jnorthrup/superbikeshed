@@ -179,7 +179,7 @@ suspend fun demonstrateCompositionalPatterns() {
     val compositionDemo = SimpleJoin("architectural", "artistry")
     println("      🔗 Join composition: ${compositionDemo.a} + ${compositionDemo.b}")
     
-    // Series operations demo
+    // Indexed operations demo
     val capabilitySeries = SimpleSeries(4) { i ->
         when (i) {
             0 -> "autonomous-learning"
@@ -190,7 +190,7 @@ suspend fun demonstrateCompositionalPatterns() {
         }
     }
     
-    println("      📊 Series capabilities:")
+    println("      📊 Indexed capabilities:")
     for (i in 0 until capabilitySeries.size) {
         println("         $i: ${capabilitySeries.accessor(i)}")
         delay(500)

@@ -1,7 +1,7 @@
 package nexus.core.dgm.services
 
 import nexus.core.dgm.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 
 // Data structures for Kotlin-to-Python communication (as per design doc)
@@ -121,10 +121,10 @@ class RemoteSolutionProposerService(
             // Handle error case, potentially throwing an exception or returning a candidate with error info
             // For now, let's assume an error means no changes and log in rationale
             return ImprovementCandidate(
-                Join(task, Series.empty()), // No changes
+                Join(task, Indexed.empty()), // No changes
                 Join(
                     "llm_error_handler", // ProposerId indicating error
-                    Series.ofList(listOfNotNull("Proposal failed: ${pythonResponse.errorMessage}", pythonResponse.llmOutputLog))
+                    Indexed.ofList(listOfNotNull("Proposal failed: ${pythonResponse.errorMessage}", pythonResponse.llmOutputLog))
                 )
             )
         }
@@ -133,11 +133,11 @@ class RemoteSolutionProposerService(
         pythonResponse.changedFiles.forEach {
             proposedCodeChanges.add(Join(it.filePath, it.content))
         }
-        val proposedCodeSnapshot = Series.ofList(proposedCodeChanges)
+        val proposedCodeSnapshot = Indexed.ofList(proposedCodeChanges)
 
         // TODO: ProposerId should ideally come from the response or be configurable
         val proposerId: ProposerId = pythonResponse.langchainAgentConfig?.agentName ?: "unknown_python_agent"
-        val rationale: Series<String> = Series.ofList(listOfNotNull(pythonResponse.llmOutputLog))
+        val rationale: Indexed<String> = Indexed.ofList(listOfNotNull(pythonResponse.llmOutputLog))
 
         return ImprovementCandidate(
             Join(task, proposedCodeSnapshot),

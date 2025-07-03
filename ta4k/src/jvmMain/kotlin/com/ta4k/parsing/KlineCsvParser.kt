@@ -23,7 +23,7 @@ object KlineCsvParser {
      * or a [Failure] containing a list of error messages.
      */
     sealed class ParseResult {
-        data class Success(val klines: Series<Kline>) : ParseResult() // KlineSeries is now Series<Kline>
+        data class Success(val klines: Indexed<Kline>) : ParseResult() // KlineSeries is now Indexed<Kline>
         data class Failure(val errors: List<String>) : ParseResult()
     }
 
@@ -112,7 +112,7 @@ object KlineCsvParser {
         }
 
         // Determine final result
-        // Convert the mutableList to Series<Kline>
+        // Convert the mutableList to Indexed<Kline>
         val finalKlineSeries = klines.toSeries() // Explicit call to toSeries
 
         return if (errors.isNotEmpty()) {

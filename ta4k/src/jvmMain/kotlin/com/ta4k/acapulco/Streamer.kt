@@ -110,11 +110,11 @@ class Streamer(val bFac: BinanceApiClientFactory, coins: CoinsAndPairings) { // 
         val episodeCutoff: Int by lazy { Help.episodeLength.value.toInt() }
 
         // Define klineSimpleScalar using Trikeshed types
-        val klineSimpleScalar: Series<ColumnMeta> by lazy {
+        val klineSimpleScalar: Indexed<ColumnMeta> by lazy {
             DataBinanceVision.klines.let { klinesSpec ->
                 klinesSpec.names.zip(klinesSpec.types.asIterable()) { name, type ->
                     ColumnMeta(name, type) // Assuming TypeMemento is compatible/mapped
-                }.toSeries() // Convert the list of ColumnMeta to a Series
+                }.toSeries() // Convert the list of ColumnMeta to a Indexed
             }
         }
     }

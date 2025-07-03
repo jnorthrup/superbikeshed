@@ -22,7 +22,7 @@ value class ColumnName(val value: String)
 @JvmInline
 value class PredictionValue(val value: Double)
 
-// Series operations for price data
+// Indexed operations for price data
 fun extractColumnData(data: Map<String, DoubleArray>, columnName: ColumnName): PriceData? {
     val column = data[columnName.value] ?: return null
     return PriceData(column)

@@ -1,6 +1,6 @@
 package com.ta4k.stats
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
@@ -19,7 +19,7 @@ object StatsUtils {
      * Calculate the compound annual growth rate (CAGR)
      */
     fun cagr(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         periods: Int = 252
     ): BigDecimal {
@@ -42,10 +42,10 @@ object StatsUtils {
      * Calculate the rolling volatility
      */
     fun rollingVolatility(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         window: Int = 126,
         periods: Int = 252
-    ): Series<BigDecimal> {
+    ): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
         val returnsList = returns.`play`.toList()
@@ -63,11 +63,11 @@ object StatsUtils {
      * Calculate the rolling Sharpe ratio
      */
     fun rollingSharpe(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         window: Int = 126,
         periods: Int = 252
-    ): Series<BigDecimal> {
+    ): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
         val returnsList = returns.`play`.toList()
@@ -91,11 +91,11 @@ object StatsUtils {
      * Calculate the rolling Sortino ratio
      */
     fun rollingSortino(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         window: Int = 126,
         periods: Int = 252
-    ): Series<BigDecimal> {
+    ): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
         val returnsList = returns.`play`.toList()
@@ -118,7 +118,7 @@ object StatsUtils {
     /**
      * Calculate the Kelly Criterion
      */
-    fun kellyCriterion(returns: Series<BigDecimal>): BigDecimal {
+    fun kellyCriterion(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()

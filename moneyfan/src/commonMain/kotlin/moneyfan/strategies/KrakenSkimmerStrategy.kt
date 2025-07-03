@@ -3,7 +3,7 @@ package moneyfan.strategies
 import moneyfan.models.Kline
 import moneyfan.models.Price
 import moneyfan.models.TradingSignal
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.α // For klines α {it.close}
 import moneyfan.trikeshed.j // For constructing the output series
 import moneyfan.indicators.calculateSMA
@@ -16,18 +16,18 @@ import moneyfan.models.Price.Companion.UNDEFINED as UNDEFINED_PRICE // Alias for
  * - A SELL signal (Harvest) is generated if the current price exceeds the baseline SMA by a certain percentage (harvestThreshold).
  * - A BUY signal (Rebalance) is generated if the current price falls below the baseline SMA by a certain percentage (rebalanceThreshold).
  *
- * @param klines A Series of Kline objects representing historical price data.
+ * @param klines A Indexed of Kline objects representing historical price data.
  * @param baselinePeriod The period for calculating the baseline SMA. Defaults to 20.
  * @param harvestThreshold The percentage above the baseline SMA to trigger a SELL signal (e.g., 0.03 for 3%). Defaults to 0.03.
  * @param rebalanceThreshold The percentage below the baseline SMA to trigger a BUY signal (e.g., 0.04 for 4%). Defaults to 0.04.
- * @return A Series of TradingSignal objects of the same size as `klines`.
+ * @return A Indexed of TradingSignal objects of the same size as `klines`.
  */
 fun executeKrakenSkimmerStrategy(
-    klines: Series<Kline>,
+    klines: Indexed<Kline>,
     baselinePeriod: Int = 20,
     harvestThreshold: Double = 0.03,
     rebalanceThreshold: Double = 0.04
-): Series<TradingSignal> {
+): Indexed<TradingSignal> {
 
     if (klines.isEmpty()) {
         return moneyfan.trikeshed.emptySeries()
@@ -79,9 +79,9 @@ fun executeKrakenSkimmerStrategy(
 // --- Example Usage (Conceptual) ---
 /*
 fun main() {
-    // Assume klineDataSeries is a Series<Kline> loaded elsewhere
+    // Assume klineDataSeries is a Indexed<Kline> loaded elsewhere
 
-    // val klineDataSeries: Series<Kline> = ... create or load some Kline data ...
+    // val klineDataSeries: Indexed<Kline> = ... create or load some Kline data ...
     // if (klineDataSeries.isNotEmpty()) {
     //     val signals = executeKrakenSkimmerStrategy(klineDataSeries) // Using default parameters
     //

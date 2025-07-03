@@ -10,7 +10,7 @@ import borg.trikeshed.lib.*
  * Provides high-level API for scanning Kotlin source code using:
  * - Hierarchical token classification stairway (zero-cost inline classes)
  * - Inductive graph refinement with forward chaining logic
- * - TrikeShed type system compliance (Series<T>, Join<A,B>, α transforms)
+ * - TrikeShed type system compliance (Indexed<T>, Join<A,B>, α transforms)
  */
 
 // ==== PUBLIC API TYPES ====
@@ -26,8 +26,8 @@ typealias KotlinAnnotationName = String
 
 // Entity Analysis Results
 typealias EntityAnalysisResult = Join<GraphNodeSeries, RefinementSeries>
-typealias DependencyGraph = Series<Join<String, String>>
-typealias EntityIndex = Series<Join<String, EntityMetadata>>
+typealias DependencyGraph = Indexed<Join<String, String>>
+typealias EntityIndex = Indexed<Join<String, EntityMetadata>>
 
 // Entity Metadata for rich analysis results
 @JvmInline
@@ -95,7 +95,7 @@ object KotlinEntityScanner {
     /**
      * Extract specific entity types from source code
      */
-    fun scanClasses(source: KotlinSourceCode): Series<KotlinClassName> {
+    fun scanClasses(source: KotlinSourceCode): Indexed<KotlinClassName> {
         val (graphNodes, _) = scan(source, ScanConfig.FAST_SCAN)
         
         return graphNodes.α { node ->
@@ -114,7 +114,7 @@ object KotlinEntityScanner {
     /**
      * Extract function declarations from source code
      */
-    fun scanFunctions(source: KotlinSourceCode): Series<KotlinFunctionName> {
+    fun scanFunctions(source: KotlinSourceCode): Indexed<KotlinFunctionName> {
         val entities = source.scanToEntities()
         
         return entities.α { entity ->
@@ -134,7 +134,7 @@ object KotlinEntityScanner {
     /**
      * Extract import statements and dependencies
      */
-    fun scanImports(source: KotlinSourceCode): Series<KotlinImportPath> {
+    fun scanImports(source: KotlinSourceCode): Indexed<KotlinImportPath> {
         val lines = source.lines()
         val imports = mutableListOf<String>()
         
@@ -298,7 +298,7 @@ object K2ScriptIntegration {
     /**
      * Extract k2script-specific annotations and dependencies
      */
-    fun extractK2ScriptMetadata(source: KotlinSourceCode): Join<Series<String>, DependencyGraph> {
+    fun extractK2ScriptMetadata(source: KotlinSourceCode): Join<Indexed<String>, DependencyGraph> {
         val annotations = mutableListOf<String>()
         val dependencies = mutableListOf<Join<String, String>>()
         
@@ -327,7 +327,7 @@ object K2ScriptIntegration {
     /**
      * Generate dependency graph suitable for spacegraph visualization
      */
-    fun generateSpaceGraphData(source: KotlinSourceCode): Series<Join<String, Any>> {
+    fun generateSpaceGraphData(source: KotlinSourceCode): Indexed<Join<String, Any>> {
         val (graphNodes, _) = KotlinEntityScanner.scan(source, ScanConfig.FULL_ANALYSIS)
         
         return graphNodes.α { node ->
@@ -364,13 +364,13 @@ object K2ScriptIntegration {
 /**
  * Extension functions for easy integration
  */
-fun KotlinSourceCode.extractClasses(): Series<KotlinClassName> = 
+fun KotlinSourceCode.extractClasses(): Indexed<KotlinClassName> = 
     KotlinEntityScanner.scanClasses(this)
 
-fun KotlinSourceCode.extractFunctions(): Series<KotlinFunctionName> = 
+fun KotlinSourceCode.extractFunctions(): Indexed<KotlinFunctionName> = 
     KotlinEntityScanner.scanFunctions(this)
 
-fun KotlinSourceCode.extractImports(): Series<KotlinImportPath> = 
+fun KotlinSourceCode.extractImports(): Indexed<KotlinImportPath> = 
     KotlinEntityScanner.scanImports(this)
 
 fun KotlinSourceCode.extractDependencies(): DependencyGraph = 
@@ -383,10 +383,10 @@ fun KotlinSourceCode.buildEntityIndex(): EntityIndex =
     KotlinEntityScanner.buildEntityIndex(this)
 
 // For k2script integration
-fun KotlinSourceCode.extractK2ScriptMetadata(): Join<Series<String>, DependencyGraph> = 
+fun KotlinSourceCode.extractK2ScriptMetadata(): Join<Indexed<String>, DependencyGraph> = 
     K2ScriptIntegration.extractK2ScriptMetadata(this)
 
-fun KotlinSourceCode.generateSpaceGraphData(): Series<Join<String, Any>> = 
+fun KotlinSourceCode.generateSpaceGraphData(): Indexed<Join<String, Any>> = 
     K2ScriptIntegration.generateSpaceGraphData(this)
 
 /**

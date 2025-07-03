@@ -1,7 +1,7 @@
 package backtesting
 
 import kotlin.test.*
-import com.google.trike.series.* // Star import for Series, Cursor, RowVec, Join, ColumnMeta, etc.
+import com.google.trike.series.* // Star import for Indexed, Cursor, RowVec, Join, ColumnMeta, etc.
 import com.google.trike.series.memseries.* // Star import for MemSeries and related utilities
 import com.google.trike.series.j // Explicit import for 'j' infix function if not covered by star
 import data.klinesRecordMeta // Access to the shared klines data structure definition
@@ -16,7 +16,7 @@ private class MockTradingStrategy(private val signalsToReturn: List<TradingSigna
 
     override fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
+        historicalPrices: Indexed<Double>,
         historicalDataPoint: RowVec
     ): TradingSignal {
         if (signalIndex < signalsToReturn.size) {

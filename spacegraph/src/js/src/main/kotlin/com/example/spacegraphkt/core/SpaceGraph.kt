@@ -35,10 +35,10 @@ class SpaceGraph actual constructor(
     private var lastFrameTime = 0.0
 
     // CSS3D renderer for HTML elements
-// Replace MutableList with Series
-actual val nodes: Series<BaseNode> = Series()
-// Replace MutableList with Series for edges
-actual val edges: Series<Edge> = Series()
+// Replace MutableList with Indexed
+actual val nodes: Indexed<BaseNode> = Indexed()
+// Replace MutableList with Indexed for edges
+actual val edges: Indexed<Edge> = Indexed()
     private val cssRenderer = CSS3DRenderer()
     private val cssScene = CSS3DScene()
     private val cssCamera = CSS3DCamera()
@@ -146,7 +146,7 @@ actual val edges: Series<Edge> = Series()
         if (isDisposed) return
 
         // Add node to layout
-// Replace List with Series in layout.addNode
+// Replace List with Indexed in layout.addNode
     layout.addNode(node)
         layout.addNode(node)
 

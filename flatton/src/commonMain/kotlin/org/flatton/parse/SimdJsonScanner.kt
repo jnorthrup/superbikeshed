@@ -14,13 +14,13 @@ import kotlinx.serialization.scanner.BitmapJsonDecoder
 object SimdJsonScanner {
     
     /**
-     * Creates a cursor-like Series over JSON elements using BitmapJsonDecoder.
+     * Creates a cursor-like Indexed over JSON elements using BitmapJsonDecoder.
      * This provides efficient, on-the-fly parsing without full deserialization.
      */
-    fun createCursor(jsonBytes: Series<Byte>): Series<JsonObjectCursor> {
+    fun createCursor(jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         val decoder = BitmapJsonDecoder(jsonBytes.play.toByteArray())
         
-        return object : Series<JsonObjectCursor> {
+        return object : Indexed<JsonObjectCursor> {
             private var currentIndex = 0
             private val totalElements = countElements(decoder)
             
@@ -49,7 +49,7 @@ object SimdJsonScanner {
      * Finds the indices of all structural JSON characters using bitmap scanning.
      * This uses the superior BitmapJsonDecoder instead of crude regex checks.
      */
-    fun findStructuralIndices(json: Series<Byte>): Series<Int> {
+    fun findStructuralIndices(json: Indexed<Byte>): Indexed<Int> {
         val decoder = BitmapJsonDecoder(json.play.toByteArray())
         val indices = mutableListOf<Int>()
         
@@ -71,7 +71,7 @@ object SimdJsonScanner {
      * Creates a cursor specifically for CouchDB view responses.
      * This replaces the JsonWireProtoAdapter with a more robust implementation.
      */
-    fun createCouchViewCursor(jsonBytes: Series<Byte>): Series<JsonObjectCursor> {
+    fun createCouchViewCursor(jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         val decoder = BitmapJsonDecoder(jsonBytes.play.toByteArray())
         
         // Navigate to the "rows" array
@@ -93,10 +93,10 @@ object SimdJsonScanner {
         return emptySeries()
     }
     
-    private fun createArrayCursor(decoder: BitmapJsonDecoder, jsonBytes: Series<Byte>): Series<JsonObjectCursor> {
+    private fun createArrayCursor(decoder: BitmapJsonDecoder, jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         decoder.decodeToken(JsonToken.BEGIN_LIST)
         
-        return object : Series<JsonObjectCursor> {
+        return object : Indexed<JsonObjectCursor> {
             private var currentIndex = 0
             
             override fun get(index: Int): JsonObjectCursor {
@@ -144,7 +144,7 @@ object SimdJsonScanner {
  * This replaces the simplified JsonObjectCursor with a production-ready implementation.
  */
 class JsonObjectCursor(
-    private val jsonBytes: Series<Byte>,
+    private val jsonBytes: Indexed<Byte>,
     private val startIndex: Int,
     private val endIndex: Int,
     private val parsedElement: Any? = null
@@ -249,23 +249,23 @@ class JsonObjectCursor(
 
 /**
  * A wire protocol adapter that uses the robust SimdJsonScanner for efficient,
- * on-the-fly parsing of JSON responses into a cursor-like Series of elements.
+ * on-the-fly parsing of JSON responses into a cursor-like Indexed of elements.
  * This replaces the fragile JsonWireProtoAdapter with a production-ready implementation.
  */
 class JsonWireProtoAdapter {
     
     /**
-     * Creates a cursor (Series) over the "rows" array in a CouchDB view response.
+     * Creates a cursor (Indexed) over the "rows" array in a CouchDB view response.
      * This uses the superior BitmapJsonDecoder instead of crude string matching.
      */
-    fun toCursor(jsonBytes: Series<Byte>): Series<JsonObjectCursor> {
+    fun toCursor(jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         return SimdJsonScanner.createCouchViewCursor(jsonBytes)
     }
     
     /**
      * Creates a cursor over any JSON array.
      */
-    fun toArrayCursor(jsonBytes: Series<Byte>): Series<JsonObjectCursor> {
+    fun toArrayCursor(jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         return SimdJsonScanner.createCursor(jsonBytes)
     }
 }

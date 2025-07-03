@@ -1,6 +1,6 @@
 package rtsgame.systems
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import rtsgame.config.*
 import rtsgame.entities.GameUnit

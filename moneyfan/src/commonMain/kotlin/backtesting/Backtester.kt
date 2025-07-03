@@ -1,6 +1,6 @@
 package backtesting
 
-import com.google.trike.series.* // Star import for Series, Cursor, RowVec, Join, ColumnMeta etc.
+import com.google.trike.series.* // Star import for Indexed, Cursor, RowVec, Join, ColumnMeta etc.
 import com.google.trike.series.memseries.* // Star import for MemSeries
 import strategies.TradingSignal // Specific import for enum from another package
 
@@ -37,8 +37,8 @@ interface TradingStrategyInterface {
      */
     fun getSignal(
         currentPrice: Double,
-        historicalPrices: Series<Double>,
-        historicalDataPoint: RowVec // RowVec is Series<Join<Any?, () -> ColumnMeta>>
+        historicalPrices: Indexed<Double>,
+        historicalDataPoint: RowVec // RowVec is Indexed<Join<Any?, () -> ColumnMeta>>
     ): TradingSignal
 }
 

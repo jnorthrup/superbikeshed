@@ -1,7 +1,7 @@
 package com.ta4k.strategy.examples
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series // Corrected import
+import borg.trikeshed.lib.Indexed // Corrected import
 import com.ta4k.trikeshedutils.toSeries // Planned new location
 import borg.trikeshed.lib.get
 // import com.ta4k.indicators.SMAIndicator // Still not directly used in test logic

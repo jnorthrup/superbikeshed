@@ -16,7 +16,7 @@ import kotlin.system.exitProcess
  * - Direct integration with LiteLLMClient
  * - Tool management and execution
  * - Interactive CLI with ANSI colors
- * - Uses TrikeShed data structures (Series/Indexed, Join)
+ * - Uses TrikeShed data structures (Indexed/Indexed, Join)
  */
 object NexusInteractiveLLM {
     
@@ -36,7 +36,7 @@ object NexusInteractiveLLM {
         val execute: suspend (Map<String, Any>) -> String
     )
     
-    // Conversation history using Series/Indexed
+    // Conversation history using Indexed/Indexed
     private val conversationHistory = mutableListOf<Join<String, String>>()
     
     // Available tools

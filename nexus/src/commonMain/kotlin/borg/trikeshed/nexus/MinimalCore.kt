@@ -18,7 +18,7 @@ import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
 /**
- * Indexed<T> - Int-indexed sequences (Series equivalent)
+ * Indexed<T> - Int-indexed sequences (Indexed equivalent)
  */
 typealias Indexed<T> = Join<Int, (Int) -> T>
 

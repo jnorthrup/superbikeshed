@@ -10,14 +10,14 @@ import org.w3c.dom.* // For HTML elements like HTMLButtonElement, HTMLInputEleme
 
 // Data classes and DSEL interface are assumed to be in the same 'com.example.demo' package
 // and will be resolved by the Kotlin compiler.
-// Imports for Series, Kline, etc., are within those files (DataHelper.kt, DselInterfaceAugmented.kt).
+// Imports for Indexed, Kline, etc., are within those files (DataHelper.kt, DselInterfaceAugmented.kt).
 
 private val coroutineScope = MainScope()
 private var agentApiInstance: AgentAPI? = null
 private var demoVisualizerInstance: DemoVisualizer? = null
 
-private var currentKlineDataSeries: Series<Kline>? = null
-private var currentAugmentedVisualSeries: Series<VisualGraphPointWithMoneyfanOutcome>? = null
+private var currentKlineDataSeries: Indexed<Kline>? = null
+private var currentAugmentedVisualSeries: Indexed<VisualGraphPointWithMoneyfanOutcome>? = null
 
 // Default values for UI elements, matching index.html defaults
 private const val DEFAULT_ASSET_SYMBOL = "BTC"

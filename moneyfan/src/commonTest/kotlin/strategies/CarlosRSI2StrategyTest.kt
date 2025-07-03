@@ -1,7 +1,7 @@
 package strategies
 
 import kotlin.test.*
-import com.google.trike.series.* // Star import for Series, RowVec, Join, ColumnMeta, DataTypes
+import com.google.trike.series.* // Star import for Indexed, RowVec, Join, ColumnMeta, DataTypes
 import com.google.trike.series.memseries.* // Star import for MemSeries and related utilities
 import com.google.trike.series.DataTypes // Specifically for ColumnMeta type, though series.* should cover it.
 
@@ -13,7 +13,7 @@ class CarlosRSI2StrategyTest {
     // Helper to create a dummy RowVec. Useful for testing strategies that might inspect historicalDataPoint.
     // For CarlosRSI2Strategy, historicalPrices and currentPrice are primary inputs for indicators.
     private fun createDummyRowVec(timestamp: Long, price: Double): RowVec {
-        // A RowVec is Series<Join<Any?, () -> ColumnMeta>>.
+        // A RowVec is Indexed<Join<Any?, () -> ColumnMeta>>.
         // We use klinesRecordMeta structure for consistency, though only timestamp and close are used here.
         // If klinesRecordMeta is not directly accessible or desired, define simple ColumnMetas.
         val tsMeta = { ColumnMeta.Builder().name("timestamp").type(DataTypes.LONG).build() }
@@ -77,7 +77,7 @@ class CarlosRSI2StrategyTest {
         assertEquals(2, rsiFlat.size, "RSI2 series length for flatPrices should be 2.")
         // With refined RSI logic: if AvgGain and AvgLoss are both 0, RSI can be 0 or 50 or 100 by convention.
         // The code `if (initialRsi.isInfinite() && rsInitial > 0) 100.0 else if (initialRsi.isInfinite()) 0.0 else initialRsi`
-        // leads to 0.0 if rsInitial is MAX_VALUE from (0.0/0.0) which becomes NaN, then 1+NaN = NaN... need to check Trike's Series behavior for 0/0.
+        // leads to 0.0 if rsInitial is MAX_VALUE from (0.0/0.0) which becomes NaN, then 1+NaN = NaN... need to check Trike's Indexed behavior for 0/0.
         // Assuming 0/0 for AvgGain/AvgLoss results in RS that leads to RSI = 0 or 50 or 100.
         // Current code path with avgGain=0, avgLoss=0 -> rsInitial=MAX_VALUE -> initialRsi=0.0
         assertEquals(0.0, rsiFlat.values[0], testDelta, "RSI2 value 0 for flatPrices should be 0 (AvgGain=0, AvgLoss=0).")

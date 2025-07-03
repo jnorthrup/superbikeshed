@@ -8,7 +8,7 @@ import kotlinx.datetime.Instant
 
 /**
  * Attention-based ticker system for trading pairs
- * Uses TrikeShed Series<T> and Join<A,B> to track attention spans on time series data
+ * Uses TrikeShed Indexed<T> and Join<A,B> to track attention spans on time series data
  */
 
 // Variable time gauge attention spans using TrikeShed patterns
@@ -49,7 +49,7 @@ value class PairWeight(val value: Decimal) {
 typealias AttentionFocus = Join<Symbol, AttentionSpan>
 typealias WeightedPair = Join<Symbol, PairWeight>
 typealias GaugeReading = Join<VolatilityGauge, VolumeGauge>
-typealias AttentionState = Join<AttentionFocus, Series<WeightedPair>>
+typealias AttentionState = Join<AttentionFocus, Indexed<WeightedPair>>
 
 // Time series attention tracker with variable gauges
 data class AttentionWindow(
@@ -65,7 +65,7 @@ data class AttentionWindow(
     val dynamicSpan: AttentionSpan
 )
 
-typealias AttentionSeries = Series<AttentionWindow>
+typealias AttentionSeries = Indexed<AttentionWindow>
 
 /**
  * Real-time ticker that focuses attention on most active/volatile pairs
@@ -79,7 +79,7 @@ class AttentionBasedTicker {
     
     // Current attention state with variable time gauge
     private var currentAttention: AttentionState = 
-        (Symbol("BTC") j baseAttentionSpan) j Series.of(0) { WeightedPair(Symbol(""), PairWeight(0.0)) }
+        (Symbol("BTC") j baseAttentionSpan) j Indexed.of(0) { WeightedPair(Symbol(""), PairWeight(0.0)) }
     
     // Trading pairs with dynamic attention weights and spans
     private val watchedPairs = mutableMapOf<Symbol, PairWeight>()
@@ -97,7 +97,7 @@ class AttentionBasedTicker {
         
         // Update attention state using TrikeShed patterns
         val weightedPairs = watchedPairs.map { (sym, weight) -> sym j weight }
-        val pairSeries = Series.of(weightedPairs.size) { weightedPairs[it] }
+        val pairSeries = Indexed.of(weightedPairs.size) { weightedPairs[it] }
         currentAttention = currentAttention.a j pairSeries
         
         println("Added ${symbol.value} to variable time gauge tracker with weight ${initialWeight.value}")
@@ -196,7 +196,7 @@ class AttentionBasedTicker {
             }
         }
         
-        return Series.of(windows.size) { windows[it] }
+        return Indexed.of(windows.size) { windows[it] }
     }
     
     private fun calculateVolatility(prices: List<Price>): Decimal {
@@ -237,7 +237,7 @@ class AttentionBasedTicker {
             val topSpan = dynamicSpans[topPair.key] ?: baseAttentionSpan
             val focusPair = topPair.key j topSpan
             val weightedPairs = watchedPairs.map { (sym, weight) -> sym j weight }
-            val pairSeries = Series.of(weightedPairs.size) { weightedPairs[it] }
+            val pairSeries = Indexed.of(weightedPairs.size) { weightedPairs[it] }
             currentAttention = focusPair j pairSeries
         }
     }
@@ -245,17 +245,17 @@ class AttentionBasedTicker {
     // Get current attention focus
     fun getCurrentFocus(): AttentionFocus = currentAttention.a
     
-    // Get attention history for a pair using Series
+    // Get attention history for a pair using Indexed
     fun getAttentionHistory(symbol: Symbol): AttentionSeries {
         val history = attentionWindows[symbol] ?: emptyList()
-        return Series.of(history.size) { history[it] }
+        return Indexed.of(history.size) { history[it] }
     }
     
     // Get most attended pairs using TrikeShed patterns
-    fun getMostAttentionPairs(count: Int = 5): Series<WeightedPair> {
+    fun getMostAttentionPairs(count: Int = 5): Indexed<WeightedPair> {
         val sorted = watchedPairs.toList().sortedByDescending { it.second.value }
         val topPairs = sorted.take(count).map { (symbol, weight) -> symbol j weight }
-        return Series.of(topPairs.size) { topPairs[it] }
+        return Indexed.of(topPairs.size) { topPairs[it] }
     }
     
     fun getDynamicSpan(symbol: Symbol): AttentionSpan? = dynamicSpans[symbol]

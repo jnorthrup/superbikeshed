@@ -1,8 +1,8 @@
 package moneyfan.indicators
 
 import moneyfan.models.Price
-import moneyfan.trikeshed.Series
-import moneyfan.trikeshed.j // For Series construction
+import moneyfan.trikeshed.Indexed
+import moneyfan.trikeshed.j // For Indexed construction
 import moneyfan.trikeshed.emptySeries
 import kotlin.math.abs // For absolute value in losses
 
@@ -13,19 +13,19 @@ import kotlin.math.abs // For absolute value in losses
  * It is calculated using average gains and average losses over a specified period,
  * typically using a Simple Moving Average (SMA) for these averages in this implementation.
  *
- * The output Series will have the same size as the input `prices` series.
+ * The output Indexed will have the same size as the input `prices` series.
  * Values where RSI cannot be calculated (typically at the beginning of the series)
  * will be `Double.NaN`.
  *
  * @param prices The series of prices to calculate RSI from.
  * @param period The look-back period for calculating average gains and losses (e.g., 14).
  *               Must be greater than 0.
- * @return A `Series<Double>` containing the calculated RSI values (0-100), or `Double.NaN` for undefined values.
+ * @return A `Indexed<Double>` containing the calculated RSI values (0-100), or `Double.NaN` for undefined values.
  *         Returns an `emptySeries()` if the input `prices` series does not have enough data
  *         (i.e., `prices.a < period + 1`, as at least `period` deltas are needed).
  * @throws IllegalArgumentException if `period` is less than or equal to 0.
  */
-fun calculateRSI(prices: Series<Price>, period: Int): Series<Double> {
+fun calculateRSI(prices: Indexed<Price>, period: Int): Indexed<Double> {
     if (period <= 0) {
         throw IllegalArgumentException("Period must be greater than 0, but was $period.")
     }

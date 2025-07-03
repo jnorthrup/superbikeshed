@@ -4,7 +4,7 @@ package k2script.trikeshed.lib.bridge
 
 import k2script.trikeshed.lib.*
 import kotlin.jvm.JvmInline
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toSeries
 
 /**
@@ -131,7 +131,7 @@ class QuicConnectionFlowControl(val connectionId: String) {
 
 // === SERIES CONSTRUCTION BRIDGE ===
 
-// Removed duplicate s_ and Series.size definitions; use those from CoreTypes.kt
+// Removed duplicate s_ and Indexed.size definitions; use those from CoreTypes.kt
 
 // === JSON BRIDGE ===
 

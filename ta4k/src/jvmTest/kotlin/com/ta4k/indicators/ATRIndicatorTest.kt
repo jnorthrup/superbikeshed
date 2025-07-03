@@ -4,7 +4,7 @@ import com.ta4k.core.model.Kline
 import com.ta4k.trikeshedutils.toSeries // Planned new location
 import com.ta4k.trikeshedutils.toList   // Planned new location
 import borg.trikeshed.lib.size
-import borg.trikeshed.lib.Series // Should be imported if Series is explicitly typed
+import borg.trikeshed.lib.Indexed // Should be imported if Indexed is explicitly typed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import java.math.BigDecimal
@@ -51,7 +51,7 @@ class ATRIndicatorTest {
         val resultScale = 4 // Matching ATRIndicator's resultScale for assertion
 
         // Test True Range values (scaled)
-        for (i in 0 until klines.size) { // Use klines.size for Series
+        for (i in 0 until klines.size) { // Use klines.size for Indexed
             assertEquals(expectedTrValues[i].setScale(resultScale, RoundingMode.HALF_UP), atr14.getTrueRange(i))
         }
 

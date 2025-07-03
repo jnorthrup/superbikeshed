@@ -1,7 +1,7 @@
 package moneyfan.strategy
 
 import moneyfan.model.TradeSignal
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import com.ta4k.core.model.Kline
 import java.math.BigDecimal
 
@@ -12,8 +12,8 @@ class SimpleMovingAverageStrategy(
     private val fastPeriod: Int,
     private val slowPeriod: Int
 ) {
-    fun generateSignals(klines: Series<Kline>): Series<TradeSignal> {
-        // Convert Series<Kline> to ta4j BarSeries
+    fun generateSignals(klines: Indexed<Kline>): Indexed<TradeSignal> {
+        // Convert Indexed<Kline> to ta4j BarSeries
         val barSeries = BaseBarSeries()
         for (i in 0 until klines.size) {
             val kline = klines.get(i)
@@ -38,7 +38,7 @@ class SimpleMovingAverageStrategy(
         val tradingRule = OrRule(entryRule, exitRule)
 
         // Generate signals
-        return Series.of(barSeries.barCount) { i ->
+        return Indexed.of(barSeries.barCount) { i ->
             if (i < slowPeriod) {
                 TradeSignal.NONE
             } else {

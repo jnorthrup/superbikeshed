@@ -2,7 +2,7 @@ package nexus.core.dgm.services
 
 import nexus.core.dgm.*
 import kotlin.coroutines.CoroutineContext
-import borg.trikeshed.lib.Series // Assuming CCEKContext might be a TrikeShed type or a basic CoroutineContext
+import borg.trikeshed.lib.Indexed // Assuming CCEKContext might be a TrikeShed type or a basic CoroutineContext
 
 // For now, CCEKContext can be a placeholder. It would typically be a more complex
 // type alias using Join, potentially from a dedicated CCEK definition file.

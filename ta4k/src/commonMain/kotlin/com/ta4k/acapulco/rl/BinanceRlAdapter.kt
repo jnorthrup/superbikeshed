@@ -3,10 +3,10 @@
 // =====================================================================
 package borg.trikeshed.acapulco.rl
 
-import borg.trikeshed.cursor.Cursor // Assuming Cursor is Series<RowVec>
+import borg.trikeshed.cursor.Cursor // Assuming Cursor is Indexed<RowVec>
 import borg.trikeshed.rl.Agent
 import borg.trikeshed.rl.Environment
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.cursor.RowVec
 
 /**
@@ -15,7 +15,7 @@ import borg.trikeshed.cursor.RowVec
  * A: Action type determined by the agent
  */
 class BinanceRlAdapter<A>(
-    private val cursor: Cursor, // Cursor is Series<RowVec>
+    private val cursor: Cursor, // Cursor is Indexed<RowVec>
     private val agent: Agent<RowVec, A>
 ) : Environment<RowVec, A> {
     private lateinit var currentState: RowVec

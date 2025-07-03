@@ -1,6 +1,6 @@
 package k2script.api.models
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import k2script.bus.Address
 import k2script.bus.Command
 import k2script.bus.Query
@@ -27,8 +27,8 @@ data class ValidateScriptQuery(
  */
 data class ParseDependenciesQuery(
     override val payload: File,
-    override val reply: CompletableDeferred<Series<String>> = CompletableDeferred()
-) : Query<File, Series<String>> {
+    override val reply: CompletableDeferred<Indexed<String>> = CompletableDeferred()
+) : Query<File, Indexed<String>> {
     override val address: Address = SCRIPT_ENGINE_ADDRESS
 }
 

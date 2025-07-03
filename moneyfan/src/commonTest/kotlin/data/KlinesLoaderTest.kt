@@ -1,7 +1,7 @@
 package data
 
 import kotlin.test.*
-import com.google.trike.series.* // Star import for Series, Cursor, RowVec, Join, ColumnMeta etc.
+import com.google.trike.series.* // Star import for Indexed, Cursor, RowVec, Join, ColumnMeta etc.
 import com.google.trike.series.storage.IsamDataFile // Specific import if needed, though covered by series.*
 import kotlin.io.File // For file deletion, assuming common or JVM context
 
@@ -34,7 +34,7 @@ class KlinesLoaderTest {
         assertNotNull(mockKlinesSeries, "Mock klines series should not be null.")
         assertTrue(mockKlinesSeries.size > 0, "Mock klines series should contain data.")
 
-        // Convert Series<RowVec> to List<RowVec> for easier comparison later.
+        // Convert Indexed<RowVec> to List<RowVec> for easier comparison later.
         val originalKlinesList = mockKlinesSeries.toList()
 
         // 2. Store the mock klines data to an ISAM file.

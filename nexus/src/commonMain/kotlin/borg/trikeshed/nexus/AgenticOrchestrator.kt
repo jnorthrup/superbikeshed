@@ -20,7 +20,7 @@ import kotlin.jvm.JvmInline
  * - Async/detached operation with coroutines
  * - LLM integration for intelligent responses  
  * - Environment adaptation and learning
- * - Series-based processing with TrikeShed patterns
+ * - Indexed-based processing with TrikeShed patterns
  * - Autonomous task execution
  * - Integration with Nexus taxonomy and DSL
  */
@@ -167,7 +167,7 @@ class AgenticOrchestrator {
                 val observation = learningChannel.receive()
                 observations.add(observation)
                 
-                // Extract patterns from observations using Series operations
+                // Extract patterns from observations using Indexed operations
                 extractAndUpdatePatterns(observation)
                 
                 if (observations.size % 5 == 0) {
@@ -247,7 +247,7 @@ class AgenticOrchestrator {
         // Use TrikeShed AgentSeries for pattern analysis
         val observationSeries: AgentSeries<AgentObservation> = observations.size j { i -> observations[i] }
         
-        // Analyze patterns using Series transformations
+        // Analyze patterns using Indexed transformations
         val recentObservations = if (observationSeries.size > 10) {
             10 j { i: Int -> observationSeries[i] }
         } else {
@@ -318,7 +318,7 @@ class AgenticOrchestrator {
         val demoSeries: AgentSeries<Int> = 10 j { i -> i * i }
         val first5 = 5 j { i: Int -> demoSeries[i] }
         val demoList = (0 until first5.size).map { i -> first5[i] }
-        println("   📊 Series demo: ${demoList.joinToString(", ")}")
+        println("   📊 Indexed demo: ${demoList.joinToString(", ")}")
         
         // Demonstrate Join composition
         val demoJoin = "hello" j 42

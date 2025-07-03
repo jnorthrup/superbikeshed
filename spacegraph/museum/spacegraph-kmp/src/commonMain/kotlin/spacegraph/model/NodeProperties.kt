@@ -1,5 +1,5 @@
 package spacegraph.model
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 
-typealias NodeProperties = Series<String>
+typealias NodeProperties = Indexed<String>

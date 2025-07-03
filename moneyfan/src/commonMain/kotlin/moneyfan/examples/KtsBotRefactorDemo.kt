@@ -1,6 +1,6 @@
 package moneyfan.examples
 
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.scope.AttentionScope
 import moneyfan.trikeshed.scope.FractionalScope
 import moneyfan.trikeshed.scope.RangeScope
@@ -59,7 +59,7 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
         println("Portfolio is empty. No demonstration possible.")
         return
     }
-    val portfolioSeries: Series<DemoPortfolioRow> = portfolioRows.toSeries()
+    val portfolioSeries: Indexed<DemoPortfolioRow> = portfolioRows.toSeries()
     println("Original portfolio size: ${portfolioSeries.a}")
 
     // 1. Demonstrate FractionalScope
@@ -105,9 +105,9 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
  * Demonstrates sparse data handling (fillna, ffill) and series extension.
  */
 fun demonstrateSparseAndExtendedHandling() {
-    println("\n--- Demonstrating Sparse and Extended Series Handling ---")
+    println("\n--- Demonstrating Sparse and Extended Indexed Handling ---")
     val pricesWithNullsList = listOf(10.0, null, 12.0, null, null, 15.0, 16.0)
-    val sparsePrices: Series<Double?> = pricesWithNullsList.toSeries()
+    val sparsePrices: Indexed<Double?> = pricesWithNullsList.toSeries()
     println("Original sparse prices: ${sparsePrices.`play`.joinToString { it?.format(2) ?: "null" }}")
 
     // fillna with a default value
@@ -123,7 +123,7 @@ fun demonstrateSparseAndExtendedHandling() {
     // println("dropna():             ${droppedPrices.`play`.joinToString { it.format(2) }}")
 
 
-    println("\n--- Demonstrating Series Extension ---")
+    println("\n--- Demonstrating Indexed Extension ---")
     val baseSeries = listOf(1.0, 2.0, 3.0).toSeries()
     println("Base series: ${baseSeries.`play`.joinToString { it.format(2) }} (Size: ${baseSeries.a})")
 

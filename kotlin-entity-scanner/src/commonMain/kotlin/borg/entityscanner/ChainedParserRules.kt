@@ -41,8 +41,8 @@ typealias RuleAction = (ParseContext, Int) -> ParseContext
 typealias ChainedRule = Join<ParsingRule, Join<ChainDirection, ContextWindow>>
 
 // Rule collections
-typealias ForwardRuleSeries = Series<ChainedRule>
-typealias BackwardRuleSeries = Series<ChainedRule>
+typealias ForwardRuleSeries = Indexed<ChainedRule>
+typealias BackwardRuleSeries = Indexed<ChainedRule>
 typealias RuleChain = Join<ForwardRuleSeries, BackwardRuleSeries>
 
 // ==== KOTLIN SYNTAX RULES ====

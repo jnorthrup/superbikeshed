@@ -22,7 +22,7 @@ data class SwingPoint(
 )
 
 /**
- * Detects swing highs and lows in a given Trikethed [Series] of [Kline].
+ * Detects swing highs and lows in a given Trikethed [Indexed] of [Kline].
  * A swing high is a kline whose high is higher than the highs of 'strength' klines to its left and right.
  * A swing low is a kline whose low is lower than the lows of 'strength' klines to its left and right.
  */
@@ -31,12 +31,12 @@ object SwingPointDetector {
     /**
      * Detects all swing points (both highs and lows) in the series.
      *
-     * @param klineSeries The Trikethed [Series] of klines to analyze. // Changed from List
+     * @param klineSeries The Trikethed [Indexed] of klines to analyze. // Changed from List
      * @param strength The number of klines to the left and right to compare against.
      *                 A higher strength means more significant (but fewer) swing points.
      * @return A list of [SwingPoint]s, sorted by index.
      */
-    fun detectSwingPoints(klineSeries: Series<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
+    fun detectSwingPoints(klineSeries: Indexed<Kline>, strength: Int): List<SwingPoint> { // Changed parameter type
         require(strength > 0) { "Strength must be positive." }
         // Use klineSeries.size
         if (klineSeries.size < (2 * strength + 1)) {
@@ -49,7 +49,7 @@ object SwingPointDetector {
         // Index i is the candidate swing point
         // Use klineSeries.size and klineSeries[i]
         for (i in strength until klineSeries.size - strength) {
-            val candidateKline = klineSeries[i] // Access using Series operator
+            val candidateKline = klineSeries[i] // Access using Indexed operator
 
             // Check for Swing High
             var isSwingHigh = true

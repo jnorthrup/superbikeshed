@@ -2,7 +2,7 @@ package com.example.demo
 
 import com.example.spacegraphkt.api.AgentAPI
 import com.example.spacegraphkt.api.jsObject // Helper for creating JS objects for AgentAPI
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.`play`
 // Data classes (VisualGraphPointWithMoneyfanOutcome, etc.) and Enums (TASignalType, MoneyfanActionType)
 // are assumed to be in this package (from DemoDataClasses.kt) or correctly imported.
@@ -32,10 +32,10 @@ class DemoVisualizer(private val agentApi: AgentAPI) {
      * Creates nodes for each data point and edges to connect them sequentially.
      * Node content and styling reflect the data.
      *
-     * @param augmentedVisualData The DSEL Series of data points to visualize.
+     * @param augmentedVisualData The DSEL Indexed of data points to visualize.
      */
     fun displayDataWithMoneyfanOutcomes(
-        augmentedVisualData: Series<VisualGraphPointWithMoneyfanOutcome>
+        augmentedVisualData: Indexed<VisualGraphPointWithMoneyfanOutcome>
     ) {
         clearGraph() // Start with a fresh graph
 
@@ -153,7 +153,7 @@ class DemoVisualizer(private val agentApi: AgentAPI) {
 
     fun highlightMoneyfanAction(
         actionToHighlight: MoneyfanActionType?,
-        fullVisualData: Series<VisualGraphPointWithMoneyfanOutcome>
+        fullVisualData: Indexed<VisualGraphPointWithMoneyfanOutcome>
     ) {
         if (klineNodeIds.isEmpty() || fullVisualData.size != klineNodeIds.size) {
             console.warn("DemoVisualizer: Cannot highlight, data mismatch or empty.")

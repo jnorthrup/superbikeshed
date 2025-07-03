@@ -1,6 +1,6 @@
 package rtsgame.terrain
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import rtsgame.config.*
 import rtsgame.codec.DeterministicRandom

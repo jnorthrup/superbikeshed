@@ -13,7 +13,7 @@ import TaskHistory
 import KotlinExtensionState
 import ActiveSession
 import EnvironmentContext
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.seriesOf
 import borg.trikeshed.lib.size
 import borg.trikeshed.lib.get
@@ -28,7 +28,7 @@ class TaskLogicTest {
 
     @Test
     fun testAddTaskEvent() {
-        val initialHistory = seriesOf<TaskEvent>() // Initialize with an empty Series
+        val initialHistory = seriesOf<TaskEvent>() // Initialize with an empty Indexed
         val event = TaskEvent(ts = 123L, type = "ask", text = "Hello")
         val newHistory = addTaskEvent(initialHistory, event)
         

@@ -222,13 +222,13 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private suspend fun getCarlosOnlyAnalysis(): Series<CombinedAnalysis> {
+    private suspend fun getCarlosOnlyAnalysis(): Indexed<CombinedAnalysis> {
         // Get analyses and filter to show only Carlos signals
         val topSymbols = orchestrator.analyzeTopSymbols(10)
         return topSymbols.map { analysis ->
             analysis.copy(
                 combinedSignal = convertCarlosToSignal(analysis.carlosSignal),
-                votes = Series.of(1) { 
+                votes = Indexed.of(1) { 
                     StrategyVote(
                         signal = analysis.carlosSignal,
                         confidence = StrategyConfidence(0.8),
@@ -240,12 +240,12 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private suspend fun getSkimmerOnlyAnalysis(): Series<CombinedAnalysis> {
+    private suspend fun getSkimmerOnlyAnalysis(): Indexed<CombinedAnalysis> {
         val topSymbols = orchestrator.analyzeTopSymbols(10)
         return topSymbols.map { analysis ->
             analysis.copy(
                 combinedSignal = convertSkimmerToSignal(analysis.skimmerSignal),
-                votes = Series.of(1) { 
+                votes = Indexed.of(1) { 
                     StrategyVote(
                         signal = convertSkimmerActionToSignal(analysis.skimmerSignal),
                         confidence = StrategyConfidence(0.7),
@@ -257,7 +257,7 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private suspend fun getAttentionOnlyAnalysis(): Series<CombinedAnalysis> {
+    private suspend fun getAttentionOnlyAnalysis(): Indexed<CombinedAnalysis> {
         val topSymbols = orchestrator.analyzeTopSymbols(10)
         return topSymbols.map { analysis ->
             val attentionSignal = if (analysis.attentionScore.value > 0.7) {
@@ -270,7 +270,7 @@ class TechnicalAnalysisDisplay(
             
             analysis.copy(
                 combinedSignal = attentionSignal,
-                votes = Series.of(1) { 
+                votes = Indexed.of(1) { 
                     StrategyVote(
                         signal = if (attentionSignal == CombinedSignal.BUY) TradeSignal.BUY 
                                  else if (attentionSignal == CombinedSignal.SELL) TradeSignal.SELL 
@@ -308,7 +308,7 @@ class TechnicalAnalysisDisplay(
         }
     }
     
-    private fun updateSignalTable(analyses: Series<CombinedAnalysis>) {
+    private fun updateSignalTable(analyses: Indexed<CombinedAnalysis>) {
         val model = signalTable.model as DefaultTableModel
         model.rowCount = 0
         

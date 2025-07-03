@@ -1,12 +1,12 @@
 package moneyfan.examples
 
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.toSeries
 import moneyfan.trikeshed.scope.HumanLanguageAgentScope
 import moneyfan.trikeshed.nlp.HybridNlpAgentPoc
 import moneyfan.trikeshed.nlp.NlpAgentResult // For casting or direct use if needed
 import moneyfan.trikeshed.nlp.rql.* // RQL model classes
-import moneyfan.trikeshed.focus // Series.focus extension
+import moneyfan.trikeshed.focus // Indexed.focus extension
 
 /**
  * Represents a sample data record for demonstration purposes with [HumanLanguageAgentScope].
@@ -35,7 +35,7 @@ data class DemoDataRecord(
  *
  * This demo showcases how a natural language query can be processed to extract
  * both a structured RQL query and semantic relevance scores, and how these
- * are combined to filter a `Series` of data records.
+ * are combined to filter a `Indexed` of data records.
  */
 fun runAdvancedScopeDemo() {
     println("======== AdvancedScope (HumanLanguageAgentScope PoC) Demo Start ========")
@@ -53,7 +53,7 @@ fun runAdvancedScopeDemo() {
         DemoDataRecord(9, "Kitchen Mixer Pro", "appliances", 150.0, "Powerful stand mixer for all your baking needs."),
         DemoDataRecord(10, "Portable SSD 1TB", "electronics", 120.0, "Fast and reliable portable storage gadget for your files.")
     )
-    val dataSeries: Series<DemoDataRecord> = sampleList.toSeries()
+    val dataSeries: Indexed<DemoDataRecord> = sampleList.toSeries()
 
     println("\n--- Original Data (${dataSeries.a} items) ---")
     dataSeries.`play`.forEach { println(it) }
@@ -130,7 +130,7 @@ fun runAdvancedScopeDemo() {
     val focusedSeries = dataSeries.focus(scope)
 
     // 6. Print Final Focused Output
-    println("\n--- Final Focused Series (${focusedSeries.a} items) ---")
+    println("\n--- Final Focused Indexed (${focusedSeries.a} items) ---")
     if (focusedSeries.isEmpty()) {
         println("No items matched both RQL (if any) and semantic score threshold.")
     } else {

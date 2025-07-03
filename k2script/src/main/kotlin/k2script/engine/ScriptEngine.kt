@@ -171,7 +171,7 @@ class DefaultScriptEngine : Handler {
         return emptyList()
     }
 
-    private fun parseDependencies(scriptFile: File): borg.trikeshed.lib.Series<String> {
+    private fun parseDependencies(scriptFile: File): borg.trikeshed.lib.Indexed<String> {
         return borg.trikeshed.lib.emptySeries()
     }
 
@@ -192,7 +192,7 @@ private class ScriptValidator {
 }
 
 private class DependencyParser(private val resolvers: List<DependencyResolver>) {
-    fun parse(scriptFile: File): borg.trikeshed.lib.Series<String> {
+    fun parse(scriptFile: File): borg.trikeshed.lib.Indexed<String> {
         // Implementation will be added here
         return borg.trikeshed.lib.emptySeries()
     }

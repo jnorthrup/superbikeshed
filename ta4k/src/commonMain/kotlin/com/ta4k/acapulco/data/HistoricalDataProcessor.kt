@@ -32,7 +32,7 @@ value class CandleCount(val value: Int)
 typealias OHLC = Join<Join<Price, Price>, Join<Price, Price>> // Open-High-Low-Close
 typealias OHLCV = Join<OHLC, Volume>
 typealias TimestampedCandle = Join<OHLCV, Instant>
-typealias CandleSeries = Series<TimestampedCandle>
+typealias CandleSeries = Indexed<TimestampedCandle>
 
 // Helper functions for OHLC access
 val OHLC.open: Price get() = this.a.a
@@ -48,22 +48,22 @@ class ResponsiveCursorSlab(
     private val hotWindowSize: Int = 10_000,
     private val maxSize: Int = 100_000
 ) {
-    private var activeData: Series<TimestampedCandle> = Series.of(0) { error("Empty slab") }
+    private var activeData: Indexed<TimestampedCandle> = Indexed.of(0) { error("Empty slab") }
     
     fun appendCandles(newCandles: CandleSeries) {
         activeData = when {
             activeData.size == 0 -> newCandles
             activeData.size + newCandles.size <= maxSize -> {
-                // Combine using Series concatenation
-                Series.of(activeData.size + newCandles.size) { i ->
+                // Combine using Indexed concatenation
+                Indexed.of(activeData.size + newCandles.size) { i ->
                     if (i < activeData.size) activeData[i] else newCandles[i - activeData.size]
                 }
             }
             else -> {
                 // Rotate old data out, keep recent data
                 val keepCount = maxSize - newCandles.size
-                val recentData = Series.of(keepCount) { i -> activeData[activeData.size - keepCount + i] }
-                Series.of(maxSize) { i ->
+                val recentData = Indexed.of(keepCount) { i -> activeData[activeData.size - keepCount + i] }
+                Indexed.of(maxSize) { i ->
                     if (i < keepCount) recentData[i] else newCandles[i - keepCount]
                 }
             }
@@ -73,9 +73,9 @@ class ResponsiveCursorSlab(
     fun getHotWindow(): CandleSeries {
         val windowSize = minOf(hotWindowSize, activeData.size)
         return if (windowSize == 0) {
-            Series.of(0) { error("No data") }
+            Indexed.of(0) { error("No data") }
         } else {
-            Series.of(windowSize) { i -> activeData[activeData.size - windowSize + i] }
+            Indexed.of(windowSize) { i -> activeData[activeData.size - windowSize + i] }
         }
     }
     
@@ -83,9 +83,9 @@ class ResponsiveCursorSlab(
         val actualStart = maxOf(0, activeData.size - startOffset - count)
         val actualCount = minOf(count, activeData.size - actualStart)
         return if (actualCount <= 0) {
-            Series.of(0) { error("No data in range") }
+            Indexed.of(0) { error("No data in range") }
         } else {
-            Series.of(actualCount) { i -> activeData[actualStart + i] }
+            Indexed.of(actualCount) { i -> activeData[actualStart + i] }
         }
     }
     
@@ -99,10 +99,10 @@ class ParallelCSVProcessor {
         // Skip header line and process data lines in parallel
         val dataLines = csvLines.drop(1)
         
-        // Use Series.α for functional transformation
+        // Use Indexed.α for functional transformation
         val candleList = dataLines.map { line -> parseKlineLine(line) }
         
-        return Series.of(candleList.size) { i -> candleList[i] }
+        return Indexed.of(candleList.size) { i -> candleList[i] }
     }
     
     private fun parseKlineLine(line: String): TimestampedCandle {
@@ -137,20 +137,20 @@ class HistoricalDataManager {
     }
     
     fun getRecentCandles(symbol: Symbol, count: CandleCount): CandleSeries {
-        val slab = cursorSlabs[symbol] ?: return Series.of(0) { error("No data for symbol: ${symbol.value}") }
+        val slab = cursorSlabs[symbol] ?: return Indexed.of(0) { error("No data for symbol: ${symbol.value}") }
         return slab.getWindow(0, count.value)
     }
     
     fun getHotWindow(symbol: Symbol): CandleSeries {
-        val slab = cursorSlabs[symbol] ?: return Series.of(0) { error("No data for symbol: ${symbol.value}") }
+        val slab = cursorSlabs[symbol] ?: return Indexed.of(0) { error("No data for symbol: ${symbol.value}") }
         return slab.getHotWindow()
     }
     
     fun getSymbolCount(): Int = cursorSlabs.size
     
-    fun getAvailableSymbols(): Series<Symbol> {
+    fun getAvailableSymbols(): Indexed<Symbol> {
         val symbols = cursorSlabs.keys.toList()
-        return Series.of(symbols.size) { i -> symbols[i] }
+        return Indexed.of(symbols.size) { i -> symbols[i] }
     }
 }
 

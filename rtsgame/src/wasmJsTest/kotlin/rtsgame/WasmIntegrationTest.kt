@@ -50,7 +50,7 @@ class WasmIntegrationTest {
     @Test
     fun `series operations work in wasm`() {
         val data = listOf(1, 2, 3, 4, 5)
-        val series = Series.of(data.size) { i -> data[i] }
+        val series = Indexed.of(data.size) { i -> data[i] }
         
         assertEquals(5, series.size)
         assertEquals(data, series.play)

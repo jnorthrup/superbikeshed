@@ -1,7 +1,7 @@
 package moneyfan.trikeshed.scope
 
-import moneyfan.trikeshed.Series
-import moneyfan.trikeshed.j // For Series construction
+import moneyfan.trikeshed.Indexed
+import moneyfan.trikeshed.j // For Indexed construction
 import moneyfan.trikeshed.emptySeries
 import moneyfan.trikeshed.toSeries
 // Imports for the NlpAgent and RQL model from the correct 'nlp' package
@@ -126,7 +126,7 @@ private fun evaluateNode(node: RqlQueryNode, itemFields: Map<String, Any?>): Boo
  * 1.  The provided `nlpQuery` (natural language) is sent to the `agent`.
  * 2.  The `agent` returns an [NlpAgentResult], which includes:
  *     a.  An optional `structuredQuery` ([RqlRootQuery]) parsed from `nlpQuery`.
- *     b.  `relevanceScores` ([Series<Double>]) for all items in the source series,
+ *     b.  `relevanceScores` ([Indexed<Double>]) for all items in the source series,
  *         derived from `nlpQuery` and `itemToStringConverter`.
  * 3.  If `structuredQuery` is present, the initial `source` series is filtered based on this RQL query
  *     using `itemToFieldsExtractor` to access item properties.
@@ -136,7 +136,7 @@ private fun evaluateNode(node: RqlQueryNode, itemFields: Map<String, Any?>): Boo
  *
  * This is a **Proof-of-Concept (PoC)** implementation.
  *
- * @param T The type of elements in the source [Series].
+ * @param T The type of elements in the source [Indexed].
  * @property nlpQuery The natural language query string that drives both RQL parsing and semantic scoring.
  * @property itemToStringConverter A lambda `(T) -> String` that converts items of type `T` into their
  *                                 string representation. This is used by the [NlpAgent] for semantic scoring.
@@ -165,16 +165,16 @@ data class HumanLanguageAgentScope<T>(
     }
 
     /**
-     * Applies the hybrid (RQL + semantic) filtering logic to the `source` [Series].
+     * Applies the hybrid (RQL + semantic) filtering logic to the `source` [Indexed].
      *
-     * @param source The input [Series<T>] to be filtered.
-     * @return A new [Series<T>] containing items that satisfy both the parsed RQL query (if any)
+     * @param source The input [Indexed<T>] to be filtered.
+     * @return A new [Indexed<T>] containing items that satisfy both the parsed RQL query (if any)
      *         and the semantic score threshold. Returns an empty series if no items match or if the source is empty.
      */
-    override fun apply(source: Series<T>): Series<T> {
+    override fun apply(source: Indexed<T>): Indexed<T> {
         if (source.isEmpty()) return emptySeries()
 
-        // 1. Convert source Series<T> to Series<String> for the NLP agent's semantic scoring part.
+        // 1. Convert source Indexed<T> to Indexed<String> for the NLP agent's semantic scoring part.
         val stringSeries = source.a j { idx:Int -> itemToStringConverter(source.b(idx)) }
 
         // This check is mostly defensive, assuming itemToStringConverter is well-behaved.
@@ -214,13 +214,13 @@ data class HumanLanguageAgentScope<T>(
             .filter { (_, _, score) -> score >= semanticScoreThreshold }
             .map { (item, _, _) -> item } // Extract only the item of type T for the result.
 
-        // 6. Construct the result Series<T>.
+        // 6. Construct the result Indexed<T>.
         if (finalFilteredItems.isEmpty()) return emptySeries()
         return finalFilteredItems.toSeries()
     }
 
     /**
-     * Returns a [Series<Int>] of indices selected by this scope.
+     * Returns a [Indexed<Int>] of indices selected by this scope.
      * **Proof-of-Concept Limitation:** This method is a placeholder for `HumanLanguageAgentScope`.
      * A full implementation would require access to the source data (or its string representations
      * and field maps) to perform both RQL evaluation and NLP scoring, which are not available
@@ -231,7 +231,7 @@ data class HumanLanguageAgentScope<T>(
      * @param sourceSize The size of the conceptual source series.
      * @return An [emptySeries] for this PoC implementation.
      */
-    override fun getScopedIndices(sourceSize: Int): Series<Int> {
+    override fun getScopedIndices(sourceSize: Int): Indexed<Int> {
         if (sourceSize == 0) return emptySeries()
 
         println("Warning: HumanLanguageAgentScope.getScopedIndices is a PoC placeholder and does not produce " +

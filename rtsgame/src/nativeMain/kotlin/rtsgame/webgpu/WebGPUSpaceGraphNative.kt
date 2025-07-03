@@ -31,7 +31,7 @@ actual class WebGPUSpaceGraph actual constructor() {
         return true
     }
     
-    actual fun createVertexBuffer(data: Series<VertexData>): BufferId {
+    actual fun createVertexBuffer(data: Indexed<VertexData>): BufferId {
         val bufferId = BufferId(nextBufferId++)
         val buffer = GPUBuffer() // TODO: Create actual wgpu-native buffer
         buffers[bufferId] = buffer

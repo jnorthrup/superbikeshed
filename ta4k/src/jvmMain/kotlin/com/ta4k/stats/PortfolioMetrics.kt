@@ -1,6 +1,6 @@
 package com.ta4k.stats
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
@@ -18,7 +18,7 @@ class PortfolioMetrics {
     /**
      * Calculate the win rate of a series of returns
      */
-    fun winRate(returns: Series<BigDecimal>): BigDecimal {
+    fun winRate(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val wins = returns.`play`.count { it > BigDecimal.ZERO }
@@ -29,7 +29,7 @@ class PortfolioMetrics {
     /**
      * Calculate the average win size
      */
-    fun avgWin(returns: Series<BigDecimal>): BigDecimal {
+    fun avgWin(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
@@ -41,7 +41,7 @@ class PortfolioMetrics {
     /**
      * Calculate the average loss size
      */
-    fun avgLoss(returns: Series<BigDecimal>): BigDecimal {
+    fun avgLoss(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
@@ -53,7 +53,7 @@ class PortfolioMetrics {
     /**
      * Calculate the profit factor (gross profit / gross loss)
      */
-    fun profitFactor(returns: Series<BigDecimal>): BigDecimal {
+    fun profitFactor(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val grossProfit = returns.`play`.filter { it > BigDecimal.ZERO }
@@ -68,7 +68,7 @@ class PortfolioMetrics {
     /**
      * Calculate the maximum drawdown
      */
-    fun maxDrawdown(returns: Series<BigDecimal>): BigDecimal {
+    fun maxDrawdown(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         var peak = BigDecimal.ONE
@@ -88,7 +88,7 @@ class PortfolioMetrics {
     /**
      * Calculate the average drawdown
      */
-    fun avgDrawdown(returns: Series<BigDecimal>): BigDecimal {
+    fun avgDrawdown(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         var peak = BigDecimal.ONE
@@ -109,7 +109,7 @@ class PortfolioMetrics {
     /**
      * Calculate the exposure (percentage of time invested)
      */
-    fun exposure(returns: Series<BigDecimal>): BigDecimal {
+    fun exposure(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val invested = returns.`play`.count { it != BigDecimal.ZERO }

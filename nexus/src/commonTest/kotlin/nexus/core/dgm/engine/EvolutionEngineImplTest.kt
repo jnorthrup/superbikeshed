@@ -2,7 +2,7 @@ package nexus.core.dgm.engine
 
 import nexus.core.dgm.*
 import nexus.core.dgm.services.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.*
@@ -43,7 +43,7 @@ class MockDgmStateService : DgmStateService {
     override suspend fun loadArchive(context: CCEKContext): DgmArchive {
         calls.add("loadArchive")
         loadArchiveShouldThrow?.let { throw it }
-        return Series.ofList(archiveState.map { Join(it.key, it.value) })
+        return Indexed.ofList(archiveState.map { Join(it.key, it.value) })
     }
 
     override suspend fun saveArchiveEntry(entry: ArchivedImprovement, context: CCEKContext): ArchiveEntryId {
@@ -56,7 +56,7 @@ class MockDgmStateService : DgmStateService {
         // Reconstruct ArchiveEntry as it would be stored
         val parentEntryId = candidate.a.a.a.b // candidate.task.parentEntryId
         val commitHash = "commit_for_${newEntryId.take(4)}" // Simplified
-        val tags = Series.ofList(listOf("tag1", validationResult.a.a.lowercase()))
+        val tags = Indexed.ofList(listOf("tag1", validationResult.a.a.lowercase()))
         val timestamp = TimestampUtils.now()
         val versionMetadata = VersionMetadata(Join(parentEntryId, commitHash), Join(tags, timestamp))
         val codeSnapshot = candidate.a.b // candidate.proposedCodeSnapshot
@@ -105,7 +105,7 @@ class MockWorkspaceService : WorkspaceService {
     val calls = mutableListOf<String>()
     var workspacePathToReturn: FilePath = "/mock/workspace/default_path_0"
     var applyChangesShouldReturn: Boolean = true
-    var currentSnapshotToReturn: CodeSnapshot = Series.empty()
+    var currentSnapshotToReturn: CodeSnapshot = Indexed.empty()
     var setupShouldThrow: Exception? = null
     var applyChangesShouldThrow: Exception? = null
     var getCurrentSnapshotShouldThrow: Exception? = null
@@ -116,7 +116,7 @@ class MockWorkspaceService : WorkspaceService {
         calls.clear()
         workspacePathToReturn = "/mock/workspace/default_path_${counter++}"
         applyChangesShouldReturn = true
-        currentSnapshotToReturn = Series.empty()
+        currentSnapshotToReturn = Indexed.empty()
         setupShouldThrow = null
         applyChangesShouldThrow = null
         getCurrentSnapshotShouldThrow = null
@@ -201,11 +201,11 @@ class EvolutionEngineImplTest {
     }
 
     private fun createDummyCodeSnapshot(content: String = "dummy code"): CodeSnapshot {
-        return Series.of(Join("file.kt", content))
+        return Indexed.of(Join("file.kt", content))
     }
 
     private fun createDummyVersionMetadata(parentId: ArchiveEntryId = "p0", commit: CommitHash = "c0"): VersionMetadata {
-        return VersionMetadata(Join(parentId, commit), Join(Series.of("tag"), TimestampUtils.now()))
+        return VersionMetadata(Join(parentId, commit), Join(Indexed.of("tag"), TimestampUtils.now()))
     }
 
     private fun createDummyArchiveEntry(id: ArchiveEntryId, content: String = "code"): ArchiveEntry {
@@ -213,12 +213,12 @@ class EvolutionEngineImplTest {
     }
 
      private fun createDummyImprovementCandidate(
-        task: DgmTask = DgmTask(Join(TaskId("t1"), ArchiveEntryId("p1")), Join(BenchmarkId("b1"), Series.empty())),
+        task: DgmTask = DgmTask(Join(TaskId("t1"), ArchiveEntryId("p1")), Join(BenchmarkId("b1"), Indexed.empty())),
         proposedCode: CodeSnapshot = createDummyCodeSnapshot("proposed code")
     ): ImprovementCandidate {
         return ImprovementCandidate(
             Join(task, proposedCode),
-            Join(ProposerId("test_proposer"), Series.of("Test rationale"))
+            Join(ProposerId("test_proposer"), Indexed.of("Test rationale"))
         )
     }
 
@@ -259,7 +259,7 @@ class EvolutionEngineImplTest {
 
     @Test
     fun selectParentEntryFromEmptyArchiveInitializes() = runTest {
-        val initialId = engine.selectParentEntry(Series.empty(), testContext)
+        val initialId = engine.selectParentEntry(Indexed.empty(), testContext)
         assertTrue(mockStateService.archiveState.isNotEmpty())
         assertEquals(mockStateService.archiveState.keys.first(), initialId)
     }
@@ -278,15 +278,15 @@ class EvolutionEngineImplTest {
 
         // Mock proposer
         val proposedSnapshot = createDummyCodeSnapshot("improved code by LLM")
-        val dummyTaskForCandidate = DgmTask(Join(TaskId("task_run1"), initialEntryId), Join(BenchmarkId("benchmark_A"), Series.empty()))
+        val dummyTaskForCandidate = DgmTask(Join(TaskId("task_run1"), initialEntryId), Join(BenchmarkId("benchmark_A"), Indexed.empty()))
         mockProposerService.candidateToReturn = ImprovementCandidate(
             Join(dummyTaskForCandidate, proposedSnapshot),
-            Join(ProposerId("llm_proposer"), Series.of("It's better now"))
+            Join(ProposerId("llm_proposer"), Indexed.of("It's better now"))
         )
 
         // Mock validation
         mockValidationService.validationResultToReturn = ValidationResult(
-            Join(ValidationStatus("PASSED"), Series.of(Join("score", 100.0))),
+            Join(ValidationStatus("PASSED"), Indexed.of(Join("score", 100.0))),
             "Validation successful"
         )
 
@@ -317,7 +317,7 @@ class EvolutionEngineImplTest {
 
         mockProposerService.candidateToReturn = createDummyImprovementCandidate()
         mockValidationService.validationResultToReturn = ValidationResult(
-            Join(ValidationStatus("FAILED"), Series.empty()), "Tests failed"
+            Join(ValidationStatus("FAILED"), Indexed.empty()), "Tests failed"
         )
         mockWorkspaceService.workspacePathToReturn = "/test/ws_fail_validate"
 
@@ -339,14 +339,14 @@ class EvolutionEngineImplTest {
         mockStateService.snapshotToReturn = mockStateService.archiveState[initialEntryId]!!.a
 
         val errorCandidate = ImprovementCandidate(
-            Join(DgmTask(Join(TaskId("t_err"), initialEntryId), Join(BenchmarkId("b_err"), Series.empty())), Series.empty()), // No changes
-            Join(ProposerId("error_proposer"), Series.of("LLM failed to propose"))
+            Join(DgmTask(Join(TaskId("t_err"), initialEntryId), Join(BenchmarkId("b_err"), Indexed.empty())), Indexed.empty()), // No changes
+            Join(ProposerId("error_proposer"), Indexed.of("LLM failed to propose"))
         )
         mockProposerService.candidateToReturn = errorCandidate
 
         // Assume validation will fail for an empty/error candidate or simply return something
         mockValidationService.validationResultToReturn = ValidationResult(
-            Join(ValidationStatus("ERROR"), Series.empty()), "Validation error due to bad proposal"
+            Join(ValidationStatus("ERROR"), Indexed.empty()), "Validation error due to bad proposal"
         )
         mockWorkspaceService.workspacePathToReturn = "/test/ws_prop_fail"
 

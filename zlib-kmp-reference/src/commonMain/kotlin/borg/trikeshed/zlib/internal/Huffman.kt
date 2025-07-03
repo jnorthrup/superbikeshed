@@ -1,7 +1,7 @@
 package borg.trikeshed.zlib.internal
 
 import borg.trikeshed.lib.Indexed
-Alias // Alias Series to Indexed
+Alias // Alias Indexed to Indexed
 import borg.trikeshed.lib.size
 import borg.trikeshed.lib.get
 import borg.trikeshed.lib.j
@@ -45,13 +45,13 @@ sealed interface HuffmanCode {
  *
  * @param maxCodeLength The maximum bit length of any code in this Huffman set.
  * @param minCodeLength The minimum bit length of any code in this Huffman set.
- * @param firstCode An Indexed (Series) where `firstCode[length]` is the smallest canonical code
+ * @param firstCode An Indexed (Indexed) where `firstCode[length]` is the smallest canonical code
  *                  for that `length`. Codes are assigned numerically within each length.
- * @param firstSymbol An Indexed (Series) where `firstSymbol[length]` is the index into the `values`
+ * @param firstSymbol An Indexed (Indexed) where `firstSymbol[length]` is the index into the `values`
  *                    array for the first symbol of that `length`.
- * @param values An Indexed (Series) of symbols, sorted by their canonical codes.
+ * @param values An Indexed (Indexed) of symbols, sorted by their canonical codes.
  *               `values[firstSymbol[length] + (code - firstCode[length])]` gives the symbol.
- * @param lookupTable An Indexed (Series) of HuffmanCode, used for initial fast lookup.
+ * @param lookupTable An Indexed (Indexed) of HuffmanCode, used for initial fast lookup.
  *                    The size is 2^maxLookupBits. Entries can be FullCode, PartialCode, or InvalidCode.
  */
 class HuffmanLookupTable(
@@ -154,7 +154,7 @@ fun buildHuffmanTable(codeLengths: Indexed<Int>, maxLookupBits: Int): HuffmanLoo
         }
     }
 
-    // Convert arrays to Indexed (Series) for CoreTypes compatibility
+    // Convert arrays to Indexed (Indexed) for CoreTypes compatibility
     val indexedFirstCode = IndexedAlias(maxCodeLength + 1) { nextCode[it] }
     val indexedFirstSymbol = IndexedAlias(maxCodeLength + 1) { firstSymbolArray[it] }
     val indexedValues = IndexedAlias(currentValIdx) { valuesArray[it] }

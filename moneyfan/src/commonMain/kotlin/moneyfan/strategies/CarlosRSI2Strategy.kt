@@ -3,7 +3,7 @@ package moneyfan.strategies
 import moneyfan.models.Kline
 import moneyfan.models.Price
 import moneyfan.models.TradingSignal
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.α // For klines α {it.close}
 import moneyfan.trikeshed.j // For constructing the output series
 import moneyfan.indicators.calculateRSI
@@ -24,10 +24,10 @@ import moneyfan.models.Price.Companion.UNDEFINED as UNDEFINED_PRICE // Alias for
  * If neither entry nor exit conditions are met, or if any required indicator value
  * is undefined, the signal is HOLD.
  *
- * @param klines A Series of Kline objects representing historical price data.
- * @return A Series of TradingSignal objects of the same size as `klines`.
+ * @param klines A Indexed of Kline objects representing historical price data.
+ * @return A Indexed of TradingSignal objects of the same size as `klines`.
  */
-fun executeCarlosRSI2Strategy(klines: Series<Kline>): Series<TradingSignal> {
+fun executeCarlosRSI2Strategy(klines: Indexed<Kline>): Indexed<TradingSignal> {
     if (klines.isEmpty()) {
         return moneyfan.trikeshed.emptySeries()
     }
@@ -81,10 +81,10 @@ fun executeCarlosRSI2Strategy(klines: Series<Kline>): Series<TradingSignal> {
 // --- Example Usage (Conceptual) ---
 /*
 fun main() {
-    // Assume klineDataSeries is a Series<Kline> loaded elsewhere
+    // Assume klineDataSeries is a Indexed<Kline> loaded elsewhere
     // For example, using HistoricalDataService and MockFileContentProvider as in previous examples
 
-    // val klineDataSeries: Series<Kline> = ... create or load some Kline data ...
+    // val klineDataSeries: Indexed<Kline> = ... create or load some Kline data ...
     // if (klineDataSeries.isNotEmpty()) {
     //     val signals = executeCarlosRSI2Strategy(klineDataSeries)
     //

@@ -28,7 +28,7 @@ object HeadAndShouldersPatternDetector {
     )
 
     fun detect(
-        @Suppress("UNUSED_PARAMETER") klineSeries: Series<Kline>, // Changed from List to Series, marked unused for now
+        @Suppress("UNUSED_PARAMETER") klineSeries: Indexed<Kline>, // Changed from List to Indexed, marked unused for now
         swingPoints: List<SwingPoint>, // Remains List<SwingPoint>
         config: DetectorConfig = DetectorConfig()
     ): List<IdentifiedPattern> {

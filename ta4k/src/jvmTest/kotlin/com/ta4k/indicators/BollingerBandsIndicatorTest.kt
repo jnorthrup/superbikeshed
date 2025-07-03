@@ -4,7 +4,7 @@ import com.ta4k.core.model.Kline
 import com.ta4k.trikeshedutils.toSeries // Planned new location
 import com.ta4k.trikeshedutils.toList   // Planned new location (though not strictly needed here)
 import borg.trikeshed.lib.size
-import borg.trikeshed.lib.Series // Should be imported if Series is explicitly typed
+import borg.trikeshed.lib.Indexed // Should be imported if Indexed is explicitly typed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import kotlin.math.sqrt // Needed for manual std dev calculation in test

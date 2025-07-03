@@ -4,9 +4,9 @@ import moneyfan.models.Kline
 import moneyfan.models.KlineMetadata
 import moneyfan.models.Symbol // Added import for Symbol
 import moneyfan.models.TimestampEpochMillis
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.toSeries
-import moneyfan.trikeshed.toList // For converting Series to List for filtering
+import moneyfan.trikeshed.toList // For converting Indexed to List for filtering
 import moneyfan.trikeshed.emptySeries // For returning empty series
 // kotlinx.coroutines imports are not directly used here anymore for file ops,
 // but might be relevant if the FileContentProvider implementation uses them.
@@ -22,13 +22,13 @@ class BinanceDataArchiveReader(
      *
      * @param filePath The path to the CSV file.
      * @param skipHeader Whether to skip the first line (header) of the CSV.
-     * @return A Series of Kline objects.
+     * @return A Indexed of Kline objects.
      * @throws Exception if there's an error reading or parsing the file.
      */
     suspend fun readKlinesFromCsv(
         filePath: String,
         skipHeader: Boolean = true
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         // fileContentProvider.fileExists(filePath) could be checked here if desired,
         // but readFileLines should ideally throw if file not found.
         // Depending on FileContentProvider's contract.
@@ -68,20 +68,20 @@ class BinanceDataArchiveReader(
      * @param startTime The start of the date range (inclusive).
      * @param endTime The end of the date range (inclusive).
      * @param skipHeader Whether to skip the first line (header) of the CSV.
-     * @return A Series of Kline objects within the specified date range.
+     * @return A Indexed of Kline objects within the specified date range.
      */
     suspend fun readKlinesFromCsvWithDateRange(
         filePath: String,
         startTime: TimestampEpochMillis,
         endTime: TimestampEpochMillis,
         skipHeader: Boolean = true
-    ): Series<Kline> {
+    ): Indexed<Kline> {
         if (startTime.value > endTime.value) {
             return emptySeries() // Return empty series if range is invalid
         }
         // Assuming readKlinesFromCsv will handle file not found by throwing or returning empty.
         // If FileContentProvider.fileExists is cheap, could check filePath existence first.
-        val allKlines: Series<Kline> = readKlinesFromCsv(filePath, skipHeader)
+        val allKlines: Indexed<Kline> = readKlinesFromCsv(filePath, skipHeader)
         if (allKlines.isEmpty()) {
             return emptySeries()
         }
@@ -142,7 +142,7 @@ class BinanceDataArchiveReader(
 
 // Test comments updated to reflect FileContentProvider usage for mocking.
 // Unit tests for `BinanceDataArchiveReader.readKlinesFromCsv` would now require a mock FileContentProvider.
-// ... (other test comments remain largely the same but would operate on Series and mock provider)
+// ... (other test comments remain largely the same but would operate on Indexed and mock provider)
 // Unit tests for `readKlinesFromCsvWithDateRange` also require mock FileContentProvider.
 // ...
 // Unit tests for `readKlineMetadata` also require mock FileContentProvider and would verify KlineMetadata.symbol is a Symbol object.

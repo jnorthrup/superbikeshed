@@ -1,18 +1,18 @@
 package com.ta4k.indicators
 
 import com.ta4k.core.model.Kline // Assuming this path is correct
-import borg.trikeshed.lib.j // For creating Series instance for 'values' via infix j
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.j // For creating Indexed instance for 'values' via infix j
+import borg.trikeshed.lib.Indexed
 import java.math.BigDecimal
 import java.math.RoundingMode
 
 /**
  * Simple Moving Average (SMA) indicator.
  * Calculates the average of a kline property (typically close price) over a specified period.
- * Operates on a Trikethed [Series] of [Kline].
+ * Operates on a Trikethed [Indexed] of [Kline].
  */
 class SMAIndicator(
-    private val klineSeries: Series<Kline>, // Changed from List<Kline>
+    private val klineSeries: Indexed<Kline>, // Changed from List<Kline>
     private val period: Int,
     private val klinePropertySelector: (Kline) -> BigDecimal = { it.closePrice }
 ) {
@@ -79,21 +79,21 @@ class SMAIndicator(
 
     /**
      * Returns all calculated SMA values up to the latest available data in the input series,
-     * as a Trikethed [Series].
+     * as a Trikethed [Indexed].
      * Accessing this property will trigger calculation for all available klines if not already done.
      */
-    val values: Series<BigDecimal?>
+    val values: Indexed<BigDecimal?>
         get() {
             if (klineSeries.size > 0 && calculatedUpToIndex < klineSeries.size - 1) {
                 ensureCalculatedUpTo(klineSeries.size - 1)
             }
-            // Wrap the internal mutable list 'results' into a Series for output
+            // Wrap the internal mutable list 'results' into a Indexed for output
             return klineSeries.size j { index:Int -> // Use infix j
                 // getValue will ensure calculation if needed for a specific index,
                 // but ensureCalculatedUpTo above should have populated most of it.
                 // This direct access assumes results is padded to klineSeries.size
                 if (index < 0 || index >= klineSeries.size) {
-                    throw IndexOutOfBoundsException("Index $index is out of bounds for Series of size ${klineSeries.size}")
+                    throw IndexOutOfBoundsException("Index $index is out of bounds for Indexed of size ${klineSeries.size}")
                 }
                 if (index < results.size) results[index] else null
             }

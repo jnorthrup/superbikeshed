@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking // Not strictly needed if extensions are not suspend, but good for consistency
 
 // TrikeShed core types and helpers
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j // For Join infix constructor
 import borg.trikeshed.lib.seriesOf

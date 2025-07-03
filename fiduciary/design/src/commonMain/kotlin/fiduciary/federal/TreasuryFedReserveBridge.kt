@@ -297,8 +297,8 @@ class TreasuryFedReserveBridge {
                         "Participate in open market operations"
                     ),
                     requiredCertifications = setOf(
-                        "FINRA Series 7",
-                        "FINRA Series 63",
+                        "FINRA Indexed 7",
+                        "FINRA Indexed 63",
                         "Primary Dealer Agreement"
                     ),
                     fiduciaryDuties = setOf(

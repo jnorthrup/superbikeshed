@@ -45,9 +45,9 @@ enum class TrendDirection {
 }
 
 // Signal data structures using TrikeShed patterns
-typealias RSISeries = Series<RSIValue>
-typealias SMASeries = Series<SMAValue>
-typealias SignalSeries = Series<TradeSignal>
+typealias RSISeries = Indexed<RSIValue>
+typealias SMASeries = Indexed<SMAValue>
+typealias SignalSeries = Indexed<TradeSignal>
 typealias TrendAnalysis = Join<TrendDirection, Double> // Direction + Strength
 
 // Carlos RSI2 strategy implementation
@@ -64,7 +64,7 @@ class CarlosRSI2Strategy(
             return StrategyAnalysis.empty()
         }
         
-        // Extract price series using Series.α transformation
+        // Extract price series using Indexed.α transformation
         val prices = candles.α { candle -> candle.a.ohlc.close }
         
         // Calculate technical indicators
@@ -88,13 +88,13 @@ class CarlosRSI2Strategy(
         )
     }
     
-    private fun calculateRSI(prices: Series<Price>, period: Int): RSISeries {
+    private fun calculateRSI(prices: Indexed<Price>, period: Int): RSISeries {
         if (prices.size < period + 1) {
-            return Series.of(0) { RSIValue(50.0) }
+            return Indexed.of(0) { RSIValue(50.0) }
         }
         
         // Calculate price changes
-        val priceChanges = Series.of(prices.size - 1) { i ->
+        val priceChanges = Indexed.of(prices.size - 1) { i ->
             prices[i + 1].value - prices[i].value
         }
         
@@ -128,12 +128,12 @@ class CarlosRSI2Strategy(
             }
         }
         
-        return Series.of(rsiResults.size) { i -> rsiResults[i] }
+        return Indexed.of(rsiResults.size) { i -> rsiResults[i] }
     }
     
-    private fun calculateSMA(prices: Series<Price>, period: Int): SMASeries {
+    private fun calculateSMA(prices: Indexed<Price>, period: Int): SMASeries {
         if (prices.size < period) {
-            return Series.of(0) { SMAValue(0.0) }
+            return Indexed.of(0) { SMAValue(0.0) }
         }
         
         val smaResults = mutableListOf<SMAValue>()
@@ -144,18 +144,18 @@ class CarlosRSI2Strategy(
             smaResults.add(SMAValue(sma))
         }
         
-        return Series.of(smaResults.size) { i -> smaResults[i] }
+        return Indexed.of(smaResults.size) { i -> smaResults[i] }
     }
     
     private fun generateSignals(
-        prices: Series<Price>,
+        prices: Indexed<Price>,
         rsiValues: RSISeries,
         shortSMA: SMASeries,
         longSMA: SMASeries
     ): SignalSeries {
         val minSize = minOf(prices.size, rsiValues.size, shortSMA.size, longSMA.size)
         if (minSize == 0) {
-            return Series.of(0) { TradeSignal.HOLD }
+            return Indexed.of(0) { TradeSignal.HOLD }
         }
         
         val signals = mutableListOf<TradeSignal>()
@@ -179,7 +179,7 @@ class CarlosRSI2Strategy(
             signals.add(signal)
         }
         
-        return Series.of(signals.size) { i -> signals[i] }
+        return Indexed.of(signals.size) { i -> signals[i] }
     }
     
     private fun isCarlosBuySignal(
@@ -248,12 +248,12 @@ data class StrategyAnalysis(
     
     companion object {
         fun empty(): StrategyAnalysis = StrategyAnalysis(
-            signals = Series.of(0) { TradeSignal.HOLD },
-            rsiValues = Series.of(0) { RSIValue(50.0) },
-            shortSMA = Series.of(0) { SMAValue(0.0) },
-            longSMA = Series.of(0) { SMAValue(0.0) },
+            signals = Indexed.of(0) { TradeSignal.HOLD },
+            rsiValues = Indexed.of(0) { RSIValue(50.0) },
+            shortSMA = Indexed.of(0) { SMAValue(0.0) },
+            longSMA = Indexed.of(0) { SMAValue(0.0) },
             trend = TrendDirection.SIDEWAYS j 0.0,
-            candles = Series.of(0) { error("Empty analysis") }
+            candles = Indexed.of(0) { error("Empty analysis") }
         )
     }
 }
@@ -275,7 +275,7 @@ class AttentionCarlosRSI2(
         }
     }
     
-    fun getActiveSymbols(maxCount: Int = 5): Series<Symbol> {
+    fun getActiveSymbols(maxCount: Int = 5): Indexed<Symbol> {
         return attentionActivator.getActiveSymbolsForStrategy("CarlosRSI2", maxCount)
     }
 }

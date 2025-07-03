@@ -11,8 +11,8 @@ interface Indexed<T> {
     operator fun get(index: Int): T
 }
 
-// Series implementation
-class Series<T>(private val generator: (Int) -> T, override val size: Int) : Indexed<T> {
+// Indexed implementation
+class Indexed<T>(private val generator: (Int) -> T, override val size: Int) : Indexed<T> {
     override fun get(index: Int): T {
         if (index < 0 || index >= size) throw IndexOutOfBoundsException("Index $index out of bounds for size $size")
         return generator(index)
@@ -24,10 +24,10 @@ data class Join<A, B>(val a: A, val b: B)
 
 // DSL operators
 infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
-infix fun <T> Int.j(generator: (Int) -> T): Indexed<T> = Series(generator, this)
+infix fun <T> Int.j(generator: (Int) -> T): Indexed<T> = Indexed(generator, this)
 
 // Utility functions
-fun <T> emptySeries(): Indexed<T> = Series({ throw IndexOutOfBoundsException("Empty series") }, 0)
+fun <T> emptySeries(): Indexed<T> = Indexed({ throw IndexOutOfBoundsException("Empty series") }, 0)
 
 // Extension for compatibility
 val <T> Indexed<T>.play: List<T>

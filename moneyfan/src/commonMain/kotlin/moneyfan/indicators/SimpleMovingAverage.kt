@@ -1,26 +1,26 @@
 package moneyfan.indicators
 
 import moneyfan.models.Price
-import moneyfan.trikeshed.Series
+import moneyfan.trikeshed.Indexed
 import moneyfan.trikeshed.emptySeries
-import moneyfan.trikeshed.j // For Series construction (Int.j)
+import moneyfan.trikeshed.j // For Indexed construction (Int.j)
 
 /**
  * Calculates the Simple Moving Average (SMA) for a series of prices.
  *
  * The SMA is the unweighted mean of the previous `period` data points.
  * For elements where the SMA cannot be calculated (i.e., the first `period - 1` elements),
- * the resulting `Series<Price>` will contain `Price.UNDEFINED`.
- * The output Series will have the same size as the input `prices` series.
+ * the resulting `Indexed<Price>` will contain `Price.UNDEFINED`.
+ * The output Indexed will have the same size as the input `prices` series.
  *
  * @param prices The series of prices to calculate the SMA from.
  * @param period The number of data points to include in the moving average calculation.
  *               Must be greater than 0.
- * @return A `Series<Price>` containing the calculated SMA values.
+ * @return A `Indexed<Price>` containing the calculated SMA values.
  *         Returns an `emptySeries()` if the input `prices` series is empty.
  * @throws IllegalArgumentException if `period` is less than or equal to 0.
  */
-fun calculateSMA(prices: Series<Price>, period: Int): Series<Price> {
+fun calculateSMA(prices: Indexed<Price>, period: Int): Indexed<Price> {
     if (period <= 0) {
         throw IllegalArgumentException("Period must be greater than 0, but was $period.")
     }

@@ -1,9 +1,9 @@
 package com.ta4k.backtesting
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series // Using local TrikeShed Series
-import borg.trikeshed.lib.size // Import Series extensions
-import borg.trikeshed.lib.get  // Import Series extensions
+import borg.trikeshed.lib.Indexed // Using local TrikeShed Indexed
+import borg.trikeshed.lib.size // Import Indexed extensions
+import borg.trikeshed.lib.get  // Import Indexed extensions
 import com.ta4k.strategy.Strategy
 import com.ta4k.trading.TradingRecord
 import com.ta4k.trading.entities.Order
@@ -21,7 +21,7 @@ import com.ta4k.trading.entities.OrderStatus
  *                              For simplicity, using a fixed amount for now.
  */
 class Backtester(
-    private val klineSeries: Series<Kline>,
+    private val klineSeries: Indexed<Kline>,
     private val strategy: Strategy,
     @Suppress("UNUSED_PARAMETER") private val initialCapital: BigDecimal = BigDecimal("100000"), // Illustrative, marked unused
     private val defaultOrderAmount: BigDecimal = BigDecimal("1")    // e.g., 1 unit of base asset

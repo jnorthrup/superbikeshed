@@ -1,7 +1,7 @@
 package borg.trikeshed.acapulco
 
 import com.ta4k.core.model.Kline
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import kotlinx.coroutines.*
 import java.time.Instant
 import java.time.LocalDate
@@ -138,7 +138,7 @@ class AttentionKlinesIntegration(
     /**
      * Finds attention windows in kline data
      */
-    private fun findAttentionWindows(klines: Series<Kline>): List<AttentionWindow> {
+    private fun findAttentionWindows(klines: Indexed<Kline>): List<AttentionWindow> {
         val windows = mutableListOf<AttentionWindow>()
         val klineList = klines.play
         
@@ -149,7 +149,7 @@ class AttentionKlinesIntegration(
         
         for (i in 10 until klineList.size) {
             val window = klineList.subList(i - 10, i + 1)
-            val metrics = calculateAttentionMetrics(Series.of(window.size) { j -> window[j] })
+            val metrics = calculateAttentionMetrics(Indexed.of(window.size) { j -> window[j] })
             
             if (metrics.attentionScore > 0.7) {
                 if (windowStart == -1) {
@@ -190,7 +190,7 @@ class AttentionKlinesIntegration(
     /**
      * Calculates attention metrics for a kline series
      */
-    private fun calculateAttentionMetrics(klines: Series<Kline>): AttentionMetrics {
+    private fun calculateAttentionMetrics(klines: Indexed<Kline>): AttentionMetrics {
         if (klines.size < 20) {
             return AttentionMetrics(1.0, 0.0, 0.0)
         }
@@ -235,7 +235,7 @@ class AttentionKlinesIntegration(
         return kotlin.math.sqrt(variance)
     }
     
-    private fun calculateAverageAttentionScore(klines: Series<Kline>): Double {
+    private fun calculateAverageAttentionScore(klines: Indexed<Kline>): Double {
         if (klines.size < 20) return 0.0
         
         val klineList = klines.play
@@ -244,7 +244,7 @@ class AttentionKlinesIntegration(
         
         for (i in 10 until klineList.size) {
             val window = klineList.subList(i - 10, i + 1)
-            val metrics = calculateAttentionMetrics(Series.of(window.size) { j -> window[j] })
+            val metrics = calculateAttentionMetrics(Indexed.of(window.size) { j -> window[j] })
             totalScore += metrics.attentionScore
             count++
         }
@@ -252,7 +252,7 @@ class AttentionKlinesIntegration(
         return if (count > 0) totalScore / count else 0.0
     }
     
-    private fun countVolumeSpikes(klines: Series<Kline>): Int {
+    private fun countVolumeSpikes(klines: Indexed<Kline>): Int {
         if (klines.size < 20) return 0
         
         val klineList = klines.play
@@ -260,14 +260,14 @@ class AttentionKlinesIntegration(
         
         for (i in 10 until klineList.size) {
             val window = klineList.subList(i - 10, i + 1)
-            val metrics = calculateAttentionMetrics(Series.of(window.size) { j -> window[j] })
+            val metrics = calculateAttentionMetrics(Indexed.of(window.size) { j -> window[j] })
             if (metrics.volumeSpike > 2.0) spikeCount++
         }
         
         return spikeCount
     }
     
-    private fun countVolatilitySpikes(klines: Series<Kline>): Int {
+    private fun countVolatilitySpikes(klines: Indexed<Kline>): Int {
         if (klines.size < 20) return 0
         
         val klineList = klines.play
@@ -275,7 +275,7 @@ class AttentionKlinesIntegration(
         
         for (i in 10 until klineList.size) {
             val window = klineList.subList(i - 10, i + 1)
-            val metrics = calculateAttentionMetrics(Series.of(window.size) { j -> window[j] })
+            val metrics = calculateAttentionMetrics(Indexed.of(window.size) { j -> window[j] })
             if (metrics.volatility > 0.05) spikeCount++ // 5% volatility threshold
         }
         

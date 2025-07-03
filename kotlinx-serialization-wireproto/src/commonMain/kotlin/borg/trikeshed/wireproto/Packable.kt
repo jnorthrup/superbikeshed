@@ -5,8 +5,8 @@ package borg.trikeshed.wireproto
 import borg.trikeshed.lib.Indexed
 import kotlin.jvm.JvmInline
 
-// Compatibility alias for tests that still use Series
-typealias Series<T> = Indexed<T>
+// Compatibility alias for tests that still use Indexed
+typealias Indexed<T> = Indexed<T>
 
 /**
  * Manual demonstration of what KSP would generate for optimized join packers

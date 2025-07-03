@@ -3,7 +3,7 @@
 // =====================================================================
 package borg.trikeshed.acapulco
 
-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
+import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
 import borg.trikeshed.lib.Join // Replaces Pai2
 import kotlinx.coroutines.flow.MutableSharedFlow
 

@@ -1,6 +1,6 @@
 package com.ta4k.stats
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.`play`
 import borg.trikeshed.lib.size
@@ -20,7 +20,7 @@ class ReturnMetrics {
     /**
      * Geometric mean calculation
      */
-    fun geometricMean(returns: Series<BigDecimal>): BigDecimal {
+    fun geometricMean(returns: Indexed<BigDecimal>): BigDecimal {
         if (returns.isEmpty()) return BigDecimal.ZERO
         
         val product = returns.`play`.fold(BigDecimal.ONE) { acc: BigDecimal, ret: BigDecimal -> 
@@ -37,7 +37,7 @@ class ReturnMetrics {
      * Compound Annual Growth Rate (CAGR) calculation
      */
     fun cagr(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         periods: Int = DEFAULT_PERIODS
     ): BigDecimal {
@@ -60,11 +60,11 @@ class ReturnMetrics {
      * Rolling Sharpe ratio calculation
      */
     fun rollingSharpe(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         window: Int = 126, // 6 months of trading days
         periods: Int = DEFAULT_PERIODS
-    ): Series<BigDecimal> {
+    ): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
         val excessReturns = returns.`play`.map { it.subtract(rf) }.toList()
@@ -88,11 +88,11 @@ class ReturnMetrics {
      * Rolling Sortino ratio calculation
      */
     fun rollingSortino(
-        returns: Series<BigDecimal>,
+        returns: Indexed<BigDecimal>,
         rf: BigDecimal = BigDecimal.ZERO,
         window: Int = 126,
         periods: Int = DEFAULT_PERIODS
-    ): Series<BigDecimal> {
+    ): Indexed<BigDecimal> {
         if (returns.isEmpty()) return 0 j { BigDecimal.ZERO }
         
         val excessReturns = returns.`play`.map { it.subtract(rf) }.toList()

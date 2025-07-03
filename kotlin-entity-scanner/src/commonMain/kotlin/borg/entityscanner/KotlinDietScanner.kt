@@ -1,11 +1,11 @@
 package borg.entityscanner
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 
 // Use the existing CharSeries from TokenStairway.kt
-typealias CharSeries = Series<PositionedChar>
-typealias ByteIndexed = Series<Byte>
+typealias CharSeries = Indexed<PositionedChar>
+typealias ByteIndexed = Indexed<Byte>
 
 /**
  * Represents a contiguous block (island) in the source, by index.
@@ -29,10 +29,10 @@ enum class IslandIndexedType {
 }
 
 /**
- * Given a CharSeries, produce a Series<IslandIndexed> by grouping contiguous runs of the same type.
+ * Given a CharSeries, produce a Indexed<IslandIndexed> by grouping contiguous runs of the same type.
  * This is a diet scanner: no regex, just TrikeShed types and patterns.
  */
-fun CharSeries.toIslandsIndexed(): Series<IslandIndexed> {
+fun CharSeries.toIslandsIndexed(): Indexed<IslandIndexed> {
     val islands = mutableListOf<IslandIndexed>()
     if (this.size == 0) return 0 j { throw IndexOutOfBoundsException() }
 
@@ -201,4 +201,4 @@ fun findSimpleFunctions(islands: List<Island>): List<SimpleFunction> {
 
 typealias DietIsland = IslandIndexed
 typealias DietIslandType = IslandIndexedType
-fun CharSeries.toDietIslands(): Series<DietIsland> = this.toIslandsIndexed() 
+fun CharSeries.toDietIslands(): Indexed<DietIsland> = this.toIslandsIndexed() 

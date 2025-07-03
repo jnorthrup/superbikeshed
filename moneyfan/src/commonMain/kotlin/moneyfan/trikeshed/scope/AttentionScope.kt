@@ -1,7 +1,7 @@
 package moneyfan.trikeshed.scope
 
-import moneyfan.trikeshed.Series
-import moneyfan.trikeshed.j // For Series construction
+import moneyfan.trikeshed.Indexed
+import moneyfan.trikeshed.j // For Indexed construction
 import moneyfan.trikeshed.emptySeries
 import moneyfan.trikeshed.toSeries
 import kotlin.random.Random
@@ -10,47 +10,47 @@ import kotlin.random.Random
 // import kotlin.math.roundToInt // Used
 
 /**
- * Defines a scope or subset of a [Series] that an operation should focus on.
+ * Defines a scope or subset of a [Indexed] that an operation should focus on.
  * Attention scopes allow for selective processing of series data, enabling strategies
  * like focusing on specific time ranges, random samples, or data matching certain criteria.
  *
  * This is a sealed interface, meaning all direct implementations must be declared in this file.
  *
- * @param T The type of elements in the [Series] to which this scope can be applied.
+ * @param T The type of elements in the [Indexed] to which this scope can be applied.
  */
 sealed interface AttentionScope<T> {
     /**
-     * Applies this attention scope to a given `source` [Series].
-     * This method returns a new [Series] containing only the elements from the `source`
+     * Applies this attention scope to a given `source` [Indexed].
+     * This method returns a new [Indexed] containing only the elements from the `source`
      * that fall within the criteria defined by this scope. The relative order of elements
      * from the source series is generally preserved in the resulting series.
      *
-     * @param source The original [Series<T>] to apply the scope to.
-     * @return A new [Series<T>] representing the focused subset. If the scope results in
+     * @param source The original [Indexed<T>] to apply the scope to.
+     * @return A new [Indexed<T>] representing the focused subset. If the scope results in
      *         no elements being selected, or if the source is empty, an empty series is returned.
      */
-    fun apply(source: Series<T>): Series<T>
+    fun apply(source: Indexed<T>): Indexed<T>
 
     /**
-     * Calculates and returns a [Series<Int>] of sorted indices that this scope would select
+     * Calculates and returns a [Indexed<Int>] of sorted indices that this scope would select
      * from a source series of a given `sourceSize`.
      *
      * This method is useful for understanding which elements *would be* selected by the scope
      * without needing the actual data of the source series, or for applying the scope's
      * selection logic in different contexts. The returned indices are always sorted in ascending order.
      *
-     * @param sourceSize The size of the conceptual source [Series] for which to determine scoped indices.
-     * @return A [Series<Int>] of zero-based indices, sorted in ascending order.
+     * @param sourceSize The size of the conceptual source [Indexed] for which to determine scoped indices.
+     * @return A [Indexed<Int>] of zero-based indices, sorted in ascending order.
      *         Returns an empty series if the scope selects no indices or if `sourceSize` is 0.
      */
-    fun getScopedIndices(sourceSize: Int): Series<Int>
+    fun getScopedIndices(sourceSize: Int): Indexed<Int>
 }
 
 /**
- * An [AttentionScope] that defines a focus on a fixed range of indices within a [Series].
+ * An [AttentionScope] that defines a focus on a fixed range of indices within a [Indexed].
  * The range is defined by a `startIndex` (inclusive) and an `endIndexExclusive` (exclusive).
  *
- * @param T The type of elements in the [Series]. This type parameter is nominal and not directly used
+ * @param T The type of elements in the [Indexed]. This type parameter is nominal and not directly used
  *          in the logic of `RangeScope` itself, but ensures type compatibility when used with `AttentionScope<T>`.
  * @property startIndex The starting index of the range (inclusive). Must be non-negative.
  * @property endIndexExclusive The ending index of the range (exclusive). Must be greater than or equal to `startIndex`.
@@ -63,11 +63,11 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
     }
 
     /**
-     * Returns a [Series<Int>] of indices within the defined range, adjusted for the `sourceSize`.
+     * Returns a [Indexed<Int>] of indices within the defined range, adjusted for the `sourceSize`.
      * The indices are contiguous and sorted.
-     * For example, `RangeScope(1, 4).getScopedIndices(5)` would produce `Series[1, 2, 3]`.
+     * For example, `RangeScope(1, 4).getScopedIndices(5)` would produce `Indexed[1, 2, 3]`.
      */
-    override fun getScopedIndices(sourceSize: Int): Series<Int> {
+    override fun getScopedIndices(sourceSize: Int): Indexed<Int> {
         if (sourceSize == 0 || startIndex >= sourceSize || startIndex >= endIndexExclusive) {
             return emptySeries()
         }
@@ -83,12 +83,12 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
     }
 
     /**
-     * Applies the range scope to the `source` [Series].
-     * Returns a new [Series] containing elements from the `source` series
+     * Applies the range scope to the `source` [Indexed].
+     * Returns a new [Indexed] containing elements from the `source` series
      * at indices from `startIndex` (inclusive) up to `endIndexExclusive` (exclusive),
      * respecting the bounds of the `source` series.
      */
-    override fun apply(source: Series<T>): Series<T> {
+    override fun apply(source: Indexed<T>): Indexed<T> {
         // getScopedIndices handles empty sourceSize correctly, so this check is belt-and-suspenders
         // but good for clarity if apply is called directly with an empty series.
         if (source.isEmpty()) {
@@ -104,10 +104,10 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
 }
 
 /**
- * An [AttentionScope] that defines a focus on a randomly selected fractional subset of a [Series].
+ * An [AttentionScope] that defines a focus on a randomly selected fractional subset of a [Indexed].
  * The selection aims to pick approximately `percentage * source.a` elements.
  *
- * @param T The type of elements in the [Series].
+ * @param T The type of elements in the [Indexed].
  * @property percentage The target fraction of elements to select, ranging from `0.0` (select none)
  *                      to `1.0` (select all).
  * @property seed An optional [Long] seed for the random number generator. Providing a seed ensures
@@ -125,12 +125,12 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
     private fun getRandom(): Random = if (seed != null) Random(seed) else Random.Default
 
     /**
-     * Returns a [Series<Int>] of randomly selected indices.
+     * Returns a [Indexed<Int>] of randomly selected indices.
      * The number of indices is approximately `percentage * sourceSize`.
      * The selected indices are **sorted** to ensure that when [apply] is used,
      * the relative order of elements from the source series is maintained in the result.
      */
-    override fun getScopedIndices(sourceSize: Int): Series<Int> {
+    override fun getScopedIndices(sourceSize: Int): Indexed<Int> {
         if (sourceSize == 0 || percentage == 0.0) {
             return emptySeries()
         }
@@ -158,12 +158,12 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
     }
 
     /**
-     * Applies the fractional scope to the `source` [Series].
-     * Returns a new [Series] containing a randomly selected subset of elements
+     * Applies the fractional scope to the `source` [Indexed].
+     * Returns a new [Indexed] containing a randomly selected subset of elements
      * from the `source`. The size of the subset is approximately `percentage * source.a`.
      * The relative order of the selected elements is preserved.
      */
-    override fun apply(source: Series<T>): Series<T> {
+    override fun apply(source: Indexed<T>): Indexed<T> {
         if (source.isEmpty() || percentage == 0.0) { // Check percentage here too for quick exit
             return emptySeries()
         }

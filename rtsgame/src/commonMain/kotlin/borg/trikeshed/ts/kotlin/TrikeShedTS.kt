@@ -15,9 +15,9 @@ import borg.trikeshed.lib.*
 
 
 /**
- * Create a Series instance
+ * Create a Indexed instance
  */
-fun <T> createSeries(size: Int, accessor: (index: Int) -> T): Series<T> {
+fun <T> createSeries(size: Int, accessor: (index: Int) -> T): Indexed<T> {
     return size j accessor
 }
 
@@ -48,14 +48,14 @@ fun <T> createCursor(shape: Indexed<Int>, accessor: (coords: Indexed<Int>) -> T)
 /**
  * Alpha transform - Fundamental transformation
  */
-fun <T, R> alpha(series: Series<T>, transform: (value: T) -> R): Series<R> {
+fun <T, R> alpha(series: Indexed<T>, transform: (value: T) -> R): Indexed<R> {
     return createSeries(series.size) { i -> transform(series[i]) }
 }
 
 /**
- * Materialize a Series to a list
+ * Materialize a Indexed to a list
  */
-fun <T> materialize(series: Series<T>): List<T> {
+fun <T> materialize(series: Indexed<T>): List<T> {
     return List(series.size) { i -> series[i] }
 }
 

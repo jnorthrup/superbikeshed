@@ -1,7 +1,7 @@
 package nexus.core.dgm.services
 
 import nexus.core.dgm.*
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.Join
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.*
@@ -56,12 +56,12 @@ class RemoteBenchmarkValidationServiceTest {
     private fun createDummyImprovementCandidate(): ImprovementCandidate {
         val task = DgmTask(
             Join(TaskId("task1"), ArchiveEntryId("parent1")),
-            Join(BenchmarkId("bench1"), Series.empty<String>())
+            Join(BenchmarkId("bench1"), Indexed.empty<String>())
         )
-        val codeSnapshot = Series.of(Join<FilePath, FileContent>("file.kt", "dummy content"))
+        val codeSnapshot = Indexed.of(Join<FilePath, FileContent>("file.kt", "dummy content"))
         return ImprovementCandidate(
             Join(task, codeSnapshot),
-            Join(ProposerId("proposer1"), Series.of("rationale"))
+            Join(ProposerId("proposer1"), Indexed.of("rationale"))
         )
     }
 

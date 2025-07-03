@@ -4,7 +4,7 @@ import com.ta4k.core.model.Kline
 import com.ta4k.trikeshedutils.toSeries // Planned new location
 import com.ta4k.trikeshedutils.toList   // Planned new location
 import borg.trikeshed.lib.size
-import borg.trikeshed.lib.Series // Should be imported if Series is explicitly typed
+import borg.trikeshed.lib.Indexed // Should be imported if Indexed is explicitly typed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import java.math.BigDecimal
@@ -91,8 +91,8 @@ class SMAIndicatorTest {
             createDummyKline("13"), createDummyKline("14")
         ).toSeries()
         val sma = SMAIndicator(klines, 3)
-        val allValues = sma.values.toList() // Convert Series to List
-        assertEquals(klines.size, allValues.size) // klines.size works on Series
+        val allValues = sma.values.toList() // Convert Indexed to List
+        assertEquals(klines.size, allValues.size) // klines.size works on Indexed
         assertNull(allValues[0])
         assertNull(allValues[1])
         assertEquals(BigDecimal("11.0000"), allValues[2]?.setScale(4, RoundingMode.HALF_UP))
@@ -106,7 +106,7 @@ class SMAIndicatorTest {
         val sma = SMAIndicator(klines, 2)
 
         // Access values property first
-        val allValues = sma.values.toList() // Convert Series to List
+        val allValues = sma.values.toList() // Convert Indexed to List
         assertEquals(3, allValues.size)
         assertNull(allValues[0])
         assertEquals(BigDecimal("10.5000"), allValues[1]?.setScale(4, RoundingMode.HALF_UP))

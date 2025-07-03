@@ -1,14 +1,14 @@
 package k2script.trikeshed
 
 @JvmInline
-value class Series<T>(val size: Int, val accessor: (Int) -> T) {
+value class Indexed<T>(val size: Int, val accessor: (Int) -> T) {
     companion object {
-        fun <T> of(vararg items: T): Series<T> = Series(items.size) { items[it] }
+        fun <T> of(vararg items: T): Indexed<T> = Indexed(items.size) { items[it] }
     }
     
-    fun <R> α(transform: (T) -> R): Series<R> = Series(size) { transform(accessor(it)) }
+    fun <R> α(transform: (T) -> R): Indexed<R> = Indexed(size) { transform(accessor(it)) }
     
-    operator fun plus(other: Series<T>): Series<T> = Series(size + other.size) { 
+    operator fun plus(other: Indexed<T>): Indexed<T> = Indexed(size + other.size) { 
         if (it < size) accessor(it) else other.accessor(it - size)
     }
     

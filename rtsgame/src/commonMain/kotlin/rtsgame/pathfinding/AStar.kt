@@ -1,6 +1,6 @@
 package rtsgame.pathfinding
 
-import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.j
 import rtsgame.terrain.TerrainSystem
 import rtsgame.config.*
