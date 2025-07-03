@@ -333,7 +333,7 @@ graph TB
         subgraph "FIFO Compaction"
             FF1[Old SSTable] -->|TTL Expired| X1[❌ Delete]
             FF2[Old SSTable] -->|TTL Expired| X2[❌ Delete]
-            FF3[Recent SSTable] -->|Still Valid| ✓[Keep]
+            FF3[Recent SSTable] -->|Still Valid| V[ Keep ]
             style FF1 fill:#f99
             style FF2 fill:#f99
             style FF3 fill:#9f9
