@@ -9,7 +9,6 @@ import com.ta4k.trading.TradingRecord
 import com.ta4k.trading.entities.Order
 import com.ta4k.trading.entities.OrderType
 import com.ta4k.trading.entities.OrderStatus
-import java.math.BigDecimal
 
 /**
  * A basic backtesting engine that simulates a strategy over historical kline data.

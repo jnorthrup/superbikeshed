@@ -6,7 +6,6 @@ import com.ta4k.indicators.SMAIndicator
 import moneyfan.model.TradeSignal
 import borg.trikeshed.lib.Series
 import borg.trikeshed.lib.b
-import java.math.BigDecimal
 
 /**
  * 2-Period RSI Strategy

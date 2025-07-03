@@ -68,9 +68,9 @@ class TrikeShedWireProtoTest {
         val deserialized = wireBytes.toSeries<String>()
         
         // Verify series content
-        assertEquals(series.size, deserialized.size)
-        for (i in 0 until series.size) {
-            assertEquals(series[i], deserialized[i])
+        assertEquals(series.a, deserialized.a)
+        for (i in 0 until series.a) {
+            assertEquals(series.b(i), deserialized.b(i))
         }
     }
     
@@ -83,9 +83,9 @@ class TrikeShedWireProtoTest {
         val wireBytes = series.toWireBytes()
         val deserialized = wireBytes.toSeries<Int>()
         
-        assertEquals(series.size, deserialized.size)
-        for (i in 0 until series.size) {
-            assertEquals(series[i], deserialized[i])
+        assertEquals(series.a, deserialized.a)
+        for (i in 0 until series.a) {
+            assertEquals(series.b(i), deserialized.b(i))
         }
     }
     
@@ -113,9 +113,9 @@ class TrikeShedWireProtoTest {
         val wireBytes = series.toWireBytes()
         val deserialized = wireBytes.toSeries<Boolean>()
         
-        assertEquals(series.size, deserialized.size)
-        for (i in 0 until series.size) {
-            assertEquals(series[i], deserialized[i])
+        assertEquals(series.a, deserialized.a)
+        for (i in 0 until series.a) {
+            assertEquals(series.b(i), deserialized.b(i))
         }
     }
     

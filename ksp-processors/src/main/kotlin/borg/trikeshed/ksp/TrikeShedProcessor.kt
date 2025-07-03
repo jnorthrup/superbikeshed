@@ -4,7 +4,6 @@ import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import java.io.OutputStream
 
 class TrikeShedProcessor(
     private val environment: SymbolProcessorEnvironment
@@ -23,7 +22,7 @@ class TrikeShedProcessor(
         // Process @GeneratePackingStrategies
         processPackingStrategies(resolver)
         
-        // Process @GenerateWireAdapters
+        // Process @GenerateWireAdapters1
         processWireAdapters(resolver)
         
         // Process @GenerateSeriesExtensions

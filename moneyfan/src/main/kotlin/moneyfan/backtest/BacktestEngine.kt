@@ -5,8 +5,6 @@ import com.ta4k.core.model.Kline
 import com.ta4k.core.model.TradingPair
 import moneyfan.model.TradeSignal
 import moneyfan.model.TradeResult
-import java.math.BigDecimal
-import java.time.Instant
 
 /**
  * Core backtesting engine that processes historical data and simulates trading strategies

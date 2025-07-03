@@ -2,7 +2,6 @@ package com.ta4k.patterns
 
 import com.ta4k.core.model.Kline // Assuming SwingPoint needs Kline, but SwingPoint is in its own file.
                                // IdentifiedPattern itself does not directly hold KlineSeries to save memory.
-import java.math.BigDecimal
 
 /**
  * Represents a recognized chart pattern.

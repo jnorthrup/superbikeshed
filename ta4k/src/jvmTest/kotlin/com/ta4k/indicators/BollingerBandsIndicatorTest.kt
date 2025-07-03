@@ -7,8 +7,6 @@ import borg.trikeshed.lib.size
 import borg.trikeshed.lib.Series // Should be imported if Series is explicitly typed
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
-import java.math.BigDecimal
-import java.math.RoundingMode
 import kotlin.math.sqrt // Needed for manual std dev calculation in test
 
 class BollingerBandsIndicatorTest {
