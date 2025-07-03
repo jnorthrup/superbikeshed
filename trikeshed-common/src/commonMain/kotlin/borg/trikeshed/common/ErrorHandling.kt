@@ -1,6 +1,8 @@
 @file:Suppress("NOTHING_TO_INLINE", "FunctionName")
 package borg.trikeshed.common
 
+import borg.trikeshed.lib.*
+
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline

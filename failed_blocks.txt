@@ -1,0 +1,45 @@
+> Task :zlib-kmp-reference:commonizeNativeDistribution UP-TO-DATE
+> Task :zlib-kmp-reference:metadataNativeMainProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:metadataAppleMainProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:wasmJsProcessResources NO-SOURCE
+
+> Task :trikeshed-common:compileKotlinWasmJs FAILED
+
+> Task :trikeshed-torrent:kotlinWasmNodeJsSetup UP-TO-DATE
+> Task :zlib-kmp-reference:kotlinWasmBinaryenSetup UP-TO-DATE
+> Task :zlib-kmp-reference:macosX64ProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:jvmProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:processJvmMainResources SKIPPED
+> Task :zlib-kmp-reference:metadataMacosMainProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:macosArm64ProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:jvmTestProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:processJvmTestResources SKIPPED
+--
+> Task :trikeshed-common:transformNativeMainDependenciesMetadata
+> Task :trikeshed-common:transformAppleMainDependenciesMetadata
+> Task :trikeshed-common:transformMacosMainDependenciesMetadata
+> Task :trikeshed-io:transformCommonMainDependenciesMetadata
+
+> Task :trikeshed-common:compileKotlinJvm FAILED
+
+> Task :trikeshed-io:transformNativeMainDependenciesMetadata
+> Task :trikeshed-io:transformAppleMainDependenciesMetadata
+> Task :trikeshed-io:transformMacosMainDependenciesMetadata
+
+> Task :trikeshed-common:compileCommonMainKotlinMetadata FAILED
+
+> Task :trikeshed-common:compileKotlinMacosArm64 FAILED
+
+> Task :trikeshed-common:compileKotlinMacosX64 FAILED
+
+> Task :trikeshed-io:compileKotlinWasmJs FAILED
+
+> Task :trikeshed-io:compileKotlinJvm FAILED
+
+> Task :trikeshed-io:compileCommonMainKotlinMetadata FAILED
+
+> Task :trikeshed-io:compileKotlinMacosArm64 FAILED
+
+> Task :trikeshed-io:compileKotlinMacosX64 FAILED
+285 actionable tasks: 29 executed, 256 up-to-date
+Configuration cache entry reused.

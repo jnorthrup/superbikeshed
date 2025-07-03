@@ -1,5 +1,7 @@
 package borg.trikeshed.common
 
+import borg.trikeshed.lib.*
+
 // Pure utility functions - no platform dependencies
 import borg.trikeshed.lib.*
 
