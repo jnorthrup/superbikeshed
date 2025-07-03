@@ -52,6 +52,7 @@ flowchart TD
 ```
 
 ### CouchDB Implementation Checklist
+
 - [ ] BBCursive parser for CouchDB protocol with zero-copy continuations
 - [ ] Session context composition: `currentCoroutineContext() + CouchContext(dbName)`
 - [ ] Channel allocation based on document size: `when (docSize) { ... }`
@@ -91,6 +92,7 @@ flowchart TD
 ```
 
 ### QUIC Implementation Checklist
+
 - [ ] Frame parser with suspension points per stream
 - [ ] Per-stream coroutine context: `streamContext(streamId)`
 - [ ] Multiplexed channel select with cancellation
@@ -128,6 +130,7 @@ flowchart TD
 ```
 
 ### curl Implementation Checklist
+
 - [ ] URL parser with continuation points
 - [ ] HTTP client context with timeout/retry
 - [ ] ProducerScope for streaming downloads
@@ -169,6 +172,7 @@ flowchart TD
 ```
 
 ### aria2 Implementation Checklist
+
 - [ ] Multi-URL parser with validation
 - [ ] Concurrent coroutine contexts with supervisor
 - [ ] Per-segment channels with buffer limits
@@ -212,6 +216,7 @@ flowchart TD
 ```
 
 ### SSH Implementation Checklist
+
 - [ ] Auth state machine with suspension points
 - [ ] Session context with keep-alive coroutine
 - [ ] Channel multiplexing via channelFlow
@@ -257,6 +262,7 @@ flowchart TD
 ```
 
 ### CouchDB+ISAM Implementation Checklist
+
 - [ ] Query parser with ISAM-aware optimization
 - [ ] ISAM index context with key path tracking
 - [ ] io_uring submission queue preparation
@@ -306,6 +312,7 @@ flowchart TD
 ```
 
 ### CouchDB+IPFS Implementation Checklist
+
 - [ ] CID parser with multi-hash support
 - [ ] IPFS DAG context with block resolution strategy
 - [ ] io_uring batch submission for parallel block reads
@@ -319,6 +326,7 @@ flowchart TD
 ## io_uring Integration Patterns
 
 ### 1. 90° Pivot Pattern
+
 ```kotlin
 // Vertical flow (application logic) pivots to horizontal (io_uring)
 suspend fun pivotToUring(request: Request): Response {
@@ -338,6 +346,7 @@ suspend fun pivotToUring(request: Request): Response {
 ```
 
 ### 2. Multi-Ring Coordination
+
 ```kotlin
 // Multiple io_uring instances for different subsystems
 class MultiRingCoordinator {
@@ -354,6 +363,7 @@ class MultiRingCoordinator {
 ```
 
 ### 3. Continuation Opaque Pointers
+
 ```kotlin
 // Store continuations as opaque pointers in SQE userData
 inline class ContinuationHandle(val ptr: Long) {
@@ -372,6 +382,7 @@ inline class ContinuationHandle(val ptr: Long) {
 ## Common Continuation Patterns
 
 ### 1. Direct Continuation Access
+
 ```kotlin
 suspendCoroutineUninterceptedOrReturn { cont ->
     // Zero-copy async operation
@@ -383,6 +394,7 @@ suspendCoroutineUninterceptedOrReturn { cont ->
 ```
 
 ### 2. Context Composition
+
 ```kotlin
 withContext(currentCoroutineContext() + CustomContext(data)) {
     // Operations with composed context
@@ -390,6 +402,7 @@ withContext(currentCoroutineContext() + CustomContext(data)) {
 ```
 
 ### 3. Tail Recursive Streaming
+
 ```kotlin
 tailrec suspend fun stream(offset: Long): Unit =
     if (hasMore(offset)) {
@@ -399,6 +412,7 @@ tailrec suspend fun stream(offset: Long): Unit =
 ```
 
 ### 4. Backpressure via Channels
+
 ```kotlin
 Channel<T>(
     capacity = adaptiveCapacity(load),
@@ -407,6 +421,7 @@ Channel<T>(
 ```
 
 ### 5. Cancellable Continuations
+
 ```kotlin
 suspendCancellableCoroutine { cont ->
     val handle = startOperation()
@@ -414,4 +429,4 @@ suspendCancellableCoroutine { cont ->
         handle.cancel()
     }
 }
-``` 
+```

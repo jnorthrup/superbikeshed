@@ -8,8 +8,8 @@ import borg.trikeshed.lib.*
 
 fun IOMemento.toWireBytes(): ByteArray {
     // Simplified implementation for testing
-    val nameBytes = name?.toByteArray() ?: byteArrayOf()
-    val typeBytes = type?.toByteArray() ?: byteArrayOf()
+    val nameBytes = name?.encodeToByteArray() ?: byteArrayOf()
+    val typeBytes = type?.encodeToByteArray() ?: byteArrayOf()
     
     return byteArrayOf(
         nameBytes.size.toByte(),

@@ -5,6 +5,8 @@ package borg.trikeshed.serialization
 import borg.trikeshed.lib.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import kotlinx.serialization.modules.EmptySerializersModule
+import kotlinx.serialization.modules.SerializersModule
 
 /**
  * High-performance JSON format using bitmap scanning
@@ -71,7 +73,7 @@ class BitmapJsonFormat(private val configuration: BitmapJson.Configuration) : St
      * Decode JSON string using bitmap scanning
      */
     override fun <T> decodeFromString(deserializer: DeserializationStrategy<T>, string: String): T {
-        val decoder = BitmapJsonFormat.createDecoder(string)
+        val decoder = createDecoder(string)
         return decoder.decodeSerializableValue(deserializer)
     }
     
@@ -90,6 +92,11 @@ class BitmapJsonFormat(private val configuration: BitmapJson.Configuration) : St
             explicitNulls = configuration.explicitNulls
         }
         return json.encodeToString(serializer, value)
+    }
+    
+    private fun createDecoder(string: String): BitmapJsonDecoder {
+        val (bitmap, indices) = scanJsonStructure(string)
+        return BitmapJsonDecoder(serializersModule, string, bitmap, indices)
     }
 }
 

@@ -26,12 +26,14 @@ import shutil
 import re
 
 # Define the root directory
+
 src_root = os.path.join("Trikeshed", "src")
 kotlin_root = os.path.join("commonMain", "kotlin", "borg", "trikeshed")
 
 print("--- Finalizing Library Names to 'bikeshed-*' Convention ---")
 
 # Mapping of old directory names (from previous step) to the new, final names
+
 name_map = {
     "ts_join": "bikeshed_join",
     "ts_series": "bikeshed_series",
@@ -41,11 +43,12 @@ name_map = {
     "ts_wireproto": "bikeshed_wireproto",
     "ts_data": "bikeshed_data_adapters",
     # Catch-all for other core components if they exist
-    "core_foundations": "bikeshed_foundations", 
+    "core_foundations": "bikeshed_foundations",
     "core_parse": "bikeshed_parser"
 }
 
 # --- Step 1: Rename the directories on the filesystem ---
+
 for source_set_folder in os.listdir(src_root):
     source_set_path = os.path.join(src_root, source_set_folder, "kotlin", "borg", "trikeshed")
     if os.path.isdir(source_set_path):
@@ -57,6 +60,7 @@ for source_set_folder in os.listdir(src_root):
                 shutil.move(old_dir, new_dir)
 
 # --- Step 2: Update all package and import statements in all .kt files ---
+
 print("\n--- Updating package and import statements globally ---")
 for root, _, files in os.walk(src_root):
     for filename in files:
@@ -83,7 +87,9 @@ for root, _, files in os.walk(src_root):
                 print(f"Error processing {filepath}: {e}")
 
 # --- Final Check & Cleanup ---
-# It's good practice to remove any potentially empty leftover directories from old structures.
+
+# It's good practice to remove any potentially empty leftover directories from old structures
+
 def cleanup_empty_dirs(path):
     if not os.path.isdir(path):
         return
@@ -104,15 +110,14 @@ cleanup_empty_dirs(os.path.join(old_structure_base, "parse"))
 cleanup_empty_dirs(os.path.join(old_structure_base, "cursor"))
 cleanup_empty_dirs(os.path.join(old_structure_base, "core"))
 
-
 print("\n--- Project successfully refactored to 'bikeshed-*' library convention. ---")
-
 
 The refactoring is complete. The project now has a clear, layered architecture with distinct, single-purpose libraries following the bikeshed-* naming convention. The core components are now properly isolated, establishing the "immutable dependencies" you described.
 
 Here is the Mermaid diagram reflecting the final architecture. This visualizes the "pure" progression from the most fundamental join operation up to the application layer, providing a clear map for any developer and ensuring that the core foundations are sheltered from arbitrary changes.
 
 Generated mermaid
+
 ```mermaid
 graph TD
     %% Core Foundation Layer
