@@ -134,15 +134,4 @@ value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s
 
 val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 
-val <T> Indexed<T>.size: Int by a
-
-// Extension property to provide .size for Indexed<T> = Join<Int, (Int) -> T>
-val  Indexed.size: Int by a
-
-@Deprecated("Use 0 j { /* custom error handling */ } instead")
-fun <T> emptyIndexed(): Indexed<T> = Indexed(0) { error("Empty Indexed Access Violation at index $it") }
-
-@Deprecated("Use .toIndexed() instead")
-fun ByteArray.toIdx(): Indexed<Byte> = this.toIndexed()
-@Deprecated("Use .toIndexed() instead")
-fun IntArray.toIdx(): Indexed<Int> = Indexed(this.size) { i -> this[i] }
+val <T> Indexed<T>.size: Int get() = a

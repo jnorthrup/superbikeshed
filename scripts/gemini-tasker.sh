@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Gemini Tasker Script - Clone repo into new feature branch with zero errors requirement
-# This script clones the current repo, creates a new feature branch, and ensures zero build errors
+# Gemini Tasker Script - Clone repo into new feature branch and launch Gemini
+# This script clones the current repo, creates a new feature branch, and launches Gemini with tasks
 
 set -euo pipefail
 
@@ -17,7 +17,6 @@ print_color() {
     echo -e "${1}${2}${NC}"
 }
 
-# Function to check if we're in a git repository
 check_git_repo() {
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
         print_color $RED "Error: Not in a git repository"
@@ -27,14 +26,14 @@ check_git_repo() {
 
 # Function to find the latest zero-error tag
 find_zero_error_tag() {
-    print_color $BLUE "Finding latest zero-error tag..."
+    print_color $BLUE "Finding latest zero-error tag..." >&2
     local zero_error_tag=$(git tag -l "*zero-error*" | sort -V | tail -n 1)
     
     if [ -z "$zero_error_tag" ]; then
-        print_color $YELLOW "Warning: No zero-error tag found. Using current HEAD as parent."
+        print_color $YELLOW "Warning: No zero-error tag found. Using current HEAD as parent." >&2
         echo "HEAD"
     else
-        print_color $GREEN "Found zero-error tag: $zero_error_tag"
+        print_color $GREEN "Found zero-error tag: $zero_error_tag" >&2
         echo "$zero_error_tag"
     fi
 }
@@ -173,6 +172,76 @@ DOCKERFILE
     fi
 }
 
+launch_gemini() {
+    local use_tmux="$1"
+    local use_terminal="$2"
+    local pwd_path="$3"
+    
+    # Create Gemini execution script
+    cat > run_gemini_task.sh << 'GEMINI_SCRIPT'
+#!/bin/bash
+set -euo pipefail
+
+echo "=== Gemini Task Environment ==="
+echo "Repository: $(pwd)"
+echo "Branch: $(git branch --show-current)"
+echo "Task: $(cat GEMINI_TASK.md 2>/dev/null || echo 'No task file found')"
+echo ""
+
+if command -v gemini &> /dev/null; then
+    echo "Running Gemini with task..."
+    gemini --yolo  --prompt "$(cat GEMINI_TASK.md)"
+    echo "Gemini completed. Check output above."
+else
+    echo "ERROR: Gemini CLI not found"
+    echo "Install with: npm install -g @anthropic/gemini-cli"
+    echo ""
+    echo "Task was: $(cat GEMINI_TASK.md)"
+    echo ""
+    echo "Manual execution: gemini --yolo --prompt \"$(cat GEMINI_TASK.md)\""
+fi
+GEMINI_SCRIPT
+    chmod +x run_gemini_task.sh
+    
+    if [ "$use_tmux" = true ]; then
+        local session_name="gemini-task-$(date +%H%M%S)"
+        print_color $BLUE "Launching Gemini in tmux session: $session_name"
+        
+        tmux new-session -d -s "$session_name" -c "$pwd_path"
+        tmux send-keys -t "$session_name" "./run_gemini_task.sh" Enter
+        
+        print_color $GREEN "=== GEMINI LAUNCHED IN TMUX ==="
+        print_color $GREEN "Session: $session_name"
+        print_color $GREEN "Attach: tmux attach -t $session_name"
+        print_color $GREEN "Detach: Ctrl+B then D"
+        
+    elif [ "$use_terminal" = true ]; then
+        print_color $BLUE "Launching Gemini in new terminal..."
+        
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            osascript -e "tell application \"Terminal\" to do script \"cd '$pwd_path' && ./run_gemini_task.sh && echo 'Press any key to close...' && read -n 1\""
+        elif command -v gnome-terminal &> /dev/null; then
+            gnome-terminal --working-directory="$pwd_path" -- bash -c "./run_gemini_task.sh; echo 'Press any key to close...'; read -n 1"
+        elif command -v xterm &> /dev/null; then
+            xterm -e "cd '$pwd_path' && ./run_gemini_task.sh && echo 'Press any key to close...' && read -n 1" &
+        else
+            print_color $RED "No supported terminal found. Use --tmux or run manually:"
+            print_color $YELLOW "cd $pwd_path && ./run_gemini_task.sh"
+            exit 1
+        fi
+        
+        print_color $GREEN "=== GEMINI LAUNCHED IN TERMINAL ==="
+        print_color $GREEN "Check new terminal window"
+        
+    else
+        print_color $BLUE "Running Gemini directly in current terminal..."
+        ./run_gemini_task.sh 2>&1 | tee gemini_output.log
+        
+        print_color $GREEN "=== GEMINI COMPLETED ==="
+        print_color $GREEN "Output saved to: gemini_output.log"
+    fi
+}
+
 # Main script execution
 main() {
     print_color $BLUE "=== Gemini Tasker - Zero Error Branch Creator ==="
@@ -183,6 +252,8 @@ main() {
     local use_remote=false
     local skip_gemini=false
     local gemini_task_file=""
+    local use_tmux=false
+    local use_terminal=false
     
     while [[ $# -gt 0 ]] && [[ "$1" =~ ^-- ]]; do
         case "$1" in
@@ -200,6 +271,14 @@ main() {
                 ;;
             --skip-gemini)
                 skip_gemini=true
+                shift
+                ;;
+            --tmux)
+                use_tmux=true
+                shift
+                ;;
+            --terminal)
+                use_terminal=true
                 shift
                 ;;
             --task)
@@ -224,7 +303,6 @@ main() {
         use_docker=true
     fi
     
-    # Check prerequisites
     check_git_repo
     
     # Get current directory name for default clone target
@@ -282,60 +360,50 @@ main() {
     # Create feature branch from zero-error parent
     create_feature_branch "$zero_error_parent" "$branch_name"
     
-    # Run build to verify zero errors (optionally in Docker)
-    local build_success=false
-    if [ "$use_docker" = true ]; then
-        if command -v docker &> /dev/null; then
-            if run_in_docker "$PWD" "$branch_name"; then
-                build_success=true
-            fi
+    # Skip Gemini if requested
+    if [ "$skip_gemini" = true ]; then
+        print_color $GREEN "Skipping Gemini task (--skip-gemini flag set)"
+        exit 0
+    fi
+    
+    # Create or use Gemini task file
+    if [ -n "$gemini_task_file" ]; then
+        if [ -f "$gemini_task_file" ]; then
+            print_color $BLUE "Using custom task file: $gemini_task_file"
+            cp "$gemini_task_file" GEMINI_TASK.md
+        elif [ "$gemini_task_file" = "-" ]; then
+            print_color $BLUE "Reading task from stdin..."
+            cat > GEMINI_TASK.md
         else
-            print_color $RED "Docker not found! Install Docker or run without --docker flag"
+            print_color $RED "Error: Task file not found: $gemini_task_file"
             exit 1
         fi
     else
-        if run_build && check_compilation_errors; then
-            build_success=true
+        # No task specified - read from stdin with sensible default
+        print_color $BLUE "Reading task from stdin (or provide default task)..."
+        if [ -t 0 ]; then
+            # stdin is a terminal, provide default task
+            print_color $YELLOW "No stdin detected. Using default task: 'Run build verification and ensure zero compilation errors'"
+            echo "Run build verification and ensure zero compilation errors" > GEMINI_TASK.md
+        else
+            # stdin has content, read it
+            cat > GEMINI_TASK.md
         fi
     fi
     
-    if [ "$build_success" = true ]; then
-        print_color $GREEN "=== SUCCESS ==="
-        print_color $GREEN "Repository cloned to: $clone_target"
-        print_color $GREEN "Feature branch created: $branch_name"
-        print_color $GREEN "Build completed with ZERO ERRORS ✓"
+    # If we have a task, run Gemini regardless of build state
+    if [ -f GEMINI_TASK.md ]; then
+        print_color $GREEN "=== LAUNCHING GEMINI ==="
+        print_color $GREEN "Repository: $PWD"
+        print_color $GREEN "Feature branch: $branch_name"
+        print_color $BLUE "Running Gemini task..."
         
-        # Save success marker
-        echo "GEMINI_TASK_SUCCESS" > .gemini_task_status
+        # Save task marker
+        echo "GEMINI_TASK_LAUNCHED" > .gemini_task_status
         echo "Branch: $branch_name" >> .gemini_task_status
         echo "Parent: $zero_error_parent" >> .gemini_task_status
         echo "Timestamp: $(date)" >> .gemini_task_status
         
-        # Skip Gemini if requested
-        if [ "$skip_gemini" = true ]; then
-            print_color $GREEN "Skipping Gemini task (--skip-gemini flag set)"
-            exit 0
-        fi
-        
-        # Create or use Gemini task file
-        if [ -n "$gemini_task_file" ]; then
-            if [ -f "$gemini_task_file" ]; then
-                print_color $BLUE "Using custom task file: $gemini_task_file"
-                cp "$gemini_task_file" GEMINI_TASK.md
-            elif [ "$gemini_task_file" = "-" ]; then
-                print_color $BLUE "Reading task from stdin..."
-                cat > GEMINI_TASK.md
-            else
-                print_color $RED "Error: Task file not found: $gemini_task_file"
-                exit 1
-            fi
-        else
-            # No task specified - exit gracefully
-            print_color $GREEN "No Gemini task specified. Use --task <file> or --task - for stdin"
-            print_color $GREEN "Repository ready at: $PWD"
-            exit 0
-        fi
-
         # Create automated Gemini execution script
         cat > run_gemini_task.sh << 'GEMINI_SCRIPT'
 #!/bin/bash
@@ -344,58 +412,72 @@ set -euo pipefail
 echo "=== Gemini Task Environment ==="
 echo "Repository: $(pwd)"
 echo "Branch: $(git branch --show-current)"
-echo "Status: Zero errors verified ✓"
+echo "Task: $(cat GEMINI_TASK.md 2>/dev/null || echo 'No task file found')"
 echo ""
-echo "Executing Gemini task..."
 
-# Try to run Gemini CLI with proper options
 if command -v gemini &> /dev/null; then
-    # Run gemini in YOLO mode with the task as prompt
-    gemini --yolo --model gemini-2.5-pro --prompt "$(cat GEMINI_TASK.md)" > GEMINI_OUTPUT.log 2>&1
+    echo "Running Gemini with task..."
+    gemini --yolo  --prompt "$(cat GEMINI_TASK.md)"
+    echo "Gemini completed. Check output above."
 else
-    echo "WARNING: Gemini CLI not found."
+    echo "ERROR: Gemini CLI not found"
     echo "Install with: npm install -g @anthropic/gemini-cli"
-    exit 1
+    echo ""
+    echo "Task was: $(cat GEMINI_TASK.md)"
+    echo ""
+    echo "Manual execution: gemini --yolo --prompt \"$(cat GEMINI_TASK.md)\""
 fi
-
-echo "Task completed. Check LINT_REPORT.md for results."
 GEMINI_SCRIPT
         chmod +x run_gemini_task.sh
         
-        # Run Gemini task in background
-        print_color $BLUE "Running Gemini task in background..."
-        nohup ./run_gemini_task.sh > gemini_task_output.log 2>&1 &
-        local gemini_pid=$!
-        
-        print_color $GREEN "=== GEMINI TASK LAUNCHED ==="
-        print_color $GREEN "Clone directory: $PWD"
-        print_color $GREEN "Task PID: $gemini_pid"
-        print_color $GREEN "Task file: GEMINI_TASK.md"
-        print_color $GREEN "Output will be saved to: LINT_REPORT.md"
-        print_color $GREEN "Log file: gemini_task_output.log"
-        
-        # Optionally wait for task completion (with timeout)
-        local wait_time=30
-        print_color $YELLOW "Waiting up to ${wait_time}s for task completion..."
-        
-        local count=0
-        while [ $count -lt $wait_time ] && kill -0 $gemini_pid 2>/dev/null; do
-            sleep 1
-            ((count++))
-            printf "."
-        done
-        echo ""
-        
-        if kill -0 $gemini_pid 2>/dev/null; then
-            print_color $YELLOW "Task still running in background (PID: $gemini_pid)"
-            print_color $YELLOW "Check results later at: $PWD/LINT_REPORT.md"
-        else
-            print_color $GREEN "Task completed!"
-            if [ -f LINT_REPORT.md ]; then
-                print_color $GREEN "Report generated successfully: LINT_REPORT.md"
-                echo "--- First 20 lines of report ---"
-                head -20 LINT_REPORT.md
+        # Choose execution method
+        if [ "$use_tmux" = true ]; then
+            # Launch in tmux session
+            local session_name="gemini-task-$(date +%H%M%S)"
+            print_color $BLUE "Launching Gemini in tmux session: $session_name"
+            
+            tmux new-session -d -s "$session_name" -c "$PWD"
+            tmux send-keys -t "$session_name" "./run_gemini_task.sh" Enter
+            
+            print_color $GREEN "=== GEMINI LAUNCHED IN TMUX ==="
+            print_color $GREEN "Session name: $session_name"
+            print_color $GREEN "To attach: tmux attach -t $session_name"
+            print_color $GREEN "To detach: Ctrl+B then D"
+            print_color $GREEN "Repository: $PWD"
+            
+        elif [ "$use_terminal" = true ]; then
+            # Launch in new terminal window
+            print_color $BLUE "Launching Gemini in new terminal window..."
+            
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                # macOS
+                osascript -e "tell application \"Terminal\" to do script \"cd '$PWD' && ./run_gemini_task.sh && echo 'Press any key to close...' && read -n 1\""
+            elif command -v gnome-terminal &> /dev/null; then
+                # Linux with GNOME Terminal
+                gnome-terminal --working-directory="$PWD" -- bash -c "./run_gemini_task.sh; echo 'Press any key to close...'; read -n 1"
+            elif command -v xterm &> /dev/null; then
+                # Linux with xterm
+                xterm -e "cd '$PWD' && ./run_gemini_task.sh && echo 'Press any key to close...' && read -n 1" &
+            else
+                print_color $RED "No supported terminal found. Use --tmux instead or run manually:"
+                print_color $YELLOW "cd $PWD && ./run_gemini_task.sh"
+                exit 1
             fi
+            
+            print_color $GREEN "=== GEMINI LAUNCHED IN TERMINAL ==="
+            print_color $GREEN "Repository: $PWD"
+            print_color $GREEN "Check new terminal window for progress"
+            
+        else
+            # Run directly in current terminal, showing output and saving to log
+            print_color $BLUE "Running Gemini task directly in current terminal..."
+            
+            ./run_gemini_task.sh 2>&1 | tee gemini_task_output.log
+            
+            print_color $GREEN "=== GEMINI TASK COMPLETED ==="
+            print_color $GREEN "Clone directory: $PWD"
+            print_color $GREEN "Task file: GEMINI_TASK.md"
+            print_color $GREEN "Full output saved to: gemini_task_output.log"
         fi
         
         exit 0
@@ -426,6 +508,8 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
     echo "  --remote      Clone from remote origin instead of local directory (default: local)"
     echo "  --skip-gemini Skip running Gemini task after build"
     echo "  --task FILE   Specify Gemini task file (use '-' for stdin)"
+    echo "  --tmux        Launch Gemini in new tmux session"
+    echo "  --terminal    Launch Gemini in new terminal window"
     echo "  -h, --help    Show this help message"
     echo ""
     echo "Arguments:"
@@ -443,8 +527,9 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
     echo "  $0 --no-clone --docker       # Current dir + Docker"
     echo "  $0 --remote                  # Clone from remote origin instead of local"
     echo "  $0 --task -                  # Read Gemini task from stdin"
-    echo "  echo 'Fix zero errors' | $0 --task -  # Pipe task to Gemini"
-    echo "  $0 --task <(echo 'Ensure zero build errors')  # Process substitution"
+    echo "  echo 'Fix zero errors' | $0 --task - --tmux     # Run in tmux session"
+    echo "  echo 'Analyze code' | $0 --task - --terminal    # Run in new terminal"
+    echo "  $0 --task <(echo 'Ensure zero build errors')    # Process substitution"
     echo ""
     echo "The script will:"
     echo "  1. Find the latest zero-error tag in the repository"

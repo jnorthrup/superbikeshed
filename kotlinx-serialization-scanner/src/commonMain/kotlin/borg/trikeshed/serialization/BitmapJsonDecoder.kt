@@ -385,7 +385,7 @@ class BitmapJsonDecoder(
 /**
  * Factory for creating bitmap-based JSON decoders
  */
-object BitmapJsonFormat {
+object BitmapJsonDecoderFactory {
     fun createDecoder(input: String): BitmapJsonDecoder {
         val (bitmapArray, structuralIndices) = scanJsonStructure(input)
         return BitmapJsonDecoder(
@@ -407,6 +407,6 @@ expect fun scanJsonStructure(input: String): Pair<JsonBitmapArray, JsonStructura
  * Extension function for easy deserialization with bitmap scanning
  */
 inline fun <reified T> String.decodeBitmapJson(): T {
-    val decoder = BitmapJsonFormat.createDecoder(this)
+    val decoder = BitmapJsonDecoderFactory.createDecoder(this)
     return decoder.decodeSerializableValue(serializer<T>())
 }

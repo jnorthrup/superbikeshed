@@ -1,14 +1,6 @@
 package borg.trikeshed.acapulco.model
 
-import cursors.Cursor
-import cursors.TypeMemento
-import cursors.calendar.UnixTimeRemapper
-import cursors.get
-import cursors.io.IOMemento
-import cursors.unaryMinus
-import vec.macros.Vect0r
-import vec.macros.size
-import vec.util._v
+import borg.trikeshed.lib.IOMemento
 
 enum class DataBinanceVision(
     val names: Vect0r<String>,

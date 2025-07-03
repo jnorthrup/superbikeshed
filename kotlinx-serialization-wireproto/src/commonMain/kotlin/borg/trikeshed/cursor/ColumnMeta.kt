@@ -1,6 +1,7 @@
 package borg.trikeshed.cursor
 
 import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.TypeMemento
 
 /**
  * Represents metadata for a column

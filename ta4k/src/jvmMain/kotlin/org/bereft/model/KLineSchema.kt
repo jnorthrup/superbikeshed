@@ -1,6 +1,6 @@
 package org.bereft.model
 
-import cursors.io.IOMemento
+import borg.trikeshed.lib.IOMemento
 import cursors.context.Scalar
 
 enum class KLineColumn(val colName: String, val type: IOMemento) {

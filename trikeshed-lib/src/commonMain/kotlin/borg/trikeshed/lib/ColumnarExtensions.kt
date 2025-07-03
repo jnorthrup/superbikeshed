@@ -4,19 +4,7 @@ package borg.trikeshed.lib
 
 import borg.trikeshed.lib.IOMemento.*
 import borg.trikeshed.lib.IOMemento
-import borg.trikeshed.lib.IoBoolean
-import borg.trikeshed.lib.IoByte
-import borg.trikeshed.lib.IoShort
-import borg.trikeshed.lib.IoInt
-import borg.trikeshed.lib.IoLong
-import borg.trikeshed.lib.IoFloat
-import borg.trikeshed.lib.IoDouble
-import borg.trikeshed.lib.IoChar
-import borg.trikeshed.lib.IoString
-import borg.trikeshed.lib.IoVarchar
-import borg.trikeshed.lib.IoLocalDate
-import borg.trikeshed.lib.IoLocalDateTime
-import borg.trikeshed.lib.IoInstant
+import borg.trikeshed.lib.TypeMemento
 import kotlin.reflect.KClassifier
 
 
@@ -333,7 +321,6 @@ val IOMemento.networkSize: Int?
         is IOMemento.IoInt -> 4
         is IOMemento.IoLong -> 8
         is IOMemento.IoFloat -> 4
-        is IoDouble -> 8
         is IOMemento.IoChar -> 2
         is IOMemento.IoString -> null // Variable length
         is IOMemento.IoVarchar -> null // Variable length
@@ -353,7 +340,7 @@ val IOMemento.isNumeric: Boolean
         is IOMemento.IoInt,
         is IOMemento.IoLong,
         is IOMemento.IoFloat,
-        is IoDouble -> true
+        is IOMemento.IoChar -> true
         else -> false
     }
 
