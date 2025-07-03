@@ -2,7 +2,7 @@ package borg.trikeshed.lib
 
 import borg.trikeshed.lib.j // Explicitly import the j infix function
 
-// Tensor<T> is already defined in CoreTypes.kt as MetaSeries<Shape, T>
+// Tensor<T> is already defined in CoreTypes.kt as MetaIndexed<Shape, T>
 // This file provides additional operations for the Tensor type
 
 inline val <T> Tensor<T>.shape: IntArray get() = a

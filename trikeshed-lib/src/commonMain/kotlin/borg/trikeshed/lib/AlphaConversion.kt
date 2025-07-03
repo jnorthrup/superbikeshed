@@ -2,6 +2,8 @@
 
 package borg.trikeshed.lib
 
+
+
 /**
  * Alpha Conversion (α) - Lambda calculus transformation
  * 
@@ -88,28 +90,7 @@ fun <T> Indexed<T>.toList(): AbstractList<T> = object : AbstractList<T>() {
     override fun get(index: Int): T = b(index)
 }
 
-// Specialized toArray conversions
-fun Indexed<Byte>.toByteArray(): ByteArray = ByteArray(a, b)
-fun Indexed<Char>.toCharArray(): CharArray = CharArray(a, b)
-fun Indexed<Int>.toIntArray(): IntArray = IntArray(a, b)
-fun Indexed<Boolean>.toBooleanArray(): BooleanArray = BooleanArray(a, b)
-fun Indexed<Long>.toLongArray(): LongArray = LongArray(a, b)
-fun Indexed<Float>.toFloatArray(): FloatArray = FloatArray(a, b)
-fun Indexed<Double>.toDoubleArray(): DoubleArray = DoubleArray(a, b)
-fun Indexed<Short>.toShortArray(): ShortArray = ShortArray(a, b)
 
-inline fun <reified T> Indexed<T>.toArray(): Array<T> = Array(a, b)
-
-// Array to Indexed conversion
-fun <T> Array<T>.toIndexed(): Indexed<T> = size j ::get
-fun ByteArray.toIndexed(): Indexed<Byte> = size j ::get
-fun CharArray.toIndexed(): Indexed<Char> = size j ::get
-fun IntArray.toIndexed(): Indexed<Int> = size j ::get
-fun BooleanArray.toIndexed(): Indexed<Boolean> = size j ::get
-fun LongArray.toIndexed(): Indexed<Long> = size j ::get
-fun FloatArray.toIndexed(): Indexed<Float> = size j ::get
-fun DoubleArray.toIndexed(): Indexed<Double> = size j ::get
-fun ShortArray.toIndexed(): Indexed<Short> = size j ::get
 
 /**
  * Map operation in the spirit of alpha conversion
@@ -246,5 +227,6 @@ inline fun <T> Indexed<T>.partition(predicate: (T) -> Boolean): Join<Indexed<T>,
         val item = b(i)
         if (predicate(item)) first.add(item) else second.add(item)
     }
-    return (first.size j first::get) j (second.size j second::get)
+    @Suppress("UNCHECKED_CAST")
+    return (first.size j first::get) j (second.size j second::get) as Join<Indexed<T>, Indexed<T>>
 }

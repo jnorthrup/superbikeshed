@@ -76,8 +76,7 @@ infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  */
 infix fun <A, B, C> ((A) -> B).`◂`(g: (B) -> C): (A) -> C = { a: A -> g(this(a)) }
 
-expect fun assert(value: Boolean)
-expect fun assert(value: Boolean, lazyMessage: () -> Any)
+
 
         @Suppress("UNCHECKED_CAST")
 inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l -> l.size j l::get } ?: error("Cannot convert to Indexed")

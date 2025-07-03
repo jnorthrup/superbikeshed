@@ -8,11 +8,7 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 
 /**
- * CCEK (Control, Context, Environment, Knowledge) + CoroutineContextElementKey
- * The "Radian of Attention" that carries specificity and intent from the
- * orchestrator (`main`) to the execution handler. It IS the DSL.
- * 
- * Extended to support io_uring batch operations and channel chaining.
+ * CCEK   CoroutineContextElementKey 
  */
 data class CcekContext(
     val control: Control,

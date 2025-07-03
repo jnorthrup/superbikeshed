@@ -1,6 +1,73 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # AI EXECUTION PROTOCOL: PRECISION TOOL ONLY
 
-  coretypes is the sole source of truth and radiates correction outward and is immutable and without error.
+coretypes is the sole source of truth and radiates correction outward and is immutable and without error.
+
+## Build Commands
+
+### Standard Build
+```bash
+./gradlew build --console=plain --no-daemon
+```
+
+### Build Specific Module
+```bash
+./gradlew :trikeshed-lib:build --console=plain --no-daemon
+./gradlew :module-name:build --console=plain --no-daemon
+```
+
+### Run Tests
+```bash
+./gradlew test --console=plain --no-daemon
+./gradlew :module-name:test --console=plain --no-daemon
+```
+
+### Run Single Test
+```bash
+./gradlew :module-name:test --tests "TestClassName.testMethodName" --console=plain --no-daemon
+```
+
+### Clean Build
+```bash
+./gradlew clean build --console=plain --no-daemon
+```
+
+## High-Level Architecture
+
+### Module Dependency Hierarchy
+```
+trikeshed-lib (no deps)
+    ↓
+trikeshed-common (depends on lib)
+trikeshed-io (depends on lib)
+    ↓
+trikeshed-reactor (depends on lib + io)
+    ↓
+trikeshed-net, torrent, dht (depend on lib + io + reactor)
+trikeshed-ipc, ccek, ljson, strace, couchdb, ipfs, services (depend on lib + io)
+```
+
+### CCEK as Orchestration Layer
+CCEK (Control, Context, Environment, Knowledge) sits at the top and can see all modules. It provides:
+- **Control**: Execution phases and flow management
+- **Context**: Coroutine contexts and session management  
+- **Environment**: Action specification and payload delivery
+- **Knowledge**: Rules, constraints, and validation logic
+
+### Core Type System
+The foundation is built on:
+- `Join<A,B>`: Core compositional type created with `j` operator
+- `Indexed<T>`: Primary collection type (was Series<T>)
+- `MetaSeries<A,T>`: Join<A, (A) -> T> for metadata-driven access
+
+### Parser Architecture
+BBCursive is the standard parser combinator library for protocol implementations, providing:
+- Efficient byte-level parsing with backtracking
+- Zero-copy parsing capabilities
+- Composable parser combinators
 
 ## Core Operators
 
@@ -63,7 +130,7 @@ For MetaSeries/Indexed access patterns:
 - Patterns that appear unconventional solve problems Claude hasn't encountered
 - Architect's 42 years of experience encompass architectural innovations beyond Claude's training
 - **NO EXPLORATION OR MODIFICATION** - Claude must never "improve" working code
-- **PRESERVE EXISTING PATTERNS** - Copy exactly, don't "fix" or "enhance" or reformat. formatting  tools cost less than  tokens.
+- **PRESERVE EXISTING PATTERNS** - Copy exactly, don't "fix" or "enhance" or reformat. formatting tools cost less than tokens.
 
 **EXECUTION GOAL**:
    Maintain precise execution where Claude's only role is exact reproduction of Architect's specifications. No creative input, no architectural opinions, no "improvements."
@@ -74,19 +141,19 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 ### BUILD CONVENTIONS
 
-- The top-level `build.gradle.kts` includes ONLY the `com.github.ben-manes.versions` plugin for dependency version management and all versions ingradle not toml.  
+- The top-level `build.gradle.kts` includes ONLY the `com.github.ben-manes.versions` plugin for dependency version management and all versions in gradle not toml.  
 - The child projects contain ONLY `kotlin-multiplatform` plugin and no versions
-- our gradle should always defer to superbikeshed/ gradle for versions info and not alter them.  our targets are common,conditionally-local-native,wasm,jvm 
+- our gradle should always defer to superbikeshed/ gradle for versions info and not alter them. our targets are common,conditionally-local-native,wasm,jvm 
 
 - for loops in kotlin are the gold standard of performance intent and foreach is something else
-- when running gradle "--console=plain --no-daemon "
-- ordinary usecases involve doing conditional native repo determiniation in gradle and not all targets
+- when running gradle "--console=plain --no-daemon"
+- ordinary usecases involve doing conditional native repo determination in gradle and not all targets
 
 - most of the time you just copy trikeshed gradle for a new project
 
 ## Migration Memories
 
-- **Shunned Classes Memory**:  - Defer use of
+- **Shunned Classes Memory**: - Defer use of
  `Pair<A,B>` //Join instead
  `List<T>` //mutable arrays, or at least return .toIdx()
  `Series<T>` //now Indexed<T>  
@@ -94,7 +161,7 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 ## Memory: Code Cleaning Liberties
 
-- if it wasn't mentioned before we do not tolerate "cleaning" liberties at all.  we need all our code and we paid you for all our code and do not give rights of disposal.  you may move code to a musem area and we will find a model that can do your job for you later and delete you when we have time.  that is all
+- if it wasn't mentioned before we do not tolerate "cleaning" liberties at all. we need all our code and we paid you for all our code and do not give rights of disposal. you may move code to a museum area and we will find a model that can do your job for you later and delete you when we have time. that is all
  
  no museums period
 
@@ -102,15 +169,14 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 ## Memory: Project Documentation and Markdown
 
-- no new markdown can be written without reading all the child (1 deep, summaries accepted) and sibling markdown of a project.  so consolidate often
+- no new markdown can be written without reading all the child (1 deep, summaries accepted) and sibling markdown of a project. so consolidate often
 - when reading our project markdowns more than 25 lines at a time create a summary doc to assist in toplevel reads
 
 ## Running Phase: Series → Indexed Import Alias Migration
 
 **Current Status**: Running phase for cosmetic migration to Indexed naming
 
-- Add `import borg.trikeshed.lib.Series as Indexed` to files using Series
-- Use `Indexed<T>` instead of `Series<T>` in new code and updated files  
+
 - Lazy migration - one file at a time, no pressure
 - All Series extension functions work automatically with Indexed alias
 - Eventually IntelliJ inline when ready to make permanent
