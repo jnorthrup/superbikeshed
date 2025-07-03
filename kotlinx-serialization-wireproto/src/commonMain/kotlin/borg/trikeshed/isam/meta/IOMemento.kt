@@ -75,4 +75,6 @@ class IOMemento : TypeMemento {
             }
         }
     }
-} 
+}
+
+typealias IOMemento = borg.trikeshed.lib.IOMemento 

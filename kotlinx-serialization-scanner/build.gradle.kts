@@ -32,6 +32,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                implementation(kotlin("stdlib"))
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")

@@ -12,63 +12,10 @@ import kotlinx.serialization.modules.SerializersModule
  * High-performance JSON format using bitmap scanning
  * Drop-in replacement for kotlinx.serialization.json.Json with better performance
  */
-object BitmapJson {
-    
-    /**
-     * Configuration for bitmap JSON processing
-     */
-    data class Configuration(
-        val ignoreUnknownKeys: Boolean = false,
-        val isLenient: Boolean = false,
-        val allowStructuredMapKeys: Boolean = false,
-        val useArrayPolymorphism: Boolean = false,
-        val classDiscriminator: String = "type",
-        val allowComments: Boolean = false,
-        val explicitNulls: Boolean = true
-    )
-    
-    /**
-     * Default configuration instance
-     */
-    val Default = BitmapJsonFormat(Configuration())
-    
-    /**
-     * Create configured instance
-     */
-    fun configured(configuration: Configuration) = BitmapJsonFormat(configuration)
-    
-    /**
-     * Create instance with builder pattern
-     */
-    inline fun create(builderAction: ConfigurationBuilder.() -> Unit): BitmapJsonFormat {
-        val builder = ConfigurationBuilder()
-        builder.builderAction()
-        return BitmapJsonFormat(builder.build())
-    }
-    
-    class ConfigurationBuilder {
-        var ignoreUnknownKeys: Boolean = false
-        var isLenient: Boolean = false
-        var allowStructuredMapKeys: Boolean = false
-        var useArrayPolymorphism: Boolean = false
-        var classDiscriminator: String = "type"
-        var allowComments: Boolean = false
-        var explicitNulls: Boolean = true
-        
-        fun build() = Configuration(
-            ignoreUnknownKeys, isLenient, allowStructuredMapKeys,
-            useArrayPolymorphism, classDiscriminator, allowComments, explicitNulls
-        )
-    }
-}
+class BitmapJsonFormat(private val configuration: JsonConfiguration) : StringFormat {
 
-/**
- * Main bitmap JSON format implementation
- */
-class BitmapJsonFormat(private val configuration: BitmapJson.Configuration) : StringFormat {
-    
     override val serializersModule: SerializersModule = EmptySerializersModule()
-    
+
     /**
      * Decode JSON string using bitmap scanning
      */
@@ -76,14 +23,14 @@ class BitmapJsonFormat(private val configuration: BitmapJson.Configuration) : St
         val decoder = createDecoder(string)
         return decoder.decodeSerializableValue(deserializer)
     }
-    
+
     /**
      * Encode to JSON string (uses kotlinx.serialization for now)
      */
     override fun <T> encodeToString(serializer: SerializationStrategy<T>, value: T): String {
         // For encoding, use standard kotlinx.serialization.json for now
         // Could be optimized with bitmap-based encoding in the future
-        val json = Json { 
+        val json = Json {
             ignoreUnknownKeys = configuration.ignoreUnknownKeys
             isLenient = configuration.isLenient
             allowStructuredMapKeys = configuration.allowStructuredMapKeys
@@ -93,7 +40,7 @@ class BitmapJsonFormat(private val configuration: BitmapJson.Configuration) : St
         }
         return json.encodeToString(serializer, value)
     }
-    
+
     private fun createDecoder(string: String): BitmapJsonDecoder {
         val (bitmap, indices) = scanJsonStructure(string)
         return BitmapJsonDecoder(serializersModule, string, bitmap, indices)
@@ -106,38 +53,38 @@ class BitmapJsonFormat(private val configuration: BitmapJson.Configuration) : St
 
 // Decode extensions
 inline fun <reified T> BitmapJsonFormat.decodeFromString(string: String): T =
-    decodeFromString(serializer<T>(), string)
+    decodeFromString(serializersModule.serializer(), string)
 
-inline fun <reified T> String.decodeBitmapJson(format: BitmapJsonFormat = BitmapJson.Default): T =
+inline fun <reified T> String.decodeBitmapJson(format: BitmapJsonFormat): T =
     format.decodeFromString<T>(this)
 
-// Encode extensions  
+// Encode extensions
 inline fun <reified T> BitmapJsonFormat.encodeToString(value: T): String =
-    encodeToString(serializer<T>(), value)
+    encodeToString(serializersModule.serializer(), value)
 
-inline fun <reified T> T.encodeBitmapJson(format: BitmapJsonFormat = BitmapJson.Default): String =
+inline fun <reified T> T.encodeBitmapJson(format: BitmapJsonFormat): String =
     format.encodeToString(this)
 
 /**
  * Streaming JSON processing for large documents
  */
-class BitmapJsonStream(private val format: BitmapJsonFormat = BitmapJson.Default) {
-    
+class BitmapJsonStream(private val format: BitmapJsonFormat) {
+
     /**
      * Parse JSON array elements one by one using streaming
      */
     inline fun <reified T> parseArrayStream(jsonArray: String): Sequence<T> = sequence {
         val scanner = StreamingBitmapScanner()
         val indices = scanner.scanChunk(jsonArray).let { scanner.getStructuralIndices() }
-        
+
         var arrayDepth = 0
         var elementStart = -1
         var i = 0
-        
+
         while (i < indices.size) {
             val pos = indices[i]
             val char = jsonArray[pos]
-            
+
             when (char) {
                 '[' -> {
                     arrayDepth++
@@ -167,7 +114,7 @@ class BitmapJsonStream(private val format: BitmapJsonFormat = BitmapJson.Default
             i++
         }
     }
-    
+
     /**
      * Parse JSON object properties one by one
      */
@@ -177,65 +124,12 @@ class BitmapJsonStream(private val format: BitmapJsonFormat = BitmapJson.Default
     }
 }
 
-/**
- * Performance comparison utilities
- */
-object BitmapJsonBenchmark {
-    
-    /**
-     * Compare bitmap JSON vs standard kotlinx.serialization performance
-     */
-    inline fun <reified T> benchmark(json: String, iterations: Int = 1000): BenchmarkResult {
-        // Warmup
-        repeat(10) {
-            json.decodeBitmapJson<T>()
-            Json.decodeFromString<T>(json)
-        }
-        
-        // Bitmap JSON benchmark
-        val bitmapStart = kotlinx.datetime.Clock.System.now()
-        repeat(iterations) {
-            json.decodeBitmapJson<T>()
-        }
-        val bitmapEnd = kotlinx.datetime.Clock.System.now()
-        val bitmapDuration = bitmapEnd - bitmapStart
-        
-        // Standard JSON benchmark
-        val standardStart = kotlinx.datetime.Clock.System.now()
-        repeat(iterations) {
-            Json.decodeFromString<T>(json)
-        }
-        val standardEnd = kotlinx.datetime.Clock.System.now()
-        val standardDuration = standardEnd - standardStart
-        
-        return BenchmarkResult(
-            bitmapDurationMs = bitmapDuration.inWholeMilliseconds,
-            standardDurationMs = standardDuration.inWholeMilliseconds,
-            speedupFactor = standardDuration.inWholeNanoseconds.toDouble() / bitmapDuration.inWholeNanoseconds.toDouble(),
-            iterations = iterations
-        )
-    }
-    
-    data class BenchmarkResult(
-        val bitmapDurationMs: Long,
-        val standardDurationMs: Long,
-        val speedupFactor: Double,
-        val iterations: Int
-    ) {
-        override fun toString(): String = buildString {
-            appendLine("Bitmap JSON Benchmark Results ($iterations iterations):")
-            appendLine("  Bitmap JSON: ${bitmapDurationMs}ms")
-            appendLine("  Standard JSON: ${standardDurationMs}ms")
-            appendLine("  Speedup: ${String.format("%.2fx", speedupFactor)}")
-        }
-    }
-}
 
 /**
  * JSON validation using bitmap scanning
  */
 object BitmapJsonValidator {
-    
+
     /**
      * Fast JSON validation without full parsing
      */
@@ -247,7 +141,7 @@ object BitmapJsonValidator {
             false
         }
     }
-    
+
     /**
      * Validate structural integrity of JSON using bitmap indices
      */
@@ -255,11 +149,11 @@ object BitmapJsonValidator {
         val stack = mutableListOf<Char>()
         var quoteState = false
         var escapeNext = false
-        
+
         for (i in 0 until indices.size) {
             val pos = indices[i]
             val char = json[pos]
-            
+
             when {
                 escapeNext -> escapeNext = false
                 char == '\\' && quoteState -> escapeNext = true
@@ -277,23 +171,23 @@ object BitmapJsonValidator {
                 }
             }
         }
-        
+
         return stack.isEmpty() && !quoteState
     }
-    
+
     /**
      * Get detailed validation errors
      */
     fun getValidationErrors(json: String): List<String> {
         val errors = mutableListOf<String>()
-        
+
         try {
             val (_, indices) = scanJsonStructure(json)
             // Detailed validation logic would go here
         } catch (e: Exception) {
             errors.add("Scanning failed: ${e.message}")
         }
-        
+
         return errors
     }
 }
