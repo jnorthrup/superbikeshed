@@ -1,3 +1,12 @@
+# [ARCHIVED] URING_NWAY_ROUTING.md
+
+> **Note:** This document is now **stale** and has been **superseded** by `LINUX_ENDGAME_KERNEL_INTEGRATION.md`.
+> All future development and architectural reference should use the new document.
+>
+> The content below is preserved for historical context only.
+
+---
+
 # io_uring N-Way Routing to LSM Trees
 
 ## The Core Challenge
@@ -358,7 +367,7 @@ class ZeroCopyRouter {
 
 ## Key Insights
 
-1. **Ring per tree** - Avoids contention, allows CPU affinity
+1. **Ring per tree** - Avoids contention,  allows CPU affinity
 2. **Consistent routing** - Same key always goes to same tree
 3. **Batch submission** - Amortize syscall overhead
 4. **Work stealing** - Balance load dynamically
@@ -459,7 +468,7 @@ flowchart LR
         end
         
         subgraph "Work Stealing"
-            WK[Key] --> LQ[Local Queue]
+            WK[Key] --> LQ[Local Queue] 
             LQ -->|Empty| ST[Steal from Others]
             LQ -->|Has Work| PR[Process]
         end

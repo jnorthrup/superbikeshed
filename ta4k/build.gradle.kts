@@ -6,7 +6,6 @@ plugins {
 }
 
 group = "borg.rtsgame"
-version = "1.0-SNAPSHOT"
 
 kotlin {
     jvm()

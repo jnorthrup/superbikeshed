@@ -1,86 +1,97 @@
-# Channel & Coroutine Patterns - Simple Version
+# Production Coroutine & Channel Patterns
 
-## CouchDB Service
+This document provides concise, production-ready examples for implementing services using Kotlin coroutines and channels, aligned with the project's refined architectural style. For more detailed explanations and the `HandlerRegistry` pattern, see `COMPOSITIONAL_CONTEXT_PATTERNS.md`.
+
+---
+
+## 1. CouchDB Service with `channelFlow`
 
 ```mermaid
 flowchart TD
     subgraph "CouchDB Service"
-        A[HTTP Request] -->|parse| B[Parsed Request]
-        B -->|query| C[Database Query]
-        C -->|stream| D[Document Stream]
-        D -->|serialize| E[HTTP Response]
-        
-        B -.->|suspend for parsing| BP[Parser Continuation]
-        C -.->|suspend for DB| DB[Database I/O]
-        D -.->|Channel backpressure| CH[Document Channel]
+        A[HTTP Request] -->|`suspendCoroutine`| B[Parsed Request]
+        B -->|`coroutineContext[...`| C[Database Query]
+        C -->|`channelFlow`| D[Document Stream]
+        D -->|Backpressure| E[Serialize Response]
     end
 ```
 
 ### Implementation
+
 ```kotlin
+import borg.trikeshed.lib.*
+import kotlinx.coroutines.flow.channelFlow
+
+// Represents a DB connection stored in the coroutine context
+data class DbConnection(val conn: Any) : kotlin.coroutines.CoroutineContext.Element {
+    override val key = Key
+    companion object Key : kotlin.coroutines.CoroutineContext.Key<DbConnection>
+}
+
+// Assumes `httpParser` and `buildResponse` are defined elsewhere
 suspend fun handleCouchRequest(request: ByteArray): ByteArray {
-    // Parse HTTP
+    // 1. Asynchronously parse the request
     val parsed = suspendCoroutine { cont ->
-        httpParser.parseAsync(request) { result ->
-            cont.resume(result)
-        }
+        httpParser.parseAsync(request) { result -> cont.resume(result) }
     }
-    
-    // Query with connection from context
-    val conn = coroutineContext[DbConnection]?.conn 
-        ?: error("No DB connection")
-    
-    // Stream results through channel
+
+    // 2. Access database connection from the context
+    val conn = coroutineContext[DbConnection]?.conn
+        ?: error("No DB connection in context")
+
+    // 3. Stream results efficiently using a channelFlow
     val docs = channelFlow {
         conn.query(parsed.query).forEach { doc ->
-            send(doc) // Suspends on backpressure
+            send(doc) // Suspends if the channel is full (backpressure)
         }
     }
-    
-    // Serialize response
+
+    // 4. Build a response from the stream of documents
     return buildResponse(docs)
 }
 ```
 
 ---
 
-## QUIC Service  
+## 2. QUIC Service with `select` Multiplexing
 
 ```mermaid
 flowchart TD
     subgraph "QUIC Service"
-        A[UDP Datagram] -->|demux| B[Stream Router]
-        B -->|stream 1| C1[Stream Handler 1]
-        B -->|stream 2| C2[Stream Handler 2]
-        B -->|stream n| CN[Stream Handler N]
-        
-        C1 & C2 & CN -->|mux| D[Packet Builder]
-        D -->|send| E[UDP Socket]
-        
-        B -.->|Channel per stream| CH[Stream Channels]
-        D -.->|select for multiplexing| SEL[Channel Select]
+        A[UDP Datagrams] -->|`launch`| B(Demux Actor)
+        B -->|`Channel.send`| C[Stream-specific Channels]
+        D(Mux Actor) -->|`select`| C
+        D -->|`socket.send`| E[Outgoing UDP Socket]
     end
 ```
 
 ### Implementation
+
 ```kotlin
+import kotlinx.coroutines.*
+import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.channels.Channel
+
+// A map to hold channels for each QUIC stream ID
+val streams = java.util.concurrent.ConcurrentHashMap<Int, Channel<ByteArray>>()
+
 suspend fun handleQuic(socket: DatagramSocket) = coroutineScope {
-    val streams = ConcurrentHashMap<Int, Channel<ByteArray>>()
-    
-    // Demux incoming
+    // Coroutine for demultiplexing incoming packets
     launch {
         while (isActive) {
             val packet = socket.receive()
             val streamId = parseStreamId(packet)
-            streams.getOrPut(streamId) { Channel() }
+            // Get or create a channel for the stream and send data to it
+            streams.getOrPut(streamId) { Channel(Channel.BUFFERED) }
                 .send(packet.data)
         }
     }
-    
-    // Mux outgoing
+
+    // Coroutine for multiplexing outgoing packets
     launch {
         while (isActive) {
-            select {
+            // `select` waits for the first receive operation to complete
+            select<Unit> {
                 streams.forEach { (id, channel) ->
                     channel.onReceive { data ->
                         socket.send(buildPacket(id, data))
@@ -94,55 +105,56 @@ suspend fun handleQuic(socket: DatagramSocket) = coroutineScope {
 
 ---
 
-## SSH Service
+## 3. SSH Service with `suspendCancellableCoroutine`
 
 ```mermaid
 flowchart TD
     subgraph "SSH Service"
-        A[TCP Socket] -->|decrypt| B[SSH Packets]
-        B -->|route| C[Channel Router]
-        
-        C -->|shell| D1[Shell Channel]
-        C -->|sftp| D2[SFTP Channel]  
-        C -->|forward| D3[Port Forward]
-        
-        D1 & D2 & D3 -->|encrypt| E[TCP Socket]
-        
-        B -.->|suspend auth| AUTH[Auth Continuation]
-        D1 -.->|bidirectional flow| BID[Shell I/O Channels]
+        A[TCP Socket] -->|`suspendCancellableCoroutine`| B(Authenticated Session)
+        B -->|`coroutineScope`| C{Multiplexer}
+        C -- Shell --> D1[Shell Handler]
+        C -- SFTP --> D2[SFTP Handler]
     end
 ```
 
 ### Implementation
+
 ```kotlin
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+
 suspend fun handleSsh(socket: Socket) {
-    // Auth
+    // 1. Authenticate with cancellation support
     val session = suspendCancellableCoroutine { cont ->
         sshAuth.authenticate(socket) { result ->
-            if (result.isSuccess) cont.resume(result.session)
-            else cont.resumeWithException(result.error)
+            if (cont.isActive) {
+                if (result.isSuccess) cont.resume(result.session)
+                else cont.resumeWithException(result.error)
+            }
         }
+        // Define cancellation handler
+        cont.invokeOnCancellation { sshAuth.cancel() }
     }
-    
-    // Channel multiplexing
+
+    // 2. Set up channel multiplexing within a coroutine scope
     coroutineScope {
         val channels = mutableMapOf<Int, Channel<ByteArray>>()
-        
-        // Read loop
+
+        // Coroutine to read packets and route them to the correct channel
         launch {
             while (isActive) {
                 val packet = session.readPacket()
                 channels[packet.channelId]?.send(packet.data)
             }
         }
-        
-        // Channel handlers
+
+        // Handler for new channel requests from the client
         session.onChannelOpen { id, type ->
-            channels[id] = Channel()
+            channels[id] = Channel(Channel.BUFFERED)
             when (type) {
-                "shell" -> launch { handleShell(channels[id]) }
-                "sftp" -> launch { handleSftp(channels[id]) }
-                "forward" -> launch { handleForward(channels[id]) }
+                "shell" -> launch { handleShell(channels.getValue(id)) }
+                "sftp"  -> launch { handleSftp(channels.getValue(id)) }
+                // etc.
             }
         }
     }
@@ -151,106 +163,55 @@ suspend fun handleSsh(socket: Socket) {
 
 ---
 
-## io_uring Integration
+## 4. `io_uring` Integration with Continuations
 
 ```mermaid
 flowchart TD
     subgraph "io_uring I/O"
-        A[Read Request] -->|prepare| B[SQE Entry]
-        B -->|submit| C[io_uring]
-        C -->|complete| D[CQE Entry]
-        D -->|resume| E[Read Complete]
-        
-        B -.->|store continuation| CONT[Continuation in userData]
-        D -.->|retrieve continuation| RESUME[Resume Coroutine]
+        A[Read Request] -->|"suspendCoroutineUninterceptedOrReturn"| B{SQE Preparation}
+        B -->|Store Continuation in `userData`| C[Submit to `io_uring`]
+        C -->|...Kernel I/O...| D{CQE Processing Loop}
+        D -->|Retrieve & Resume Continuation| E[Read Complete]
     end
 ```
 
 ### Implementation
+
 ```kotlin
+import kotlin.coroutines.*
+import kotlin.coroutines.intrinsics.*
+
 suspend fun readWithUring(fd: Int, size: Int): ByteArray {
     return suspendCoroutineUninterceptedOrReturn { cont ->
         val sqe = ring.getSqe()
         val buffer = ByteBuffer.allocateDirect(size)
-        
+
+        // Prepare a read operation on the submission queue entry (SQE)
         sqe.prepareRead(fd, buffer, 0)
-        sqe.userData = StoreContination(cont) // Store for completion
-        
-        ring.submit()
-        COROUTINE_SUSPENDED
+        // CRITICAL: Store the continuation's raw handle in `userData`
+        sqe.userData = StoreContinuation(cont)
+
+        ring.submit() // Submit the operation to the kernel
+        COROUTINE_SUSPENDED // Suspend the coroutine until the CQE processor resumes it
     }
 }
 
-// Completion handler (runs in separate coroutine)
-suspend fun processCompletions() {
+// This runs in a separate, dedicated dispatcher (e.g., Dispatchers.IO)
+suspend fun processUringCompletions() {
     while (true) {
+        // Wait for a completion queue entry (CQE)
         val cqe = ring.waitCqe()
+        // Retrieve the coroutine's continuation from `userData`
         val cont = RetrieveContinuation<ByteArray>(cqe.userData)
-        
-        if (cqe.res < 0) {
+
+        if (cqe.res < 0) { // Error case
             cont.resumeWithException(IOException("Read failed: ${cqe.res}"))
-        } else {
+        } else { // Success case
             val buffer = cqe.getBuffer()
-            cont.resume(buffer.toByteArray())
+            cont.resume(buffer.toByteArray()) // Resume the coroutine with the result
         }
-        
-        ring.cqeSeen(cqe)
-    }
-}
-```
 
----
-
-## Common Patterns
-
-### 1. Simple Suspension
-```kotlin
-suspend fun doAsync(param: String): Result {
-    return suspendCoroutine { cont ->
-        asyncApi.call(param) { result ->
-            cont.resume(result)
-        }
-    }
-}
-```
-
-### 2. Channel Backpressure
-```kotlin
-val channel = Channel<Data>(
-    capacity = Channel.BUFFERED,
-    onBufferOverflow = BufferOverflow.SUSPEND
-)
-```
-
-### 3. Context Usage
-```kotlin
-// Add to context
-withContext(DbConnection(conn) + RequestId(id)) {
-    doWork()
-}
-
-// Access from context
-val conn = coroutineContext[DbConnection]?.conn
-val reqId = coroutineContext[RequestId]?.id
-```
-
-### 4. Streaming with Channels
-```kotlin
-fun streamData() = channelFlow {
-    while (hasMore()) {
-        send(readNext()) // Suspends on backpressure
-    }
-}
-```
-
-### 5. Multiplexing with Select
-```kotlin
-select {
-    channel1.onReceive { data ->
-        process1(data)
-    }
-    channel2.onReceive { data ->
-        process2(data)  
+        ring.cqeSeen(cqe) // Mark CQE as processed
     }
 }
 ```

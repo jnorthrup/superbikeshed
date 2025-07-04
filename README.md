@@ -281,3 +281,7 @@ This module follows TrikeShed's development principles:
 ## License
 
 Same as TrikeShed main project.
+
+## TODO
+
+- [ ] All previous/alternative cursor implementations are cancelled. Only the columnar cursor delegating to Indexed is canonical. All future work must use this pattern.

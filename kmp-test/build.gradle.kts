@@ -10,7 +10,6 @@ socksplugins {
 }
 
 group = "test"
-version = "0.1"
 
 kotlin {
     jvm()

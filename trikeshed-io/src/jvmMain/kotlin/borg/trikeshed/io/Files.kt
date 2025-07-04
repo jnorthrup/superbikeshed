@@ -50,8 +50,8 @@ actual object Files {
     }
     
     actual fun iterateLines(fileName: String, bufsize: Int): Iterable<Join<Long, Indexed<Byte>>> {
-        return streamLines(fileName, bufsize).map { (lineNum, bytes) ->
-            lineNum j bytes.toIdx()
+        return streamLines(fileName, bufsize).map { (lineNum: Long, bytes: ByteArray) ->
+            lineNum j (bytes.size j { i: Int -> bytes[i] })
         }.asIterable()
     }
     

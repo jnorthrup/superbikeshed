@@ -14,12 +14,16 @@ interface TypeMemento {
 enum class IOMemento(override val networkSize: Int? = null) : TypeMemento {
     IoBoolean(1),
     IoByte(1),
+    IoShort(2),
     IoInt(4),
     IoLong(8),
     IoFloat(4),
     IoDouble(8),
+    IoChar(2),
     IoString,
+    IoVarchar,
     IoLocalDate(8),
+    IoLocalDateTime(16),
     IoInstant(12),
     IoNothing;
 

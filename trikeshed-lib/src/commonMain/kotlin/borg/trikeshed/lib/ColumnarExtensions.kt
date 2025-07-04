@@ -21,7 +21,7 @@ import kotlin.reflect.KClassifier
 
 
 typealias CursorLike = Indexed<RowVec>
-typealias TypeMemento = Join<IOMemento, String?>
+typealias ColumnTypeMemento = Join<IOMemento, String?>
 
 // === Categorical Operators ===
 
@@ -254,17 +254,17 @@ fun <T : Comparable<T>> Indexed<T>.asOrdinal(
  * Calculate network coordinates for serialization - using Indexed2 pattern
  */
 fun networkCoords(
-    types: Indexed<TypeMemento>,
+    types: Indexed<ColumnTypeMemento>,
     defaultVarcharSize: Int = 255,
     varcharSizes: Map<Int, Int> = emptyMap()
 ): Indexed2<Int, Int> {
     // Use Indexed2 pattern to avoid type hardening
-    val coordCalculator: (Indexed<TypeMemento>, Int, Map<Int, Int>) -> Indexed2<Int, Int> = { typeMementos, defaultSize, varSizes ->
+    val coordCalculator: (Indexed<ColumnTypeMemento>, Int, Map<Int, Int>) -> Indexed2<Int, Int> = { typeMementos, defaultSize, varSizes ->
         var offset = 0
         typeMementos.a j { i ->
             val memento = typeMementos.b(i).a
             val size = when (memento) {
-                is IOMemento.IoVarchar -> varSizes[i] ?: defaultSize
+                IOMemento.IoVarchar -> varSizes[i] ?: defaultSize
                 else -> memento.networkSize ?: 0
             }
             val start = offset
@@ -315,19 +315,20 @@ inline fun <reified T> column(name: String, index: Int, memento: IOMemento): Col
  */
 val IOMemento.networkSize: Int?
     get() = when (this) {
-        is IOMemento.IoBoolean -> 1
-        is IOMemento.IoByte -> 1
-        is IOMemento.IoShort -> 2
-        is IOMemento.IoInt -> 4
-        is IOMemento.IoLong -> 8
-        is IOMemento.IoFloat -> 4
-        is IOMemento.IoChar -> 2
-        is IOMemento.IoString -> null // Variable length
-        is IOMemento.IoVarchar -> null // Variable length
-        is IOMemento.IoLocalDate -> 8
-        is IOMemento.IoLocalDateTime -> 16
-        is IOMemento.IoInstant -> 8
-        else -> null
+        IOMemento.IoBoolean -> 1
+        IOMemento.IoByte -> 1
+        IOMemento.IoShort -> 2
+        IOMemento.IoInt -> 4
+        IOMemento.IoLong -> 8
+        IOMemento.IoFloat -> 4
+        IOMemento.IoDouble -> 8
+        IOMemento.IoChar -> 2
+        IOMemento.IoString -> null // Variable length
+        IOMemento.IoVarchar -> null // Variable length
+        IOMemento.IoLocalDate -> 8
+        IOMemento.IoLocalDateTime -> 16
+        IOMemento.IoInstant -> 8
+        IOMemento.IoNothing -> null
     }
 
 /**
@@ -335,12 +336,13 @@ val IOMemento.networkSize: Int?
  */
 val IOMemento.isNumeric: Boolean
     get() = when (this) {
-        is IOMemento.IoByte,
-        is IOMemento.IoShort,
-        is IOMemento.IoInt,
-        is IOMemento.IoLong,
-        is IOMemento.IoFloat,
-        is IOMemento.IoChar -> true
+        IOMemento.IoByte,
+        IOMemento.IoShort,
+        IOMemento.IoInt,
+        IOMemento.IoLong,
+        IOMemento.IoFloat,
+        IOMemento.IoDouble,
+        IOMemento.IoChar -> true
         else -> false
     }
 

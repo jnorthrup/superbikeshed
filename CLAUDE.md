@@ -213,6 +213,10 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 - in this code to avoid headaches, always import with wildcards until necessary to be specific
 
+## Build Conventions Memory
+
+- remove all versions from child projects keep up top
+
 # Columnar Cursor Features, Operators, and QOL (from ../columnar)
 
 ## Core Abstractions

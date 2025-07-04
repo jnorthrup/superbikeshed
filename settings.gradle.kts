@@ -14,8 +14,8 @@ pluginManagement {
     }
     plugins {
         kotlin("multiplatform") version "2.1.21"
-        id("com.github.ben-manes.versions") version "0.51.0"
-        id("io.gitlab.arturbosch.detekt") version "1.23.0"
+        id("com.github.ben-manes.versions") version "0.52.0"
+        id("io.gitlab.arturbosch.detekt") version "1.23.8"
     }
 }
 
@@ -49,6 +49,8 @@ include(":trikeshed-strace")
 include(":trikeshed-couchdb")
 include(":trikeshed-ipfs")
 include(":trikeshed-services")
+include(":trikeshed-cursor")
+include(":trikeshed-isam")
 
 // Application modules
 include(":rtsgame")

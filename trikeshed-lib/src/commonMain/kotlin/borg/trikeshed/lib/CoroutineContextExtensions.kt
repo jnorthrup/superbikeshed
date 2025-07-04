@@ -55,8 +55,8 @@ suspend fun <K, V : Function<*>> withHandlers(
  * Extension to easily access the handler registry from any coroutine context.
  */
 @Suppress("UNCHECKED_CAST")
-val <K, V : Function<*>> CoroutineContext.handlerRegistry: HandlerRegistry<K, V>?
-    get() = this[HandlerRegistry.Key] as? HandlerRegistry<K, V>
+fun <K, V : Function<*>> CoroutineContext.getHandlerRegistry(): HandlerRegistry<K, V>? = 
+    this[HandlerRegistry.Key] as? HandlerRegistry<K, V>
 
 // === Standard Granular Context Elements ===
 
