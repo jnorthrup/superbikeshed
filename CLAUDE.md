@@ -212,3 +212,42 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 ## Code Import Memory
 
 - in this code to avoid headaches, always import with wildcards until necessary to be specific
+
+# Columnar Cursor Features, Operators, and QOL (from ../columnar)
+
+## Core Abstractions
+- **Cursor**: A type-safe, columnar, and composable abstraction for tabular data, compatible with TrikeShed MetaSeries and Indexed types.
+- **RowVec**: Represents a row in a Cursor, supporting type-safe access and metadata.
+- **ISAMCursor**: Platform-dependent, efficient file-backed cursor for ISAM data.
+
+## Operators
+- **Sum operator (∑)**: Aggregates values across rows or columns using a reducer function.
+- **Transform operator (α)**: Applies a unary functor to each value in the cursor.
+- **List ellipsis operator (…​)**: Converts a Vect0r to a List.
+- **Join**: Column-wise join of multiple cursors, with row count validation and empty-cursor handling.
+- **Pivot**: Reorganizes data for analytics, supporting key-based grouping and fan-out.
+- **Ordered**: Sorts rows by key(s) using a comparator.
+- **Indexing and slicing**: Supports negative indices, ranges, and multi-index selection.
+
+## Quality-of-Life Extensions
+- **Type-safe getters**: `getInt`, `getString`, `getFloat`, `getDouble`, and generic `getTyped` for RowVec.
+- **Scalars and column metadata**: Access column names/types and metadata via `scalars`, `width`, and `colIdx`.
+- **Network size/coord helpers**: Compute network sizes and coordinates for serialization.
+- **Iterable promotion**: Convert RowVec to an Iterable of typed values.
+- **Platform expect/actual**: ISAMCursor and file access are platform-abstracted for JVM/Native/JS.
+
+## Design Principles
+- **Composable**: All operators and accessors are designed for functional composition and chaining.
+- **Meta-driven**: All access is guided by meta descriptions for type safety and schema evolution.
+- **KMP compatible**: Core abstractions and most operators are multiplatform-ready.
+- **No unnecessary rewrites**: The proven, JVM-tested columnar cursor is preserved as canonical.
+
+## Cursor Policy Update
+
+- All previous/alternative cursor implementations are now **cancelled**.
+- `Cursor` is now a delegator to `Indexed` (MetaSeries/Indexed), not an implementation itself.
+- This is the canonical and required policy for all future development.
+
+---
+
+This enshrines the columnar cursor's features, operators, and QOL improvements as the canonical reference for future development and integration.
