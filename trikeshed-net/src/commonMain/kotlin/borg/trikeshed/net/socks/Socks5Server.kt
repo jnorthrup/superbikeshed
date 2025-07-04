@@ -91,17 +91,15 @@ data class CqeResult(
  * SOCKS5 Server implementation with CCEK-based channel handling
  * Implements RFC 1928 SOCKS Protocol Version 5
  * 
- * This server uses CCEK patterns for all I/O operations and supports:
+ * This server uses direct context-driven patterns for all I/O operations and supports:
  * - No authentication (non-auth mode)
  * - CONNECT command for TCP proxying
- * - BIND command for reverse connections
- * - UDP ASSOCIATE for UDP relay
  * - io_uring batch operations for performance
  */
 class Socks5Server(
     private val bindAddress: String,
     private val bindPort: Int,
-    private val ioContext: IOContext.UringContext, // io_uring first!
+    private val ioContext: IOContext.UringContext, // Now a direct dependency, not just a config object
     private val scope: CoroutineScope = GlobalScope
 ) {
     // Server state
@@ -165,9 +163,7 @@ class Socks5Server(
         
         // Start server coroutines
         serverJob = scope.launch {
-            launch { acceptLoop() }
-            launch { commandProcessor() }
-            launch { uringBatchProcessor() }
+            acceptLoop()
         }
     }
     
@@ -234,7 +230,7 @@ class Socks5Server(
                         
                         activeConnections[connectionId] = connection
                         
-                        // Handle connection with CCEK context
+                        // Launch the handler in the connection's own coroutine context
                         scope.launch(connection.context) {
                             handleConnection(connection)
                         }
