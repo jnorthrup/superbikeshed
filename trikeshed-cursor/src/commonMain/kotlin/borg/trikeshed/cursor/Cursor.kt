@@ -1,7 +1,7 @@
 package borg.trikeshed.cursor
 
 import borg.trikeshed.lib.*
-import kotlinx.datetime.LocalDate
+import kotlin.reflect.KClassifier
 import kotlin.reflect.KClass
 
 /**
@@ -12,39 +12,11 @@ import kotlin.reflect.KClass
  */
 
 // Core type definitions using TrikeShed foundation
-typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
-typealias Cursor = Indexed<RowVec>
+// RowVec and Cursor are now defined in trikeshed-lib
+// This module provides cursor operations and extensions
 
-/**
- * Column metadata interface
- */
-interface ColumnMeta {
-    val typeMemento: IOMemento
-    val columnName: String?
-    val context: Any?
-}
-
-/**
- * IO type mementos for type-safe column access
- */
-sealed class IOMemento {
-    object IoInt : IOMemento()
-    object IoString : IOMemento()
-    object IoFloat : IOMemento()
-    object IoDouble : IOMemento()
-    object IoLocalDate : IOMemento()
-}
-
-/**
- * Scalar metadata for columns
- */
-data class Scalar(
-    override val typeMemento: IOMemento,
-    val name: String? = null
-) : ColumnMeta {
-    override val columnName: String? = name
-    override val context: Any? = null
-}
+// ColumnMeta is now defined in trikeshed-lib as Join<String, KClassifier>
+// Scalar removed - use ColumnMeta from lib
 
 // Core cursor operations
 
@@ -89,7 +61,7 @@ fun Cursor.column(name: String): Indexed<Any?> {
 private fun Cursor.findColumnIndex(name: String): Int {
     val columnMetas = scalars
     for (i in 0 until columnMetas.a) {
-        if (columnMetas.b(i).columnName == name) {
+        if (columnMetas.b(i).a == name) {
             return i
         }
     }
@@ -110,14 +82,17 @@ fun Cursor.columns(vararg indices: Int): Cursor =
 val Cursor.scalars: Indexed<ColumnMeta>
     get() = if (a > 0) {
         val firstRow = at(0)
-        firstRow.a j { colIndex: Int -> firstRow.b(colIndex).b() }
+        firstRow.a j { colIndex: Int -> 
+            // ColumnMeta is Join<String, KClassifier>, so we need to create the proper structure
+            "col_$colIndex" j Int::class
+        }
     } else {
-        0 j { _: Int -> Scalar(IOMemento.IoString) }
+        0 j { _: Int -> "col_0" j Int::class }
     }
 
 /** Get column names */
 val Cursor.columnNames: Indexed<String>
-    get() = scalars.a j { i -> scalars.b(i).columnName ?: "col_$i" }
+    get() = scalars.a j { i -> scalars.b(i).a }
 
 /** Get column index by name */
 val Cursor.colIdx: Map<String, Int>
@@ -130,36 +105,31 @@ val Cursor.colIdx: Map<String, Int>
 /** Get Int value with type safety */
 fun RowVec.getInt(index: Int): Int? {
     val cell = b(index)
-    val meta = cell.b()
-    return if (meta.typeMemento == IOMemento.IoInt) cell.a as? Int else null
+    return cell.a as? Int
 }
 
 /** Get String value with type safety */
 fun RowVec.getString(index: Int): String? {
     val cell = b(index)
-    val meta = cell.b()
-    return if (meta.typeMemento == IOMemento.IoString) cell.a as? String else null
+    return cell.a as? String
 }
 
 /** Get Float value with type safety */
 fun RowVec.getFloat(index: Int): Float? {
     val cell = b(index)
-    val meta = cell.b()
-    return if (meta.typeMemento == IOMemento.IoFloat) cell.a as? Float else null
+    return cell.a as? Float
 }
 
 /** Get Double value with type safety */
 fun RowVec.getDouble(index: Int): Double? {
     val cell = b(index)
-    val meta = cell.b()
-    return if (meta.typeMemento == IOMemento.IoDouble) cell.a as? Double else null
+    return cell.a as? Double
 }
 
 /** Generic typed getter */
-fun <T : Any> RowVec.getTyped(index: Int, expectedClass: KClass<T>, expectedType: IOMemento): T? {
+fun <T : Any> RowVec.getTyped(index: Int, expectedClass: KClass<T>): T? {
     val cell = b(index)
-    val meta = cell.b()
-    return if (meta.typeMemento == expectedType && expectedClass.isInstance(cell.a)) {
+    return if (expectedClass.isInstance(cell.a)) {
         cell.a as? T
     } else null
 }
@@ -251,13 +221,13 @@ fun Cursor.toList(): List<RowVec> = (0 until a).map { at(it) }
 fun cursorOf(
     data: List<List<Any?>>,
     columnNames: List<String> = data.indices.map { "col_$it" },
-    columnTypes: List<IOMemento> = data.firstOrNull()?.map { inferType(it) } ?: emptyList()
+    columnTypes: List<KClassifier> = data.firstOrNull()?.map { inferType(it) } ?: emptyList()
 ): Cursor {
     require(data.isNotEmpty()) { "Data cannot be empty" }
     require(columnNames.size == data.first().size) { "Column names size mismatch" }
     require(columnTypes.size == data.first().size) { "Column types size mismatch" }
     
-    val scalars = columnNames.zip(columnTypes) { name, type -> Scalar(type, name) }
+    val scalars = columnNames.zip(columnTypes) { name, type -> name j type }
     
     return data.size j { rowIndex: Int ->
         val rowData = data[rowIndex]
@@ -268,11 +238,10 @@ fun cursorOf(
 }
 
 /** Infer type from value */
-private fun inferType(value: Any?): IOMemento = when (value) {
-    is Int -> IOMemento.IoInt
-    is String -> IOMemento.IoString
-    is Float -> IOMemento.IoFloat
-    is Double -> IOMemento.IoDouble
-    is LocalDate -> IOMemento.IoLocalDate
-    else -> IOMemento.IoString
+private fun inferType(value: Any?): KClassifier = when (value) {
+    is Int -> Int::class
+    is String -> String::class
+    is Float -> Float::class
+    is Double -> Double::class
+    else -> String::class
 }

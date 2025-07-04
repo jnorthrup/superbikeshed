@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlin.coroutines.CoroutineContext
+import kotlinx.datetime.Clock
 
 /**
  * Cursor-Channel Integration Layer
@@ -162,14 +163,14 @@ class CursorReactor(
      * Monitor cursor operations
      */
     fun monitorCursor(cursor: Cursor): Flow<CursorMetrics> = flow {
-        val startTime = System.currentTimeMillis()
+        val startTime = Clock.System.now().toEpochMilliseconds()
         var rowsProcessed = 0
         
         cursor.asFlow()
             .onEach { rowsProcessed++ }
             .collect()
         
-        val endTime = System.currentTimeMillis()
+        val endTime = Clock.System.now().toEpochMilliseconds()
         val duration = endTime - startTime
         
         emit(CursorMetrics(

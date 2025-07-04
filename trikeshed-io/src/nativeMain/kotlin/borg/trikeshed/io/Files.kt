@@ -3,6 +3,7 @@ package borg.trikeshed.io
 import borg.trikeshed.lib.*
 import kotlinx.cinterop.*
 import platform.posix.*
+import borg.trikeshed.lib.toIdx
 
 @OptIn(ExperimentalForeignApi::class)
 

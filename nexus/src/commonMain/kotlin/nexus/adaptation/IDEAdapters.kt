@@ -17,7 +17,7 @@ class IntelliJAdapter(
     suspend fun reportExecStart(scriptName: String, nexusVersion: String, k2scriptVersion: String) {
         sendTelemetry(
             K2ScriptTelemetryEvent(
-                timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+                timestamp = System.currentTimeMillis(),
                 scriptName = scriptName,
                 eventType = "EXEC_START",
                 platform = "INTELLIJ_PLUGIN",

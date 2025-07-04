@@ -217,6 +217,10 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 - remove all versions from child projects keep up top
 
+## Gradle Management Memory
+
+- changing gradle is off limits without supervised permission
+
 # Columnar Cursor Features, Operators, and QOL (from ../columnar)
 
 ## Core Abstractions

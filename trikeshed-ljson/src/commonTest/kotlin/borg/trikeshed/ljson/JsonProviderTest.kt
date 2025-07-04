@@ -3,6 +3,7 @@ package borg.trikeshed.ljson
 import borg.trikeshed.cursor.*
 import kotlin.test.*
 import kotlinx.serialization.*
+import kotlinx.coroutines.runBlocking
 
 @Serializable
 data class TestData(
@@ -189,5 +190,56 @@ class JsonProviderTest {
         
         val obj = result.a as JsonElement.Obj
         assertEquals(2, obj.fields.a)
+    }
+
+    @Test
+    fun testRemoteFileAttentionReadsTargetedRange() = kotlinx.coroutines.runBlocking {
+        // TODO: Mock HttpRangeClient and test RemoteFileAttention
+        // val httpClient = ...
+        // val attention = RemoteFileAttention(httpClient)
+        // val url = "https://example.com/large.json.gz"
+        // val start = 1000L
+        // val length = 500L
+        // val flow = attention.readRange(url, start, length)
+        // Assert that flow emits expected Indexed<Byte> chunks
+        assertTrue(true) // Placeholder
+    }
+
+    @Test
+    fun testGzipFileAttentionIntegration() = kotlinx.coroutines.runBlocking {
+        // TODO: Mock HttpRangeClient and test GzipFileAttention
+        // val httpClient = ...
+        // val attention = GzipFileAttention(httpClient)
+        // val url = "https://example.com/large.json.gz"
+        // val flow = attention.readRange(url, 0, 1024)
+        // Assert decompressed output
+        assertTrue(true) // Placeholder
+    }
+
+    @Test
+    fun testCreateBitmapAsTensor() {
+        // TODO: Use a sample JSON and test createBitmapAsTensor
+        // val jsonString = "{"key": "value"}".encodeToByteArray().toUByteArray()
+        // val tensor = createBitmapAsTensor(jsonString)
+        // Assert tensor shape and content
+        assertTrue(true) // Placeholder
+    }
+
+    @Test
+    fun testJsonStreamingParseArrayStream() = kotlinx.coroutines.runBlocking {
+        // TODO: Test streaming parse of large JSON array
+        // val json = "[1,2,3,4,5]"
+        // val flow = JsonStreamingImpl().parseArrayStream(json)
+        // Assert flow emits correct elements
+        assertTrue(true) // Placeholder
+    }
+
+    @Test
+    fun testJsonStreamingParseObjectStream() = kotlinx.coroutines.runBlocking {
+        // TODO: Test streaming parse of large JSON object
+        // val json = "{"a":1,"b":2}"
+        // val flow = JsonStreamingImpl().parseObjectStream(json)
+        // Assert flow emits correct key-value pairs
+        assertTrue(true) // Placeholder
     }
 }

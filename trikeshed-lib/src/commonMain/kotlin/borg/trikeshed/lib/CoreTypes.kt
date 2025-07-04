@@ -41,11 +41,21 @@ typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 typealias ColumnMeta = Join<String, KClassifier>
-typealias RowVec = Indexed<Join<Any?, () -> ColumnMeta>>
+// Canonical RowVec and Cursor definitions
+typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
+typealias Cursor = Indexed<RowVec>
 data class TableMeta(val name: String)
 typealias CursorIndex = Join<TableMeta, Int>
-typealias Cursor = MetaSeries<CursorIndex, RowVec>
+// Cursor is now defined in trikeshed-lib
 typealias TensorCursor = Indexed<Tensor<Any?>>
+
+typealias ByteSeries = Indexed<Byte>
+typealias CharSeries = Indexed<Char>
+
+fun ByteArray.toByteSeries(): ByteSeries = size j { this[it] }
+fun CharArray.toCharSeries(): CharSeries = size j { this[it] }
+
+// ByteIndexed and CharIndexed are now classes defined in IoTypes.kt
 
 val Byte.nz: Boolean get() = 0 != this.toInt()
 val Short.nz: Boolean get() = 0 != this.toInt()

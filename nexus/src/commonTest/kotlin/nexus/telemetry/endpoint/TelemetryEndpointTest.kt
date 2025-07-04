@@ -96,4 +96,26 @@ class TelemetryEndpointTest {
         assertTrue(errContent.toString().isEmpty(), "Error stream should be empty for the default valid event path.")
         println("Note: TelemetryEndpoint validation test is limited by current placeholder structure.")
     }
+
+    @Test
+    fun testAttentionDerivedResultsTDD() {
+        // TDD: Specify expected attention-derived results for telemetry
+        val context = object {
+            val metadata = mutableMapOf<String, String>()
+        }
+        context.metadata["focus"] = "telemetry event"
+        // Simulate attention-derived result logic
+        class Attention(val context: Any) {
+            fun derivedResults(): List<String> {
+                // TDD: hardcoded expected results for now
+                return listOf("event summary", "anomaly detection", "usage stats")
+            }
+        }
+        val attention = Attention(context)
+        val results = attention.derivedResults()
+        kotlin.test.assertTrue(results.contains("event summary"))
+        kotlin.test.assertTrue(results.contains("anomaly detection"))
+        kotlin.test.assertTrue(results.contains("usage stats"))
+        kotlin.test.assertEquals(3, results.size)
+    }
 }

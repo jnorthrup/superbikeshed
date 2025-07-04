@@ -1,14 +1,15 @@
 package borg.trikeshed.taxonomy
 
-import com.rtsgame.storage.StratifiedJsonStorage
-import com.rtsgame.storage.JsonSlab
-import com.rtsgame.storage.CompressionAlgorithm
-import com.rtsgame.storage.StorageTier
+// Commented out missing dependencies - need to implement or add modules
+// import com.rtsgame.storage.StratifiedJsonStorage
+// import com.rtsgame.storage.JsonSlab
+// import com.rtsgame.storage.CompressionAlgorithm
+// import com.rtsgame.storage.StorageTier
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import borg.trikeshed.parse.json.JsonParser
+// import borg.trikeshed.parse.json.JsonParser
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.toSeries
+// import borg.trikeshed.lib.toSeries
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -16,84 +17,100 @@ import kotlinx.serialization.json.JsonArray
 
 /**
  * Storage adapter for taxonomic entities
+ * TODO: Implement when storage dependencies are available
  */
 class TaxonomicStorage(
-    private val storage: StratifiedJsonStorage
+    // private val storage: StratifiedJsonStorage
 ) {
     /**
      * Store a taxonomic entity
+     * TODO: Implement when dependencies are available
      */
     suspend fun storeEntity(entity: TaxonomicEntity) {
+        // Placeholder implementation
         val jsonStr = entityToJson(entity)
-        val parsed = JsonParser.reify(jsonStr.toSeries())
-        val jsonElement = convertToJsonElement(parsed)
-        val slab = JsonSlab(
-            id = entity.id,
-            data = jsonElement,
-            metadata = com.rtsgame.storage.SlabMetadata(
-                size = 0, // Will be calculated by storage
-                lastAccess = System.currentTimeMillis(),
-                accessCount = 0,
-                tier = StorageTier.HOT_RAM,
-                compression = CompressionAlgorithm.NONE
-            )
-        )
-        storage.putSlab(slab)
+        // val parsed = JsonParser.reify(jsonStr.toSeries())
+        // val jsonElement = convertToJsonElement(parsed)
+        // val slab = JsonSlab(
+        //     id = entity.id,
+        //     data = jsonElement,
+        //     metadata = com.rtsgame.storage.SlabMetadata(
+        //         size = 0, // Will be calculated by storage
+        //         lastAccess = System.currentTimeMillis(),
+        //         accessCount = 0,
+        //         tier = StorageTier.HOT_RAM,
+        //         compression = CompressionAlgorithm.NONE
+        //     )
+        // )
+        // storage.putSlab(slab)
+        println("Storing entity: ${entity.id} (placeholder)")  // Placeholder
     }
 
     /**
      * Store a taxonomic graph
+     * TODO: Implement when dependencies are available
      */
     suspend fun storeGraph(graph: TaxonomicGraph) {
         val jsonStr = graphToJson(graph)
-        val parsed = JsonParser.reify(jsonStr.toSeries())
-        val jsonElement = convertToJsonElement(parsed)
-        val slab = JsonSlab(
-            id = "graph_${System.currentTimeMillis()}",
-            data = jsonElement,
-            metadata = com.rtsgame.storage.SlabMetadata(
-                size = 0, // Will be calculated by storage
-                lastAccess = System.currentTimeMillis(),
-                accessCount = 0,
-                tier = StorageTier.HOT_RAM,
-                compression = CompressionAlgorithm.NONE
-            )
-        )
-        storage.putSlab(slab)
+        // val parsed = JsonParser.reify(jsonStr.toSeries())
+        // val jsonElement = convertToJsonElement(parsed)
+        // val slab = JsonSlab(
+        //     id = "graph_${System.currentTimeMillis()}",
+        //     data = jsonElement,
+        //     metadata = com.rtsgame.storage.SlabMetadata(
+        //         size = 0, // Will be calculated by storage
+        //         lastAccess = System.currentTimeMillis(),
+        //         accessCount = 0,
+        //         tier = StorageTier.HOT_RAM,
+        //         compression = CompressionAlgorithm.NONE
+        //     )
+        // )
+        // storage.putSlab(slab)
+        println("Storing graph: ${graph} (placeholder)")  // Placeholder
     }
 
     /**
      * Retrieve a taxonomic entity
+     * TODO: Implement when dependencies are available
      */
     suspend fun getEntity(id: SemanticId): TaxonomicEntity? {
-        val slab = storage.getSlab(id) ?: return null
-        return jsonToEntity(slab.data as JsonObject)
+        // val slab = storage.getSlab(id) ?: return null
+        // return jsonToEntity(slab.data as JsonObject)
+        println("Getting entity: $id (placeholder)")  // Placeholder
+        return null
     }
 
     /**
      * Retrieve a taxonomic graph
+     * TODO: Implement when dependencies are available
      */
     suspend fun getGraph(id: String): TaxonomicGraph? {
-        val slab = storage.getSlab(id) ?: return null
-        return jsonToGraph(slab.data as JsonObject)
+        // val slab = storage.getSlab(id) ?: return null
+        // return jsonToGraph(slab.data as JsonObject)
+        println("Getting graph: $id (placeholder)")  // Placeholder
+        return null
     }
 
     /**
      * Watch for changes to a taxonomic entity
+     * TODO: Implement when dependencies are available
      */
     fun watchEntity(id: SemanticId): Flow<TaxonomicEntity> {
-        return storage.watchSlab(id).map { slab ->
-            jsonToEntity(slab.data as JsonObject)
-        }
+        // return storage.watchSlab(id).map { slab ->
+        //     jsonToEntity(slab.data as JsonObject)
+        // }
+        TODO("Implement when storage dependencies are available")
     }
 
     /**
      * Watch for changes to a taxonomic graph
+     * TODO: Implement when dependencies are available
      */
     fun watchGraph(id: String): Flow<TaxonomicGraph> {
-        return storage.watchSlab(id).map { slab ->
-            jsonToGraph(slab.data as JsonObject)
-        }
+        // return storage.watchSlab(id).map { slab ->
+        //     jsonToGraph(slab.data as JsonObject)
+        // }
+        TODO("Implement when storage dependencies are available")
     }
 
     /**
@@ -149,7 +166,9 @@ class TaxonomicStorage(
             version = (json["version"] as? JsonPrimitive)?.content ?: "",
             attention = (json["attention"] as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0,
             concepts = (json["concepts"] as? JsonArray)?.map { (it as JsonPrimitive).content.toFloatOrNull() ?: 0f } ?: emptyList(),
-            properties = json["properties"] as? JsonObject ?: JsonObject(emptyMap())
+            properties = json["properties"] as? JsonObject ?: JsonObject(emptyMap()),
+            contentId = "",
+            merkleHash = ""
         )
     }
 
@@ -189,7 +208,8 @@ class TaxonomicStorage(
                 target = (obj["target"] as? JsonPrimitive)?.content ?: "",
                 type = (obj["type"] as? JsonPrimitive)?.content ?: "",
                 weight = (obj["weight"] as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0,
-                bidirectional = (obj["bidirectional"] as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false
+                bidirectional = (obj["bidirectional"] as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
+                merkleHash = ""
             )
         } ?: emptyList()
         
@@ -207,7 +227,8 @@ class TaxonomicStorage(
                 val normA = kotlin.math.sqrt(a.map { it.toDouble() * it.toDouble() }.sum())
                 val normB = kotlin.math.sqrt(b.map { it.toDouble() * it.toDouble() }.sum())
                 if (normA == 0.0 || normB == 0.0) 0.0 else dotProduct / (normA * normB)
-            }
+            },
+            merkleRoot = ""
         )
     }
 

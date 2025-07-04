@@ -15,7 +15,6 @@ pluginManagement {
     plugins {
         kotlin("multiplatform") version "2.1.21"
         id("com.github.ben-manes.versions") version "0.52.0"
-        id("io.gitlab.arturbosch.detekt") version "1.23.8"
     }
 }
 
@@ -51,6 +50,7 @@ include(":trikeshed-ipfs")
 include(":trikeshed-services")
 include(":trikeshed-cursor")
 include(":trikeshed-isam")
+include(":trikeshed-lsmr")
 
 // Application modules
 include(":rtsgame")
@@ -67,3 +67,12 @@ include(":SSH")
 include(":spacegraph")
 include(":ta4k")
 include(":zlib-kmp-reference")
+
+// Remove or comment out the following block to disable TOML version catalog
+// versionCatalogs {
+//     create("libs") {
+//         version("kotlin", "1.9.22")
+//         version("coroutines", "1.7.3")
+//         version("serialization", "1.6.0")
+//     }
+// }

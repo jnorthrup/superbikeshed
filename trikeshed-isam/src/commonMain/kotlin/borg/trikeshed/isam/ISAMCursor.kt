@@ -1,122 +1,84 @@
 package borg.trikeshed.isam
 
-import borg.trikeshed.cursor.*
 import borg.trikeshed.lib.*
+import borg.trikeshed.cursor.Cursor
+import borg.trikeshed.cursor.RowVec
+import borg.trikeshed.cursor.ColumnMeta
+import borg.trikeshed.cursor.at
+import borg.trikeshed.cursor.cursorOf
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.IOMemento
+import borg.trikeshed.lib.ColumnTypeMemento
+import borg.trikeshed.lib.j
 
 /**
- * ISAM (Indexed Sequential Access Method) Cursor
+ * Simple ISAM Cursor - File-backed cursor implementation
  * 
- * High-performance file-backed cursor for efficient random access to large datasets.
- * Uses platform-optimized file I/O with zero-copy operations where possible.
- * 
- * Based on the proven columnar ISAM implementation with TrikeShed integration.
+ * Simple file-backed cursor for efficient access to large datasets.
+ * Focus on simplicity over complex columnar operations.
  */
 
 /**
- * Handle for ISAM cursor operations
- */
-typealias ISAMHandle = Join<Cursor, FileAccess>
-
-/**
- * Driver interface for reading/writing typed data from/to byte buffers
- */
-interface CellDriver<BufferType, ValueType> {
-    fun read(buffer: BufferType): ValueType
-    fun write(buffer: BufferType, value: ValueType)
-    val fixedSize: Int
-}
-
-/**
- * Coordinate range for column data
+ * Coordinate range for ISAM column layout
  */
 typealias CoordRange = Join<Int, Int>
 
 /**
- * ISAM metadata containing schema information
+ * Simple ISAM metadata
  */
 data class ISAMMetadata(
-    val recordLength: Int,
-    val columnCoords: Indexed<CoordRange>,
-    val columnNames: Indexed<String>,
-    val columnTypes: Indexed<IOMemento>,
+    val columnNames: List<String>,
+    val columnTypes: List<IOMemento>,
     val rowCount: Int
 )
 
 /**
- * Platform-specific ISAM cursor implementation
+ * Simple ISAM cursor implementation
  */
-expect class ISAMCursor(fileAccess: FileAccess, metadata: ISAMMetadata) : Cursor {
-    val recordLength: Int
-    val columnCount: Int
-    val rowCount: Int
-    
-    override val a: Int
-    override val b: (Int) -> RowVec
-}
+expect class ISAMCursor(path: String, metadata: ISAMMetadata) : Cursor
 
 /**
  * Open an ISAM cursor from file path
  */
-expect fun openISAMCursor(path: String): ISAMHandle
+expect fun openISAMCursor(path: String): ISAMCursor
 
 /**
  * Write cursor data to ISAM format
  */
-expect fun Cursor.writeISAM(
-    pathname: String,
-    defaultVarcharSize: Int = 128,
-    varcharSizes: Map<Int, Int>? = null
-)
+expect fun Cursor.writeISAM(pathname: String, defaultVarcharSize: Int = 255, varcharSizes: Map<Int, Int>? = null)
 
 /**
- * Common ISAM operations
+ * Simple ISAM operations
  */
 
 /**
- * Parse ISAM metadata from .meta file
+ * Parse simple ISAM metadata
  */
-fun parseISAMMetadata(metaContent: String, fileSize: Long): ISAMMetadata {
-    val lines = metaContent.lines()
-        .filter { it.isNotBlank() && !it.startsWith("#") }
+fun parseISAMMetadata(metaContent: String): ISAMMetadata {
+    val lines = metaContent.lines().filter { it.isNotBlank() && !it.startsWith("#") }
+    require(lines.size >= 2) { "Invalid ISAM meta file: needs names, types" }
     
-    require(lines.size >= 3) { "Invalid ISAM meta file: needs coords, names, types" }
+    val names = lines[0].split("\\s+".toRegex())
+    val typeNames = lines[1].split("\\s+".toRegex())
     
-    // Parse coordinates
-    val coordPairs = lines[0].split("\\s+".toRegex())
-        .mapNotNull { it.toIntOrNull() }
-        .chunked(2) { (start, end) -> start j { end } }
-    
-    val recordLength = coordPairs.lastOrNull()?.b ?: 0
-    require(recordLength > 0) { "Invalid record length: $recordLength" }
-    
-    // Parse names and types
-    val names = lines[1].split("\\s+".toRegex())
-    val typeNames = lines[2].split("\\s+".toRegex())
-    
-    require(coordPairs.size == names.size && names.size == typeNames.size) {
-        "Metadata mismatch: coords=${coordPairs.size}, names=${names.size}, types=${typeNames.size}"
+    require(names.size == typeNames.size) {
+        "Metadata mismatch: names=${names.size}, types=${typeNames.size}"
     }
-    
-    // Convert type names to IOMemento
     val types = typeNames.map { typeName ->
         when (typeName.uppercase()) {
-            "INT", "IOINT" -> IOMemento.IoInt
-            "STRING", "IOSTRING" -> IOMemento.IoString
-            "FLOAT", "IOFLOAT" -> IOMemento.IoFloat
-            "DOUBLE", "IODOUBLE" -> IOMemento.IoDouble
-            "LOCALDATE", "IOLOCALDATE" -> IOMemento.IoLocalDate
-            else -> IOMemento.IoString // Default fallback
+            "INT" -> IOMemento.IoInt
+            "STRING" -> IOMemento.IoString
+            "FLOAT" -> IOMemento.IoFloat
+            "DOUBLE" -> IOMemento.IoDouble
+            else -> IOMemento.IoString
         }
     }
     
-    val rowCount = if (recordLength > 0) (fileSize / recordLength).toInt() else 0
-    
     return ISAMMetadata(
-        recordLength = recordLength,
-        columnCoords = coordPairs.size j { i -> coordPairs[i] },
-        columnNames = names.size j { i -> names[i] },
-        columnTypes = types.size j { i -> types[i] },
-        rowCount = rowCount
+        columnNames = names,
+        columnTypes = types,
+        rowCount = 0 // Will be determined from file
     )
 }
 
@@ -163,16 +125,25 @@ fun calculateNetworkCoords(
     return types.a j { i ->
         val type = types.b(i)
         val size = when (type) {
+            IOMemento.IoBoolean -> 1
+            IOMemento.IoByte -> 1
+            IOMemento.IoShort -> 2
             IOMemento.IoInt -> 4
+            IOMemento.IoLong -> 8
             IOMemento.IoFloat -> 4
             IOMemento.IoDouble -> 8
-            IOMemento.IoLocalDate -> 8 // Store as epoch days (Long)
+            IOMemento.IoChar -> 2
             IOMemento.IoString -> varcharSizes?.get(i) ?: defaultVarcharSize
+            IOMemento.IoVarchar -> varcharSizes?.get(i) ?: defaultVarcharSize
+            IOMemento.IoLocalDate -> 8
+            IOMemento.IoLocalDateTime -> 16
+            IOMemento.IoInstant -> 12
+            IOMemento.IoNothing -> 0
         }
         
         val start = offset
         offset += size
-        start j { offset }
+        start j offset
     }
 }
 
@@ -184,8 +155,8 @@ fun calculateNetworkCoords(
 val CoordRange.span: Int get() = b - a
 
 /** Create typed scalar for ISAM column */
-fun createISAMScalar(type: IOMemento, name: String): Scalar = 
-    Scalar(type, name)
+fun createISAMScalar(type: IOMemento, name: String): ColumnTypeMemento = 
+    type j name
 
 /** Create simple cursor from ISAM data for testing */
 fun createTestCursor(data: List<List<Any?>>, columnNames: List<String>): Cursor =

@@ -1,9 +1,9 @@
 package borg.trikeshed.taxonomy
 
-import borg.trikeshed.cursor.*
-import borg.trikeshed.parse.TypeEvidence
+// import borg.trikeshed.cursor.*
+// import borg.trikeshed.parse.TypeEvidence
 import borg.trikeshed.lib.*
-import borg.trikeshed.isam.meta.IOMemento
+// import borg.trikeshed.isam.meta.IOMemento
 import borg.trikeshed.common.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -268,81 +268,84 @@ fun taxonomicGraph(init: TaxonomicGraphBuilder.() -> Unit): TaxonomicGraph {
 /**
  * Extension function to create a taxonomic entity from a cursor row
  */
-fun TaxonomicEntityBuilder.fromCursorRow(cursor: CoreTensorCursorWithMeta<Any>, rowIndex: Int) {
-    val row = cursor.a.row(rowIndex)
-    val meta = cursor.b
-    
-    id = row(0).toString()
-    version = row(1).toString()
-    attention = (row(2) as? Number)?.toDouble() ?: 0.0
-    
-    // Convert concept vector to list
-    concepts = (row(3) as? List<*>)?.map { (it as? Number)?.toFloat() ?: 0f } ?: emptyList()
-    
-    // Add remaining columns as properties
-    for (i in 4 until row.totalSize) {
-        val columnMeta = meta(intArrayOf(i))
-        property(columnMeta.name, row(i))
-    }
-}
+// TODO: Implement when cursor dependencies are available
+// fun TaxonomicEntityBuilder.fromCursorRow(cursor: CoreTensorCursorWithMeta<Any>, rowIndex: Int) {
+//     val row = cursor.a.row(rowIndex)
+//     val meta = cursor.b
+//     
+//     id = row(0).toString()
+//     version = row(1).toString()
+//     attention = (row(2) as? Number)?.toDouble() ?: 0.0
+//     
+//     // Convert concept vector to list
+//     concepts = (row(3) as? List<*>)?.map { (it as? Number)?.toFloat() ?: 0f } ?: emptyList()
+//     
+//     // Add remaining columns as properties
+//     for (i in 4 until row.totalSize) {
+//         val columnMeta = meta(intArrayOf(i))
+//         property(columnMeta.name, row(i))
+//     }
+// }
 
 /**
  * Extension function to create a taxonomic graph from a cursor
+ * TODO: Implement when cursor dependencies are available
  */
-fun TaxonomicGraphBuilder.fromCursor(cursor: CoreTensorCursorWithMeta<Any>) {
-    // Process each row as an entity
-    val rows = cursor.a.rows
-    for (i in 0 until rows) {
-        val entityBuilder = TaxonomicEntityBuilder()
-        entityBuilder.fromCursorRow(cursor, i)
-        entity { 
-            id = entityBuilder.id
-            version = entityBuilder.version
-            attention = entityBuilder.attention
-            concepts = entityBuilder.concepts
-            entityBuilder.properties.forEach { (name, value) -> property(name, value) }
-        }
-    }
-    
-    // Create relationships based on type evidence
-    val typeEvidence = cursor.b.map { meta ->
-        TypeEvidence().apply {
-            meta.name.forEach { char -> this + char }
-        }
-    }
-    
-    // Create relationships based on type similarity
-    for (i in 0 until rows) {
-        for (j in i + 1 until rows) {
-            val similarity = calculateTypeSimilarity(typeEvidence(i), typeEvidence(j))
-            if (similarity > 0.5) {
-                relationship {
-                    source = cursor.a(i, 0).toString()
-                    target = cursor.a(j, 0).toString()
-                    type = "type_similar"
-                    weight = similarity
-                    bidirectional = true
-                }
-            }
-        }
-    }
-}
+// fun TaxonomicGraphBuilder.fromCursor(cursor: CoreTensorCursorWithMeta<Any>) {
+//     // Process each row as an entity
+//     val rows = cursor.a.rows
+//     for (i in 0 until rows) {
+//         val entityBuilder = TaxonomicEntityBuilder()
+//         entityBuilder.fromCursorRow(cursor, i)
+//         entity { 
+//             id = entityBuilder.id
+//             version = entityBuilder.version
+//             attention = entityBuilder.attention
+//             concepts = entityBuilder.concepts
+//             entityBuilder.properties.forEach { (name, value) -> property(name, value) }
+//         }
+//     }
+//     
+//     // Create relationships based on type evidence
+//     val typeEvidence = cursor.b.map { meta ->
+//         TypeEvidence().apply {
+//             meta.name.forEach { char -> this + char }
+//         }
+//     }
+//     
+//     // Create relationships based on type similarity
+//     for (i in 0 until rows) {
+//         for (j in i + 1 until rows) {
+//             val similarity = calculateTypeSimilarity(typeEvidence(i), typeEvidence(j))
+//             if (similarity > 0.5) {
+//                 relationship {
+//                     source = cursor.a(i, 0).toString()
+//                     target = cursor.a(j, 0).toString()
+//                     type = "type_similar"
+//                     weight = similarity
+//                     bidirectional = true
+//                 }
+//             }
+//         }
+//     }
+// }
 
 /**
  * Calculate similarity between two type evidence objects
+ * TODO: Implement when TypeEvidence dependencies are available
  */
-private fun calculateTypeSimilarity(a: TypeEvidence, b: TypeEvidence): Double {
-    val totalA = a.digits + a.periods + a.exponent + a.signs + a.special + a.alpha + a.truefalse
-    val totalB = b.digits + b.periods + b.exponent + b.signs + b.special + b.alpha + b.truefalse
+// private fun calculateTypeSimilarity(a: TypeEvidence, b: TypeEvidence): Double {
+//     val totalA = a.digits + a.periods + a.exponent + a.signs + a.special + a.alpha + a.truefalse
+//     val totalB = b.digits + b.periods + b.exponent + b.signs + b.special + b.alpha + b.truefalse
     
-    if (totalA == 0U || totalB == 0U) return 0.0
-    
-    val digitSim = minOf(a.digits, b.digits).toDouble() / maxOf(totalA, totalB).toDouble()
-    val periodSim = minOf(a.periods, b.periods).toDouble() / maxOf(totalA, totalB).toDouble()
-    val alphaSim = minOf(a.alpha, b.alpha).toDouble() / maxOf(totalA, totalB).toDouble()
-    
-    return (digitSim + periodSim + alphaSim) / 3.0
-}
+//     if (totalA == 0U || totalB == 0U) return 0.0
+//     
+//     val digitSim = minOf(a.digits, b.digits).toDouble() / maxOf(totalA, totalB).toDouble()
+//     val periodSim = minOf(a.periods, b.periods).toDouble() / maxOf(totalA, totalB).toDouble()
+//     val alphaSim = minOf(a.alpha, b.alpha).toDouble() / maxOf(totalA, totalB).toDouble()
+//     
+//     return (digitSim + periodSim + alphaSim) / 3.0
+// }
 
 /**
  * Pandas-like DSL for taxonomic operations

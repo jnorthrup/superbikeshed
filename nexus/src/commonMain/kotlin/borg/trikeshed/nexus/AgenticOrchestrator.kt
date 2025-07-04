@@ -199,7 +199,7 @@ class AgenticOrchestrator {
                     action = task.type.name,
                     outcome = outcome.data,
                     success = outcome.success,
-                    timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    timestamp = System.currentTimeMillis()
                 )
                 learningChannel.trySend(observation)
                 
@@ -224,7 +224,7 @@ class AgenticOrchestrator {
                 
                 // Create monitoring task using Nexus taxonomy
                 val task = DevelopmentTask(
-                    id = TaskId("monitor-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"),
+                    id = TaskId("monitor-${System.currentTimeMillis()}"),
                     type = TaskType.ANALYSIS,
                     description = "Environment state check",
                     contextScope = "development",

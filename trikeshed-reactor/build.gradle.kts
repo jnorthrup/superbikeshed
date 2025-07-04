@@ -10,7 +10,7 @@ repositories {
 
 kotlin {
     jvm()
-    wasmJs { 
+    wasmJs {
         browser()
         nodejs()
     }

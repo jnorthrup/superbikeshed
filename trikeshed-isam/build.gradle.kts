@@ -10,10 +10,10 @@ kotlin {
     jvm {
         // JVM toolchain configured at extension level
     }
-    js(IR) {
-        nodejs()
-        browser()
-    }
+    // js(IR) {
+    //     nodejs()
+    //     browser()
+    // }
     wasmJs {
         nodejs()
         browser()
@@ -38,8 +38,8 @@ kotlin {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-io"))
                 implementation(project(":trikeshed-cursor"))
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.datetime)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.0-0.6.x-compat")
             }
         }
         

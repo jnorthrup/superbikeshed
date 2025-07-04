@@ -3,7 +3,7 @@ package borg.trikeshed.ljson
 import borg.trikeshed.lib.*
 import borg.trikeshed.cursor.*
 import borg.trikeshed.isam.*
-import borg.trikeshed.serialization.*
+import kotlinx.serialization.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*

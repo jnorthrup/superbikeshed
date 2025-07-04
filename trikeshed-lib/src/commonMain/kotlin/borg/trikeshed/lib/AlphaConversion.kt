@@ -234,3 +234,5 @@ inline fun <T> Indexed<T>.partition(predicate: (T) -> Boolean): Join<Indexed<T>,
     }
     return (first.size j { i: Int -> first[i] }) j (second.size j { i: Int -> second[i] })
 }
+
+fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }

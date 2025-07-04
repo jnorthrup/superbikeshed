@@ -8,7 +8,18 @@ plugins {
 group = "borg.rtsgame"
 
 kotlin {
-    jvm()
+    jvm {
+        compilations["main"].defaultSourceSet {
+            kotlin.srcDir("src/main/kotlin")
+        }
+        withJava()
+        // Set the main class for the JVM application plugin
+        tasks.withType<Jar> {
+            manifest {
+                attributes["Main-Class"] = "k2script.K2scriptKt"
+            }
+        }
+    }
     wasmJs { 
         browser()
         nodejs()
@@ -33,6 +44,18 @@ kotlin {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-common"))
+                implementation(project(":trikeshed-io"))
+                implementation(project(":trikeshed-cursor"))
+                implementation(project(":trikeshed-isam"))
+                implementation(project(":trikeshed-net"))
+                implementation(project(":trikeshed-strace"))
+                implementation(project(":trikeshed-torrent"))
+                implementation(project(":trikeshed-reactor"))
+                implementation(project(":trikeshed-services"))
+                implementation(project(":trikeshed-ljson"))
+                implementation(project(":trikeshed-dht"))
+                implementation(project(":trikeshed-couchdb"))
+                implementation(project(":trikeshed-ipc"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
                 implementation(npm("source-map-support", "0.5.21"))
@@ -48,6 +71,15 @@ kotlin {
         jvmTest {
             dependencies {
 // Removed explicit dependency on kotlin("test-junit5") to resolve conflict
+            }
+        }
+        jvmMain {
+            dependencies {
+                implementation("commons-cli:commons-cli:1.5.0")
+                implementation("commons-io:commons-io:2.15.1")
+                implementation("commons-codec:commons-codec:1.16.1")
+                implementation("org.apache.commons:commons-lang3:3.14.0")
+                implementation("com.vdurmont:semver4j:3.1.0")
             }
         }
     }

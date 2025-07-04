@@ -34,7 +34,6 @@ kotlin {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-common"))
-                implementation(project(":k2script"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
                 implementation(npm("source-map-support", "0.5.21"))
@@ -57,4 +56,24 @@ kotlin {
 
 tasks.withType<JavaExec> {
     mainClass.set(System.getProperty("mainClass", "nexus.Main"))
+}
+
+tasks {
+    // Create executable jar
+    register<Jar>("executableJar") {
+        dependsOn("jvmJar")
+        archiveClassifier.set("executable")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        
+        manifest {
+            attributes["Main-Class"] = "nexus.agent.NvidiaTaskerMain"
+        }
+        
+        from(sourceSets["jvmMain"].output)
+        
+        // Include dependencies
+        from(configurations["jvmRuntimeClasspath"].map { 
+            if (it.isDirectory) it else zipTree(it) 
+        })
+    }
 }

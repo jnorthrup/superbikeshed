@@ -1,9 +1,7 @@
 # Nexus Project Instructions
 
 ## Critical Architecture Refactoring Required
-
-**Current Issue**: The `nexus/src/commonMain/BROKEN` directory contains abandoned, overly-abstract agent designs (`NexusTypes_OLD.kt`) and broken, non-functional implementation (`DefaultNexusAgent.kt`). The attempt at "purely compositional" agent resulted in a system that is difficult to understand, maintain, or complete.
-
+ 
 ### **CRITICAL Proposal: Complete Architectural Rebuild**
 
 **Delete the entire `nexus/src/commonMain/BROKEN` directory** and refactor Nexus agent from ground up using proven k2script architecture:

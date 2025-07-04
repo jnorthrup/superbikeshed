@@ -4,6 +4,7 @@ import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import kotlin.reflect.KClassifier
 
 /**
  * CCEK Integration for Cursor Operations
@@ -31,7 +32,7 @@ data class CursorMetadata(
     val rowCount: Int,
     val columnCount: Int,
     val columnNames: List<String>,
-    val columnTypes: List<IOMemento>,
+    val columnTypes: List<KClassifier>,
     val sourceType: CursorSourceType,
     val sourcePath: String? = null
 )
@@ -98,7 +99,7 @@ sealed class CursorConstraint {
     data class RowLimit(val maxRows: Int) : CursorConstraint()
     data class ColumnLimit(val maxColumns: Int) : CursorConstraint()
     data class MemoryLimit(val maxMemoryMB: Int) : CursorConstraint()
-    data class TypeConstraint(val columnIndex: Int, val allowedTypes: List<IOMemento>) : CursorConstraint()
+    data class TypeConstraint(val columnIndex: Int, val allowedTypes: List<KClassifier>) : CursorConstraint()
 }
 
 /**
@@ -136,7 +137,7 @@ suspend fun Cursor.withCCEK(
         rowCount = a,
         columnCount = if (a > 0) at(0).a else 0,
         columnNames = columnNames.let { names -> (0 until names.a).map { names.b(it) } },
-        columnTypes = scalars.let { scalars -> (0 until scalars.a).map { scalars.b(it).typeMemento } },
+        columnTypes = scalars.let { scalars -> (0 until scalars.a).map { scalars.b(it).b } },
         sourceType = sourceType,
         sourcePath = sourcePath
     )
@@ -197,7 +198,7 @@ class CursorSession(
             rowCount = cursor.a,
             columnCount = if (cursor.a > 0) cursor.at(0).a else 0,
             columnNames = cursor.columnNames.let { names -> (0 until names.a).map { names.b(it) } },
-            columnTypes = cursor.scalars.let { scalars -> (0 until scalars.a).map { scalars.b(it).typeMemento } },
+            columnTypes = cursor.scalars.let { scalars -> (0 until scalars.a).map { scalars.b(it).b } },
             sourceType = sourceType,
             sourcePath = sourcePath
         )
@@ -277,7 +278,7 @@ private fun Cursor.validateConstraints(constraints: List<CursorConstraint>) {
             }
             is CursorConstraint.TypeConstraint -> {
                 if (a > 0) {
-                    val actualType = scalars.b(constraint.columnIndex).typeMemento
+                    val actualType = scalars.b(constraint.columnIndex).b
                     require(actualType in constraint.allowedTypes) {
                         "Column ${constraint.columnIndex} type $actualType not in allowed types ${constraint.allowedTypes}"
                     }
