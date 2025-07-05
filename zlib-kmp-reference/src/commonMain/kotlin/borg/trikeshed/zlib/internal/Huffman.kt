@@ -17,7 +17,7 @@ sealed interface HuffmanCode {
      * @param value The decoded symbol.
      * @param length The bit length of this code.
      */
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class FullCode(private val packed: Int) : HuffmanCode {
         constructor(value: Int, length: Int) : this((value shl 8) or (length and 0xFF)) // Pack value and length
         val value: Int get() = packed shr 8
@@ -29,7 +29,7 @@ sealed interface HuffmanCode {
      * to be read from the stream to form a complete code.
      * @param length The bit length of this partial code (the number of bits already read).
      */
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class PartialCode(val length: Int) : HuffmanCode
 
     /**

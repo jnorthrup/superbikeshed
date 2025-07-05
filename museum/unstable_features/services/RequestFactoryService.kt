@@ -34,15 +34,15 @@ interface RequestFactoryService {
 
 // === REQUESTFACTORY ALIEN TYPES ===
 
-@JvmInline value class ServiceClass(val value: String)
-@JvmInline value class MethodName(val value: String)
+@kotlin.jvm.JvmInline value class ServiceClass(val value: String)
+@kotlin.jvm.JvmInline value class MethodName(val value: String)
 data class ServiceMethod(val service: ServiceClass, val method: MethodName)
 
 // === GWT-SPECIFIC TYPES ===
 
-@JvmInline value class RequestContext(val json: String)
-@JvmInline value class RequestData(val payload: Series<Byte>)
-@JvmInline value class ResponseData(val payload: Series<Byte>)
+@kotlin.jvm.JvmInline value class RequestContext(val json: String)
+@kotlin.jvm.JvmInline value class RequestData(val payload: Series<Byte>)
+@kotlin.jvm.JvmInline value class ResponseData(val payload: Series<Byte>)
 
 // === SERVICE REGISTRY ===
 

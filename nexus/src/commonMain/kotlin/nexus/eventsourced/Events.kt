@@ -22,12 +22,16 @@ sealed interface Event {
 }
 
 // Value types
+@kotlin.jvm.JvmInline
 value class EventId(val value: String)
 
+@kotlin.jvm.JvmInline
 value class AggregateId(val value: String)
 
+@kotlin.jvm.JvmInline
 value class CommandId(val value: String)
 
+@kotlin.jvm.JvmInline
 value class ProjectionId(val value: String)
 
 // Domain events

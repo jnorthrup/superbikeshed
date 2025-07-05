@@ -4,25 +4,25 @@ import org.github.k2script.shell.model.ScriptLocation
 
 sealed interface ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Include(val value: String) : ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class PackageName(val value: String) : ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class ImportName(val value: String) : ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Dependency(val value: String) : ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class KotlinOpt(val value: String) : ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class CompilerOpt(val value: String) : ScriptAnnotation
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Entry(val value: String) : ScriptAnnotation
 
 data class DeprecatedItem(val scriptLocation: ScriptLocation, val line: Int, val message: String) : ScriptAnnotation

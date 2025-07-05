@@ -1,6 +1,6 @@
 package k2script.trikeshed
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Indexed<T>(val size: Int, val accessor: (Int) -> T) {
     companion object {
         fun <T> of(vararg items: T): Indexed<T> = Indexed(items.size) { items[it] }

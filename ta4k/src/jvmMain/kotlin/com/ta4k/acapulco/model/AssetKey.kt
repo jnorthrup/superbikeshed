@@ -2,7 +2,7 @@ package borg.trikeshed.acapulco.model
 
 import vec.macros.Pai2
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class AssetKeyMapper(val m: MutableMap<String, AssetKey>) {
     operator fun get(k: String): AssetKey? = m.get(k.uppercase())
     operator fun plus(assetKey: AssetKey) = m.put(assetKey.binanceEventResponseSymbol, assetKey)
@@ -13,7 +13,7 @@ value class AssetKeyMapper(val m: MutableMap<String, AssetKey>) {
 /**
  * binance specific trade symbol gymnastics
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class AssetKey(val symbol: String) : Pai2<String, String>, Comparable<AssetKey> {
     val div get() = symbol.indexOf('/')
     val tradeAsset get() = symbol.take(div)

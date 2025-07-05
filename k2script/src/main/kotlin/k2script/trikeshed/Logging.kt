@@ -56,7 +56,7 @@ object Log {
 /**
  * Context-aware logging that captures execution context
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class ContextualLogger(private val context: Context) {
     
     fun debug(message: String) {
@@ -79,7 +79,7 @@ value class ContextualLogger(private val context: Context) {
 /**
  * Performance monitoring with context capture
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class PerfMonitor(val context: Context) {
     
     @HotPath

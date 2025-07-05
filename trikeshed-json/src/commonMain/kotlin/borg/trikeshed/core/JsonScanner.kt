@@ -35,7 +35,7 @@ typealias JsonTypedValue = Join<JsonTypeEvidence, Any?> // type j value
 /**
  * Compact JSON scanner with JsonTypeEvidence
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class JsonScannerCompact(val input: CharSequence) {
     
     /**
@@ -278,7 +278,7 @@ value class JsonScannerCompact(val input: CharSequence) {
 /**
  * Context flow for JSON operations (TrikeShed stairway pattern)
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class JsonFlow(val scanner: JsonScannerCompact) {
     
     fun structural(): StructuralFlow = StructuralFlow(scanner)
@@ -286,7 +286,7 @@ value class JsonFlow(val scanner: JsonScannerCompact) {
     fun comparable(): ComparableFlow = ComparableFlow(scanner)
 }
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class StructuralFlow(val scanner: JsonScannerCompact) {
     
     fun extract(): JsonDocument = scanner.scan()
@@ -299,7 +299,7 @@ value class StructuralFlow(val scanner: JsonScannerCompact) {
     fun bitmap(): IntArray = scanner.scan().a.a
 }
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class QueryableFlow(val scanner: JsonScannerCompact) {
     
     fun get(path: String): JsonTypedValue? = scanner.query(path)
@@ -311,7 +311,7 @@ value class QueryableFlow(val scanner: JsonScannerCompact) {
     fun values(): Indexed<String> = scanner.properties() α { it.b }
 }
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class ComparableFlow(val scanner: JsonScannerCompact) {
     
     fun isomorphic(other: JsonScannerCompact): Boolean = scanner isIsomorphicTo other

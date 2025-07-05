@@ -22,7 +22,7 @@ import kotlin.time.Duration.Companion.seconds
 object NexusInteractive {
     
     // Terminal styling using value classes for type safety
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class AnsiColor(val code: String) {
         operator fun invoke(text: String) = "$code$text$RESET"
         companion object {

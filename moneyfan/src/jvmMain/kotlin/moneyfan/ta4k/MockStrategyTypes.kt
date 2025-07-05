@@ -11,22 +11,22 @@ import java.time.format.DateTimeFormatter
  */
 
 // Basic value classes
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Symbol(val value: String)
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Price(val value: Double)
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Volume(val value: Double)
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class AttentionScore(val value: Double)
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class StrategyConfidence(val value: Double)
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class StrategyWeight(val value: Double)
 
 // Signal enums

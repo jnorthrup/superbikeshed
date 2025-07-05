@@ -1,12 +1,12 @@
 package parse.bash
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class ParseResult<out T>(
     val value: T,
     val remaining: List<Token>
 )
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Parser<T>(val parse: (List<Token>) -> ParseResult<T>?) {
     companion object {
         fun <T> pure(value: T): Parser<T> = Parser { tokens -> ParseResult(value, tokens) }
@@ -147,7 +147,7 @@ object BashParsers {
 }
 
 // Public API
-@JvmInline
+@kotlin.jvm.JvmInline
 value class BashBraceParser(val input: String) {
     fun parse(): List<String> {
         val tokens = BashBrace.of(input).scanTokens()

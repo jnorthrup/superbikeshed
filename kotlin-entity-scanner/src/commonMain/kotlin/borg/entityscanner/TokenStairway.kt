@@ -698,7 +698,7 @@ fun TokenIndexed.materializeTokens(): List<BoundedToken> = this.play.toList()
 object TokenStairwayExample {
     fun demonstrateStairway() {
         val kotlinCode = """
-            @JvmInline
+            @kotlin.jvm.JvmInline
             value class UserId(val id: String)
             
             fun getUserName(userId: UserId): String {

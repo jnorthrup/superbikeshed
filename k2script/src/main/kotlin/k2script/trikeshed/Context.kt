@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
  * CCEK (Context Capture and Execute Kit) implementation for k2script
  * Provides clean dependency injection and context management without bloat
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Context(val scope: String) {
     
     companion object {

@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class NodeId(val value: String) {
     init {
         require(value.isNotBlank()) { "NodeId cannot be blank" }
@@ -19,7 +19,7 @@ value class NodeId(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class NetworkId(val value: String) {
     init {
         require(value.isNotBlank()) { "NetworkId cannot be blank" }
@@ -30,7 +30,7 @@ value class NetworkId(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class WorkflowId(val value: String) {
     init {
         require(value.isNotBlank()) { "WorkflowId cannot be blank" }
@@ -41,7 +41,7 @@ value class WorkflowId(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class TaskId(val value: String) {
     init {
         require(value.isNotBlank()) { "TaskId cannot be blank" }
@@ -52,7 +52,7 @@ value class TaskId(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class PluginName(val value: String) {
     init {
         require(value.isNotBlank()) { "PluginName cannot be blank" }
@@ -63,7 +63,7 @@ value class PluginName(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class GossipTopic(val value: String) {
     init {
         require(value.isNotBlank()) { "GossipTopic cannot be blank" }
@@ -74,7 +74,7 @@ value class GossipTopic(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class AuthToken(val value: String) {
     init {
         require(value.isNotBlank()) { "AuthToken cannot be blank" }
@@ -85,7 +85,7 @@ value class AuthToken(val value: String) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Port(val value: Int) {
     init {
         require(value in 1..65535) { "Port must be between 1 and 65535" }
@@ -95,7 +95,7 @@ value class Port(val value: Int) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class TimeoutMs(val value: Long) {
     init {
         require(value >= 0) { "Timeout must be non-negative" }
@@ -105,7 +105,7 @@ value class TimeoutMs(val value: Long) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class MaxConnections(val value: Int) {
     init {
         require(value > 0) { "MaxConnections must be positive" }
@@ -116,7 +116,7 @@ value class MaxConnections(val value: Int) {
 }
 
 @Serializable
-@JvmInline
+@kotlin.jvm.JvmInline
 value class MaxMessageSize(val value: Int) {
     init {
         require(value > 0) { "MaxMessageSize must be positive" }

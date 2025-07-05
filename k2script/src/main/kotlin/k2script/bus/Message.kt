@@ -8,7 +8,7 @@ import kotlinx.coroutines.CompletableDeferred
  * A unique address for routing messages to handlers.
  * Essentially a topic or a key.
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Address(val value: String)
 
 /**

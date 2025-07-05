@@ -1,6 +1,7 @@
 package borg.trikeshed.nexus
 
 import kotlinx.coroutines.*
+import borg.trikeshed.nexus.getCurrentTime
 import borg.trikeshed.lib.j
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.size
@@ -138,7 +139,8 @@ suspend fun demonstrateAgentIntelligenceCommon() {
         
         // Simulate pattern confidence building
         val confidence = 0.5 + (index * 0.1)
-        println("      📈 Pattern confidence: ${String.format("%.1f", confidence)}")
+        println("      📈 Pattern confidence: $confidence")
+        println("      Current time: ${getCurrentTime()}")
     }
     
     println("      ✅ Agent: Autonomous learning cycle complete")

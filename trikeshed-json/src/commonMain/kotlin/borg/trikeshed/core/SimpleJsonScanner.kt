@@ -28,7 +28,7 @@ typealias SimpleJsonValue = Join<String, Any?> // type j value
 /**
  * Simple JSON scanner without bitmap overhead
  */
-@JvmInline
+@kotlin.jvm.JvmInline
 value class SimpleJsonScanner(val input: CharSequence) {
     
     /**

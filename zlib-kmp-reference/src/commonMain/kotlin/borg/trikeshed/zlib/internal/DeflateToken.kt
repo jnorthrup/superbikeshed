@@ -14,7 +14,7 @@ sealed interface DeflateToken {
      * Uses a value class for potential performance optimization (no object allocation).
      * @param byte The literal byte value (0-255).
      */
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class Literal(val byte: Int) : DeflateToken {
         init {
             require(byte in 0..255) { "Literal byte must be between 0 and 255." }
@@ -34,7 +34,7 @@ sealed interface DeflateToken {
      * @param length The length of the match.
      * @param distance The distance of the match.
      */
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class Match(private val packed: Join<Int, Int>) : DeflateToken {
         constructor(length: Int, distance: Int) : this(length j distance)
 

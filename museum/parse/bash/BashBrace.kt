@@ -2,7 +2,7 @@ package parse.bash
 
 import borg.trikeshed.common.collections.CirQlar
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class Token(val type: TokenType, val literal: String, val pos: Int)
 
 enum class TokenType {
@@ -101,7 +101,7 @@ class BashScanner(val input: String) {
     }
 }
 
-@JvmInline
+@kotlin.jvm.JvmInline
 value class BashBrace(val scanner: BashScanner) {
     fun scanTokens(): List<Token> {
         val tokens = mutableListOf<Token>()

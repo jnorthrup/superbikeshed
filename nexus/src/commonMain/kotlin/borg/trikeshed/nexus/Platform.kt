@@ -1,4 +1,4 @@
-package nexus
+package borg.trikeshed.nexus
 
 expect fun getEnvironmentVariable(name: String): String?
 expect fun getCurrentTime(): String

@@ -20,7 +20,7 @@ class KotlinEntityScannerTest {
         
         import kotlinx.coroutines.delay
         
-        @JvmInline
+        @kotlin.jvm.JvmInline
         value class UserId(val id: String)
         
         data class User(val id: UserId, val name: String)

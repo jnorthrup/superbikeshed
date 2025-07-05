@@ -4,7 +4,7 @@ import kotlin.jvm.JvmInline
 
 /**
  * Simple data series implementation without external dependencies.
- * Following TrikeShed patterns with @JvmInline value classes and typealiases.
+ * Following TrikeShed patterns with @kotlin.jvm.JvmInline value classes and typealiases.
  */
 
 interface Indexed<T> {

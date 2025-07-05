@@ -43,16 +43,16 @@ class MappedByteBuffer {
 // === DATABASE TYPES BRIDGE ===
 
 /** Document identity for CouchDB operations */
-@JvmInline value class DocumentId(val value: String)
+@kotlin.jvm.JvmInline value class DocumentId(val value: String)
 
 /** Revision identity for CouchDB versioning */
-@JvmInline value class RevisionId(val value: String)
+@kotlin.jvm.JvmInline value class RevisionId(val value: String)
 
 /** Database name wrapper */
-@JvmInline value class DatabaseName(val value: String)
+@kotlin.jvm.JvmInline value class DatabaseName(val value: String)
 
 /** CouchDB document container */
-@JvmInline value class CouchDocument(val json: String) {
+@kotlin.jvm.JvmInline value class CouchDocument(val json: String) {
     val _id: String get() = ""
     val _rev: String get() = ""
     val ok: Boolean get() = true
@@ -61,7 +61,7 @@ class MappedByteBuffer {
 }
 
 /** CouchDB client connection */
-@JvmInline value class CouchClient(val url: String) {
+@kotlin.jvm.JvmInline value class CouchClient(val url: String) {
     suspend fun createDocument(db: DatabaseName, doc: CouchDocument): DocumentId = DocumentId("")
     suspend fun getDocument(db: DatabaseName, id: DocumentId): CouchDocument? = null
     suspend fun updateDocument(db: DatabaseName, id: DocumentId, doc: CouchDocument): RevisionId = RevisionId("")
@@ -70,7 +70,7 @@ class MappedByteBuffer {
 }
 
 /** CouchDB connection state */
-@JvmInline value class CouchConnection(val state: String) {
+@kotlin.jvm.JvmInline value class CouchConnection(val state: String) {
     val couch: CouchClient get() = CouchClient("")
 }
 
@@ -87,10 +87,10 @@ class RandomAccessFile(path: String) {
 }
 
 /** POSIX file offset */
-@JvmInline value class PosixOffset(val value: Long)
+@kotlin.jvm.JvmInline value class PosixOffset(val value: Long)
 
 /** POSIX file status */
-@JvmInline value class PosixStat(val info: String) {
+@kotlin.jvm.JvmInline value class PosixStat(val info: String) {
     val size: Long get() = 0L
     val mode: Int get() = 0
 }
@@ -172,7 +172,7 @@ class PlatformChannel<T> {
     suspend fun onReceiveCatching(): T? = null
 }
 
-@JvmInline value class InternalReceiveChannel<T>(val channel: PlatformChannel<T>) {
+@kotlin.jvm.JvmInline value class InternalReceiveChannel<T>(val channel: PlatformChannel<T>) {
     suspend fun send(item: T) = channel.send(item)
     fun close() = channel.close()
     val closed: Boolean get() = channel.closed
@@ -182,7 +182,7 @@ class PlatformChannel<T> {
 // === SOCKET BRIDGE ===
 
 /** Socket abstraction with remote info */
-@JvmInline value class SocketBridge(val id: String) {
+@kotlin.jvm.JvmInline value class SocketBridge(val id: String) {
     val socket: Any? get() = null
     val remoteAddress: Any? get() = null
     val remoteConnectionId: ByteArray get() = byteArrayOf()

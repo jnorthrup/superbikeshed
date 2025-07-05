@@ -19,7 +19,7 @@ class TechnicalAnalysisDisplay(
 ) : JPanel(BorderLayout()) {
     
     // Strategy control state
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class StrategyMode(val name: String)
     
     private var currentMode = StrategyMode("Combined")

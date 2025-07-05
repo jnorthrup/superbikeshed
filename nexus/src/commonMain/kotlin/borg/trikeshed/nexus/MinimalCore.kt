@@ -41,10 +41,13 @@ fun <T> indexed(size: Int, accessor: (Int) -> T): Indexed<T> = size j accessor
 // NEXUS TAXONOMY - MINIMAL VALUE CLASSES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+@kotlin.jvm.JvmInline
 value class AgentId(val value: String)
 
+@kotlin.jvm.JvmInline
 value class TaskId(val value: String)
 
+@kotlin.jvm.JvmInline
 value class CapabilityKey(val value: String)
 
 enum class AgentState {

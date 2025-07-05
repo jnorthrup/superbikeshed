@@ -14,13 +14,13 @@ import kotlin.math.*
  */
 class SpaceGraphMasterLoader : JPanel(BorderLayout()) {
     
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class LoadingPhase(val name: String)
     
-    @JvmInline 
+    @kotlin.jvm.JvmInline 
     value class LatencyScale(val milliseconds: Long)
     
-    @JvmInline
+    @kotlin.jvm.JvmInline
     value class LoadingProgress(val percentage: Double)
     
     // Loading phases with different latency scales

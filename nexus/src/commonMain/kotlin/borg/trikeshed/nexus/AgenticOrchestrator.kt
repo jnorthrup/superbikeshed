@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import kotlin.random.Random
+import kotlinx.datetime.Clock
 
 // Import alias for migration to Indexed
 import borg.trikeshed.lib.Indexed as AgentSeries
@@ -29,7 +30,8 @@ import kotlin.jvm.JvmInline
 // CORE VALUE CLASSES - TRIKESHED ALIGNMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-internal value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
+internal @kotlin.jvm.JvmInline
+value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
     fun extractCurrentScope(): String = findValue("scope") ?: "global"
     fun extractCurrentCapabilities(): AgentSeries<String> = findValue("capabilities")?.split(",")?.toIdx() ?: (0 j { "" })
     fun extractCurrentConstraints(): String = findValue("constraints") ?: "none"
@@ -44,9 +46,11 @@ internal value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
     }
 }
 
-internal value class AgentAction(val data: String)
+internal kotlin.jvm.JvmInline
+value class AgentAction(val data: String)
 
-internal value class AgentOutcome(val data: String) {
+internal kotlin.jvm.JvmInline
+value class AgentOutcome(val data: String) {
     val success: Boolean get() = !data.contains("error", ignoreCase = true)
 }
 
@@ -189,7 +193,7 @@ class AgenticOrchestrator {
                     action = task.type.name,
                     outcome = outcome.data,
                     success = outcome.success,
-                    timestamp = System.currentTimeMillis()
+                    timestamp = Clock.System.now().toEpochMilliseconds()
                 )
                 learningChannel.trySend(observation)
                 
@@ -214,7 +218,7 @@ class AgenticOrchestrator {
                 
                 // Create monitoring task using Nexus taxonomy
                 val task = DevelopmentTask(
-                    id = TaskId("monitor-${System.currentTimeMillis()}"),
+                    id = TaskId("monitor-${Clock.System.now().toEpochMilliseconds()}"),
                     type = TaskType.ANALYSIS,
                     description = "Environment state check",
                     contextScope = "development",

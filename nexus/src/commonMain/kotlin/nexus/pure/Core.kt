@@ -75,6 +75,7 @@ sealed class Tool<A, B> {
 }
 
 // Tool identifier
+@kotlin.jvm.JvmInline
 value class ToolId(val value: String)
 
 // Error types

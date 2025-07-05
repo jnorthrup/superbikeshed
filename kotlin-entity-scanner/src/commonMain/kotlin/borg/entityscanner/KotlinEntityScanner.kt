@@ -401,7 +401,7 @@ object KotlinEntityScannerExample {
             import kotlinx.coroutines.delay
             import kotlinx.coroutines.runBlocking
             
-            @JvmInline
+            @kotlin.jvm.JvmInline
             value class UserId(val id: String)
             
             data class User(val id: UserId, val name: String)

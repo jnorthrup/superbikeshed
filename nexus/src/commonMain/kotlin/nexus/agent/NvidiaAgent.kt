@@ -79,7 +79,7 @@ class NvidiaAgent(
                 val path = args["path"]?.jsonPrimitive?.content ?: return "Error: path required"
                 val content = args["content"]?.jsonPrimitive?.content ?: return "Error: content required"
                 return try {
-                    java.io.File(basePath, path).writeText(content)
+                    File(joinPath(basePath, path)).writeText(content)
                     "Successfully wrote to $path"
                 } catch (e: Exception) {
                     "Error writing file: ${e.message}"
@@ -93,10 +93,10 @@ class NvidiaAgent(
             override suspend fun execute(args: JsonObject): String {
                 val path = args["path"]?.jsonPrimitive?.content ?: "."
                 return try {
-                    val dir = java.io.File(basePath, path)
+                    val dir = File(joinPath(basePath, path))
                     if (!dir.exists()) return "Directory does not exist"
-                    if (!dir.isDirectory) return "Path is not a directory"
-                    dir.listFiles()?.joinToString("\n") { it.name } ?: "Empty directory"
+                    if (!dir.isDirectory()) return "Path is not a directory"
+                    dir.listFiles()?.joinToString("\n") { it } ?: "Empty directory"
                 } catch (e: Exception) {
                     "Error listing files: ${e.message}"
                 }
@@ -322,9 +322,9 @@ class NvidiaAgent(
     
     companion object {
         val defaultApiKeys = listOf(
-            System.getenv("NVIDIA_API_KEY"),
-            System.getenv("NVIDIA_API_KEY_2"),
-            System.getenv("NVIDIA_API_KEY_3"),
+            getEnvironmentVariable("NVIDIA_API_KEY"),
+            getEnvironmentVariable("NVIDIA_API_KEY_2"),
+            getEnvironmentVariable("NVIDIA_API_KEY_3"),
             "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",
             "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"
         ).filterNotNull().filter { it.isNotBlank() }
