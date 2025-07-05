@@ -1,0 +1,542 @@
+{
+  "timestamp": "2025-07-05T17:19:39.097984Z",
+  "base_url": "http://localhost:63342",
+  "about": {
+    "name": "IntelliJ IDEA 2025.2 EAP",
+    "productName": "IDEA",
+    "edition": "Community Edition",
+    "baselineVersion": 252,
+    "buildNumber": "252.23591.19"
+  },
+  "endpoints": {
+    "/api/about": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/file": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/file/": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/project": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/projects": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/modules": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/module": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/vfs": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/editor": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/editors": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/actions": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/action": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/run": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/debug": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/refactor": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/refactoring": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/inspect": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/inspection": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/complete": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/completion": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/find": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/search": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/navigate": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/navigation": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/git": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/vcs": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/maven": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/gradle": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/build": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/compile": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/problems": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/diagnostics": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/quickfix": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/intentions": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/codeInsight": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/psi": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/ast": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/structure": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/symbols": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/references": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/usages": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/highlight": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/folding": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/format": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/settings": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/config": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/plugins": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    },
+    "/api/extensions": {
+      "status": 404,
+      "headers": {
+        "content-length": "0",
+        "server": "IntelliJ IDEA 2025.2 EAP",
+        "date": "Sat, 05 Jul 2025 17:19:39 GMT",
+        "x-frame-options": "SameOrigin",
+        "X-Content-Type-Options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
+    }
+  },
+  "working_endpoints": []
+}

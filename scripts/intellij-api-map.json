@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-07-05T17:19:01Z",
+  "base_url": "http://localhost:63342",
+  "about": 
+{
+  "name" : "IntelliJ IDEA 2025.2 EAP",
+  "productName" : "IDEA",
+  "edition" : "Community Edition",
+  "baselineVersion" : 252,
+  "buildNumber" : "252.23591.19"
+},
+  "endpoints": {
+    "/api/about": {"status": 200, "description": "IDE information"},
+    "/api/file": {"status": 404},
+    "/api/project": {"status": 404},
+    "/api/modules": {"status": 404},
+    "/api/vfs": {"status": 404},
+    "/api/editor": {"status": 404},
+    "/api/actions": {"status": 404},
+    "/api/run": {"status": 404},
+    "/api/debug": {"status": 404},
+    "/api/refactor": {"status": 404},
+    "/api/inspect": {"status": 404},
+    "/api/complete": {"status": 404},
+    "/api/find": {"status": 404},
+    "/api/navigate": {"status": 404},
+    "/api/git": {"status": 404},
+    "/api/maven": {"status": 404},
+    "/api/gradle": {"status": 404},
+  }
+}
