@@ -9,6 +9,7 @@ import k2script.env.EnvironmentManager
 import k2script.trikeshed.*
 import k2script.cli.ClasspathCommand
 import k2script.cli.MCPCommand
+import k2script.cli.GitFeatureCommand
 import borg.trikeshed.lib.play
 import borg.trikeshed.lib.size
 import kotlinx.coroutines.runBlocking
@@ -46,6 +47,7 @@ object K2script {
                 args[0] == "--ai" -> handleAiFeature(args)
                 args[0] == "--classpath" -> handleClasspathCommand(args)
                 args[0] == "--mcp" -> handleMCPCommand(args)
+                args[0] == "--git" -> handleGitCommand(args)
                 else -> executeScript(args)
             }
             // LiteLLMClient.stopService() should be called here in a finally block
@@ -72,6 +74,7 @@ object K2script {
               --ai <prompt>     Generate or explain script using AI
               --classpath       Generate classpath from Maven coordinates or files
               --mcp             Manage MCP servers and hosting services
+              --git             Git feature branch management with rapid cloning
         """.trimIndent())
     }
     
@@ -327,6 +330,31 @@ object K2script {
             MCPCommand.execute(args.drop(1).toTypedArray())
         } catch (e: Exception) {
             System.err.println("MCP command error: ${e.message}")
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                e.printStackTrace()
+            }
+            exitProcess(1)
+        }
+    }
+
+    private suspend fun handleGitCommand(args: Array<String>) {
+        try {
+            if (args.size < 2) {
+                println("Error: Git command required")
+                println("Usage: k2script --git <command> [args...]")
+                return
+            }
+            
+            val gitCommand = args[1]
+            when (gitCommand) {
+                "feature" -> GitFeatureCommand.execute(args.drop(2).toTypedArray())
+                else -> {
+                    println("Unknown Git command: $gitCommand")
+                    println("Available commands: feature")
+                }
+            }
+        } catch (e: Exception) {
+            System.err.println("Git command error: ${e.message}")
             if (EnvironmentManager.K2Script.isVerbose()) {
                 e.printStackTrace()
             }
