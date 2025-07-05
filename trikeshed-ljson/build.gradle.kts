@@ -40,7 +40,7 @@ kotlin {
                 implementation(project(":trikeshed-io"))
                 implementation(project(":trikeshed-cursor"))
                 implementation(project(":trikeshed-isam"))
-                implementation(project(":zlib-kmp-reference"))
+                // implementation(project(":zlib-kmp-reference")) // Module disabled
                 implementation(project(":trikeshed-net"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0")

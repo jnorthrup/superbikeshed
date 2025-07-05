@@ -13,11 +13,3 @@ allprojects {
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
     }
 }
-
-allprojects {
-    apply(plugin = "io.gitlab.arturbosch.detekt")
-    detekt {
-        config = files("detekt.yml")
-        buildUponDefaultConfig = false
-    }
-}

@@ -12,7 +12,7 @@ kotlin {
         compilations["main"].defaultSourceSet {
             kotlin.srcDir("src/main/kotlin")
         }
-        withJava()
+        // withJava() deprecated in Kotlin 2.2.0 - Java sources are automatically configured
         // Set the main class for the JVM application plugin
         tasks.withType<Jar> {
             manifest {

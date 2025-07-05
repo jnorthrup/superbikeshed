@@ -1,6 +1,10 @@
 package fiduciary.ui
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.io.InputStream
+import borg.trikeshed.io.PosixFilePermissions
+import borg.trikeshed.io.InflaterInputStream
+import borg.trikeshed.io.LimitedInputStream
 import kotlinx.datetime.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -57,7 +61,7 @@ class StreamingFileReifier {
             ArchiveFormat.AR → streamArStdio(archiveStdio, archiveBangpath)
             ArchiveFormat.CPIO → streamCpioStdio(archiveStdio, archiveBangpath)
             else → throw UnsupportedOperationException("Format $format not supported")
-        }.collect { emit(it) }
+        }
     }
     
     /**
@@ -213,51 +217,25 @@ class StreamingFileReifier {
         TAR, ZIP, AR, CPIO, SEVENZIP, RAR
     }
     
-    /**
-     * Limited input stream for entry boundaries
-     */
-    private class LimitedInputStream(
-        private val source: InputStream,
-        private val limit: Long
-    ) : InputStream() {
-        private var read = 0L
-        
-        override fun read(): Int {
-            if (read >= limit) return -1
-            val b = source.read()
-            if (b >= 0) read++
-            return b
-        }
-        
-        override fun read(b: ByteArray, off: Int, len: Int): Int {
-            if (read >= limit) return -1
-            val toRead = minOf(len.toLong(), limit - read).toInt()
-            val actual = source.read(b, off, toRead)
-            if (actual > 0) read += actual
-            return actual
-        }
-    }
-    
-    // Helper functions
-    private fun ByteArray.toInt(): Int = 
+    private fun ByteArray.toInt(): Int =
         (this[0].toInt() and 0xFF) or
-        ((this[1].toInt() and 0xFF) shl 8) or
-        ((this[2].toInt() and 0xFF) shl 16) or
-        ((this[3].toInt() and 0xFF) shl 24)
-    
-    private fun octToPermissions(oct: Int): Set<PosixFilePermission> = 
+                ((this[1].toInt() and 0xFF) shl 8) or
+                ((this[2].toInt() and 0xFF) shl 16) or
+                ((this[3].toInt() and 0xFF) shl 24)
+
+    private fun octToPermissions(oct: Int): Set<PosixFilePermission> =
         PosixFilePermissions.fromString(
             "${if (oct and 0400 != 0) 'r' else '-'}" +
-            "${if (oct and 0200 != 0) 'w' else '-'}" +
-            "${if (oct and 0100 != 0) 'x' else '-'}" +
-            "${if (oct and 0040 != 0) 'r' else '-'}" +
-            "${if (oct and 0020 != 0) 'w' else '-'}" +
-            "${if (oct and 0010 != 0) 'x' else '-'}" +
-            "${if (oct and 0004 != 0) 'r' else '-'}" +
-            "${if (oct and 0002 != 0) 'w' else '-'}" +
-            "${if (oct and 0001 != 0) 'x' else '-'}"
+                    "${if (oct and 0200 != 0) 'w' else '-'}" +
+                    "${if (oct and 0100 != 0) 'x' else '-'}" +
+                    "${if (oct and 0040 != 0) 'r' else '-'}" +
+                    "${if (oct and 0020 != 0) 'w' else '-'}" +
+                    "${if (oct and 0010 != 0) 'x' else '-'}" +
+                    "${if (oct and 0004 != 0) 'r' else '-'}" +
+                    "${if (oct and 0002 != 0) 'w' else '-'}" +
+                    "${if (oct and 0001 != 0) 'x' else '-'}"
         )
-    
+
     private fun detectMimeType(path: String): String = when {
         path.endsWith(".pdf") → "application/pdf"
         path.endsWith(".txt") → "text/plain"
@@ -266,7 +244,7 @@ class StreamingFileReifier {
         path.endsWith(".docx") → "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         else → "application/octet-stream"
     }
-    
+
     private fun compressionMethodName(method: Int): String = when (method) {
         0 → "stored"
         8 → "deflated"
@@ -274,7 +252,7 @@ class StreamingFileReifier {
         14 → "lzma"
         else → "unknown"
     }
-    
+
     private fun dosDateTimeToInstant(date: Int, time: Int): Instant {
         val year = ((date shr 9) and 0x7F) + 1980
         val month = (date shr 5) and 0x0F
@@ -282,10 +260,10 @@ class StreamingFileReifier {
         val hour = (time shr 11) and 0x1F
         val minute = (time shr 5) and 0x3F
         val second = (time and 0x1F) * 2
-        
+
         return Instant.EPOCH // Simplified - would use proper date construction
     }
-    
+
     // Placeholder header structures
     private data class TarHeader(
         val name: String,
@@ -300,7 +278,7 @@ class StreamingFileReifier {
         val uname: String,
         val gname: String
     )
-    
+
     private data class ZipLocalHeader(
         val filename: String,
         val compressionMethod: Int,
@@ -312,60 +290,15 @@ class StreamingFileReifier {
         val generalPurpose: Int,
         val extraField: ByteArray
     )
-    
+
     private fun parseTarHeader(buffer: ByteArray): TarHeader {
         // Implementation would parse TAR header format
         return TarHeader("", 0, 0, 0, 0L, 0L, "", ' ', "", "", "")
     }
-    
+
     private fun readZipLocalHeader(stream: InputStream): ZipLocalHeader {
         // Implementation would read ZIP local file header
         return ZipLocalHeader("", 0, 0, 0, 0L, 0L, 0L, 0, ByteArray(0))
     }
 }
 
-@Suppress("unused")
-open class InputStream {
-    fun read(buffer: ByteArray): Int = 0
-    fun skip(n: Long): Long = 0
-}
-
-@Suppress("unused")
-enum class PosixFilePermission { READ, WRITE, EXECUTE }
-
-@Suppress("unused")
-class InflaterInputStream(stream: InputStream) : InputStream()
-
-@Suppress("unused")
-class LimitedInputStream(stream: InputStream, limit: Long) : InputStream()
-
-@Suppress("unused")
-enum class ArchiveFormat { TAR, ZIP, AR, CPIO }
-
-@Suppress("unused")
-data class TarHeader(
-    val name: String,
-    val size: Long,
-    val mtime: Long,
-    val mode: Int,
-    val uid: Int,
-    val gid: Int,
-    val uname: String,
-    val gname: String,
-    val linkname: String,
-    val typeflag: Byte,
-    val checksum: String
-)
-
-@Suppress("unused")
-data class ZipLocalHeader(
-    val filename: String,
-    val uncompressedSize: Long,
-    val compressedSize: Long,
-    val lastModDate: Int,
-    val lastModTime: Int,
-    val crc32: Int,
-    val compressionMethod: Int,
-    val generalPurpose: Int,
-    val extraField: ByteArray
-)
