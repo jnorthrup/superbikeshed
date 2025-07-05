@@ -6,6 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 coretypes is the sole source of truth and radiates correction outward and is immutable and without error.
 
+## Core Stability Principles
+
+1. **CoreTypes Immutable** - `borg.trikeshed.lib.CoreTypes` is truth
+2. **No Code Removal** - Normalize, don't delete. Test strings: `"""old"""` 
+3. **Drag Factor** - 329+ files using `Indexed<T>` = high caution
+4. **Join Sacred** - MetaSeries<A,T> = Join<A, (A) -> T>
+5. **ByteBuffer→Pyramid** - Unify, keep adapters
+6. **Wildcard Imports** - `import borg.trikeshed.lib.*`
+7. **Gradual Migration** - Series → Indexed, one file at a time
+8. **Infix Types** - Full lambda annotations: `size j { i: Int -> data[i] }`
+
 ## Build Commands
 
 ### Standard Build
@@ -198,6 +209,35 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 
 - most parsers should be re-written into bbcursive
 
+## Architecture Memory: Indexed as TypeAlias vs Value Class
+
+**Question**: Should `Indexed<T>` be promoted from typealias to inline value class?
+
+**Analysis**: 
+- 329+ files use Indexed<T> across the codebase
+- Current definition: `typealias Indexed<T> = Join<Int, (Int) -> T>`
+- Value class would provide zero-overhead type safety
+
+**Decision**: Keep as typealias for stability ("drag factor")
+
+**Rationale**:
+1. **Breaking Changes**: Value classes cannot inherit from Join interface
+2. **API Surface**: Would lose direct `.a` and `.b` access without proxy methods
+3. **Construction Pattern**: All `size j { ... }` patterns would need factory functions
+4. **Composition**: Current typealias maintains full Join<A,B> composition capabilities
+5. **MetaSeries Heritage**: Indexed is a specialization of MetaSeries<Int,T>
+
+**Alternative Considered**:
+```kotlin
+@kotlin.jvm.JvmInline
+value class Indexed<T>(private val join: Join<Int, (Int) -> T>) {
+    val a: Int get() = join.a
+    val b: (Int) -> T get() = join.b
+}
+```
+
+**Conclusion**: The drag factor of 329+ files and loss of Join composition makes typealias the stable choice. The current approach provides the right balance of type safety, performance, and composability.
+
 ## Code Writing Memory
 
 - if you are writing new code, it must have complete type info around any infix like our j
@@ -259,3 +299,11 @@ Our current supported targets are `wasmJs`, `jvm`, and `local`.
 ---
 
 This enshrines the columnar cursor's features, operators, and QOL improvements as the canonical reference for future development and integration.
+
+## Task Workflow Memories
+
+- Open at least 2 project files to edit each or possibly collapse 1
+
+## Build Conventions Memory
+
+- benmanes puglin false at top, multiplatform plugin in childs, no versions in child projects only in top

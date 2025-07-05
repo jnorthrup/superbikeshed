@@ -8,11 +8,26 @@ plugins {
 group = "borg.rtsgame"
 
 kotlin {
-    jvm()
+    jvm {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.add("-Xjvm-enable-value-classes")
+                }
+            }
+        }
+    }
     wasmJs { 
         browser()
         nodejs()
         binaries.executable()
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.add("-Xjvm-enable-value-classes")
+                }
+            }
+        }
     }
     
     // Native targets based on host OS

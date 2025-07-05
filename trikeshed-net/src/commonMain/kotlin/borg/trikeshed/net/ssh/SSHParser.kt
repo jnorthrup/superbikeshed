@@ -34,7 +34,7 @@ private fun ByteIndexedBuffer.readBytes(count: Int): Indexed<Byte>? {
 
 // UnaryOperator for reading an SSH-formatted string (length-prefixed bytes)
 object ReadSSHString : UnaryOperator<ByteIndexedBuffer> {
-    override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
+    override fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
         val originalPos = buffer.pos
         val length = buffer.readUInt32() ?: return null
         if (buffer.rem < length.toInt()) {
@@ -48,7 +48,7 @@ object ReadSSHString : UnaryOperator<ByteIndexedBuffer> {
 
 // UnaryOperator for reading an SSH-formatted name list (length-prefixed, comma-separated strings)
 object ReadSSHNameList : UnaryOperator<ByteIndexedBuffer> {
-    override suspend fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
+    override fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
         val originalPos = buffer.pos
         val length = buffer.readUInt32() ?: return null
         if (buffer.rem < length.toInt()) {
@@ -62,7 +62,7 @@ object ReadSSHNameList : UnaryOperator<ByteIndexedBuffer> {
 
 // Parser for SSHPacket
 object SSHPacketParser {
-    suspend fun parse(buffer: ByteIndexedBuffer): SSHPacket? {
+    fun parse(buffer: ByteIndexedBuffer): SSHPacket? {
         val originalPos = buffer.pos
 
         // Packet Length (uint32)

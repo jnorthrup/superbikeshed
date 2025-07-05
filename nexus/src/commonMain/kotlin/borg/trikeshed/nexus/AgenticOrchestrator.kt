@@ -30,7 +30,7 @@ import kotlin.jvm.JvmInline
 // CORE VALUE CLASSES - TRIKESHED ALIGNMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-internal @kotlin.jvm.JvmInline
+internal @JvmInline
 value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
     fun extractCurrentScope(): String = findValue("scope") ?: "global"
     fun extractCurrentCapabilities(): AgentSeries<String> = findValue("capabilities")?.split(",")?.toIdx() ?: (0 j { "" })
@@ -46,10 +46,10 @@ value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
     }
 }
 
-internal kotlin.jvm.JvmInline
+internal @JvmInline
 value class AgentAction(val data: String)
 
-internal kotlin.jvm.JvmInline
+internal @JvmInline
 value class AgentOutcome(val data: String) {
     val success: Boolean get() = !data.contains("error", ignoreCase = true)
 }

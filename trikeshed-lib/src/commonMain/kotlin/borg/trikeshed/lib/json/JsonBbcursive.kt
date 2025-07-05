@@ -6,7 +6,9 @@ import borg.trikeshed.parse.bbcursive.ann.Backtracking
 import borg.trikeshed.parse.bbcursive.ann.Skipper
 
 // bbcursive-style UnaryOperator for ByteIndexedBuffer
-fun interface BbcursiveOp { fun apply(buffer: ByteIndexedBuffer): ByteIndexedBuffer? }
+fun interface BbcursiveOp { 
+    fun apply(buffer: ByteIndexedBuffer): ByteIndexedBuffer? 
+}
 
 /**
  * JSON parser using bbcursive patterns with ByteIndexedBuffer
@@ -16,47 +18,56 @@ object JsonBbcursive {
     
     // Core JSON tokens using bbcursive patterns
     @Skipper
-    fun ws(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun ws(): BbcursiveOp = BbcursiveOp { buffer ->
         buffer.skipWs
     }
     
     @Backtracking
-    fun quote(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun quote(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == '"'.code.toByte()) buffer else null
     }
     
     @Backtracking 
-    fun comma(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun comma(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == ','.code.toByte()) buffer else null
     }
     
     @Backtracking
-    fun colon(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun colon(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == ':'.code.toByte()) buffer else null
     }
     
     @Backtracking
-    fun lbrace(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun lbrace(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == '{'.code.toByte()) buffer else null
     }
     
     @Backtracking
-    fun rbrace(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun rbrace(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == '}'.code.toByte()) buffer else null
     }
     
     @Backtracking
-    fun lbracket(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun lbracket(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == '['.code.toByte()) buffer else null
     }
     
     @Backtracking
-    fun rbracket(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun rbracket(): BbcursiveOp = BbcursiveOp { buffer ->
         if (buffer.hasRemaining && buffer.get == ']'.code.toByte()) buffer else null
     }
 
     // bbcursive-style sequencing function (like bb() from std.kt)
-    fun bb(buffer: ByteIndexedBuffer?, vararg ops: BbcursiveOp): ByteIndexedBuffer? {
+    @kotlin.internal.InlineOnly
+    inline fun bb(buffer: ByteIndexedBuffer?, vararg ops: BbcursiveOp): ByteIndexedBuffer? {
         var result = buffer
         for (op in ops) {
             result = op.apply(result ?: return null) ?: return null
@@ -109,7 +120,8 @@ object JsonBbcursive {
     
     // Number parsing
     @Backtracking
-    fun digit(): BbcursiveOp = BbcursiveOp { buffer ->
+    @kotlin.internal.InlineOnly
+    inline fun digit(): BbcursiveOp = BbcursiveOp { buffer ->
         if (!buffer.hasRemaining) return@BbcursiveOp null
         val c = buffer.get
         if (c in '0'.code.toByte()..'9'.code.toByte()) buffer else {
