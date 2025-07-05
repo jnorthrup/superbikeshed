@@ -8,6 +8,10 @@ actual fun getCurrentTime(): String {
     return java.time.LocalDateTime.now().toString()
 }
 
+actual fun joinPath(base: String, path: String): String {
+    return java.io.File(base, path).path
+}
+
 actual class File actual constructor(path: String) {
     private val jvmFile = java.io.File(path)
 

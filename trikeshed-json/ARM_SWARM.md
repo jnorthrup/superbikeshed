@@ -1,4 +1,4 @@
-# ARM SIMD & macOS Swarm Implementation
+# ARM SIMD & Swarm Parallel Processing Implementation
 
 ## Branch: `feature/arm-simd-native`
 
