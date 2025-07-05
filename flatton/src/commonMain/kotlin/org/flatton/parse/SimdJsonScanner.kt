@@ -1,7 +1,11 @@
 package org.flatton.parse
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.parse.json.*
+import borg.trikeshed.lib.json.JsonObjectCursor
+import borg.trikeshed.lib.toIndexed
+import borg.trikeshed.lib.emptyIndexed
+import borg.trikeshed.lib.play
+import kotlinx.serialization.json.JsonToken
 import kotlinx.serialization.scanner.BitmapJsonDecoder
 
 /**
@@ -20,28 +24,22 @@ object SimdJsonScanner {
     fun createCursor(jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         val decoder = BitmapJsonDecoder(jsonBytes.play.toByteArray())
         
-        return object : Indexed<JsonObjectCursor> {
-            private var currentIndex = 0
-            private val totalElements = countElements(decoder)
+        val totalElements = countElements(decoder)
+        return Join(totalElements) { index ->
+            if (index >= totalElements) throw IndexOutOfBoundsException("Index $index out of bounds")
             
-            override fun get(index: Int): JsonObjectCursor {
-                if (index >= totalElements) throw IndexOutOfBoundsException("Index $index out of bounds")
-                
-                // Navigate to the nth element
-                var current = 0
-                while (current < index) {
-                    decoder.skipElement()
-                    current++
-                }
-                
-                val startPos = decoder.currentPosition
-                val element = decoder.decodeElement()
-                val endPos = decoder.currentPosition
-                
-                return JsonObjectCursor(jsonBytes, startPos, endPos, element)
+            // Navigate to the nth element
+            var current = 0
+            while (current < index) {
+                decoder.skipElement()
+                current++
             }
             
-            override val size: Int get() = totalElements
+            val startPos = decoder.currentPosition
+            val element = decoder.decodeElement()
+            val endPos = decoder.currentPosition
+            
+            JsonObjectCursor(jsonBytes, startPos, endPos, element)
         }
     }
     
@@ -64,7 +62,7 @@ object SimdJsonScanner {
             }
         }
         
-        return indices.toTypedArray().toSeries()
+        return indices.toTypedArray().toIndexed()
     }
     
     /**
@@ -90,38 +88,27 @@ object SimdJsonScanner {
             }
         }
         
-        return emptySeries()
+        return emptyIndexed()
     }
     
     private fun createArrayCursor(decoder: BitmapJsonDecoder, jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         decoder.decodeToken(JsonToken.BEGIN_LIST)
         
-        return object : Indexed<JsonObjectCursor> {
-            private var currentIndex = 0
+        return Join(totalElements) { index ->
+            if (index >= totalElements) throw IndexOutOfBoundsException("Index $index out of bounds")
             
-            override fun get(index: Int): JsonObjectCursor {
-                if (decoder.isEnd || decoder.peekToken() == JsonToken.END_LIST) {
-                    throw IndexOutOfBoundsException("Index $index out of bounds")
-                }
-                
-                // Navigate to the nth element
-                var current = 0
-                while (current < index) {
-                    decoder.skipElement()
-                    if (decoder.peekToken() == JsonToken.COMMA) {
-                        decoder.decodeToken(JsonToken.COMMA)
-                    }
-                    current++
-                }
-                
-                val startPos = decoder.currentPosition
-                val element = decoder.decodeElement()
-                val endPos = decoder.currentPosition
-                
-                return JsonObjectCursor(jsonBytes, startPos, endPos, element)
+            // Navigate to the nth element
+            var current = 0
+            while (current < index) {
+                decoder.skipElement()
+                current++
             }
             
-            override val size: Int get() = -1 // Unknown until fully traversed
+            val startPos = decoder.currentPosition
+            val element = decoder.decodeElement()
+            val endPos = decoder.currentPosition
+            
+            JsonObjectCursor(jsonBytes, startPos, endPos, element)
         }
     }
     

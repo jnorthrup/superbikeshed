@@ -33,9 +33,10 @@ kotlin {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-common"))
-                implementation(project(":kotlinx-serialization-scanner"))
+                implementation(project(":trikeshed-json"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-scanner:1.0.0")
                 implementation(npm("source-map-support", "0.5.21"))
             }
         }

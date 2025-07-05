@@ -1,4 +1,10 @@
-# k2script TODO
+# Superbikeshed TODO
+
+## Bitmap Acceleration
+- [ ] Implement true bitmap acceleration with coordinate-based lookups
+- [ ] Add coroutine element keys for parallel scanning
+- [ ] Implement O(log n) bitmap-based property lookups
+- [ ] Add vectorized JSON operations using bitmap
 
 ## AI Integration
 

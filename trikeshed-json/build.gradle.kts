@@ -2,18 +2,17 @@
 
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
-group = "borg.trikeshed"
-
-repositories {
-    mavenCentral()
-}
+group = "borg.rtsgame"
 
 kotlin {
     jvm()
-    wasmJs {
+    wasmJs { 
+        browser()
         nodejs()
+        binaries.executable()
     }
     
     // Native targets based on host OS
@@ -32,20 +31,19 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                // Core library has minimal dependencies
+                implementation(kotlin("stdlib"))
+                implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-common"))
+                implementation(project(":trikeshed-io"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
             }
         }
         
         commonTest {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
             }
         }
     }
 }
-
- 

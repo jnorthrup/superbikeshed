@@ -1,8 +1,9 @@
 package org.flatton.types
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.parse.json.*
-import borg.trikeshed.lib.toSeries
+import borg.trikeshed.lib.json.JsonBbcursive
+import borg.trikeshed.lib.toIndexed
+import borg.trikeshed.lib.play
 // Remove kotlinx.serialization dependency - using trikeshed types
 
 // TrikeShed-compatible JSON types
@@ -126,10 +127,10 @@ data class ViewQueryParams(
 ) {
     fun toQueryString(): String {
         val params = mutableListOf<String>()
-        key?.let { params.add("key=${JsonImpl.stringify(it)}") }
-        keys?.let { params.add("keys=${JsonImpl.stringify(it.play.toList())}") }
-        startKey?.let { params.add("startkey=${JsonImpl.stringify(it)}") }
-        endKey?.let { params.add("endkey=${JsonImpl.stringify(it)}") }
+        key?.let { params.add("key=${JsonBbcursive.stringify(it)}") }
+        keys?.let { params.add("keys=${JsonBbcursive.stringify(it.play.toList())}") }
+        startKey?.let { params.add("startkey=${JsonBbcursive.stringify(it)}") }
+        endKey?.let { params.add("endkey=${JsonBbcursive.stringify(it)}") }
         startKeyDocId?.let { params.add("startkey_docid=${it.value}") }
         endKeyDocId?.let { params.add("endkey_docid=${it.value}") }
         limit?.let { params.add("limit=$it") }
@@ -175,7 +176,7 @@ data class ReplicationHistoryEntry(
 
 object CouchDocumentAdapter {
     fun fromJson(json: String): CouchDocument {
-        val map = JsonImpl.parse(json) as Map<String, Any?>
+        val map = JsonBbcursive.parse(json) as Map<String, Any?>
         val data = map.filterKeys { !it.startsWith("_") }
         return CouchDocument(
             _id = DocumentId(map["_id"] as String),
@@ -205,13 +206,13 @@ object CouchDocumentAdapter {
         doc.docIds?.let { map["doc_ids"] = it }
         doc.userContext?.let { map["user_context"] = it }
         doc.history?.let { map["history"] = it }
-        return JsonImpl.stringify(map)
+        return JsonBbcursive.stringify(map)
     }
 }
 
 object CouchDesignDocumentAdapter {
     fun fromJson(json: String): CouchDesignDocument {
-        val map = JsonImpl.parse(json) as Map<String, Any?>
+        val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchDesignDocument(
             id = DesignDocId((map["_id"] as String).removePrefix("_design/")),
             rev = (map["_rev"] as? String)?.let { RevisionId(it) },
@@ -227,7 +228,7 @@ object CouchDesignDocumentAdapter {
     }
 
     fun toJson(ddoc: CouchDesignDocument): String {
-        return JsonImpl.stringify(mapOf(
+        return JsonBbcursive.stringify(mapOf(
             "_id" to ddoc.id.asDocId().value,
             "_rev" to ddoc.rev?.value,
             "language" to ddoc.language,
@@ -241,9 +242,8 @@ object CouchDesignDocumentAdapter {
     }
 }
 
-object CouchDatabaseInfoAdapter {
     fun fromJson(json: String): CouchDatabaseInfo {
-        val map = JsonImpl.parse(json) as Map<String, Any?>
+        val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchDatabaseInfo(
             dbName = DatabaseName(map["db_name"] as String),
             docCount = map["doc_count"] as Int,
@@ -262,9 +262,8 @@ object CouchDatabaseInfoAdapter {
     }
 }
 
-object CouchSecurityAdapter {
     fun fromJson(json: String): CouchSecurity {
-        val map = JsonImpl.parse(json) as Map<String, Any?>
+        val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchSecurity(
             admins = SecurityPrincipal(
                 names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
@@ -278,7 +277,7 @@ object CouchSecurityAdapter {
     }
 
     fun toJson(security: CouchSecurity): String {
-        return JsonImpl.stringify(mapOf(
+        return JsonBbcursive.stringify(mapOf(
             "admins" to mapOf(
                 "names" to security.admins.names.play.toList(),
                 "roles" to security.admins.roles.play.toList()
@@ -291,9 +290,8 @@ object CouchSecurityAdapter {
     }
 }
 
-object CouchResponseAdapter {
     fun fromJson(json: String): CouchResponse {
-        val map = JsonImpl.parse(json) as Map<String, Any?>
+        val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchResponse(
             ok = map["ok"] as Boolean,
             id = (map["id"] as? String)?.let { DocumentId(it) },

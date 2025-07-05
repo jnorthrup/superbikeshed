@@ -114,31 +114,30 @@ class CharIndexed(
 
 // ByteIndexedBuffer wrapper for ByteIndexed
 class ByteIndexedBuffer(
-    private val buffer: ByteIndexed,
-    var pos: Int = buffer.pos,
-    var limit: Int = buffer.limit,
-    var mark: Int = buffer.mark
+    private val buffer: ByteIndexed
 ) {
     constructor(bytes: ByteArray) : this(ByteIndexed(bytes.toIdx()))
     constructor(input: String) : this(input.encodeToByteArray())
     constructor(indexed: Indexed<Byte>) : this(ByteIndexed(indexed))
     
-    val rem: Int get() = limit - pos
-    val hasRemaining: Boolean get() = rem > 0
-    val peek: Byte get() = if (hasRemaining) buffer.buf.b(pos) else -1
+    val pos: Int get() = buffer.pos
+    val limit: Int get() = buffer.limit
+    val mark: Int get() = buffer.mark
+
+    val rem: Int get() = buffer.rem
+    val hasRemaining: Boolean get() = buffer.hasRemaining
+    val peek: Byte get() = if (buffer.hasRemaining) buffer.buf.b(buffer.pos) else -1
     
     val get: Byte get() {
-        if (!hasRemaining) throw IndexOutOfBoundsException("pos: $pos, limit: $limit")
-        return buffer.buf.b(pos++)
+        if (!buffer.hasRemaining) throw IndexOutOfBoundsException("pos: ${buffer.pos}, limit: ${buffer.limit}")
+        return buffer.get
     }
     
-    fun inc() { if (hasRemaining) pos++ }
-    fun dec() { if (pos > 0) pos-- }
-    fun pos(newPos: Int) { pos = newPos }
+    fun pos(newPos: Int) { buffer.pos(newPos) }
     
     // Whitespace operations
     val skipWs: ByteIndexedBuffer get() {
-        while (hasRemaining && buffer.buf.b(pos).toInt().toChar().isWhitespace()) pos++
+        buffer.trim
         return this
     }
     

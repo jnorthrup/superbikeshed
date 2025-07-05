@@ -41,9 +41,27 @@ typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 typealias ColumnMeta = Join<String, KClassifier>
+// Trait for array-like access - WHENEVER THEY NEED get[i] OPERATOR
+interface ArrayLike<I, T> {
+    operator fun get(index: I): T
+    val size: Int
+}
+
+// Index type for Cursor to avoid conflicts with Indexed<T>
+@kotlin.jvm.JvmInline
+value class CursorRowIndex(val value: Int)
+
 // Canonical RowVec and Cursor definitions
 typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
-typealias Cursor = Indexed<RowVec>
+
+// Cursor with ArrayLike trait - WHENEVER THEY NEED get[i] OPERATOR
+@kotlin.jvm.JvmInline
+value class Cursor(private val data: MetaSeries<CursorRowIndex, RowVec>) : ArrayLike<Int, RowVec> {
+    override operator fun get(index: Int): RowVec = data.b(CursorRowIndex(index))
+    override val size: Int get() = data.a.value
+    // Delegate to the underlying MetaSeries for operations that need it
+    fun asSeries(): MetaSeries<CursorRowIndex, RowVec> = data
+}
 data class TableMeta(val name: String)
 typealias CursorIndex = Join<TableMeta, Int>
 // Cursor is now defined in trikeshed-lib
@@ -145,3 +163,6 @@ value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s
 val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 
 val <T> Indexed<T>.size: Int get() = a
+
+// Clean array-like access for Indexed<T> - no more .b(i)!
+operator fun <T> Indexed<T>.get(index: Int): T = b(index)

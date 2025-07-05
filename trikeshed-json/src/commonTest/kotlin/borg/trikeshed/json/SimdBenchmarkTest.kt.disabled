@@ -1,0 +1,258 @@
+package borg.trikeshed.json
+
+import borg.trikeshed.lib.*
+import borg.trikeshed.core.*
+import kotlinx.coroutines.*
+import kotlin.test.*
+import kotlin.time.*
+
+/**
+ * Benchmark tests for SIMD JSON performance
+ */
+@OptIn(ExperimentalTime::class)
+class SimdBenchmarkTest {
+    
+    // Test data generators
+    private fun generateSimpleJson(count: Int): String = buildString {
+        append("[")
+        repeat(count) { i ->
+            if (i > 0) append(",")
+            append("""{"id":$i,"name":"item$i","value":${i * 3.14},"active":${i % 2 == 0}}""")
+        }
+        append("]")
+    }
+    
+    private fun generateNestedJson(depth: Int, width: Int): String = buildString {
+        fun appendLevel(level: Int) {
+            append("{")
+            repeat(width) { i ->
+                if (i > 0) append(",")
+                append("\"field$i\":")
+                if (level < depth) {
+                    appendLevel(level + 1)
+                } else {
+                    append("\"value$i\"")
+                }
+            }
+            append("}")
+        }
+        appendLevel(0)
+    }
+    
+    private fun generateLargeJson(sizeMB: Int): String {
+        val targetSize = sizeMB * 1024 * 1024
+        val sb = StringBuilder()
+        sb.append("{\"data\":[")
+        
+        var currentSize = 10
+        var index = 0
+        
+        while (currentSize < targetSize) {
+            if (index > 0) sb.append(",")
+            val record = """{"id":$index,"timestamp":${System.currentTimeMillis()},"value":${Math.random()}}"""
+            sb.append(record)
+            currentSize += record.length + 1
+            index++
+        }
+        
+        sb.append("]}")
+        return sb.toString()
+    }
+    
+    @Test
+    fun benchmarkSimpleVsBitmapVsSimd() {
+        val json = generateSimpleJson(1000)
+        
+        // Benchmark simple scanner
+        val simpleTime = measureTime {
+            repeat(100) {
+                val scanner = json.simpleJson()
+                scanner.properties()
+            }
+        }
+        
+        // Benchmark bitmap scanner
+        val bitmapTime = measureTime {
+            repeat(100) {
+                val scanner = json.json()
+                scanner.properties()
+            }
+        }
+        
+        // Benchmark SIMD scanner
+        val simdTime = measureTime {
+            repeat(100) {
+                val scanner = json.simdJson()
+                scanner.scanSimd()
+            }
+        }
+        
+        println("Simple Scanner: ${simpleTime.inWholeMilliseconds}ms")
+        println("Bitmap Scanner: ${bitmapTime.inWholeMilliseconds}ms")
+        println("SIMD Scanner: ${simdTime.inWholeMilliseconds}ms")
+        
+        // SIMD should be faster for large inputs
+        assertTrue(simdTime < simpleTime * 2) // Allow some overhead
+    }
+    
+    @Test
+    fun benchmarkBitmapAcceleration() {
+        val json = generateSimpleJson(1000)
+        val scanner = json.bitmapJson()
+        
+        // Scan once to build index
+        scanner.scan()
+        
+        // Benchmark repeated queries (should be O(log n))
+        val queryTime = measureTime {
+            repeat(10000) {
+                scanner.query("name")
+                scanner.query("value")
+                scanner.query("active")
+            }
+        }
+        
+        println("Bitmap query time (10k queries): ${queryTime.inWholeMilliseconds}ms")
+        
+        // Should be very fast due to O(log n) access
+        assertTrue(queryTime.inWholeMilliseconds < 100)
+    }
+    
+    @Test
+    fun benchmarkParallelProcessing() = runBlocking {
+        val json = generateLargeJson(1) // 1MB JSON
+        
+        // Single-threaded processing
+        val singleTime = measureTime {
+            val scanner = json.json()
+            scanner.properties()
+        }
+        
+        // Parallel processing
+        val parallelTime = measureTime {
+            json.scanJsonParallel(
+                ParallelJsonConfig(
+                    chunkSize = 8192,
+                    parallelism = 4,
+                    useSimd = true
+                )
+            )
+        }
+        
+        println("Single-threaded: ${singleTime.inWholeMilliseconds}ms")
+        println("Parallel (4 cores): ${parallelTime.inWholeMilliseconds}ms")
+        
+        // Parallel should show speedup
+        assertTrue(parallelTime < singleTime)
+    }
+    
+    @Test
+    fun benchmarkSimdFingerprinting() {
+        val json1 = generateNestedJson(3, 5)
+        val json2 = generateNestedJson(3, 5)
+        val json3 = generateSimpleJson(100)
+        
+        val scanner1 = json1.bitmapJson()
+        val scanner2 = json2.bitmapJson()
+        val scanner3 = json3.bitmapJson()
+        
+        val fingerprintTime = measureTime {
+            repeat(1000) {
+                scanner1.structuralFingerprint()
+                scanner2.structuralFingerprint()
+                scanner3.structuralFingerprint()
+            }
+        }
+        
+        println("SIMD fingerprint time (3k operations): ${fingerprintTime.inWholeMilliseconds}ms")
+        
+        // Fingerprinting should be fast with SIMD
+        assertTrue(fingerprintTime.inWholeMilliseconds < 50)
+    }
+    
+    @Test
+    fun benchmarkVectorizedOperations() {
+        val json = generateSimpleJson(10000)
+        val scanner = json.bitmapJson()
+        
+        // Find all structural elements
+        val findTime = measureTime {
+            scanner.findAll(JsonElementType.OBJECT_START)
+            scanner.findAll(JsonElementType.STRING)
+            scanner.findAll(JsonElementType.COMMA)
+        }
+        
+        println("Vectorized find operations: ${findTime.inWholeMilliseconds}ms")
+        
+        // Should be fast with bitmap operations
+        assertTrue(findTime.inWholeMilliseconds < 100)
+    }
+    
+    @Test
+    fun testSimdCorrectness() {
+        val json = """{"name":"test","count":42,"active":true}"""
+        
+        // Compare results from all scanners
+        val simpleProps = json.simpleJson().properties()
+        val bitmapProps = json.json().properties()
+        val simdScanner = json.simdJson()
+        val simdDoc = simdScanner.scanSimd()
+        
+        // All should find same properties
+        assertEquals(3, simpleProps.size)
+        assertEquals(3, bitmapProps.size)
+        
+        // Verify property extraction
+        val coords = simdDoc.b.b
+        val keys = coords.a
+        assertTrue(keys.size >= 3)
+    }
+    
+    @Test
+    fun benchmarkWorkStealing() = runBlocking {
+        val json = generateLargeJson(2) // 2MB JSON
+        
+        // Test different parallelism levels
+        val configs = listOf(
+            ParallelJsonConfig(parallelism = 1),
+            ParallelJsonConfig(parallelism = 2),
+            ParallelJsonConfig(parallelism = 4),
+            ParallelJsonConfig(parallelism = 8)
+        )
+        
+        for (config in configs) {
+            val time = measureTime {
+                json.scanJsonParallel(config)
+            }
+            println("Parallelism ${config.parallelism}: ${time.inWholeMilliseconds}ms")
+        }
+    }
+    
+    @Test
+    fun benchmarkChunkBoundaryHandling() {
+        // JSON with values split across chunk boundaries
+        val problematicJson = buildString {
+            append("{")
+            // Add padding to force boundary issues
+            append("\"padding\":\"")
+            append("x".repeat(8190)) // Just under chunk size
+            append("\",\"important\":\"value\",")
+            append("\"number\":")
+            append("12345") // Number split across boundary
+            append("}")
+        }
+        
+        val time = measureTime {
+            runBlocking {
+                problematicJson.scanJsonParallel(
+                    ParallelJsonConfig(chunkSize = 8192)
+                )
+            }
+        }
+        
+        println("Chunk boundary handling: ${time.inWholeMilliseconds}ms")
+        
+        // Should handle boundaries correctly
+        assertTrue(time.inWholeMilliseconds < 100)
+    }
+}
