@@ -11,10 +11,13 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
         google()
+        maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
     }
     plugins {
-        kotlin("multiplatform") version "2.1.21"
+        kotlin("multiplatform") version "2.2.0"
         id("com.github.ben-manes.versions") version "0.52.0"
+        id("io.gitlab.arturbosch.detekt") version "1.23.6"
     }
 }
 
@@ -22,6 +25,8 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         google()
+        maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
     }
 }
 

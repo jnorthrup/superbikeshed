@@ -11,15 +11,15 @@ typealias JsonObject = Map<String, Any?>
 typealias JsonElement = Any?
 
 // Ontological Typealiases for CouchDB Primitives
-@JvmInline value class DocumentId(val value: String)
-@JvmInline value class RevisionId(val value: String)
-@JvmInline value class DatabaseName(val value: String)
-@JvmInline value class DesignDocId(val value: String) {
+value class DocumentId(val value: String)
+value class RevisionId(val value: String)
+value class DatabaseName(val value: String)
+value class DesignDocId(val value: String) {
     fun asDocId(): DocumentId = DocumentId("_design/${this.value}")
 }
-@JvmInline value class ViewName(val value: String)
-@JvmInline value class MapFunction(val code: String)
-@JvmInline value class ReduceFunction(val code: String)
+value class ViewName(val value: String)
+value class MapFunction(val code: String)
+value class ReduceFunction(val code: String)
 typealias AttachmentName = String
 typealias FieldName = String
 typealias JsonString = String
@@ -242,6 +242,7 @@ object CouchDesignDocumentAdapter {
     }
 }
 
+    object CouchDatabaseInfoAdapter {
     fun fromJson(json: String): CouchDatabaseInfo {
         val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchDatabaseInfo(
@@ -262,16 +263,17 @@ object CouchDesignDocumentAdapter {
     }
 }
 
+object CouchSecurityAdapter {
     fun fromJson(json: String): CouchSecurity {
         val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchSecurity(
             admins = SecurityPrincipal(
-                names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
-                roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
+                names = ((map["admins"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toIndexed(),
+                roles = ((map["admins"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toIndexed()
             ),
             members = SecurityPrincipal(
-                names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toSeries(),
-                roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toSeries()
+                names = ((map["members"] as? Map<*, *>)?.get("names") as? List<String> ?: emptyList()).toIndexed(),
+                roles = ((map["members"] as? Map<*, *>)?.get("roles") as? List<String> ?: emptyList()).toIndexed()
             )
         )
     }
@@ -290,6 +292,7 @@ object CouchDesignDocumentAdapter {
     }
 }
 
+object CouchResponseAdapter {
     fun fromJson(json: String): CouchResponse {
         val map = JsonBbcursive.parse(json) as Map<String, Any?>
         return CouchResponse(

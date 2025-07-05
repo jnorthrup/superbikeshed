@@ -2,6 +2,7 @@
 
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization")
 }
 
 group = "borg.trikeshed"

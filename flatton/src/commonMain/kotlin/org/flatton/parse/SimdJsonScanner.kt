@@ -25,8 +25,7 @@ object SimdJsonScanner {
         val decoder = BitmapJsonDecoder(jsonBytes.play.toByteArray())
         
         val totalElements = countElements(decoder)
-        return Join(totalElements) { index ->
-            if (index >= totalElements) throw IndexOutOfBoundsException("Index $index out of bounds")
+        return Join(-1) { index ->
             
             // Navigate to the nth element
             var current = 0
@@ -94,8 +93,8 @@ object SimdJsonScanner {
     private fun createArrayCursor(decoder: BitmapJsonDecoder, jsonBytes: Indexed<Byte>): Indexed<JsonObjectCursor> {
         decoder.decodeToken(JsonToken.BEGIN_LIST)
         
-        return Join(totalElements) { index ->
-            if (index >= totalElements) throw IndexOutOfBoundsException("Index $index out of bounds")
+        return Join(countElements(decoder)) { index ->
+            if (index >= countElements(decoder)) throw IndexOutOfBoundsException("Index $index out of bounds")
             
             // Navigate to the nth element
             var current = 0
@@ -225,7 +224,7 @@ class JsonObjectCursor(
      * Converts the cursor back to a JSON string.
      */
     fun toJsonString(): String {
-        return String(jsonBytes.play.toByteArray(), startIndex, endIndex - startIndex + 1)
+        return jsonBytes.play.toByteArray().decodeToString(startIndex, endIndex + 1)
     }
     
     /**

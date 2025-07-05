@@ -2,6 +2,7 @@
 
 plugins {
     kotlin("multiplatform")
+    kotlin("jvm")
     kotlin("plugin.serialization")
 }
 
