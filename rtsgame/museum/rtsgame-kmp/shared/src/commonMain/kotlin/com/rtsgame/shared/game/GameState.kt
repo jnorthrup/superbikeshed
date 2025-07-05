@@ -6,7 +6,6 @@ import com.rtsgame.shared.entity.Position
 import com.rtsgame.shared.map.ResourceType
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class GameState(
     val entities: Map<String, Entity> = emptyMap(),
     val resources: Map<Int, Map<ResourceType, Int>> = emptyMap(),

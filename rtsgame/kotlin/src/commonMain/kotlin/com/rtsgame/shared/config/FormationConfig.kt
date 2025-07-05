@@ -2,7 +2,6 @@ package com.rtsgame.shared.config
 
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class FormationConfig(
     val predictionTimeSeconds: Float = 1.0f,
     val arrivalRadiusFactor: Float = 1.5f,
@@ -16,13 +15,11 @@ data class FormationConfig(
     val commandRanges: CommandRanges = CommandRanges()
 )
 
-@Serializable
 data class SteeringWeights(
     val separation: Float = 1.0f,
     val terrainAvoidance: Float = 1.0f
 )
 
-@Serializable
 data class CommandRanges(
     val strategic: Float = 200.0f,
     val formationMinDistance: Float = 80.0f,

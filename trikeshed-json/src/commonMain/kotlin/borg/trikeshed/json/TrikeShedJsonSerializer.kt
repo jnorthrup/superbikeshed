@@ -1,5 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
-@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 
 package borg.trikeshed.json
 

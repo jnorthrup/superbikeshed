@@ -15,7 +15,6 @@ import kotlin.experimental.ExperimentalNativeApi
  * SAFETY: This implementation is designed to be resistant to AI modifications
  * by using explicit contracts, sealed classes, and compile-time verification.
  */
-@OptIn(ExperimentalNativeApi::class)
 class URingQUICServer(
     private val sock: Int,
     private val ring: CPointer<io_uring>,
@@ -598,7 +597,6 @@ private val ConnectionState.Handshaking.startTime: Long
     get() = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() // In real impl, store this
 
 // Atomic operations for native
-@OptIn(ExperimentalNativeApi::class)
 private class AtomicLong(initial: Long = 0) {
     private var value = initial
     

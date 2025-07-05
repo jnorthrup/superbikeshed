@@ -205,7 +205,6 @@ inline fun decodeHuffmanSymbol(bitStream: BitStream, huffmanTable: HuffmanLookup
  * Helper function for decoding Huffman codes that are longer than the initial lookup bits.
  * This function is designed to be inlined into the decodeHuffmanSymbol function.
  */
-@PublishedApi
 internal inline fun decodeLongHuffmanCode(bitStream: BitStream, huffmanTable: HuffmanLookupTable, initialLength: Int): Int {
     var currentCode = bitStream.peekBits(huffmanTable.maxCodeLength) // Peek up to max possible code length
     var currentLength = initialLength

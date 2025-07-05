@@ -1,6 +1,12 @@
 package borg.trikeshed.nexus
 
 import kotlinx.coroutines.*
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.size
+import borg.trikeshed.lib.get
+
+data class SimpleJoin<A, B>(val a: A, val b: B)
 
 /**
  * SIMPLE REALIZATION - Main()'s Intention Without Dependencies
@@ -13,8 +19,7 @@ import kotlinx.coroutines.*
  * Simplified main() - The beneficiary in pursuit of happiness
  */
 suspend fun realizeIntentionSimple() {
-    println("🎯 Main() begins pursuit of happiness through architectural artistry")
-    println("=".repeat(80))
+    
     
     try {
         // Realize main()'s intention through coordinated attention distribution
@@ -31,7 +36,7 @@ suspend fun realizeIntentionSimple() {
  * Core demonstration of main()'s distributed attention strategy
  */
 suspend fun demonstrateAttentionDistributionCommon() = coroutineScope {
-    println("🧠 Initializing attention distribution across abstractions...")
+    
     
     // ═══════════════════════════════════════════════════════════════════════
     // ATTENTION ALLOCATION 1: Agent Intelligence Layer (40%)
@@ -172,15 +177,15 @@ suspend fun demonstrateCompositionalPatternsCommon() {
     println("      🏗️ Foundation: Demonstrating compositional artistry")
     
     // Simulate compositional patterns without TrikeShed dependency
-    data class SimpleJoin<A, B>(val a: A, val b: B)
-    data class SimpleSeries<T>(val size: Int, val accessor: (Int) -> T)
     
+
+
     // Join composition demo
     val compositionDemo = SimpleJoin("architectural", "artistry")
     println("      🔗 Join composition: ${compositionDemo.a} + ${compositionDemo.b}")
-    
+
     // Indexed operations demo
-    val capabilitySeries = SimpleSeries(4) { i ->
+    val capabilitySeries = 4 j { i ->
         when (i) {
             0 -> "autonomous-learning"
             1 -> "pattern-recognition" 
@@ -189,10 +194,10 @@ suspend fun demonstrateCompositionalPatternsCommon() {
             else -> "meta-capability"
         }
     }
-    
+
     println("      📊 Indexed capabilities:")
     for (i in 0 until capabilitySeries.size) {
-        println("         $i: ${capabilitySeries.accessor(i)}")
+        println("         $i: ${capabilitySeries.get(i)}")
         delay(500)
     }
     

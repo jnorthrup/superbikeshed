@@ -46,7 +46,6 @@ enum class QuicFrameType(val value: Byte) {
 }
 
 // Connection ID using Indexed<Byte>
-@Serializable
 data class ConnectionId(
     val bytes: Indexed<Byte>
 ) {
@@ -67,7 +66,6 @@ data class ConnectionId(
 }
 
 // QUIC packet header
-@Serializable
 data class QuicHeader(
     val type: QuicPacketType,
     val version: Long,
@@ -78,13 +76,11 @@ data class QuicHeader(
 )
 
 // QUIC frame base
-@Serializable
 sealed class QuicFrame {
     abstract val type: QuicFrameType
 }
 
 // Stream frame
-@Serializable
 data class StreamFrame(
     val streamId: Long,
     val offset: Long,
@@ -95,7 +91,6 @@ data class StreamFrame(
 }
 
 // ACK frame
-@Serializable
 data class AckFrame(
     val largestAcknowledged: Long,
     val ackDelay: Long,
@@ -105,7 +100,6 @@ data class AckFrame(
 }
 
 // Crypto frame
-@Serializable
 data class CryptoFrame(
     val offset: Long,
     val data: Indexed<Byte>
@@ -114,7 +108,6 @@ data class CryptoFrame(
 }
 
 // QUIC packet
-@Serializable
 data class QuicPacket(
     val header: QuicHeader,
     val frames: Indexed<QuicFrame>,
@@ -122,7 +115,6 @@ data class QuicPacket(
 )
 
 // QUIC transport parameters
-@Serializable
 data class TransportParameters(
     val maxStreamData: Long = 1_048_576,
     val maxData: Long = 10_485_760,
@@ -142,7 +134,6 @@ data class TransportParameters(
 )
 
 // QUIC connection state
-@Serializable
 data class QuicConnectionState(
     val localConnectionId: ConnectionId,
     val remoteConnectionId: ConnectionId,
@@ -159,7 +150,6 @@ data class QuicConnectionState(
 )
 
 // Stream state
-@Serializable
 data class QuicStreamState(
     val streamId: Long,
     val sendBuffer: Indexed<Byte> = emptyIndex(),

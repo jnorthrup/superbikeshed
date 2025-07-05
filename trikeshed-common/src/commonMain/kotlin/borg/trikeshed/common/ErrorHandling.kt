@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE", "FunctionName")
 package borg.trikeshed.common
 
 import borg.trikeshed.lib.*
@@ -14,10 +13,6 @@ typealias ErrorMessage = String
 typealias ErrorKey = String
 typealias SystemCallResult = Int
 
-@JvmInline value class PosixError(val code: ErrorCode)
-@JvmInline value class WindowsError(val code: ErrorCode)
-@JvmInline value class HttpError(val code: ErrorCode)
-@JvmInline value class DatabaseError(val code: ErrorCode)
 
 // === COMMON ERROR CODES ===
 object ErrorCodes {

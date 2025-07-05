@@ -5,7 +5,6 @@ import kotlinx.cinterop.*
 import platform.posix.*
 import borg.trikeshed.lib.toIdx
 
-@OptIn(ExperimentalForeignApi::class)
 
 /**
  * Native implementation of Files

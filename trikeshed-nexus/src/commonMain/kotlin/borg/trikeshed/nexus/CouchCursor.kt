@@ -10,7 +10,6 @@ import kotlin.coroutines.intrinsics.*
 import kotlin.coroutines.*
 
 // High-level type representing the database file
-@JvmInline
 value class CouchDatabaseFile(val path: String)
 
 // The specific index for a CouchDB Cursor: database file + document sequence ID

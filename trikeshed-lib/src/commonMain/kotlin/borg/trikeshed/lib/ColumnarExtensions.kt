@@ -1,4 +1,3 @@
-@file:Suppress("NonAsciiCharacters", "UNCHECKED_CAST", "FunctionName")
 
 package borg.trikeshed.lib
 
@@ -293,7 +292,6 @@ data class Column<T>(
 /**
  * Get typed value from row - softened to avoid type hardening
  */
-@Suppress("UNCHECKED_CAST")
 operator fun <T> RowVec.get(column: Column<T>): T? {
     // Lambda-based column access to avoid type hardening
     val columnAccessor: (RowVec, Column<T>) -> T? = { row, col ->

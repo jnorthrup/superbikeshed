@@ -10,7 +10,6 @@ import kotlinx.browser.*
 /**
  * WASM entry point for the RTS game
  */
-@JsExport
 class RTSGameWeb(
     private val canvas: HTMLCanvasElement,
     private val gpuDevice: dynamic
@@ -174,7 +173,6 @@ class RTSGameWeb(
     }
 }
 
-@JsExport
 data class UnitPosition(
     val x: Float,
     val y: Float,
@@ -186,8 +184,6 @@ data class ScreenPos(val x: Int, val y: Int)
 /**
  * Main entry point for WASM
  */
-@JsExport
-@JsName("createRTSGame")
 fun createRTSGame(): RTSGameWeb {
     // This will be called from JavaScript
     val canvas = document.getElementById("gameCanvas") as HTMLCanvasElement

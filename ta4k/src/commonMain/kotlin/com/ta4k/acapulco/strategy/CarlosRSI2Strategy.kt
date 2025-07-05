@@ -21,7 +21,6 @@ import kotlinx.datetime.Instant
  */
 
 // Strategy value classes
-@JvmInline
 value class RSIValue(val value: Double) {
     fun isOversold(threshold: Double = 5.0): Boolean = value < threshold
     fun isOverbought(threshold: Double = 95.0): Boolean = value > threshold
@@ -29,7 +28,6 @@ value class RSIValue(val value: Double) {
     operator fun compareTo(threshold: Double): Int = value.compareTo(threshold)
 }
 
-@JvmInline
 value class SMAValue(val value: Double) {
     operator fun compareTo(other: SMAValue): Int = value.compareTo(other.value)
     operator fun compareTo(price: Price): Int = value.compareTo(price.value)

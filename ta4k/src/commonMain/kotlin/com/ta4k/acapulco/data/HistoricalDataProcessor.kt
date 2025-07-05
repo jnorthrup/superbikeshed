@@ -11,21 +11,17 @@ import kotlinx.datetime.Instant
  */
 
 // Core value classes for type safety
-@JvmInline
 value class Price(val value: Double) {
     operator fun times(other: Double): Price = Price(value * other)
     operator fun compareTo(other: Price): Int = value.compareTo(other.value)
 }
 
-@JvmInline  
 value class Volume(val value: Double) {
     operator fun plus(other: Volume): Volume = Volume(value + other.value)
 }
 
-@JvmInline
 value class Symbol(val value: String)
 
-@JvmInline
 value class CandleCount(val value: Int)
 
 // Core data structures using TrikeShed Join patterns

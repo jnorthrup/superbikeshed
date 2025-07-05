@@ -28,7 +28,6 @@ expect interface RequestHandle {
     suspend fun upgrade(to: UpgradeProtocol): Result<UpgradedConnection>
 }
 
-@Serializable
 data class HTTPRequest(
     val method: String,
     val path: String,
@@ -38,7 +37,6 @@ data class HTTPRequest(
     val protocolHint: HTTPProtocol? = null
 )
 
-@Serializable
 data class HTTPResponse(
     val status: Int,
     val headers: Map<String, List<String>>,
@@ -46,7 +44,6 @@ data class HTTPResponse(
     val protocol: HTTPProtocol
 )
 
-@Serializable
 data class HTTPChunk(
     val data: ByteArray,
     val extensions: Map<String, String> = emptyMap(),
@@ -75,7 +72,6 @@ expect interface RelaxFactory : RequestFactory {
     suspend fun equilibrium(): RelaxationState // Find balance
 }
 
-@Serializable
 data class RelaxationState(
     val tensionLevel: Float, // 0.0 = fully relaxed, 1.0 = fully tense
     val activeConnections: Int,
@@ -104,7 +100,6 @@ expect interface CouchDBProxy {
     ): Flow<ChangesFeedEntry>
 }
 
-@Serializable
 data class CouchRequest(
     val method: String,
     val database: String?,
@@ -115,14 +110,12 @@ data class CouchRequest(
     val body: ByteArray?
 )
 
-@Serializable
 data class CouchResponse(
     val status: Int,
     val json: Map<String, Any?>?,
     val headers: Map<String, String>
 )
 
-@Serializable
 data class ViewOptions(
     val startKey: Any? = null,
     val endKey: Any? = null,
@@ -135,14 +128,12 @@ data class ViewOptions(
     val groupLevel: Int? = null
 )
 
-@Serializable
 data class ViewResult(
     val totalRows: Int,
     val offset: Int,
     val rows: List<ViewRow>
 )
 
-@Serializable
 data class ViewRow(
     val id: String,
     val key: Any?,
@@ -150,7 +141,6 @@ data class ViewRow(
     val doc: Map<String, Any?>?
 )
 
-@Serializable
 data class ChangesOptions(
     val feed: ChangesFeed = ChangesFeed.NORMAL,
     val style: ChangesStyle = ChangesStyle.MAIN_ONLY,
@@ -172,7 +162,6 @@ enum class ChangesStyle {
     ALL_DOCS
 }
 
-@Serializable
 data class ChangesFeedEntry(
     val seq: String,
     val id: String,
@@ -181,12 +170,10 @@ data class ChangesFeedEntry(
     val doc: Map<String, Any?>? = null
 )
 
-@Serializable
 data class RevisionChange(
     val rev: String
 )
 
-@Serializable
 data class ReplicationEvent(
     val type: ReplicationType,
     val seq: String,
@@ -217,7 +204,6 @@ expect interface GWTRequest {
     suspend fun fire(): Result<Unit>
 }
 
-@JvmInline
 value class GWTInvocation<T>(val method: String)
 
 // The Factory Factory - because we need to manufacture factories
@@ -227,7 +213,6 @@ expect interface FactoryFactory {
     suspend fun merge(vararg factories: RequestFactory): RequestFactory
 }
 
-@Serializable
 data class FactoryConfig(
     val protocols: Set<HTTPProtocol>,
     val maxConnections: Int = 100,
@@ -235,7 +220,6 @@ data class FactoryConfig(
     val cloneDepth: Int = 3
 )
 
-@Serializable
 data class RelaxConfig(
     val couchDBUrl: String,
     val replicationEnabled: Boolean = true,

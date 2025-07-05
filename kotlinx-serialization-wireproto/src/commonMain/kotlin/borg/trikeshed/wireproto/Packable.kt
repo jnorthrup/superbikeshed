@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 package borg.trikeshed.wireproto
 
@@ -70,7 +69,6 @@ object PDouble : Packable<Double> {
 /**
  * Zero-cost register-packed join for primitive combinations
  */
-@JvmInline
 value class RegisterJoin<A, B>(val word: Long) {
     
     fun unpackA(packer: Packable<A>): A = packer.unpack(word)

@@ -158,7 +158,7 @@ execute_shell_command() {
     if [ "$show_terminal" = "true" ]; then
         # Show everything in terminal
         echo ">>> $command"
-        if eval "$command" 2>&1 | tee -a NVIDIA_EXECUTION.log; then
+        if bash -c "$command" 2>&1 | tee -a NVIDIA_EXECUTION.log; then
             print_color $GREEN "✓ Command successful"
             echo "SUCCESS: $command" >> NVIDIA_EXECUTION.log
             return 0
@@ -169,7 +169,7 @@ execute_shell_command() {
         fi
     else
         # Log only mode
-        if eval "$command" 2>&1 | tee -a NVIDIA_EXECUTION.log; then
+        if bash -c "$command" 2>&1 | tee -a NVIDIA_EXECUTION.log; then
             print_color $GREEN "✓ Command successful"
             echo "SUCCESS: $command" >> NVIDIA_EXECUTION.log
             return 0

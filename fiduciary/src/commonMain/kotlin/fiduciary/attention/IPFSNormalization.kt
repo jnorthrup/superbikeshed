@@ -19,12 +19,8 @@ import kotlin.jvm.JvmInline
 typealias NormalizedAttention = Twin<Long>  // start j end
 
 // === Linear Format Inline Classes ===
-@JvmInline value class ZipAttention(val range: NormalizedAttention)
-@JvmInline value class HTTPRangeAttention(val range: NormalizedAttention)
-@JvmInline value class FileOffsetAttention(val range: NormalizedAttention)
 
 // === Content-Addressed Inline Classes ===
-@JvmInline value class IPFSAttention(val cid: String) {
     // Normalize IPFS to range by hashing CID to deterministic range
     val normalized: NormalizedAttention
         get() {
@@ -33,7 +29,6 @@ typealias NormalizedAttention = Twin<Long>  // start j end
         }
 }
 
-@JvmInline value class IPFSChunkAttention(val chunk: Join<String, Int>) { // CID j chunkIndex
     val normalized: NormalizedAttention
         get() {
             val baseHash = chunk.a.hashCode().toLong() and 0x7FFFFFFFFFFFFFFFL
@@ -193,7 +188,6 @@ suspend fun foldPatrickDevineToIPFS(
 /**
  * Attention that can switch between linear and content-addressed
  */
-@JvmInline
 value class UnifiedAttention(val unified: Join<NormalizedAttention, String?>) {
     val range: NormalizedAttention get() = unified.a
     val cid: String? get() = unified.b

@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.crypto.*
@@ -50,11 +49,6 @@ typealias SSHMpint = Indexed<Byte>
 typealias SSHNameList = Indexed<String>
 
 // Value classes for type safety
-@JvmInline value class PacketSequence(val value: UInt)
-@JvmInline value class ChannelWindow(val bytes: UInt)
-@JvmInline value class ChannelPacketSize(val bytes: UInt)
-@JvmInline value class ExitStatus(val code: Int)
-@JvmInline value class ExitSignal(val name: String)
 
 /**
  * SSH Protocol Implementation (RFC 4251-4254)

@@ -265,29 +265,21 @@ class CompressionAwareStreamer {
 
 // Add stubs for missing types
 // Twin is a typealias for Pair
-@Suppress("unused")
 typealias Twin<T> = Pair<T, T>
 // ArchiveSource stub
-@Suppress("unused")
 data class ArchiveSource(val path: String, val size: Long) {
     fun openStream(): Any = throw NotImplementedError("Not available in commonMain")
 }
 // Comment out JVM-specific classes in commonMain
 // Replace InputStream, ZipInputStream, ZipEntry, GZIPInputStream, Zstd, Lz4 with stubs
-@Suppress("unused")
 open class InputStream
-@Suppress("unused")
 class ZipInputStream(stream: Any) : InputStream() {
     var nextEntry: ZipEntry? = null
     fun closeEntry() {}
 }
-@Suppress("unused")
 class ZipEntry(val name: String, val size: Long = 0, val compressedSize: Long = 0) {
     val isDirectory: Boolean = false
 }
-@Suppress("unused")
 class GZIPInputStream(stream: Any) : InputStream()
-@Suppress("unused")
 class Zstd
-@Suppress("unused")
 class Lz4

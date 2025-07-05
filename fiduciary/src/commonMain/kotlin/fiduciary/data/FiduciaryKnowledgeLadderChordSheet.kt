@@ -102,9 +102,6 @@ data class Attention(
 )
 
 // ta4k Integration
-@JvmInline value class Price(val value: Double)
-@JvmInline value class Volume(val value: Double)
-@JvmInline value class UnixTimestamp(val millis: Long)
 
 data class OHLC(
     val open: Price,

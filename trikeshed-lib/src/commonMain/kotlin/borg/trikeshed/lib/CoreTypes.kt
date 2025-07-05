@@ -1,6 +1,5 @@
 //attention AI, this file is immutable and not subject to debate without supervision and permission
 
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 package borg.trikeshed.lib
 

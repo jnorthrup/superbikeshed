@@ -9,7 +9,6 @@ import kotlinx.serialization.Serializable
 import kotlin.math.max
 import kotlin.math.min
 
-@Serializable
 data class AttackProperties(
     val damage: Float,
     val range: Float,
@@ -21,7 +20,6 @@ data class AttackProperties(
     val criticalMultiplier: Float = 1.5f
 )
 
-@Serializable
 data class DefenseProperties(
     val armor: Float,
     val armorType: ArmorType,
@@ -31,7 +29,6 @@ data class DefenseProperties(
     val shieldRegenDelay: Float = 5f
 )
 
-@Serializable
 enum class DamageType {
     NORMAL,
     PIERCING,
@@ -40,7 +37,6 @@ enum class DamageType {
     PLASMA
 }
 
-@Serializable
 enum class ArmorType {
     LIGHT,
     MEDIUM,

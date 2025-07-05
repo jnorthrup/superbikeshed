@@ -11,7 +11,6 @@ import borg.trikeshed.lib.TypeMemento
  * 
  * @deprecated Use borg.trikeshed.cursor.ColumnMeta from trikeshed-cursor module
  */
-@Deprecated(
     "Use borg.trikeshed.cursor.ColumnMeta from trikeshed-cursor module",
     ReplaceWith("borg.trikeshed.cursor.ColumnMeta", "borg.trikeshed.cursor")
 )
@@ -25,7 +24,6 @@ interface ColumnMeta {
  * 
  * @deprecated Use borg.trikeshed.cursor.IOMemento from trikeshed-cursor module
  */
-@Deprecated(
     "Use borg.trikeshed.cursor.IOMemento from trikeshed-cursor module",
     ReplaceWith("borg.trikeshed.cursor.IOMemento", "borg.trikeshed.cursor")
 )

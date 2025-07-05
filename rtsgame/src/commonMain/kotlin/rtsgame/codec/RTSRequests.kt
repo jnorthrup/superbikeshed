@@ -9,7 +9,6 @@ import borg.trikeshed.lib.j
  * RTS Request Types - All game commands as serializable requests
  * These match JS command structure exactly for deterministic replay
  */
-@Serializable
 sealed class RTSRequest {
     abstract val frameNumber: Long
     abstract val timestamp: Double
@@ -107,7 +106,6 @@ sealed class RTSRequest {
 /**
  * RTS Response Types - Results from command execution
  */
-@Serializable
 sealed class RTSResponse {
     abstract val frameNumber: Long
     abstract val success: Boolean
@@ -142,7 +140,6 @@ sealed class RTSResponse {
 /**
  * Entity state for synchronization
  */
-@Serializable
 data class EntityState(
     val id: Int,
     val type: String,

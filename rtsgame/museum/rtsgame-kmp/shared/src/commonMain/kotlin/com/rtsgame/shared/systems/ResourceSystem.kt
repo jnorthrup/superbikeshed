@@ -8,7 +8,6 @@ import com.rtsgame.shared.map.ResourceProperties
 import com.rtsgame.shared.map.ResourceType
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class ResourceNode(
     val id: String,
     val position: Position,

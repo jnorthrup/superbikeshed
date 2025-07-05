@@ -54,13 +54,11 @@ interface TaxonomicEntity {
 /**
  * DSL for defining taxonomic relationships
  */
-@DslMarker
 annotation class TaxonomyDSL
 
 /**
  * Builder for taxonomic entities
  */
-@TaxonomyDSL
 class TaxonomicEntityBuilder {
     var id: SemanticId = ""
     var version: VersionedCID = ""
@@ -130,7 +128,6 @@ data class TaxonomicRelationship(
 /**
  * Builder for taxonomic relationships
  */
-@TaxonomyDSL
 class TaxonomicRelationshipBuilder {
     var source: SemanticId = ""
     var target: SemanticId = ""
@@ -216,7 +213,6 @@ data class TaxonomicGraph(
 /**
  * Builder for taxonomic graphs
  */
-@TaxonomyDSL
 class TaxonomicGraphBuilder {
     private val entities = mutableMapOf<SemanticId, TaxonomicEntity>()
     private val relationships = mutableListOf<TaxonomicRelationship>()
@@ -350,7 +346,6 @@ fun taxonomicGraph(init: TaxonomicGraphBuilder.() -> Unit): TaxonomicGraph {
 /**
  * Pandas-like DSL for taxonomic operations
  */
-@TaxonomyDSL
 class TaxonomicPandasDSL(private val graph: TaxonomicGraph) {
     /**
      * Get entities matching a filter condition

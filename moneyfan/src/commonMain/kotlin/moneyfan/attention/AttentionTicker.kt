@@ -12,16 +12,13 @@ import kotlinx.datetime.Instant
  */
 
 // Variable time gauge attention spans using TrikeShed patterns
-@JvmInline
 value class AttentionSpan(val millis: Long) {
     fun scale(factor: Decimal): AttentionSpan = AttentionSpan((millis * factor).toLong())
     fun clamp(min: Long, max: Long): AttentionSpan = AttentionSpan(millis.coerceIn(min, max))
 }
 
-@JvmInline
 value class TickerInterval(val millis: Long)
 
-@JvmInline
 value class VolatilityGauge(val value: Decimal) {
     fun toAttentionSpan(baseSpan: AttentionSpan): AttentionSpan {
         // High volatility = shorter attention span
@@ -30,7 +27,6 @@ value class VolatilityGauge(val value: Decimal) {
     }
 }
 
-@JvmInline
 value class VolumeGauge(val value: Decimal) {
     fun toAttentionSpan(baseSpan: AttentionSpan): AttentionSpan {
         // High volume = shorter attention span
@@ -39,7 +35,6 @@ value class VolumeGauge(val value: Decimal) {
     }
 }
 
-@JvmInline
 value class PairWeight(val value: Decimal) {
     operator fun times(other: PairWeight): PairWeight = PairWeight(value * other.value)
     operator fun plus(other: PairWeight): PairWeight = PairWeight(value + other.value)

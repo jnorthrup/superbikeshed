@@ -7,7 +7,6 @@ package borg.trikeshed.net.http
  *
  * Enum names with a leading '$' are quoted with backticks to be valid Kotlin identifiers.
  */
-@Suppress("EnumEntryName")
 enum class MimeType(val contentType: String) {
     abw("application/x-abiword"),
     ai("application/postscript"),

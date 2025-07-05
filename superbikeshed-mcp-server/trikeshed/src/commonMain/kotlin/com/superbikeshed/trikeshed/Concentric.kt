@@ -14,7 +14,6 @@ expect class ConcentricDHT {
 }
 
 // Dynamic key length support - keys can be 160, 256, 512, or custom bits
-@Serializable
 data class DynamicKey(
     val bits: ByteArray,
     val length: Int
@@ -53,19 +52,16 @@ data class DynamicKey(
     }
 }
 
-@Serializable
 data class NodeID(
     val key: DynamicKey,
     val subnet: Int = 0
 )
 
-@Serializable
 data class NodeAddress(
     val id: NodeID,
     val endpoints: List<IPCEndpoint>
 )
 
-@Serializable
 sealed class IPCEndpoint {
     @Serializable
     data class URing(val fd: Int) : IPCEndpoint()
@@ -93,7 +89,6 @@ expect class ConcentricSubnet {
     suspend fun subscribe(filter: MessageFilter): Flow<SubnetMessage>
 }
 
-@Serializable
 data class SubnetMessage(
     val from: NodeID,
     val to: NodeID?,
@@ -102,7 +97,6 @@ data class SubnetMessage(
     val routePath: List<NodeID> = emptyList()
 )
 
-@Serializable
 data class MessageFilter(
     val keyPrefix: ByteArray? = null,
     val subnet: Int? = null,
@@ -120,7 +114,6 @@ expect class NWayRoutingTable {
 }
 
 // Bucket structure for variable key lengths
-@Serializable
 data class KBucket(
     val rangeStart: DynamicKey,
     val rangeEnd: DynamicKey,
@@ -156,7 +149,6 @@ expect interface RXFSync {
     suspend fun restore(snapshot: SyncSnapshot): Result<Unit>
 }
 
-@Serializable
 data class FileChange(
     val path: String,
     val type: ChangeType,
@@ -172,14 +164,12 @@ enum class ChangeType {
     RENAME
 }
 
-@Serializable
 data class SyncSnapshot(
     val files: Map<String, FileState>,
     val gitCommit: String?,
     val timestamp: Long
 )
 
-@Serializable
 data class FileState(
     val size: Long,
     val hash: String,
@@ -195,7 +185,6 @@ expect interface ConcentricCouchAdapter {
     suspend fun replicateSubnet(subnet: Int, target: NodeAddress): Flow<ReplicationEvent>
 }
 
-@Serializable
 data class SubnetData(
     val subnet: Int,
     val key: DynamicKey,

@@ -54,7 +54,6 @@ suspend fun <K, V : Function<*>> withHandlers(
 /**
  * Extension to easily access the handler registry from any coroutine context.
  */
-@Suppress("UNCHECKED_CAST")
 fun <K, V : Function<*>> CoroutineContext.getHandlerRegistry(): HandlerRegistry<K, V>? = 
     this[HandlerRegistry.Key] as? HandlerRegistry<K, V>
 

@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.dht.kademlia.routing
 
 import kotlinx.datetime.Clock

@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
 
 package borg.entityscanner
 
@@ -13,7 +12,6 @@ import borg.trikeshed.lib.*
 
 // ==== EVIDENCE AND CONFIDENCE TYPES ====
 
-@JvmInline
 value class EvidenceType(val type: UByte) {
     companion object {
         const val SYNTAX_PATTERN: UByte = 1u      // "class" followed by identifier
@@ -29,19 +27,14 @@ value class EvidenceType(val type: UByte) {
     }
 }
 
-@JvmInline
 value class EvidenceStrength(val strength: Double) // 0.0 to 1.0 confidence
 
-@JvmInline
 value class ParseStateId(val id: String)
 
-@JvmInline
 value class ParseConfidence(val confidence: Double) // 0.0 to 1.0
 
-@JvmInline
 value class ParsePosition(val position: Int)
 
-@JvmInline
 value class AccuracyDelta(val delta: Double) // Change in accuracy
 
 
@@ -64,7 +57,6 @@ typealias ParseContext = Join<ParsePosition, Join<String, ParseStateSeries>>
 
 // ==== PREDICATE SYSTEM ====
 
-@JvmInline
 value class PredicateResult(val result: Boolean)
 
 typealias ParsePredicate = (Char, ParsePosition) -> PredicateResult

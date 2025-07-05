@@ -14,7 +14,6 @@ import kotlinx.serialization.protobuf.ProtoNumber
 /**
  * Wire format messages using protobuf-style encoding
  */
-@Serializable
 sealed class NetworkMessage {
     abstract val messageId: Long
     abstract val timestamp: Long
@@ -65,7 +64,6 @@ sealed class NetworkMessage {
 /**
  * Compressed command format for bandwidth efficiency
  */
-@Serializable
 data class CompressedCommand(
     @ProtoNumber(1) val type: Byte, // Command type as byte
     @ProtoNumber(2) val entityId: Int,
@@ -134,7 +132,6 @@ data class CompressedCommand(
 /**
  * Compressed entity state for sync messages
  */
-@Serializable
 data class CompressedEntity(
     @ProtoNumber(1) val id: Int,
     @ProtoNumber(2) val type: Byte,
@@ -148,7 +145,6 @@ data class CompressedEntity(
 /**
  * Compressed game state for initial sync
  */
-@Serializable
 data class CompressedGameState(
     @ProtoNumber(1) val seed: Long,
     @ProtoNumber(2) val frameNumber: Long,
@@ -156,7 +152,6 @@ data class CompressedGameState(
     @ProtoNumber(4) val entities: List<CompressedEntity>
 )
 
-@Serializable
 data class ResourceState(
     @ProtoNumber(1) val mass: Int,
     @ProtoNumber(2) val energy: Int,

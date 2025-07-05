@@ -22,7 +22,6 @@ expect class SocketAddress {
     }
 }
 
-@Serializable
 data class CompletionEvent(
     val fd: Int,
     val result: Int,
@@ -47,14 +46,12 @@ expect interface CouchDBSession {
     suspend fun replicate(source: String, target: String, continuous: Boolean = false): Result<ReplicationHandle>
 }
 
-@Serializable
 data class DatabaseInfo(
     val dbName: String,
     val docCount: Long,
     val updateSeq: String
 )
 
-@Serializable
 data class Document(
     val id: String,
     val rev: String? = null,
@@ -62,7 +59,6 @@ data class Document(
     val attachments: Map<String, Attachment>? = null
 )
 
-@Serializable
 data class Attachment(
     val contentType: String,
     val length: Long,
@@ -70,14 +66,12 @@ data class Attachment(
     val data: ByteArray? = null
 )
 
-@Serializable
 data class DocumentResult(
     val id: String,
     val rev: String,
     val ok: Boolean
 )
 
-@Serializable
 data class ChangeEvent(
     val seq: String,
     val id: String,
@@ -85,12 +79,10 @@ data class ChangeEvent(
     val deleted: Boolean = false
 )
 
-@Serializable
 data class Change(
     val rev: String
 )
 
-@Serializable
 data class ReplicationHandle(
     val id: String,
     val continuous: Boolean
@@ -99,7 +91,6 @@ data class ReplicationHandle(
     suspend fun status(): Result<ReplicationStatus> = TODO()
 }
 
-@Serializable
 data class ReplicationStatus(
     val docsRead: Long,
     val docsWritten: Long,
@@ -126,7 +117,6 @@ expect interface TrikeshedVM {
     suspend fun spawn(config: VMConfig): Result<VMHandle>
 }
 
-@Serializable
 data class VMConfig(
     val type: VMType,
     val memory: Long,
@@ -146,7 +136,6 @@ expect interface VMHandle {
 }
 
 // IPC Protocol
-@Serializable
 sealed class IPCMessage {
     @Serializable
     data class Request(

@@ -5,7 +5,6 @@ import kotlin.jvm.JvmInline
 /**
  * Represents a trading symbol (e.g., "BTCUSDT", "DOGEUSDT").
  */
-@JvmInline
 value class Symbol(val value: String) {
     override fun toString(): String = value // Optional: for easier logging if needed
 }
@@ -13,14 +12,12 @@ value class Symbol(val value: String) {
 /**
  * Represents a timestamp in milliseconds since the epoch.
  */
-@JvmInline
 value class TimestampEpochMillis(val value: Long)
 
 /**
  * Represents a price value.
  * Using Double for precision with financial data.
  */
-@JvmInline
 value class Price(val value: Double) {
     operator fun compareTo(other: Price): Int = value.compareTo(other.value)
 
@@ -34,7 +31,6 @@ value class Price(val value: Double) {
  * Represents a volume value.
  * Using Double for precision.
  */
-@JvmInline
 value class Volume(val value: Double)
 
 /**

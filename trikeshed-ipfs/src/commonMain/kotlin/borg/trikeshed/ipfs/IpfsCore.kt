@@ -12,7 +12,6 @@ import kotlin.experimental.xor
  */
 
 // Multihash components
-@Serializable
 data class Multihash(
     val type: HashType,
     val digest: Indexed<Byte>
@@ -54,7 +53,6 @@ data class Multihash(
 }
 
 // Content Identifier (CID)
-@Serializable
 data class CID(
     val version: Int,
     val codec: Codec,
@@ -93,7 +91,6 @@ data class CID(
 }
 
 // IPFS Block
-@Serializable
 data class IpfsBlock(
     val cid: CID,
     val data: Indexed<Byte>,
@@ -101,7 +98,6 @@ data class IpfsBlock(
 )
 
 // IPFS Link
-@Serializable
 data class IpfsLink(
     val name: String,
     val cid: CID,
@@ -109,7 +105,6 @@ data class IpfsLink(
 )
 
 // Merkle DAG Node
-@Serializable
 data class MerkleNode(
     val data: Indexed<Byte>,
     val links: Indexed<Join<String, CID>> // name -> CID
@@ -135,7 +130,6 @@ data class MerkleNode(
 }
 
 // DHT (Distributed Hash Table) structures
-@Serializable
 data class PeerId(
     val id: Indexed<Byte>
 ) {
@@ -150,7 +144,6 @@ data class PeerId(
     }
 }
 
-@Serializable
 data class PeerInfo(
     val id: PeerId,
     val addresses: Indexed<String>, // multiaddrs like "/ip4/127.0.0.1/tcp/4001"

@@ -153,23 +153,18 @@ data class DocumentMetadata(
     val lastModified: Instant?
 )
 
-@Suppress("unused")
 data class Path(val path: String)
 
-@Suppress("unused")
 class PatrickDevineProcessor {
     fun processArchiveStream(path: Path, block: (Any, DocumentMetadata) -> Unit) {}
 }
 
-@Suppress("unused")
 class FileIngesterPipeline {
     fun ingest(input: Any, filename: String): IngestResult = IngestResult("", 0)
 }
 
-@Suppress("unused")
 data class IngestResult(val content: String, val size: Long)
 
-@Suppress("unused")
 class BlackboardLatticeChordSheet {
     val totalDocuments: Long = 0
     val latticeDepth: Int = 0
@@ -177,7 +172,6 @@ class BlackboardLatticeChordSheet {
     fun submitBatch(concepts: Indexed<Concept>) {}
 }
 
-@Suppress("unused")
 class ConceptLatticeStore {
     val size: Long = 0
     fun extractConcepts(content: String): Indexed<Concept> = Indexed(emptyList())
@@ -185,16 +179,12 @@ class ConceptLatticeStore {
     fun findSimilar(vector: Any, limit: Int): Indexed<Twin<Concept, Double>> = Indexed(emptyList())
 }
 
-@Suppress("unused")
 data class Concept(val name: String)
 
-@Suppress("unused")
 typealias Twin<T> = Pair<T, T>
 
-@Suppress("unused")
 data class Indexed<T>(val list: List<T>) {
     operator fun plus(other: T): Indexed<T> = Indexed(list + other)
 }
 
-@Suppress("unused")
 object b0 { val a = Indexed(emptyList<Nothing>()) }

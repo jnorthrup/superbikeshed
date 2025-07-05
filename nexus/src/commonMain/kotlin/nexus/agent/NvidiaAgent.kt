@@ -19,9 +19,9 @@ import nexus.toIdx
  */
 class NvidiaAgent(
     private val apiKeys: Indexed<String> = listOf(
-        System.getenv("NVIDIA_API_KEY"),
-        System.getenv("NVIDIA_API_KEY_2"), 
-        System.getenv("NVIDIA_API_KEY_3"),
+        getEnvironmentVariable("NVIDIA_API_KEY"),
+        getEnvironmentVariable("NVIDIA_API_KEY_2"), 
+        getEnvironmentVariable("NVIDIA_API_KEY_3"),
         "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",
         "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"
     ).filterNotNull().filter { it.isNotBlank() }.toIdx(),
@@ -56,7 +56,7 @@ class NvidiaAgent(
             override val name = "get_current_time"
             override val description = "Get the current date and time"
             override suspend fun execute(args: JsonObject) = 
-                java.time.LocalDateTime.now().toString()
+                getCurrentTime()
         }
         
         data class ReadFile(val basePath: String = ".") : Tool() {
@@ -65,7 +65,7 @@ class NvidiaAgent(
             override suspend fun execute(args: JsonObject): String {
                 val path = args["path"]?.jsonPrimitive?.content ?: return "Error: path required"
                 return try {
-                    java.io.File(basePath, path).readText()
+                    File(joinPath(basePath, path)).readText()
                 } catch (e: Exception) {
                     "Error reading file: ${e.message}"
                 }
@@ -332,13 +332,11 @@ class NvidiaAgent(
 }
 
 // Data classes for API communication
-@Serializable
 data class ChatMessage(
     val role: String,
     val content: String
 )
 
-@Serializable
 data class ChatCompletionRequest(
     val model: String,
     val messages: List<ChatMessage>,
@@ -352,21 +350,18 @@ data class ChatCompletionRequest(
     @SerialName("tool_choice") val toolChoice: String? = null
 )
 
-@Serializable
 data class ChatCompletionResponse(
     val id: String? = null,
     val choices: List<Choice>,
     val usage: Usage? = null
 )
 
-@Serializable
 data class Choice(
     val index: Int = 0,
     val message: ChatMessage,
     @SerialName("finish_reason") val finishReason: String? = null
 )
 
-@Serializable
 data class Usage(
     @SerialName("prompt_tokens") val promptTokens: Int = 0,
     @SerialName("completion_tokens") val completionTokens: Int = 0,

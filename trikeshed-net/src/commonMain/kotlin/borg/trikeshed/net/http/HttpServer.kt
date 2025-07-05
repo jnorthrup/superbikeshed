@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.http
 
 import borg.trikeshed.ccek.CcekContext
@@ -14,8 +13,6 @@ import borg.trikeshed.ccek.AsyncChannelContext
 
 // RFC 7230 Compliant HTTP/1.1 Server Implementation
 
-@JvmInline value class HttpServerPort(val value: Int)
-@JvmInline value class HttpServerHost(val value: String)
 
 typealias HttpHandler = suspend (HttpRequest) -> HttpResponse
 

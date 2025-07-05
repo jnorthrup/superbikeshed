@@ -22,16 +22,12 @@ sealed interface Event {
 }
 
 // Value types
-@JvmInline
 value class EventId(val value: String)
 
-@JvmInline
 value class AggregateId(val value: String)
 
-@JvmInline
 value class CommandId(val value: String)
 
-@JvmInline
 value class ProjectionId(val value: String)
 
 // Domain events

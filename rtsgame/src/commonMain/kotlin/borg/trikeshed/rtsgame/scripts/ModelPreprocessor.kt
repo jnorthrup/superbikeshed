@@ -8,13 +8,11 @@ import kotlinx.serialization.Serializable
  * Original: ../superbikeshed/rtsgame/scripts/preprocess-models.js
  */
 
-@Serializable
 data class ModelManifest(
     val path: String,
     val type: String = "glb"
 )
 
-@Serializable
 data class PreprocessingResult(
     val success: Boolean,
     val modelName: String,

@@ -86,10 +86,8 @@ object SimpleJsonScanner {
 }
 
 // Analysis result using TrikeShed value class pattern
-@JvmInline
 value class JsonComplexity(val value: Int)
 
-@JvmInline  
 value class ElementCount(val value: Int)
 
 data class TradingJsonAnalysis(

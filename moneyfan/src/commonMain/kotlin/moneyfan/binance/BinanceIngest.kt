@@ -13,15 +13,12 @@ import kotlinx.datetime.Instant
  */
 
 // Binance-specific data types using TrikeShed patterns
-@JvmInline
 value class BinanceSymbol(val value: String) {
     fun toSymbol(): Symbol = Symbol(value)
 }
 
-@JvmInline
 value class OrderBookDepth(val value: Int)
 
-@JvmInline
 value class TickerInterval(val value: String) // 1s, 5s, 1m, 5m, 15m, 1h, etc.
 
 // Binance market data structures

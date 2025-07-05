@@ -1,4 +1,3 @@
-@file:Suppress("NonAsciiCharacters", "UNCHECKED_CAST")
 
 package borg.trikeshed.lib
 

@@ -17,7 +17,6 @@ typealias DatabaseName = String
 /**
  * CouchDB Document interface
  */
-@Serializable
 data class CouchDocument(
     val _id: DocumentId,
     val _rev: RevisionId? = null,
@@ -34,7 +33,6 @@ data class CouchDocument(
 /**
  * CouchDB View definition
  */
-@Serializable
 data class CouchView(
     val map: String,
     val reduce: String? = null
@@ -43,7 +41,6 @@ data class CouchView(
 /**
  * CouchDB Design Document
  */
-@Serializable
 data class CouchDesignDocument(
     val _id: DocumentId,
     val _rev: RevisionId? = null,
@@ -54,7 +51,6 @@ data class CouchDesignDocument(
 /**
  * CouchDB Database Information
  */
-@Serializable
 data class CouchDatabaseInfo(
     val db_name: DatabaseName,
     val doc_count: Int,
@@ -74,13 +70,11 @@ data class CouchDatabaseInfo(
 /**
  * CouchDB Security configuration
  */
-@Serializable
 data class CouchSecurity(
     val admins: CouchSecurityGroup,
     val members: CouchSecurityGroup
 )
 
-@Serializable
 data class CouchSecurityGroup(
     val names: List<String>,
     val roles: List<String>
@@ -89,7 +83,6 @@ data class CouchSecurityGroup(
 /**
  * Admin Party Mode configuration
  */
-@Serializable
 data class AdminPartyConfig(
     val enabled: Boolean,
     val admin_roles: List<String>
@@ -98,14 +91,12 @@ data class AdminPartyConfig(
 /**
  * CouchDB Response types
  */
-@Serializable
 data class CouchResponse(
     val ok: Boolean,
     val id: DocumentId,
     val rev: RevisionId
 )
 
-@Serializable
 data class CouchError(
     val error: String,
     val reason: String
@@ -114,7 +105,6 @@ data class CouchError(
 /**
  * View Query Parameters
  */
-@Serializable
 data class ViewQueryParams(
     val key: @Contextual Any? = null,
     val keys: List<@Contextual Any>? = null,
@@ -134,14 +124,12 @@ data class ViewQueryParams(
 /**
  * View Response
  */
-@Serializable
 data class ViewResponse<T>(
     val total_rows: Int,
     val offset: Int,
     val rows: List<CouchViewRow<T>>
 )
 
-@Serializable
 data class CouchViewRow<T>(
     val id: DocumentId,
     val key: @Contextual Any,

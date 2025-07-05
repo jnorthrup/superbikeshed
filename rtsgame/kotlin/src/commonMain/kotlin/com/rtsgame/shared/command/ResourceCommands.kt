@@ -9,7 +9,6 @@ import com.rtsgame.shared.map.ResourceType
 import com.rtsgame.shared.systems.ResourceSystem
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class GatherResourceCommand(
     val unitId: String,
     val nodeId: String
@@ -20,7 +19,6 @@ data class GatherResourceCommand(
     }
 }
 
-@Serializable
 data class DepositResourceCommand(
     val unitId: String,
     val buildingId: String
@@ -31,7 +29,6 @@ data class DepositResourceCommand(
     }
 }
 
-@Serializable
 data class AutoGatherCommand(
     val unitId: String,
     val resourceType: ResourceType
@@ -54,7 +51,6 @@ data class AutoGatherCommand(
     }
 }
 
-@Serializable
 data class EquipToolCommand(
     val unitId: String,
     val tool: GatheringTool
@@ -66,7 +62,6 @@ data class EquipToolCommand(
     }
 }
 
-@Serializable
 data class FindHighPurityResourceCommand(
     val unitId: String,
     val resourceType: ResourceType,

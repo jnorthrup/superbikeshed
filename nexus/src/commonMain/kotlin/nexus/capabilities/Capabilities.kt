@@ -22,7 +22,6 @@ sealed interface Capability {
     fun combine(other: Capability): Capability
 }
 
-@JvmInline
 value class CapabilityId(val value: String) {
     companion object {
         fun generate(namespace: String, name: String) = 

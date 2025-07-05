@@ -62,7 +62,6 @@ sealed class SealedOperation<T> {
 /**
  * Result of a black box operation - always encrypted
  */
-@Serializable
 data class EncryptedResult<T>(
     val id: EncryptedId,
     val operationId: OpId,
@@ -91,7 +90,6 @@ data class EncryptedResult<T>(
  * Cryptographic proof for public disclosure
  * Proves compliance without revealing strategic information
  */
-@Serializable
 data class CryptographicProof(
     val id: ProofId,
     val operationId: OpId,
@@ -129,7 +127,6 @@ enum class ProofType {
 /**
  * Operation metadata - public information about the operation
  */
-@Serializable
 data class OperationMetadata(
     val operationType: String,
     val entityId: String,
@@ -154,7 +151,6 @@ enum class ComplianceFlag {
 /**
  * Access control list for encrypted results
  */
-@Serializable
 data class AccessControlList(
     val owner: String,
     val authorizedParties: Set<String>,
@@ -165,7 +161,6 @@ data class AccessControlList(
 /**
  * Conditions for accessing encrypted data
  */
-@Serializable
 sealed class AccessCondition {
     data class TimeBasedAccess(val afterTime: Instant) : AccessCondition()
     data class MultiSigAccess(val requiredSignatures: Int, val authorizedKeys: Set<String>) : AccessCondition()
@@ -240,7 +235,6 @@ abstract class BaseBlackBoxOperation<T> : SealedOperation<T>() {
 /**
  * Operation result wrapper for type safety
  */
-@JvmInline
 value class OperationResult<T>(val value: T)
 
 /**

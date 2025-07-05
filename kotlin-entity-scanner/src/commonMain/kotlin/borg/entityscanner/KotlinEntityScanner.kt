@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
 
 package borg.entityscanner
 
@@ -30,7 +29,6 @@ typealias DependencyGraph = Indexed<Join<String, String>>
 typealias EntityIndex = Indexed<Join<String, EntityMetadata>>
 
 // Entity Metadata for rich analysis results
-@JvmInline
 value class EntityMetadata(val packed: Long) {
     val entityType: UByte get() = (packed and 0xFF).toUByte()
     val confidence: UByte get() = ((packed shr 8) and 0xFF).toUByte() 
@@ -49,7 +47,6 @@ value class EntityMetadata(val packed: Long) {
 }
 
 // Scanning Configuration
-@JvmInline
 value class ScanConfig(val flags: UInt) {
     val enableInductiveRefinement: Boolean get() = (flags and 1u) != 0u
     val enableDependencyAnalysis: Boolean get() = (flags and 2u) != 0u

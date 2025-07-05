@@ -9,13 +9,10 @@ import kotlinx.datetime.Instant
  * Maps market data to spacegraph nodes and trading relationships to edges
  */
 
-@JvmInline
 value class NodeId(val value: String)
 
-@JvmInline
 value class EdgeId(val value: String)
 
-@JvmInline
 value class ChartScale(val value: Float)
 
 enum class NodeType {

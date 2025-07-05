@@ -26,19 +26,15 @@ import org.apache.tika.parser.ParseContext
  */
 
 // Fiduciary-specific attention types
-@JvmInline value class DocumentAttention(val doc: Join<NormalizedAttention, String>)  // range j mimeType
-@JvmInline value class CorpusAttention(val corpus: Join<Indexed<DocumentAttention>, String>)  // docs j corpusId
-@JvmInline value class ConceptAttention(val concept: Join<DocumentAttention, Indexed<String>>)  // doc j concepts
 
 // Document sources with fiduciary context
 sealed interface DocumentSource
-@JvmInline value class TikaSource(val tika: Join<String, ParseContext>) : DocumentSource  // path j parseContext
-@JvmInline value class NLPSource(val nlp: Join<String, Map<String, Any>>) : DocumentSource  // text j annotations
-@JvmInline value class OCRSource(val ocr: Join<ByteArray, String>) : DocumentSource  // image j language
-@JvmInline value class AudioSource(val audio: Join<String, Int>) : DocumentSource  // path j sampleRate
+value class TikaSource(val tika: Join<String, ParseContext>) : DocumentSource  // path j parseContext
+value class NLPSource(val nlp: Join<String, Map<String, Any>>) : DocumentSource  // text j annotations
+value class OCRSource(val ocr: Join<ByteArray, String>) : DocumentSource  // image j language
+value class AudioSource(val audio: Join<String, Int>) : DocumentSource  // path j sampleRate
 
 // Fiduciary context - carries document processing state
-@JvmInline
 value class FiduciaryContext(val ctx: Join<IOContext, Join<Metadata, ParseContext>>) {
     val ioContext: IOContext get() = ctx.a
     val metadata: Metadata get() = ctx.b.a
@@ -46,14 +42,12 @@ value class FiduciaryContext(val ctx: Join<IOContext, Join<Metadata, ParseContex
 }
 
 // Fiduciary attention - document attention with context
-@JvmInline
 value class FiduciaryAttention(val fid: Join<DocumentAttention, FiduciaryContext>) {
     val document: DocumentAttention get() = fid.a
     val context: FiduciaryContext get() = fid.b
 }
 
 // Patrick Devine corpus specific attention
-@JvmInline
 value class PatrickDevineAttention(val pd: Join<CorpusAttention, Join<String, Boolean>>) {
     val corpus: CorpusAttention get() = pd.a
     val zipUrl: String get() = pd.b.a
@@ -61,7 +55,6 @@ value class PatrickDevineAttention(val pd: Join<CorpusAttention, Join<String, Bo
 }
 
 // Common Law 1215.org tree builder with torrent support
-@JvmInline
 value class CommonLawAttention(val law: Join<CorpusAttention, Join<String, Boolean>>) {
     val corpus: CorpusAttention get() = law.a
     val sourceUrl: String get() = law.b.a

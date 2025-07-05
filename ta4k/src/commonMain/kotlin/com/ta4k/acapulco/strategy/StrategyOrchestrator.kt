@@ -11,13 +11,11 @@ import kotlinx.datetime.Instant
  */
 
 // Unified strategy signals
-@JvmInline
 value class StrategyConfidence(val value: Double) {
     operator fun compareTo(other: StrategyConfidence): Int = value.compareTo(other.value)
     operator fun times(multiplier: Double): StrategyConfidence = StrategyConfidence(value * multiplier)
 }
 
-@JvmInline
 value class StrategyWeight(val value: Double) {
     operator fun times(confidence: StrategyConfidence): Double = value * confidence.value
 }

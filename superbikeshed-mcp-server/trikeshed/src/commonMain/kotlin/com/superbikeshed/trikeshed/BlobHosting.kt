@@ -15,7 +15,6 @@ interface BlobHostingService {
     suspend fun getMetadata(namespace: String, key: String): Result<BlobMetadata?>
 }
 
-@Serializable
 data class BlobMetadata(
     val namespace: String,
     val key: String,
@@ -144,7 +143,6 @@ interface RequestFactoryService {
     suspend fun processRequest(request: RequestFactoryRequest): Result<RequestFactoryResponse>
 }
 
-@Serializable
 data class RequestFactoryRequest(
     val version: String,
     val operations: List<Operation>
@@ -157,7 +155,6 @@ data class RequestFactoryRequest(
     )
 }
 
-@Serializable  
 data class RequestFactoryResponse(
     val version: String,
     val results: List<OperationResult>
@@ -211,7 +208,6 @@ class ABTestRouter(
     }
 }
 
-@Serializable
 data class PlaygroundRequest(
     val sessionId: String,
     val sourceCode: String,

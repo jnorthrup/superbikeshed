@@ -7,12 +7,10 @@ import moneyfan.spacegraph.*
  * WASM trading demo exports for web interface
  */
 
-@JsExport
 fun greet(): String {
     return "Moneyfan Interactive Trading Demo - WebAssembly"
 }
 
-@JsExport
 fun generateChartForSampleData(): String {
     val engine = TradingEngine()
     val portfolioManager = PortfolioManager()

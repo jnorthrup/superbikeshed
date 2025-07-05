@@ -73,13 +73,10 @@ expect class GPURenderPassEncoder
 expect class GPUCommandBuffer
 
 // WebGPU resource handles
-@PlatformInline
 value class BufferId(val value: Int)
 
-@PlatformInline
 value class PipelineId(val value: Int)
 
-@PlatformInline
 value class TextureId(val value: Int)
 
 // Shader resource types

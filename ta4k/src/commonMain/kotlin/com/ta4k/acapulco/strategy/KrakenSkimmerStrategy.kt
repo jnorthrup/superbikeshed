@@ -18,25 +18,21 @@ import kotlinx.datetime.Instant
  */
 
 // Skimmer value classes
-@JvmInline
 value class BaselineValue(val value: Double) {
     operator fun times(multiplier: Double): BaselineValue = BaselineValue(value * multiplier)
     operator fun plus(other: BaselineValue): BaselineValue = BaselineValue(value + other.value)
     operator fun compareTo(other: BaselineValue): Int = value.compareTo(other.value)
 }
 
-@JvmInline
 value class HarvestTrigger(val percentage: Double) {
     fun applyToBaseline(baseline: BaselineValue): Price = Price(baseline.value * (1.0 + percentage / 100.0))
     fun reverseFromPrice(price: Price): BaselineValue = BaselineValue(price.value / (1.0 + percentage / 100.0))
 }
 
-@JvmInline
 value class RebalanceTrigger(val percentage: Double) {
     fun applyToBaseline(baseline: BaselineValue): Price = Price(baseline.value * (1.0 - percentage / 100.0))
 }
 
-@JvmInline
 value class DeviationPercent(val value: Double) {
     operator fun compareTo(other: DeviationPercent): Int = value.compareTo(other.value)
     operator fun compareTo(threshold: Double): Int = value.compareTo(threshold)

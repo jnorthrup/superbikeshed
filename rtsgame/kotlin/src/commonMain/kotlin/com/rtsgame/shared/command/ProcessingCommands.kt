@@ -6,7 +6,6 @@ import com.rtsgame.shared.map.GameMap
 import com.rtsgame.shared.systems.ProcessingSystem
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class StartProcessingCommand(
     val buildingId: String,
     val recipeId: String
@@ -17,7 +16,6 @@ data class StartProcessingCommand(
     }
 }
 
-@Serializable
 data class CancelProcessingCommand(
     val buildingId: String,
     val queueIndex: Int
@@ -33,7 +31,6 @@ data class CancelProcessingCommand(
     }
 }
 
-@Serializable
 data class PrioritizeProcessingCommand(
     val buildingId: String,
     val queueIndex: Int
@@ -51,7 +48,6 @@ data class PrioritizeProcessingCommand(
     }
 }
 
-@Serializable
 data class UpgradeProcessingCommand(
     val buildingId: String
 ) : Command() {

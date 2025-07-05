@@ -12,13 +12,11 @@ interface Indexed<T> {
     operator fun get(index: Int): T
 }
 
-@JvmInline
 value class ArraySeries<T>(private val data: Array<T>) : Indexed<T> {
     override val size: Int get() = data.size
     override fun get(index: Int): T = data[index]
 }
 
-@JvmInline
 value class ListSeries<T>(private val data: List<T>) : Indexed<T> {
     override val size: Int get() = data.size
     override fun get(index: Int): T = data[index]

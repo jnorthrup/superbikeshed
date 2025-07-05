@@ -14,7 +14,6 @@ import kotlin.math.min
 import kotlin.math.max
 import kotlin.random.Random
 
-@Serializable
 data class Unit(
     override val id: String,
     override val position: Position,
@@ -182,7 +181,6 @@ data class Unit(
     }
 }
 
-@Serializable
 enum class UnitType {
     // Basic Units
     WORKER,

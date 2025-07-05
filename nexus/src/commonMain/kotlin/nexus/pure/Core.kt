@@ -75,7 +75,6 @@ sealed class Tool<A, B> {
 }
 
 // Tool identifier
-@JvmInline
 value class ToolId(val value: String)
 
 // Error types

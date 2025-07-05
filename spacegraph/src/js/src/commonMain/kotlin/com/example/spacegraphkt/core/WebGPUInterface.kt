@@ -5,19 +5,14 @@ import borg.trikeshed.lib.*
 /**
  * Value classes for WebGPU resource IDs
  */
-@JvmInline
 value class BufferId(val value: Int)
 
-@JvmInline
 value class PipelineId(val value: Int)
 
-@JvmInline
 value class ShaderId(val value: Int)
 
-@JvmInline
 value class TextureId(val value: Int)
 
-@JvmInline
 value class RenderPassId(val value: Int)
 
 /**

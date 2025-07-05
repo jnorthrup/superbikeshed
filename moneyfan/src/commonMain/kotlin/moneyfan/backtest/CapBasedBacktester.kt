@@ -11,13 +11,11 @@ import kotlinx.datetime.*
  */
 
 // Market cap tracking using TrikeShed patterns
-@JvmInline
 value class MarketCap(val value: Decimal) {
     operator fun compareTo(other: MarketCap): Int = value.compareTo(other.value)
     operator fun times(multiplier: Decimal): MarketCap = MarketCap(value * multiplier)
 }
 
-@JvmInline
 value class SkimmerPercent(val value: Decimal) {
     fun applyToPrice(price: Price): Price = Price(price.value * (1.0 + value / 100.0))
     fun reverseFromPrice(price: Price): Price = Price(price.value / (1.0 + value / 100.0))

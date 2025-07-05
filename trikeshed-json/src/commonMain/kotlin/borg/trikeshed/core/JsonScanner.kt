@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
 
 package borg.trikeshed.core
 

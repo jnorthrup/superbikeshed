@@ -10,7 +10,6 @@ import kotlinx.serialization.Serializable
 import kotlin.math.max
 import kotlin.math.min
 
-@Serializable
 data class Ability(
     val id: String,
     val name: String,
@@ -24,7 +23,6 @@ data class Ability(
     val effects: List<Effect>
 )
 
-@Serializable
 enum class AbilityType {
     ACTIVE,
     PASSIVE,
@@ -32,7 +30,6 @@ enum class AbilityType {
     CHANNELED
 }
 
-@Serializable
 enum class TargetType {
     NONE,
     SELF,
@@ -42,7 +39,6 @@ enum class TargetType {
     AREA
 }
 
-@Serializable
 enum class EffectType {
     DAMAGE,
     HEAL,
@@ -66,7 +62,6 @@ enum class EffectType {
     SUMMON
 }
 
-@Serializable
 data class Effect(
     val type: EffectType,
     val value: Float,

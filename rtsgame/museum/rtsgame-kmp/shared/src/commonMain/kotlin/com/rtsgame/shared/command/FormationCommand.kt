@@ -11,7 +11,6 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-@Serializable
 sealed class FormationCommand : Command {
     @Serializable
     data class SetFormation(
@@ -275,7 +274,6 @@ sealed class FormationCommand : Command {
     }
 }
 
-@Serializable
 enum class FormationType {
     LINE,      // Units form a horizontal line
     COLUMN,    // Units form a vertical line

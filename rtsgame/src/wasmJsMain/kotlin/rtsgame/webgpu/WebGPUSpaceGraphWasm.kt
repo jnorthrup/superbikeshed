@@ -14,7 +14,6 @@ import org.w3c.dom.*
  */
 
 // Actual implementations of WebGPU types
-@JsName("GPUDevice")
 actual external class GPUDevice {
     actual fun createBuffer(descriptor: Any): GPUBuffer
     actual fun createRenderPipeline(descriptor: Any): GPURenderPipeline
@@ -22,33 +21,26 @@ actual external class GPUDevice {
     actual fun createShaderModule(descriptor: Any): GPUShaderModule
 }
 
-@JsName("GPUBuffer")
 actual external class GPUBuffer {
     actual fun destroy()
 }
 
-@JsName("GPUTexture")
 actual external class GPUTexture {
     actual fun destroy()
 }
 
-@JsName("GPURenderPipeline")
 actual external class GPURenderPipeline
 
-@JsName("GPUCommandEncoder")
 actual external class GPUCommandEncoder {
     actual fun beginRenderPass(descriptor: Any): GPURenderPassEncoder
     actual fun finish(): GPUCommandBuffer
     actual fun copyBufferToBuffer(source: GPUBuffer, sourceOffset: Int, destination: GPUBuffer, destinationOffset: Int, size: Int)
 }
 
-@JsName("GPUShaderModule")
 actual external class GPUShaderModule
 
-@JsName("GPURenderPassEncoder")
 actual external class GPURenderPassEncoder
 
-@JsName("GPUCommandBuffer")
 actual external class GPUCommandBuffer
 
 // CCEK context for WebGPU WASM implementation

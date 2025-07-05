@@ -10,10 +10,8 @@ import rtsgame.compat.*
  * Interactive WebGPU panel with actual buttons and controls
  */
 
-@PlatformInline
 value class ButtonId(val value: String)
 
-@PlatformInline  
 value class PanelId(val value: String)
 
 data class ButtonState(

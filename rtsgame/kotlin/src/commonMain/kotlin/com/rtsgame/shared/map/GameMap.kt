@@ -3,7 +3,6 @@ package com.rtsgame.shared.map
 import com.rtsgame.shared.entity.Position
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class GameMap(
     val width: Int,
     val height: Int,
@@ -89,7 +88,6 @@ data class GameMap(
     }
 }
 
-@Serializable
 data class Tile(
     val type: TileType,
     val height: Float = 0f,
@@ -100,7 +98,6 @@ data class Tile(
     val resourceAmount: Float = 0f
 )
 
-@Serializable
 enum class TileType {
     GRASS,
     DIRT,
@@ -116,7 +113,6 @@ enum class TileType {
     VOID
 }
 
-@Serializable
 data class ResourceNode(
     val id: String,
     val position: Position,

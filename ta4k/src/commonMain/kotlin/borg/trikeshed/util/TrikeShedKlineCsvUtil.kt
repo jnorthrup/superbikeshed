@@ -7,10 +7,8 @@ typealias KlineData = DoubleArray
 typealias CsvRow = List<String>
 typealias ParsedKlineRow = DoubleArray
 
-@JvmInline
 value class ColumnName(val value: String)
 
-@JvmInline  
 value class ColumnIndex(val value: Int)
 
 // TrikeShed metadata for Kline CSV structure

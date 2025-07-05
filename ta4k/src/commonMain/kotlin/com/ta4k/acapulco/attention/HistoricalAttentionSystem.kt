@@ -11,24 +11,20 @@ import kotlin.math.*
  */
 
 // Attention value classes
-@JvmInline
 value class AttentionScore(val value: Double) {
     operator fun compareTo(other: AttentionScore): Int = value.compareTo(other.value)
     operator fun plus(other: AttentionScore): AttentionScore = AttentionScore(value + other.value)
     operator fun times(multiplier: Double): AttentionScore = AttentionScore(value * multiplier)
 }
 
-@JvmInline
 value class VolatilityGauge(val value: Double) {
     fun toAttentionScore(): AttentionScore = AttentionScore(value * 100.0) // Scale volatility to attention
 }
 
-@JvmInline
 value class VolumeGauge(val value: Double) {
     fun toAttentionScore(): AttentionScore = AttentionScore(ln(value + 1.0)) // Log scale for volume
 }
 
-@JvmInline
 value class AttentionWindow(val startIndex: Int, val endIndex: Int, val score: AttentionScore)
 
 // Core attention data structures using TrikeShed Join patterns

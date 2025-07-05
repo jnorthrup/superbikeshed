@@ -9,13 +9,11 @@ import kotlinx.serialization.json.Json
  * Original: ../superbikeshed/rtsgame/scripts/convert-models.js
  */
 
-@Serializable
 data class ModelManifestEntry(
     val id: String,
     val path: String
 )
 
-@Serializable
 data class ModelConversionResult(
     val success: Boolean,
     val modelName: String,
@@ -24,7 +22,6 @@ data class ModelConversionResult(
     val error: String? = null
 )
 
-@Serializable
 data class ModelOptimizationResult(
     val success: Boolean,
     val modelName: String,

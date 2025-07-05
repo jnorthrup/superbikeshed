@@ -4,7 +4,6 @@ import kotlin.collections.SortedMap
 import kotlin.collections.NavigableMap
 import kotlin.collections.MutableMap
 
-@Deprecated(
     message = "This implementation is being replaced by borg.trikeshed.collections.v2.TreeMap. " +
               "Use TreeMapAdapter to migrate from old to new implementation.",
     replaceWith = ReplaceWith("borg.trikeshed.collections.v2.TreeMap", "borg.trikeshed.collections.v2.TreeMap")

@@ -13,13 +13,10 @@ data class WindowFeatures(val values: DoubleArray)
 typealias PredictionModel = (WindowFeatures) -> Double
 
 // Core value classes following TrikeShed patterns
-@JvmInline
 value class WindowSize(val value: Int)
 
-@JvmInline  
 value class ColumnName(val value: String)
 
-@JvmInline
 value class PredictionValue(val value: Double)
 
 // Indexed operations for price data

@@ -29,7 +29,6 @@ import kotlin.jvm.JvmInline
 // CORE VALUE CLASSES - TRIKESHED ALIGNMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@JvmInline
 internal value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
     fun extractCurrentScope(): String = findValue("scope") ?: "global"
     fun extractCurrentCapabilities(): AgentSeries<String> = findValue("capabilities")?.split(",")?.toIdx() ?: (0 j { "" })
@@ -45,10 +44,8 @@ internal value class CCEKContext(val data: AgentSeries<Join<String, String>>) {
     }
 }
 
-@JvmInline
 internal value class AgentAction(val data: String)
 
-@JvmInline
 internal value class AgentOutcome(val data: String) {
     val success: Boolean get() = !data.contains("error", ignoreCase = true)
 }
@@ -57,7 +54,6 @@ internal value class AgentOutcome(val data: String) {
 // SERIALIZABLE DATA STRUCTURES - IMPORTED FROM TRIKESHED
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@Serializable
 data class LLMRequest(
     val model: String,
     val messages: List<Message>,
@@ -65,23 +61,19 @@ data class LLMRequest(
     val temperature: Double = 0.7
 )
 
-@Serializable
 data class Message(
     val role: String,
     val content: String
 )
 
-@Serializable
 data class LLMResponse(
     val choices: List<Choice>
 )
 
-@Serializable
 data class Choice(
     val message: Message
 )
 
-@Serializable
 data class AgentObservation(
     val contextScope: String,
     val action: String,
@@ -90,7 +82,6 @@ data class AgentObservation(
     val timestamp: Long
 )
 
-@Serializable
 data class DevelopmentTask(
     val id: TaskId,
     val type: TaskType,
@@ -99,7 +90,6 @@ data class DevelopmentTask(
     val priority: Priority = Priority.NORMAL
 )
 
-@Serializable
 data class LearnedPattern(
     val pattern: String,
     val confidence: Double,

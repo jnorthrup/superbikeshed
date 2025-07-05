@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.http
 
 
@@ -10,12 +9,6 @@ import borg.trikeshed.lib.j
 import kotlin.jvm.JvmInline
 
 // Ontological HTTP Type Aliases
-@JvmInline value class HttpHeaderName(val value: String)
-@JvmInline value class HttpHeaderValue(val value: String)
-@JvmInline value class HttpRequestPath(val value: String)
-@JvmInline value class HttpStatusCode(val value: Int)
-@JvmInline value class HttpReasonPhrase(val value: String)
-@JvmInline value class HttpVersion(val value: String)
 
 // HTTP Method enumeration
 enum class HttpMethod {
@@ -146,8 +139,6 @@ fun Map<String, String>.toHttpHeaders(): Indexed<Join<HttpHeaderName, HttpHeader
 suspend fun HttpRequest.send(): HttpResponse = TODO("HTTP client implementation needed")
 
 // Protocol upgrade types
-@JvmInline value class ProtocolName(val value: String)
-@JvmInline value class ProtocolVersion(val value: String)
 
 data class UpgradeProtocol(
     val name: ProtocolName,

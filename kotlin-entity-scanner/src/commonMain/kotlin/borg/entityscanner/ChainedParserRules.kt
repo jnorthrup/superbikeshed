@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
 
 package borg.entityscanner
 
@@ -13,13 +12,10 @@ import borg.trikeshed.lib.*
 
 // ==== RULE SYSTEM TYPES ====
 
-@JvmInline
 value class RuleId(val id: String)
 
-@JvmInline
 value class RuleWeight(val weight: Double) // 0.0 to 1.0
 
-@JvmInline
 value class ChainDirection(val direction: UByte) {
     companion object {
         const val FORWARD: UByte = 1u
@@ -28,10 +24,8 @@ value class ChainDirection(val direction: UByte) {
     }
 }
 
-@JvmInline
 value class RuleActivation(val activation: Double) // Current activation level
 
-@JvmInline
 value class ContextWindow(val size: Int) // Lookahead/lookbehind window
 
 // Core rule types

@@ -13,7 +13,6 @@ typealias Decimal = Double
 typealias Precision = Int
 
 // Core value classes for type safety
-@JvmInline
 value class Price(val value: Decimal) {
     operator fun plus(other: Price): Price = Price(value + other.value)
     operator fun minus(other: Price): Price = Price(value - other.value)
@@ -23,19 +22,15 @@ value class Price(val value: Decimal) {
     operator fun compareTo(other: Price): Int = value.compareTo(other.value)
 }
 
-@JvmInline
 value class Volume(val value: Decimal) {
     operator fun plus(other: Volume): Volume = Volume(value + other.value)
     operator fun times(multiplier: Decimal): Volume = Volume(value * multiplier)
 }
 
-@JvmInline
 value class Symbol(val value: String)
 
-@JvmInline
 value class TradeId(val value: String)
 
-@JvmInline
 value class Quantity(val value: Decimal) {
     operator fun plus(other: Quantity): Quantity = Quantity(value + other.value)
     operator fun minus(other: Quantity): Quantity = Quantity(value - other.value)

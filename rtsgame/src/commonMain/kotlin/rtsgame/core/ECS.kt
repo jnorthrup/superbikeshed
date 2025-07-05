@@ -8,10 +8,8 @@ import kotlin.jvm.JvmInline
  * Data-oriented design for cache efficiency and SIMD operations
  */
 
-@JvmInline
 value class EntityId(val value: Int)
 
-@JvmInline
 value class ComponentTypeId(val value: Int)
 
 interface Component {

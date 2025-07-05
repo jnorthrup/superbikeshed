@@ -8,7 +8,6 @@ import com.rtsgame.shared.map.Position
 import com.rtsgame.shared.systems.CombatSystem
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class AttackCommand(
     val unitId: String,
     val targetId: String
@@ -25,7 +24,6 @@ data class AttackCommand(
     }
 }
 
-@Serializable
 data class StopAttackCommand(
     val unitId: String
 ) : Command() {
@@ -36,7 +34,6 @@ data class StopAttackCommand(
     }
 }
 
-@Serializable
 data class AttackMoveCommand(
     val unitId: String,
     val targetPosition: Position
@@ -54,7 +51,6 @@ data class AttackMoveCommand(
     }
 }
 
-@Serializable
 data class AreaAttackCommand(
     val unitId: String,
     val targetPosition: Position
@@ -87,7 +83,6 @@ data class AreaAttackCommand(
     }
 }
 
-@Serializable
 data class DefendPositionCommand(
     val unitId: String,
     val position: Position,

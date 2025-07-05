@@ -2,7 +2,6 @@ package nexus.telemetry
 
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class K2ScriptTelemetryEvent(
     val timestamp: Long,
     val scriptName: String,

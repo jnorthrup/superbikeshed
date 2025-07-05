@@ -7,7 +7,6 @@ import kotlinx.serialization.Serializable
 import kotlin.math.min
 import kotlin.math.max
 
-@Serializable
 data class Building(
     override val id: String,
     override val position: Position,
@@ -50,7 +49,6 @@ data class Building(
     }
 }
 
-@Serializable
 enum class BuildingType {
     BARRACKS,
     FACTORY,
@@ -90,7 +88,6 @@ enum class BuildingType {
         }
 }
 
-@Serializable
 enum class ResourceType {
     GOLD,
     WOOD,

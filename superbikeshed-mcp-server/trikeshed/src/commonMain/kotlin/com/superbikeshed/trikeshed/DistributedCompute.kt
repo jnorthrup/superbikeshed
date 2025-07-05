@@ -15,7 +15,6 @@ expect class TrikeshedGrid {
 }
 
 // Network slab with bitmap indexing for io_uring zero-copy
-@Serializable
 data class NetworkSlab(
     val id: Long,
     val bitmap: SlabBitmap,
@@ -24,7 +23,6 @@ data class NetworkSlab(
 )
 
 // Bitmap for fast SIMD operations
-@Serializable
 data class SlabBitmap(
     val bits: ByteArray,
     val slabSize: Int = 4096 // 4KB slabs for io_uring
@@ -74,7 +72,6 @@ data class SlabBitmap(
 }
 
 // Ring buffer reference for zero-copy io_uring operations
-@Serializable
 data class RingBufferRef(
     val ringId: Int,
     val offset: Long,
@@ -99,7 +96,6 @@ expect class AgentQuorum {
     suspend fun witness(event: QuorumEvent): Result<WitnessProof>
 }
 
-@Serializable
 data class QuorumProposal(
     val id: String,
     val type: ProposalType,
@@ -117,7 +113,6 @@ enum class ProposalType {
     COST_REDISTRIBUTION
 }
 
-@Serializable
 data class QuorumDecision(
     val proposalId: String,
     val accepted: Boolean,
@@ -125,20 +120,17 @@ data class QuorumDecision(
     val witnesses: List<WitnessSignature>
 )
 
-@Serializable
 data class Vote(
     val agentId: AgentID,
     val accept: Boolean,
     val reason: String? = null
 )
 
-@Serializable
 data class AgentID(
     val nodeId: NodeID,
     val capability: AgentCapability
 )
 
-@Serializable
 data class AgentCapability(
     val compute: Int, // GFLOPS
     val memory: Long, // bytes
@@ -147,7 +139,6 @@ data class AgentCapability(
 )
 
 // Cost sharing and economics
-@Serializable
 data class ComputeCost(
     val cpuCycles: Long,
     val memoryBytes: Long,
@@ -155,21 +146,18 @@ data class ComputeCost(
     val storageOps: Long
 )
 
-@Serializable
 data class CostAllocation(
     val allocations: Map<AgentID, ComputeCost>,
     val fairnessScore: Float
 )
 
 // Witness services
-@Serializable
 data class WitnessProof(
     val event: QuorumEvent,
     val signatures: List<WitnessSignature>,
     val timestamp: Long
 )
 
-@Serializable
 data class QuorumEvent(
     val type: EventType,
     val data: ByteArray,
@@ -184,7 +172,6 @@ enum class EventType {
     STATE_CHECKPOINT
 }
 
-@Serializable
 data class WitnessSignature(
     val witnessId: AgentID,
     val signature: ByteArray,
@@ -199,7 +186,6 @@ expect class GossipSphere {
     suspend fun converge(): Result<ConvergenceState>
 }
 
-@Serializable
 data class GossipConfig(
     val fanout: Int = 3,
     val interval: Long = 1000,
@@ -207,7 +193,6 @@ data class GossipConfig(
     val convergenceThreshold: Float = 0.99f
 )
 
-@Serializable
 data class Rumor(
     val id: String,
     val origin: AgentID,
@@ -217,7 +202,6 @@ data class Rumor(
     val path: List<AgentID> = emptyList()
 )
 
-@Serializable
 data class RumorFilter(
     val types: Set<String>? = null,
     val minVersion: Long? = null,
@@ -225,7 +209,6 @@ data class RumorFilter(
     val origin: AgentID? = null
 )
 
-@Serializable
 data class ConvergenceState(
     val coverage: Float, // 0.0 to 1.0
     val activeRumors: Int,
@@ -257,17 +240,14 @@ interface Aggregator {
     suspend fun reduce(values: List<ByteArray>): Result<ByteArray>
 }
 
-@JvmInline
 value class SlabKey(val bytes: ByteArray)
 
-@Serializable
 data class SlabQuery(
     val bitmap: SlabBitmap? = null,
     val keyRange: Pair<SlabKey, SlabKey>? = null,
     val filter: String? = null // Simple predicate DSL
 )
 
-@Serializable
 data class AggregateResult(
     val value: ByteArray,
     val partitions: Int,
@@ -283,7 +263,6 @@ sealed class AtomicOperation {
 }
 
 // Grid member representation
-@Serializable
 data class GridMember(
     val id: AgentID,
     val address: NodeAddress,
@@ -291,7 +270,6 @@ data class GridMember(
     val heartbeat: Long
 )
 
-@Serializable
 data class ClusterConfig(
     val name: String,
     val seedNodes: List<NodeAddress>,

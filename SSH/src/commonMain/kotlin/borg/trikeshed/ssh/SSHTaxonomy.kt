@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.ssh
 
 import borg.trikeshed.lib.*
@@ -144,11 +143,6 @@ typealias SSHVariableName = String
 typealias SSHVariableValue = String
 
 // Value classes for type safety
-@JvmInline value class StateToken(val value: Int)
-@JvmInline value class CredentialToken(val value: Int)
-@JvmInline value class ChannelData(val bytes: Indexed<Byte>)
-@JvmInline value class SSHEvent(val type: Int)
-@JvmInline value class SSHSecurityPolicy(val flags: Int)
 
 // SSH State enumeration
 enum class SSHState {

@@ -132,13 +132,10 @@ class DefaultActionExecutor(private val llmClient: LiteLLMClient) : ActionExecut
 // These would ideally be moved to a common 'nexus.shared.model' package or similar
 // if they are truly shared across different Nexus implementations.
 
-@Serializable
 data class NodeId(val value: String)
 
-@Serializable
 data class NetworkId(val value: String)
 
-@Serializable
 data class AgentTask(
     val id: String,
     val type: String,
@@ -147,7 +144,6 @@ data class AgentTask(
     val timeoutMs: Long = 60000,
 )
 
-@Serializable
 sealed class TaskResult {
     @Serializable
     data class Success(val message: String, val data: Map<String, String> = emptyMap()) : TaskResult()

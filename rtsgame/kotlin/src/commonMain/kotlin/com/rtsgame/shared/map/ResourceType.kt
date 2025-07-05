@@ -2,7 +2,6 @@ package com.rtsgame.shared.map
 
 import kotlinx.serialization.Serializable
 
-@Serializable
 enum class ResourceType {
     // Basic Resources
     GOLD,
@@ -92,7 +91,6 @@ enum class ResourceType {
         }
 }
 
-@Serializable
 enum class GatheringTool {
     AXE,
     PICKAXE,

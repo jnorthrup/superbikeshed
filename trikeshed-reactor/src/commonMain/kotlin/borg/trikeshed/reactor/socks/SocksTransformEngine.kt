@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.reactor.socks
 
 import borg.trikeshed.lib.*
@@ -14,13 +13,11 @@ typealias ByteIndexed = Indexed<Byte>
 /**
  * Scan Count - Tracks the minimal number of forward scans needed
  */
-@JvmInline value class ScanCount(val count: Int)
 
 /**
  * Token Fragment - Represents a piece of SOCKS protocol data
  * Optimized for minimal forward scans through buffers
  */
-@JvmInline value class TokenFragment(val bytes: ByteIndexed)
 
 /**
  * Transform Result - Result of token fragment transformation

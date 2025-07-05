@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
 
 package borg.entityscanner
 
@@ -13,7 +12,6 @@ import borg.trikeshed.lib.*
 
 // ==== KOTLIN-SPECIFIC RULE TYPES ====
 
-@JvmInline
 value class KotlinFeature(val feature: UByte) {
     companion object {
         const val COROUTINES: UByte = 1u
@@ -29,7 +27,6 @@ value class KotlinFeature(val feature: UByte) {
     }
 }
 
-@JvmInline
 value class LanguageLevel(val level: UByte) {
     companion object {
         const val KOTLIN_1_0: UByte = 10u

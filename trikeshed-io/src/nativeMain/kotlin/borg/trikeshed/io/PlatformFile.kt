@@ -3,7 +3,6 @@ package borg.trikeshed.io
 import kotlinx.cinterop.*
 import platform.posix.*
 
-@OptIn(ExperimentalForeignApi::class)
 
 /**
  * Native implementation of PlatformFile

@@ -4,7 +4,6 @@ import borg.trikeshed.lib.*
 import kotlin.math.*
 import rtsgame.core.TeamResourcesExtended
 
-@kotlin.jvm.JvmInline
 value class FixedPoint(val raw: Long) {
     companion object {
         const val PRECISION = 10000L // 4 decimal places

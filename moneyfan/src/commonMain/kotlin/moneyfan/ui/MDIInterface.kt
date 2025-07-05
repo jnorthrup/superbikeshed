@@ -9,7 +9,6 @@ import borg.trikeshed.lib.*
  */
 
 // Trace logging system using TrikeShed patterns
-@JvmInline
 value class TraceLevel(val value: Int) {
     companion object {
         val DEBUG = TraceLevel(0)
@@ -19,7 +18,6 @@ value class TraceLevel(val value: Int) {
     }
 }
 
-@JvmInline
 value class SpaceGraphNode(val nodeId: String) {
     companion object {
         val ATTENTION = SpaceGraphNode("attention_ticker")

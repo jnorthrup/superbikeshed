@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.rts
 
 import borg.trikeshed.lib.*
@@ -6,18 +5,6 @@ import kotlin.jvm.JvmInline
 import kotlin.math.*
 
 // Core RTS spatial-temporal quantum
-@JvmInline value class Tick(val value: Long)
-@JvmInline value class WorldX(val value: Float)
-@JvmInline value class WorldY(val value: Float)
-@JvmInline value class EntityId(val value: Int)
-@JvmInline value class PlayerId(val value: Int)
-@JvmInline value class ResourceAmount(val value: Int)
-@JvmInline value class HealthPoints(val value: Float)
-@JvmInline value class DamagePoints(val value: Float)
-@JvmInline value class Speed(val value: Float)
-@JvmInline value class Range(val value: Float)
-@JvmInline value class Vision(val value: Float)
-@JvmInline value class BuildTime(val value: Int)
 
 // Omnibus RTS ontology enumerations
 enum class EntityType { UNIT, BUILDING, RESOURCE, PROJECTILE, EFFECT, WAYPOINT, TRIGGER, DECORATION }

@@ -121,26 +121,22 @@ interface ProductionSystem : GameSystem {
  * Base interface for all game commands.
  * Origin: 'rtsgame-kmp/shared/command/Command.kt'.
  */
-@kotlinx.serialization.Serializable // If commands need to be networked/saved
 sealed interface Command {
     val issuerEntityId: EntityId? // Entity that issued the command, if applicable
 }
 
-@kotlinx.serialization.Serializable
 data class MoveCommand(
     val targetEntityIds: List<EntityId>,
     val destination: PositionComponent, // Using PositionComponent for consistency
     override val issuerEntityId: EntityId? = null
 ) : Command
 
-@kotlinx.serialization.Serializable
 data class AttackCommand(
     val attackerEntityIds: List<EntityId>,
     val targetEntityId: EntityId,
     override val issuerEntityId: EntityId? = null
 ) : Command
 
-@kotlinx.serialization.Serializable
 data class PatrolCommand(
     val targetEntityIds: List<EntityId>,
     val waypoints: List<PositionComponent>,
@@ -156,7 +152,6 @@ data class PatrolCommand(
  * Contains base stats, abilities, model info, etc.
  * Origin: 'retired/config/unitTypes.ts', 'rtsgame-kmp/shared/entity/Unit.kt' (UnitType enum).
  */
-@kotlinx.serialization.Serializable
 data class UnitTypeDefinition(
     val id: String, // e.g., "tank", "worker", "command_center"
     val name: String, // Display name
@@ -182,19 +177,16 @@ data class UnitTypeDefinition(
     // Add other relevant static properties: visionRange, energy, etc.
 )
 
-@kotlinx.serialization.Serializable
 enum class ResourceType {
     MINERALS, // Example, could be Mass, Energy from museum
     GAS,      // Example
     SUPPLY
 }
 
-@kotlinx.serialization.Serializable
 enum class DamageType {
     NORMAL, KINETIC, EXPLOSIVE, ENERGY, PIERCING, PLASMA // From museum projects
 }
 
-@kotlinx.serialization.Serializable
 enum class ArmorType {
     LIGHT, MEDIUM, HEAVY, FORTIFIED, SHIELDED, BIOLOGICAL // From museum projects
 }

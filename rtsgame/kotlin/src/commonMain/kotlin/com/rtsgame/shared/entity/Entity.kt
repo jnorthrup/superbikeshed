@@ -3,7 +3,6 @@ package com.rtsgame.shared.entity
 import com.rtsgame.shared.map.Position
 import kotlinx.serialization.Serializable
 
-@Serializable
 interface Entity {
     val id: String
     val position: Position

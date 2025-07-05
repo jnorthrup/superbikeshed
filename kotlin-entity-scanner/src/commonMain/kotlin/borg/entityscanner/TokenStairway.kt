@@ -1,4 +1,3 @@
-@file:Suppress("NOTHING_TO_INLINE")
 
 package borg.entityscanner
 
@@ -16,10 +15,8 @@ import borg.trikeshed.lib.CharIndexed
 
 // ==== LEVEL 1: RAW CHARACTER CLASSIFICATION ====
 
-@JvmInline
 value class RawChar(val value: Char)
 
-@JvmInline 
 value class CharClass(val type: UByte) {
     companion object {
         const val LETTER: UByte = 1u
@@ -45,7 +42,6 @@ value class CharClass(val type: UByte) {
     }
 }
 
-@JvmInline
 value class CharPosition(val index: Int)
 
 // Level 1 Compositions
@@ -55,10 +51,8 @@ typealias CharIndexed = borg.trikeshed.lib.CharIndexed<PositionedChar>
  
 // ==== LEVEL 2: LEXICAL TOKEN CLASSIFICATION ====
 
-@JvmInline
 value class LexicalToken(val value: String)
 
-@JvmInline
 value class TokenType(val category: UByte) {
     companion object {
         const val KEYWORD: UByte = 1u
@@ -80,7 +74,6 @@ value class TokenType(val category: UByte) {
     }
 }
 
-@JvmInline
 value class TokenBounds(val packed: Long) {
     val start: Int get() = (packed shr 32).toInt()
     val length: Int get() = (packed and 0xFFFFFFFF).toInt()
@@ -108,7 +101,6 @@ typealias TokenArray = Array<BoundedToken>
 
 // ==== LEVEL 3: SYNTACTIC CLASSIFICATION ====
 
-@JvmInline
 value class SyntaxToken(val semantic: UByte) {
     companion object {
         const val CLASS_NAME: UByte = 1u
@@ -156,10 +148,8 @@ value class SyntaxToken(val semantic: UByte) {
     }
 }
 
-@JvmInline
 value class ScopeLevel(val depth: UByte)
 
-@JvmInline
 value class VisibilityToken(val access: UByte) {
     companion object {
         const val PUBLIC: UByte = 1u
@@ -183,7 +173,6 @@ typealias SyntaxIndexed = borg.trikeshed.lib.ByteIndexed<VisibleSyntax>
 
 // ==== LEVEL 4: SEMANTIC ENTITY CLASSIFICATION ====
 
-@JvmInline
 value class EntityToken(val entityType: UByte) {
     companion object {
         const val DATA_CLASS: UByte = 1u
@@ -208,7 +197,6 @@ value class EntityToken(val entityType: UByte) {
     }
 }
 
-@JvmInline
 value class RoleToken(val role: UByte) {
     companion object {
         const val DECLARATION: UByte = 1u
@@ -225,7 +213,6 @@ value class RoleToken(val role: UByte) {
     }
 }
 
-@JvmInline
 value class ContextToken(val context: UByte) {
     companion object {
         const val TOP_LEVEL: UByte = 1u
@@ -252,10 +239,8 @@ typealias EntityIndexed = borg.trikeshed.lib.ByteIndexed<ContextualEntity>
 
 // ==== LEVEL 5: GRAPH NODE CLASSIFICATION ====
 
-@JvmInline
 value class GraphNodeToken(val nodeId: UInt)
 
-@JvmInline
 value class DependencyToken(val depType: UByte) {
     companion object {
         const val IMPORTS: UByte = 1u
@@ -272,7 +257,6 @@ value class DependencyToken(val depType: UByte) {
     }
 }
 
-@JvmInline
 value class ConfidenceToken(val confidence: UByte) // 0-255 confidence score
 
 // Level 5 Compositions

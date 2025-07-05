@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.reactor.socks
 
 import borg.trikeshed.lib.*
@@ -35,11 +34,6 @@ typealias SocksDomainName = String
 typealias SocksPort = UShort
 
 // Value classes for type safety
-@JvmInline value class SocksConnectionId(val value: String)
-@JvmInline value class SocksBindAddress(val value: String)
-@JvmInline value class SocksBindPort(val value: Int)
-@JvmInline value class SocksTargetHost(val value: String)
-@JvmInline value class SocksTargetPort(val value: Int)
 
 /**
  * SOCKS Protocol Constants (RFC 1928)

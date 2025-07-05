@@ -69,7 +69,6 @@ data class HealthComponent(
 /**
  * Team/ownership component
  */
-@JvmInline
 value class TeamComponent(val teamId: Int) : Component {
     override val typeId get() = ComponentTypes.TEAM
 }

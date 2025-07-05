@@ -373,7 +373,6 @@ class BattleJournal {
 }
 
 // Data structures for battle recording
-@Serializable
 data class BattleRecord(
     val id: String,
     val seed: Long,
@@ -388,7 +387,6 @@ data class BattleRecord(
     var analysis: BattleAnalysis? = null
 )
 
-@Serializable
 data class BattleEvent(
     val frame: Long,
     val gameTime: Double,
@@ -399,10 +397,8 @@ data class BattleEvent(
     val entityId: Int? = null
 )
 
-@Serializable
 enum class EventImportance { LOW, MEDIUM, HIGH, CRITICAL }
 
-@Serializable
 data class BattleSnapshot(
     val frame: Long,
     val gameTime: Double,
@@ -411,7 +407,6 @@ data class BattleSnapshot(
     val teamStats: Map<String, TeamStats>
 )
 
-@Serializable
 data class ResourceSnapshot(
     val mass: Int,
     val energy: Int,
@@ -421,7 +416,6 @@ data class ResourceSnapshot(
     val computroniumIncome: Double
 )
 
-@Serializable
 data class TeamStats(
     val unitCount: Int,
     val buildingCount: Int,
@@ -430,7 +424,6 @@ data class TeamStats(
     val totalValue: Double
 )
 
-@Serializable
 data class PlayerAction(
     val frame: Long,
     val gameTime: Double,
@@ -440,7 +433,6 @@ data class PlayerAction(
     val targetType: String = "none"
 )
 
-@Serializable
 data class BattleResult(
     val winner: String?,
     val reason: String,
@@ -448,7 +440,6 @@ data class BattleResult(
     val totalFrames: Long
 )
 
-@Serializable
 data class BattleAnalysis(
     val keyMoments: List<KeyMoment>,
     val balanceIssues: List<BalanceIssue>,
@@ -458,17 +449,14 @@ data class BattleAnalysis(
     val dominanceShifts: List<DominanceShift>
 )
 
-@Serializable
 data class KeyMoment(
     val type: String,
     val time: Double,
     val momentType: KeyMomentType
 )
 
-@Serializable
 enum class KeyMomentType { ECONOMIC, MILITARY, TECHNOLOGY, STRATEGIC }
 
-@Serializable
 data class BalanceIssue(
     val type: String,
     val severity: Double,
@@ -476,7 +464,6 @@ data class BalanceIssue(
     val description: String
 )
 
-@Serializable
 data class PlayerBehaviorAnalysis(
     val totalActions: Int,
     val actionsPerMinute: Double,
@@ -485,19 +472,16 @@ data class PlayerBehaviorAnalysis(
     val microManagement: String
 )
 
-@Serializable
 data class EconomicProgression(
     val milestones: List<EconomicMilestone>
 )
 
-@Serializable
 data class EconomicMilestone(
     val type: String,
     val time: Double,
     val team: String
 )
 
-@Serializable
 data class DominanceShift(
     val time: Double,
     val newLeader: String,

@@ -9,7 +9,6 @@ import kotlinx.serialization.json.Json
  * Original: ../scripts/preprocess-models.ts
  */
 
-@Serializable
 data class ConversionResult(
     val success: Boolean,
     val modelName: String,
@@ -18,7 +17,6 @@ data class ConversionResult(
     val error: String? = null
 )
 
-@Serializable
 data class OptimizationResult(
     val success: Boolean,
     val modelName: String,
@@ -26,18 +24,15 @@ data class OptimizationResult(
     val error: String? = null
 )
 
-@Serializable
 data class ManifestEntry(
     val id: String,
     val path: String
 )
 
-@Serializable
 data class ModelManifest(
     val models: Map<String, ModelInfo> = emptyMap()
 )
 
-@Serializable
 data class ModelInfo(
     val path: String,
     val type: String

@@ -37,13 +37,10 @@ expect class GPURenderPassEncoder
 expect class GPUCommandBuffer
 
 // Resource handles
-@JvmInline
 value class BufferId(val value: Int)
 
-@JvmInline
 value class PipelineId(val value: Int)
 
-@JvmInline
 value class TextureId(val value: Int)
 
 // Shader resource types

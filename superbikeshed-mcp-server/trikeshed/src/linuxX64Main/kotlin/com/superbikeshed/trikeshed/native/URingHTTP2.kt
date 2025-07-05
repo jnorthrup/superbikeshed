@@ -13,7 +13,6 @@ import kotlin.experimental.ExperimentalNativeApi
  * HTTP/2 Server implementation using io_uring
  * Integrates with existing Trikeshed HTTP/2 protocol implementation
  */
-@OptIn(ExperimentalNativeApi::class)
 class URingHTTP2Server(
     private val sock: Int,
     private val ring: CPointer<io_uring>

@@ -19,12 +19,10 @@ data class GameState(
     val currentTick: Long = 0
 )
 
-@Serializable
 sealed class Command {
     abstract fun execute(state: GameState, gameMap: GameMap): GameState
 }
 
-@Serializable
 data class MoveCommand(
     val entityId: String,
     val targetPosition: Position
@@ -35,7 +33,6 @@ data class MoveCommand(
     }
 }
 
-@Serializable
 data class AttackCommand(
     val attackerId: String,
     val targetId: String
@@ -48,7 +45,6 @@ data class AttackCommand(
     }
 }
 
-@Serializable
 data class BuildCommand(
     val builderId: String,
     val buildingType: String,
@@ -60,7 +56,6 @@ data class BuildCommand(
     }
 }
 
-@Serializable
 data class TrainUnitCommand(
     val buildingId: String,
     val unitType: String

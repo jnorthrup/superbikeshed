@@ -3,7 +3,6 @@ package com.rtsgame.shared.map
 import kotlinx.serialization.Serializable
 import kotlin.math.sqrt
 
-@Serializable
 data class Position(
     val x: Float,
     val y: Float

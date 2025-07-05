@@ -248,34 +248,26 @@ class HttpRangeProcessor {
     }
 }
 
-@Suppress("unused")
 open class InputStream
 
-@Suppress("unused")
 class FileIngesterPipeline {
     fun ingest(input: Any, filename: String): IngestResult = IngestResult("", 0)
 }
 
-@Suppress("unused")
 data class IngestResult(val content: String, val size: Long)
 
-@Suppress("unused")
 class HttpRangeScanner(val url: String) {
     fun getContentLength(): Long = 0L
 }
 
-@Suppress("unused")
 class HttpRangeProcessor {
     suspend fun <T> processRange(url: String, start: Long, end: Long, processor: suspend (InputStream, Map<String, String>) -> T): T = throw NotImplementedError()
 }
 
-@Suppress("unused")
 data class ArchiveSource(val path: String, val size: Long)
 
-@Suppress("unused")
 typealias Twin<T> = Pair<T, T>
 
-@Suppress("unused")
 data class Indexed<T>(val list: List<T>) {
     operator fun plus(other: T): Indexed<T> = Indexed(list + other)
 }

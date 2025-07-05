@@ -395,12 +395,10 @@ interface CouchClient {
 
 
 // Data classes for CouchDB operations
-@Serializable
 data class CouchBulkRequest(
     val docs: List<CouchDocument>
 )
 
-@Serializable
 data class CouchBulkResult(
     val ok: Boolean,
     val id: String,
@@ -409,7 +407,6 @@ data class CouchBulkResult(
     val reason: String? = null
 )
 
-@Serializable
 data class CouchChange(
     val seq: String,
     val id: String,
@@ -418,12 +415,10 @@ data class CouchChange(
     val doc: CouchDocumentData? = null
 )
 
-@Serializable
 data class CouchChangeRev(
     val rev: String
 )
 
-@Serializable
 data class CouchReplicationRequest(
     val source: String,
     val target: String,
@@ -431,13 +426,11 @@ data class CouchReplicationRequest(
     val createTarget: Boolean = false
 )
 
-@Serializable
 data class CouchReplicationResult(
     val ok: Boolean,
     val sessionId: String
 )
 
-@Serializable
 data class CouchViewParams(
     @Contextual val startKey: Any? = null,
     @Contextual val endKey: Any? = null,
@@ -450,14 +443,12 @@ data class CouchViewParams(
     val groupLevel: Int? = null
 )
 
-@Serializable
 data class CouchViewResult(
     val totalRows: Int,
     val offset: Int,
     val rows: List<CouchViewRow>
 )
 
-@Serializable
 data class CouchViewRow(
     val id: String,
     val key: String,
@@ -473,7 +464,6 @@ sealed class CouchResult {
 
 typealias CouchDocumentResult = Either<String, CouchDocumentData>
 
-@Serializable
 data class CouchDocumentData(
     val id: String,
     val rev: String,
@@ -482,14 +472,12 @@ data class CouchDocumentData(
 
 
 
-@Serializable
 data class CouchPutResult(
     val ok: Boolean,
     val id: String,
     val rev: String
 )
 
-@Serializable
 data class CouchSecurity(
     val admins: SecurityObject = SecurityObject(),
     val members: SecurityObject = SecurityObject()

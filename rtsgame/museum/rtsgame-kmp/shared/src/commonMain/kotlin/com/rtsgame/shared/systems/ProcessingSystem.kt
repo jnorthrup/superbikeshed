@@ -6,7 +6,6 @@ import com.rtsgame.shared.map.GameMap
 import com.rtsgame.shared.map.ResourceType
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class ProcessingRecipe(
     val id: String,
     val name: String,
@@ -19,7 +18,6 @@ data class ProcessingRecipe(
     val experienceGain: Float
 )
 
-@Serializable
 data class ProcessingQueue(
     val recipeId: String,
     val progress: Float = 0f,

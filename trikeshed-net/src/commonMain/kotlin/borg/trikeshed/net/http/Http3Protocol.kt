@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.http
 
 
@@ -19,11 +18,6 @@ typealias Http3PushId = Long
 typealias Http3Priority = Byte
 
 // Value classes for type safety
-@JvmInline value class Http3StreamType(val value: Int)
-@JvmInline value class Http3FrameLength(val value: Long)
-@JvmInline value class QpackEncoderStreamId(val value: Long)
-@JvmInline value class QpackDecoderStreamId(val value: Long)
-@JvmInline value class DynamicTableCapacity(val value: Int)
 
 /**
  * HTTP/3 Protocol Implementation (RFC 9114)

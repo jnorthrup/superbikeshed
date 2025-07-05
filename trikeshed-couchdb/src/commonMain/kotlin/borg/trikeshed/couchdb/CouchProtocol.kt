@@ -13,7 +13,6 @@ import kotlinx.serialization.builtins.serializer
  */
 
 // CouchDB response
-@Serializable
 data class CouchResponse(
     val ok: Boolean = false,
     val id: String? = null,
@@ -23,7 +22,6 @@ data class CouchResponse(
 )
 
 // Document with metadata
-@Serializable
 data class CouchDocument(
     @SerialName("_id") val id: String? = null,
     @SerialName("_rev") val rev: String? = null,
@@ -41,7 +39,6 @@ data class CouchDocument(
 }
 
 // Database info
-@Serializable
 data class CouchDatabaseInfo(
     @SerialName("db_name") val dbName: String,
     @SerialName("doc_count") val docCount: Long,
@@ -57,7 +54,6 @@ data class CouchDatabaseInfo(
 )
 
 // View query parameters
-@Serializable
 data class ViewQueryParams(
     val key: JsonElement? = null,
     val startkey: JsonElement? = null,
@@ -89,14 +85,12 @@ data class ViewQueryParams(
 }
 
 // View response
-@Serializable
 data class ViewResponse<K, V>(
     val total_rows: Int,
     val offset: Int,
     val rows: Indexed<ViewRow<K, V>>
 )
 
-@Serializable
 data class ViewRow<K, V>(
     val id: String,
     val key: K,
@@ -105,7 +99,6 @@ data class ViewRow<K, V>(
 )
 
 // Bulk docs request
-@Serializable
 data class BulkDocsRequest(
     val docs: Indexed<JsonObject>,
     val new_edits: Boolean = true,
@@ -123,7 +116,6 @@ data class BulkDocsRequest(
 }
 
 // Changes feed
-@Serializable
 data class ChangesFeedParams(
     val since: String = "0",
     val limit: Int? = null,
@@ -148,14 +140,12 @@ data class ChangesFeedParams(
     }
 }
 
-@Serializable
 data class ChangesResponse(
     val results: Indexed<Change>,
     val last_seq: String,
     val pending: Int
 )
 
-@Serializable
 data class Change(
     val seq: String,
     val id: String,
@@ -164,13 +154,11 @@ data class Change(
     val doc: CouchDocument? = null
 )
 
-@Serializable
 data class ChangeRev(
     val rev: String
 )
 
 // Replication
-@Serializable
 data class ReplicationRequest(
     val source: String,
     val target: String,
@@ -197,7 +185,6 @@ data class ReplicationRequest(
     }
 }
 
-@Serializable
 data class ReplicationResponse(
     val ok: Boolean,
     val session_id: String? = null,
@@ -205,7 +192,6 @@ data class ReplicationResponse(
     val history: Indexed<ReplicationHistory>? = null
 )
 
-@Serializable
 data class ReplicationHistory(
     val session_id: String,
     val start_time: String,
@@ -221,7 +207,6 @@ data class ReplicationHistory(
 )
 
 // Design document
-@Serializable
 data class DesignDocument(
     @SerialName("_id") val id: String,
     @SerialName("_rev") val rev: String? = null,
@@ -236,13 +221,11 @@ data class DesignDocument(
     val options: @Contextual kotlinx.serialization.json.JsonObject? = null
 )
 
-@Serializable
 data class ViewDefinition(
     val map: String,
     val reduce: String? = null
 )
 
-@Serializable
 data class RewriteRule(
     val from: String,
     val to: String,
@@ -258,21 +241,18 @@ sealed class CouchResult {
 
 typealias CouchDocumentResult = Either<String, CouchDocumentData>
 
-@Serializable
 data class CouchDocumentData(
     val id: String,
     val rev: String,
     val data: Map<String, String> = emptyMap()
 )
 
-@Serializable
 data class CouchPutResult(
     val ok: Boolean,
     val id: String,
     val rev: String
 )
 
-@Serializable
 data class CouchSecurity(
     val admins: SecurityObject = SecurityObject(),
     val members: SecurityObject = SecurityObject()

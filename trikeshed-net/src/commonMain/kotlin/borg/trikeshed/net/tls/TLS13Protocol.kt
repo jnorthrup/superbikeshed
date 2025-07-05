@@ -1,4 +1,3 @@
-@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 package borg.trikeshed.net.tls
 
 
@@ -32,12 +31,6 @@ typealias CertificateVerify = Indexed<Byte>
 typealias Finished = Indexed<Byte>
 
 // Value classes for type safety
-@JvmInline value class ProtocolVersion(val value: UShort)
-@JvmInline value class HandshakeMessageType(val value: Byte)
-@JvmInline value class RecordType(val value: Byte)
-@JvmInline value class MaxFragmentLength(val value: Int)
-@JvmInline value class TicketAge(val millis: Long)
-@JvmInline value class TicketNonce(val value: Indexed<Byte>)
 
 /**
  * TLS 1.3 Protocol Implementation (RFC 8446)

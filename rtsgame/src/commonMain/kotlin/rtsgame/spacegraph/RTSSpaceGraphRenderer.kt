@@ -9,13 +9,10 @@ import rtsgame.compat.*
  * Maps game entities to spacegraph nodes and relationships to edges
  */
 
-@PlatformInline
 value class NodeId(val value: String)
 
-@PlatformInline
 value class EdgeId(val value: String)
 
-@PlatformInline
 value class VisualizationScale(val value: Float)
 
 data class RenderingConfig(

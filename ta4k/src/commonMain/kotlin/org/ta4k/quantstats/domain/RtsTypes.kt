@@ -4,13 +4,10 @@ package org.ta4k.quantstats.domain
 // If it's not, this code will need adjustment once Join's definition is clear.
 import borg.trikeshed.Join
 
-@JvmInline
 value class Price(val value: Double)
 
-@JvmInline
 value class Volume(val value: Double)
 
-@JvmInline
 value class UnixTimestamp(val millis: Long)
 
 data class OHLC(

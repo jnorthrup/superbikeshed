@@ -2,7 +2,6 @@ package com.rtsgame.shared.systems
 
 import kotlinx.serialization.Serializable
 
-@Serializable
 data class AttackProperties(
     val damage: Float,
     val damageMultiplier: Float = 1.0f,
@@ -22,7 +21,6 @@ data class AttackProperties(
     val canAttackBuildings: Boolean = true
 )
 
-@Serializable
 data class DefenseProperties(
     val armor: Float = 0f,
     val armorMultiplier: Float = 1.0f,
@@ -42,7 +40,6 @@ data class DefenseProperties(
     val isImmuneToPull: Boolean = false
 )
 
-@Serializable
 enum class DamageType {
     NORMAL,
     PIERCING,
@@ -61,7 +58,6 @@ enum class DamageType {
     RADIATION
 }
 
-@Serializable
 enum class ArmorType {
     LIGHT,
     MEDIUM,
