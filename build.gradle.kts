@@ -12,4 +12,9 @@ allprojects {
         maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
     }
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs.add("-Xjvm-enable-value-classes")
+        }
+    }
 }

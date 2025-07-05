@@ -21,17 +21,17 @@ import kotlin.reflect.KClass
 // Core cursor operations
 
 /** Get row at index y, supporting negative indices */
-infix fun Cursor.at(y: Int): RowVec = b(if (y < 0) a + y else y)
+infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) size + y else y]
 
 /** Get slice of rows */
 infix fun Cursor.at(r: IntRange): Cursor {
-    val actualStart = if (r.first < 0) a + r.first else r.first
-    val actualEnd = if (r.last < 0) a + r.last else r.last
-    require(actualStart >= 0 && actualEnd < a && actualStart <= actualEnd) { 
-        "Invalid range $r for cursor size $a" 
+    val actualStart = if (r.first < 0) size + r.first else r.first
+    val actualEnd = if (r.last < 0) size + r.last else r.last
+    require(actualStart >= 0 && actualEnd < size && actualStart <= actualEnd) { 
+        "Invalid range $r for cursor size $size" 
     }
     val sliceSize = actualEnd - actualStart + 1
-    return (sliceSize j { y: Int -> b(y + actualStart) })
+    return Cursor(CursorRowIndex(sliceSize) j { y: CursorRowIndex -> this[y.value + actualStart] })
 }
 
 /** Get cursor with specified row indices */

@@ -1,0 +1,227 @@
+version: '3.8'
+
+services:
+  # MCP Gateway - REST API gateway
+  mcp-gateway:
+    build:
+      context: .
+      dockerfile: mcp-server.Dockerfile
+    container_name: mcp-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - MCP_SERVER_TYPE=gateway
+      - MCP_LOG_LEVEL=INFO
+      - MCP_CAPABILITIES=gateway,loadbalancer
+    volumes:
+      - mcp-data:/app/data
+      - mcp-logs:/app/logs
+    networks:
+      - mcp-network
+    depends_on:
+      - mcp-tools-server
+      - mcp-resources-server
+      - mcp-prompts-server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MCP Tools Server
+  mcp-tools-server:
+    build:
+      context: .
+      dockerfile: mcp-server.Dockerfile
+    container_name: mcp-tools-server
+    ports:
+      - "8081:8080"
+    environment:
+      - MCP_SERVER_TYPE=tools
+      - MCP_LOG_LEVEL=INFO
+      - MCP_CAPABILITIES=tools,filesystem
+      - MCP_SERVER_NAME=tools-server
+    volumes:
+      - mcp-data:/app/data
+      - mcp-logs:/app/logs
+      - ./examples:/app/examples:ro
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MCP Resources Server
+  mcp-resources-server:
+    build:
+      context: .
+      dockerfile: mcp-server.Dockerfile
+    container_name: mcp-resources-server
+    ports:
+      - "8082:8080"
+    environment:
+      - MCP_SERVER_TYPE=resources
+      - MCP_LOG_LEVEL=INFO
+      - MCP_CAPABILITIES=resources,databases
+      - MCP_SERVER_NAME=resources-server
+    volumes:
+      - mcp-data:/app/data
+      - mcp-logs:/app/logs
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MCP Prompts Server
+  mcp-prompts-server:
+    build:
+      context: .
+      dockerfile: mcp-server.Dockerfile
+    container_name: mcp-prompts-server
+    ports:
+      - "8083:8080"
+    environment:
+      - MCP_SERVER_TYPE=prompts
+      - MCP_LOG_LEVEL=INFO
+      - MCP_CAPABILITIES=prompts,templates
+      - MCP_SERVER_NAME=prompts-server
+    volumes:
+      - mcp-data:/app/data
+      - mcp-logs:/app/logs
+      - ./templates:/app/templates:ro
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: mcp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for persistent data
+  postgres:
+    image: postgres:15-alpine
+    container_name: mcp-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=mcp
+      - POSTGRES_USER=mcp
+      - POSTGRES_PASSWORD=mcp_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mcp"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mcp-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana for monitoring dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mcp-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Nginx for load balancing
+  nginx:
+    image: nginx:alpine
+    container_name: mcp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    depends_on:
+      - mcp-gateway
+      - mcp-tools-server
+      - mcp-resources-server
+      - mcp-prompts-server
+
+volumes:
+  mcp-data:
+    driver: local
+  mcp-logs:
+    driver: local
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

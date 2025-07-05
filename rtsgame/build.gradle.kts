@@ -8,7 +8,9 @@ plugins {
 group = "borg.rtsgame"
 
 kotlin {
-    jvm()
+    jvm {
+        // withJava() deprecated in Kotlin 2.2.0 - Java sources are automatically configured
+    }
     wasmJs { 
         browser()
         nodejs()

@@ -7,6 +7,8 @@ import k2script.bus.Router
 import k2script.engine.DefaultScriptEngine
 import k2script.env.EnvironmentManager
 import k2script.trikeshed.*
+import k2script.cli.ClasspathCommand
+import k2script.cli.MCPCommand
 import borg.trikeshed.lib.play
 import borg.trikeshed.lib.size
 import kotlinx.coroutines.runBlocking
@@ -42,6 +44,8 @@ object K2script {
                 args[0] == "--env-check" -> checkEnvironment()
                 args[0] == "--components" -> showComponents(engine)
                 args[0] == "--ai" -> handleAiFeature(args)
+                args[0] == "--classpath" -> handleClasspathCommand(args)
+                args[0] == "--mcp" -> handleMCPCommand(args)
                 else -> executeScript(args)
             }
             // LiteLLMClient.stopService() should be called here in a finally block
@@ -65,7 +69,9 @@ object K2script {
               --version, -v     Show version  
               --env-check       Check environment
               --components      Show engine components (DSL vines)
-              --ai <prompt>   Generate or explain script using AI
+              --ai <prompt>     Generate or explain script using AI
+              --classpath       Generate classpath from Maven coordinates or files
+              --mcp             Manage MCP servers and hosting services
         """.trimIndent())
     }
     
@@ -301,6 +307,30 @@ object K2script {
                 e.printStackTrace()
             }
             // Do not call exitProcess(1) here
+        }
+    }
+
+    private suspend fun handleClasspathCommand(args: Array<String>) {
+        try {
+            ClasspathCommand.execute(args.drop(1).toTypedArray())
+        } catch (e: Exception) {
+            System.err.println("Classpath command error: ${e.message}")
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                e.printStackTrace()
+            }
+            exitProcess(1)
+        }
+    }
+
+    private suspend fun handleMCPCommand(args: Array<String>) {
+        try {
+            MCPCommand.execute(args.drop(1).toTypedArray())
+        } catch (e: Exception) {
+            System.err.println("MCP command error: ${e.message}")
+            if (EnvironmentManager.K2Script.isVerbose()) {
+                e.printStackTrace()
+            }
+            exitProcess(1)
         }
     }
 }

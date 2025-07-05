@@ -1,0 +1,356 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp-system
+  labels:
+    name: mcp-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: mcp-system
+  labels:
+    app: mcp-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+    spec:
+      containers:
+      - name: mcp-gateway
+        image: mcp-server:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MCP_SERVER_TYPE
+          value: "gateway"
+        - name: MCP_LOG_LEVEL
+          value: "INFO"
+        - name: MCP_CAPABILITIES
+          value: "gateway,loadbalancer"
+        - name: MCP_SERVER_PORT
+          value: "8080"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: mcp-config
+          mountPath: /app/config
+        - name: mcp-data
+          mountPath: /app/data
+        - name: mcp-logs
+          mountPath: /app/logs
+      volumes:
+      - name: mcp-config
+        configMap:
+          name: mcp-config
+      - name: mcp-data
+        persistentVolumeClaim:
+          claimName: mcp-data-pvc
+      - name: mcp-logs
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-tools-server
+  namespace: mcp-system
+  labels:
+    app: mcp-tools-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-tools-server
+  template:
+    metadata:
+      labels:
+        app: mcp-tools-server
+    spec:
+      containers:
+      - name: mcp-tools-server
+        image: mcp-server:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MCP_SERVER_TYPE
+          value: "tools"
+        - name: MCP_LOG_LEVEL
+          value: "INFO"
+        - name: MCP_CAPABILITIES
+          value: "tools,filesystem"
+        - name: MCP_SERVER_NAME
+          value: "tools-server"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: mcp-config
+          mountPath: /app/config
+        - name: mcp-data
+          mountPath: /app/data
+        - name: mcp-logs
+          mountPath: /app/logs
+      volumes:
+      - name: mcp-config
+        configMap:
+          name: mcp-config
+      - name: mcp-data
+        persistentVolumeClaim:
+          claimName: mcp-data-pvc
+      - name: mcp-logs
+        emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-resources-server
+  namespace: mcp-system
+  labels:
+    app: mcp-resources-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-resources-server
+  template:
+    metadata:
+      labels:
+        app: mcp-resources-server
+    spec:
+      containers:
+      - name: mcp-resources-server
+        image: mcp-server:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MCP_SERVER_TYPE
+          value: "resources"
+        - name: MCP_LOG_LEVEL
+          value: "INFO"
+        - name: MCP_CAPABILITIES
+          value: "resources,databases"
+        - name: MCP_SERVER_NAME
+          value: "resources-server"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: mcp-config
+          mountPath: /app/config
+        - name: mcp-data
+          mountPath: /app/data
+        - name: mcp-logs
+          mountPath: /app/logs
+      volumes:
+      - name: mcp-config
+        configMap:
+          name: mcp-config
+      - name: mcp-data
+        persistentVolumeClaim:
+          claimName: mcp-data-pvc
+      - name: mcp-logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway-service
+  namespace: mcp-system
+spec:
+  selector:
+    app: mcp-gateway
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-tools-service
+  namespace: mcp-system
+spec:
+  selector:
+    app: mcp-tools-server
+  ports:
+  - protocol: TCP
+    port: 8081
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-resources-service
+  namespace: mcp-system
+spec:
+  selector:
+    app: mcp-resources-server
+  ports:
+  - protocol: TCP
+    port: 8082
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-config
+  namespace: mcp-system
+data:
+  mcp-server.conf: |
+    server {
+      port = 8080
+      host = "0.0.0.0"
+    }
+    
+    logging {
+      level = "INFO"
+      format = "json"
+    }
+    
+    capabilities {
+      tools = true
+      resources = true
+      prompts = true
+    }
+    
+    health {
+      enabled = true
+      path = "/health"
+      interval = "30s"
+    }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mcp-data-pvc
+  namespace: mcp-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-gateway-hpa
+  namespace: mcp-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-gateway
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-tools-hpa
+  namespace: mcp-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-tools-server
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-resources-hpa
+  namespace: mcp-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-resources-server
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70 

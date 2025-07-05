@@ -1,0 +1,570 @@
+package k2script.git
+
+import java.io.File
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.delay
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+/**
+ * Git Feature Branch Manager with TrikeShed Taxonomy Integration
+ * 
+ * Features:
+ * - Rapid cloning with LFS support
+ * - TrikeShed taxonomy-based branch naming
+ * - Automatic GitHub/GitLab/upstream setup
+ * - Deployment recipes (Docker/Kubernetes)
+ * - Fiduciary attention to Git tree and LFS objects
+ */
+class GitFeatureBranchManager(
+    private val workDir: File = File("."),
+    private val tmpDir: File = File(System.getProperty("java.io.tmpdir"), "k2script-features")
+) {
+    private val taxonomy = TrikeShedTaxonomy()
+    private val lfsManager = GitLFSManager()
+    private val recipeManager = DeploymentRecipeManager()
+    
+    init {
+        tmpDir.mkdirs()
+    }
+    
+    /**
+     * Detect Git repository in PWD with fiduciary attention
+     */
+    fun isGitRepository(dir: File): Boolean {
+        val gitDir = File(dir, ".git")
+        if (!gitDir.exists() || !gitDir.isDirectory) return false
+        
+        // Fiduciary attention: Check Git tree integrity
+        val objectsDir = File(gitDir, "objects")
+        val refsDir = File(gitDir, "refs")
+        
+        return objectsDir.exists() && refsDir.exists() && 
+               File(gitDir, "HEAD").exists()
+    }
+    
+    /**
+     * Create feature branch with TrikeShed taxonomy naming
+     */
+    suspend fun createFeatureBranch(featureName: String): String {
+        if (!isValidFeatureName(featureName)) {
+            throw IllegalArgumentException("Invalid feature name: $featureName")
+        }
+        
+        val taxonomyBranch = taxonomy.generateBranchName(featureName)
+        val branchName = "feature/$taxonomyBranch"
+        
+        if (branchExists(branchName)) {
+            throw IllegalStateException("Branch $branchName already exists")
+        }
+        
+        // Create branch with fiduciary attention
+        executeGitCommand("checkout", "-b", branchName)
+        
+        // Setup LFS tracking with attention
+        lfsManager.setupLFSTracking(workDir)
+        
+        return branchName
+    }
+    
+    /**
+     * Rapid clone with LFS and deployment recipes
+     */
+    suspend fun rapidClone(
+        sourceUrl: String,
+        featureName: String,
+        setupRemotes: Boolean = true,
+        includeLFS: Boolean = true,
+        generateRecipes: Boolean = true
+    ): RapidCloneResult {
+        val cloneDir = File(tmpDir, "clone-${System.currentTimeMillis()}")
+        cloneDir.mkdirs()
+        
+        try {
+            // Clone with LFS support
+            val cloneResult = if (includeLFS) {
+                executeGitCommand(cloneDir, "clone", "--recurse-submodules", sourceUrl, ".")
+            } else {
+                executeGitCommand(cloneDir, "clone", sourceUrl, ".")
+            }
+            
+            // Setup LFS with fiduciary attention
+            if (includeLFS) {
+                lfsManager.setupLFSTracking(cloneDir)
+                lfsManager.pullLFSObjects(cloneDir)
+            }
+            
+            // Create feature branch
+            val branchName = createFeatureBranchInDir(cloneDir, featureName)
+            
+            // Setup remotes with attention
+            val remotes = if (setupRemotes) {
+                setupRemotesWithAttention(cloneDir, sourceUrl)
+            } else {
+                emptyList()
+            }
+            
+            // Generate deployment recipes
+            val recipes = if (generateRecipes) {
+                recipeManager.generateRecipes(cloneDir, featureName)
+            } else {
+                emptyList()
+            }
+            
+            return RapidCloneResult(
+                success = true,
+                cloneDir = cloneDir,
+                branchName = branchName,
+                remotes = remotes,
+                recipes = recipes,
+                lfsObjects = if (includeLFS) lfsManager.getLFSObjects(cloneDir) else emptyList()
+            )
+            
+        } catch (e: Exception) {
+            return RapidCloneResult(
+                success = false,
+                error = e.message,
+                cloneDir = cloneDir
+            )
+        }
+    }
+    
+    /**
+     * Setup remotes with fiduciary attention to Git tree
+     */
+    private suspend fun setupRemotesWithAttention(cloneDir: File, sourceUrl: String): List<GitRemote> {
+        val remotes = mutableListOf<GitRemote>()
+        
+        // Parse source URL to determine platform
+        val platform = detectGitPlatform(sourceUrl)
+        
+        when (platform) {
+            GitPlatform.GITHUB -> {
+                // Setup GitHub remotes
+                val githubUrl = convertToGitHubUrl(sourceUrl)
+                executeGitCommand(cloneDir, "remote", "add", "origin", githubUrl)
+                executeGitCommand(cloneDir, "remote", "add", "upstream", sourceUrl)
+                remotes.add(GitRemote("origin", githubUrl, GitPlatform.GITHUB))
+                remotes.add(GitRemote("upstream", sourceUrl, GitPlatform.GITHUB))
+            }
+            GitPlatform.GITLAB -> {
+                // Setup GitLab remotes
+                val gitlabUrl = convertToGitLabUrl(sourceUrl)
+                executeGitCommand(cloneDir, "remote", "add", "origin", gitlabUrl)
+                executeGitCommand(cloneDir, "remote", "add", "upstream", sourceUrl)
+                remotes.add(GitRemote("origin", gitlabUrl, GitPlatform.GITLAB))
+                remotes.add(GitRemote("upstream", sourceUrl, GitPlatform.GITLAB))
+            }
+            else -> {
+                // Generic remote setup
+                executeGitCommand(cloneDir, "remote", "add", "origin", sourceUrl)
+                remotes.add(GitRemote("origin", sourceUrl, GitPlatform.GENERIC))
+            }
+        }
+        
+        return remotes
+    }
+    
+    /**
+     * Validate feature name with TrikeShed taxonomy
+     */
+    fun isValidFeatureName(name: String): Boolean {
+        if (name.isEmpty()) return false
+        
+        // Check basic format
+        val basicPattern = Regex("^[a-z0-9-]+$")
+        if (!basicPattern.matches(name)) return false
+        
+        // Check TrikeShed taxonomy compatibility
+        return taxonomy.isValidFeatureName(name)
+    }
+    
+    /**
+     * Check if branch exists with fiduciary attention
+     */
+    fun branchExists(branchName: String): Boolean {
+        val result = executeGitCommand("branch", "--list", branchName)
+        return result.isNotEmpty()
+    }
+    
+    /**
+     * Get current branch with full attention to Git tree
+     */
+    fun getCurrentBranch(): GitBranch {
+        val branchName = executeGitCommand("branch", "--show-current").trim()
+        val lastCommit = getLastCommit()
+        
+        return GitBranch(
+            name = branchName,
+            isCurrent = true,
+            lastCommit = lastCommit
+        )
+    }
+    
+    /**
+     * List all branches with fiduciary attention
+     */
+    fun listBranches(): List<GitBranch> {
+        val branches = mutableListOf<GitBranch>()
+        val currentBranch = getCurrentBranch()
+        
+        val branchList = executeGitCommand("branch", "--list", "--format=%(refname:short)")
+        branchList.split("\n").filter { it.isNotEmpty() }.forEach { branchName ->
+            val isCurrent = branchName == currentBranch.name
+            val lastCommit = if (isCurrent) currentBranch.lastCommit else getLastCommit(branchName)
+            
+            branches.add(GitBranch(
+                name = branchName,
+                isCurrent = isCurrent,
+                lastCommit = lastCommit
+            ))
+        }
+        
+        return branches
+    }
+    
+    /**
+     * Check for uncommitted changes with attention
+     */
+    fun hasUncommittedChanges(): Boolean {
+        val status = executeGitCommand("status", "--porcelain")
+        return status.isNotEmpty()
+    }
+    
+    /**
+     * Stage and commit with fiduciary attention
+     */
+    suspend fun stageAndCommit(message: String, files: List<File>): String {
+        // Stage files with attention
+        files.forEach { file ->
+            executeGitCommand("add", file.absolutePath)
+        }
+        
+        // Commit with attention to Git tree
+        val commitHash = executeGitCommand("commit", "-m", message)
+        
+        // Extract hash from commit output
+        val hashPattern = Regex("\\b[a-f0-9]{40}\\b")
+        val match = hashPattern.find(commitHash)
+        
+        return match?.value ?: throw IllegalStateException("Failed to get commit hash")
+    }
+    
+    /**
+     * Push branch with LFS attention
+     */
+    suspend fun pushBranch(branchName: String): Boolean {
+        try {
+            // Push Git objects
+            executeGitCommand("push", "origin", branchName)
+            
+            // Push LFS objects with fiduciary attention
+            lfsManager.pushLFSObjects(workDir)
+            
+            return true
+        } catch (e: Exception) {
+            return false
+        }
+    }
+    
+    /**
+     * Create pull request with deployment recipes
+     */
+    suspend fun createPullRequest(
+        featureName: String,
+        title: String,
+        description: String
+    ): PullRequest {
+        val branchName = "feature/$featureName"
+        val recipes = recipeManager.generateRecipes(workDir, featureName)
+        
+        // Create PR description with recipes
+        val enhancedDescription = buildString {
+            appendLine(description)
+            appendLine()
+            appendLine("## Deployment Recipes")
+            recipes.forEach { recipe ->
+                appendLine("- ${recipe.name}: ${recipe.description}")
+            }
+        }
+        
+        return PullRequest(
+            id = generatePRId(),
+            title = title,
+            description = enhancedDescription,
+            sourceBranch = branchName,
+            targetBranch = getDefaultBranch(),
+            status = "open"
+        )
+    }
+    
+    /**
+     * Get repository information with fiduciary attention
+     */
+    fun getRepositoryInfo(): GitRepositoryInfo {
+        val name = workDir.name
+        val remoteUrl = getRemoteUrl("origin")
+        val defaultBranch = getDefaultBranch()
+        val currentBranch = getCurrentBranch().name
+        
+        return GitRepositoryInfo(
+            name = name,
+            remoteUrl = remoteUrl,
+            defaultBranch = defaultBranch,
+            currentBranch = currentBranch
+        )
+    }
+    
+    /**
+     * Validate repository state with full attention
+     */
+    fun validateRepositoryState(): GitValidationResult {
+        val messages = mutableListOf<String>()
+        var isValid = true
+        
+        // Check Git tree integrity
+        if (!isGitRepository(workDir)) {
+            messages.add("Not a valid Git repository")
+            isValid = false
+        }
+        
+        // Check LFS setup
+        if (lfsManager.hasLFSFiles(workDir) && !lfsManager.isLFSConfigured(workDir)) {
+            messages.add("LFS files detected but LFS not configured")
+            isValid = false
+        }
+        
+        // Check for uncommitted changes
+        if (hasUncommittedChanges()) {
+            messages.add("Uncommitted changes detected")
+        }
+        
+        return GitValidationResult(isValid, messages)
+    }
+    
+    /**
+     * Get feature branch status with attention
+     */
+    fun getFeatureBranchStatus(featureName: String): FeatureBranchStatus {
+        val branchName = "feature/$featureName"
+        val lastCommit = getLastCommit(branchName)
+        val aheadCount = getAheadCount(branchName)
+        val behindCount = getBehindCount(branchName)
+        val hasChanges = hasUncommittedChanges()
+        
+        return FeatureBranchStatus(
+            branchName = branchName,
+            lastCommit = lastCommit,
+            aheadCount = aheadCount,
+            behindCount = behindCount,
+            hasUncommittedChanges = hasChanges
+        )
+    }
+    
+    /**
+     * List feature branches with taxonomy attention
+     */
+    fun listFeatureBranches(): List<GitBranch> {
+        return listBranches().filter { it.name.startsWith("feature/") }
+    }
+    
+    /**
+     * Delete feature branch with cleanup attention
+     */
+    suspend fun deleteFeatureBranch(featureName: String): Boolean {
+        val branchName = "feature/$featureName"
+        
+        try {
+            // Switch to default branch first
+            val defaultBranch = getDefaultBranch()
+            executeGitCommand("checkout", defaultBranch)
+            
+            // Delete local branch
+            executeGitCommand("branch", "-D", branchName)
+            
+            // Delete remote branch if exists
+            try {
+                executeGitCommand("push", "origin", "--delete", branchName)
+            } catch (e: Exception) {
+                // Remote branch might not exist, which is fine
+            }
+            
+            return true
+        } catch (e: Exception) {
+            return false
+        }
+    }
+    
+    /**
+     * Get commit history with attention
+     */
+    fun getCommitHistory(branchName: String, limit: Int): List<GitCommit> {
+        val commits = mutableListOf<GitCommit>()
+        
+        val logOutput = executeGitCommand(
+            "log", "--format=%H|%s|%an|%ad", "--date=short", "-n", limit.toString(), branchName
+        )
+        
+        logOutput.split("\n").filter { it.isNotEmpty() }.forEach { line ->
+            val parts = line.split("|")
+            if (parts.size >= 4) {
+                commits.add(GitCommit(
+                    hash = parts[0],
+                    message = parts[1],
+                    author = parts[2],
+                    date = parts[3]
+                ))
+            }
+        }
+        
+        return commits
+    }
+    
+    // Private helper methods
+    
+    private suspend fun createFeatureBranchInDir(dir: File, featureName: String): String {
+        val originalDir = workDir
+        workDir = dir
+        val result = createFeatureBranch(featureName)
+        workDir = originalDir
+        return result
+    }
+    
+    private fun executeGitCommand(vararg args: String): String {
+        val process = ProcessBuilder("git", *args)
+            .directory(workDir)
+            .redirectErrorStream(true)
+            .start()
+        
+        val output = process.inputStream.bufferedReader().readText()
+        val exitCode = process.waitFor()
+        
+        if (exitCode != 0) {
+            throw RuntimeException("Git command failed: ${args.joinToString(" ")}")
+        }
+        
+        return output
+    }
+    
+    private fun executeGitCommand(dir: File, vararg args: String): String {
+        val process = ProcessBuilder("git", *args)
+            .directory(dir)
+            .redirectErrorStream(true)
+            .start()
+        
+        val output = process.inputStream.bufferedReader().readText()
+        val exitCode = process.waitFor()
+        
+        if (exitCode != 0) {
+            throw RuntimeException("Git command failed: ${args.joinToString(" ")}")
+        }
+        
+        return output
+    }
+    
+    private fun getLastCommit(branchName: String = "HEAD"): GitCommit {
+        val hash = executeGitCommand("rev-parse", branchName).trim()
+        val message = executeGitCommand("log", "-1", "--format=%s", branchName).trim()
+        val author = executeGitCommand("log", "-1", "--format=%an", branchName).trim()
+        val date = executeGitCommand("log", "-1", "--format=%ad", "--date=short", branchName).trim()
+        
+        return GitCommit(hash, message, author, date)
+    }
+    
+    private fun getRemoteUrl(remoteName: String): String? {
+        return try {
+            executeGitCommand("remote", "get-url", remoteName).trim()
+        } catch (e: Exception) {
+            null
+        }
+    }
+    
+    private fun getDefaultBranch(): String {
+        return try {
+            executeGitCommand("symbolic-ref", "refs/remotes/origin/HEAD")
+                .trim()
+                .removePrefix("refs/remotes/origin/")
+        } catch (e: Exception) {
+            "main"
+        }
+    }
+    
+    private fun getAheadCount(branchName: String): Int {
+        return try {
+            val output = executeGitCommand("rev-list", "--count", "$branchName..origin/${getDefaultBranch()}")
+            output.trim().toInt()
+        } catch (e: Exception) {
+            0
+        }
+    }
+    
+    private fun getBehindCount(branchName: String): Int {
+        return try {
+            val output = executeGitCommand("rev-list", "--count", "origin/${getDefaultBranch()}..$branchName")
+            output.trim().toInt()
+        } catch (e: Exception) {
+            0
+        }
+    }
+    
+    private fun detectGitPlatform(url: String): GitPlatform {
+        return when {
+            url.contains("github.com") -> GitPlatform.GITHUB
+            url.contains("gitlab.com") -> GitPlatform.GITLAB
+            else -> GitPlatform.GENERIC
+        }
+    }
+    
+    private fun convertToGitHubUrl(url: String): String {
+        // Convert various GitHub URL formats to SSH
+        return url.replace("https://github.com/", "git@github.com:")
+    }
+    
+    private fun convertToGitLabUrl(url: String): String {
+        // Convert various GitLab URL formats to SSH
+        return url.replace("https://gitlab.com/", "git@gitlab.com:")
+    }
+    
+    private fun generatePRId(): String {
+        return "pr-${System.currentTimeMillis()}"
+    }
+}
+
+enum class GitPlatform {
+    GITHUB, GITLAB, GENERIC
+}
+
+data class GitRemote(
+    val name: String,
+    val url: String,
+    val platform: GitPlatform
+)
+
+data class RapidCloneResult(
+    val success: Boolean,
+    val cloneDir: File? = null,
+    val branchName: String? = null,
+    val remotes: List<GitRemote> = emptyList(),
+    val recipes: List<DeploymentRecipe> = emptyList(),
+    val lfsObjects: List<LFSObject> = emptyList(),
+    val error: String? = null
+)
+
+data class LFSObject(
+    val path: String,
+    val size: Long,
+    val oid: String
+)
+
+data class DeploymentRecipe(
+    val name: String,
+    val type: RecipeType,
+    val content: String,
+    val description: String
+)
+
+enum class RecipeType {
+    DOCKER, KUBERNETES, DOCKER_COMPOSE, HELM, TERRAFORM
+} 
