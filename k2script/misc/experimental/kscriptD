@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-exec $(kotlin -J-agentlib:jdwp=transport=dt_socket,server=n,address=scicomp-mac-12.local:8765,suspend=y -classpath build/libs/kscript-0.1-SNAPSHOT-all.jar kscript.app.KscriptKt "$@")

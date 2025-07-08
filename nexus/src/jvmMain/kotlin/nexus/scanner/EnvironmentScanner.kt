@@ -119,7 +119,8 @@ class EnvironmentScanner(
     
     private fun detectProjectType(buildTools: Set<BuildTool>, languages: Set<Language>): ProjectType {
         return when {
-            BuildTool.GRADLE in buildTools && File(rootDir, "gradle.properties").readText().contains("kotlin.mpp.enableGranularSourceSetsMetadata") 
+            BuildTool.GRADLE in buildTools && 
+                File(rootDir, "gradle.properties").let { it.exists() && it.readText().contains("kotlin.mpp.enableGranularSourceSetsMetadata") }
                 -> ProjectType.KOTLIN_MULTIPLATFORM
             Language.KOTLIN in languages && Language.JAVA !in languages 
                 -> ProjectType.KOTLIN_JVM

@@ -39,7 +39,7 @@ class CompilationDataCube(
      */
     fun transform(rank: Int): CompilationDataCube {
         val rankedTransform = transforms[rank % transforms.a]
-        val transformedCoordinates = coordinates.a j { i ->
+        val transformedCoordinates = coordinates.a j { i: Int ->
             rankedTransform.apply(coordinates[i])
         }
         
@@ -55,7 +55,7 @@ class CompilationDataCube(
      */
     fun bisectBySeverity(severity: ErrorSeverity): CompilationDataCube {
         val filtered = coordinates.filter { it.severity == severity }
-        val filteredIndexed = filtered.size j { i -> filtered[i] }
+        val filteredIndexed = filtered.size j { i: Int -> filtered[i] }
         
         return CompilationDataCube(
             dimensions = dimensions,
@@ -76,7 +76,7 @@ class CompilationDataCube(
         }
         
         return fileGroups.entries.first().key j 
-               (fileGroups.entries.first().value.size j { i -> fileGroups.entries.first().value[i] })
+               (fileGroups.entries.first().value.size j { i: Int -> fileGroups.entries.first().value[i] })
     }
     
     /**
@@ -84,7 +84,7 @@ class CompilationDataCube(
      */
     fun rankByComplexity(): Indexed<CompilationCoordinate> {
         val sorted = coordinates.toList().sortedByDescending { it.severity.rank }
-        return sorted.size j { i -> sorted[i] }
+        return sorted.size j { i: Int -> sorted[i] }
     }
 }
 
@@ -167,8 +167,8 @@ object StacktraceParser {
             }
         }
         
-        val indexed = coordinates.size j { i -> coordinates[i] }
-        val transforms = 3 j { i ->
+        val indexed = coordinates.size j { i: Int -> coordinates[i] }
+        val transforms = 3 j { i: Int ->
             when (i) {
                 0 -> TypeMismatchTransform()
                 1 -> UnresolvedReferenceTransform()
@@ -177,7 +177,7 @@ object StacktraceParser {
             }
         }
         
-        val dimensions = 4 j { i ->
+        val dimensions = 4 j { i: Int ->
             when (i) {
                 0 -> "file"
                 1 -> "line" 
@@ -235,7 +235,7 @@ object CompilationAnalytics {
         val afterCount = afterCube.coordinates.a
         val reduction = beforeCount - afterCount
         
-        val suppressions = beforeCube.coordinates.a j { i ->
+        val suppressions = beforeCube.coordinates.a j { i: Int ->
             val before = beforeCube.coordinates[i]
             SuppressionAction(
                 target = before.file,
@@ -268,7 +268,7 @@ object CompilationAnalytics {
             complexity j coord
         }.sortedByDescending { it.a }
         
-        return ranked.size j { i -> ranked[i] }
+        return ranked.size j { i: Int -> ranked[i] }
     }
 }
 

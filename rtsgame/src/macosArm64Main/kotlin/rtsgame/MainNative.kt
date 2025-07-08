@@ -1,9 +1,9 @@
 package rtsgame
 
 import kotlinx.coroutines.*
+import kotlinx.datetime.*
 
 // Top-level data classes for minimal flow mode
-
 data class GameState(
     val entities: MutableList<GameEntity> = mutableListOf(),
     var currentTime: Long = 0L,
@@ -43,58 +43,52 @@ actual fun platformMain() {
 suspend fun runFlowModeDemo() {
     println("🌊 Initializing Flow Mode...")
     
+    // Simple game state
     val gameState = GameState()
     
-    // Create initial entities
-    val entities = listOf(
-        GameEntity("commander1", "COMMANDER", Position(0f, 0f)),
-        GameEntity("scout1", "SCOUT", Position(10f, 5f)),
-        GameEntity("worker1", "WORKER", Position(-5f, 3f)),
-        GameEntity("soldier1", "SOLDIER", Position(15f, -2f)),
-        GameEntity("archer1", "ARCHER", Position(-10f, 8f)),
-        GameEntity("cavalry1", "CAVALRY", Position(20f, 12f)),
-        GameEntity("siege1", "SIEGE", Position(-15f, -5f)),
-        GameEntity("navy1", "NAVY", Position(25f, 25f))
-    )
-    
-    gameState.entities.addAll(entities)
+    // Add some initial entities
+    gameState.entities.addAll(listOf(
+        GameEntity("unit1", "scout", Position(10f, 20f), 100, 1),
+        GameEntity("unit2", "warrior", Position(30f, 40f), 150, 1),
+        GameEntity("unit3", "enemy", Position(50f, 60f), 120, 2)
+    ))
     
     println("✅ Game state initialized with ${gameState.entities.size} entities")
     
-    // Game loop
+    // Simple game loop
     var tick = 0
     while (tick < 100) {
         tick++
+        gameState.currentTime = Clock.System.now().toEpochMilliseconds()
         
-        // Update game state
-        gameState.currentTime = System.currentTimeMillis()
-        
-        // Simulate entity movement and interactions
-        gameState.entities.forEachIndexed { index, entity ->
-            // Simple movement simulation
-            val newX = entity.position.x + (kotlin.random.Random.nextFloat() - 0.5f) * 2f
-            val newY = entity.position.y + (kotlin.random.Random.nextFloat() - 0.5f) * 2f
+        // Update entity positions (simple movement)
+        gameState.entities.forEach { entity ->
+            val newX = entity.position.x + (if (entity.playerId == 1) 1f else -1f)
+            val newY = entity.position.y + 0.5f
+            val newPosition = Position(newX, newY, entity.position.z)
             
-            val updatedEntity = entity.copy(
-                position = Position(newX, newY, entity.position.z)
-            )
-            gameState.entities[index] = updatedEntity
-        }
-        
-        // Print game state every 10 ticks
-        if (tick % 10 == 0) {
-            println("⏱️  Tick $tick - ${gameState.entities.size} entities active")
-            gameState.entities.take(3).forEach { entity ->
-                println("  ${entity.type} at (${entity.position.x.toInt()}, ${entity.position.y.toInt()})")
+            // Update entity position
+            val index = gameState.entities.indexOfFirst { it.id == entity.id }
+            if (index != -1) {
+                gameState.entities[index] = entity.copy(position = newPosition)
             }
         }
         
-        delay(100) // 100ms per tick
+        // Print status every 10 ticks
+        if (tick % 10 == 0) {
+            println("⏱️ Tick $tick - Entities: ${gameState.entities.size}")
+            gameState.entities.forEach { entity ->
+                println("  ${entity.type} (${entity.id}) at (${entity.position.x}, ${entity.position.y}) - HP: ${entity.health}")
+            }
+        }
+        
+        // Simulate some time passing
+        delay(100)
     }
     
     println("🎮 Flow Mode Demo Complete!")
     println("📊 Final Stats:")
-    println("  - Total entities: ${gameState.entities.size}")
-    println("  - Total ticks: $tick")
-    println("  - Resources: ${gameState.resources}")
+    println("  Total ticks: $tick")
+    println("  Final entities: ${gameState.entities.size}")
+    println("  Resources: ${gameState.resources}")
 }

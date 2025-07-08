@@ -3,11 +3,14 @@
 package borg.trikeshed.torrent.simulation
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.torrent.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
 import java.security.MessageDigest
+
+// Torrent type aliases - imported from TorrentKettle
 
 /**
  * Complete Torrent Simulation Framework

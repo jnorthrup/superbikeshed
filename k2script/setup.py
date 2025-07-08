@@ -1,21 +1,21 @@
 from setuptools import setup
 
 setup(
-    name='kscript',
-    version='4.2.3',
-    author='Holger Brandl, Marcin Kuszczak',
-    author_email='holgerbrandl@gmail.com, aarti@interia.pl',
-    description='KScript - easy scripting with Kotlin',
-    url='https://github.com/kscripting/kscript',
+    name='k2script',
+    version='1.0.0',
+    author='K2script Team',
+    author_email='team@k2scripting.org',
+    description='K2script - Enhanced Kotlin 2.x scripting',
+    url='https://github.com/k2scripting/k2script',
     license='MIT',
     packages=['wrappers'],
     entry_points={
         'console_scripts': [
-            'kscript=wrappers.kscript_py_wrapper:main'
+            'k2script=wrappers.k2script_py_wrapper:main'
         ]
     },
     package_data={
-        'wrappers': ['kscript.jar'] # Assume kscript.jar is copied to wrappers directory
+        'wrappers': ['k2script.jar'] # Assume k2script.jar is copied to wrappers directory
     },
     classifiers=[
         'Programming Language :: Python :: 3',

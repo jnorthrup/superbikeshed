@@ -1,8 +1,7 @@
-package nexus.integration
+package nexus
 
 import kotlinx.coroutines.runBlocking
 import nexus.scanner.EnvironmentScanner
-import nexus.Main.NexusConfig
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals

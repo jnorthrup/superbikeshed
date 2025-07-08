@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import nexus.ai.*
 import nexus.scanner.*
 import nexus.tools.*
+import nexus.telemetry.*
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -28,6 +29,7 @@ object Nexus {
               task <description>  Execute AI-powered task
               serve               Start LSP server
               tools [tool] [args] List or execute available tools
+              telemetry [cmd]     Manage IDE telemetry collection
               help                Show this help
               
             Options:
@@ -112,6 +114,7 @@ class ActionExecutor(private val config: NexusConfig) {
             "task" -> executeTask(args)
             "serve" -> executeServe(args)
             "tools" -> executeTools(args)
+            "telemetry" -> executeTelemetry(args)
             "help" -> Nexus.printHelp()
             else -> {
                 println("Unknown command: $command")
@@ -229,6 +232,83 @@ class ActionExecutor(private val config: NexusConfig) {
             } catch (e: Exception) {
                 println("Error executing tool: ${e.message}")
                 exitProcess(1)
+            }
+        }
+    }
+    
+    private suspend fun executeTelemetry(args: List<String>) {
+        val subcommand = args.firstOrNull() ?: "status"
+        
+        when (subcommand) {
+            "start" -> {
+                println("Starting unified telemetry collection...")
+                val telemetrySystem = UnifiedTelemetrySystem()
+                telemetrySystem.initialize()
+                telemetrySystem.start()
+                
+                println("Telemetry collection started")
+                println("Collecting from: IntelliJ, VS Code, Eclipse")
+                println("Press Ctrl+C to stop...")
+                
+                // Keep running
+                Runtime.getRuntime().addShutdownHook(Thread {
+                    runBlocking {
+                        telemetrySystem.stop()
+                    }
+                })
+                
+                // Wait indefinitely
+                while (true) {
+                    delay(1000)
+                    // Could periodically print metrics here
+                }
+            }
+            
+            "status" -> {
+                println("Telemetry Status:")
+                println("- IntelliJ: Not connected")
+                println("- VS Code: Not connected") 
+                println("- Eclipse: Not connected")
+                println("Run 'nexus telemetry start' to begin collection")
+            }
+            
+            "report" -> {
+                val telemetrySystem = UnifiedTelemetrySystem()
+                val report = telemetrySystem.generateReport()
+                
+                println("=== Telemetry Report ===")
+                println("Period: ${report.startTime} to ${report.endTime}")
+                println("Total events: ${report.totalEvents}")
+                println("\nEvents by IDE:")
+                report.eventsByIDE.forEach { (ide, count) ->
+                    println("  $ide: $count")
+                }
+                println("\nEvents by Type:")
+                report.eventsByType.forEach { (type, count) ->
+                    println("  $type: $count")
+                }
+                println("\nTop Metrics:")
+                report.topMetrics.take(5).forEach { metric ->
+                    println("  ${metric.name}: ${metric.value} ${metric.unit}")
+                }
+            }
+            
+            "metrics" -> {
+                val telemetrySystem = UnifiedTelemetrySystem()
+                val metrics = telemetrySystem.getMetrics()
+                
+                println("Current Metrics:")
+                metrics.forEach { (key, value) ->
+                    println("  $key: ${value.value} ${value.unit}")
+                    value.tags.forEach { (tag, tagValue) ->
+                        println("    $tag: $tagValue")
+                    }
+                }
+            }
+            
+            else -> {
+                println("Unknown telemetry command: $subcommand")
+                println("Available commands: start, status, report, metrics")
             }
         }
     }
