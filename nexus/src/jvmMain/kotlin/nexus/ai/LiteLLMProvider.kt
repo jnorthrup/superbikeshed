@@ -121,18 +121,18 @@ class LiteLLMProvider(
 }
 
 /**
- * Factory for creating AI providers
+ * Adapter to make LiteLLMProvider implement AIProvider interface
  */
-object AIProviderFactory {
-    fun create(provider: String): LiteLLMProvider {
-        return when (provider.lowercase()) {
-            "litellm", "openai" -> LiteLLMProvider()
-            "anthropic" -> LiteLLMProvider(
-                apiKey = System.getenv("ANTHROPIC_API_KEY"),
-                baseUrl = "https://api.anthropic.com/v1",
-                model = "claude-3-opus-20240229"
-            )
-            else -> throw IllegalArgumentException("Unknown AI provider: $provider")
+class LiteLLMAIProvider : AIProvider {
+    private val litellm = LiteLLMProvider()
+    
+    override suspend fun completeTask(task: String, context: String?): String {
+        val fullTask = buildString {
+            append(task)
+            context?.let {
+                append("\n\nContext:\n$it")
+            }
         }
+        return litellm.completeTask(fullTask)
     }
 }

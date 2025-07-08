@@ -22,14 +22,28 @@ value class Cursor(internal val data: MetaSeries<CursorRowIndex, RowVec>) : Arra
     fun asSeries(): MetaSeries<CursorRowIndex, RowVec> = data
 }
 
-// Core cursor operations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 
 /** Get row at index y, supporting negative indices */
-infix fun Cursor.at(y: Int): RowVec = data.b(CursorRowIndex(if (y < 0) data.a.value + y else y))
+infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) size + y else y]
 
 /** Get slice of rows */
 infix fun Cursor.at(r: IntRange): Cursor {
@@ -39,7 +53,9 @@ infix fun Cursor.at(r: IntRange): Cursor {
         "Invalid range $r for cursor size $size" 
     }
     val sliceSize = actualEnd - actualStart + 1
-    return Cursor(sliceSize j { y: Int -> data.b(CursorRowIndex(y + actualStart)) })
+    return Cursor(MetaSeries(CursorRowIndex(sliceSize)) { iy: CursorRowIndex ->
+        this[iy.value + actualStart]
+    })
 }
 
 /** Get cursor with specified row indices */
@@ -52,7 +68,10 @@ operator fun Cursor.get(indices: Iterable<Int>): Cursor {
     return Cursor(array.size j { iy: Int -> data.b(CursorRowIndex(array[iy])) })
 }
 
-// Column operations
+// Core cursor operations
+
+/** Get row at index y, supporting negative indices */
+infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) size + y else y]
 
 /** Get column by index */
 fun Cursor.column(index: Int): Indexed<Any?> = 
@@ -91,7 +110,7 @@ val Cursor.scalars: Indexed<ColumnMeta>
     get() = if (size > 0) {
         val firstRow = this[0]
         firstRow.size j { colIndex: Int -> 
-            firstRow.b(colIndex).b
+                        firstRow.b(colIndex).b
         }
     } else {
         0 j { _: Int -> "" j String::class }
@@ -185,7 +204,7 @@ fun Cursor.groupBy(columnIndex: Int): Indexed<Cursor> {
 fun Cursor.sumColumn(columnIndex: Int): Double {
     var sum = 0.0
     for (i in 0 until size) {
-        val value = at(i).b(columnIndex).a
+        val value = this[i].b(columnIndex).a
         sum += when (value) {
             is Number -> value.toDouble()
             else -> 0.0
@@ -198,7 +217,7 @@ fun Cursor.sumColumn(columnIndex: Int): Double {
 fun Cursor.countColumn(columnIndex: Int): Int {
     var count = 0
     for (i in 0 until size) {
-        if (at(i).b(columnIndex).a != null) count++
+        if (this[i].b(columnIndex).a != null) count++
     }
     return count
 }

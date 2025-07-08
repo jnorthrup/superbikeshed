@@ -5,6 +5,7 @@ import nexus.ai.*
 import nexus.scanner.*
 import nexus.tools.*
 import nexus.telemetry.*
+import nexus.mcp.*
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -28,6 +29,7 @@ object Nexus {
               scan [path]         Scan environment capabilities
               task <description>  Execute AI-powered task
               serve               Start LSP server
+              mcp [port]          Start MCP server (default: 8765)
               tools [tool] [args] List or execute available tools
               telemetry [cmd]     Manage IDE telemetry collection
               help                Show this help
@@ -35,15 +37,17 @@ object Nexus {
             Options:
               --config <file>     Use configuration file
               --verbose           Enable verbose output
-              --ai-provider <id>  Set AI provider (default: litellm)
+              --ai-provider <id>  Set AI provider: litellm, nemotron, nemo (default: litellm)
               --version           Show version
               
             Examples:
-              nexus scan                    # Scan current directory
-              nexus task "refactor to use Series<T>"
+              nexus scan                              # Scan current directory
+              nexus task "refactor to use Series<T>"  # Use default AI provider
+              nexus --ai-provider nemo task "analyze this architecture"  # Thinking Nemotron
+              nexus --ai-provider nemo task "what is 2+2"              # Non-thinking Nemotron
               nexus run analysis.kts
-              nexus tools                   # List available tools
-              nexus tools gradle build      # Execute gradle build
+              nexus tools                             # List available tools
+              nexus tools gradle build                # Execute gradle build
         """.trimIndent())
     }
 }
@@ -113,6 +117,7 @@ class ActionExecutor(private val config: NexusConfig) {
             "scan" -> executeScan(args)
             "task" -> executeTask(args)
             "serve" -> executeServe(args)
+            "mcp" -> executeMCP(args)
             "tools" -> executeTools(args)
             "telemetry" -> executeTelemetry(args)
             "help" -> Nexus.printHelp()
@@ -163,7 +168,13 @@ class ActionExecutor(private val config: NexusConfig) {
         
         try {
             val provider = AIProviderFactory.create(config.aiProvider)
-            val result = provider.completeTask(taskDescription)
+            
+            // Get context from current directory if verbose mode
+            val context = if (config.verbose) {
+                "Working directory: ${config.workingDir.absolutePath}"
+            } else null
+            
+            val result = provider.completeTask(taskDescription, context)
             println("\nResult:")
             println(result)
         } catch (e: Exception) {
@@ -200,6 +211,40 @@ class ActionExecutor(private val config: NexusConfig) {
             runBlocking {
                 println("\nShutting down LSP server...")
                 lspServer.stop()
+                serverJob.cancel()
+            }
+        })
+        
+        // Keep main thread alive
+        serverJob.join()
+    }
+    
+    private suspend fun executeMCP(args: List<String>) {
+        val port = args.firstOrNull()?.toIntOrNull() ?: 8765
+        println("Starting Nexus MCP server on port $port...")
+        
+        val mcpServer = NexusMCPServer(port, config.workingDir)
+        
+        // Start server in background
+        val serverJob = GlobalScope.launch {
+            try {
+                mcpServer.start()
+            } catch (e: Exception) {
+                println("MCP Server error: ${e.message}")
+                if (config.verbose) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        
+        println("MCP Server started on port $port")
+        println("Press Ctrl+C to stop...")
+        
+        // Wait for shutdown signal
+        Runtime.getRuntime().addShutdownHook(Thread {
+            runBlocking {
+                println("\nShutting down MCP server...")
+                mcpServer.stop()
                 serverJob.cancel()
             }
         })
