@@ -1,38 +1,68 @@
-#!/bin/bash
+#\!/bin/bash
 
 # Nexus MCP Server Startup Script
-# Starts the Model Context Protocol server for Nexus
+# Starts the Nexus Model Context Protocol server
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$SCRIPT_DIR"
 
-echo "=== Nexus MCP Server ==="
-echo
+# Default configuration
+MCP_PORT=${MCP_PORT:-8765}
+AI_PROVIDER=${AI_PROVIDER:-litellm}
+VERBOSE=${VERBOSE:-false}
 
-# Default port
-PORT=${1:-8765}
+# Colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-# Build the project first
-echo "Building nexus..."
-cd "$PROJECT_ROOT"
-./gradlew :nexus:jvmJar || {
-    echo "Build failed!"
-    exit 1
-}
+echo -e "${GREEN}Nexus MCP Server Startup${NC}"
+echo "================================="
 
-# Find the JAR
-JAR_PATH="$PROJECT_ROOT/nexus/build/libs/nexus-jvm.jar"
-if [ ! -f "$JAR_PATH" ]; then
-    echo "JAR not found at: $JAR_PATH"
-    echo "Looking for JARs..."
-    find "$PROJECT_ROOT/nexus/build" -name "*.jar" -type f
+# Check if gradlew exists
+if [ \! -f "$PROJECT_ROOT/gradlew" ]; then
+    echo -e "${RED}Error: gradlew not found in $PROJECT_ROOT${NC}"
+    echo "Please run this script from the nexus project directory"
     exit 1
 fi
 
-echo
-echo "Starting MCP server on port $PORT..."
-echo "Press Ctrl+C to stop"
-echo
+# Check for NVIDIA API key if using Nemotron
+if [[ "$AI_PROVIDER" == "nemotron" || "$AI_PROVIDER" == "nemo" ]]; then
+    if [ -z "$NVIDIA_API_KEY" ]; then
+        echo -e "${YELLOW}Warning: NVIDIA_API_KEY not set. Using default key.${NC}"
+        echo "To use your own key: export NVIDIA_API_KEY=your-key-here"
+    fi
+fi
 
-# Run the MCP server
-java -cp "$JAR_PATH" nexus.MainKt mcp $PORT
+# Build the project if needed
+echo -e "${YELLOW}Building Nexus...${NC}"
+cd "$PROJECT_ROOT"
+./gradlew :nexus:build -q
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Build failed\!${NC}"
+    exit 1
+fi
+
+# Prepare arguments
+ARGS="mcp $MCP_PORT"
+if [ "$VERBOSE" = "true" ]; then
+    ARGS="--verbose $ARGS"
+fi
+if [ -n "$AI_PROVIDER" ]; then
+    ARGS="--ai-provider $AI_PROVIDER $ARGS"
+fi
+
+# Start the server
+echo -e "${GREEN}Starting MCP server on port $MCP_PORT${NC}"
+echo "AI Provider: $AI_PROVIDER"
+echo "Verbose: $VERBOSE"
+echo ""
+echo "To connect: telnet localhost $MCP_PORT"
+echo "Or use the test client: python test-mcp-client.py"
+echo ""
+
+# Run the server
+exec ./gradlew :nexus:run -q --args="$ARGS"
+EOF < /dev/null
