@@ -1,0 +1,145 @@
+---
+openapi: "3.0.0"
+info:
+  description: Define coinmarketcap's api in swagger 2.0 openapi standard
+  version: 0.0.1
+  title: Coinmarketcap API Swagger Implementation
+
+paths:
+  /cryptocurrency/market-pairs/latest:
+    get:
+      summary: List market pairs
+      parameters:
+        - name: symbol
+          in: query
+          schema:
+            type: string
+          description: Optionally offset the start (1-based index) of the paginated list of items to return.
+          required: true
+
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CryptocurrencyMarketPairsLatestResponse'
+
+
+components:
+
+  schemas:
+
+    CryptocurrencyMarketPairsLatestResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            symbol:
+              type: string
+            num_market_pairs:
+              type: integer
+            market_pairs:
+              type: array
+              items:
+                $ref: '#/components/schemas/CryptocurrencyMarketPair'
+        status:
+          $ref: '#/components/schemas/Status'
+
+    CryptocurrencyMarketPair:
+      type: object
+      properties:
+        exchange:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            slug:
+              type: string
+        market_pair_base:
+          type: object
+          properties:
+            exchange_symbol:
+              type: string
+            currency_id:
+              type: integer
+            currency_symbol:
+              type: string
+            currency_type:
+              type: string
+        market_pair_quote:
+          type: object
+          properties:
+            exchange_symbol:
+              type: string
+            currency_id:
+              type: integer
+            currency_symbol:
+              type: string
+            currency_type:
+              type: string
+        quote:
+          type: object
+          properties:
+            exchange_reported:
+              type: object
+              properties:
+                price:
+                  type: number
+                  format: double
+                volume_24h_base:
+                  type: number
+                  format: double
+                volume_24h_quote:
+                  type: number
+                  format: double
+                last_updated:
+                  type: string
+                  format: date-time
+            USD:
+              type: object
+              properties:
+                price:
+                  type: number
+                  format: double
+                volume_24h:
+                  type: number
+                  format: double
+                last_updated:
+                  type: string
+                  format: date-time
+        market_id:
+          type: integer
+        market_pair:
+          type: string
+        category:
+          type: string
+        fee_type:
+          type: string
+
+    Status:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        error_code:
+          type: integer
+          format: int64
+        error_message:
+          type: string
+        elapsed:
+          type: integer
+          format: int64
+        credit_count:
+          type: integer
+          format: int64
+        notice:
+          type: string

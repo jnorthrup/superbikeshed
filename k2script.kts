@@ -202,6 +202,11 @@ suspend fun main(args: Array<String>) = coroutineScope {
             require(args.size >= 3) { "Usage: k2script --install <destination> <script.kts>" }
             installScript(args[2], args[1])
         }
+
+        args[0] == "--kmp" -> {
+            require(args.size >= 4) { "Usage: k2script --kmp <module> <target> <action> [args...]" }
+            handleKmpCommand(args.drop(1).toTypedArray())
+        }
         
         else -> {
             // Execute script
@@ -213,6 +218,60 @@ suspend fun main(args: Array<String>) = coroutineScope {
             exitProcess(exitCode)
         }
     }
+}
+
+// Handle KMP commands
+suspend fun handleKmpCommand(kmpArgs: Array<String>) {
+    val module = kmpArgs[0]
+    val target = kmpArgs[1]
+    val action = kmpArgs[2]
+    val remainingArgs = kmpArgs.drop(3)
+
+    val gradleCommand = when (action) {
+        "run" -> {
+            when (target) {
+                "jvm" -> "./gradlew :$module:run" // Default JVM run task
+                "jsBrowser" -> "./gradlew :$module:jsBrowserRun"
+                "jsNode" -> "./gradlew :$module:jsNodeRun"
+                "macosX64" -> "./gradlew :$module:runDebugExecutableMacosX64"
+                "macosArm64" -> "./gradlew :$module:runDebugExecutableMacosArm64"
+                "linuxX64" -> "./gradlew :$module:runDebugExecutableLinuxX64"
+                "linuxArm64" -> "./gradlew :$module:runDebugExecutableLinuxArm64"
+                else -> throw IllegalArgumentException("Unsupported KMP run target: $target")
+            }
+        }
+        "build" -> {
+            when (target) {
+                "jvm" -> "./gradlew :$module:assembleJvm"
+                "js" -> "./gradlew :$module:assembleJs"
+                "macosX64" -> "./gradlew :$module:assembleMacosX64"
+                "macosArm64" -> "./gradlew :$module:assembleMacosArm64"
+                "linuxX64" -> "./gradlew :$module:assembleLinuxX64"
+                "linuxArm64" -> "./gradlew :$module:assembleLinuxArm64"
+                else -> throw IllegalArgumentException("Unsupported KMP build target: $target")
+            }
+        }
+        "test" -> {
+            when (target) {
+                "jvm" -> "./gradlew :$module:jvmTest"
+                "jsBrowser" -> "./gradlew :$module:jsBrowserTest"
+                "jsNode" -> "./gradlew :$module:jsNodeTest"
+                "macosX64" -> "./gradlew :$module:macosX64Test"
+                "macosArm64" -> "./gradlew :$module:macosArm64Test"
+                "linuxX64" -> "./gradlew :$module:linuxX64Test"
+                "linuxArm64" -> "./gradlew :$module:linuxArm64Test"
+                else -> throw IllegalArgumentException("Unsupported KMP test target: $target")
+            }
+        }
+        else -> throw IllegalArgumentException("Unsupported KMP action: $action. Must be 'run', 'build', or 'test'.")
+    }
+
+    println("🚀 Running KMP command: $gradleCommand ${remainingArgs.joinToString(" ")}")
+    val process = ProcessBuilder(*gradleCommand.split(" ").toTypedArray(), *remainingArgs.toTypedArray())
+        .inheritIO()
+        .start()
+    val exitCode = process.waitFor()
+    exitProcess(exitCode)
 }
 
 // Bootstrap

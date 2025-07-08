@@ -121,7 +121,7 @@ class SSHScpClientImpl(
                 val fileContent = receiveScpFileContent(channel, fileInfo.size)
                 
                 // Write to local file system
-                val success = fileSystem.writeFile(localPath, fileContent)
+                val success = fileSystem.writeFile(localPath, fileContent.toByteArray())
                 if (!success) {
                     println("SCP: Failed to write file to $localPath")
                     return@withContext false
@@ -202,12 +202,12 @@ class SSHScpClientImpl(
     private suspend fun sendScpCommand(channel: SSHChannel, command: String) {
         // Send exec request with SCP command
         val commandData = command.encodeToByteArray()
-        channel.dataBuffer.addAll(commandData.toList())
+        channel.dataBuffer.addAll(commandData.toMutableList())
         println("SCP: Sent command: $command")
     }
     
     private suspend fun sendScpData(channel: SSHChannel, data: ByteArray) {
-        channel.dataBuffer.addAll(data.toList())
+        channel.dataBuffer.addAll(data.toMutableList())
         println("SCP: Sent ${data.size} bytes")
     }
     
@@ -241,14 +241,14 @@ class SSHScpClientImpl(
         return ScpFileInfo(mode, size, filename)
     }
     
-    private suspend fun receiveScpFileContent(channel: SSHChannel, size: Long): ByteArray {
+    private suspend fun receiveScpFileContent(channel: SSHChannel, size: Long): Indexed<Byte> {
         // Simulate receiving file content
         delay(10) // Simulate network delay
         
-        val content = "Downloaded content from remote file".toByteArray()
+        val content = "Downloaded content from remote file".encodeToByteArray()
         println("SCP: Received ${content.size} bytes")
         
-        return content
+        return content.size j { i: Int -> content[i] }
     }
 }
 

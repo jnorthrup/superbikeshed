@@ -76,7 +76,8 @@ class SSHAuthenticationService : SSHAuthentication {
             
             // Check for identity files
             val identityFiles = findIdentityFiles()
-            identityFiles.forEach { path ->
+            for (i in 0 until identityFiles.size) {
+                val path = identityFiles.j(i)
                 try {
                     val identity = loadIdentity(path, context)
                     methods.add(PublicKeyAuthMethod(identity.a))
@@ -190,7 +191,7 @@ class SSHAuthenticationService : SSHAuthentication {
         return hosts.size j { i: Int -> hosts[i] }
     }
     
-    internal suspend fun findIdentityFiles(): List<String> {
+    internal suspend fun findIdentityFiles(): Indexed<String> {
         val homeDir = getHomeDirectory()
         val sshDir = "$homeDir/.ssh"
         val identityFiles = mutableListOf<String>()
@@ -204,7 +205,7 @@ class SSHAuthenticationService : SSHAuthentication {
             }
         }
         
-        return identityFiles
+        return identityFiles.size j { i: Int -> identityFiles[i] }
     }
     
     internal suspend fun parseOpenSSHPrivateKey(content: String): SSHIdentity {

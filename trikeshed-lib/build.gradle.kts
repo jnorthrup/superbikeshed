@@ -13,7 +13,6 @@ repositories {
 
 kotlin {
     jvm()
-    wasmJs { browser(); nodejs() }
     
     // Native target based on host OS
     val hostOs = System.getProperty("os.name")

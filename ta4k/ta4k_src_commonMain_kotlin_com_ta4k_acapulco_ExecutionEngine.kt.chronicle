@@ -1,0 +1,26 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ExecutionEngine.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ExecutionEngine.kt
+deleted file mode 100644
+index e84a3b0e..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/ExecutionEngine.kt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-package borg.trikeshed.acapulco
+-
+-class ExecutionEngine {
+-    fun initialize(initialWalletState: WalletState) {
+-        // Implementation placeholder
+-    }
+-
+-    suspend fun processTick(currentTick: MarketTick, agentAction: AgentAction): ExecutionResult {
+-        // Implementation placeholder
+-        return ExecutionResult(emptyList(), 0.0, WalletState())
+-    }
+-}
+-
+-// Define related types as per task
+-data class WalletState(val balances: Map<String, Double>)  // Simplified
+-data class ExecutionResult(val fills: List<FillInfo>, val pnlChange: Double, val newWalletState: WalletState)
+-data class FillInfo(val assetKey: String, val side: String, val quantity: Double, val price: Double, val timestamp: Long)
+\ No newline at end of file

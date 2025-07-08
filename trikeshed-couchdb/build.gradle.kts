@@ -9,7 +9,12 @@ repositories {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        withJava()
+        binaries {
+            executable()
+        }
+    }
     
     sourceSets {
         commonMain {
@@ -20,6 +25,12 @@ kotlin {
                 implementation(project(":trikeshed-net"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
+            }
+        }
+        jvmMain {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
         commonTest {
@@ -33,3 +44,4 @@ kotlin {
         }
     }
 }
+

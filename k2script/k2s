@@ -1,0 +1,196 @@
+#!/bin/bash
+# K2Script launcher using surrogate Maven approach
+
+# Check for SDKMAN Maven
+MVN_PATH="/Users/jim/.sdkman/candidates/maven/current/bin/mvn"
+if [ ! -f "$MVN_PATH" ]; then
+    echo "Error: Maven not found at $MVN_PATH"
+    echo "Please install Maven via SDKMAN: sdk install maven"
+    exit 1
+fi
+
+# Get script path
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <script.kts> [args...]"
+    exit 1
+fi
+
+SCRIPT_PATH="$1"
+shift
+
+# Run the surrogate launcher
+exec kotlin -cp "$(dirname "$0")/src/jvmMain/kotlin" <<'EOF'
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+
+// Inline version of SurrogateMavenLauncher
+val scriptFile = File(System.getenv("SCRIPT_PATH"))
+val mvnPath = System.getenv("MVN_PATH")
+val scriptArgs = System.getenv("SCRIPT_ARGS")?.split(" ") ?: emptyList()
+
+if (!scriptFile.exists()) {
+    println("Script not found: ${scriptFile.absolutePath}")
+    System.exit(1)
+}
+
+val k2scriptHome = Paths.get(System.getProperty("user.home"), ".k2script")
+val surrogatesDir = k2scriptHome.resolve("surrogates")
+val mavenRepo = k2scriptHome.resolve("m2-cache")
+
+Files.createDirectories(surrogatesDir)
+Files.createDirectories(mavenRepo)
+
+// Parse annotations
+val dependencies = mutableListOf<String>()
+val compilerPlugins = mutableSetOf<String>()
+
+scriptFile.readLines().forEach { line ->
+    if (line.contains("@file:DependsOn")) {
+        val dep = line.substringAfter('"').substringBefore('"')
+        dependencies.add(dep)
+        if (dep.contains("kotlinx-serialization")) {
+            compilerPlugins.add("serialization")
+        }
+    }
+}
+
+val scriptHash = scriptFile.readText().hashCode().toString(16)
+val surrogateName = "${scriptFile.nameWithoutExtension}-$scriptHash"
+val surrogateDir = surrogatesDir.resolve(surrogateName)
+
+// Check if already compiled
+if (!Files.exists(surrogateDir.resolve("target/classes"))) {
+    println("Building ${scriptFile.name}...")
+    
+    surrogateDir.toFile().mkdirs()
+    
+    // Generate pom.xml
+    val pomContent = """
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <groupId>k2script.surrogate</groupId>
+    <artifactId>${scriptFile.nameWithoutExtension}</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    
+    <properties>
+        <kotlin.version>1.9.22</kotlin.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    
+    <repositories>
+        <repository>
+            <id>mavenCentral</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+    </repositories>
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>${'$'}{kotlin.version}</version>
+        </dependency>
+        ${dependencies.joinToString("\n        ") { dep ->
+            val parts = dep.split(":")
+            if (parts.size >= 3) """
+        <dependency>
+            <groupId>${parts[0]}</groupId>
+            <artifactId>${parts[1]}</artifactId>
+            <version>${parts[2]}</version>
+        </dependency>""" else ""
+        }}
+    </dependencies>
+    
+    <build>
+        <sourceDirectory>src/main/kotlin</sourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <version>${'$'}{kotlin.version}</version>
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <jvmTarget>17</jvmTarget>
+                    ${if (compilerPlugins.contains("serialization")) """
+                    <compilerPlugins>
+                        <plugin>kotlinx-serialization</plugin>
+                    </compilerPlugins>""" else ""}
+                </configuration>
+                ${if (compilerPlugins.contains("serialization")) """
+                <dependencies>
+                    <dependency>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-maven-serialization</artifactId>
+                        <version>${'$'}{kotlin.version}</version>
+                    </dependency>
+                </dependencies>""" else ""}
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+    """.trimIndent()
+    
+    File(surrogateDir.toFile(), "pom.xml").writeText(pomContent)
+    
+    // Prepare script
+    val srcDir = File(surrogateDir.toFile(), "src/main/kotlin")
+    srcDir.mkdirs()
+    
+    val cleanedLines = scriptFile.readLines().filter { line ->
+        !line.startsWith("#!/") &&
+        !line.contains("@file:DependsOn") &&
+        !line.contains("@file:Repository")
+    }
+    
+    File(srcDir, "${scriptFile.nameWithoutExtension}.kt").writeText(
+        cleanedLines.joinToString("\n")
+    )
+    
+    // Compile
+    val compileProcess = ProcessBuilder(
+        mvnPath, "-q",
+        "-f", surrogateDir.toFile().absolutePath,
+        "-Dmaven.repo.local=${mavenRepo.toAbsolutePath()}",
+        "compile"
+    ).inheritIO().start()
+    
+    if (compileProcess.waitFor() != 0) {
+        println("Compilation failed")
+        System.exit(1)
+    }
+}
+
+// Run
+println("Running ${scriptFile.name}...")
+val runProcess = ProcessBuilder(
+    mvnPath, "-q",
+    "-f", surrogateDir.toFile().absolutePath,
+    "-Dmaven.repo.local=${mavenRepo.toAbsolutePath()}",
+    "exec:java",
+    "-Dexec.mainClass=${scriptFile.nameWithoutExtension}Kt",
+    "-Dexec.args=${scriptArgs.joinToString(" ")}"
+).inheritIO().start()
+
+System.exit(runProcess.waitFor())
+EOF

@@ -1,45 +1,22 @@
-
 package borg.trikeshed.cursor
 
 import borg.trikeshed.lib.*
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KClass
 
+typealias ColumnMeta = Join<String, KClassifier>
+typealias Cell = Join<Any?, () -> ColumnMeta>
+typealias RowVec = Join<Int, (Int) -> Cell>
 
+@kotlin.jvm.JvmInline
+value class CursorRowIndex(val value: Int)
 
-typealias Cell = Join<Any?, ColumnMeta>
-
-// Canonical RowVec and Cursor definitions
-typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
-
-// Cursor with ArrayLike trait - WHENEVER THEY NEED get[i] OPERATOR
 @kotlin.jvm.JvmInline
 value class Cursor(internal val data: MetaSeries<CursorRowIndex, RowVec>) : ArrayLike<Int, RowVec> {
     override operator fun get(index: Int): RowVec = data.b(CursorRowIndex(index))
     override val size: Int get() = data.a.value
-    // Delegate to the underlying MetaSeries for operations that need it
     fun asSeries(): MetaSeries<CursorRowIndex, RowVec> = data
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /** Get row at index y, supporting negative indices */
 infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) size + y else y]
@@ -48,16 +25,14 @@ infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) size + y else y]
 infix fun Cursor.at(r: IntRange): Cursor {
     val actualStart = if (r.first < 0) size + r.first else r.first
     val actualEnd = if (r.last < 0) size + r.last else r.last
-    require(actualStart >= 0 && actualEnd < size && actualStart <= actualEnd) { 
-        "Invalid range $r for cursor size $size" 
+    require(actualStart >= 0 && actualEnd < size && actualStart <= actualEnd) {
+        "Invalid range $r for cursor size $size"
     }
     val sliceSize = actualEnd - actualStart + 1
     return Cursor(MetaSeries(CursorRowIndex(sliceSize)) { iy: CursorRowIndex ->
         this[iy.value + actualStart]
     })
 }
-
-/** Get cursor with specified row indices */
 
 /**
  * Transforms the Cursor into a MetaSeries, allowing for specialized DSL transformations.
@@ -69,23 +44,20 @@ inline fun <T> Cursor.asMetaSeries(crossinline transform: (RowVec) -> T): MetaSe
     }
 }
 
-operator fun Cursor.get(vararg indices: Int): Cursor = 
+operator fun Cursor.get(vararg indices: Int): Cursor =
     Cursor(MetaSeries(CursorRowIndex(indices.size)) { iy: CursorRowIndex -> data.b(CursorRowIndex(indices[iy.value])) })
 
 /** Get cursor with specified row indices from iterable */
 operator fun Cursor.get(indices: Iterable<Int>): Cursor {
     val array = indices.toList().toIntArray()
-    return Cursor(array.size j { iy: Int -> data.b(CursorRowIndex(array[iy])) })
+    return Cursor(MetaSeries(CursorRowIndex(array.size)) { iy: CursorRowIndex -> data.b(CursorRowIndex(array[iy.value])) })
 }
 
 // Core cursor operations
 
-/** Get row at index y, supporting negative indices */
-infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) size + y else y]
-
 /** Get column by index */
-fun Cursor.column(index: Int): Indexed<Any?> = 
-    size j { rowIndex: Int -> this[rowIndex].b(index) }
+fun Cursor.column(index: Int): Indexed<Any?> =
+    size j { rowIndex: Int -> this[rowIndex].b(index).a }
 
 /** Get column by name */
 fun Cursor.column(name: String): Indexed<Any?> {
@@ -106,10 +78,11 @@ internal fun Cursor.findColumnIndex(name: String): Int {
 }
 
 /** Get multiple columns */
-fun Cursor.columns(vararg indices: Int): Cursor = 
+fun Cursor.columns(vararg indices: Int): Cursor =
     Cursor(MetaSeries(CursorRowIndex(size)) { rowIndex: CursorRowIndex ->
-        MetaSeries(CursorRowIndex(indices.size)) { colIndex: CursorRowIndex ->
-            this[rowIndex.value].b(indices[colIndex.value])
+        val oldRow = this[rowIndex.value]
+        indices.size j { colIdx: Int ->
+            oldRow.b(indices[colIdx])
         }
     })
 
@@ -119,8 +92,8 @@ fun Cursor.columns(vararg indices: Int): Cursor =
 val Cursor.scalars: Indexed<ColumnMeta>
     get() = if (size > 0) {
         val firstRow = this[0]
-        firstRow.size j { colIndex: Int -> 
-                        firstRow.b(colIndex).b
+        firstRow.size j { colIndex: Int ->
+            firstRow.b(colIndex).b()
         }
     } else {
         0 j { _: Int -> "" j String::class }
@@ -173,7 +146,7 @@ fun <T : Any> RowVec.getTyped(index: Int, expectedClass: KClass<T>): T? {
 // Transformations
 
 /** Transform cursor values */
-fun <T> Cursor.map(transform: (RowVec) -> T): Indexed<T> = 
+fun <T> Cursor.map(transform: (RowVec) -> T): Indexed<T> =
     size j { i: Int -> this[i].let(transform) }
 
 /** Filter cursor rows */
@@ -265,26 +238,26 @@ fun Cursor.toList(): List<RowVec> = (0 until size).map { this[it] }
 /** Create simple cursor from data */
 fun cursorOf(
     data: List<List<Any?>>,
-    columnNames: List<String> = data.indices.map { "col_$it" },
+    columnNames: List<String> = data.firstOrNull()?.indices?.map { "col_$it" } ?: emptyList(),
     columnTypes: List<KClassifier> = data.firstOrNull()?.map { inferType(it) } ?: emptyList()
 ): Cursor {
     require(data.isNotEmpty()) { "Data cannot be empty" }
-    require(columnNames.size == data.first().size) { "Column names size mismatch" }
-    require(columnTypes.size == data.first().size) { "Column types size mismatch" }
-    
+    val firstRow = data.first()
+    require(columnNames.size == firstRow.size) { "Column names size mismatch" }
+    require(columnTypes.size == firstRow.size) { "Column types size mismatch" }
+
     val scalars: Indexed<ColumnMeta> = columnNames.size j { i ->
         columnNames[i] j columnTypes[i]
     }
 
-    return data.size j { rowIndex: Int ->
-        val rowData = data[rowIndex]
-        rowData.a j { colIndex: Int ->
-            rowData[colIndex] j scalars.b(colIndex)
+    val metaSeries = MetaSeries(CursorRowIndex(data.size)) { rowIndex: CursorRowIndex ->
+        val rowData = data[rowIndex.value]
+        val rowVec: RowVec = rowData.size j { colIndex: Int ->
+            val cellValue = rowData[colIndex]
+            val columnMeta = scalars.b(colIndex)
+            cellValue j { columnMeta }
         }
+        rowVec
     }
+    return Cursor(metaSeries)
 }
-
-
-
-
-

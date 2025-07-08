@@ -14,8 +14,14 @@ import kotlinx.coroutines.flow.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import java.util.concurrent.ConcurrentHashMap
-import com.superbikeshed.mcp.trikeshed.CouchDbMcpAdapter
-import com.superbikeshed.mcp.trikeshed.MockCouchClient
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.CouchDbMcpAdapter
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.MockCouchClient
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.BlobHostingService
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.CouchDBBlobHosting
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.CouchDBConnection
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.CouchDBSession
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.Base64Utils.decodeBase64Bytes
+import com.v2superbikeshed.nexus.rpc.mcp_adapters.Base64Utils.encodeBase64
 import com.superbikeshed.mcp.trikeshed.TrikeshedMcpServer
 import com.superbikeshed.mcp.trikeshed.TrikeshedServiceRegistry
 import com.superbikeshed.mcp.trikeshed.TrikeshedReactor
@@ -396,36 +402,31 @@ class UnifiedService(
         bridge.exposeNodeAsMcp(refactoringNode)
 
         // Expose CouchDB MCP Server
-        val serviceRegistry = TrikeshedServiceRegistry()
-        val reactor = TrikeshedReactor()
         val mockCouchClient = MockCouchClient()
+        val mockCouchDBConnection = object : CouchDBConnection {
+            override suspend fun handshake(): Result<CouchDBSession> = Result.success(object : CouchDBSession {
+                override suspend fun listDatabases(): Result<List<String>> = Result.success(emptyList())
+                override suspend fun createDatabase(name: String): Result<com.superbikeshed.trikeshed.DatabaseInfo> = Result.success(com.superbikeshed.trikeshed.DatabaseInfo(name, 0, "0"))
+                override suspend fun deleteDatabase(name: String): Result<Unit> = Result.success(Unit)
+                override suspend fun getDocument(db: String, id: String): Result<com.superbikeshed.trikeshed.Document> = Result.failure(Exception("Not implemented"))
+                override suspend fun putDocument(db: String, doc: com.superbikeshed.trikeshed.Document): Result<com.superbikeshed.trikeshed.DocumentResult> = Result.failure(Exception("Not implemented"))
+                override suspend fun deleteDocument(db: String, id: String, rev: String): Result<com.superbikeshed.trikeshed.DocumentResult> = Result.failure(Exception("Not implemented"))
+                override suspend fun bulkDocs(db: String, docs: List<com.superbikeshed.trikeshed.Document>): Result<List<com.superbikeshed.trikeshed.DocumentResult>> = Result.failure(Exception("Not implemented"))
+                override suspend fun changes(db: String, since: String?): Flow<com.superbikeshed.trikeshed.ChangeEvent> = kotlinx.coroutines.flow.emptyFlow()
+                override suspend fun replicate(source: String, target: String, continuous: Boolean): Result<com.superbikeshed.trikeshed.ReplicationHandle> = Result.failure(Exception("Not implemented"))
+            })
+            override suspend fun close(): Unit = Unit
+        }
+        val couchDBBlobHosting = CouchDBBlobHosting(mockCouchDBConnection)
 
         val couchDbAdapter = CouchDbMcpAdapter(
             name = "couchdb-mcp-server",
             version = "1.0.0",
-            capabilities = setOf("get", "put", "listDatabases", "createDatabase", "deleteDatabase"),
-            couchClient = mockCouchClient
+            capabilities = setOf("get", "put", "listDatabases", "createDatabase", "deleteDatabase", "storeBlob", "retrieveBlob"),
+            couchClient = mockCouchClient,
+            blobHostingService = couchDBBlobHosting
         )
         bridge.exposeMcpAsNode(couchDbAdapter)
-
-        // Expose QUIC MCP Server
-        val quicEngine = QuicEngine(
-            role = Role.SERVER,
-            initialState = QuicConnectionState(
-                localConnectionId = borg.trikeshed.net.quic.ConnectionId(byteArrayOf(1,2,3,4).toIndexed()),
-                remoteConnectionId = borg.trikeshed.net.quic.ConnectionId(byteArrayOf(5,6,7,8).toIndexed())
-            ),
-            port = 8443, // Default QUIC port
-            privateKey = byteArrayOf(0,0,0,0).toIndexed() // Dummy internal key
-        )
-
-        val quicAdapter = QuicMcpAdapter(
-            name = "quic-mcp-server",
-            version = "1.0.0",
-            capabilities = setOf("connect", "createStream", "sendData", "closeConnection"),
-            quicEngine = quicEngine
-        )
-        bridge.exposeMcpAsNode(quicAdapter)
 
         // Expose QUIC MCP Server
         val quicEngine = QuicEngine(

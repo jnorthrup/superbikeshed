@@ -1,0 +1,331 @@
+openapi: 3.0.0
+info:
+  title: Mock CouchDB API
+  version: 1.0.0
+  description: A mock implementation of a CouchDB-like API, built with Kotlin and channelized coroutines.
+servers:
+  - url: http://localhost:5984
+    description: Local Mock CouchDB Server
+
+paths:
+  /:
+    get:
+      summary: Get server information
+      operationId: getServerInfo
+      responses:
+        '200':
+          description: Server information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  couchdb:
+                    type: string
+                    example: "Welcome"
+                  version:
+                    type: string
+                    example: "1.7.2"
+  /_all_dbs:
+    get:
+      summary: List all databases
+      operationId: listAllDatabases
+      responses:
+        '200':
+          description: A list of database names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: "mydb"
+
+  /{dbname}:
+    put:
+      summary: Create a new database
+      operationId: createDatabase
+      parameters:
+        - name: dbname
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the database to create
+      responses:
+        '201':
+          description: Database created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '412':
+          description: Database already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "file_exists"
+                  reason:
+                    type: string
+                    example: "The database could not be created, the file already exists."
+    delete:
+      summary: Delete a database
+      operationId: deleteDatabase
+      parameters:
+        - name: dbname
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the database to delete
+      responses:
+        '200':
+          description: Database deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "not_found"
+                  reason:
+                    type: string
+                    example: "no_db_file"
+
+  /{dbname}/{docid}:
+    get:
+      summary: Get a document
+      operationId: getDocument
+      parameters:
+        - name: dbname
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the database
+        - name: docid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the document to retrieve
+      responses:
+        '200':
+          description: Document retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                example: { "_id": "doc1", "name": "test", "value": 123 }
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "not_found"
+                  reason:
+                    type: string
+                    example: "missing"
+    put:
+      summary: Create or update a document
+      operationId: putDocument
+      parameters:
+        - name: dbname
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the database
+        - name: docid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the document to create or update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example: { "name": "new_doc", "value": 456 }
+      responses:
+        '201':
+          description: Document created or updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  id:
+                    type: string
+                    example: "doc1"
+                  rev:
+                    type: string
+                    example: "1-967a00dff5e02add41819138abb3284d"
+        '409':
+          description: Conflict (e.g., revision mismatch)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "conflict"
+                  reason:
+                    type: string
+                    example: "Document update conflict."
+    delete:
+      summary: Delete a document
+      operationId: deleteDocument
+      parameters:
+        - name: dbname
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the database
+        - name: docid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the document to delete
+        - name: rev
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Revision of the document to delete
+      responses:
+        '200':
+          description: Document deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  id:
+                    type: string
+                    example: "doc1"
+                  rev:
+                    type: string
+                    example: "2-967a00dff5e02add41819138abb3284d"
+        '404':
+          description: Document or database not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "not_found"
+                  reason:
+                    type: string
+                    example: "missing"
+        '409':
+          description: Conflict (e.g., revision mismatch)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "conflict"
+                  reason:
+                    type: string
+                    example: "Document update conflict."
+
+  /{dbname}/_bulk_docs:
+    post:
+      summary: Bulk document operations
+      operationId: bulkDocs
+      parameters:
+        - name: dbname
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                docs:
+                  type: array
+                  items:
+                    type: object
+                    example: { "_id": "doc_bulk_1", "value": "test" }
+              example:
+                docs:
+                  - _id: "doc_bulk_1"
+                    value: "test1"
+                  - _id: "doc_bulk_2"
+                    value: "test2"
+      responses:
+        '201':
+          description: Documents processed successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ok:
+                      type: boolean
+                      example: true
+                    id:
+                      type: string
+                      example: "doc_bulk_1"
+                    rev:
+                      type: string
+                      example: "1-abc"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "internal_error"
+                  reason:
+                    type: string
+                    example: "Something went wrong during bulk operation."

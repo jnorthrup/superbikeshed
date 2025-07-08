@@ -254,7 +254,7 @@ class DefaultSSHConfigParser : SSHConfigParser {
 }
 
 // Base64 decoder (simplified)
-internal fun decodeBase64(data: String): ByteArray {
+internal fun decodeBase64(data: String): Indexed<Byte> {
     // Remove any whitespace
     val cleaned = data.replace(Regex("\\s"), "")
     
@@ -268,7 +268,7 @@ internal fun decodeBase64(data: String): ByteArray {
         bytes.add((i % 256).toByte())
     }
     
-    return bytes.toByteArray()
+    return bytes.size j { i: Int -> bytes[i] }
 }
 
 // SSH directory structure
@@ -330,13 +330,15 @@ class SSHConfigResolver(
         return hostname.matches(Regex(regex))
     }
     
-    internal fun parseIdentityFiles(value: String?): List<String> {
-        if (value == null) return emptyList()
+    internal fun parseIdentityFiles(value: String?): Indexed<String> {
+        if (value == null) return 0 j { "" }
         
         // Identity files can be space-separated
-        return value.split(Regex("\\s+"))
+        val files = value.split(Regex("\\s+"))
             .map { expandPath(it) }
             .filter { it.isNotEmpty() }
+        
+        return files.size j { i: Int -> files[i] }
     }
     
     internal fun expandPath(path: String): String {
@@ -358,7 +360,7 @@ data class SSHResolvedConfig(
     val hostname: String,
     val user: String,
     val port: Int,
-    val identityFiles: List<String>,
+    val identityFiles: Indexed<String>,
     val options: Map<String, String>
 )
 
@@ -484,13 +486,16 @@ class SSHFileLocator {
     fun getSystemKnownHostsPath(): String = "/etc/ssh/ssh_known_hosts"
     fun getUserAuthorizedKeysPath(): String = "${getSSHDirectory()}/authorized_keys"
     
-    suspend fun findIdentityFiles(): List<String> = coroutineScope {
+    suspend fun findIdentityFiles(): Indexed<String> = coroutineScope {
         val sshDir = getSSHDirectory()
         val files = listFiles(sshDir, Regex("^id_[a-z0-9_]+$"))
         
+        val identityFiles = mutableListOf<String>()
         files.filter { file ->
             // Only return internal keys (not .pub files)
             !file.endsWith(".pub") && fileExists("$sshDir/$file")
-        }.map { "$sshDir/$it" }
+        }.mapTo(identityFiles) { "$sshDir/$it" }
+        
+        identityFiles.size j { i: Int -> identityFiles[i] }
     }
 }

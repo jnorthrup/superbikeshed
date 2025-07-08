@@ -88,17 +88,34 @@ class InlineScriptRunner {
     // Create script compilation configuration
     private fun createCompilationConfig(
         classpath: List<File>,
-        compilerOpts: List<String>
+        compilerOpts: List<String>,
+        hasSerializableDependency: Boolean
     ): ScriptCompilationConfiguration {
         return createJvmCompilationConfigurationFromTemplate<Any> {
             jvm {
                 dependenciesFromClasspath(*classpath.toTypedArray())
             }
+            
+            // Add serialization plugin if needed
+            if (hasSerializableDependency) {
+                val pluginPath = findSerializationPlugin()
+                if (pluginPath != null) {
+                    compilerOptions.append("-Xplugin=$pluginPath")
+                }
+            }
+            
             compilerOptions(compilerOpts)
             ide {
                 acceptedLocations(ScriptAcceptedLocation.Everywhere)
             }
         }
+    }
+    
+    private fun findSerializationPlugin(): String? {
+        // Look for serialization plugin in Kotlin installation
+        val kotlinHome = System.getenv("KOTLIN_HOME") ?: "/usr/local/lib/kotlin"
+        val pluginPath = "$kotlinHome/lib/kotlinx-serialization-compiler-plugin.jar"
+        return if (File(pluginPath).exists()) pluginPath else null
     }
     
     // Create script evaluation configuration
@@ -144,8 +161,17 @@ class InlineScriptRunner {
             
             val allJars = jars + kotlinJars
             
+            // Check if we need serialization plugin
+            val needsSerializationPlugin = annotations.dependencies.toList().any { dep ->
+                dep.contains("kotlinx-serialization")
+            }
+            
             // Create configurations
-            val compilationConfig = createCompilationConfig(allJars, annotations.compilerOpts.toList())
+            val compilationConfig = createCompilationConfig(
+                allJars, 
+                annotations.compilerOpts.toList(),
+                needsSerializationPlugin
+            )
             val evaluationConfig = createEvaluationConfig(allJars, args)
             
             // Load and run script

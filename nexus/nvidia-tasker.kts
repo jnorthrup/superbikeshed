@@ -18,7 +18,7 @@ import java.net.http.HttpResponse
 import java.time.Duration
 
 // Configuration
-val apiKey = "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"
+val apiKey = System.getenv("NVIDIA_API_KEY") ?: throw IllegalStateException("NVIDIA_API_KEY environment variable not set")
 val model = "nvidia/llama-3.1-nemotron-ultra-253b-v1"
 
 // JSON

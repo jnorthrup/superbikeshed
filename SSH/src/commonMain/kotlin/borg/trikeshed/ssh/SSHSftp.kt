@@ -15,7 +15,7 @@ import kotlin.coroutines.CoroutineContext
 interface SSHSftp {
     suspend fun openChannel(context: SSHChannelContext): SSHChannelID
     suspend fun closeChannel(context: SSHChannelContext)
-    suspend fun listDirectory(path: String, context: SSHChannelContext): List<SSHSftpFile>
+    suspend fun listDirectory(path: String, context: SSHChannelContext): Indexed<SSHSftpFile>
     suspend fun openFile(path: String, flags: SSHSftpOpenFlags, context: SSHChannelContext): SSHSftpFileHandle
     suspend fun closeFile(handle: SSHSftpFileHandle, context: SSHChannelContext)
     suspend fun readFile(handle: SSHSftpFileHandle, offset: Long, length: UInt, context: SSHChannelContext): Indexed<Byte>
@@ -36,14 +36,14 @@ class SSHSftpImpl(
     
     internal var sftpChannelId: SSHChannelID? = null
     internal var nextRequestId: UInt = 0u
-    internal val openFiles = mutableMapOf<String, SSHSftpFileHandle>()
+    internal val openFiles = mutableMapOf<Indexed<Byte>, SSHSftpFileHandle>()
     
     override suspend fun openChannel(context: SSHChannelContext): SSHChannelID {
         val channelId = channelManager.openChannel(SSHChannelType.SESSION, context)
         sftpChannelId = channelId
         
         // Start SFTP subsystem
-        val request = SubsystemRequest("sftp")
+        val request = SubsystemRequest("sftp".encodeToByteArray().size j { i: Int -> "sftp".encodeToByteArray()[i] })
         channelManager.handleChannelRequest(request, context)
         
         return channelId
@@ -56,9 +56,9 @@ class SSHSftpImpl(
         }
     }
     
-    override suspend fun listDirectory(path: String, context: SSHChannelContext): List<SSHSftpFile> {
+    override suspend fun listDirectory(path: String, context: SSHChannelContext): Indexed<SSHSftpFile> {
         val requestId = nextRequestId++
-        val payload = buildReadDirRequest(requestId, path)
+        val payload = buildReadDirRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] })
         
         // Send request
         sendSftpRequest(payload, context)
@@ -72,7 +72,7 @@ class SSHSftpImpl(
     
     override suspend fun openFile(path: String, flags: SSHSftpOpenFlags, context: SSHChannelContext): SSHSftpFileHandle {
         val requestId = nextRequestId++
-        val payload = buildOpenFileRequest(requestId, path, flags)
+        val payload = buildOpenFileRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] }, flags)
         
         // Send request
         sendSftpRequest(payload, context)
@@ -82,7 +82,7 @@ class SSHSftpImpl(
         
         // Parse file handle
         val handle = parseFileHandle(response)
-        val fileHandle = SSHSftpFileHandle(handle, path, flags)
+        val fileHandle = SSHSftpFileHandle(handle, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] }, flags)
         openFiles[handle] = fileHandle
         
         return fileHandle
@@ -129,7 +129,7 @@ class SSHSftpImpl(
     
     override suspend fun createDirectory(path: String, context: SSHChannelContext) {
         val requestId = nextRequestId++
-        val payload = buildMkdirRequest(requestId, path)
+        val payload = buildMkdirRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] })
         
         // Send request
         sendSftpRequest(payload, context)
@@ -140,7 +140,7 @@ class SSHSftpImpl(
     
     override suspend fun removeDirectory(path: String, context: SSHChannelContext) {
         val requestId = nextRequestId++
-        val payload = buildRmdirRequest(requestId, path)
+        val payload = buildRmdirRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] })
         
         // Send request
         sendSftpRequest(payload, context)
@@ -151,7 +151,7 @@ class SSHSftpImpl(
     
     override suspend fun removeFile(path: String, context: SSHChannelContext) {
         val requestId = nextRequestId++
-        val payload = buildRemoveRequest(requestId, path)
+        val payload = buildRemoveRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] })
         
         // Send request
         sendSftpRequest(payload, context)
@@ -162,7 +162,7 @@ class SSHSftpImpl(
     
     override suspend fun renameFile(oldPath: String, newPath: String, context: SSHChannelContext) {
         val requestId = nextRequestId++
-        val payload = buildRenameRequest(requestId, oldPath, newPath)
+        val payload = buildRenameRequest(requestId, oldPath.encodeToByteArray().size j { i: Int -> oldPath.encodeToByteArray()[i] }, newPath.encodeToByteArray().size j { i: Int -> newPath.encodeToByteArray()[i] })
         
         // Send request
         sendSftpRequest(payload, context)
@@ -173,7 +173,7 @@ class SSHSftpImpl(
     
     override suspend fun getFileAttributes(path: String, context: SSHChannelContext): SSHSftpFileAttributes {
         val requestId = nextRequestId++
-        val payload = buildStatRequest(requestId, path)
+        val payload = buildStatRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] })
         
         // Send request
         sendSftpRequest(payload, context)
@@ -187,7 +187,7 @@ class SSHSftpImpl(
     
     override suspend fun setFileAttributes(path: String, attributes: SSHSftpFileAttributes, context: SSHChannelContext) {
         val requestId = nextRequestId++
-        val payload = buildSetStatRequest(requestId, path, attributes)
+        val payload = buildSetStatRequest(requestId, path.encodeToByteArray().size j { i: Int -> path.encodeToByteArray()[i] }, attributes)
         
         // Send request
         sendSftpRequest(payload, context)
@@ -215,8 +215,8 @@ class SSHSftpImpl(
     }
     
     // Request builders
-    internal fun buildReadDirRequest(requestId: UInt, path: String): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildReadDirRequest(requestId: UInt, path: Indexed<Byte>): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size
         
         return size j { i: Int ->
@@ -229,8 +229,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildOpenFileRequest(requestId: UInt, path: String, flags: SSHSftpOpenFlags): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildOpenFileRequest(requestId: UInt, path: Indexed<Byte>, flags: SSHSftpOpenFlags): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size + 4 + 4
         
         return size j { i: Int ->
@@ -246,8 +246,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildCloseFileRequest(requestId: UInt, handle: String): SSHPayload {
-        val handleBytes = handle.encodeToByteArray()
+    internal fun buildCloseFileRequest(requestId: UInt, handle: Indexed<Byte>): SSHPayload {
+        val handleBytes = handle
         val size = 1 + 4 + 4 + handleBytes.size
         
         return size j { i: Int ->
@@ -260,8 +260,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildReadFileRequest(requestId: UInt, handle: String, offset: Long, length: UInt): SSHPayload {
-        val handleBytes = handle.encodeToByteArray()
+    internal fun buildReadFileRequest(requestId: UInt, handle: Indexed<Byte>, offset: Long, length: UInt): SSHPayload {
+        val handleBytes = handle
         val size = 1 + 4 + 4 + handleBytes.size + 8 + 4
         
         return size j { i: Int ->
@@ -277,8 +277,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildWriteFileRequest(requestId: UInt, handle: String, offset: Long, data: Indexed<Byte>): SSHPayload {
-        val handleBytes = handle.encodeToByteArray()
+    internal fun buildWriteFileRequest(requestId: UInt, handle: Indexed<Byte>, offset: Long, data: Indexed<Byte>): SSHPayload {
+        val handleBytes = handle
         val size = 1 + 4 + 4 + handleBytes.size + 8 + 4 + data.a
         
         return size j { i: Int ->
@@ -294,8 +294,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildMkdirRequest(requestId: UInt, path: String): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildMkdirRequest(requestId: UInt, path: Indexed<Byte>): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size + 4
         
         return size j { i: Int ->
@@ -310,8 +310,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildRmdirRequest(requestId: UInt, path: String): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildRmdirRequest(requestId: UInt, path: Indexed<Byte>): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size
         
         return size j { i: Int ->
@@ -324,8 +324,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildRemoveRequest(requestId: UInt, path: String): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildRemoveRequest(requestId: UInt, path: Indexed<Byte>): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size
         
         return size j { i: Int ->
@@ -338,9 +338,9 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildRenameRequest(requestId: UInt, oldPath: String, newPath: String): SSHPayload {
-        val oldPathBytes = oldPath.encodeToByteArray()
-        val newPathBytes = newPath.encodeToByteArray()
+    internal fun buildRenameRequest(requestId: UInt, oldPath: Indexed<Byte>, newPath: Indexed<Byte>): SSHPayload {
+        val oldPathBytes = oldPath
+        val newPathBytes = newPath
         val size = 1 + 4 + 4 + oldPathBytes.size + 4 + newPathBytes.size
         
         return size j { i: Int ->
@@ -355,8 +355,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildStatRequest(requestId: UInt, path: String): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildStatRequest(requestId: UInt, path: Indexed<Byte>): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size
         
         return size j { i: Int ->
@@ -369,8 +369,8 @@ class SSHSftpImpl(
         }
     }
     
-    internal fun buildSetStatRequest(requestId: UInt, path: String, attributes: SSHSftpFileAttributes): SSHPayload {
-        val pathBytes = path.encodeToByteArray()
+    internal fun buildSetStatRequest(requestId: UInt, path: Indexed<Byte>, attributes: SSHSftpFileAttributes): SSHPayload {
+        val pathBytes = path
         val size = 1 + 4 + 4 + pathBytes.size + 4 + attributes.size
         
         return size j { i: Int ->
@@ -386,14 +386,15 @@ class SSHSftpImpl(
     }
     
     // Response parsers
-    internal fun parseFileList(response: SSHPayload): List<SSHSftpFile> {
+    internal fun parseFileList(response: SSHPayload): Indexed<SSHSftpFile> {
         // TODO: Parse SFTP file list response
-        return emptyList()
+        return 0 j { SSHSftpFile("", "", SSHSftpFileAttributes(0 j { 0.toByte() })) }
     }
     
-    internal fun parseFileHandle(response: SSHPayload): String {
+    internal fun parseFileHandle(response: SSHPayload): Indexed<Byte> {
         // TODO: Parse SFTP file handle response
-        return "handle_${kotlin.random.Random.nextInt()}"
+        val handle = "handle_${kotlin.random.Random.nextInt()}".encodeToByteArray()
+        return handle.size j { i: Int -> handle[i] }
     }
     
     internal fun parseFileData(response: SSHPayload): Indexed<Byte> {
@@ -409,14 +410,14 @@ class SSHSftpImpl(
 
 // SFTP data structures
 data class SSHSftpFile(
-    val filename: String,
-    val longname: String,
+    val filename: Indexed<Byte>,
+    val longname: Indexed<Byte>,
     val attributes: SSHSftpFileAttributes
 )
 
 data class SSHSftpFileHandle(
-    val handle: String,
-    val path: String,
+    val handle: Indexed<Byte>,
+    val path: Indexed<Byte>,
     val flags: SSHSftpOpenFlags
 )
 
@@ -427,7 +428,7 @@ data class SSHSftpFileAttributes(
 }
 
 data class SSHSftpFileInfo(
-    val path: String,
+    val path: Indexed<Byte>,
     val attributes: SSHSftpFileAttributes
 )
 

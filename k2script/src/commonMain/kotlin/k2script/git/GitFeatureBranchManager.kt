@@ -1,9 +1,9 @@
 @file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
 package k2script.git
 
-import borg.trikeshed.io.*
-import k2script.platform.*
-import k2script.platform.*
+import borg.trikeshed.io.PlatformFile
+import k2script.platform.fileSystemOperations
+import k2script.platform.processExecutor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.delay
@@ -25,16 +25,15 @@ import kotlinx.coroutines.runBlocking
  */
 class GitFeatureBranchManager(
     internal var workDir: String = ".",
-    internal val tmpDir: String = "${Environment.getProperty("java.io.tmpdir") ?: "/tmp"}/k2script-features"
+    internal val tmpDir: PlatformFile // Use PlatformFile for tmpDir
 ) {
     internal val taxonomy = TrikeShedTaxonomy()
     internal val lfsManager = GitLFSManager()
     internal val recipeManager = DeploymentRecipeManager()
     
     init {
-        runBlocking { // Use runBlocking for init block to call suspend functions
-            coroutineContext.fileSystemOperations.createTempDir(prefix = tmpDir) // Assuming tmpDir is a prefix for temp dir
-        }
+        // The tmpDir is now a PlatformFile, and its creation/existence should be handled
+        // by the caller or a suspend function. We remove runBlocking from init.
     }
     
     /**
@@ -42,13 +41,13 @@ class GitFeatureBranchManager(
      */
     suspend fun isGitRepository(dir: String): Boolean {
         val fileSystem = coroutineContext.fileSystemOperations
-        val gitDir = File("$dir/.git")
+        val gitDir = PlatformFile(dir, ".git")
         if (!fileSystem.fileExists(gitDir)) return false
         
         // Fiduciary attention: Check Git tree integrity
-        val objectsDir = File("$gitDir/objects")
-        val refsDir = File("$gitDir/refs")
-        val headFile = File("$gitDir/HEAD")
+        val objectsDir = PlatformFile(gitDir, "objects")
+        val refsDir = PlatformFile(gitDir, "refs")
+        val headFile = PlatformFile(gitDir, "HEAD")
         
         return fileSystem.fileExists(objectsDir) && fileSystem.fileExists(refsDir) && fileSystem.fileExists(headFile)
     }
@@ -87,54 +86,54 @@ class GitFeatureBranchManager(
         includeLFS: Boolean = true,
         generateRecipes: Boolean = true
     ): RapidCloneResult {
-        val cloneDir = "$tmpDir/clone-${System.currentTimeMillis()}"
-        createDirectory(cloneDir)
+        val cloneDir = PlatformFile(tmpDir, "clone-${System.currentTimeMillis()}")
+        coroutineContext.fileSystemOperations.createDirectory(cloneDir)
         
         try {
             // Clone with LFS support
             val cloneResult = if (includeLFS) {
-                executeGitCommandInDir(cloneDir, "clone", "--recurse-submodules", sourceUrl, ".")
+                executeGitCommandInDir(cloneDir.path, "clone", "--recurse-submodules", sourceUrl, ".")
             } else {
-                executeGitCommandInDir(cloneDir, "clone", sourceUrl, ".")
+                executeGitCommandInDir(cloneDir.path, "clone", sourceUrl, ".")
             }
             
             // Setup LFS with fiduciary attention
             if (includeLFS) {
-                lfsManager.setupLFSTracking(cloneDir)
-                lfsManager.pullLFSObjects(cloneDir)
+                lfsManager.setupLFSTracking(cloneDir.path)
+                lfsManager.pullLFSObjects(cloneDir.path)
             }
             
             // Create feature branch
-            val branchName = createFeatureBranchInDir(cloneDir, featureName)
+            val branchName = createFeatureBranchInDir(cloneDir.path, featureName)
             
             // Setup remotes with attention
             val remotes = if (setupRemotes) {
-                setupRemotesWithAttention(cloneDir, sourceUrl)
+                setupRemotesWithAttention(cloneDir.path, sourceUrl)
             } else {
                 emptyList()
             }
             
             // Generate deployment recipes
             val recipes = if (generateRecipes) {
-                recipeManager.generateRecipes(cloneDir, featureName)
+                recipeManager.generateRecipes(cloneDir.path, featureName)
             } else {
                 emptyList()
             }
             
             return RapidCloneResult(
                 success = true,
-                cloneDir = cloneDir,
+                cloneDir = cloneDir.path,
                 branchName = branchName,
                 remotes = remotes,
                 recipes = recipes,
-                lfsObjects = if (includeLFS) lfsManager.getLFSObjects(cloneDir) else emptyList()
+                lfsObjects = if (includeLFS) lfsManager.getLFSObjects(cloneDir.path) else emptyList()
             )
             
         } catch (e: Exception) {
             return RapidCloneResult(
                 success = false,
                 error = e.message,
-                cloneDir = cloneDir
+                cloneDir = cloneDir.path
             )
         }
     }
@@ -192,7 +191,7 @@ class GitFeatureBranchManager(
     /**
      * Check if branch exists with fiduciary attention
      */
-    fun branchExists(branchName: String): Boolean {
+    suspend fun branchExists(branchName: String): Boolean {
         val result = executeGitCommand(workDir, "branch", "--list", branchName)
         return result.isNotEmpty()
     }
@@ -200,7 +199,7 @@ class GitFeatureBranchManager(
     /**
      * Get current branch with full attention to Git tree
      */
-    fun getCurrentBranch(): GitBranch {
+    suspend fun getCurrentBranch(): GitBranch {
         val branchName = executeGitCommand(workDir, "branch", "--show-current").trim()
         val lastCommit = getLastCommit()
         
@@ -214,7 +213,7 @@ class GitFeatureBranchManager(
     /**
      * List all branches with fiduciary attention
      */
-    fun listBranches(): List<GitBranch> {
+    suspend fun listBranches(): List<GitBranch> {
         val branches = mutableListOf<GitBranch>()
         val currentBranch = getCurrentBranch()
         
@@ -236,7 +235,7 @@ class GitFeatureBranchManager(
     /**
      * Check for uncommitted changes with attention
      */
-    fun hasUncommittedChanges(): Boolean {
+    suspend fun hasUncommittedChanges(): Boolean {
         val status = executeGitCommandInDir(workDir, "status", "--porcelain")
         return status.isNotEmpty()
     }
@@ -311,7 +310,7 @@ class GitFeatureBranchManager(
     /**
      * Get repository information with fiduciary attention
      */
-    fun getRepositoryInfo(): GitRepositoryInfo {
+    suspend fun getRepositoryInfo(): GitRepositoryInfo {
         val name = workDir.split("/").last()
         val remoteUrl = getRemoteUrl("origin")
         val defaultBranch = getDefaultBranch()
@@ -328,7 +327,7 @@ class GitFeatureBranchManager(
     /**
      * Validate repository state with full attention
      */
-    fun validateRepositoryState(): GitValidationResult {
+    suspend fun validateRepositoryState(): GitValidationResult {
         val messages = mutableListOf<String>()
         var isValid = true
         
@@ -355,7 +354,7 @@ class GitFeatureBranchManager(
     /**
      * Get feature branch status with attention
      */
-    fun getFeatureBranchStatus(featureName: String): FeatureBranchStatus {
+    suspend fun getFeatureBranchStatus(featureName: String): FeatureBranchStatus {
         val branchName = "feature/$featureName"
         val lastCommit = getLastCommit(branchName)
         val aheadCount = getAheadCount(branchName)
@@ -374,7 +373,7 @@ class GitFeatureBranchManager(
     /**
      * List feature branches with taxonomy attention
      */
-    fun listFeatureBranches(): List<GitBranch> {
+    suspend fun listFeatureBranches(): List<GitBranch> {
         return listBranches().filter { it.name.startsWith("feature/") }
     }
     
@@ -408,11 +407,11 @@ class GitFeatureBranchManager(
     /**
      * Get commit history with attention
      */
-    fun getCommitHistory(branchName: String, limit: Int): List<GitCommit> {
+    suspend fun getCommitHistory(branchName: String, limit: Int): List<GitCommit> {
         val commits = mutableListOf<GitCommit>()
         
         val logOutput = executeGitCommand(
-            "log", "--format=%H|%s|%an|%ad", "--date=short", "-n", limit.toString(), branchName
+            workDir, "log", "--format=%H|%s|%an|%ad", "--date=short", "-n", limit.toString(), branchName
         )
         
         logOutput.split("\n").filter { it.isNotEmpty() }.forEach { line ->
@@ -440,9 +439,9 @@ class GitFeatureBranchManager(
         return result
     }
     
-    internal suspend fun executeGitCommand(vararg args: String): String {
+    internal suspend fun executeGitCommand(dir: String, vararg args: String): String {
         val processExecutor = coroutineContext.processExecutor
-        val result = processExecutor.runCommand("git " + args.joinToString(" "), File(workDir))
+        val result = processExecutor.runCommand("git " + args.joinToString(" "), PlatformFile(dir))
         if (result.exitCode != 0) {
             throw RuntimeException("Git command failed: ${result.stderr}")
         }
@@ -451,14 +450,14 @@ class GitFeatureBranchManager(
     
     internal suspend fun executeGitCommandInDir(dir: String, vararg args: String): String {
         val processExecutor = coroutineContext.processExecutor
-        val result = processExecutor.runCommand("git " + args.joinToString(" "), File(dir))
+        val result = processExecutor.runCommand("git " + args.joinToString(" "), PlatformFile(dir))
         if (result.exitCode != 0) {
             throw RuntimeException("Git command failed in $dir: ${result.stderr}")
         }
         return result.stdout
     }
     
-    internal fun getLastCommit(branchName: String = "HEAD"): GitCommit {
+    internal suspend fun getLastCommit(branchName: String = "HEAD"): GitCommit {
         val hash = executeGitCommandInDir(workDir, "rev-parse", branchName).trim()
         val message = executeGitCommandInDir(workDir, "log", "-1", "--format=%s", branchName).trim()
         val author = executeGitCommandInDir(workDir, "log", "-1", "--format=%an", branchName).trim()
@@ -467,7 +466,7 @@ class GitFeatureBranchManager(
         return GitCommit(hash, message, author, date)
     }
     
-    internal fun getRemoteUrl(remoteName: String): String? {
+    internal suspend fun getRemoteUrl(remoteName: String): String? {
         return try {
             executeGitCommandInDir(workDir, "remote", "get-url", remoteName).trim()
         } catch (e: Exception) {
@@ -475,7 +474,7 @@ class GitFeatureBranchManager(
         }
     }
     
-    internal fun getDefaultBranch(): String {
+    internal suspend fun getDefaultBranch(): String {
         return try {
             executeGitCommandInDir(workDir, "symbolic-ref", "refs/remotes/origin/HEAD")
                 .trim()
@@ -485,7 +484,7 @@ class GitFeatureBranchManager(
         }
     }
     
-    internal fun getAheadCount(branchName: String): Int {
+    internal suspend fun getAheadCount(branchName: String): Int {
         return try {
             val output = executeGitCommandInDir(workDir, "rev-list", "--count", "$branchName..origin/${getDefaultBranch()}")
             output.trim().toInt()
@@ -494,7 +493,7 @@ class GitFeatureBranchManager(
         }
     }
     
-    internal fun getBehindCount(branchName: String): Int {
+    internal suspend fun getBehindCount(branchName: String): Int {
         return try {
             val output = executeGitCommandInDir(workDir, "rev-list", "--count", "origin/${getDefaultBranch()}..$branchName")
             output.trim().toInt()
@@ -603,4 +602,4 @@ data class PullRequest(
     val sourceBranch: String,
     val targetBranch: String,
     val status: String
-) 
+)

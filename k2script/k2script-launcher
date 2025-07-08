@@ -1,0 +1,31 @@
+#!/bin/bash
+# K2Script launcher
+
+# Compile and run the launcher
+cd "$(dirname "$0")"
+
+# Check if we need to compile
+if [ ! -f "build/k2script-launcher.jar" ] || [ "src/jvmMain/kotlin/k2script/launcher/SurrogateMavenLauncher.kt" -nt "build/k2script-launcher.jar" ]; then
+    echo "Compiling k2script launcher..."
+    mkdir -p build
+    
+    # Compile the launcher classes
+    kotlinc -cp "../trikeshed-lib/build/libs/trikeshed-lib-jvm-0.1.0.jar" \
+        src/jvmMain/kotlin/k2script/launcher/SurrogateMavenLauncher.kt \
+        src/jvmMain/kotlin/k2script/launcher/K2ScriptMain.kt \
+        -include-runtime \
+        -d build/k2script-launcher.jar 2>/dev/null
+    
+    if [ $? -ne 0 ]; then
+        # Try simpler compilation without trikeshed dependency
+        echo "Trying standalone compilation..."
+        kotlinc src/jvmMain/kotlin/k2script/launcher/SurrogateMavenLauncher.kt \
+            src/jvmMain/kotlin/k2script/launcher/K2ScriptMain.kt \
+            -include-runtime \
+            -jvm-target 17 \
+            -d build/k2script-launcher.jar
+    fi
+fi
+
+# Run the launcher
+exec java -jar build/k2script-launcher.jar "$@"

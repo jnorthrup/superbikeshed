@@ -1,6 +1,9 @@
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    
+    
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "borg.trikeshed"
@@ -33,3 +36,12 @@ kotlin {
         }
     }
 }
+
+tasks {
+    withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
+        archiveBaseName.set("nexus-all")
+        archiveClassifier.set("")
+        archiveVersion.set("")
+    }
+}
+

@@ -1,1 +1,0 @@
-rootProject.name = "superbikeshed-mcp-server" 

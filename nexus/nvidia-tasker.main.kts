@@ -61,8 +61,7 @@ sealed class EditInstruction {
 val API_KEYS = listOf(
     System.getenv("NVIDIA_API_KEY"),
     System.getenv("NVIDIA_API_KEY_2"),
-    System.getenv("NVIDIA_API_KEY_3"),
-    "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"
+    System.getenv("NVIDIA_API_KEY_3")
 ).filterNotNull().filter { it.isNotBlank() }
 
 var currentKeyIndex = 0
@@ -206,6 +205,22 @@ suspend fun callNvidia(
 
 // --- File Operations with Coordinate Safety ---
 class FileEditor {
+    private val allowedPaths: List<File> = System.getenv("K2SCRIPT_ALLOWED_PATHS")
+        ?.split(":")
+        ?.map { File(it).normalize() }
+        ?: emptyList()
+
+    private fun isPathAllowed(filePath: String): Boolean {
+        if (allowedPaths.isEmpty()) {
+            // If no allowed paths are specified, allow all (no sandboxing)
+            return true
+        }
+        val targetFile = File(filePath).normalize()
+        return allowedPaths.any { allowedDir ->
+            targetFile.startsWith(allowedDir)
+        }
+    }
+
     fun applyEdit(instruction: EditInstruction): Result<String> {
         return when (instruction) {
             is EditInstruction.Insert -> insertAfterLine(
@@ -276,6 +291,9 @@ class FileEditor {
     }
     
     private fun deleteLines(filePath: String, startLine: Int, endLine: Int): Result<String> {
+        if (!isPathAllowed(filePath)) {
+            return Result.failure(Exception("File path not allowed by sandboxing policy: $filePath"))
+        }
         val file = File(filePath)
         if (!file.exists()) {
             return Result.failure(Exception("File not found: $filePath"))

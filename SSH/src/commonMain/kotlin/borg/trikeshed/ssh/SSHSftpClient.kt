@@ -66,7 +66,7 @@ class SSHSftpClientImpl(
         }
     }
     
-    override suspend fun listDirectory(path: String, context: SSHSftpContext): List<String> {
+    override suspend fun listDirectory(path: String, context: SSHSftpContext): Indexed<String> {
         return withContext(context.b) {
             println("SFTP: Listing directory $path")
             
@@ -103,11 +103,11 @@ class SSHSftpClientImpl(
                 receiveSftpResponse(channel)
                 
                 println("SFTP: Listed ${files.size} files in $path")
-                files.map { it.filename }
+                files.size j { i: Int -> files.j(i).filename }
                 
             } catch (e: Exception) {
                 println("SFTP: Directory listing failed: ${e.message}")
-                emptyList()
+                0 j { "" }
             }
         }
     }
@@ -174,7 +174,7 @@ class SSHSftpClientImpl(
         }
     }
     
-    override suspend fun readFile(handle: String, offset: Long, length: Int, context: SSHSftpContext): ByteArray {
+    override suspend fun readFile(handle: String, offset: Long, length: Int, context: SSHSftpContext): Indexed<Byte> {
         return withContext(context.b) {
             println("SFTP: Reading file with handle $handle")
             
@@ -195,7 +195,7 @@ class SSHSftpClientImpl(
                 
             } catch (e: Exception) {
                 println("SFTP: File read failed: ${e.message}")
-                ByteArray(0)
+                0 j { 0.toByte() }
             }
         }
     }
@@ -387,8 +387,8 @@ class SSHSftpClientImpl(
     
     private suspend fun initializeSftpSubsystem(channel: SSHChannel) {
         // Send subsystem request for SFTP
-        val subsystemData = "sftp".encodeToByteArray()
-        channel.dataBuffer.addAll(subsystemData.toList())
+        val subsystemData = "sftp".encodeToByteArray().size j { i: Int -> "sftp".encodeToByteArray()[i] }
+        sendSftpRequest(channel, subsystemData)
         
         // Send SFTP INIT message
         val initPayload = buildSftpInitMessage()
@@ -398,7 +398,7 @@ class SSHSftpClientImpl(
         receiveSftpResponse(channel)
     }
     
-    private suspend fun sendSftpRequest(channel: SSHChannel, payload: ByteArray) {
+    private suspend fun sendSftpRequest(channel: SSHChannel, payload: Indexed<Byte>) {
         channel.dataBuffer.addAll(payload.toList())
     }
     
@@ -409,7 +409,7 @@ class SSHSftpClientImpl(
     }
     
     // SFTP message builders
-    private fun buildSftpInitMessage(): ByteArray {
+    private fun buildSftpInitMessage(): Indexed<Byte> {
         val payload = mutableListOf<Byte>()
         
         // Length (placeholder)
@@ -431,10 +431,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpOpenDirRequest(requestId: Int, path: String): ByteArray {
+    private fun buildSftpOpenDirRequest(requestId: Int, path: String): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -466,10 +466,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpReadDirRequest(requestId: Int, handle: String): ByteArray {
+    private fun buildSftpReadDirRequest(requestId: Int, handle: String): Indexed<Byte> {
         val handleBytes = handle.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -501,10 +501,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpOpenRequest(requestId: Int, path: String, flags: SSHSftpOpenFlags): ByteArray {
+    private fun buildSftpOpenRequest(requestId: Int, path: String, flags: SSHSftpOpenFlags): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -542,10 +542,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpCloseRequest(requestId: Int, handle: String): ByteArray {
+    private fun buildSftpCloseRequest(requestId: Int, handle: String): Indexed<Byte> {
         val handleBytes = handle.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -577,10 +577,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpReadRequest(requestId: Int, handle: String, offset: Long, length: UInt): ByteArray {
+    private fun buildSftpReadRequest(requestId: Int, handle: String, offset: Long, length: UInt): Indexed<Byte> {
         val handleBytes = handle.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -628,10 +628,10 @@ class SSHSftpClientImpl(
         payload[2] = (length2 shr 8).toByte()
         payload[3] = length2.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpWriteRequest(requestId: Int, handle: String, offset: Long, data: ByteArray): ByteArray {
+    private fun buildSftpWriteRequest(requestId: Int, handle: String, offset: Long, data: ByteArray): Indexed<Byte> {
         val handleBytes = handle.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -682,10 +682,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpMkdirRequest(requestId: Int, path: String): ByteArray {
+    private fun buildSftpMkdirRequest(requestId: Int, path: String): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -717,10 +717,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpRmdirRequest(requestId: Int, path: String): ByteArray {
+    private fun buildSftpRmdirRequest(requestId: Int, path: String): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -752,10 +752,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpRemoveRequest(requestId: Int, path: String): ByteArray {
+    private fun buildSftpRemoveRequest(requestId: Int, path: String): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -787,10 +787,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpRenameRequest(requestId: Int, oldPath: String, newPath: String): ByteArray {
+    private fun buildSftpRenameRequest(requestId: Int, oldPath: String, newPath: String): Indexed<Byte> {
         val oldPathBytes = oldPath.encodeToByteArray()
         val newPathBytes = newPath.encodeToByteArray()
         val payload = mutableListOf<Byte>()
@@ -832,10 +832,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpStatRequest(requestId: Int, path: String): ByteArray {
+    private fun buildSftpStatRequest(requestId: Int, path: String): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -867,10 +867,10 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
-    private fun buildSftpSetStatRequest(requestId: Int, path: String, attributes: SSHSftpFileAttributes): ByteArray {
+    private fun buildSftpSetStatRequest(requestId: Int, path: String, attributes: SSHSftpFileAttributes): Indexed<Byte> {
         val pathBytes = path.encodeToByteArray()
         val payload = mutableListOf<Byte>()
         
@@ -905,7 +905,7 @@ class SSHSftpClientImpl(
         payload[2] = (length shr 8).toByte()
         payload[3] = length.toByte()
         
-        return payload.toByteArray()
+        return payload.size j { i: Int -> payload[i] }
     }
     
     // SFTP response parsers
@@ -914,17 +914,19 @@ class SSHSftpClientImpl(
         return "handle_${kotlin.random.Random.nextInt()}"
     }
     
-    private fun parseSftpFileList(response: ByteArray): List<SSHSftpFile> {
+    private fun parseSftpFileList(response: ByteArray): Indexed<SSHSftpFile> {
         // Simulate parsing SFTP file list response
-        return listOf(
+        val files = mutableListOf(
             SSHSftpFile("file1.txt", "file1.txt", SSHSftpFileAttributes(0 j { 0.toByte() })),
             SSHSftpFile("file2.txt", "file2.txt", SSHSftpFileAttributes(0 j { 0.toByte() }))
         )
+        return files.size j { i: Int -> files[i] }
     }
     
-    private fun parseSftpFileData(response: ByteArray): ByteArray {
+    private fun parseSftpFileData(response: ByteArray): Indexed<Byte> {
         // Simulate parsing SFTP file data response
-        return "SFTP file content".toByteArray()
+        val data = "SFTP file content".toByteArray()
+        return data.size j { i: Int -> data[i] }
     }
     
     private fun parseSftpAttributes(response: ByteArray): SSHSftpFileAttributes {

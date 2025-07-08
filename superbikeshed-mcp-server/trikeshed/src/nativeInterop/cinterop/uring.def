@@ -1,3 +1,0 @@
-headers = liburing.h
-package = com.superbikeshed.trikeshed.native.uring
-linkerOpts.linux = -luring

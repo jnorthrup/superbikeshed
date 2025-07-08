@@ -1,0 +1,3 @@
+mesh.id=mvpnode
+hazelcast.diagnostics.enabled=true
+mvpnode.keypair.public=bin/KeyPair.cmd line2

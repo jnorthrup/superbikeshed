@@ -1,0 +1,3 @@
+headers = /usr/local/include/liburing.h
+libraryPaths = /usr/local/lib
+libraries = uring

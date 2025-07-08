@@ -51,7 +51,8 @@ class SSHConfigAwareBuilder {
             
             // Try identity files
             // TODO: Check file existence in platform-specific way
-            for (identityFile in resolved.identityFiles) {
+            for (i in 0 until resolved.identityFiles.size) {
+                val identityFile = resolved.identityFiles.j(i)
                 publicKey {
                     keyPath = identityFile
                 }
@@ -327,8 +328,8 @@ class SSHHostKeyVerifier(
         val parts = hashedPattern.split("|")
         if (parts.size != 4) return false
         
-        val salt = decodeBase64Public(parts[2])
-        val hash = decodeBase64Public(parts[3])
+        val salt = decodeBase64Public(parts[2]).toByteArray()
+        val hash = decodeBase64Public(parts[3]).toByteArray()
         
         // Compute HMAC-SHA1 of host with salt
         // Simplified - would use actual HMAC
@@ -385,7 +386,7 @@ suspend fun exampleConfigUsage() = coroutineScope {
 }
 
 // Public base64 decoder for use in other files
-fun decodeBase64Public(data: String): ByteArray {
+fun decodeBase64Public(data: String): Indexed<Byte> {
     // Remove any whitespace
     val cleaned = data.replace(Regex("\\s"), "")
     
@@ -399,7 +400,7 @@ fun decodeBase64Public(data: String): ByteArray {
         bytes.add((i % 256).toByte())
     }
     
-    return bytes.toByteArray()
+    return bytes.size j { i: Int -> bytes[i] }
 }
 
 // Agent integration

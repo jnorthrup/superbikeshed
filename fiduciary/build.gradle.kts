@@ -31,3 +31,10 @@ kotlin {
         }
     }
 }
+
+tasks.register<JavaExec>("runFetchIndexes") {
+    group = "application"
+    description = "Runs the Divine Index Fetcher"
+    classpath = sourceSets["jvmMain"].runtimeClasspath
+    mainClass.set("fiduciary.FetchIndexesKt")
+}

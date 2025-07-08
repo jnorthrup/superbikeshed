@@ -200,7 +200,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
         val subsystem = request.subsystem
         
         // TODO: Start subsystem
-        println("Starting subsystem: $subsystem")
+        println("Starting subsystem: ${subsystem.toByteArray().decodeToString()}")
         
         // Send success response
         val response = buildChannelSuccessResponse(channelId)
@@ -407,7 +407,7 @@ class ExecRequest(val command: String) : SSHChannelRequest() {
     override val requestType = "exec"
 }
 
-class SubsystemRequest(val subsystem: String) : SSHChannelRequest() {
+class SubsystemRequest(val subsystem: Indexed<Byte>) : SSHChannelRequest() {
     override val requestType = "subsystem"
 }
 

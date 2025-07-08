@@ -15,7 +15,9 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":trikeshed-lib"))
-                
+                implementation(project(":trikeshed-channel-api"))
+                implementation(project(":trikeshed-reactor"))
+                implementation(project(":trikeshed-couchdb"))
             }
         }
         commonTest {

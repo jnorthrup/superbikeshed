@@ -46,7 +46,7 @@ sealed class SSHChannelRequest {
     abstract val requestType: String
 }
 
-class SubsystemRequest(val subsystem: String) : SSHChannelRequest() {
+class SubsystemRequest(val subsystem: Indexed<Byte>) : SSHChannelRequest() {
     override val requestType = "subsystem"
 }
 

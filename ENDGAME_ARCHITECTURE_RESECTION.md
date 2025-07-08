@@ -24,6 +24,7 @@ graph TB
 ## Proper Resection Analysis
 
 ### 1. **CCEK Pattern**
+
 ```kotlin
 // REMOVE: Forced four-field structure
 data class CcekContext(
@@ -38,6 +39,7 @@ data class KernelOp(val id: Int) : CoroutineContext.Key<KernelOp>
 ```
 
 ### 2. **Reactor → io_uring Native**
+
 ```kotlin
 // REMOVE: Java NIO-style reactor
 interface SelectableChannel {
@@ -51,6 +53,7 @@ suspend fun ioOperation() = uring.submit { sqe ->
 ```
 
 ### 3. **Protocol Consolidation**
+
 ```kotlin
 // REMOVE: Separate HTTP/QUIC/SOCKS implementations
 // KEEP: Unified protocol engine with eBPF parsing
@@ -94,18 +97,21 @@ graph LR
 ## The Surgical Cuts
 
 ### 1. **Remove Intermediate Buffers**
+
 ```kotlin
 // REMOVE: ByteBuffer abstractions
 // KEEP: Direct registered buffers with io_uring
 ```
 
 ### 2. **Remove Protocol State Machines**
+
 ```kotlin
 // REMOVE: HttpStateMachine, QuicStateMachine, SocksStateMachine
 // KEEP: Single eBPF program that handles all protocols
 ```
 
 ### 3. **Remove Async Abstractions**
+
 ```kotlin
 // REMOVE: AsyncChannel, SelectableChannel, SelectionKey
 // KEEP: suspend fun + io_uring
@@ -124,7 +130,7 @@ Everything else is removed. The kernel does the work.
         PARSE["Protocol Parsing"]
         DISPATCH["Command Dispatch"]
     end
-    
+
     subgraph "Kernel (Everything Else)"
         EBPF["eBPF Programs"]
         LSM["LSM Trees"]
@@ -141,6 +147,7 @@ Everything else is removed. The kernel does the work.
     style LSM fill:#cfc
     style CXL fill:#cfc
     style DPU fill:#cfc
+
 ```
 
 ## Module Resection List

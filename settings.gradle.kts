@@ -13,9 +13,11 @@ pluginManagement {
         google()
         maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlin/kotlin-mpp") }
     }
     plugins {
         kotlin("multiplatform") version "2.2.0"
+        kotlin("native") version "2.2.0" apply false
         id("com.github.ben-manes.versions") version "0.52.0"
         id("io.gitlab.arturbosch.detekt") version "1.23.6"
     }
@@ -50,6 +52,7 @@ include(":trikeshed-io")
 include(":trikeshed-async-core") // Core async abstractions and primitives.
 include(":trikeshed-reactor") // Core reactive programming model.
 include(":trikeshed-net")     // Networking protocols (TCP, UDP, QUIC).
+include(":trikeshed-quic")    // QUIC protocol implementation.
 include(":trikeshed-torrent") // BitTorrent protocol implementation.
 include(":trikeshed-dht")     // Distributed Hash Table implementation.
 include(":trikeshed-ipc")     // Inter-process communication.
@@ -57,6 +60,7 @@ include(":trikeshed-ccek")    // Coroutine Context Element Key - orchestration f
 include(":trikeshed-ljson")   // Large JSON parsing utilities.
 include(":trikeshed-strace")  // System call tracing utilities.
 include(":trikeshed-couchdb") // CouchDB integration.
+include(":platform-launcher")
 include(":trikeshed-ipfs")    // IPFS integration.
 // include(":trikeshed-services") // Temporarily disabled due to plugin issues.
 include(":trikeshed-cursor")  // Cursor-based data access.
@@ -70,6 +74,7 @@ include(":trikeshed-channel-test")    // Protocol testing and recording
 
 // Application modules
 include(":rtsgame")      // Real-time strategy game example.
+
 include(":boingDemo")    // Simple physics demo.
 include(":fiduciary") // Patrick Devine Agent TDD implementation
 

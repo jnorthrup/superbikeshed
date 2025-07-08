@@ -1,0 +1,27 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/model/PortfolioRow.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/model/PortfolioRow.kt
+deleted file mode 100644
+index 68efc6eb..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/model/PortfolioRow.kt
++++ /dev/null
+@@ -1,18 +0,0 @@
+-package com.ta4k.acapulco.model
+-
+-import java.math.BigDecimal
+-
+-/**
+- * Represents a row in the portfolio display.
+- */
+-data class PortfolioRow(
+-    val symbol: String,
+-    val currency: String,
+-    val quantity: BigDecimal,
+-    val price: BigDecimal,
+-    val value: BigDecimal,
+-    val baseline: BigDecimal,
+-    val deviation: BigDecimal,
+-    val absoluteDifference: BigDecimal,
+-    val priceChange: BigDecimal? = null
+-) 
+\ No newline at end of file

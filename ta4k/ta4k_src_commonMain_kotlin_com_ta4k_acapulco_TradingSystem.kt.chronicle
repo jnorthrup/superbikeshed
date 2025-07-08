@@ -1,0 +1,130 @@
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt
+index f5dd34e4..f00694c7 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt
+@@ -1,6 +1,6 @@
+ package com.ta4k.acapulco
+ 
+-import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.Indexed
+ import com.ta4k.core.model.Kline
+ import com.ta4k.acapulco.model.PortfolioRow
+ import kotlinx.coroutines.flow.MutableStateFlow
+@@ -36,7 +36,7 @@ class TradingSystem {
+         startTime: Instant,
+         endTime: Instant,
+         timeframe: String = DogeDataLoader.DEFAULT_TIMEFRAME
+-    ): Series<Kline> {
++    ): Indexed<Kline> {
+         return dogeDataLoader.loadHistoricalData(startTime, endTime, timeframe)
+     }
+     
+@@ -44,7 +44,7 @@ class TradingSystem {
+      * Update the visualization with new kline data.
+      * @param klines Series of Klines to visualize
+      */
+-    fun updateVisualization(klines: Series<Kline>) {
++    fun updateVisualization(klines: Indexed<Kline>) {
+         _visualizationState.value = SpaceGraphVisualizer.visualizeKlines(klines)
+     }
+     
+@@ -73,7 +73,7 @@ class TradingSystem {
+     suspend fun loadLastNPeriods(
+         n: Int,
+         timeframe: String = DogeDataLoader.DEFAULT_TIMEFRAME
+-    ): Series<Kline> {
++    ): Indexed<Kline> {
+         return dogeDataLoader.loadLastNPeriods(n, timeframe)
+     }
+ } 
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt
+deleted file mode 100644
+index f00694c7..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/TradingSystem.kt
++++ /dev/null
+@@ -1,79 +0,0 @@
+-package com.ta4k.acapulco
+-
+-import borg.trikeshed.lib.Indexed
+-import com.ta4k.core.model.Kline
+-import com.ta4k.acapulco.model.PortfolioRow
+-import kotlinx.coroutines.flow.MutableStateFlow
+-import kotlinx.coroutines.flow.StateFlow
+-import kotlinx.coroutines.flow.asStateFlow
+-import java.time.Instant
+-import java.math.BigDecimal
+-
+-/**
+- * Main integration class that coordinates between the trading bot, UI bridge,
+- * data loading, and visualization components.
+- */
+-class TradingSystem {
+-    private val dogeDataLoader = DogeDataLoader()
+-    
+-    // State flows for UI updates
+-    private val _portfolioState = MutableStateFlow<List<PortfolioRow>>(emptyList())
+-    private val _tradingState = MutableStateFlow(BigDecimal.ZERO)
+-    private val _visualizationState = MutableStateFlow<SpaceGraphData?>(null)
+-    
+-    val portfolioState: StateFlow<List<PortfolioRow>> = _portfolioState.asStateFlow()
+-    val tradingState: StateFlow<BigDecimal> = _tradingState.asStateFlow()
+-    val visualizationState: StateFlow<SpaceGraphData?> = _visualizationState.asStateFlow()
+-    
+-    /**
+-     * Load historical DOGE data for backtesting.
+-     * @param startTime Start time for historical data
+-     * @param endTime End time for historical data
+-     * @param timeframe Optional timeframe (defaults to 1h)
+-     * @return Series of Klines for the specified period
+-     */
+-    suspend fun loadHistoricalData(
+-        startTime: Instant,
+-        endTime: Instant,
+-        timeframe: String = DogeDataLoader.DEFAULT_TIMEFRAME
+-    ): Indexed<Kline> {
+-        return dogeDataLoader.loadHistoricalData(startTime, endTime, timeframe)
+-    }
+-    
+-    /**
+-     * Update the visualization with new kline data.
+-     * @param klines Series of Klines to visualize
+-     */
+-    fun updateVisualization(klines: Indexed<Kline>) {
+-        _visualizationState.value = SpaceGraphVisualizer.visualizeKlines(klines)
+-    }
+-    
+-    /**
+-     * Update the portfolio state with new data.
+-     * @param portfolioRows New portfolio rows
+-     */
+-    fun updatePortfolioState(portfolioRows: List<PortfolioRow>) {
+-        _portfolioState.value = portfolioRows
+-    }
+-    
+-    /**
+-     * Update the trading state with new data.
+-     * @param tradingValue New trading value
+-     */
+-    fun updateTradingState(tradingValue: BigDecimal) {
+-        _tradingState.value = tradingValue
+-    }
+-    
+-    /**
+-     * Load the last N periods of DOGE data.
+-     * @param n Number of periods to load
+-     * @param timeframe Optional timeframe (defaults to 1h)
+-     * @return Series of Klines for the last N periods
+-     */
+-    suspend fun loadLastNPeriods(
+-        n: Int,
+-        timeframe: String = DogeDataLoader.DEFAULT_TIMEFRAME
+-    ): Indexed<Kline> {
+-        return dogeDataLoader.loadLastNPeriods(n, timeframe)
+-    }
+-} 
+\ No newline at end of file

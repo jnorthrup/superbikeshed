@@ -1,5 +1,4 @@
-@file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
-@file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
+@file:OptIn(RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class, kotlin.ExperimentalUnsignedTypes::class)
 package borg.trikeshed.io
 
 expect object IOError {
