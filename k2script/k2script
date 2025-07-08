@@ -1,0 +1,29 @@
+#!/bin/bash
+# K2Script launcher - Maven-based Kotlin script runner
+
+# Find script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Set up classpath
+K2SCRIPT_JAR="$PROJECT_ROOT/k2script/build/libs/k2script-jvm.jar"
+TRIKESHED_JAR="$PROJECT_ROOT/trikeshed-lib/build/libs/trikeshed-lib-jvm.jar"
+
+# Check if JARs exist, build if not
+if [ ! -f "$K2SCRIPT_JAR" ]; then
+    echo "Building k2script..."
+    cd "$PROJECT_ROOT"
+    ./gradlew :k2script:jvmJar :trikeshed-lib:jvmJar -q || {
+        echo "Build failed. Running script with kotlin command instead."
+        exec kotlin "$@"
+    }
+fi
+
+# Run with Maven launcher if available
+if [ -f "$K2SCRIPT_JAR" ]; then
+    exec java -cp "$K2SCRIPT_JAR:$TRIKESHED_JAR" \
+        k2script.launcher.MavenScriptLauncherKt "$@"
+else
+    # Fallback to direct kotlin execution
+    exec kotlin "$@"
+fi

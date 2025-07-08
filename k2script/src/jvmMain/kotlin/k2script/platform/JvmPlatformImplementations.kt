@@ -6,43 +6,51 @@ import kotlinx.coroutines.withContext
 import java.io.File as JvmFile
 import borg.trikeshed.io.PlatformFileIO
 import borg.trikeshed.io.PlatformFileIOImpl
+import borg.trikeshed.io.PlatformFile
 import borg.trikeshed.io.Files as TrikeshedFiles
 
 // JVM implementation of FileSystemOperations
 class JvmFileSystemOperations(override val platformFileIO: PlatformFileIO) : FileSystemOperations {
-    override suspend fun createTempDir(prefix: String): File = withContext(Dispatchers.IO) {
+    override suspend fun createTempDir(prefix: String): PlatformFile = withContext(Dispatchers.IO) {
         val tempDir = JvmFile.createTempFile(prefix, "")
         tempDir.delete()
         tempDir.mkdir()
-        File(tempDir.absolutePath)
+        PlatformFile(tempDir.absolutePath)
     }
 
     override suspend fun copyFile(source: File, destination: File, overwrite: Boolean) = withContext(Dispatchers.IO) {
-        JvmFile(source.absolutePath).copyTo(JvmFile(destination.absolutePath), overwrite)
+        val srcFile = if (source is PlatformFile) JvmFile(source.path) else JvmFile(source.toString())
+        val destFile = if (destination is PlatformFile) JvmFile(destination.path) else JvmFile(destination.toString())
+        srcFile.copyTo(destFile, overwrite)
     }
 
     override suspend fun deleteRecursively(file: File) = withContext(Dispatchers.IO) {
-        JvmFile(file.absolutePath).deleteRecursively()
+        val jvmFile = if (file is PlatformFile) JvmFile(file.path) else JvmFile(file.toString())
+        jvmFile.deleteRecursively()
     }
 
     override suspend fun fileExists(file: File): Boolean = withContext(Dispatchers.IO) {
-        TrikeshedFiles.exists(file.absolutePath)
+        val path = if (file is PlatformFile) file.path else file.toString()
+        TrikeshedFiles.exists(path)
     }
 
     override suspend fun isDirectory(file: File): Boolean = withContext(Dispatchers.IO) {
-        JvmFile(file.absolutePath).isDirectory()
+        file.isDirectory()
     }
 
     override suspend fun readText(file: File): String = withContext(Dispatchers.IO) {
-        TrikeshedFiles.readString(file.absolutePath)
+        val path = if (file is PlatformFile) file.path else file.toString()
+        TrikeshedFiles.readString(path)
     }
 
     override suspend fun writeText(file: File, text: String) = withContext(Dispatchers.IO) {
-        TrikeshedFiles.write(file.absolutePath, text)
+        val path = if (file is PlatformFile) file.path else file.toString()
+        TrikeshedFiles.write(path, text)
     }
 
     override suspend fun getFileSize(file: File): Long = withContext(Dispatchers.IO) {
-        JvmFile(file.absolutePath).length()
+        val jvmFile = if (file is PlatformFile) JvmFile(file.path) else JvmFile(file.toString())
+        jvmFile.length()
     }
 }
 
@@ -50,7 +58,10 @@ class JvmFileSystemOperations(override val platformFileIO: PlatformFileIO) : Fil
 class JvmProcessExecutor : ProcessExecutor {
     override suspend fun runCommand(command: String, workingDir: File?): CommandResult = withContext(Dispatchers.IO) {
         val processBuilder = ProcessBuilder(*command.split(" ").toTypedArray())
-        workingDir?.let { processBuilder.directory(JvmFile(it.absolutePath)) }
+        workingDir?.let { 
+            val dirPath = if (it is PlatformFile) it.path else it.toString()
+            processBuilder.directory(JvmFile(dirPath)) 
+        }
         processBuilder.redirectErrorStream(true) // Combine stdout and stderr
 
         val process = processBuilder.start()
