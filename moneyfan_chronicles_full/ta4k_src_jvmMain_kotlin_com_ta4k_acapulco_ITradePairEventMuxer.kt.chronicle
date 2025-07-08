@@ -1,0 +1,36 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt
+index 2c90db8d..9be3b47f 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt
+@@ -3,7 +3,7 @@
+ // =====================================================================
+ package borg.trikeshed.acapulco
+ 
+-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
++import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
+ import borg.trikeshed.lib.Join // Replaces Pai2
+ import kotlinx.coroutines.flow.MutableSharedFlow
+ 
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt
+deleted file mode 100644
+index 9be3b47f..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ITradePairEventMuxer.kt
++++ /dev/null
+@@ -1,12 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/ITradePairEventMuxer.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco
+-
+-import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
+-import borg.trikeshed.lib.Join // Replaces Pai2
+-import kotlinx.coroutines.flow.MutableSharedFlow
+-
+-interface ITradePairEventMuxer {
+-    val intra_events: MutableSharedFlow<Join<Cursor, Int>> // Use Join instead of Pai2
+-}
+\ No newline at end of file

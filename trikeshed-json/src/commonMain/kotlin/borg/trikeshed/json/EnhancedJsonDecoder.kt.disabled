@@ -1,0 +1,168 @@
+@file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
+package borg.trikeshed.json
+
+import borg.trikeshed.lib.*
+import borg.trikeshed.core.*
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
+import kotlinx.serialization.modules.*
+
+/**
+ * Enhanced TrikeShed JSON Decoder using bitmap acceleration
+ */
+class EnhancedTrikeShedJsonDecoder(
+    override val serializersModule: SerializersModule,
+    private val input: String,
+    private val scanner: BitmapJsonScanner,
+    private val document: BitmapDocument,
+    private var currentPath: String = "",
+    private var elementIndex: Int = 0
+) : AbstractDecoder() {
+    
+    // Cache for O(1) repeated access
+    private val queryCache = mutableMapOf<String, JsonTypedValue?>()
+    
+    // === Core Decoding Interface (using bitmap acceleration) ===
+    
+    override fun decodeBoolean(): Boolean {
+        val value = queryFast(currentPath)
+        return when (val v = value?.b) {
+            is Boolean -> v
+            is String -> when (v) {
+                "true" -> true
+                "false" -> false
+                else -> throw SerializationException("Expected boolean at path: $currentPath, got: $v")
+            }
+            else -> throw SerializationException("Expected boolean at path: $currentPath, got: $v")
+        }
+    }
+    
+    override fun decodeByte(): Byte = decodeNumber().toInt().toByte()
+    override fun decodeShort(): Short = decodeNumber().toInt().toShort()
+    override fun decodeInt(): Int = decodeNumber().toInt()
+    override fun decodeLong(): Long = decodeNumber().toLong()
+    override fun decodeFloat(): Float = decodeNumber().toFloat()
+    override fun decodeDouble(): Double = decodeNumber()
+    
+    private fun decodeNumber(): Double {
+        val value = queryFast(currentPath)
+        return when (val v = value?.b) {
+            is Number -> v.toDouble()
+            is String -> v.toDoubleOrNull() ?: throw SerializationException("Invalid number: $v at path: $currentPath")
+            else -> throw SerializationException("Expected number at path: $currentPath, got: $v")
+        }
+    }
+    
+    override fun decodeChar(): Char {
+        val str = decodeString()
+        if (str.length != 1) throw SerializationException("Expected single char, got: $str")
+        return str[0]
+    }
+    
+    override fun decodeString(): String {
+        val value = queryFast(currentPath)
+        return when (val v = value?.b) {
+            is String -> v
+            else -> throw SerializationException("Expected string at path: $currentPath")
+        }
+    }
+    
+    override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
+        val value = decodeString()
+        val index = enumDescriptor.getElementIndex(value)
+        if (index == CompositeDecoder.UNKNOWN_NAME) {
+            throw SerializationException("Unknown enum value: $value")
+        }
+        return index
+    }
+    
+    override fun decodeNotNullMark(): Boolean {
+        val value = queryFast(currentPath)
+        return value?.b != null && value.b != "null"
+    }
+    
+    override fun decodeNull(): Nothing? {
+        val value = queryFast(currentPath)
+        if (value?.b != null && value.b != "null") {
+            throw SerializationException("Expected null at path: $currentPath")
+        }
+        return null
+    }
+    
+    // === Fast O(log n) query using bitmap ===
+    
+    private fun queryFast(path: String): JsonTypedValue? {
+        // Check cache first
+        queryCache[path]?.let { return it }
+        
+        // Use bitmap acceleration for O(log n) lookup
+        val result = scanner.query(path)
+        queryCache[path] = result
+        return result
+    }
+    
+    // === Composite Decoding ===
+    
+    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        return EnhancedTrikeShedJsonDecoder(serializersModule, input, scanner, document, currentPath, 0)
+    }
+    
+    override fun endStructure(descriptor: SerialDescriptor) {
+        // Clear cache for nested structures
+        queryCache.clear()
+    }
+    
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
+        if (elementIndex >= descriptor.elementsCount) {
+            return CompositeDecoder.DECODE_DONE
+        }
+        
+        val name = descriptor.getElementName(elementIndex)
+        currentPath = name // For simple JSON objects, use just the field name
+        
+        return elementIndex++
+    }
+    
+    // === Collection Decoding with Bitmap Navigation ===
+    
+    override fun decodeCollectionSize(descriptor: SerialDescriptor): Int {
+        // Use bitmap to count array elements efficiently
+        val arrayStart = scanner.nextElement(0, JsonElementType.ARRAY_START)
+        val arrayEnd = scanner.nextElement(arrayStart ?: 0, JsonElementType.ARRAY_END)
+        
+        if (arrayStart == null || arrayEnd == null) return 0
+        
+        // Count commas between array start and end
+        var count = 1
+        var pos = arrayStart
+        while (pos < arrayEnd) {
+            val comma = scanner.nextElement(pos, JsonElementType.COMMA) ?: break
+            if (comma < arrayEnd) count++
+            pos = comma + 1
+        }
+        
+        return count
+    }
+}
+
+/**
+ * Create enhanced bitmap JSON format
+ */
+fun TrikeShedJson.withBitmapAcceleration(): TrikeShedJsonFormat {
+    return create {
+        copy(useEnhancedBitmap = true, useBitmapAcceleration = true)
+    }
+}
+
+/**
+ * Extension for parallel decoding (coroutine-based)
+ */
+suspend inline fun <reified T> String.decodeTrikeShedJsonParallel(
+    context: JsonScanContext = JsonScanContext()
+): T {
+    val format = TrikeShedJson.withBitmapAcceleration()
+    return format.decodeFromString<T>(this)
+}

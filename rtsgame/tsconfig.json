@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "es6",                        // Target modern ECMAScript version
+    "module": "commonjs",                   // Or "esnext" if using ES modules for Node/webpack
+    "strict": true,                         // Enable all strict type-checking options
+    "esModuleInterop": true,                // Enables emit interoperability between CommonJS and ES Modules
+    "skipLibCheck": true,                   // Skip type checking of declaration files
+    "forceConsistentCasingInFileNames": true, // Disallow inconsistently-cased references to the same file.
+    "outDir": "./js",                       // Redirect output structure to the directory.
+    "rootDir": "./src",                     // Specify the root directory of input files.
+    "baseUrl": "./",                        // Base directory to resolve non-absolute module names.
+    "paths": {
+      "*": [                                // Fallback for other modules
+        "node_modules/*",
+        "src/types/*"                       // Example for project-specific type definitions
+      ]
+    },
+    "resolveJsonModule": true,              // Include modules imported with .json extension
+    "allowJs": true                         // Allow javascript files to be compiled
+    // "checkJs": true,                     // Report errors in .js files.
+  },
+  "include": [
+    "src/**/*"                              // Include all files in src
+    // "vendor/trikeshed-core/trikeshedCore.d.ts" // Explicitly include if needed
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "js"                                    // Exclude the output directory
+  ]
+}

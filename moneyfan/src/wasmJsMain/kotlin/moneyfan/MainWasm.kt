@@ -1,0 +1,99 @@
+package moneyfan
+
+import moneyfan.core.*
+import moneyfan.spacegraph.*
+
+/**
+ * WASM trading demo exports for web interface
+ */
+
+fun greet(): String {
+    return "Moneyfan Interactive Trading Demo - WebAssembly"
+}
+
+fun generateChartForSampleData(): String {
+    val engine = TradingEngine()
+    val portfolioManager = PortfolioManager()
+    val technicalAnalysis = TechnicalAnalysis()
+    val renderer = TradingSpaceGraphRenderer()
+    
+    // Generate sample data
+    val symbols = listOf("AAPL", "GOOGL", "TSLA", "BTC")
+    val allCandles = mutableListOf<Candlestick>()
+    
+    symbols.forEach { symbol ->
+        val ticks = engine.generateSampleTicks(symbol, 50, 100.0 + kotlin.random.Random.nextDouble() * 500.0)
+        val candles = engine.processTickSeries(ticks)
+        allCandles.addAll(candles.play)
+    }
+    
+    val candleSeries = Indexed.of(allCandles.size) { i -> allCandles[i] }
+    
+    // Simulate trading
+    symbols.forEach { symbol ->
+        val latestCandle = allCandles.filter { it.symbol.value == symbol }.lastOrNull()
+        if (latestCandle != null) {
+            portfolioManager.buyPosition(Symbol(symbol), Quantity(10.0), latestCandle.ohlcv.close)
+        }
+    }
+    
+    val currentPrices = allCandles.groupBy { it.symbol }.mapValues { (_, candles) ->
+        candles.last().ohlcv.close
+    }
+    val portfolioState = portfolioManager.getPortfolioState(currentPrices)
+    
+    // Generate technical indicators
+    val indicators = mutableMapOf<String, PriceSeries>()
+    symbols.forEach { symbol ->
+        val symbolCandles = allCandles.filter { it.symbol.value == symbol }
+        if (symbolCandles.isNotEmpty()) {
+            val prices = Indexed.of(symbolCandles.size) { i -> symbolCandles[i].ohlcv.close }
+            indicators["${symbol}_SMA"] = technicalAnalysis.simpleMovingAverage(prices, 10)
+        }
+    }
+    
+    // Create visualization
+    val visualization = renderer.renderMarketData(candleSeries, portfolioState, indicators)
+    
+    // Format output
+    val output = buildString {
+        appendLine("=== Moneyfan Trading Results ===")
+        appendLine("Portfolio Value: $${portfolioState.totalValue.value}")
+        appendLine("Cash Balance: $${portfolioState.cashBalance.value}")
+        appendLine("Total Return: ${(portfolioState.totalReturn * 100.0).format(2)}%")
+        appendLine()
+        
+        appendLine("=== Positions ===")
+        portfolioState.positions.play.forEach { position ->
+            val currentPrice = currentPrices[position.symbol] ?: position.averagePrice
+            val pnl = (currentPrice - position.averagePrice) * position.quantity
+            appendLine("${position.symbol.value}: ${position.quantity.value} @ $${position.averagePrice.value} (P&L: $${pnl.value.format(2)})")
+        }
+        appendLine()
+        
+        appendLine("=== SpaceGraph Data ===")
+        appendLine("Generated ${visualization.nodes.size} nodes and ${visualization.edges.size} edges")
+        appendLine("Symbols: ${visualization.metadata.symbolCount}")
+        appendLine("Candles: ${visualization.metadata.candleCount}")
+        appendLine()
+        
+        appendLine("=== Sample Nodes ===")
+        visualization.nodes.play.take(3).forEach { node ->
+            appendLine("${node.type}: ${node.data.label}")
+            appendLine("  Position: (${node.position.x.format(1)}, ${node.position.y.format(1)}, ${node.position.z.format(1)})")
+        }
+        appendLine()
+        
+        appendLine("=== Sample Technical Analysis ===")
+        indicators.forEach { (name, series) ->
+            val latest = series.play.lastOrNull()
+            if (latest != null) {
+                appendLine("$name: ${latest.value.format(2)}")
+            }
+        }
+    }
+    
+    return output
+}
+
+internal fun Double.format(decimals: Int): String = "%.${decimals}f".format(this)

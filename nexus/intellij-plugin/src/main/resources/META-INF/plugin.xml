@@ -1,0 +1,130 @@
+<idea-plugin>
+    <id>com.v2superbikeshed.nexus-intellij-api</id>
+    <name>Nexus IntelliJ API Bridge</name>
+    <vendor>v2superbikeshed</vendor>
+    
+    <description><![CDATA[
+    Exposes IntelliJ IDEA functionality via REST API for LLM integration.
+    Provides endpoints for refactoring, code analysis, and project navigation.
+    ]]></description>
+    
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.java</depends>
+    
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Application service for REST server -->
+        <applicationService 
+            serviceImplementation="com.v2superbikeshed.nexus.service.NexusApiServer"/>
+        
+        <!-- Project service for code operations -->
+        <projectService 
+            serviceImplementation="com.v2superbikeshed.nexus.service.ProjectApiService"/>
+            
+        <!-- IntelliJ Access Service -->
+        <projectService
+            serviceImplementation="com.v2superbikeshed.nexus.service.IntelliJAccessService"/>
+            
+        <!-- PSI Bridge Service -->
+        <projectService
+            serviceImplementation="com.v2superbikeshed.nexus.psi.PsiTrikeShedBridge"/>
+            
+        <!-- Kotlin Analysis Bridge Service -->
+        <projectService
+            serviceImplementation="com.v2superbikeshed.nexus.psi.KotlinAnalysisBridge"/>
+            
+        <!-- K2 Analysis Bridge Service -->
+        <projectService
+            serviceImplementation="com.v2superbikeshed.nexus.psi.K2TrikeShedBridge"/>
+            
+        <!-- MCP Bridge Service -->
+        <projectService
+            serviceImplementation="com.v2superbikeshed.nexus.rpc.TrikeshedMcpBridge"/>
+            
+        <!-- MCP Server Launcher -->
+        <applicationService
+            serviceImplementation="com.v2superbikeshed.nexus.mcp.McpServerLauncher"/>
+            
+        <!-- QUIC MCP Server -->
+        <projectService
+            serviceImplementation="com.v2superbikeshed.nexus.mcp.QuicMcpServer"/>
+            
+        <!-- Startup activity to auto-start MCP server -->
+        <postStartupActivity
+            implementation="com.v2superbikeshed.nexus.mcp.McpServerLauncher"/>
+            
+        <!-- Settings -->
+        <applicationConfigurable
+            parentId="tools"
+            instance="com.v2superbikeshed.nexus.settings.NexusApiConfigurable"
+            id="com.v2superbikeshed.nexus.settings"
+            displayName="Nexus API Server"/>
+    </extensions>
+    
+    <applicationListeners>
+        <listener 
+            class="com.v2superbikeshed.nexus.listener.NexusServerLifecycleListener"
+            topic="com.intellij.ide.ApplicationActivationListener"/>
+    </applicationListeners>
+    
+    <actions>
+        <!-- Start/Stop server actions -->
+        <action id="Nexus.StartServer"
+                class="com.v2superbikeshed.nexus.action.StartServerAction"
+                text="Start Nexus API Server"
+                description="Start the REST API server">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <action id="Nexus.StopServer"
+                class="com.v2superbikeshed.nexus.action.StopServerAction"
+                text="Stop Nexus API Server"
+                description="Stop the REST API server">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <!-- MCP Server actions -->
+        <action id="Nexus.StartMcpServer"
+                class="com.v2superbikeshed.nexus.action.StartMcpServerAction"
+                text="Start MCP Server"
+                description="Start the Model Context Protocol server">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <action id="Nexus.StopMcpServer"
+                class="com.v2superbikeshed.nexus.action.StopMcpServerAction"
+                text="Stop MCP Server"
+                description="Stop the Model Context Protocol server">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <action id="Nexus.TestMcpServer"
+                class="com.v2superbikeshed.nexus.action.TestMcpServerAction"
+                text="Test MCP Server"
+                description="Run MCP server test client">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <!-- PSI Analysis Actions -->
+        <action id="Nexus.AnalyzeCurrentFile"
+                class="com.v2superbikeshed.nexus.action.AnalyzeCurrentFileAction"
+                text="Analyze Current File with PSI"
+                description="Perform PSI analysis on the current file">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <action id="Nexus.AnalyzeProject"
+                class="com.v2superbikeshed.nexus.action.AnalyzeProjectAction"
+                text="Analyze Project with PSI"
+                description="Perform PSI analysis on the entire project">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        
+        <action id="Nexus.K2Analysis"
+                class="com.v2superbikeshed.nexus.action.K2AnalysisAction"
+                text="K2 Analysis"
+                description="Perform K2-based semantic analysis">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

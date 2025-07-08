@@ -1,0 +1,141 @@
+package moneyfan.trikeshed.nlp
+
+import moneyfan.trikeshed.Indexed
+import moneyfan.trikeshed.j // For Indexed construction
+import moneyfan.trikeshed.nlp.rql.RqlRootQuery
+import moneyfan.trikeshed.nlp.parser.SimpleRqlParser
+import moneyfan.trikeshed.emptySeries
+
+/**
+ * A **Proof-of-Concept (PoC)** semantic scorer that provides relevance scores based on keyword matching.
+ *
+ * This scorer is intentionally simple for demonstration purposes within the [HybridNlpAgentPoc].
+ * It works by:
+ * 1. Extracting unique, non-trivial keywords (length > 1) from the lowercase version of the input `query`.
+ * 2. For each string in `itemsAsStrings`, it counts how many of these query keywords are present (case-insensitive containment).
+ * 3. The score for each item is then normalized by dividing the count of matched keywords by the total number of unique query keywords.
+ *
+ * **Limitations:**
+ * - Purely keyword-based, no true semantic understanding (e.g., synonyms, context).
+ * - Simple normalization might not be ideal for all use cases.
+ * - Keyword extraction is basic (splits by space, filters by length).
+ */
+internal object PocSemanticScorer {
+    /**
+     * Calculates relevance scores for a series of item strings against a query string.
+     *
+     * @param query The natural language query string. Keywords are extracted from this query.
+     * @param itemsAsStrings A [Indexed<String>] containing the textual representation of items to score.
+     *                       Scores will correspond index-wise to this series.
+     * @return A [Indexed<Double>] of relevance scores, aligned with `itemsAsStrings`.
+     *         Scores are normalized by the number of unique, non-trivial keywords found in the query.
+     *         - If `itemsAsStrings` is empty, an empty series is returned.
+     *         - If the `query` yields no usable keywords (e.g., it's empty or contains only very short words),
+     *           all items in a non-empty `itemsAsStrings` series will receive a score of `0.0`.
+     */
+    fun score(query: String, itemsAsStrings: Indexed<String>): Indexed<Double> {
+        if (itemsAsStrings.isEmpty()) {
+            return emptySeries()
+        }
+
+        val queryKeywords = query.lowercase().split("\\s+".toRegex())
+            .filter { it.isNotBlank() && it.length > 1 } // Basic filtering for meaningful keywords
+            .toSet()
+
+        if (queryKeywords.isEmpty()) {
+            return itemsAsStrings.a j { 0.0 } // Default score of 0.0 if no usable query keywords
+        }
+
+        return itemsAsStrings.a j { index:Int ->
+            val itemText = itemsAsStrings.b(index).lowercase()
+            var matchCount = 0.0
+            for (keyword in queryKeywords) {
+                if (itemText.contains(keyword)) {
+                    matchCount += 1.0
+                }
+            }
+            // Normalize score by the number of query keywords.
+            // This ensures score is between 0.0 and 1.0.
+            matchCount / queryKeywords.size
+        }
+    }
+}
+
+/**
+ * A **Proof-of-Concept (PoC)** implementation of the [NlpAgent] interface.
+ *
+ * This agent demonstrates a hybrid approach to query processing by combining:
+ * 1.  **Structured Query Parsing:** It utilizes the [SimpleRqlParser] to attempt to translate
+ *     the input natural language `query` into a formal RQL ([RqlRootQuery]) structure.
+ *     This allows for precise, rule-based filtering if the query matches known patterns.
+ * 2.  **Semantic Scoring:** It employs the [PocSemanticScorer] (a basic keyword-matching scorer)
+ *     to calculate relevance scores for each item in `itemsAsStrings` relative to the `query`.
+ *     This provides a fallback or complementary measure of relevance when structured parsing
+ *     is insufficient or not applicable.
+ *
+ * The results from both parsing and scoring are packaged into an [NlpAgentResult].
+ *
+ * **Key PoC Characteristics & Limitations:**
+ * - **Parser Limitations:** The RQL generation capabilities are entirely dependent on the
+ *   [SimpleRqlParser], which understands only a very restricted, pattern-based grammar.
+ * - **Scorer Simplicity:** The [PocSemanticScorer] performs rudimentary keyword counting and does not
+ *   offer true semantic understanding (e.g., it doesn't handle synonyms, context, or intent beyond keywords).
+ * - **Non-Suspending Operations:** For this PoC, the `processQuery` method is **non-suspend (blocking)**.
+ *   This was a deliberate choice to simplify integration with components like `AttentionScope.apply`
+ *   which are also non-suspend in the current design. A production-grade NLP agent performing
+ *   complex analysis or I/O would typically have a `suspend`ing `processQuery` method.
+ * - **Basic Error Handling:** Error reporting is minimal, primarily indicating if RQL parsing failed.
+ *
+ * This class serves as a concrete example of how an [NlpAgent] could be structured to provide
+ * both structured (RQL) and unstructured (semantic scores) insights from a query, which can then
+ * be leveraged by consumers like `HumanLanguageAgentScope` for hybrid data filtering and attention mechanisms.
+ */
+class HybridNlpAgentPoc : NlpAgent {
+
+    internal val rqlParser = SimpleRqlParser()
+
+    /**
+     * Processes a natural language query to produce both a potential structured RQL query
+     * (via [SimpleRqlParser]) and semantic relevance scores for provided item strings
+     * (via [PocSemanticScorer]).
+     *
+     * This implementation is **non-suspend (blocking)** for PoC purposes.
+     *
+     * @param query The natural language query string.
+     * @param itemsAsStrings A [Indexed<String>] of item representations to be scored. The resulting
+     *                       `relevanceScores` in [NlpAgentResult] will align with this series.
+     * @return An [NlpAgentResult] containing:
+     *         - `relevanceScores`: A [Indexed<Double>] from [PocSemanticScorer].
+     *         - `structuredQuery`: An [RqlRootQuery] from [SimpleRqlParser] if parsing was successful; `null` otherwise.
+     *         - `originalQuery`: The unmodified input `query` string.
+     *         - `errors`: A list of error messages. For this PoC, it may include a message if
+     *           [SimpleRqlParser] fails to parse a non-blank query, or if an unexpected exception occurs.
+     */
+    override fun processQuery(query: String, itemsAsStrings: Indexed<String>): NlpAgentResult {
+        var structuredQuery: RqlRootQuery? = null
+        val errors = mutableListOf<String>()
+
+        try {
+            structuredQuery = rqlParser.parse(query)
+            if (query.isNotBlank() && structuredQuery == null && !query.trim().equals("null", ignoreCase = true) ) {
+                 // Only add error if query was not blank, not "null" and parsing failed to produce a structure.
+                 // A query like "null" might not parse to RQL but is a valid query for semantic scorer.
+                errors.add("SimpleRqlParser could not parse the query into a structured RQL format.")
+            }
+        } catch (e: Exception) {
+            // In a real application, log this exception with more detail.
+            println("Error during RQL parsing in HybridNlpAgentPoc for query \"$query\": ${e.message}")
+            errors.add("An unexpected error occurred during RQL parsing: ${e.message}")
+            structuredQuery = null // Ensure structure is null if parsing threw an exception
+        }
+
+        val relevanceScores = PocSemanticScorer.score(query, itemsAsStrings)
+
+        return NlpAgentResult(
+            relevanceScores = relevanceScores,
+            structuredQuery = structuredQuery,
+            originalQuery = query,
+            errors = if (errors.isNotEmpty()) errors else null
+        )
+    }
+}

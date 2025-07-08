@@ -1,0 +1,249 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js artifacts
+node_modules/
+yarn.lock
+yarn-error.log
+npm-debug.log*
+.npm
+
+# Python artifacts
+venv/
+venv_new/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Build outputs
+dist/
+build/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# JetBrains IDEs
+.idea/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/
+
+# Gradle
+.gradle/
+gradle-app.setting
+
+# Maven
+target/
+
+# SBT
+.sbt
+
+# Metals (Scala)
+.metals/
+.bloop/
+
+# Build configuration leftovers
+kotlin-js-store/
+.kotlin/
+build-cache/
+
+# IntelliJ IDEA project files (keep shared configs)
+.idea/copyright/
+.idea/scopes/
+
+# Webpack and JS artifacts
+webpack.config.js
+*.bundle.js
+*.chunk.js
+
+# KSP generated files
+**/build/generated/ksp/
+
+# Test sandbox artifacts
+**/test/
+**/kscript_test_sandbox/
+
+# Debug and temporary Kotlin files
+debug_packer.kt
+DebugBashBracePacker.kt
+TestBashPacker.kt
+test_bash_packer.kt
+test_parse.kt
+demo_packing_parser.kt
+
+# Platform-specific build outputs
+**/build/bin/
+**/build/obj/
+
+# Archive and backup directories
+archive/
+museum-*/
+worker-*/
+trikeshed-work/
+
+# Corpus files - should be reproduced from archive
+corpus/
+
+# Documentation build outputs
+docs/build/
+docs/_build/
+
+# Deployment directories
+deploy/
+
+# Additional development turds with wildcards
+*_evolution.diff
+*_history.txt
+git_taxonomical_system.md
+docs_consolidation.sh
+realize_intention*.kts
+**/CONSOLIDATED_DOCS.md
+**/DOCS_FINAL.md
+**/DOCS_REUP.md
+**/DOCS_SUMMARY.md
+
+# Backup and temporary build files
+*.backup
+*.orig
+*.rej
+*.patch
+*.diff
+*~
+*.swp
+*.swo
+
+# JS/TS development artifacts
+closure-config.json
+gemini/
+nvidia_nim/
+processed_models/
+models/
+*.glb
+*.obj
+
+# Python development artifacts
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.coverage/
+.nyc_outputbuild
+.gradle
+.kotlin/
+.idea/
+.aider*
+
+env/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Lock files that can be regenerated
+package-lock.json
+pnpm-lock.yaml
+
+# Test artifacts
+test-results/
+test-output/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Runtime configuration
+.vscode/settings.json
+.aider.tags.cache.v4/cache.db
+.aider.tags.cache.v4/a9/28/dec0b99c4a30164bd43a232b776d.val
+.aider.tags.cache.v4/ac/3a/5a37af97adc81205249b4a9a06fd.val
+.aider.tags.cache.v4/b9/ff/27308213adcbbf47fd16bce8264a.val
+.aider.chat.history.md
+.aider.input.history
+.kotlin
+
+# Ignore Gradle build output directory
+build
+superannuate/superannuated1909.fwf

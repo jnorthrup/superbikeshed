@@ -1,0 +1,472 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
+package borg.trikeshed.core
+
+import borg.trikeshed.lib.*
+import kotlinx.coroutines.*
+import kotlin.jvm.*
+
+/**
+ * Parallel JSON processor using coroutines and SIMD
+ * 
+ * Provides:
+ * - Chunk-based parallel scanning
+ * - Work-stealing for load balancing
+ * - SIMD acceleration per chunk
+ * - Lock-free result merging
+ */
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// PARALLEL PROCESSING CONTEXT
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Parallel JSON processing configuration
+ */
+data class ParallelJsonConfig(
+    val chunkSize: Int = 8192,
+    val parallelism: Int = 4,
+    val useSimd: Boolean = true,
+    val stealingThreshold: Int = 1024
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<ParallelJsonConfig>
+    override val key: CoroutineContext.Key<*> = Key
+}
+
+/**
+ * Work-stealing deque for chunk distribution
+ */
+class WorkStealingDeque<T> {
+    private val deque = ArrayDeque<T>()
+    
+    @Synchronized
+    fun pushBottom(item: T) {
+        deque.addLast(item)
+    }
+    
+    @Synchronized
+    fun popBottom(): T? {
+        return deque.removeLastOrNull()
+    }
+    
+    @Synchronized
+    fun steal(): T? {
+        return deque.removeFirstOrNull()
+    }
+    
+    val size: Int
+        @Synchronized get() = deque.size
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// PARALLEL JSON SCANNER
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Parallel JSON scanner with coroutine-based chunk processing
+ */
+class ParallelJsonScanner(
+    private val input: ByteArray,
+    private val config: ParallelJsonConfig = ParallelJsonConfig()
+) {
+    
+    /**
+     * Scan JSON in parallel using coroutines
+     */
+    suspend fun scanParallel(): ParallelScanResult = coroutineScope {
+        val chunks = createChunks()
+        val workers = List(config.parallelism) { 
+            WorkStealingDeque<JsonChunk>() 
+        }
+        
+        // Distribute initial chunks
+        chunks.forEachIndexed { index, chunk ->
+            workers[index % config.parallelism].pushBottom(chunk)
+        }
+        
+        // Launch worker coroutines
+        val results = List(config.parallelism) { workerId ->
+            async(Dispatchers.Default) {
+                processWorker(workerId, workers)
+            }
+        }.awaitAll()
+        
+        // Merge results
+        mergeParallelResults(results)
+    }
+    
+    /**
+     * Create chunks with overlap for boundary handling
+     */
+    private fun createChunks(): List<JsonChunk> {
+        val chunks = mutableListOf<JsonChunk>()
+        var offset = 0
+        var chunkId = 0
+        
+        while (offset < input.size) {
+            // Find chunk boundary at structural character
+            var endOffset = minOf(offset + config.chunkSize, input.size)
+            
+            // Scan forward to find safe boundary (not inside string)
+            if (endOffset < input.size) {
+                endOffset = findChunkBoundary(offset, endOffset)
+            }
+            
+            // Add overlap for seam reconstruction (same as first chunk)
+            val overlapSize = if (chunkId > 0) minOf(64, offset) else 0
+            val seamOffset = offset - overlapSize
+            
+            chunks.add(JsonChunk(
+                id = chunkId++,
+                data = input,
+                startOffset = seamOffset,
+                endOffset = endOffset,
+                actualStart = offset, // Where real content begins (after overlap)
+                isFirst = offset == 0,
+                isLast = endOffset >= input.size
+            ))
+            
+            offset = endOffset
+        }
+        
+        return chunks
+    }
+    
+    /**
+     * Find safe chunk boundary (not inside string or number)
+     */
+    private fun findChunkBoundary(start: Int, preferredEnd: Int): Int {
+        var inString = false
+        var escaped = false
+        
+        // Scan chunk to determine string state at preferred boundary
+        for (i in start until preferredEnd) {
+            when {
+                escaped -> escaped = false
+                input[i] == '\\'.code.toByte() -> escaped = true
+                input[i] == '"'.code.toByte() -> inString = !inString
+            }
+        }
+        
+        // If inside string, scan forward to find end
+        if (inString) {
+            for (i in preferredEnd until minOf(preferredEnd + 1024, input.size)) {
+                when {
+                    escaped -> escaped = false
+                    input[i] == '\\'.code.toByte() -> escaped = true
+                    input[i] == '"'.code.toByte() -> return i + 1
+                }
+            }
+        }
+        
+        return preferredEnd
+    }
+    
+    /**
+     * Worker coroutine with work stealing
+     */
+    private suspend fun processWorker(
+        workerId: Int,
+        workers: List<WorkStealingDeque<JsonChunk>>
+    ): ChunkResult {
+        val localQueue = workers[workerId]
+        val results = mutableListOf<ChunkScanResult>()
+        
+        while (true) {
+            // Try local queue first
+            val chunk = localQueue.popBottom()
+                ?: stealWork(workerId, workers)
+                ?: break
+            
+            // Process chunk with SIMD if available
+            val scanResult = if (config.useSimd) {
+                processChunkSimd(chunk)
+            } else {
+                processChunkScalar(chunk)
+            }
+            
+            results.add(scanResult)
+            
+            // Yield to allow other coroutines to run
+            yield()
+        }
+        
+        return ChunkResult(workerId, results)
+    }
+    
+    /**
+     * Steal work from other workers
+     */
+    private fun stealWork(
+        thiefId: Int,
+        workers: List<WorkStealingDeque<JsonChunk>>
+    ): JsonChunk? {
+        // Try to steal from workers with most work
+        val candidates = workers.indices
+            .filter { it != thiefId }
+            .sortedByDescending { workers[it].size }
+        
+        for (victimId in candidates) {
+            val stolen = workers[victimId].steal()
+            if (stolen != null) return stolen
+        }
+        
+        return null
+    }
+    
+    /**
+     * Process chunk with SIMD acceleration
+     */
+    private fun processChunkSimd(chunk: JsonChunk): ChunkScanResult {
+        val scanner = SimdJsonScanner(chunk.getBytes())
+        val bitmap = scanner.scanSimd()
+        
+        // Handle seam reconstruction
+        val properties = if (!chunk.isFirst) {
+            // Process overlap to maintain context
+            val overlapScanner = SimdJsonScanner(chunk.getOverlap())
+            val overlapBitmap = overlapScanner.scanSimd()
+            
+            // Merge properties, filtering duplicates from overlap
+            val seamProperties = extractChunkProperties(chunk, bitmap, chunk.actualStart - chunk.startOffset)
+            seamProperties
+        } else {
+            extractChunkProperties(chunk, bitmap, 0)
+        }
+        
+        return ChunkScanResult(
+            chunkId = chunk.id,
+            bitmap = bitmap,
+            properties = properties
+        )
+    }
+    
+    /**
+     * Process chunk without SIMD
+     */
+    private fun processChunkScalar(chunk: JsonChunk): ChunkScanResult {
+        val scanner = BitmapJsonScanner(String(chunk.getBytes()))
+        val bitmap = scanner.scan()
+        
+        return ChunkScanResult(
+            chunkId = chunk.id,
+            bitmap = convertToBitmapDocument(bitmap),
+            properties = scanner.properties()
+        )
+    }
+    
+    /**
+     * Extract properties from chunk with bitmap
+     */
+    private fun extractChunkProperties(
+        chunk: JsonChunk,
+        bitmap: SimdBitmapDocument,
+        skipBytes: Int = 0
+    ): Indexed<JsonProperty> {
+        val coords = bitmap.b.b
+        val keys = coords.a
+        val positions = coords.b
+        
+        val properties = mutableListOf<JsonProperty>()
+        
+        for (i in 0 until keys.size) {
+            val key = keys[i]
+            val pos = positions[i]
+            
+            // Skip properties in overlap region
+            if (pos < skipBytes) continue
+            
+            // Extract value at position
+            val value = extractValueFromChunk(chunk, pos)
+            properties.add(key j (value ?: "null"))
+        }
+        
+        return properties.size j { i -> properties[i] }
+    }
+    
+    /**
+     * Extract value from chunk at position
+     */
+    private fun extractValueFromChunk(chunk: JsonChunk, position: Int): String? {
+        val data = chunk.getBytes()
+        var pos = position
+        
+        // Skip whitespace
+        while (pos < data.size && data[pos].toInt().toChar().isWhitespace()) {
+            pos++
+        }
+        
+        if (pos >= data.size) return null
+        
+        return when (data[pos].toInt().toChar()) {
+            '"' -> extractString(data, pos)
+            in '0'..'9', '-' -> extractNumber(data, pos)
+            't', 'f' -> extractBoolean(data, pos)
+            'n' -> if (matchesNull(data, pos)) "null" else null
+            else -> null
+        }
+    }
+    
+    // String/number/boolean extraction helpers
+    private fun extractString(data: ByteArray, start: Int): String {
+        var pos = start + 1
+        val bytes = mutableListOf<Byte>()
+        
+        while (pos < data.size && data[pos] != '"'.code.toByte()) {
+            if (data[pos] == '\\'.code.toByte()) pos++
+            if (pos < data.size) bytes.add(data[pos])
+            pos++
+        }
+        
+        return String(bytes.toByteArray())
+    }
+    
+    private fun extractNumber(data: ByteArray, start: Int): String {
+        var pos = start
+        val bytes = mutableListOf<Byte>()
+        
+        while (pos < data.size) {
+            val char = data[pos].toInt().toChar()
+            if (char.isDigit() || char in ".-+eE") {
+                bytes.add(data[pos])
+                pos++
+            } else {
+                break
+            }
+        }
+        
+        return String(bytes.toByteArray())
+    }
+    
+    private fun extractBoolean(data: ByteArray, start: Int): String? {
+        val remaining = data.size - start
+        
+        return when {
+            remaining >= 4 && data.sliceArray(start until start + 4).contentEquals("true".toByteArray()) -> "true"
+            remaining >= 5 && data.sliceArray(start until start + 5).contentEquals("false".toByteArray()) -> "false"
+            else -> null
+        }
+    }
+    
+    private fun matchesNull(data: ByteArray, start: Int): Boolean {
+        val remaining = data.size - start
+        return remaining >= 4 && data.sliceArray(start until start + 4).contentEquals("null".toByteArray())
+    }
+    
+    /**
+     * Merge results from parallel workers
+     */
+    private fun mergeParallelResults(results: List<ChunkResult>): ParallelScanResult {
+        val allProperties = mutableListOf<JsonProperty>()
+        val structuralBitmaps = mutableListOf<LongArray>()
+        
+        // Merge in chunk order
+        results.sortedBy { it.workerId }
+            .flatMap { it.results }
+            .sortedBy { it.chunkId }
+            .forEach { chunkResult ->
+                // Add properties
+                for (i in 0 until chunkResult.properties.size) {
+                    allProperties.add(chunkResult.properties[i])
+                }
+                
+                // Merge bitmaps
+                val structural = chunkResult.bitmap.a.a
+                structuralBitmaps.add(structural)
+            }
+        
+        // Build final result
+        val properties: Indexed<JsonProperty> = allProperties.size j { i -> allProperties[i] }
+        
+        return ParallelScanResult(
+            properties = properties,
+            chunkCount = results.sumOf { it.results.size },
+            workerCount = results.size
+        )
+    }
+    
+    // Helper conversions
+    private fun convertToBitmapDocument(bitmap: BitmapDocument): SimdBitmapDocument {
+        // Convert between bitmap formats
+        val intBitmap = bitmap.a.a
+        val longBitmap = LongArray((intBitmap.size + 1) / 2) { i ->
+            val low = intBitmap.getOrNull(i * 2)?.toLong() ?: 0L
+            val high = intBitmap.getOrNull(i * 2 + 1)?.toLong() ?: 0L
+            low or (high shl 32)
+        }
+        
+        return longBitmap j longBitmap j (longBitmap j (0 j { "" } j IntArray(0)))
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// DATA TYPES
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * JSON chunk for parallel processing
+ */
+data class JsonChunk(
+    val id: Int,
+    val data: ByteArray,
+    val startOffset: Int,
+    val endOffset: Int,
+    val actualStart: Int, // Where real content begins (after overlap)
+    val isFirst: Boolean,
+    val isLast: Boolean
+) {
+    fun getBytes(): ByteArray = data.sliceArray(startOffset until endOffset)
+    fun getOverlap(): ByteArray = data.sliceArray(startOffset until actualStart)
+    fun getContent(): ByteArray = data.sliceArray(actualStart until endOffset)
+}
+
+/**
+ * Result from chunk scanning
+ */
+data class ChunkScanResult(
+    val chunkId: Int,
+    val bitmap: SimdBitmapDocument,
+    val properties: Indexed<JsonProperty>
+)
+
+/**
+ * Result from worker
+ */
+data class ChunkResult(
+    val workerId: Int,
+    val results: List<ChunkScanResult>
+)
+
+/**
+ * Final parallel scan result
+ */
+data class ParallelScanResult(
+    val properties: Indexed<JsonProperty>,
+    val chunkCount: Int,
+    val workerCount: Int
+)
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// PARALLEL EXTENSIONS
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Scan JSON in parallel
+ */
+suspend fun String.scanJsonParallel(
+    config: ParallelJsonConfig = ParallelJsonConfig()
+): ParallelScanResult {
+    val scanner = ParallelJsonScanner(encodeToByteArray(), config)
+    return scanner.scanParallel()
+}
+
+/**
+ * Process large JSON file in parallel
+ */
+suspend fun ByteArray.processJsonParallel(
+    config: ParallelJsonConfig = ParallelJsonConfig()
+): Indexed<JsonProperty> {
+    val scanner = ParallelJsonScanner(this, config)
+    val result = scanner.scanParallel()
+    return result.properties
+}

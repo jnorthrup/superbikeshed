@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse & Keyboard Calibration Tool</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #calibrationCanvas {
+            border: 1px solid #333;
+            cursor: grab;
+        }
+        
+        #calibrationCanvas:active {
+            cursor: grabbing;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .key-display {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #333;
+            border: 2px solid #666;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 26px;
+            margin: 2px;
+            transition: all 0.1s;
+        }
+        
+        .key-display.active {
+            background: #ff4444;
+            border-color: #ff6666;
+            transform: scale(1.1);
+        }
+        
+        .status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        
+        .clear-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: #444;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .clear-btn:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="calibrationCanvas"></canvas>
+    
+    <div class="controls">
+        <h3>Controls Test</h3>
+        <div>WASD Movement:</div>
+        <div>
+            <div class="key-display" id="key-w">W</div>
+        </div>
+        <div>
+            <div class="key-display" id="key-a">A</div>
+            <div class="key-display" id="key-s">S</div>
+            <div class="key-display" id="key-d">D</div>
+        </div>
+        <div style="margin-top: 10px;">
+            <small>Mouse: Drag to see trails</small><br>
+            <small>Keys: WASD to see movement</small>
+        </div>
+    </div>
+    
+    <div class="status">
+        <div>Camera: <span id="camera-pos">0, 0</span></div>
+        <div>Mouse: <span id="mouse-pos">0, 0</span></div>
+        <div>Drag: <span id="drag-status">No</span></div>
+        <div>Keys: <span id="keys-status">None</span></div>
+    </div>
+    
+    <button class="clear-btn" onclick="clearTrails()">Clear Trails</button>
+
+    <script>
+        const canvas = document.getElementById('calibrationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Camera state
+        const camera = {
+            x: 0,
+            y: 0,
+            isDragging: false,
+            lastMouseX: 0,
+            lastMouseY: 0
+        };
+        
+        // Input state
+        const keys = {
+            w: false, a: false, s: false, d: false
+        };
+        
+        // Visual effects
+        const trails = [];
+        const particles = [];
+        const keyMovements = [];
+        
+        // Trail point class
+        class TrailPoint {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.life = 1.0;
+                this.maxLife = 1.0;
+            }
+            
+            update(deltaTime) {
+                this.life -= deltaTime * 0.5; // Fade over 2 seconds
+                return this.life > 0;
+            }
+            
+            draw(ctx) {
+                const alpha = this.life / this.maxLife;
+                ctx.strokeStyle = `rgba(255, 0, 0, ${alpha})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+        
+        // Particle class for fairy dust
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 50;
+                this.vy = (Math.random() - 0.5) * 50;
+                this.life = 1.0;
+                this.maxLife = 1.0;
+                this.size = Math.random() * 3 + 1;
+            }
+            
+            update(deltaTime) {
+                this.x += this.vx * deltaTime;
+                this.y += this.vy * deltaTime;
+                this.vx *= 0.98; // Friction
+                this.vy *= 0.98;
+                this.life -= deltaTime * 2; // Fade quickly
+                return this.life > 0;
+            }
+            
+            draw(ctx) {
+                const alpha = this.life / this.maxLife;
+                ctx.fillStyle = `rgba(255, 255, 100, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // Movement indicator class
+        class KeyMovement {
+            constructor(direction) {
+                this.direction = direction;
+                this.life = 1.0;
+                this.maxLife = 1.0;
+                this.startTime = Date.now();
+            }
+            
+            update(deltaTime) {
+                this.life -= deltaTime * 3; // Fade quickly
+                return this.life > 0;
+            }
+            
+            draw(ctx) {
+                const alpha = this.life / this.maxLife;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const distance = 50;
+                
+                let x = centerX, y = centerY;
+                switch(this.direction) {
+                    case 'w': y -= distance; break;
+                    case 's': y += distance; break;
+                    case 'a': x -= distance; break;
+                    case 'd': x += distance; break;
+                }
+                
+                ctx.strokeStyle = `rgba(0, 255, 0, ${alpha})`;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                // Arrow head
+                const angle = Math.atan2(y - centerY, x - centerX);
+                const arrowLength = 15;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - arrowLength * Math.cos(angle - 0.3), y - arrowLength * Math.sin(angle - 0.3));
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - arrowLength * Math.cos(angle + 0.3), y - arrowLength * Math.sin(angle + 0.3));
+                ctx.stroke();
+            }
+        }
+        
+        // Mouse event handlers
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                camera.isDragging = true;
+                camera.lastMouseX = e.clientX;
+                camera.lastMouseY = e.clientY;
+                canvas.style.cursor = 'grabbing';
+                
+                // Add initial trail point
+                trails.push(new TrailPoint(e.clientX, e.clientY));
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            // Update mouse position display
+            document.getElementById('mouse-pos').textContent = `${e.clientX}, ${e.clientY}`;
+            
+            if (camera.isDragging) {
+                const deltaX = e.clientX - camera.lastMouseX;
+                const deltaY = e.clientY - camera.lastMouseY;
+                
+                // Update camera (inverted for natural dragging)
+                camera.x -= deltaX;
+                camera.y -= deltaY;
+                
+                // Add trail points
+                trails.push(new TrailPoint(e.clientX, e.clientY));
+                
+                // Add fairy dust particles
+                for (let i = 0; i < 3; i++) {
+                    particles.push(new Particle(
+                        e.clientX + (Math.random() - 0.5) * 10,
+                        e.clientY + (Math.random() - 0.5) * 10
+                    ));
+                }
+                
+                camera.lastMouseX = e.clientX;
+                camera.lastMouseY = e.clientY;
+            }
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                camera.isDragging = false;
+                canvas.style.cursor = 'grab';
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            camera.isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+        
+        // Keyboard event handlers
+        document.addEventListener('keydown', (e) => {
+            let keyPressed = false;
+            
+            if (e.code === 'KeyW' && !keys.w) {
+                keys.w = true;
+                keyPressed = true;
+                document.getElementById('key-w').classList.add('active');
+                keyMovements.push(new KeyMovement('w'));
+                camera.y += 50; // Visual movement
+            }
+            if (e.code === 'KeyA' && !keys.a) {
+                keys.a = true;
+                keyPressed = true;
+                document.getElementById('key-a').classList.add('active');
+                keyMovements.push(new KeyMovement('a'));
+                camera.x += 50;
+            }
+            if (e.code === 'KeyS' && !keys.s) {
+                keys.s = true;
+                keyPressed = true;
+                document.getElementById('key-s').classList.add('active');
+                keyMovements.push(new KeyMovement('s'));
+                camera.y -= 50;
+            }
+            if (e.code === 'KeyD' && !keys.d) {
+                keys.d = true;
+                keyPressed = true;
+                document.getElementById('key-d').classList.add('active');
+                keyMovements.push(new KeyMovement('d'));
+                camera.x -= 50;
+            }
+            
+            if (keyPressed) {
+                updateKeyStatus();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW') {
+                keys.w = false;
+                document.getElementById('key-w').classList.remove('active');
+            }
+            if (e.code === 'KeyA') {
+                keys.a = false;
+                document.getElementById('key-a').classList.remove('active');
+            }
+            if (e.code === 'KeyS') {
+                keys.s = false;
+                document.getElementById('key-s').classList.remove('active');
+            }
+            if (e.code === 'KeyD') {
+                keys.d = false;
+                document.getElementById('key-d').classList.remove('active');
+            }
+            updateKeyStatus();
+        });
+        
+        function updateKeyStatus() {
+            const activeKeys = [];
+            if (keys.w) activeKeys.push('W');
+            if (keys.a) activeKeys.push('A');
+            if (keys.s) activeKeys.push('S');
+            if (keys.d) activeKeys.push('D');
+            
+            document.getElementById('keys-status').textContent = activeKeys.length > 0 ? activeKeys.join('+') : 'None';
+        }
+        
+        function clearTrails() {
+            trails.length = 0;
+            particles.length = 0;
+            keyMovements.length = 0;
+        }
+        
+        // Animation loop
+        let lastTime = 0;
+        function animate(timestamp) {
+            const deltaTime = lastTime > 0 ? (timestamp - lastTime) / 1000 : 0.016;
+            lastTime = timestamp;
+            
+            // Clear canvas
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw trail points
+            for (let i = trails.length - 1; i >= 0; i--) {
+                if (!trails[i].update(deltaTime)) {
+                    trails.splice(i, 1);
+                } else {
+                    trails[i].draw(ctx);
+                }
+            }
+            
+            // Draw red line connecting trail points
+            if (trails.length > 1) {
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(trails[0].x, trails[0].y);
+                for (let i = 1; i < trails.length; i++) {
+                    ctx.lineTo(trails[i].x, trails[i].y);
+                }
+                ctx.stroke();
+            }
+            
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                if (!particles[i].update(deltaTime)) {
+                    particles.splice(i, 1);
+                } else {
+                    particles[i].draw(ctx);
+                }
+            }
+            
+            // Update and draw key movement indicators
+            for (let i = keyMovements.length - 1; i >= 0; i--) {
+                if (!keyMovements[i].update(deltaTime)) {
+                    keyMovements.splice(i, 1);
+                } else {
+                    keyMovements[i].draw(ctx);
+                }
+            }
+            
+            // Draw camera center
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(centerX - 10, centerY);
+            ctx.lineTo(centerX + 10, centerY);
+            ctx.moveTo(centerX, centerY - 10);
+            ctx.lineTo(centerX, centerY + 10);
+            ctx.stroke();
+            
+            // Update status
+            document.getElementById('camera-pos').textContent = `${Math.round(camera.x)}, ${Math.round(camera.y)}`;
+            document.getElementById('drag-status').textContent = camera.isDragging ? 'Yes' : 'No';
+            
+            requestAnimationFrame(animate);
+        }
+        
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>

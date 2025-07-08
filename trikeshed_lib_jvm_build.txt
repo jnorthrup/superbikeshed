@@ -1,0 +1,329 @@
+Initialized native services in: /Users/jim/.gradle/native
+Initialized jansi services in: /Users/jim/.gradle/native
+The client will now receive all logging from the daemon (pid: 76506). The daemon log file: /Users/jim/.gradle/daemon/9.0.0-rc-1/daemon-76506.out.log
+Starting 2nd build in daemon [uptime: 2 mins 27.082 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 9 GiB]
+Using 12 worker leases.
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/9.0.0-rc-1/fileHashes/fileHashes.bin
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/9.0.0-rc-1/fileHashes/resourceHashesCache.bin
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/buildOutputCleanup/outputFiles.bin
+Invalidating in-memory cache of /Users/jim/.gradle/caches/journal-1/file-access.bin
+Calculating task graph as no cached configuration is available for tasks: :trikeshed-lib:compileKotlinJvm
+Now considering [/Users/jim/work/v2superbikeshed] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Starting Build
+Invalidating in-memory cache of /Users/jim/.gradle/caches/9.0.0-rc-1/fileHashes/kotlinDslCompileAvoidanceClasspathHashCache.bin
+Invalidating in-memory cache of /Users/jim/.gradle/caches/9.0.0-rc-1/fileHashes/fileHashes.bin
+Invalidating in-memory cache of /Users/jim/.gradle/caches/9.0.0-rc-1/fileHashes/resourceHashesCache.bin
+Settings evaluated using settings file '/Users/jim/work/v2superbikeshed/settings.gradle.kts'.
+Using local directory build cache for the root build (location = /Users/jim/.gradle/caches/build-cache-1, remove unused entries = after 7 days).
+Projects loaded. Root project using build file '/Users/jim/work/v2superbikeshed/build.gradle.kts'.
+Included projects: [root project 'superbikeshed', project ':boingDemo', project ':fiduciary', project ':flatton', project ':k2script', project ':kotlin-entity-scanner', project ':kotlinx-serialization-scanner', project ':kotlinx-serialization-wireproto', project ':moneyfan', project ':nexus', project ':rtsgame', project ':spacegraph', project ':SSH', project ':ta4k', project ':trikeshed-ccek', project ':trikeshed-common', project ':trikeshed-couchdb', project ':trikeshed-dht', project ':trikeshed-io', project ':trikeshed-ipc', project ':trikeshed-ipfs', project ':trikeshed-lib', project ':trikeshed-ljson', project ':trikeshed-net', project ':trikeshed-reactor', project ':trikeshed-services', project ':trikeshed-strace', project ':trikeshed-torrent', project ':zlib-kmp-reference']
+
+> Configure project :
+Evaluating root project 'superbikeshed' using build file '/Users/jim/work/v2superbikeshed/build.gradle.kts'.
+Resolved plugin [id: 'com.github.ben-manes.versions', version: '0.52.0']
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.2.0', apply: false]
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization', version: '2.2.0', apply: false]
+
+> Configure project :boingDemo
+Evaluating project ':boingDemo' using build file '/Users/jim/work/v2superbikeshed/boingDemo/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Build f9fa72de-169d-4cb1-8218-cf43f7526842 is started
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :fiduciary
+Evaluating project ':fiduciary' using build file '/Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :flatton
+Evaluating project ':flatton' using build file '/Users/jim/work/v2superbikeshed/flatton/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :k2script
+Evaluating project ':k2script' using build file '/Users/jim/work/v2superbikeshed/k2script/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :kotlin-entity-scanner
+Evaluating project ':kotlin-entity-scanner' using build file '/Users/jim/work/v2superbikeshed/kotlin-entity-scanner/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+Invalidating in-memory cache of /Users/jim/.gradle/caches/9.0.0-rc-1/fileHashes/kotlinDslCompileAvoidanceClasspathHashCache.bin
+Invalidating in-memory cache of /Users/jim/.gradle/caches/9.0.0-rc-1/fileHashes/fileHashes.bin
+Invalidating in-memory cache of /Users/jim/.gradle/caches/9.0.0-rc-1/fileHashes/resourceHashesCache.bin
+Invalidating in-memory cache of /Users/jim/.gradle/caches/journal-1/file-access.bin
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :kotlinx-serialization-scanner
+Evaluating project ':kotlinx-serialization-scanner' using build file '/Users/jim/work/v2superbikeshed/kotlinx-serialization-scanner/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :kotlinx-serialization-wireproto
+Evaluating project ':kotlinx-serialization-wireproto' using build file '/Users/jim/work/v2superbikeshed/kotlinx-serialization-wireproto/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :moneyfan
+Evaluating project ':moneyfan' using build file '/Users/jim/work/v2superbikeshed/moneyfan/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :nexus
+Evaluating project ':nexus' using build file '/Users/jim/work/v2superbikeshed/nexus/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :rtsgame
+Evaluating project ':rtsgame' using build file '/Users/jim/work/v2superbikeshed/rtsgame/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :spacegraph
+Evaluating project ':spacegraph' using build file '/Users/jim/work/v2superbikeshed/spacegraph/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :SSH
+Evaluating project ':SSH' using build file '/Users/jim/work/v2superbikeshed/SSH/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :ta4k
+Evaluating project ':ta4k' using build file '/Users/jim/work/v2superbikeshed/ta4k/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-ccek
+Evaluating project ':trikeshed-ccek' using build file '/Users/jim/work/v2superbikeshed/trikeshed-ccek/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-common
+Evaluating project ':trikeshed-common' using build file '/Users/jim/work/v2superbikeshed/trikeshed-common/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-couchdb
+Evaluating project ':trikeshed-couchdb' using build file '/Users/jim/work/v2superbikeshed/trikeshed-couchdb/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-dht
+Evaluating project ':trikeshed-dht' using build file '/Users/jim/work/v2superbikeshed/trikeshed-dht/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-io
+Evaluating project ':trikeshed-io' using build file '/Users/jim/work/v2superbikeshed/trikeshed-io/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-ipc
+Evaluating project ':trikeshed-ipc' using build file '/Users/jim/work/v2superbikeshed/trikeshed-ipc/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-ipfs
+Evaluating project ':trikeshed-ipfs' using build file '/Users/jim/work/v2superbikeshed/trikeshed-ipfs/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-lib
+Evaluating project ':trikeshed-lib' using build file '/Users/jim/work/v2superbikeshed/trikeshed-lib/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-ljson
+Evaluating project ':trikeshed-ljson' using build file '/Users/jim/work/v2superbikeshed/trikeshed-ljson/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-net
+Evaluating project ':trikeshed-net' using build file '/Users/jim/work/v2superbikeshed/trikeshed-net/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-reactor
+Evaluating project ':trikeshed-reactor' using build file '/Users/jim/work/v2superbikeshed/trikeshed-reactor/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-services
+Evaluating project ':trikeshed-services' using build file '/Users/jim/work/v2superbikeshed/trikeshed-services/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-strace
+Evaluating project ':trikeshed-strace' using build file '/Users/jim/work/v2superbikeshed/trikeshed-strace/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :trikeshed-torrent
+Evaluating project ':trikeshed-torrent' using build file '/Users/jim/work/v2superbikeshed/trikeshed-torrent/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+
+> Configure project :zlib-kmp-reference
+Evaluating project ':zlib-kmp-reference' using build file '/Users/jim/work/v2superbikeshed/zlib-kmp-reference/build.gradle.kts'.
+Resolved plugin [id: 'org.jetbrains.kotlin.multiplatform', version: '2.1.21']
+Resolved plugin [id: 'org.jetbrains.kotlin.plugin.serialization']
+Using Kotlin Gradle Plugin gradle813 variant
+kotlin scripting plugin: created the scripting discovery configuration: kotlinScriptDef
+kotlin scripting plugin: created the scripting discovery configuration: testKotlinScriptDef
+[KOTLIN] Storing cached files in /Users/jim/.gradle
+All projects evaluated.
+Task path ':trikeshed-lib:compileKotlinJvm' matched project ':trikeshed-lib'
+Task name matched 'compileKotlinJvm'
+Selected primary task 'compileKotlinJvm' from project :trikeshed-lib
+Tasks to be executed: [task ':trikeshed-lib:checkKotlinGradlePluginConfigurationErrors', task ':trikeshed-lib:compileKotlinJvm']
+Tasks that were excluded: []
+Build f9fa72de-169d-4cb1-8218-cf43f7526842 is closed
+Using local directory build cache for the root build (location = /Users/jim/.gradle/caches/build-cache-1, remove unused entries = after 7 days).
+Ignoring listeners of task graph ready event, as this build (:) has already executed work.
+Resolve mutations for :trikeshed-lib:checkKotlinGradlePluginConfigurationErrors (Thread[#329,Execution worker,5,main]) started.
+:trikeshed-lib:checkKotlinGradlePluginConfigurationErrors (Thread[#335,Execution worker Thread 7,5,main]) started.
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/9.0.0-rc-1/executionHistory/executionHistory.bin
+
+> Task :trikeshed-lib:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':trikeshed-lib:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+Resolve mutations for :trikeshed-lib:compileKotlinJvm (Thread[#335,Execution worker Thread 7,5,main]) started.
+:trikeshed-lib:compileKotlinJvm (Thread[#335,Execution worker Thread 7,5,main]) started.
+
+> Task :trikeshed-lib:compileKotlinJvm FAILED
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/buildOutputCleanup/outputFiles.bin
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/9.0.0-rc-1/fileHashes/fileHashes.bin
+Invalidating in-memory cache of /Users/jim/work/v2superbikeshed/.gradle/9.0.0-rc-1/fileHashes/resourceHashesCache.bin
+Build cache key for task ':trikeshed-lib:compileKotlinJvm' is c45c80a1f7c352424d5c394e0d1b3662
+Task ':trikeshed-lib:compileKotlinJvm' is not up-to-date because:
+  Task has failed previously.
+The input changes require a full rebuild for incremental task ':trikeshed-lib:compileKotlinJvm'.
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+Kotlin source files: /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ColumnarExtensions.kt, /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/CoreTypes.kt, /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/IoTypes.kt, /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/AlphaConversion.kt, /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/IOMemento.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/kotlin', not found
+file or directory '/Users/jim/work/v2superbikeshed/trikeshed-lib/src/jvmMain/java', not found
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: /Users/jim/.sdkman/candidates/java/21.0.7-graal
+Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExtensions=[]), sourceChanges=org.jetbrains.kotlin.buildtools.api.SourcesChanges$Unknown@410851c1, classpathChanges=NotAvailableForNonIncrementalRun, workingDir=/Users/jim/work/v2superbikeshed/trikeshed-lib/build/kotlin/compileKotlinJvm/cacheable, multiModuleICSettings=MultiModuleICSettings(buildHistoryFile=/Users/jim/work/v2superbikeshed/trikeshed-lib/build/kotlin/compileKotlinJvm/local-state/build-history.bin, useModuleDetection=false), icFeatures=IncrementalCompilationFeatures(usePreciseJavaTracking=true, withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=false, enableMonotonousIncrementalCompileSetExpansion=true), outputFiles=[/Users/jim/work/v2superbikeshed/trikeshed-lib/build/classes/kotlin/jvm/main, /Users/jim/work/v2superbikeshed/trikeshed-lib/build/kotlin/compileKotlinJvm/cacheable, /Users/jim/work/v2superbikeshed/trikeshed-lib/build/kotlin/compileKotlinJvm/local-state])
+Finished executing kotlin compiler using DAEMON strategy
+Build 6e5e2247-b573-4338-a31d-f736a7bd8736 is started
+Build 6e5e2247-b573-4338-a31d-f736a7bd8736 is closed
+
+Some tasks in this build are not compatible with the configuration cache.
+See the complete report at file:///Users/jim/work/v2superbikeshed/build/reports/configuration-cache/8t6jhqtjvug02ndh1o9jufgwi/a3ljv1yezvff0dgxmu7mh1ndl/configuration-cache-report.html
+1 actionable task: 1 executed
+Watched directory hierarchies: [/Users/jim/work/v2superbikeshed]
+Configuration cache entry stored.

@@ -1,0 +1,56 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Reusing configuration cache.
+> Task :trikeshed-lib:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :trikeshed-lib:jvmTestProcessResources NO-SOURCE
+> Task :trikeshed-lib:jvmProcessResources NO-SOURCE
+> Task :trikeshed-lib:macosX64ProcessResources NO-SOURCE
+> Task :trikeshed-lib:macosArm64ProcessResources NO-SOURCE
+> Task :trikeshed-lib:processJvmMainResources SKIPPED
+> Task :trikeshed-lib:processJvmTestResources SKIPPED
+> Task :trikeshed-lib:compileKotlinJvm UP-TO-DATE
+> Task :trikeshed-lib:compileJvmMainJava NO-SOURCE
+> Task :trikeshed-lib:jvmMainClasses UP-TO-DATE
+> Task :trikeshed-lib:jvmJar UP-TO-DATE
+> Task :trikeshed-lib:compileTestKotlinJvm UP-TO-DATE
+> Task :trikeshed-lib:compileJvmTestJava NO-SOURCE
+> Task :trikeshed-lib:jvmTestClasses UP-TO-DATE
+> Task :trikeshed-lib:jvmTest UP-TO-DATE
+> Task :trikeshed-lib:compileKotlinMacosX64 UP-TO-DATE
+> Task :trikeshed-lib:compileKotlinMacosArm64 UP-TO-DATE
+> Task :trikeshed-lib:macosX64MainKlibrary UP-TO-DATE
+> Task :trikeshed-lib:macosArm64MainKlibrary UP-TO-DATE
+> Task :trikeshed-lib:compileTestKotlinMacosX64 UP-TO-DATE
+> Task :trikeshed-lib:compileTestKotlinMacosArm64 UP-TO-DATE
+> Task :trikeshed-lib:linkDebugTestMacosX64 UP-TO-DATE
+> Task :trikeshed-lib:linkDebugTestMacosArm64 UP-TO-DATE
+> Task :trikeshed-lib:macosX64Test SKIPPED
+
+borg.trikeshed.crypto.KeyExchangeTest.testDHKeyExchange[macosArm64] FAILED
+    kotlin.NotImplementedError at /opt/buildAgent/work/2d153abd4d2c0600/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:30
+
+borg.trikeshed.crypto.KeyExchangeTest.testECDHKeyExchange[macosArm64] FAILED
+    kotlin.NotImplementedError at /opt/buildAgent/work/2d153abd4d2c0600/kotlin/kotlin-native/runtime/src/main/kotlin/kotlin/Throwable.kt:30
+
+> Task :trikeshed-lib:macosArm64Test
+
+13 tests completed, 2 failed
+There were failing tests. See the report at: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/build/reports/tests/macosArm64Test/index.html
+
+> Task :trikeshed-lib:allTests FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':trikeshed-lib:allTests'.
+> There were failing tests. See the report at: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/build/reports/tests/allTests/index.html
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+12 actionable tasks: 2 executed, 10 up-to-date
+Configuration cache entry reused.

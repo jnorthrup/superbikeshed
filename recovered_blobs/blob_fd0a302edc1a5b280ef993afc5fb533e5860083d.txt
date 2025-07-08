@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""
+Error Rate Dashboard for TrikeShed QUIC
+Analyzes build logs and generates visualizations
+"""
+
+import json
+import subprocess
+import datetime
+import os
+from pathlib import Path
+from collections import defaultdict
+
+class QuicErrorAnalyzer:
+    def __init__(self, project_root):
+        self.project_root = Path(project_root)
+        self.reports_dir = self.project_root / "build" / "error-reports"
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
+        
+    def run_gradle_build(self):
+        """Run gradle build and capture output"""
+        print("Running gradle build...")
+        result = subprocess.run(
+            ["./gradlew", ":Trikeshed:compileKotlinJvm", "--console=plain", "--no-daemon"],
+            cwd=self.project_root,
+            capture_output=True,
+            text=True
+        )
+        return result
+    
+    def analyze_build_output(self, output):
+        """Parse build output for errors"""
+        errors = []
+        warnings = []
+        
+        for line in output.split('\n'):
+            if line.startswith('e: '):
+                errors.append(line)
+            elif line.startswith('w: '):
+                warnings.append(line)
+        
+        # Categorize errors
+        error_categories = defaultdict(list)
+        for error in errors:
+            if 'quic' in error.lower():
+                error_categories['QUIC'].append(error)
+            elif 'unresolved reference' in error:
+                error_categories['Unresolved Reference'].append(error)
+            elif 'type mismatch' in error:
+                error_categories['Type Mismatch'].append(error)
+            elif 'nullable' in error or 'null' in error:
+                error_categories['Null Safety'].append(error)
+            else:
+                error_categories['Other'].append(error)
+        
+        return {
+            'total_errors': len(errors),
+            'total_warnings': len(warnings),
+            'categories': dict(error_categories),
+            'timestamp': datetime.datetime.now().isoformat()
+        }
+    
+    def analyze_code_quality(self):
+        """Analyze code quality metrics"""
+        quic_path = self.project_root / "Trikeshed/src/commonMain/kotlin/borg/trikeshed/net/quic"
+        
+        metrics = {
+            'unsafe_casts': 0,
+            'bang_bang': 0,
+            'suppress': 0,
+            'mutable_statics': 0,
+            'global_scope': 0,
+            'files': 0
+        }
+        
+        if quic_path.exists():
+            for kt_file in quic_path.rglob("*.kt"):
+                metrics['files'] += 1
+                content = kt_file.read_text()
+                
+                # Count occurrences
+                metrics['unsafe_casts'] += content.count(' as ')
+                metrics['bang_bang'] += content.count('!!')
+                metrics['suppress'] += content.count('@Suppress')
+                
+                # Check for patterns
+                if 'companion object' in content and ' var ' in content:
+                    metrics['mutable_statics'] += 1
+                if 'GlobalScope' in content:
+                    metrics['global_scope'] += 1
+        
+        return metrics
+    
+    def generate_report(self):
+        """Generate comprehensive error report"""
+        # Run build
+        build_result = self.run_gradle_build()
+        build_analysis = self.analyze_build_output(build_result.stdout + build_result.stderr)
+        
+        # Analyze code quality
+        code_metrics = self.analyze_code_quality()
+        
+        # Create report
+        report = {
+            'build_analysis': build_analysis,
+            'code_metrics': code_metrics,
+            'summary': {
+                'health_score': self.calculate_health_score(build_analysis, code_metrics),
+                'critical_issues': self.identify_critical_issues(build_analysis, code_metrics)
+            }
+        }
+        
+        # Save report
+        report_file = self.reports_dir / f"error-report-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
+        with open(report_file, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        return report
+    
+    def calculate_health_score(self, build_analysis, code_metrics):
+        """Calculate overall health score (0-100)"""
+        score = 100
+        
+        # Deduct for build errors
+        score -= min(build_analysis['total_errors'] * 5, 50)
+        
+        # Deduct for code quality issues
+        score -= min(code_metrics['unsafe_casts'], 10)
+        score -= min(code_metrics['bang_bang'] * 2, 10)
+        score -= min(code_metrics['mutable_statics'] * 5, 10)
+        
+        return max(0, score)
+    
+    def identify_critical_issues(self, build_analysis, code_metrics):
+        """Identify critical issues that need immediate attention"""
+        issues = []
+        
+        if build_analysis['total_errors'] > 0:
+            issues.append(f"{build_analysis['total_errors']} compilation errors")
+        
+        if code_metrics['mutable_statics'] > 0:
+            issues.append(f"{code_metrics['mutable_statics']} mutable static fields")
+        
+        if code_metrics['global_scope'] > 0:
+            issues.append("GlobalScope usage detected")
+        
+        return issues
+    
+    def print_dashboard(self, report):
+        """Print formatted dashboard to console"""
+        print("\n" + "="*60)
+        print("TrikeShed QUIC Error Dashboard")
+        print("="*60)
+        
+        health_score = report['summary']['health_score']
+        health_emoji = "🟢" if health_score >= 80 else "🟡" if health_score >= 60 else "🔴"
+        
+        print(f"\nHealth Score: {health_emoji} {health_score}/100")
+        
+        print("\n📊 Build Analysis:")
+        build = report['build_analysis']
+        print(f"  • Errors: {build['total_errors']}")
+        print(f"  • Warnings: {build['total_warnings']}")
+        
+        if build['categories']:
+            print("\n  Error Categories:")
+            for category, errors in build['categories'].items():
+                print(f"    - {category}: {len(errors)}")
+        
+        print("\n🔍 Code Quality Metrics:")
+        metrics = report['code_metrics']
+        print(f"  • Files analyzed: {metrics['files']}")
+        print(f"  • Unsafe casts: {metrics['unsafe_casts']}")
+        print(f"  • !! usage: {metrics['bang_bang']}")
+        print(f"  • @Suppress: {metrics['suppress']}")
+        print(f"  • Mutable statics: {metrics['mutable_statics']}")
+        
+        if report['summary']['critical_issues']:
+            print("\n⚠️  Critical Issues:")
+            for issue in report['summary']['critical_issues']:
+                print(f"  • {issue}")
+        
+        print("\n" + "="*60)
+        
+    def generate_trend_data(self):
+        """Analyze historical trends from saved reports"""
+        reports = sorted(self.reports_dir.glob("error-report-*.json"))
+        
+        if len(reports) < 2:
+            print("Not enough historical data for trends")
+            return
+        
+        trends = []
+        for report_file in reports[-10:]:  # Last 10 reports
+            with open(report_file) as f:
+                data = json.load(f)
+                trends.append({
+                    'timestamp': data['build_analysis']['timestamp'],
+                    'errors': data['build_analysis']['total_errors'],
+                    'health_score': data['summary']['health_score']
+                })
+        
+        # Simple trend analysis
+        if len(trends) >= 2:
+            error_trend = trends[-1]['errors'] - trends[-2]['errors']
+            health_trend = trends[-1]['health_score'] - trends[-2]['health_score']
+            
+            print("\n📈 Trends:")
+            print(f"  • Error trend: {'↑' if error_trend > 0 else '↓' if error_trend < 0 else '→'} {abs(error_trend)}")
+            print(f"  • Health trend: {'↑' if health_trend > 0 else '↓' if health_trend < 0 else '→'} {abs(health_trend)}")
+
+def main():
+    import sys
+    
+    project_root = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
+    analyzer = QuicErrorAnalyzer(project_root)
+    
+    print("Analyzing TrikeShed QUIC errors...")
+    report = analyzer.generate_report()
+    
+    analyzer.print_dashboard(report)
+    analyzer.generate_trend_data()
+    
+    # Exit with error if health score is too low
+    if report['summary']['health_score'] < 60:
+        print("\n❌ Build health is below acceptable threshold")
+        sys.exit(1)
+    else:
+        print("\n✅ Build health is acceptable")
+
+if __name__ == "__main__":
+    main()

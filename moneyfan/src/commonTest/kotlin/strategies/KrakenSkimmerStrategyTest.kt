@@ -1,0 +1,102 @@
+package strategies
+
+import kotlin.test.*
+import com.google.trike.series.* // Star import for Indexed, RowVec, Join, ColumnMeta, DataTypes
+import com.google.trike.series.memseries.* // Star import for MemSeries and related utilities
+import com.google.trike.series.DataTypes // Specifically for ColumnMeta type
+
+class KrakenSkimmerStrategyTest {
+
+    internal val strategy = KrakenSkimmerStrategy()
+    internal val testDelta = 0.00001 // Delta for Double comparisons
+
+    // Helper to create a dummy RowVec.
+    internal fun createDummyRowVec(timestamp: Long, price: Double): RowVec {
+        val tsMeta = { ColumnMeta.Builder().name("timestamp").type(DataTypes.LONG).build() }
+        val priceMeta = { ColumnMeta.Builder().name("close").type(DataTypes.DOUBLE).build() }
+        val tsJoin: Join<Any?, () -> ColumnMeta> = (timestamp as Any?) j tsMeta
+        val priceJoin: Join<Any?, () -> ColumnMeta> = (price as Any?) j priceMeta
+        return MemSeries.ofJoins(listOf(tsJoin, priceJoin)) as RowVec
+    }
+
+    @Test
+    fun testCalculateBaseline() {
+        // The baseline in KrakenSkimmerStrategy is a 20-period SMA.
+        val pricesList = List(25) { i -> 100.0 + i } // Prices: 100.0, 101.0, ..., 124.0
+        val prices = MemSeries.ofDoubles(pricesList)
+
+        val baseline = strategy.calculateBaseline(prices)
+        // Expected length for SMA(20) on 25 data points is 25 - 20 + 1 = 6.
+        assertEquals(6, baseline.size, "Baseline series length should be 6.")
+
+        // First baseline value: SMA of pricesList[0]...pricesList[19]
+        // Sum = (100*20) + (0+1+...+19) = 2000 + (19*20/2) = 2000 + 190 = 2190
+        // Avg = 2190 / 20 = 109.5
+        assertEquals(109.5, baseline.values[0], testDelta, "First baseline value incorrect.")
+
+        // Last baseline value: SMA of pricesList[5]...pricesList[24] (indices for a 20-period window ending at index 24)
+        // This window is pricesList[5] (105.0) to pricesList[24] (124.0)
+        // Sum = ( (105.0 + 124.0) * 20 ) / 2 = (229.0 * 20) / 2 = 2290.0
+        // Avg = 2290.0 / 20 = 114.5
+        assertEquals(114.5, baseline.values.lastOrNull(), testDelta, "Last baseline value incorrect.")
+
+        // Test with insufficient data (less than 20 points for SMA20)
+        val shortPrices = MemSeries.ofDoubles(List(19) { 100.0 }) // Only 19 data points
+        val shortBaseline = strategy.calculateBaseline(shortPrices)
+        assertTrue(shortBaseline.isEmpty, "Baseline for a series shorter than period should be empty.")
+    }
+
+    @Test
+    fun testGetSignal() {
+        // Baseline calculation (SMA20) needs 20 prices.
+        // `historicalPrices` passed to getSignal + `currentPrice` are combined for indicator calculation.
+        // So, if `historicalPrices` has 19 elements, `currentPrice` is the 20th.
+        val historicalForBaseline = MemSeries.ofDoubles(List(19) { 100.0 })
+        val dummyRowVec = createDummyRowVec(System.currentTimeMillis(), 100.0)
+
+        // Case 1: BUY signal (currentPrice < baseline * 0.96)
+        // Baseline is calculated from (historicalForBaseline + 100.0), so baseline will be 100.0.
+        // Decision price = 95.0. Target for BUY = 100.0 * 0.96 = 96.0. Since 95.0 < 96.0, BUY.
+        val currentPriceForBuy = 100.0 // This price completes the 20 periods for baseline calculation.
+        val decisionPriceBuy = 95.0   // This is the price at which the decision is made.
+        val buySignal = strategy.getSignal(decisionPriceBuy, historicalForBaseline, dummyRowVec) // Strategy uses decisionPriceBuy for its internal currentPrice
+        // Corrected: The strategy uses the `currentPrice` param for BOTH the last point in indicator calc AND decision.
+        // So, `historicalPrices` should have 19 points, `currentPrice` (95.0) is the 20th point.
+        // Baseline of (19x100.0 + 95.0) = (1900+95)/20 = 1995/20 = 99.75
+        // Decision price = 95.0. Target BUY = 99.75 * 0.96 = 95.76.  95.0 < 95.76 -> BUY.
+        val buySignalCorrected = strategy.getSignal(95.0, MemSeries.ofDoubles(List(19){100.0}), dummyRowVec)
+        assertEquals(TradingSignal.BUY, buySignalCorrected, "BUY signal: current(95) vs baseline(99.75)*0.96.")
+
+        // Case 2: SELL signal (currentPrice > baseline * 1.03)
+        // Baseline from (19x100.0 + 104.0) = (1900+104)/20 = 2004/20 = 100.2
+        // Decision price = 104.0. Target SELL = 100.2 * 1.03 = 103.206. 104.0 > 103.206 -> SELL.
+        val sellSignal = strategy.getSignal(104.0, MemSeries.ofDoubles(List(19){100.0}), dummyRowVec)
+        assertEquals(TradingSignal.SELL, sellSignal, "SELL signal: current(104) vs baseline(100.2)*1.03.")
+
+        // Case 3: HOLD signal (currentPrice between baseline*0.96 and baseline*1.03)
+        // Baseline from (19x100.0 + 100.0) = 100.0
+        // Decision price = 100.0. Lower bound = 100.0 * 0.96 = 96.0. Upper bound = 100.0 * 1.03 = 103.0.
+        // 96.0 < 100.0 < 103.0 -> HOLD.
+        val holdSignal = strategy.getSignal(100.0, MemSeries.ofDoubles(List(19){100.0}), dummyRowVec)
+        assertEquals(TradingSignal.HOLD, holdSignal, "HOLD signal: current(100) between thresholds for baseline(100).")
+
+        // Case 4: HOLD signal (currentPrice = baseline*0.96) - exactly on boundary
+        // Baseline from (19x100.0 + 96.0) = (1900+96)/20 = 1996/20 = 99.8
+        // Decision price = 96.0. Lower bound = 99.8 * 0.96 = 95.808.
+        // Since 96.0 > 95.808, this is HOLD.
+        val holdBoundaryLowSignal = strategy.getSignal(96.0, MemSeries.ofDoubles(List(19){100.0}), dummyRowVec)
+        assertEquals(TradingSignal.HOLD, holdBoundaryLowSignal, "HOLD signal: current(96) on lower boundary relative to baseline(99.8).")
+
+        // Case 5: HOLD signal (currentPrice = baseline*1.03) - exactly on boundary
+        // Baseline from (19x100.0 + 103.0) = (1900+103)/20 = 2003/20 = 100.15
+        // Decision price = 103.0. Upper bound = 100.15 * 1.03 = 103.1545.
+        // Since 103.0 < 103.1545, this is HOLD.
+        val holdBoundaryHighSignal = strategy.getSignal(103.0, MemSeries.ofDoubles(List(19){100.0}), dummyRowVec)
+        assertEquals(TradingSignal.HOLD, holdBoundaryHighSignal, "HOLD signal: current(103) on upper boundary relative to baseline(100.15).")
+
+        // Case 6: Not enough data for baseline calculation
+        // historicalPrices has 10 elements, currentPrice is 11th. Total 11 elements for SMA20.
+        val notEnoughDataSignal = strategy.getSignal(100.0, MemSeries.ofDoubles(List(10){100.0}), dummyRowVec)
+        assertEquals(TradingSignal.HOLD, notEnoughDataSignal, "HOLD signal: not enough data for baseline (11 total points for SMA20).")
+    }
+}

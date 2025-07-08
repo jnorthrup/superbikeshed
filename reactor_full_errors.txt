@@ -1,0 +1,33 @@
+> Task :trikeshed-lib:transformNativeMainDependenciesMetadata UP-TO-DATE
+> Task :trikeshed-lib:transformAppleMainDependenciesMetadata UP-TO-DATE
+> Task :trikeshed-lib:transformMacosMainDependenciesMetadata UP-TO-DATE
+
+> Task :trikeshed-lib:compileCommonMainKotlinMetadata FAILED
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:21:32 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:22:30 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:23:32 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:24:33 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:59:22 Public-API inline function cannot access non-public-API property.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:115:35 Public-API inline function cannot access non-public-API property.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:160:61 Argument type mismatch: actual type is 'PInt', but 'Packable<Byte>' was expected.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt:160:90 Argument type mismatch: actual type is 'PInt', but 'Packable<Byte>' was expected.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:57:69 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:57:69 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <M, T> Join<M, Function1<M, T>>.plus(other: Join<M, Function1<M, T>>): Join<M, Function1<M, T>>
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:62:61 Operator call is prohibited on a nullable receiver of type 'M? (of class PyramidSlice<M : Comparable<M>>)'. Use '?.'-qualified call instead.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:66:57 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:66:57 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <M, T> Join<M, Function1<M, T>>.plus(other: Join<M, Function1<M, T>>): Join<M, Function1<M, T>>
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:72:74 Cannot infer type for this parameter. Specify it explicitly.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt:72:74 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+fun <M, T> Join<M, Function1<M, T>>.plus(other: Join<M, Function1<M, T>>): Join<M, Function1<M, T>>
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteIndexedOptimized.kt:19:32 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteIndexedOptimized.kt:20:30 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteIndexedOptimized.kt:21:32 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteIndexedOptimized.kt:22:33 Public-API inline function cannot access non-public-API function.
+e: file:///Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/TiledBBCursive.kt:134:29 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
+
+> Task :trikeshed-lib:commonizeNativeDistribution UP-TO-DATE
+> Task :trikeshed-io:commonizeNativeDistribution UP-TO-DATE
+
+FAILURE: Build failed with an exception.

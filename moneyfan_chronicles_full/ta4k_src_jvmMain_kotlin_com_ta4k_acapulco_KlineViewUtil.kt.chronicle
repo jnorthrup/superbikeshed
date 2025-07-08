@@ -1,0 +1,191 @@
+
+--- Commit: 2038f3399bd254f0f876808eca5807a9d1d10397 | 2025-06-19 14:47:16 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
+index 2b390029..33d51cd2 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
+@@ -38,7 +38,7 @@ object KlineViewUtil {
+         ]
+ 
+         val timeColumns: Cursor = if (DateShed.normTime) {
+-            copentime.size j { y ->
++            copentime.size j { y:Int ->
+                 val instant = copentime.getOrNull(y) as? Instant
+                 if (instant != null) {
+                     DateShed.normalizeInstant(instant)
+@@ -53,7 +53,7 @@ object KlineViewUtil {
+         val openColIndex = 1
+         val volumeColIndex = 5
+         val selectedDataCols: Cursor = curs α { row -> s_[row.getOrNull(openColIndex), row.getOrNull(volumeColIndex)] }
+-        val pancakeInput: Cursor = horizonDepth j { y ->
++        val pancakeInput: Cursor = horizonDepth j { y:Int ->
+             val horizonIndex = horizon(y, horizonDepth, selectedDataCols.size)
+             selectedDataCols at horizonIndex
+         }
+@@ -80,7 +80,7 @@ object KlineViewUtil {
+         val totalOutputCols = numInputRows * numInputCols
+         if (totalOutputCols == 0) return emptySeries()
+ 
+-        return totalOutputCols j { flatIndex ->
++        return totalOutputCols j { flatIndex:Int ->
+             val rowIndex = flatIndex / numInputCols
+             val colIndex = flatIndex % numInputCols
+             val sourceRow = c.row(rowIndex)
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
+index 33d51cd2..677eff61 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
+@@ -6,12 +6,10 @@ package borg.trikeshed.acapulco // Adjusted package
+ import borg.trikeshed.cursor.*
+ import borg.trikeshed.isam.meta.IOMemento
+ import borg.trikeshed.lib.*
+-import borg.trikeshed.common.collections.s_
+ 
+ import borg.trikeshed.acapulco.model.TradingWallet
+ import borg.trikeshed.acapulco.util.DateShed
+ import borg.trikeshed.acapulco.util.horizon
+-import borg.trikeshed.acapulco.TradePairEventMuxer
+ 
+ object KlineViewUtil {
+     val depthScalr: () -> ColumnMeta = { ColumnMeta("depth", IOMemento.IoInt) }
+@@ -24,11 +22,11 @@ object KlineViewUtil {
+     ): Cursor {
+         val assetKey = muxer.model.tradeSymbol
+         val (c0, intra) = event0
+-        if (c0.isEmpty()) return emptySeries()
++        if (c0.isEmpty()) return emptyIndex()
+ 
+         val curs: Cursor = c0.reversed()
+         val openTimeColIndex = curs.meta.`play`.indexOfFirst { it.name == "Open_time" }.takeIf { it >= 0 } ?: 0
+-        val copentime: Series<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
++        val copentime: Indexed<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
+         val walletFreeCursor = tradingWallet.walletFree(assetKey, "USDT")
+         val depthIntraCursor: Cursor = s_[
+             s_[
+@@ -43,7 +41,7 @@ object KlineViewUtil {
+                 if (instant != null) {
+                     DateShed.normalizeInstant(instant)
+                 } else {
+-                    emptySeries()
++                    emptyIndex()
+                 }
+             }
+         } else {
+@@ -69,7 +67,7 @@ object KlineViewUtil {
+ 
+     var brandedPancake: Int? = null
+     fun pancake(c: Cursor): Cursor {
+-        if (c.isEmpty()) return emptySeries()
++        if (c.isEmpty()) return emptyIndex()
+         val numInputCols = c.row(0).size
+         val numInputRows = c.size
+ 
+@@ -78,7 +76,7 @@ object KlineViewUtil {
+         }
+ 
+         val totalOutputCols = numInputRows * numInputCols
+-        if (totalOutputCols == 0) return emptySeries()
++        if (totalOutputCols == 0) return emptyIndex()
+ 
+         return totalOutputCols j { flatIndex:Int ->
+             val rowIndex = flatIndex / numInputCols
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
+deleted file mode 100644
+index 677eff61..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/KlineViewUtil.kt
++++ /dev/null
+@@ -1,89 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/KlineViewUtil.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco // Adjusted package
+-
+-import borg.trikeshed.cursor.*
+-import borg.trikeshed.isam.meta.IOMemento
+-import borg.trikeshed.lib.*
+-
+-import borg.trikeshed.acapulco.model.TradingWallet
+-import borg.trikeshed.acapulco.util.DateShed
+-import borg.trikeshed.acapulco.util.horizon
+-
+-object KlineViewUtil {
+-    val depthScalr: () -> ColumnMeta = { ColumnMeta("depth", IOMemento.IoInt) }
+-    val ixScalr: () -> ColumnMeta = { ColumnMeta("index", IOMemento.IoInt) }
+-
+-    fun decorateView(
+-        muxer: TradePairEventMuxer,
+-        event0: Join<Cursor, Int>,
+-        tradingWallet: TradingWallet,
+-    ): Cursor {
+-        val assetKey = muxer.model.tradeSymbol
+-        val (c0, intra) = event0
+-        if (c0.isEmpty()) return emptyIndex()
+-
+-        val curs: Cursor = c0.reversed()
+-        val openTimeColIndex = curs.meta.`play`.indexOfFirst { it.name == "Open_time" }.takeIf { it >= 0 } ?: 0
+-        val copentime: Indexed<Any?> = curs α { it.left.getOrNull(openTimeColIndex) }
+-        val walletFreeCursor = tradingWallet.walletFree(assetKey, "USDT")
+-        val depthIntraCursor: Cursor = s_[
+-            s_[
+-                curs.size j { ColumnMeta("Depth", IOMemento.IoInt) },
+-                intra j { ColumnMeta("IntraEvents", IOMemento.IoInt) }
+-            ]
+-        ]
+-
+-        val timeColumns: Cursor = if (DateShed.normTime) {
+-            copentime.size j { y:Int ->
+-                val instant = copentime.getOrNull(y) as? Instant
+-                if (instant != null) {
+-                    DateShed.normalizeInstant(instant)
+-                } else {
+-                    emptyIndex()
+-                }
+-            }
+-        } else {
+-            curs.first().let { row -> s_[DateShed.treatInstant(row)] }
+-        }
+-
+-        val openColIndex = 1
+-        val volumeColIndex = 5
+-        val selectedDataCols: Cursor = curs α { row -> s_[row.getOrNull(openColIndex), row.getOrNull(volumeColIndex)] }
+-        val pancakeInput: Cursor = horizonDepth j { y:Int ->
+-            val horizonIndex = horizon(y, horizonDepth, selectedDataCols.size)
+-            selectedDataCols at horizonIndex
+-        }
+-        val candles: Cursor = pancake(pancakeInput)
+-
+-        val fiatValue = coins.pathValue(assetKey.a, assetKey.b)
+-        val holdingAmount = todub(tradingWallet.holdings[assetKey.a]?.free, 0.0)
+-        val bankXferValue = holdingAmount * fiatValue
+-        val valueCursor: Cursor = s_[s_[bankXferValue j { ColumnMeta("BankXferValue", IoDouble) }]]
+-
+-        return joinCursors(walletFreeCursor, depthIntraCursor, timeColumns, walletFreeCursor, candles, valueCursor)
+-    }
+-
+-    var brandedPancake: Int? = null
+-    fun pancake(c: Cursor): Cursor {
+-        if (c.isEmpty()) return emptyIndex()
+-        val numInputCols = c.row(0).size
+-        val numInputRows = c.size
+-
+-        if (brandedPancake == null) {
+-            brandedPancake = numInputCols
+-        }
+-
+-        val totalOutputCols = numInputRows * numInputCols
+-        if (totalOutputCols == 0) return emptyIndex()
+-
+-        return totalOutputCols j { flatIndex:Int ->
+-            val rowIndex = flatIndex / numInputCols
+-            val colIndex = flatIndex % numInputCols
+-            val sourceRow = c.row(rowIndex)
+-            val sourceCell = sourceRow[colIndex]
+-            sourceCell
+-        }
+-    }
+-}
+\ No newline at end of file

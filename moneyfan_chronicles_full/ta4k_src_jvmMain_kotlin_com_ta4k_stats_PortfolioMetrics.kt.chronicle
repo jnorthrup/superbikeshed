@@ -1,0 +1,310 @@
+
+--- Commit: 4f47c7612cc2cf60961e02d1da4ecebf7ab09280 | 2025-06-16 07:33:24 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+index 96ee14f1..31b48107 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+@@ -1,9 +1,9 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.core.Series
+-import borg.trikeshed.core.j
+-import borg.trikeshed.core.`▶`
+-import borg.trikeshed.core.size
++import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.j
++import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+ 
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+index 31b48107..6f577b14 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+@@ -2,7 +2,7 @@ package com.ta4k.stats
+ 
+ import borg.trikeshed.lib.Series
+ import borg.trikeshed.lib.j
+-import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+@@ -21,7 +21,7 @@ class PortfolioMetrics {
+     fun winRate(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val wins = returns.`▶`.count { it > BigDecimal.ZERO }
++        val wins = returns.`play`.count { it > BigDecimal.ZERO }
+         return BigDecimal(wins)
+             .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+     }
+@@ -32,7 +32,7 @@ class PortfolioMetrics {
+     fun avgWin(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val wins = returns.`▶`.filter { it > BigDecimal.ZERO }.toList()
++        val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
+         if (wins.isEmpty()) return BigDecimal.ZERO
+         
+         return wins.average()
+@@ -44,7 +44,7 @@ class PortfolioMetrics {
+     fun avgLoss(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val losses = returns.`▶`.filter { it < BigDecimal.ZERO }.toList()
++        val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
+         if (losses.isEmpty()) return BigDecimal.ZERO
+         
+         return losses.average()
+@@ -56,9 +56,9 @@ class PortfolioMetrics {
+     fun profitFactor(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val grossProfit = returns.`▶`.filter { it > BigDecimal.ZERO }
++        val grossProfit = returns.`play`.filter { it > BigDecimal.ZERO }
+             .sumOf { it }
+-        val grossLoss = returns.`▶`.filter { it < BigDecimal.ZERO }
++        val grossLoss = returns.`play`.filter { it < BigDecimal.ZERO }
+             .sumOf { it.abs() }
+             
+         return if (grossLoss == BigDecimal.ZERO) BigDecimal.ZERO
+@@ -74,7 +74,7 @@ class PortfolioMetrics {
+         var peak = BigDecimal.ONE
+         var maxDrawdown = BigDecimal.ZERO
+         
+-        returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
++        returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
+             val current = acc.multiply(BigDecimal.ONE.add(ret))
+             peak = peak.max(current)
+             val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
+@@ -94,7 +94,7 @@ class PortfolioMetrics {
+         var peak = BigDecimal.ONE
+         var drawdowns = mutableListOf<BigDecimal>()
+         
+-        returns.`▶`.fold(BigDecimal.ONE) { acc, ret ->
++        returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
+             val current = acc.multiply(BigDecimal.ONE.add(ret))
+             peak = peak.max(current)
+             val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
+@@ -112,7 +112,7 @@ class PortfolioMetrics {
+     fun exposure(returns: Series<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+-        val invested = returns.`▶`.count { it != BigDecimal.ZERO }
++        val invested = returns.`play`.count { it != BigDecimal.ZERO }
+         return BigDecimal(invested)
+             .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+     }
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+index 6f577b14..0d63e6a1 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+@@ -1,7 +1,6 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.lib.Series
+-import borg.trikeshed.lib.j
++import borg.trikeshed.lib.Indexed
+ import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+@@ -18,7 +17,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the win rate of a series of returns
+      */
+-    fun winRate(returns: Series<BigDecimal>): BigDecimal {
++    fun winRate(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val wins = returns.`play`.count { it > BigDecimal.ZERO }
+@@ -29,7 +28,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the average win size
+      */
+-    fun avgWin(returns: Series<BigDecimal>): BigDecimal {
++    fun avgWin(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
+@@ -41,7 +40,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the average loss size
+      */
+-    fun avgLoss(returns: Series<BigDecimal>): BigDecimal {
++    fun avgLoss(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
+@@ -53,7 +52,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the profit factor (gross profit / gross loss)
+      */
+-    fun profitFactor(returns: Series<BigDecimal>): BigDecimal {
++    fun profitFactor(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val grossProfit = returns.`play`.filter { it > BigDecimal.ZERO }
+@@ -68,7 +67,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the maximum drawdown
+      */
+-    fun maxDrawdown(returns: Series<BigDecimal>): BigDecimal {
++    fun maxDrawdown(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         var peak = BigDecimal.ONE
+@@ -88,7 +87,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the average drawdown
+      */
+-    fun avgDrawdown(returns: Series<BigDecimal>): BigDecimal {
++    fun avgDrawdown(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         var peak = BigDecimal.ONE
+@@ -109,7 +108,7 @@ class PortfolioMetrics {
+     /**
+      * Calculate the exposure (percentage of time invested)
+      */
+-    fun exposure(returns: Series<BigDecimal>): BigDecimal {
++    fun exposure(returns: Indexed<BigDecimal>): BigDecimal {
+         if (returns.isEmpty()) return BigDecimal.ZERO
+         
+         val invested = returns.`play`.count { it != BigDecimal.ZERO }
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
+deleted file mode 100644
+index 0d63e6a1..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/PortfolioMetrics.kt
++++ /dev/null
+@@ -1,123 +0,0 @@
+-package com.ta4k.stats
+-
+-import borg.trikeshed.lib.Indexed
+-import borg.trikeshed.lib.`play`
+-import borg.trikeshed.lib.size
+-import java.math.BigDecimal
+-import java.math.RoundingMode
+-
+-/**
+- * Portfolio metrics implementation ported from quantstats
+- */
+-class PortfolioMetrics {
+-    companion object {
+-        private const val DEFAULT_SCALE = 8
+-    }
+-
+-    /**
+-     * Calculate the win rate of a series of returns
+-     */
+-    fun winRate(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val wins = returns.`play`.count { it > BigDecimal.ZERO }
+-        return BigDecimal(wins)
+-            .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Calculate the average win size
+-     */
+-    fun avgWin(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val wins = returns.`play`.filter { it > BigDecimal.ZERO }.toList()
+-        if (wins.isEmpty()) return BigDecimal.ZERO
+-        
+-        return wins.average()
+-    }
+-
+-    /**
+-     * Calculate the average loss size
+-     */
+-    fun avgLoss(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val losses = returns.`play`.filter { it < BigDecimal.ZERO }.toList()
+-        if (losses.isEmpty()) return BigDecimal.ZERO
+-        
+-        return losses.average()
+-    }
+-
+-    /**
+-     * Calculate the profit factor (gross profit / gross loss)
+-     */
+-    fun profitFactor(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val grossProfit = returns.`play`.filter { it > BigDecimal.ZERO }
+-            .sumOf { it }
+-        val grossLoss = returns.`play`.filter { it < BigDecimal.ZERO }
+-            .sumOf { it.abs() }
+-            
+-        return if (grossLoss == BigDecimal.ZERO) BigDecimal.ZERO
+-        else grossProfit.divide(grossLoss, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    /**
+-     * Calculate the maximum drawdown
+-     */
+-    fun maxDrawdown(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        var peak = BigDecimal.ONE
+-        var maxDrawdown = BigDecimal.ZERO
+-        
+-        returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
+-            val current = acc.multiply(BigDecimal.ONE.add(ret))
+-            peak = peak.max(current)
+-            val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            maxDrawdown = maxDrawdown.max(drawdown)
+-            current
+-        }
+-        
+-        return maxDrawdown
+-    }
+-
+-    /**
+-     * Calculate the average drawdown
+-     */
+-    fun avgDrawdown(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        var peak = BigDecimal.ONE
+-        var drawdowns = mutableListOf<BigDecimal>()
+-        
+-        returns.`play`.fold(BigDecimal.ONE) { acc, ret ->
+-            val current = acc.multiply(BigDecimal.ONE.add(ret))
+-            peak = peak.max(current)
+-            val drawdown = peak.subtract(current).divide(peak, DEFAULT_SCALE, RoundingMode.HALF_UP)
+-            if (drawdown > BigDecimal.ZERO) drawdowns.add(drawdown)
+-            current
+-        }
+-        
+-        return if (drawdowns.isEmpty()) BigDecimal.ZERO
+-        else drawdowns.average()
+-    }
+-
+-    /**
+-     * Calculate the exposure (percentage of time invested)
+-     */
+-    fun exposure(returns: Indexed<BigDecimal>): BigDecimal {
+-        if (returns.isEmpty()) return BigDecimal.ZERO
+-        
+-        val invested = returns.`play`.count { it != BigDecimal.ZERO }
+-        return BigDecimal(invested)
+-            .divide(BigDecimal(returns.size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-
+-    private fun List<BigDecimal>.average(): BigDecimal {
+-        if (isEmpty()) return BigDecimal.ZERO
+-        return sumOf { it }.divide(BigDecimal(size), DEFAULT_SCALE, RoundingMode.HALF_UP)
+-    }
+-}

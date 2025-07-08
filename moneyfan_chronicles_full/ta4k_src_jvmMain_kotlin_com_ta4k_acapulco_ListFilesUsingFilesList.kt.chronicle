@@ -1,0 +1,19 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ListFilesUsingFilesList.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ListFilesUsingFilesList.kt
+deleted file mode 100644
+index f9d27943..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/ListFilesUsingFilesList.kt
++++ /dev/null
+@@ -1,11 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/ListFilesUsingFilesList.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco // Adjusted package
+-
+-// This file seems empty in the original code. Keeping the structure.
+-import java.io.IOException
+-import java.nio.file.Files
+-import java.nio.file.Path
+-import java.nio.file.Paths
+-import java.util.stream.Collectors

@@ -1,0 +1,32 @@
+2869bf0c,Initial clean rebuild commit
+c61ef55f,nwip
+1f62cdf1,stuff
+2b918d95,feat: add new data structures for space graph model
+4f47c761,demo launch for gh_pages dump
+26291b1e,wip
+938de07c,Update Trikeshed implementation with core components
+83d0de1c,Resolve merge conflicts in core TrikeShed and Nexus systems
+bf2fe283,Accept merge conflicts from feature branches - more slop collection
+9a9c2735,Accept dirty fragments from jules branches - merge conflicts caught as slop
+a8503cb2,feat: Implement initial UI Panels enhancement and Callout System
+f64b99be,feat: Implement Smooth Zoom and Smooth Pan for Camera
+9920d744,feat: Enhance AI Prediction Interface
+262e2d4b,NEW INFO commit before merge operations
+8bdbe365,Clean repository without LFS issues
+a08f2771,feat: Implement Command Hierarchy enhancements
+c14de6a7,Octopus merge all upstream branches with enhanced features
+0894f983,feat: Implement initial proof-of-concept for AI Prediction Interface
+10354598,Octopus merge all upstream branches with refactor consolidation
+f6f2703d,Add TacticsDSL - High-APM Visual Programming System
+1f622ef0,feat: Enhance Spacegraph visualization for basic combat data in rtsgame
+71464158,Octopus merge all upstream branches
+bf6c28b2,feat: Initial integration of Spacegraph.js into rtsgame for visualization
+f76e0668,feat: Implement advanced physics and system mapping for RTS game
+73918143,feat: Implement enhanced formation movement system
+e334f3cc,feat: Implement basic resource system in rtsgame using trikeshed-ts
+1a55b70a,Merge remote-tracking branch 'origin/feature/command-hierarchy-enhancements'
+b6b967f2,feat: Implement enhanced command hierarchy and veterancy systems
+1ec7d9dc,feat: Introduce trikeshed-ts (TypeScript port) and integrate with rtsgame
+ec8171e9,Integrate rtsgame with trikeshed-core via Kotlin/JS (Conceptual)
+ff7859c0,Refactor trikeshed and integrate with other libraries
+02b8c00a,Initial superbikeshed repository with multi-project Gradle setup

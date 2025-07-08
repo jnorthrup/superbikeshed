@@ -1,0 +1,31 @@
+> Task :trikeshed-torrent:wasmJsTestProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :zlib-kmp-reference:generateProjectStructureMetadata UP-TO-DATE
+> Task :zlib-kmp-reference:metadataCommonMainProcessResources NO-SOURCE
+> Task :trikeshed-strace:kotlinWasmNodeJsSetup UP-TO-DATE
+> Task :zlib-kmp-reference:commonizeNativeDistribution UP-TO-DATE
+> Task :zlib-kmp-reference:metadataNativeMainProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:metadataAppleMainProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:wasmJsProcessResources NO-SOURCE
+
+> Task :trikeshed-common:compileKotlinWasmJs FAILED
+
+> Task :trikeshed-torrent:kotlinWasmNodeJsSetup UP-TO-DATE
+> Task :zlib-kmp-reference:kotlinWasmBinaryenSetup UP-TO-DATE
+> Task :zlib-kmp-reference:macosX64ProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:jvmProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:processJvmMainResources SKIPPED
+> Task :zlib-kmp-reference:metadataMacosMainProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:macosArm64ProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:jvmTestProcessResources NO-SOURCE
+> Task :zlib-kmp-reference:processJvmTestResources SKIPPED
+> Task :zlib-kmp-reference:kotlinWasmNodeJsSetup UP-TO-DATE
+> Task :zlib-kmp-reference:wasmJsTestProcessResources NO-SOURCE
+> Task :trikeshed-common:transformCommonMainDependenciesMetadata
+> Task :trikeshed-common:transformNativeMainDependenciesMetadata
+> Task :trikeshed-common:transformAppleMainDependenciesMetadata
+> Task :trikeshed-common:transformMacosMainDependenciesMetadata
+> Task :trikeshed-io:transformCommonMainDependenciesMetadata
+
+> Task :trikeshed-common:compileKotlinJvm FAILED
+

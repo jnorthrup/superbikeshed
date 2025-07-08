@@ -1,0 +1,108 @@
+package moneyfan.trikeshed.context
+
+import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration
+import kotlinx.coroutines.delay as coroutineDelay // Alias to avoid confusion with LatencyProvider.delay
+
+/**
+ * A [CoroutineContext.Key] used to uniquely identify and access a [LatencyProvider]
+ * within a coroutine's context. This is a fundamental part of the Coroutine Context Element Key (CCEK) pattern.
+ *
+ * Example of use:
+ * ```kotlin
+ * val latencyProvider = coroutineContext[LatencyProviderKey]
+ * latencyProvider?.simulateDelay("MyOperation")
+ * ```
+ */
+object LatencyProviderKey : CoroutineContext.Key<LatencyProvider>
+
+/**
+ * A [CoroutineContext.Element] that provides latency simulation capabilities within a coroutine.
+ *
+ * This interface allows different parts of the system, especially data providers or services,
+ * to declaratively state that they might incur delays (e.g., network calls, I/O operations)
+ * and to simulate these delays in a controlled manner, often for testing or development purposes.
+ *
+ * Implementations of this interface are expected to be installed into the [CoroutineContext]
+ * so they can be retrieved using [LatencyProviderKey].
+ */
+interface LatencyProvider : CoroutineContext.Element {
+    /**
+     * The key for this [CoroutineContext.Element]. It is [LatencyProviderKey].
+     */
+    override val key: CoroutineContext.Key<*> get() = LatencyProviderKey
+
+    /**
+     * Retrieves a pre-configured latency [Duration] for a given operation identifier.
+     * This method allows components to query expected delays without necessarily executing them.
+     * Useful for planning or conditional logic based on expected operation costs.
+     *
+     * @param operationIdentifier A unique string identifying the operation (e.g., "DATABASE_READ", "EXTERNAL_API_CALL_GEOCODE").
+     * @return The configured [Duration] of latency for the operation, or `null` if no specific latency is defined.
+     */
+    suspend fun getLatency(operationIdentifier: String): Duration?
+
+    /**
+     * Simulates a delay associated with a specific operation, as configured in the provider.
+     * If no specific delay is configured for the `operationIdentifier`, a default delay (possibly [Duration.ZERO])
+     * may be applied. The actual suspension is typically done using `kotlinx.coroutines.delay`.
+     *
+     * @param operationIdentifier A unique string identifying the operation for which to simulate delay.
+     */
+    suspend fun simulateDelay(operationIdentifier: String)
+
+    /**
+     * Introduces an explicit, unconditional delay for the specified [Duration].
+     * This directly causes the calling coroutine to suspend for the given duration.
+     *
+     * @param duration The [Duration] for which the coroutine should be delayed.
+     */
+    suspend fun delay(duration: Duration)
+}
+
+/**
+ * A mock implementation of [LatencyProvider], primarily used for testing and local development.
+ * It allows configuring fixed delays for specific operations or applying a default delay for any unpecified operation.
+ *
+ * @property fixedDelays A map where keys are operation identifiers (strings) and values are the [Duration]
+ *                       of delay to simulate for that specific operation.
+ * @property defaultDelay The default [Duration] to apply if an `operationIdentifier` passed to [simulateDelay]
+ *                        is not found in `fixedDelays`. Defaults to [Duration.ZERO], meaning no delay by default.
+ */
+class MockLatencyProvider(
+    internal val fixedDelays: Map<String, Duration> = emptyMap(),
+    internal val defaultDelay: Duration = Duration.ZERO
+) : LatencyProvider {
+
+    /**
+     * Returns the configured fixed delay for the given `operationIdentifier`, or `null` if not found.
+     * Note: This mock implementation does not use `defaultDelay` for `getLatency`.
+     */
+    override suspend fun getLatency(operationIdentifier: String): Duration? {
+        return fixedDelays[operationIdentifier]
+    }
+
+    /**
+     * Delays the coroutine by the duration specified for `operationIdentifier` in `fixedDelays`,
+     * or by `defaultDelay` if the identifier is not found. Uses `kotlinx.coroutines.delay`.
+     */
+    override suspend fun simulateDelay(operationIdentifier: String) {
+        val delayDuration = fixedDelays[operationIdentifier] ?: defaultDelay
+        if (delayDuration > Duration.ZERO) {
+            coroutineDelay(delayDuration)
+        }
+    }
+
+    /**
+     * Delays the coroutine by the given `duration`. Uses `kotlinx.coroutines.delay`.
+     */
+    override suspend fun delay(duration: Duration) {
+        if (duration > Duration.ZERO) {
+            coroutineDelay(duration)
+        }
+    }
+
+    override fun toString(): String {
+        return "MockLatencyProvider(fixedDelays=$fixedDelays, defaultDelay=$defaultDelay)"
+    }
+}

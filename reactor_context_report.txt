@@ -1,0 +1,141 @@
+================================================================================
+STACKTRACE CONTEXT EXTRACTION - 5 LAYERS x 20 LINES
+================================================================================
+
+########################################
+# LAYER 1: /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/BBCursiveNatural.kt
+# Errors: 8
+########################################
+
+## Error 1.1: Line 21
+## Public-API inline function cannot access non-public-API function.
+------------------------------------------------------------
+  11     * Now uses register-at-a-time scanners with autovec optimization
+  12     */
+  13    
+  14    // === REGISTER-AT-A-TIME SCANNER INTEGRATION ===
+  15    
+  16    /**
+  17     * BBCursive scanner with register-at-a-time optimization
+  18     */
+  19    inline fun ByteArray.scanAtTime(strategy: ScanStrategy = ScanStrategy.AUTOVEC): RegisterJoin<Byte, Int>? {
+  20        return when (strategy) {
+  21>>>         ScanStrategy.SCALAR -> scanScalar()
+  22            ScanStrategy.SIMD -> scanSIMD()
+  23            ScanStrategy.VECTOR -> scanVector()
+  24            ScanStrategy.AUTOVEC -> scanAutovec()
+  25        }
+  26    }
+  27    
+  28    internal fun ByteArray.scanScalar(): RegisterJoin<Byte, Int>? {
+  29        if (isEmpty()) return null
+  30        return this[0] j 1
+  31    }
+------------------------------------------------------------
+
+## Error 1.2: Line 22
+## Public-API inline function cannot access non-public-API function.
+------------------------------------------------------------
+  12     */
+  13    
+  14    // === REGISTER-AT-A-TIME SCANNER INTEGRATION ===
+  15    
+  16    /**
+  17     * BBCursive scanner with register-at-a-time optimization
+  18     */
+  19    inline fun ByteArray.scanAtTime(strategy: ScanStrategy = ScanStrategy.AUTOVEC): RegisterJoin<Byte, Int>? {
+  20        return when (strategy) {
+  21            ScanStrategy.SCALAR -> scanScalar()
+  22>>>         ScanStrategy.SIMD -> scanSIMD()
+  23            ScanStrategy.VECTOR -> scanVector()
+  24            ScanStrategy.AUTOVEC -> scanAutovec()
+  25        }
+  26    }
+  27    
+  28    internal fun ByteArray.scanScalar(): RegisterJoin<Byte, Int>? {
+  29        if (isEmpty()) return null
+  30        return this[0] j 1
+  31    }
+  32    
+------------------------------------------------------------
+
+## Error 1.3: Line 23
+## Public-API inline function cannot access non-public-API function.
+------------------------------------------------------------
+  13    
+  14    // === REGISTER-AT-A-TIME SCANNER INTEGRATION ===
+  15    
+  16    /**
+  17     * BBCursive scanner with register-at-a-time optimization
+  18     */
+  19    inline fun ByteArray.scanAtTime(strategy: ScanStrategy = ScanStrategy.AUTOVEC): RegisterJoin<Byte, Int>? {
+  20        return when (strategy) {
+  21            ScanStrategy.SCALAR -> scanScalar()
+  22            ScanStrategy.SIMD -> scanSIMD()
+  23>>>         ScanStrategy.VECTOR -> scanVector()
+  24            ScanStrategy.AUTOVEC -> scanAutovec()
+  25        }
+  26    }
+  27    
+  28    internal fun ByteArray.scanScalar(): RegisterJoin<Byte, Int>? {
+  29        if (isEmpty()) return null
+  30        return this[0] j 1
+  31    }
+  32    
+  33    internal fun ByteArray.scanSIMD(): RegisterJoin<Byte, Int>? {
+------------------------------------------------------------
+
+########################################
+# LAYER 2: /Users/jim/work/v2superbikeshed/trikeshed-lib/src/commonMain/kotlin/borg/trikeshed/lib/ByteBufferPyramid.kt
+# Errors: 7
+########################################
+
+## Error 2.1: Line 57
+## Cannot infer type for this parameter. Specify it explicitly.
+------------------------------------------------------------
+  47        val mark: M? = null
+  48    ) where M : Comparable<M> {
+  49        // Abstract over position types - Int, Long, or custom indices
+  50        val hasRemaining: Boolean get() = position < limit
+  51    
+  52        // Pure functional operations returning new slices
+  53        fun get(): Join<Byte, PyramidSlice<M>> =
+  54            if (!hasRemaining) throw IndexOutOfBoundsException()
+  55            else pyramid.b(position) j this // position increment depends on M type
+  56    
+  57>>>     fun put(byte: Byte): PyramidSlice<M> = copy(position = position + 1)
+  58        fun flip(): PyramidSlice<M> = copy(position = 0, limit = position, mark = -1)
+  59        fun clear(): PyramidSlice<M> = copy(position = 0, limit = pyramid.a, mark = -1)
+  60        fun rewind(): PyramidSlice<M> = copy(position = 0, mark = -1)
+  61        fun mark(): PyramidSlice<M> = copy(mark = position)
+  62        fun reset(): PyramidSlice<M> = copy(position = if (mark >= 0) mark else position)
+  63    
+  64        // Slice operations
+  65        fun slice(): PyramidSlice<M> = PyramidSlice(
+  66            pyramid = pyramid.a j { i -> pyramid.b(position + i) },
+  67            position = 0,
+------------------------------------------------------------
+
+## Error 2.2: Line 57
+## Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+------------------------------------------------------------
+  47        val mark: M? = null
+  48    ) where M : Comparable<M> {
+  49        // Abstract over position types - Int, Long, or custom indices
+  50        val hasRemaining: Boolean get() = position < limit
+  51    
+  52        // Pure functional operations returning new slices
+  53        fun get(): Join<Byte, PyramidSlice<M>> =
+  54            if (!hasRemaining) throw IndexOutOfBoundsException()
+  55            else pyramid.b(position) j this // position increment depends on M type
+  56    
+  57>>>     fun put(byte: Byte): PyramidSlice<M> = copy(position = position + 1)
+  58        fun flip(): PyramidSlice<M> = copy(position = 0, limit = position, mark = -1)
+  59        fun clear(): PyramidSlice<M> = copy(position = 0, limit = pyramid.a, mark = -1)
+  60        fun rewind(): PyramidSlice<M> = copy(position = 0, mark = -1)
+  61        fun mark(): PyramidSlice<M> = copy(mark = position)
+  62        fun reset(): PyramidSlice<M> = copy(position = if (mark >= 0) mark else position)
+------------------------------------------------------------
+
+Total lines extracted: 100
+Layers processed: 2

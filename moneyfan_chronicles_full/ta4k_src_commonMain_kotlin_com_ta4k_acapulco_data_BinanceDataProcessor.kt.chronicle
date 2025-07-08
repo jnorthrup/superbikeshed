@@ -1,0 +1,222 @@
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
+index 46d14a12..70c4b9e9 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
+@@ -28,7 +28,7 @@ class BinanceDataProcessor {
+     fun convertKlinesToCandles(klines: Series<Kline>, symbol: String): CandleSeries {
+         val candleData = mutableListOf<Candlestick>()
+         
+-        klines.▶.forEach { kline ->
++        klines.play.forEach { kline ->
+             val symbolObj = Symbol(symbol)
+             val open = Price(kline.open)
+             val high = Price(kline.high)
+@@ -60,7 +60,7 @@ class BinanceDataProcessor {
+     fun processTradeData(trades: Series<BinanceTrade>, symbol: String): TickSeries {
+         val tickData = mutableListOf<MarketTick>()
+         
+-        trades.▶.forEach { trade ->
++        trades.play.forEach { trade ->
+             val tick = MarketTick(
+                 symbol = Symbol(symbol),
+                 data = (Price(trade.price) j Volume(trade.quantity)) j Instant.fromEpochMilliseconds(trade.timestamp),
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
+index 70c4b9e9..96e875c0 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
+@@ -25,7 +25,7 @@ class BinanceDataProcessor {
+     /**
+      * Converts Binance kline data to Moneyfan candlestick format
+      */
+-    fun convertKlinesToCandles(klines: Series<Kline>, symbol: String): CandleSeries {
++    fun convertKlinesToCandles(klines: Indexed<Kline>, symbol: String): CandleSeries {
+         val candleData = mutableListOf<Candlestick>()
+         
+         klines.play.forEach { kline ->
+@@ -51,13 +51,13 @@ class BinanceDataProcessor {
+             candleData.add(candle)
+         }
+         
+-        return Series.of(candleData.size) { i -> candleData[i] }
++        return Indexed.of(candleData.size) { i -> candleData[i] }
+     }
+     
+     /**
+      * Processes Binance trade data into market ticks
+      */
+-    fun processTradeData(trades: Series<BinanceTrade>, symbol: String): TickSeries {
++    fun processTradeData(trades: Indexed<BinanceTrade>, symbol: String): TickSeries {
+         val tickData = mutableListOf<MarketTick>()
+         
+         trades.play.forEach { trade ->
+@@ -69,7 +69,7 @@ class BinanceDataProcessor {
+             tickData.add(tick)
+         }
+         
+-        return Series.of(tickData.size) { i -> tickData[i] }
++        return Indexed.of(tickData.size) { i -> tickData[i] }
+     }
+     
+     /**
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
+deleted file mode 100644
+index 96e875c0..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/data/BinanceDataProcessor.kt
++++ /dev/null
+@@ -1,149 +0,0 @@
+-package com.ta4k.acapulco.data
+-
+-import com.ta4k.acapulco.model.*
+-import com.ta4k.acapulco.BinanceDataVisionReader
+-import borg.trikeshed.lib.*
+-import moneyfan.core.*
+-import kotlinx.datetime.Instant
+-import java.math.BigDecimal
+-
+-/**
+- * Unified Binance data processing module consolidating various data sources
+- * Integrates with Moneyfan core trading system using TrikeShed patterns
+- */
+-class BinanceDataProcessor {
+-    private val tradingEngine = TradingEngine()
+-    
+-    /**
+-     * Processes Binance Data Vision kline archive into trading-ready candlestick data
+-     */
+-    fun processKlineArchive(filePath: String, symbol: String): CandleSeries {
+-        val klineData = BinanceDataVisionReader.readArchive(filePath)
+-        return convertKlinesToCandles(klineData, symbol)
+-    }
+-    
+-    /**
+-     * Converts Binance kline data to Moneyfan candlestick format
+-     */
+-    fun convertKlinesToCandles(klines: Indexed<Kline>, symbol: String): CandleSeries {
+-        val candleData = mutableListOf<Candlestick>()
+-        
+-        klines.play.forEach { kline ->
+-            val symbolObj = Symbol(symbol)
+-            val open = Price(kline.open)
+-            val high = Price(kline.high)
+-            val low = Price(kline.low)
+-            val close = Price(kline.close)
+-            val volume = Volume(kline.volume)
+-            
+-            val ohlcv = OHLCV(open, high, low, close, volume)
+-            
+-            val candle = Candlestick(
+-                symbol = symbolObj,
+-                ohlcv = ohlcv,
+-                startTime = Instant.fromEpochMilliseconds(kline.openTime),
+-                endTime = Instant.fromEpochMilliseconds(kline.closeTime),
+-                tickCount = kline.tradeCount,
+-                volatility = calculateSimpleVolatility(open, high, low, close),
+-                vwap = Price(kline.vwap ?: close.value)
+-            )
+-            
+-            candleData.add(candle)
+-        }
+-        
+-        return Indexed.of(candleData.size) { i -> candleData[i] }
+-    }
+-    
+-    /**
+-     * Processes Binance trade data into market ticks
+-     */
+-    fun processTradeData(trades: Indexed<BinanceTrade>, symbol: String): TickSeries {
+-        val tickData = mutableListOf<MarketTick>()
+-        
+-        trades.play.forEach { trade ->
+-            val tick = MarketTick(
+-                symbol = Symbol(symbol),
+-                data = (Price(trade.price) j Volume(trade.quantity)) j Instant.fromEpochMilliseconds(trade.timestamp),
+-                tradeId = TradeId(trade.tradeId.toString())
+-            )
+-            tickData.add(tick)
+-        }
+-        
+-        return Indexed.of(tickData.size) { i -> tickData[i] }
+-    }
+-    
+-    /**
+-     * Aggregates tick data into candlesticks using TrikeShed transformations
+-     */
+-    fun aggregateTicksToCandles(ticks: TickSeries, timeWindowMs: Long): CandleSeries {
+-        return tradingEngine.processTickSeries(ticks)
+-    }
+-    
+-    /**
+-     * Creates portfolio rows from Binance account data
+-     */
+-    fun createPortfolioRows(
+-        balances: Map<String, BigDecimal>,
+-        prices: Map<String, BigDecimal>,
+-        baselines: Map<String, Double>
+-    ): List<PortfolioRow> {
+-        return balances.map { (symbol, quantity) ->
+-            val price = prices[symbol]
+-            val value = price?.multiply(quantity)
+-            val baseline = baselines[symbol]
+-            val deviation = if (value != null && baseline != null && baseline > 0.0) {
+-                (value.toDouble() - baseline) / baseline
+-            } else null
+-            
+-            PortfolioRow(
+-                symbol = symbol,
+-                quantity = quantity,
+-                price = price,
+-                value = value,
+-                baseline = baseline,
+-                deviation = deviation,
+-                priceChange = null // Would need historical data
+-            )
+-        }
+-    }
+-    
+-    /**
+-     * Calculates simple volatility from OHLC data
+-     */
+-    private fun calculateSimpleVolatility(open: Price, high: Price, low: Price, close: Price): Decimal {
+-        val trueRange = kotlin.math.max(
+-            high.value - low.value,
+-            kotlin.math.max(
+-                kotlin.math.abs(high.value - open.value),
+-                kotlin.math.abs(low.value - open.value)
+-            )
+-        )
+-        return trueRange / open.value
+-    }
+-}
+-
+-/**
+- * Binance trade data structure
+- */
+-data class BinanceTrade(
+-    val tradeId: Long,
+-    val price: Double,
+-    val quantity: Double,
+-    val timestamp: Long,
+-    val isBuyerMaker: Boolean
+-)
+-
+-/**
+- * Enhanced Kline data with calculated fields
+- */
+-data class Kline(
+-    val openTime: Long,
+-    val closeTime: Long,
+-    val open: Double,
+-    val high: Double,
+-    val low: Double,
+-    val close: Double,
+-    val volume: Double,
+-    val tradeCount: Int,
+-    val vwap: Double? = null
+-)
+\ No newline at end of file

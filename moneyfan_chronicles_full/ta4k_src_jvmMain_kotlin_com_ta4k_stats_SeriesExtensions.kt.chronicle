@@ -1,0 +1,148 @@
+
+--- Commit: 4f47c7612cc2cf60961e02d1da4ecebf7ab09280 | 2025-06-16 07:33:24 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+index 492c5f54..c789c4c3 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+@@ -1,8 +1,8 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.core.Series
+-import borg.trikeshed.core.`▶`
+-import borg.trikeshed.core.size
++import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+ 
+
+--- Commit: 1f62cdf166efdcf123c3bddf204d72d1a7671978 | 2025-06-18 18:25:22 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+index c789c4c3..c6240f99 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+@@ -1,7 +1,7 @@
+ package com.ta4k.stats
+ 
+ import borg.trikeshed.lib.Series
+-import borg.trikeshed.lib.`▶`
++import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+ import java.math.RoundingMode
+@@ -11,13 +11,13 @@ import java.math.RoundingMode
+  */
+ fun Series<BigDecimal>.isEmpty(): Boolean = size == 0
+ 
+-fun Series<BigDecimal>.sorted(): List<BigDecimal> = `▶`.toList().sorted()
++fun Series<BigDecimal>.sorted(): List<BigDecimal> = `play`.toList().sorted()
+ 
+ fun Series<BigDecimal>.filter(predicate: (BigDecimal) -> Boolean): List<BigDecimal> = 
+-    `▶`.toList().filter(predicate)
++    `play`.toList().filter(predicate)
+ 
+ fun Series<BigDecimal>.count(predicate: (BigDecimal) -> Boolean): Int =
+-    `▶`.toList().count(predicate)
++    `play`.toList().count(predicate)
+ 
+ fun Series<BigDecimal>.average(): BigDecimal {
+     if (isEmpty()) return BigDecimal.ZERO
+@@ -25,4 +25,4 @@ fun Series<BigDecimal>.average(): BigDecimal {
+ }
+ 
+ fun Series<BigDecimal>.sumOf(selector: (BigDecimal) -> BigDecimal): BigDecimal =
+-    `▶`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }
++    `play`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+index c6240f99..02469b24 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+@@ -1,6 +1,6 @@
+ package com.ta4k.stats
+ 
+-import borg.trikeshed.lib.Series
++import borg.trikeshed.lib.Indexed
+ import borg.trikeshed.lib.`play`
+ import borg.trikeshed.lib.size
+ import java.math.BigDecimal
+@@ -9,20 +9,20 @@ import java.math.RoundingMode
+ /**
+  * Extensions for Series<BigDecimal> to support statistical calculations
+  */
+-fun Series<BigDecimal>.isEmpty(): Boolean = size == 0
++fun Indexed<BigDecimal>.isEmpty(): Boolean = size == 0
+ 
+-fun Series<BigDecimal>.sorted(): List<BigDecimal> = `play`.toList().sorted()
++fun Indexed<BigDecimal>.sorted(): List<BigDecimal> = `play`.toList().sorted()
+ 
+-fun Series<BigDecimal>.filter(predicate: (BigDecimal) -> Boolean): List<BigDecimal> = 
++fun Indexed<BigDecimal>.filter(predicate: (BigDecimal) -> Boolean): List<BigDecimal> =
+     `play`.toList().filter(predicate)
+ 
+-fun Series<BigDecimal>.count(predicate: (BigDecimal) -> Boolean): Int =
++fun Indexed<BigDecimal>.count(predicate: (BigDecimal) -> Boolean): Int =
+     `play`.toList().count(predicate)
+ 
+-fun Series<BigDecimal>.average(): BigDecimal {
++fun Indexed<BigDecimal>.average(): BigDecimal {
+     if (isEmpty()) return BigDecimal.ZERO
+     return sumOf { it }.divide(BigDecimal(size), 8, RoundingMode.HALF_UP)
+ }
+ 
+-fun Series<BigDecimal>.sumOf(selector: (BigDecimal) -> BigDecimal): BigDecimal =
++fun Indexed<BigDecimal>.sumOf(selector: (BigDecimal) -> BigDecimal): BigDecimal =
+     `play`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+index 02469b24..64346702 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+@@ -7,7 +7,7 @@ import java.math.BigDecimal
+ import java.math.RoundingMode
+ 
+ /**
+- * Extensions for Series<BigDecimal> to support statistical calculations
++ * Extensions for Indexed<BigDecimal> to support statistical calculations
+  */
+ fun Indexed<BigDecimal>.isEmpty(): Boolean = size == 0
+ 
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
+deleted file mode 100644
+index 64346702..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/stats/SeriesExtensions.kt
++++ /dev/null
+@@ -1,28 +0,0 @@
+-package com.ta4k.stats
+-
+-import borg.trikeshed.lib.Indexed
+-import borg.trikeshed.lib.`play`
+-import borg.trikeshed.lib.size
+-import java.math.BigDecimal
+-import java.math.RoundingMode
+-
+-/**
+- * Extensions for Indexed<BigDecimal> to support statistical calculations
+- */
+-fun Indexed<BigDecimal>.isEmpty(): Boolean = size == 0
+-
+-fun Indexed<BigDecimal>.sorted(): List<BigDecimal> = `play`.toList().sorted()
+-
+-fun Indexed<BigDecimal>.filter(predicate: (BigDecimal) -> Boolean): List<BigDecimal> =
+-    `play`.toList().filter(predicate)
+-
+-fun Indexed<BigDecimal>.count(predicate: (BigDecimal) -> Boolean): Int =
+-    `play`.toList().count(predicate)
+-
+-fun Indexed<BigDecimal>.average(): BigDecimal {
+-    if (isEmpty()) return BigDecimal.ZERO
+-    return sumOf { it }.divide(BigDecimal(size), 8, RoundingMode.HALF_UP)
+-}
+-
+-fun Indexed<BigDecimal>.sumOf(selector: (BigDecimal) -> BigDecimal): BigDecimal =
+-    `play`.toList().fold(BigDecimal.ZERO) { acc, value -> acc.add(selector(value)) }

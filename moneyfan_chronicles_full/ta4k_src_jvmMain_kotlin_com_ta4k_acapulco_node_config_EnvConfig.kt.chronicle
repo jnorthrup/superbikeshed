@@ -1,0 +1,35 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/node/config/EnvConfig.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/node/config/EnvConfig.kt
+deleted file mode 100644
+index 5ca5cba5..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/node/config/EnvConfig.kt
++++ /dev/null
+@@ -1,26 +0,0 @@
+-package borg.trikeshed.acapulco.node.config
+-
+-import java.io.PrintStream
+-
+- data  class EnvConfig(
+-        val name: String="",
+-      @Transient  val defValue: String  = "",
+-       @Transient val docString: String? = null, ) {
+-    init {
+-        registry += this
+-    }
+-    constructor() : this("","","")
+-    private val env: String? by lazy { System.getenv(name) ?: defValue }
+-    val value get() = env!!.trim()
+-    fun shellAssignment(): String =
+-        ": $" + "{${name}:=${value?:defValue}}${docString?.let { "\t# $docString" } ?: ""}"
+-
+-    override fun toString() = listOf(name, defValue, docString).toString()
+-
+-    companion object {
+-        val registry = sortedSetOf<EnvConfig>(compareBy { it.name })
+-        fun shellVars(out: PrintStream = System.err) = registry.forEach { out.println(it.shellAssignment()) }
+-        fun docVars(out: PrintStream = System.err) = registry.forEach { out.println(it.toString()) }
+-    }
+-
+-}
+\ No newline at end of file

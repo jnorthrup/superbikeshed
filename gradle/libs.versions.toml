@@ -1,0 +1,22 @@
+[versions]
+gradle = "9.0"
+benmanes = "0.52.0"
+kotlin = "2.2.0"
+coroutines = "1.7.3"
+serialization = "1.7.3"
+datetime = "0.4.0"
+scripting-dependencies = "2.2.0"
+scripting-dependencies-maven = "2.2.0"
+
+[libraries]
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlin-scripting-jvm = { module = "org.jetbrains.kotlin:kotlin-scripting-jvm", version.ref = "kotlin" }
+kotlin-scripting-jvm-host = { module = "org.jetbrains.kotlin:kotlin-scripting-jvm-host", version.ref = "kotlin" }
+kotlin-scripting-dependencies = { module = "org.jetbrains.kotlin:kotlin-scripting-dependencies", version.ref = "scripting-dependencies" }
+kotlin-scripting-dependencies-maven = { module = "org.jetbrains.kotlin:kotlin-scripting-dependencies-maven", version.ref = "scripting-dependencies-maven" }
+coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+
+[plugins]
+benmanes-versions = { id = "com.github.ben-manes.versions", version.ref = "benmanes" } 

@@ -1,0 +1,10 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/indicators/TechnicalAnalysis.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/indicators/TechnicalAnalysis.kt
+deleted file mode 100644
+index 0519ecba..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/indicators/TechnicalAnalysis.kt
++++ /dev/null
+@@ -1 +0,0 @@
+- 
+\ No newline at end of file

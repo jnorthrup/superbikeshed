@@ -1,0 +1,27 @@
+plugins {
+    kotlin("multiplatform")
+}
+
+group = "borg.trikeshed"
+
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    jvm()
+    
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-io"))
+            }
+        }
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+    }
+}

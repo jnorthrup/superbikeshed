@@ -1,0 +1,5 @@
+<<<<<<< HEAD
+borg.trikeshed.ksp.TrikeShedDslProcessorProvider
+=======
+borg.trikeshed.ksp.TrikeShedProcessorProvider
+>>>>>>> origin/feat/core-serialization-impl

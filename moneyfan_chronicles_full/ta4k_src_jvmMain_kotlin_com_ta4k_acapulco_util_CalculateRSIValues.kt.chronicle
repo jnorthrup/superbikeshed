@@ -1,0 +1,135 @@
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
+index 1ef38113..8019c6fb 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
+@@ -3,16 +3,10 @@
+ // =====================================================================
+ package borg.trikeshed.acapulco.util // Adjusted package
+ 
+-import borg.trikeshed.cursor.ColumnMeta
+ import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
+-import borg.trikeshed.cursor.at
+-import borg.trikeshed.cursor.get
+ import borg.trikeshed.cursor.meta
+ import borg.trikeshed.isam.meta.IOMemento
+ import borg.trikeshed.lib.* // Imports Join, Series, j, α, etc.
+-import borg.trikeshed.common.collections.s_ // Replaces _v for Series creation
+-import borg.trikeshed.acapulco.util.calcSmmaDown // Assuming ported
+-import borg.trikeshed.acapulco.util.calcSmmaUp // Assuming ported
+ import kotlin.math.max
+ 
+ /** Calculating the RS
+@@ -26,8 +20,8 @@ fun Cursor.rsi(depth: Int = 14): Cursor = run {
+     val openColIndex = this.meta.`play`.indexOfFirst { it.name == "Open" }.takeIf { it >= 0 } ?: 0 // Fallback, adjust as needed
+     val closeColIndex = this.meta.`play`.indexOfFirst { it.name == "Close" }.takeIf { it >= 0 } ?: 1 // Fallback, adjust as needed
+ 
+-    val open: Series<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Series<Double>
+-    val close: Series<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Series<Double>
++    val open: Indexed<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Series<Double>
++    val close: Indexed<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Series<Double>
+ 
+     fun calculateRS(up: Double, dn: Double): Double = if (dn == 0.0) Double.POSITIVE_INFINITY else up / dn
+ 
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
+index 8019c6fb..60780363 100644
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
++++ b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
+@@ -3,7 +3,7 @@
+ // =====================================================================
+ package borg.trikeshed.acapulco.util // Adjusted package
+ 
+-import borg.trikeshed.cursor.Cursor // Type alias for Series<RowVec>
++import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
+ import borg.trikeshed.cursor.meta
+ import borg.trikeshed.isam.meta.IOMemento
+ import borg.trikeshed.lib.* // Imports Join, Series, j, α, etc.
+@@ -12,7 +12,7 @@ import kotlin.math.max
+ /** Calculating the RS
+ The RSI indicator is based on the changes in the price action and not on the actual price itself . This is where the term Relative Strength (RS) comes from.
+ Calculating the RS is quite simple. We need to divide the SMMA of the up changes by the SMMA of the down changes.
+-Cursor["Open","Close"] -> Series<RowVec> ["Open", "Close"]
++Cursor["Open","Close"] -> Indexed<RowVec> ["Open", "Close"]
+  */
+ fun Cursor.rsi(depth: Int = 14): Cursor = run {
+     // Assuming "Open" is at index 0 and "Close" is at index 1 after get
+@@ -20,12 +20,12 @@ fun Cursor.rsi(depth: Int = 14): Cursor = run {
+     val openColIndex = this.meta.`play`.indexOfFirst { it.name == "Open" }.takeIf { it >= 0 } ?: 0 // Fallback, adjust as needed
+     val closeColIndex = this.meta.`play`.indexOfFirst { it.name == "Close" }.takeIf { it >= 0 } ?: 1 // Fallback, adjust as needed
+ 
+-    val open: Indexed<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Series<Double>
+-    val close: Indexed<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Series<Double>
++    val open: Indexed<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Indexed<Double>
++    val close: Indexed<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Indexed<Double>
+ 
+     fun calculateRS(up: Double, dn: Double): Double = if (dn == 0.0) Double.POSITIVE_INFINITY else up / dn
+ 
+-    this.size j { y: Int -> // Create a new Cursor (Series<RowVec>)
++    this.size j { y: Int -> // Create a new Cursor (Indexed<RowVec>)
+         var accUp = 0.0
+         var accDn = 0.0
+         val rsiValue: Double = run {
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
+deleted file mode 100644
+index 60780363..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/CalculateRSIValues.kt
++++ /dev/null
+@@ -1,52 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/util/CalculateRSIValues.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco.util // Adjusted package
+-
+-import borg.trikeshed.cursor.Cursor // Type alias for Indexed<RowVec>
+-import borg.trikeshed.cursor.meta
+-import borg.trikeshed.isam.meta.IOMemento
+-import borg.trikeshed.lib.* // Imports Join, Series, j, α, etc.
+-import kotlin.math.max
+-
+-/** Calculating the RS
+-The RSI indicator is based on the changes in the price action and not on the actual price itself . This is where the term Relative Strength (RS) comes from.
+-Calculating the RS is quite simple. We need to divide the SMMA of the up changes by the SMMA of the down changes.
+-Cursor["Open","Close"] -> Indexed<RowVec> ["Open", "Close"]
+- */
+-fun Cursor.rsi(depth: Int = 14): Cursor = run {
+-    // Assuming "Open" is at index 0 and "Close" is at index 1 after get
+-    // This needs robust index lookup based on names from meta
+-    val openColIndex = this.meta.`play`.indexOfFirst { it.name == "Open" }.takeIf { it >= 0 } ?: 0 // Fallback, adjust as needed
+-    val closeColIndex = this.meta.`play`.indexOfFirst { it.name == "Close" }.takeIf { it >= 0 } ?: 1 // Fallback, adjust as needed
+-
+-    val open: Indexed<Double> = this α { todub(it.left[openColIndex]) } // Extract Open column as Indexed<Double>
+-    val close: Indexed<Double> = this α { todub(it.left[closeColIndex]) } // Extract Close column as Indexed<Double>
+-
+-    fun calculateRS(up: Double, dn: Double): Double = if (dn == 0.0) Double.POSITIVE_INFINITY else up / dn
+-
+-    this.size j { y: Int -> // Create a new Cursor (Indexed<RowVec>)
+-        var accUp = 0.0
+-        var accDn = 0.0
+-        val rsiValue: Double = run {
+-            // Iterate over the lookback period
+-            val values = (max(0, y - depth + 1)..y).map { i ->
+-                // Ensure indices for open and close are valid
+-                if (i >= 0 && i < open.size && i < close.size) {
+-                    accUp = calcSmmaUp(open, close, depth, i, accUp)
+-                    accDn = calcSmmaDown(open, close, depth, i, accDn)
+-                    val rs = calculateRS(accUp, accDn)
+-                    if (rs.isInfinite()) 100.0 else 100.0 - 100.0 / (1.0 + rs)
+-                } else {
+-                    0.0 // Or handle boundary cases appropriately
+-                }
+-            }
+-            values.lastOrNull() ?: 0.0 // Take the last calculated RSI in the window
+-        }
+-
+-        // Create a RowVec for the result (single column: rsi)
+-        s_[
+-            rsiValue j { ColumnMeta("rsi:$depth", IOMemento.IoDouble) }
+-        ]
+-    }
+-}
+\ No newline at end of file

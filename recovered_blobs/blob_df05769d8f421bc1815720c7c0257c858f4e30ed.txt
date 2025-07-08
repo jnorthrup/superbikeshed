@@ -1,0 +1,364 @@
+diff --git a/Review/build.gradle.kts b/Review/build.gradle.kts
+index e3b89ff2..1cab7e16 100644
+--- a/Review/build.gradle.kts
++++ b/Review/build.gradle.kts
+@@ -27,6 +27,7 @@ kotlin {
+                 implementation(kotlin("stdlib-common"))
+                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
++                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                 implementation(project(":Review:trikeshed-core"))
+             }
+             kotlin {
+diff --git a/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/OrchestrationAgent.kt b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/OrchestrationAgent.kt
+new file mode 100644
+index 00000000..cc1686b5
+--- /dev/null
++++ b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/OrchestrationAgent.kt
+@@ -0,0 +1,48 @@
++package borg.trikeshed.orchestration
++
++import borg.ipfs.IpfsPubSubService
++import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.Job
++import kotlinx.coroutines.SupervisorJob
++import kotlinx.coroutines.cancel
++import kotlinx.coroutines.cancelChildren
++import kotlinx.serialization.encodeToString
++import kotlinx.serialization.json.Json
++import kotlin.coroutines.CoroutineContext
++import kotlin.random.Random // For default agent ID
++
++interface OrchestrationAgent : CoroutineScope {
++    val agentId: String
++    val ipfsPubSubService: IpfsPubSubService
++
++    fun start()
++    fun stop()
++}
++
++abstract class BaseOrchestrationAgent(
++    parentCoroutineContext: CoroutineContext,
++    override val ipfsPubSubService: IpfsPubSubService,
++    givenAgentId: String? = null
++) : OrchestrationAgent {
++
++    // Ensure the context has a Job for cancellation
++    override val coroutineContext: CoroutineContext = parentCoroutineContext + SupervisorJob() + Job()
++
++    override val agentId: String = givenAgentId ?: "agent-${Random.nextInt(10000, 99999)}"
++
++    protected val json = Json { prettyPrint = false; ignoreUnknownKeys = true }
++
++    abstract override fun start()
++
++    override fun stop() {
++        coroutineContext.cancelChildren() // Cancel children jobs of this scope
++        coroutineContext.cancel()         // Cancel the scope itself
++        println("Agent $agentId stopped.")
++    }
++
++    protected suspend inline fun <reified T : AgentMessage> publishMessage(topic: String, message: T) {
++        val messageJson = json.encodeToString(message)
++        ipfsPubSubService.publish(topic, messageJson)
++        println("Agent $agentId published to $topic: $messageJson")
++    }
++}
+diff --git a/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/OrchestrationModels.kt b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/OrchestrationModels.kt
+new file mode 100644
+index 00000000..f3acda0b
+--- /dev/null
++++ b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/OrchestrationModels.kt
+@@ -0,0 +1,51 @@
++package borg.trikeshed.orchestration
++
++import kotlinx.serialization.Serializable
++
++object AgentTopics {
++    const val AGENT_DISCOVERY = "/trikeshed/agents/discovery"
++    const val AGENT_HEARTBEAT = "/trikeshed/agents/heartbeat"
++    // Example service-specific topic pattern:
++    fun getServiceRequestTopic(serviceName: String) = "/trikeshed/service/$serviceName/requests"
++    fun getServiceResponseTopic(serviceName: String, requestId: String) = "/trikeshed/service/$serviceName/responses/$requestId"
++}
++
++@Serializable
++sealed class AgentMessage {
++    abstract val agentId: String
++    abstract val timestamp: Long // Unix timestamp ms
++}
++
++@Serializable
++data class ServiceAnnouncement(
++    override val agentId: String,
++    override val timestamp: Long,
++    val serviceName: String,
++    val serviceEndpointTopic: String // The topic this service listens on for requests
++) : AgentMessage()
++
++@Serializable
++data class Heartbeat(
++    override val agentId: String,
++    override val timestamp: Long,
++    val status: String = "ALIVE"
++) : AgentMessage()
++
++@Serializable
++data class GenericRequest(
++    override val agentId: String, // ID of the requester
++    override val timestamp: Long,
++    val requestId: String, // Unique ID for this request
++    val targetService: String, // Name of the target service
++    val responseTopic: String, // Topic to send the response to
++    val payload: String // Could be JSON string for more complex requests
++) : AgentMessage()
++
++@Serializable
++data class GenericResponse(
++    override val agentId: String, // ID of the responder
++    override val timestamp: Long,
++    val requestId: String, // Correlates to the GenericRequest
++    val payload: String, // Could be JSON string
++    val error: String? = null
++) : AgentMessage()
+diff --git a/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/agents/EchoRequesterAgent.kt b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/agents/EchoRequesterAgent.kt
+new file mode 100644
+index 00000000..e29fb9e1
+--- /dev/null
++++ b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/agents/EchoRequesterAgent.kt
+@@ -0,0 +1,143 @@
++package borg.trikeshed.orchestration.agents
++
++import borg.ipfs.IpfsPubSubService
++import borg.trikeshed.orchestration.AgentMessage // Not directly used, but good for context
++import borg.trikeshed.orchestration.AgentTopics
++import borg.trikeshed.orchestration.BaseOrchestrationAgent
++import borg.trikeshed.orchestration.GenericRequest
++import borg.trikeshed.orchestration.GenericResponse
++import borg.trikeshed.orchestration.ServiceAnnouncement
++import kotlinx.coroutines.Job
++import kotlinx.coroutines.delay // Not used directly, but often useful in agents
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.collectLatest
++import kotlinx.coroutines.flow.filterNotNull // To wait for first non-null response
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.isActive
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.withTimeoutOrNull
++import kotlinx.serialization.decodeFromString
++import kotlin.coroutines.CoroutineContext
++import kotlin.random.Random
++import kotlin.system.getTimeMillis
++
++class EchoRequesterAgent(
++    parentCoroutineContext: CoroutineContext,
++    ipfsPubSubService: IpfsPubSubService,
++    agentId: String? = null
++) : BaseOrchestrationAgent(parentCoroutineContext, ipfsPubSubService, agentId ?: "agent-requester-${Random.nextInt(1000)}") {
++
++    private val discoveredServices = MutableStateFlow<Map<String, ServiceAnnouncement>>(emptyMap())
++    private var discoveryListenerJob: Job? = null
++
++    override fun start() {
++        println("EchoRequesterAgent $agentId starting.")
++        discoveryListenerJob = launch {
++            try {
++                ipfsPubSubService.subscribe(AgentTopics.AGENT_DISCOVERY).collectLatest { messageJson ->
++                    try {
++                        val announcement = json.decodeFromString<ServiceAnnouncement>(messageJson)
++                        // Add or update the service in the map
++                        discoveredServices.value = discoveredServices.value + (announcement.serviceName to announcement)
++                        println("Agent $agentId discovered/updated service: ${announcement.serviceName} from ${announcement.agentId} on topic ${announcement.serviceEndpointTopic}")
++                    } catch (e: Exception) {
++                        println("Agent $agentId failed to decode ServiceAnnouncement: $messageJson: ${e.message}")
++                    }
++                }
++            } catch (e: Exception) {
++                 if (isActive) { // Check isActive before logging error from subscription
++                    println("Agent $agentId error subscribing to ${AgentTopics.AGENT_DISCOVERY}: ${e.message}")
++                }
++            }
++        }
++        println("EchoRequesterAgent $agentId discovery listener started.")
++    }
++
++    suspend fun findFirstMatchingService(serviceName: String, timeoutMillis: Long = 5000): ServiceAnnouncement? {
++        return withTimeoutOrNull(timeoutMillis) {
++            discoveredServices.first { serviceMap -> serviceMap.containsKey(serviceName) }[serviceName]
++        }
++    }
++
++    suspend fun sendEchoRequest(targetServiceName: String, message: String, timeoutMillis: Long = 10000): String? {
++        println("Agent $agentId attempting to find service: $targetServiceName")
++        val serviceInfo = findFirstMatchingService(targetServiceName, timeoutMillis / 3)
++        if (serviceInfo == null) {
++            println("Agent $agentId: Service $targetServiceName not found after timeout.")
++            return null
++        }
++        println("Agent $agentId found service: ${serviceInfo.serviceName} on topic ${serviceInfo.serviceEndpointTopic}")
++
++        val requestId = "req-${agentId}-${Random.nextInt(100000)}"
++        // Unique response topic for this request
++        val responseTopic = AgentTopics.getServiceResponseTopic(targetServiceName, requestId)
++
++        val request = GenericRequest(
++            agentId = agentId,
++            timestamp = getTimeMillis(),
++            requestId = requestId,
++            targetService = targetServiceName,
++            responseTopic = responseTopic,
++            payload = message
++        )
++
++        var responseListenerJob: Job? = null
++        val responseFlow = MutableStateFlow<GenericResponse?>(null)
++
++        try {
++            responseListenerJob = launch {
++                 try {
++                    println("Agent $agentId subscribing to response topic: $responseTopic")
++                    ipfsPubSubService.subscribe(responseTopic).collectLatest { messageJson ->
++                        try {
++                            val genericResponse = json.decodeFromString<GenericResponse>(messageJson)
++                            if (genericResponse.requestId == requestId) {
++                                println("Agent $agentId received response for $requestId on $responseTopic: ${genericResponse.payload}")
++                                responseFlow.value = genericResponse
++                                // Once response is received, can cancel this specific listener
++                                // This cancellation will happen in the finally block of the outer try
++                            }
++                        } catch (e: Exception) {
++                            println("Agent $agentId failed to decode GenericResponse on $responseTopic: $messageJson: ${e.message}")
++                        }
++                    }
++                } catch (e: Exception) {
++                    if (isActive) {
++                         println("Agent $agentId error subscribing to response topic $responseTopic: ${e.message}")
++                    }
++                } finally {
++                    println("Agent $agentId: Listener for $responseTopic is ending.")
++                }
++            }
++
++            publishMessage(serviceInfo.serviceEndpointTopic, request)
++            println("Agent $agentId sent request $requestId to ${serviceInfo.serviceEndpointTopic} for service ${serviceInfo.serviceName}")
++
++            // Wait for the response
++            val receivedResponse = withTimeoutOrNull(timeoutMillis * 2 / 3) {
++                responseFlow.filterNotNull().first() // Wait for the first non-null response
++            }
++
++            if (receivedResponse == null) {
++                println("Agent $agentId: Timed out waiting for response for request $requestId")
++                return null
++            }
++
++            return if (receivedResponse.error == null) {
++                receivedResponse.payload
++            } else {
++                println("Agent $agentId received error in response for $requestId: ${receivedResponse.error}")
++                "Error: ${receivedResponse.error}"
++            }
++        } finally {
++            println("Agent $agentId: Cancelling response listener job for topic $responseTopic.")
++            responseListenerJob?.cancel()
++        }
++    }
++
++    override fun stop() {
++        discoveryListenerJob?.cancel()
++        super.stop()
++        println("EchoRequesterAgent $agentId fully stopped.")
++    }
++}
+diff --git a/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/agents/EchoServiceAgent.kt b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/agents/EchoServiceAgent.kt
+new file mode 100644
+index 00000000..16089268
+--- /dev/null
++++ b/Review/src/commonMain/kotlin/borg/trikeshed/orchestration/agents/EchoServiceAgent.kt
+@@ -0,0 +1,86 @@
++package borg.trikeshed.orchestration.agents
++
++import borg.ipfs.IpfsPubSubService
++import borg.trikeshed.orchestration.AgentMessage
++import borg.trikeshed.orchestration.AgentTopics
++import borg.trikeshed.orchestration.BaseOrchestrationAgent
++import borg.trikeshed.orchestration.GenericRequest
++import borg.trikeshed.orchestration.GenericResponse
++import borg.trikeshed.orchestration.ServiceAnnouncement
++import kotlinx.coroutines.Job
++import kotlinx.coroutines.delay
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.collectLatest
++import kotlinx.coroutines.isActive
++import kotlinx.coroutines.launch
++import kotlinx.serialization.decodeFromString
++import kotlin.coroutines.CoroutineContext
++import kotlin.system.getTimeMillis
++
++class EchoServiceAgent(
++    parentCoroutineContext: CoroutineContext,
++    ipfsPubSubService: IpfsPubSubService,
++    agentId: String? = null,
++    val serviceName: String = "echo_service"
++) : BaseOrchestrationAgent(parentCoroutineContext, ipfsPubSubService, agentId ?: "agent-echo-\${Random.nextInt(1000)}") {
++
++    private val serviceRequestTopic = AgentTopics.getServiceRequestTopic(serviceName)
++    private var discoveryJob: Job? = null
++    private var listenerJob: Job? = null
++
++    override fun start() {
++        println("EchoServiceAgent $agentId starting. Service Name: $serviceName, Request Topic: $serviceRequestTopic")
++
++        // Announce service periodically
++        discoveryJob = launch {
++            while (isActive) {
++                val announcement = ServiceAnnouncement(
++                    agentId = agentId,
++                    timestamp = getTimeMillis(),
++                    serviceName = serviceName,
++                    serviceEndpointTopic = serviceRequestTopic
++                )
++                publishMessage(AgentTopics.AGENT_DISCOVERY, announcement)
++                delay(30000) // Announce every 30 seconds
++            }
++        }
++
++        // Listen for requests
++        listenerJob = launch {
++            try {
++                ipfsPubSubService.subscribe(serviceRequestTopic).collectLatest { messageJson ->
++                    println("Agent $agentId received on $serviceRequestTopic: $messageJson")
++                    try {
++                        val request = json.decodeFromString<GenericRequest>(messageJson)
++                        if (request.targetService == serviceName) {
++                            val responsePayload = "Echo from $agentId: ${request.payload}"
++                            val response = GenericResponse(
++                                agentId = agentId,
++                                timestamp = getTimeMillis(),
++                                requestId = request.requestId,
++                                payload = responsePayload
++                            )
++                            // Publish response to the topic specified in the request
++                            publishMessage(request.responseTopic, response)
++                        }
++                    } catch (e: Exception) {
++                        println("Agent $agentId failed to decode/process request $messageJson: ${e.message}")
++                    }
++                }
++            } catch (e: Exception) {
++                if (isActive) { // Only log if the agent is still supposed to be active
++                    println("Agent $agentId error subscribing to $serviceRequestTopic: ${e.message}")
++                    // Optionally, attempt to resubscribe or handle error
++                }
++            }
++        }
++        println("EchoServiceAgent $agentId started and listening on $serviceRequestTopic.")
++    }
++
++    override fun stop() {
++        discoveryJob?.cancel()
++        listenerJob?.cancel()
++        super.stop() // Call base class stop to cancel the main scope
++        println("EchoServiceAgent $agentId fully stopped.")
++    }
++}

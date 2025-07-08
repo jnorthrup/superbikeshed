@@ -1,0 +1,62 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt b/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt
+index f18dcfdf..17464e49 100644
+--- a/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt
++++ b/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt
+@@ -10,7 +10,7 @@ import moneyfan.strategy.SimpleMovingAverageStrategy
+  * ConsolePlayer class to display rolling A, B, C players in separate child panes ticking on the same candles.
+  */
+ class ConsolePlayer(
+-    private val klines: Series<Kline>,
++    private val klines: Indexed<Kline>,
+     private val strategyA: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(10, 20),
+     private val strategyB: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(5, 15),
+     private val strategyC: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(15, 30)
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt b/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt
+deleted file mode 100644
+index 17464e49..00000000
+--- a/moneyfan/src/main/kotlin/moneyfan/ui/ConsolePlayer.kt
++++ /dev/null
+@@ -1,38 +0,0 @@
+-package moneyfan.ui
+-
+-import borg.trikeshed.cursor.Cursor
+-import borg.trikeshed.lib.Series
+-import com.ta4k.core.model.Kline
+-import moneyfan.model.TradeSignal
+-import moneyfan.strategy.SimpleMovingAverageStrategy
+-
+-/**
+- * ConsolePlayer class to display rolling A, B, C players in separate child panes ticking on the same candles.
+- */
+-class ConsolePlayer(
+-    private val klines: Indexed<Kline>,
+-    private val strategyA: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(10, 20),
+-    private val strategyB: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(5, 15),
+-    private val strategyC: SimpleMovingAverageStrategy = SimpleMovingAverageStrategy(15, 30)
+-) {
+-    fun play() {
+-        val signalsA = strategyA.generateSignals(klines)
+-        val signalsB = strategyB.generateSignals(klines)
+-        val signalsC = strategyC.generateSignals(klines)
+-
+-        println("Player A Signals:")
+-        for (i in 0 until signalsA.size) {
+-            println("Candle $i: ${signalsA.get(i)}")
+-        }
+-
+-        println("\nPlayer B Signals:")
+-        for (i in 0 until signalsB.size) {
+-            println("Candle $i: ${signalsB.get(i)}")
+-        }
+-
+-        println("\nPlayer C Signals:")
+-        for (i in 0 until signalsC.size) {
+-            println("Candle $i: ${signalsC.get(i)}")
+-        }
+-    }
+-} 
+\ No newline at end of file

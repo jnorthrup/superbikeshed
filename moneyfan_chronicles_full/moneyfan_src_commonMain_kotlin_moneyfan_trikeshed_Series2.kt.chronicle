@@ -1,0 +1,40 @@
+
+--- Commit: 77ebb4fe26bcfd724de7b947e3833af4f007920f | 2025-06-18 17:30:11 -0400 ---
+diff --git a/moneyfan/src/commonMain/kotlin/moneyfan/trikeshed/Series2.kt b/moneyfan/src/commonMain/kotlin/moneyfan/trikeshed/Series2.kt
+deleted file mode 100644
+index 899b57aa..00000000
+--- a/moneyfan/src/commonMain/kotlin/moneyfan/trikeshed/Series2.kt
++++ /dev/null
+@@ -1,32 +0,0 @@
+-package moneyfan.trikeshed
+-
+-/**
+- * A typealias for a Series of Join pairs.
+- * This represents a two-column series, where each row is a pair of (A, B).
+- */
+-typealias Series2<A, B> = Series<Join<A, B>>
+-
+-/**
+- * Extension property to get a Series of the left elements from a Series2.
+- *
+- * Example:
+- * val seriesOfPairs: Series2<String, Int> = ...
+- * val leftColumn: Series<String> = seriesOfPairs.left
+- */
+-val <T, I> Series2<T, I>.left: Series<T>
+-    get() = this α { join -> join.a }
+-
+-/**
+- * Extension property to get a Series of the right elements from a Series2.
+- *
+- * Example:
+- * val seriesOfPairs: Series2<String, Int> = ...
+- * val rightColumn: Series<Int> = seriesOfPairs.right
+- */
+-val <T, I> Series2<I, T>.right: Series<T>
+-    get() = this α { join -> join.b }
+-
+-// Note:
+-// Additional operations for Series2 (like zipping, joining with other series, etc.)
+-// would be defined here or in other relevant files if a more complete TrikeShed
+-// replication were needed. For this task, only `left` and `right` are specified.

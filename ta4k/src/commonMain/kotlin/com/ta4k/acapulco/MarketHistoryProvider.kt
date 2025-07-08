@@ -1,0 +1,7 @@
+package borg.trikeshed.acapulco
+
+import borg.trikeshed.common.Indexed  // Assuming this import is correct based on project structure
+
+interface MarketHistoryProvider {
+    fun getHistory(assetKey: String, ticks: Int): Indexed<TickData>
+}

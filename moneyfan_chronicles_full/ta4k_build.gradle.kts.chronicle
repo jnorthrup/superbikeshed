@@ -1,0 +1,986 @@
+
+--- Commit: ff7859c065801459e57609c13f19fd55062e0f11 | 2025-06-07 23:26:23 +0000 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index bb3de250..fe7d17fe 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -45,6 +45,7 @@ kotlin {
+             // kotlin.srcDirs are now conventional: src/commonMain/kotlin
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
++                implementation(project(":Review:trikeshed-core"))
+             }
+         }
+         val commonTest by getting {
+
+--- Commit: 0c1eca7ee22acfcce3e5ea7dfe858fa54d6dc3d6 | 2025-06-08 10:19:33 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index fe7d17fe..0fe3ce2c 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -6,14 +6,6 @@ plugins {
+ group = "org.ta4k"
+ version = "1.0-SNAPSHOT"
+ 
+-repositories {
+-    mavenLocal()
+-    maven("https://oss.sonatype.org/content/repositories/snapshots/")
+-    maven("https://mvnrepository.com/artifact/org.jetbrains.kotlinx/")
+-    mavenCentral()
+-    gradlePluginPortal()
+-    google()
+-}
+ 
+ kotlin {
+     jvm {
+@@ -24,13 +16,16 @@ kotlin {
+             useJUnitPlatform()
+         }
+     }
+-//    js(BOTH) {
+-//        browser {
+-//            commonWebpackConfig {
+-//                cssSupport.enabled = true
+-//            }
+-//        }
+-//    }
++    js(IR) {
++        browser {
++            commonWebpackConfig {
++                cssSupport {
++                    enabled.set(true)
++                }
++            }
++        }
++        binaries.executable()
++    }
+     val hostOs = System.getProperty("os.name")
+     val isMingwX64 = hostOs.startsWith("Windows")
+     when {
+@@ -69,6 +64,16 @@ kotlin {
+                 runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+             }
+         }
++        val jsMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-js"))
++            }
++        }
++        val jsTest by getting {
++            dependencies {
++                implementation(kotlin("test-js"))
++            }
++        }
+         val nativeMain by getting {
+              // kotlin.srcDirs are now conventional: src/nativeMain/kotlin
+         }
+
+--- Commit: 330ad5ee13642cfbd925b21d8c21657d249163af | 2025-06-09 23:45:28 +0000 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 0fe3ce2c..20242662 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -27,12 +27,25 @@ kotlin {
+         binaries.executable()
+     }
+     val hostOs = System.getProperty("os.name")
++    val hostArch = System.getProperty("os.arch")
+     val isMingwX64 = hostOs.startsWith("Windows")
+     when {
+-        hostOs == "Mac OS X" -> macosX64("native")
+-        hostOs == "Linux" -> linuxX64("native")
++        hostOs == "Mac OS X" -> {
++            if (hostArch == "aarch64") {
++                macosArm64("native")
++            } else {
++                macosX64("native")
++            }
++        }
++        hostOs == "Linux" -> {
++            if (hostArch == "aarch64") {
++                linuxArm64("native")
++            } else {
++                linuxX64("native")
++            }
++        }
+         isMingwX64 -> mingwX64("native")
+-        else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
++        else -> throw GradleException("Host OS is not supported in Kotlin/Native ($hostOs, $hostArch)")
+     }
+ 
+     sourceSets {
+
+--- Commit: 938de07c06c574c7644a8d9bf4617678567d637e | 2025-06-11 23:47:10 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 20242662..472da8b5 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -53,7 +53,6 @@ kotlin {
+             // kotlin.srcDirs are now conventional: src/commonMain/kotlin
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
+-                implementation(project(":Review:trikeshed-core"))
+             }
+         }
+         val commonTest by getting {
+@@ -67,6 +66,7 @@ kotlin {
+             dependencies {
+                 implementation(kotlin("stdlib-jdk8"))
+                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
++                implementation(project(":Trikeshed"))
+             }
+         }
+         val jvmTest by getting {
+
+--- Commit: 26291b1ea8009c868ce544d35f33c9e52ecfdd4d | 2025-06-12 18:00:05 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 472da8b5..c6374f25 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,5 +1,5 @@
+ plugins {
+-    kotlin("multiplatform") version "2.2.0-RC2"
++    kotlin("multiplatform")
+     `maven-publish`
+ }
+ 
+@@ -10,7 +10,7 @@ version = "1.0-SNAPSHOT"
+ kotlin {
+     jvm {
+         compilerOptions {
+-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_18)
++            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+         }
+         testRuns["test"].executionTask.configure {
+             useJUnitPlatform()
+@@ -66,7 +66,6 @@ kotlin {
+             dependencies {
+                 implementation(kotlin("stdlib-jdk8"))
+                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
+-                implementation(project(":Trikeshed"))
+             }
+         }
+         val jvmTest by getting {
+
+--- Commit: 09f41eca4a01f186b18f6aafd66a663f79a33ab6 | 2025-06-13 20:27:37 +0000 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index c6374f25..16296382 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,5 +1,5 @@
+ plugins {
+-    kotlin("multiplatform")
++    kotlin("multiplatform") version "1.9.23"
+     `maven-publish`
+ }
+ 
+@@ -16,15 +16,17 @@ kotlin {
+             useJUnitPlatform()
+         }
+     }
+-    js(IR) {
+-        browser {
+-            commonWebpackConfig {
+-                cssSupport {
+-                    enabled.set(true)
+-                }
+-            }
+-        }
+-        binaries.executable()
++    wasmJs {
++        browser()
++        // If commonWebpackConfig is needed, it can be configured here, for example:
++        // browser {
++        //     commonWebpackConfig {
++        //         cssSupport {
++        //             enabled.set(true)
++        //         }
++        //     }
++        // }
++        binaries.executable() // Ensure this is valid for wasmJs, or adjust if needed
+     }
+     val hostOs = System.getProperty("os.name")
+     val hostArch = System.getProperty("os.arch")
+@@ -53,44 +55,53 @@ kotlin {
+             // kotlin.srcDirs are now conventional: src/commonMain/kotlin
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
++                implementation("com.ionspin.kotlin:bignum:0.3.9")
+             }
+         }
+         val commonTest by getting {
+             // kotlin.srcDirs are now conventional: src/commonTest/kotlin
+             dependencies {
+-                implementation(kotlin("test"))
++                implementation(kotlin("test")) // This should cover common test needs
+             }
+         }
+         val jvmMain by getting {
+-            kotlin.srcDirs("src/jvmMain/kotlin") // JVM-specific code
++            // kotlin.srcDirs("src/jvmMain/kotlin") // Conventional, no need to specify if following convention
+             dependencies {
+-                implementation(kotlin("stdlib-jdk8"))
++                implementation(kotlin("stdlib-jdk8")) // For JVM specific APIs if needed beyond common
+                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
+             }
+         }
+         val jvmTest by getting {
+-            kotlin.srcDirs("src/jvmTest/kotlin") // JVM-specific tests
++            // kotlin.srcDirs("src/jvmTest/kotlin") // Conventional
+             dependencies {
+-                implementation("org.jetbrains.kotlin:kotlin-test-junit5")
+-                implementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
+-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
++                implementation(kotlin("test-junit5")) // JUnit 5 for JVM tests
++                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Align with moneyfan
++                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Align with moneyfan
+             }
+         }
+-        val jsMain by getting {
++        // jsMain and jsTest are removed in favor of wasmJsMain and wasmJsTest
++        val wasmJsMain by getting {
+             dependencies {
+-                implementation(kotlin("stdlib-js"))
++                // stdlib-js is usually added by default with wasmJs target
+             }
+         }
+-        val jsTest by getting {
++        val wasmJsTest by getting {
+             dependencies {
+-                implementation(kotlin("test-js"))
++                implementation(kotlin("test")) // Common test for wasmJs
+             }
+         }
+         val nativeMain by getting {
+              // kotlin.srcDirs are now conventional: src/nativeMain/kotlin
++            dependencies {
++                // Native specific dependencies if any beyond common
++            }
+         }
+         val nativeTest by getting {
+              // kotlin.srcDirs are now conventional: src/nativeTest/kotlin
++            dependencies {
++                // Native specific test dependencies if any beyond commonTest
++            }
+         }
+     }
+ }
+
+--- Commit: 8fd3866278a5e0b0e1395eac78fa29cc8a593536 | 2025-06-15 13:00:35 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 16296382..60c8cfd3 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,5 +1,5 @@
+ plugins {
+-    kotlin("multiplatform") version "1.9.23"
++    kotlin("multiplatform")
+     `maven-publish`
+ }
+ 
+
+--- Commit: 5ef17a5a9b1650dbe9531a179fb0f5cac5b1de9e | 2025-06-15 15:43:27 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 60c8cfd3..f2606956 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -34,19 +34,19 @@ kotlin {
+     when {
+         hostOs == "Mac OS X" -> {
+             if (hostArch == "aarch64") {
+-                macosArm64("native")
++                macosArm64()
+             } else {
+-                macosX64("native")
++                macosX64()
+             }
+         }
+         hostOs == "Linux" -> {
+             if (hostArch == "aarch64") {
+-                linuxArm64("native")
++                linuxArm64()
+             } else {
+-                linuxX64("native")
++                linuxX64()
+             }
+         }
+-        isMingwX64 -> mingwX64("native")
++        isMingwX64 -> mingwX64()
+         else -> throw GradleException("Host OS is not supported in Kotlin/Native ($hostOs, $hostArch)")
+     }
+ 
+@@ -91,17 +91,5 @@ kotlin {
+                 implementation(kotlin("test")) // Common test for wasmJs
+             }
+         }
+-        val nativeMain by getting {
+-             // kotlin.srcDirs are now conventional: src/nativeMain/kotlin
+-            dependencies {
+-                // Native specific dependencies if any beyond common
+-            }
+-        }
+-        val nativeTest by getting {
+-             // kotlin.srcDirs are now conventional: src/nativeTest/kotlin
+-            dependencies {
+-                // Native specific test dependencies if any beyond commonTest
+-            }
+-        }
+     }
+ }
+
+--- Commit: 6e19383da6efd183db5a94bcc89884a0f80a5ed3 | 2025-06-15 17:44:39 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index f2606956..4cbf404b 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,6 +1,8 @@
+ plugins {
+-    kotlin("multiplatform")
++    kotlin("multiplatform") version "2.1.21"
+     `maven-publish`
++    id("com.github.ben-manes.versions")
++
+ }
+ 
+ group = "org.ta4k"
+
+--- Commit: ee53ac68bf72789c62443c0367beb8fc101f4c8e | 2025-06-16 05:09:04 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 4cbf404b..503888f3 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -59,6 +59,7 @@ kotlin {
+                 implementation(kotlin("stdlib-common"))
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                 implementation("com.ionspin.kotlin:bignum:0.3.9")
++                implementation(project(":Trikeshed"))
+             }
+         }
+         val commonTest by getting {
+
+--- Commit: 96a7abf6ccb370bacf9b2f484f529bff0b0716df | 2025-06-16 22:17:10 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 503888f3..17be7939 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,8 +1,9 @@
++@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
++
+ plugins {
+     kotlin("multiplatform") version "2.1.21"
+     `maven-publish`
+     id("com.github.ben-manes.versions")
+-
+ }
+ 
+ group = "org.ta4k"
+@@ -60,6 +61,7 @@ kotlin {
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                 implementation("com.ionspin.kotlin:bignum:0.3.9")
+                 implementation(project(":Trikeshed"))
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+             }
+         }
+         val commonTest by getting {
+@@ -73,6 +75,9 @@ kotlin {
+             dependencies {
+                 implementation(kotlin("stdlib-jdk8")) // For JVM specific APIs if needed beyond common
+                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
++                implementation("com.binance.api:binance-api-client:1.0.1")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+             }
+         }
+         val jvmTest by getting {
+@@ -81,12 +86,15 @@ kotlin {
+                 implementation(kotlin("test-junit5")) // JUnit 5 for JVM tests
+                 implementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Align with moneyfan
+                 runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Align with moneyfan
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+             }
+         }
+         // jsMain and jsTest are removed in favor of wasmJsMain and wasmJsTest
+         val wasmJsMain by getting {
+             dependencies {
+                 // stdlib-js is usually added by default with wasmJs target
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+             }
+         }
+         val wasmJsTest by getting {
+
+--- Commit: 5e390b57f3ee36317b84112f2310b91f90025b66 | 2025-06-17 19:08:21 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 17be7939..0a97098c 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,7 +1,7 @@
+ @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+ 
+ plugins {
+-    kotlin("multiplatform") version "2.1.21"
++    kotlin("multiplatform")
+     `maven-publish`
+     id("com.github.ben-manes.versions")
+ }
+@@ -12,13 +12,12 @@ version = "1.0-SNAPSHOT"
+ 
+ kotlin {
+     jvm {
+-        compilerOptions {
+-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+-        }
++        jvmToolchain(21)
+         testRuns["test"].executionTask.configure {
+             useJUnitPlatform()
+         }
+     }
++    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+     wasmJs {
+         browser()
+         // If commonWebpackConfig is needed, it can be configured here, for example:
+
+--- Commit: 6af3c6c6d2f4ce76e6378c12b328aa48007717b4 | 2025-06-17 23:56:09 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 0a97098c..55e69c91 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -9,7 +9,6 @@ plugins {
+ group = "org.ta4k"
+ version = "1.0-SNAPSHOT"
+ 
+-
+ kotlin {
+     jvm {
+         jvmToolchain(21)
+@@ -17,19 +16,14 @@ kotlin {
+             useJUnitPlatform()
+         }
+     }
++    
+     @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+     wasmJs {
+         browser()
+-        // If commonWebpackConfig is needed, it can be configured here, for example:
+-        // browser {
+-        //     commonWebpackConfig {
+-        //         cssSupport {
+-        //             enabled.set(true)
+-        //         }
+-        //     }
+-        // }
+-        binaries.executable() // Ensure this is valid for wasmJs, or adjust if needed
++        nodejs()
++        binaries.executable()
+     }
++    
+     val hostOs = System.getProperty("os.name")
+     val hostArch = System.getProperty("os.arch")
+     val isMingwX64 = hostOs.startsWith("Windows")
+@@ -54,51 +48,38 @@ kotlin {
+ 
+     sourceSets {
+         val commonMain by getting {
+-            // kotlin.srcDirs are now conventional: src/commonMain/kotlin
+             dependencies {
+                 implementation(kotlin("stdlib-common"))
+-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+                 implementation("com.ionspin.kotlin:bignum:0.3.9")
+                 implementation(project(":Trikeshed"))
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+             }
+         }
++        
+         val commonTest by getting {
+-            // kotlin.srcDirs are now conventional: src/commonTest/kotlin
+             dependencies {
+-                implementation(kotlin("test")) // This should cover common test needs
++                implementation(kotlin("test"))
+             }
+         }
++        
+         val jvmMain by getting {
+-            // kotlin.srcDirs("src/jvmMain/kotlin") // Conventional, no need to specify if following convention
+             dependencies {
+-                implementation(kotlin("stdlib-jdk8")) // For JVM specific APIs if needed beyond common
++                implementation(kotlin("stdlib-jdk8"))
+                 implementation("com.github.haifengl:smile-kotlin:4.3.0")
+                 implementation("com.binance.api:binance-api-client:1.0.1")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
+             }
+         }
++        
+         val jvmTest by getting {
+-            // kotlin.srcDirs("src/jvmTest/kotlin") // Conventional
+-            dependencies {
+-                implementation(kotlin("test-junit5")) // JUnit 5 for JVM tests
+-                implementation("org.junit.jupiter:junit-jupiter-api:5.9.2") // Align with moneyfan
+-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2") // Align with moneyfan
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+-            }
+-        }
+-        // jsMain and jsTest are removed in favor of wasmJsMain and wasmJsTest
+-        val wasmJsMain by getting {
+-            dependencies {
+-                // stdlib-js is usually added by default with wasmJs target
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+-            }
+-        }
+-        val wasmJsTest by getting {
+             dependencies {
+-                implementation(kotlin("test")) // Common test for wasmJs
++                implementation(kotlin("test-junit5"))
++                implementation("org.junit.jupiter:junit-jupiter-api:${libs.versions.junit.get()}")
++                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${libs.versions.junit.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
+             }
+         }
+     }
+
+--- Commit: 26eaafb6352381a649983edb3305c87819093910 | 2025-06-18 11:41:06 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 55e69c91..c6d9743a 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,23 +1,23 @@
+-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+-
+ plugins {
+     kotlin("multiplatform")
+     `maven-publish`
+     id("com.github.ben-manes.versions")
+ }
+ 
++@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
++
+ group = "org.ta4k"
+ version = "1.0-SNAPSHOT"
+ 
+ kotlin {
++    jvmToolchain(21)
++    
+     jvm {
+-        jvmToolchain(21)
+         testRuns["test"].executionTask.configure {
+             useJUnitPlatform()
+         }
+     }
+     
+-    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl::class)
+     wasmJs {
+         browser()
+         nodejs()
+
+--- Commit: ccf166a7139b39493c05cf22b79ab7ef21f2cb89 | 2025-06-18 15:35:40 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index c6d9743a..2c5c4324 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -18,6 +18,12 @@ kotlin {
+         }
+     }
+     
++    js(IR) {
++        browser()
++        nodejs()
++        binaries.executable()
++    }
++    
+     wasmJs {
+         browser()
+         nodejs()
+@@ -73,6 +79,15 @@ kotlin {
+             }
+         }
+         
++        val jsMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-js"))
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
++                implementation(project(":Trikeshed"))
++            }
++        }
++        
+         val jvmTest by getting {
+             dependencies {
+                 implementation(kotlin("test-junit5"))
+
+--- Commit: a9bcc74bb8fc7cfca4b9b07a8d436f14a8376f23 | 2025-06-19 21:24:03 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 2c5c4324..5e725b1f 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -24,12 +24,6 @@ kotlin {
+         binaries.executable()
+     }
+     
+-    wasmJs {
+-        browser()
+-        nodejs()
+-        binaries.executable()
+-    }
+-    
+     val hostOs = System.getProperty("os.name")
+     val hostArch = System.getProperty("os.arch")
+     val isMingwX64 = hostOs.startsWith("Windows")
+
+--- Commit: 294a7e6a01c8eb92241d1c1269a3ec8f80df5534 | 2025-06-22 05:53:01 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index 5e725b1f..cdeabacd 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -1,7 +1,7 @@
+ plugins {
+-    kotlin("multiplatform")
++    alias(libs.plugins.kotlin.multiplatform)
+     `maven-publish`
+-    id("com.github.ben-manes.versions")
++    alias(libs.plugins.versions)
+ }
+ 
+ @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+@@ -18,9 +18,8 @@ kotlin {
+         }
+     }
+     
+-    js(IR) {
++    wasmJs {
+         browser()
+-        nodejs()
+         binaries.executable()
+     }
+     
+@@ -73,9 +72,8 @@ kotlin {
+             }
+         }
+         
+-        val jsMain by getting {
++        val wasmJsMain by getting {
+             dependencies {
+-                implementation(kotlin("stdlib-js"))
+                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+                 implementation(project(":Trikeshed"))
+
+--- Commit: 543e9987d82d08fb78a80c0cdd403f101f24a358 | 2025-06-22 22:10:41 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index cdeabacd..cd968803 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -48,10 +48,17 @@ kotlin {
+     sourceSets {
+         val commonMain by getting {
+             dependencies {
++                api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
++                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++
++                api("org.knowm.xchange:xchange-core:5.2.0")
++                api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
++                api("org.slf4j:slf4j-api:2.0.9")
++                
+                 implementation(kotlin("stdlib-common"))
+-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+                 implementation("com.ionspin.kotlin:bignum:0.3.9")
+                 implementation(project(":Trikeshed"))
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+             }
+         }
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+deleted file mode 100644
+index cd968803..00000000
+--- a/ta4k/build.gradle.kts
++++ /dev/null
+@@ -1,100 +0,0 @@
+-plugins {
+-    alias(libs.plugins.kotlin.multiplatform)
+-    `maven-publish`
+-    alias(libs.plugins.versions)
+-}
+-
+-@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+-
+-group = "org.ta4k"
+-version = "1.0-SNAPSHOT"
+-
+-kotlin {
+-    jvmToolchain(21)
+-    
+-    jvm {
+-        testRuns["test"].executionTask.configure {
+-            useJUnitPlatform()
+-        }
+-    }
+-    
+-    wasmJs {
+-        browser()
+-        binaries.executable()
+-    }
+-    
+-    val hostOs = System.getProperty("os.name")
+-    val hostArch = System.getProperty("os.arch")
+-    val isMingwX64 = hostOs.startsWith("Windows")
+-    when {
+-        hostOs == "Mac OS X" -> {
+-            if (hostArch == "aarch64") {
+-                macosArm64()
+-            } else {
+-                macosX64()
+-            }
+-        }
+-        hostOs == "Linux" -> {
+-            if (hostArch == "aarch64") {
+-                linuxArm64()
+-            } else {
+-                linuxX64()
+-            }
+-        }
+-        isMingwX64 -> mingwX64()
+-        else -> throw GradleException("Host OS is not supported in Kotlin/Native ($hostOs, $hostArch)")
+-    }
+-
+-    sourceSets {
+-        val commonMain by getting {
+-            dependencies {
+-                api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+-                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+-
+-                api("org.knowm.xchange:xchange-core:5.2.0")
+-                api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+-                api("org.slf4j:slf4j-api:2.0.9")
+-                
+-                implementation(kotlin("stdlib-common"))
+-                implementation("com.ionspin.kotlin:bignum:0.3.9")
+-                implementation(project(":Trikeshed"))
+-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+-            }
+-        }
+-        
+-        val commonTest by getting {
+-            dependencies {
+-                implementation(kotlin("test"))
+-            }
+-        }
+-        
+-        val jvmMain by getting {
+-            dependencies {
+-                implementation(kotlin("stdlib-jdk8"))
+-                implementation("com.github.haifengl:smile-kotlin:4.3.0")
+-                implementation("com.binance.api:binance-api-client:1.0.1")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
+-            }
+-        }
+-        
+-        val wasmJsMain by getting {
+-            dependencies {
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+-                implementation(project(":Trikeshed"))
+-            }
+-        }
+-        
+-        val jvmTest by getting {
+-            dependencies {
+-                implementation(kotlin("test-junit5"))
+-                implementation("org.junit.jupiter:junit-jupiter-api:${libs.versions.junit.get()}")
+-                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${libs.versions.junit.get()}")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
+-            }
+-        }
+-    }
+-}
+
+--- Commit: 302093197cfe2f049a7733327bd4f1850a5d2598 | 2025-06-23 19:24:24 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+new file mode 100644
+index 00000000..cd968803
+--- /dev/null
++++ b/ta4k/build.gradle.kts
+@@ -0,0 +1,100 @@
++plugins {
++    alias(libs.plugins.kotlin.multiplatform)
++    `maven-publish`
++    alias(libs.plugins.versions)
++}
++
++@OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
++
++group = "org.ta4k"
++version = "1.0-SNAPSHOT"
++
++kotlin {
++    jvmToolchain(21)
++    
++    jvm {
++        testRuns["test"].executionTask.configure {
++            useJUnitPlatform()
++        }
++    }
++    
++    wasmJs {
++        browser()
++        binaries.executable()
++    }
++    
++    val hostOs = System.getProperty("os.name")
++    val hostArch = System.getProperty("os.arch")
++    val isMingwX64 = hostOs.startsWith("Windows")
++    when {
++        hostOs == "Mac OS X" -> {
++            if (hostArch == "aarch64") {
++                macosArm64()
++            } else {
++                macosX64()
++            }
++        }
++        hostOs == "Linux" -> {
++            if (hostArch == "aarch64") {
++                linuxArm64()
++            } else {
++                linuxX64()
++            }
++        }
++        isMingwX64 -> mingwX64()
++        else -> throw GradleException("Host OS is not supported in Kotlin/Native ($hostOs, $hostArch)")
++    }
++
++    sourceSets {
++        val commonMain by getting {
++            dependencies {
++                api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
++                api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
++
++                api("org.knowm.xchange:xchange-core:5.2.0")
++                api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
++                api("org.slf4j:slf4j-api:2.0.9")
++                
++                implementation(kotlin("stdlib-common"))
++                implementation("com.ionspin.kotlin:bignum:0.3.9")
++                implementation(project(":Trikeshed"))
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++            }
++        }
++        
++        val commonTest by getting {
++            dependencies {
++                implementation(kotlin("test"))
++            }
++        }
++        
++        val jvmMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-jdk8"))
++                implementation("com.github.haifengl:smile-kotlin:4.3.0")
++                implementation("com.binance.api:binance-api-client:1.0.1")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
++            }
++        }
++        
++        val wasmJsMain by getting {
++            dependencies {
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
++                implementation(project(":Trikeshed"))
++            }
++        }
++        
++        val jvmTest by getting {
++            dependencies {
++                implementation(kotlin("test-junit5"))
++                implementation("org.junit.jupiter:junit-jupiter-api:${libs.versions.junit.get()}")
++                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${libs.versions.junit.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
++                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
++            }
++        }
++    }
++}
+
+--- Commit: b6ec620ba8aa76ad88b483023eeb479dc79d8b93 | 2025-06-24 16:17:41 -0400 ---
+diff --git a/ta4k/build.gradle.kts b/ta4k/build.gradle.kts
+index cd968803..a04c4280 100644
+--- a/ta4k/build.gradle.kts
++++ b/ta4k/build.gradle.kts
+@@ -11,18 +11,18 @@ version = "1.0-SNAPSHOT"
+ 
+ kotlin {
+     jvmToolchain(21)
+-    
++
+     jvm {
+         testRuns["test"].executionTask.configure {
+             useJUnitPlatform()
+         }
+     }
+-    
++
+     wasmJs {
+         browser()
+         binaries.executable()
+     }
+-    
++
+     val hostOs = System.getProperty("os.name")
+     val hostArch = System.getProperty("os.arch")
+     val isMingwX64 = hostOs.startsWith("Windows")
+@@ -54,21 +54,21 @@ kotlin {
+                 api("org.knowm.xchange:xchange-core:5.2.0")
+                 api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                 api("org.slf4j:slf4j-api:2.0.9")
+-                
++
+                 implementation(kotlin("stdlib-common"))
+                 implementation("com.ionspin.kotlin:bignum:0.3.9")
+-                implementation(project(":Trikeshed"))
++                // Removed Trikeshed dependency
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+             }
+         }
+-        
++
+         val commonTest by getting {
+             dependencies {
+                 implementation(kotlin("test"))
+             }
+         }
+-        
++
+         val jvmMain by getting {
+             dependencies {
+                 implementation(kotlin("stdlib-jdk8"))
+@@ -78,15 +78,15 @@ kotlin {
+                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:${libs.versions.coroutines.get()}")
+             }
+         }
+-        
++
+         val wasmJsMain by getting {
+             dependencies {
+                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${libs.versions.coroutines.get()}")
+                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.datetime.get()}")
+-                implementation(project(":Trikeshed"))
++                // Removed Trikeshed dependency
+             }
+         }
+-        
++
+         val jvmTest by getting {
+             dependencies {
+                 implementation(kotlin("test-junit5"))

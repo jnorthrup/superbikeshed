@@ -1,0 +1,24 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/Ema.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/Ema.kt
+deleted file mode 100644
+index 0c4d060b..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/util/Ema.kt
++++ /dev/null
+@@ -1,16 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/jvmMain/kotlin/borg/trikeshed/acapulco/util/Ema.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco.util // Adjusted package
+-
+-// Stub for EMA calculation as per instructions to prioritize and stub instruments
+-// TODO: Implement full EMA logic if needed, using a suitable approach for real-time
+-
+-fun Cursor.ema(
+-    depth: Int = 12,
+-    moniker: String = "ema"
+-): Cursor {
+-    // Placeholder: Return an empty cursor or basic structure
+-    // This stub does not perform actual calculations
+-    return emptySeries() // Replace with actual implementation later
+-}

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next-Gen RTS Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        #loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        #gameCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+        
+        #stats {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .control-btn:hover {
+            background: #2b7de9;
+        }
+        
+        .control-btn:active {
+            background: #1557b0;
+        }
+        
+        #minimap {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #444;
+            border-radius: 5px;
+        }
+        
+        #unitCount {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+        
+        .error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f44336;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div>Loading Next-Gen RTS Engine...</div>
+        <div class="spinner"></div>
+        <div id="loadingProgress">0%</div>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="stats">
+        <div>FPS: <span id="fps">0</span></div>
+        <div>Units: <span id="units">0</span></div>
+        <div>Update: <span id="updateTime">0</span>ms</div>
+        <div>Render: <span id="renderTime">0</span>ms</div>
+    </div>
+    
+    <div id="unitCount">0 Units Selected</div>
+    
+    <div id="controls">
+        <button class="control-btn" onclick="rtsGame.spawnArmy(0)">Spawn Blue Army</button>
+        <button class="control-btn" onclick="rtsGame.spawnArmy(1)">Spawn Red Army</button>
+        <button class="control-btn" onclick="rtsGame.togglePause()">Pause</button>
+        <button class="control-btn" onclick="rtsGame.benchmarkMode()">Benchmark</button>
+    </div>
+    
+    <canvas id="minimap"></canvas>
+    
+    <div class="error" id="error">
+        <h3>Error</h3>
+        <p id="errorMessage"></p>
+        <button class="control-btn" onclick="location.reload()">Reload</button>
+    </div>
+    
+    <script>
+        let wasmModule = null;
+        let rtsGame = null;
+        
+        // WebGPU feature detection
+        async function checkWebGPU() {
+            if (!navigator.gpu) {
+                throw new Error('WebGPU not supported. Please use a browser with WebGPU support.');
+            }
+            
+            const adapter = await navigator.gpu.requestAdapter();
+            if (!adapter) {
+                throw new Error('No GPU adapter found');
+            }
+            
+            const device = await adapter.requestDevice();
+            return { adapter, device };
+        }
+        
+        // Progress tracking
+        function updateProgress(percent, message) {
+            document.getElementById('loadingProgress').textContent = `${percent}% - ${message}`;
+        }
+        
+        // Load Kotlin/WASM
+        async function loadWasm() {
+            try {
+                updateProgress(10, 'Loading WASM module');
+                
+                // Load the Kotlin/JS generated file
+                const script = document.createElement('script');
+                script.src = 'rtsgame.js';
+                
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.body.appendChild(script);
+                });
+                
+                updateProgress(50, 'WASM module loaded');
+                
+                // The Kotlin main() will handle the rest
+                
+            } catch (error) {
+                console.error('Loading error:', error);
+                showError(error.message);
+            }
+        }
+        
+        // Game loop
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fpsTime = 0;
+        
+        function gameLoop(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            // Update FPS counter
+            frameCount++;
+            fpsTime += deltaTime;
+            if (fpsTime >= 1.0) {
+                document.getElementById('fps').textContent = Math.round(frameCount / fpsTime);
+                frameCount = 0;
+                fpsTime = 0;
+            }
+            
+            // Update game
+            const updateStart = performance.now();
+            rtsGame.update(deltaTime);
+            const updateTime = performance.now() - updateStart;
+            
+            // Render
+            const renderStart = performance.now();
+            rtsGame.render();
+            const renderTime = performance.now() - renderStart;
+            
+            // Update stats
+            document.getElementById('units').textContent = rtsGame.getUnitCount();
+            document.getElementById('updateTime').textContent = updateTime.toFixed(1);
+            document.getElementById('renderTime').textContent = renderTime.toFixed(1);
+            
+            // Update minimap
+            updateMinimap();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Input handling
+        function setupInputHandlers(canvas) {
+            let mouseDown = false;
+            let selectionStart = null;
+            
+            canvas.addEventListener('mousedown', (e) => {
+                mouseDown = true;
+                selectionStart = { x: e.clientX, y: e.clientY };
+                rtsGame.onMouseDown(e.clientX, e.clientY, e.button);
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                rtsGame.onMouseMove(e.clientX, e.clientY);
+                
+                if (mouseDown && selectionStart) {
+                    // Draw selection box
+                    rtsGame.updateSelection(
+                        selectionStart.x, selectionStart.y,
+                        e.clientX, e.clientY
+                    );
+                }
+            });
+            
+            canvas.addEventListener('mouseup', (e) => {
+                mouseDown = false;
+                rtsGame.onMouseUp(e.clientX, e.clientY, e.button);
+                
+                // Update selected unit count
+                const selected = rtsGame.getSelectedUnits();
+                document.getElementById('unitCount').textContent = 
+                    `${selected} Units Selected`;
+            });
+            
+            canvas.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                rtsGame.onKeyDown(e.key);
+                
+                // Hotkeys
+                switch(e.key) {
+                    case ' ':
+                        rtsGame.togglePause();
+                        break;
+                    case 'a':
+                        if (e.ctrlKey) {
+                            e.preventDefault();
+                            rtsGame.selectAll();
+                        }
+                        break;
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                        rtsGame.selectControlGroup(parseInt(e.key));
+                        break;
+                }
+            });
+            
+            // Zoom with mouse wheel
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                rtsGame.onZoom(e.deltaY);
+            });
+        }
+        
+        // Minimap
+        function updateMinimap() {
+            const minimapCanvas = document.getElementById('minimap');
+            const ctx = minimapCanvas.getContext('2d');
+            
+            // Clear
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, 200, 200);
+            
+            // Draw units
+            const units = rtsGame.getUnitPositions();
+            const scale = 200 / 10000; // World size to minimap scale
+            
+            units.forEach(unit => {
+                ctx.fillStyle = getTeamColor(unit.team);
+                ctx.fillRect(
+                    unit.x * scale - 1,
+                    unit.y * scale - 1,
+                    2, 2
+                );
+            });
+        }
+        
+        function getTeamColor(team) {
+            const colors = ['#2196F3', '#F44336', '#4CAF50', '#FFC107'];
+            return colors[team % colors.length];
+        }
+        
+        // Error handling
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+        
+        // Performance monitoring
+        if ('memory' in performance) {
+            setInterval(() => {
+                const memory = performance.memory;
+                const used = (memory.usedJSHeapSize / 1048576).toFixed(1);
+                const total = (memory.totalJSHeapSize / 1048576).toFixed(1);
+                console.log(`Memory: ${used}MB / ${total}MB`);
+            }, 5000);
+        }
+        
+        // Start initialization
+        window.addEventListener('load', loadWasm);
+    </script>
+</body>
+</html>

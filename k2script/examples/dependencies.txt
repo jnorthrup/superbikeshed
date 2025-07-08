@@ -1,0 +1,24 @@
+# Example dependencies file for k2script classpath command
+# One Maven coordinate per line
+# Lines starting with # are comments
+
+# Kotlin standard library
+org.jetbrains.kotlin:kotlin-stdlib:1.9.0
+
+# Kotlin reflection
+org.jetbrains.kotlin:kotlin-reflect:1.9.0
+
+# Jackson for JSON processing
+com.fasterxml.jackson.core:jackson-databind:2.15.0
+com.fasterxml.jackson.module:jackson-module-kotlin:2.15.0
+
+# HTTP client
+org.apache.httpcomponents:httpclient:4.5.14
+
+# Logging
+org.slf4j:slf4j-api:2.0.7
+ch.qos.logback:logback-classic:1.4.7
+
+# Testing (optional)
+org.junit.jupiter:junit-jupiter:5.9.2
+org.mockito:mockito-core:5.3.1 

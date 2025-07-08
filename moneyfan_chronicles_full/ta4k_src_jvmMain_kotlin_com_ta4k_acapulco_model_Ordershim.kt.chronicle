@@ -1,0 +1,22 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/Ordershim.kt b/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/Ordershim.kt
+deleted file mode 100644
+index e5f68df6..00000000
+--- a/ta4k/src/jvmMain/kotlin/com/ta4k/acapulco/model/Ordershim.kt
++++ /dev/null
+@@ -1,14 +0,0 @@
+-package borg.trikeshed.acapulco.model
+-
+-
+-class OrderShim(
+-    val assetKey: AssetKey,
+-    val price: Double,
+-    val isBuy: Boolean,
+-    val amt: Double,
+-    val created: Int,
+-) {
+-    override fun toString(): String = "Order(${assetKey.symbol} @$price, ${if(isBuy ) "BUY" else "SELL"} amt:$amt)"
+-
+-
+-}

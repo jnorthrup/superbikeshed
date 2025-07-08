@@ -1,0 +1,146 @@
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/quantstats-core/build.gradle.kts b/ta4k/quantstats-core/build.gradle.kts
+deleted file mode 100644
+index f58e3650..00000000
+--- a/ta4k/quantstats-core/build.gradle.kts
++++ /dev/null
+@@ -1,64 +0,0 @@
+-plugins {
+-    kotlin("multiplatform") // Version should be inherited from parent
+-}
+-
+-kotlin {
+-    jvm() // Define a JVM target
+-    js(IR) { // Define a JS target
+-        browser()
+-        binaries.executable()
+-    }
+-    // Minimal native target, e.g., macosX64, if easily configured
+-    // Or omit native for initial setup simplicity if it causes issues
+-    val hostOs = System.getProperty("os.name")
+-    if (hostOs == "Mac OS X") {
+-        macosX64("nativeMacos") // Example native target
+-    } else if (hostOs == "Linux") {
+-        linuxX64("nativeLinux") // Example native target
+-    }
+-
+-
+-    sourceSets {
+-        val commonMain by getting {
+-            dependencies {
+-                implementation(kotlin("stdlib-common"))
+-                // NO other kotlinx dependencies for now, per CLAUDE.md and user feedback.
+-            }
+-        }
+-        val commonTest by getting {
+-            dependencies {
+-                implementation(kotlin("test-common"))
+-                implementation(kotlin("test-annotations-common"))
+-            }
+-        }
+-        val jvmMain by getting {
+-            dependencies {
+-                implementation(kotlin("stdlib-jdk8"))
+-                // Dependency on smile-kotlin if needed by quantstats logic for JVM
+-                // implementation("com.github.haifengl:smile-kotlin:4.3.0")
+-            }
+-        }
+-        val jvmTest by getting {
+-            dependencies {
+-                implementation(kotlin("test-junit5"))
+-            }
+-        }
+-        val jsMain by getting {
+-            dependencies {
+-                implementation(kotlin("stdlib-js"))
+-            }
+-        }
+-        val jsTest by getting {
+-            dependencies {
+-                implementation(kotlin("test-js"))
+-            }
+-        }
+-        if (hostOs == "Mac OS X") {
+-            val nativeMacosMain by getting
+-            val nativeMacosTest by getting
+-        } else if (hostOs == "Linux") {
+-            val nativeLinuxMain by getting
+-            val nativeLinuxTest by getting
+-        }
+-    }
+-}
+
+--- Commit: 302093197cfe2f049a7733327bd4f1850a5d2598 | 2025-06-23 19:24:24 -0400 ---
+diff --git a/ta4k/quantstats-core/build.gradle.kts b/ta4k/quantstats-core/build.gradle.kts
+new file mode 100644
+index 00000000..81e8cf3a
+--- /dev/null
++++ b/ta4k/quantstats-core/build.gradle.kts
+@@ -0,0 +1,52 @@
++plugins {
++    kotlin("multiplatform") // Version should be inherited from parent
++}
++
++kotlin {
++    jvm() // Define a JVM target
++
++    // re-add wasm
++    // Minimal native target, e.g., macosX64, if easily configured
++    // Or omit native for initial setup simplicity if it causes issues
++    val hostOs = System.getProperty("os.name")
++    if (hostOs == "Mac OS X") {
++        macosX64("nativeMacos") // Example native target
++    } else if (hostOs == "Linux") {
++        linuxX64("nativeLinux") // Example native target
++    }
++
++
++    sourceSets {
++        val commonMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-common"))
++                // NO other kotlinx dependencies for now, per CLAUDE.md and user feedback.
++            }
++        }
++        val commonTest by getting {
++            dependencies {
++                implementation(kotlin("test-common"))
++                implementation(kotlin("test-annotations-common"))
++            }
++        }
++        val jvmMain by getting {
++            dependencies {
++                implementation(kotlin("stdlib-jdk8"))
++                // Dependency on smile-kotlin if needed by quantstats logic for JVM
++                // implementation("com.github.haifengl:smile-kotlin:4.3.0")
++            }
++        }
++        val jvmTest by getting {
++            dependencies {
++                implementation(kotlin("test-junit5"))
++            }
++        }
++        if (hostOs == "Mac OS X") {
++            val nativeMacosMain by getting
++            val nativeMacosTest by getting
++        } else if (hostOs == "Linux") {
++            val nativeLinuxMain by getting
++            val nativeLinuxTest by getting
++        }
++    }
++}
+
+--- Commit: 5d5e83c733bc1ec9981a80c07d03a14dbd6477f2 | 2025-06-24 20:59:40 -0400 ---
+diff --git a/ta4k/quantstats-core/build.gradle.kts b/ta4k/quantstats-core/build.gradle.kts
+index 81e8cf3a..431ce2f8 100644
+--- a/ta4k/quantstats-core/build.gradle.kts
++++ b/ta4k/quantstats-core/build.gradle.kts
+@@ -15,7 +15,6 @@ kotlin {
+         linuxX64("nativeLinux") // Example native target
+     }
+ 
+-
+     sourceSets {
+         val commonMain by getting {
+             dependencies {

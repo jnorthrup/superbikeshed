@@ -1,0 +1,48 @@
+
+--- Commit: 5f1884ef671e3df633e027f7ea271532baa8ed6d | 2025-06-12 23:15:27 +0000 ---
+diff --git a/moneyfan/src/main/kotlin/com/moneyfan/signals/SignalGenerator.kt b/moneyfan/src/main/kotlin/com/moneyfan/signals/SignalGenerator.kt
+deleted file mode 100644
+index 6b11e749..00000000
+--- a/moneyfan/src/main/kotlin/com/moneyfan/signals/SignalGenerator.kt
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package com.moneyfan.signals
+-
+-import com.moneyfan.indicators.SmoothingUtils
+-import java.math.BigDecimal
+-
+-enum class Signal {
+-    BUY, SELL, NEUTRAL
+-}
+-
+-class SignalGenerator(
+-    private val period: Int = 14,
+-    private val threshold: BigDecimal = BigDecimal("0.5")
+-) {
+-    fun generateSignal(smoothedValues: List<BigDecimal?>): Signal {
+-        val lastValue = smoothedValues.lastOrNull() ?: return Signal.NEUTRAL
+-        return if (lastValue > threshold) Signal.BUY else Signal.SELL
+-    }
+-
+-    fun processMarketData(marketDataList: List<MarketData>): List<Signal> {
+-        val smoothedValues = SmoothingUtils.wildersSmooth(
+-            marketDataList,
+-            period = period,
+-            initialSumProvider = { index, series ->
+-                series.subList(index - period + 1, index + 1)
+-                    .mapNotNull { it.price }
+-                    .fold(BigDecimal.ZERO) { acc, price -> acc.add(price) }
+-            },
+-            valueExtractor = { it?.price ?: BigDecimal.ZERO }
+-        )
+-
+-        return smoothedValues.map { generateSignal(listOf(it)) }
+-    }
+-}
+-
+-data class MarketData(
+-    val timestamp: Long,
+-    val price: BigDecimal,
+-    val volume: BigDecimal
+-) 
+\ No newline at end of file

@@ -1,0 +1,30 @@
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt
+index 377d0ae2..91bdc03b 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt
+@@ -3,5 +3,5 @@ package borg.trikeshed.acapulco
+ import borg.trikeshed.common.Series  // Assuming this import is correct based on project structure
+ 
+ interface MarketHistoryProvider {
+-    fun getHistory(assetKey: String, ticks: Int): Series<TickData>
++    fun getHistory(assetKey: String, ticks: Int): Indexed<TickData>
+ }
+\ No newline at end of file
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt
+deleted file mode 100644
+index 91bdc03b..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/MarketHistoryProvider.kt
++++ /dev/null
+@@ -1,7 +0,0 @@
+-package borg.trikeshed.acapulco
+-
+-import borg.trikeshed.common.Series  // Assuming this import is correct based on project structure
+-
+-interface MarketHistoryProvider {
+-    fun getHistory(assetKey: String, ticks: Int): Indexed<TickData>
+-}
+\ No newline at end of file

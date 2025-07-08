@@ -1,0 +1,34 @@
+commit f4a76dee33cc56373d7b14858f0c71e813fd7f22
+Author: google-labs-jules[bot] <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date:   Tue Jun 17 15:51:38 2025 +0000
+
+    feat: Implement basic QUIC 0-RTT and Stream Multiplexing
+    
+    I've implemented foundational components for QUIC functionality in EnhancedQuicConnection:
+    
+    1.  **0-RTT Connection Setup:**
+        *   I've added logic to attempt 0-RTT connections using a QuicSessionCache.
+        *   I've included placeholder methods for creating Initial and 0-RTT packets (`createInitialPacket`, `create0RTTPacket`) with TODOs for full cryptographic handshake implementation.
+        *   I've refined session cache usage, including clearing the cache on 0-RTT failure.
+    
+    2.  **Stream Multiplexing:**
+        *   I've introduced data structures for simplified QUIC packets and StreamFrames.
+        *   I've enhanced `QuicStream` with state management (IDLE, OPEN, LOCAL_CLOSED, REMOTE_CLOSED, CLOSED), an incoming data channel using kotlinx.coroutines.Channel, and send/receive offset tracking.
+        *   I've implemented client-initiated bidirectional stream ID allocation.
+        *   I've added simplified packet serialization (`serializePacket`) and deserialization (`deserializePacket`) focusing on StreamFrames.
+        *   `sendData` now encapsulates data into StreamFrames and QUIC packets before sending.
+        *   A new receiving loop (`startReceivingLoop`) processes incoming datagrams, deserializes packets, and dispatches StreamFrame data to the appropriate QuicStream.
+        *   I've implemented FIN signaling for graceful stream closure: `QuicStream.close()` now triggers sending a FIN frame via `EnhancedQuicConnection.sendFin()`, and `QuicStream.onRemoteFin()` handles incoming FINs.
+    
+    3.  **Code Structure:**
+        *   I've consolidated duplicate QUIC connection classes by removing `QuicConnection.kt`.
+    
+    4.  **Unit Tests (Structure):**
+        *   I've added `EnhancedQuicConnectionTest.kt` with a comprehensive suite of defined (but not implemented) test cases for 0-RTT, stream creation, data transfer (send/receive), and stream closure. These tests outline the necessary mocks and assertions for future implementation.
+    
+    This commit lays the groundwork for a more complete QUIC implementation. Significant TODOs remain for full RFC compliance, particularly in areas of cryptographic security, complete handshake state machine, all QUIC frame types, and robust flow control and error handling.
+
+ .../trikeshed/net/quic/EnhancedQuicConnection.kt   | 552 +++++++++++++++++++--
+ .../borg/trikeshed/net/quic/QuicConnection.kt      | 204 --------
+ .../net/quic/EnhancedQuicConnectionTest.kt         | 379 ++++++++++++++
+ 3 files changed, 891 insertions(+), 244 deletions(-)

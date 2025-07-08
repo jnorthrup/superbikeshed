@@ -1,0 +1,16 @@
+@file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
+@file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
+package borg.trikeshed.io
+
+import java.io.File
+
+/**
+ * JVM implementation of read lines functions
+ */
+actual fun readLinesSeq(path: String): Sequence<String> {
+    return File(path).bufferedReader().lineSequence()
+}
+
+actual fun readLines(path: String): List<String> {
+    return File(path).readLines()
+}

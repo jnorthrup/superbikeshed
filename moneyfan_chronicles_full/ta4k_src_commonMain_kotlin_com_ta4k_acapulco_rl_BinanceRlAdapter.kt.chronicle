@@ -1,0 +1,91 @@
+
+--- Commit: c10e6ff1c7a423ce87177d080a709d9ce77a949c | 2025-06-21 23:41:20 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
+index c7df0f53..68f1c2c5 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
+@@ -6,7 +6,6 @@ package borg.trikeshed.acapulco.rl
+ import borg.trikeshed.cursor.Cursor // Assuming Cursor is Series<RowVec>
+ import borg.trikeshed.rl.Agent
+ import borg.trikeshed.rl.Environment
+-import borg.trikeshed.lib.Series
+ import borg.trikeshed.cursor.RowVec
+ 
+ /**
+
+--- Commit: 61df1e48ab0430f72725044cf55406129182e78f | 2025-06-23 02:39:10 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
+index 68f1c2c5..8c96bd75 100644
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
++++ b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
+@@ -3,7 +3,7 @@
+ // =====================================================================
+ package borg.trikeshed.acapulco.rl
+ 
+-import borg.trikeshed.cursor.Cursor // Assuming Cursor is Series<RowVec>
++import borg.trikeshed.cursor.Cursor // Assuming Cursor is Indexed<RowVec>
+ import borg.trikeshed.rl.Agent
+ import borg.trikeshed.rl.Environment
+ import borg.trikeshed.cursor.RowVec
+@@ -14,7 +14,7 @@ import borg.trikeshed.cursor.RowVec
+  * A: Action type determined by the agent
+  */
+ class BinanceRlAdapter<A>(
+-    private val cursor: Cursor, // Cursor is Series<RowVec>
++    private val cursor: Cursor, // Cursor is Indexed<RowVec>
+     private val agent: Agent<RowVec, A>
+ ) : Environment<RowVec, A> {
+     private lateinit var currentState: RowVec
+
+--- Commit: 2869bf0c70c963a5abace6690b551c36d43dcd26 | 2025-06-23 19:15:00 -0400 ---
+diff --git a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt b/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
+deleted file mode 100644
+index 8c96bd75..00000000
+--- a/ta4k/src/commonMain/kotlin/com/ta4k/acapulco/rl/BinanceRlAdapter.kt
++++ /dev/null
+@@ -1,44 +0,0 @@
+-// =====================================================================
+-// === TrikeShed/src/commonMain/kotlin/borg/trikeshed/acapulco/rl/BinanceRlAdapter.kt ===
+-// =====================================================================
+-package borg.trikeshed.acapulco.rl
+-
+-import borg.trikeshed.cursor.Cursor // Assuming Cursor is Indexed<RowVec>
+-import borg.trikeshed.rl.Agent
+-import borg.trikeshed.rl.Environment
+-import borg.trikeshed.cursor.RowVec
+-
+-/**
+- * Adapts a Binance cursor-driven simulator into an RL environment.
+- * S: State (e.g., cursor row, which is RowVec)
+- * A: Action type determined by the agent
+- */
+-class BinanceRlAdapter<A>(
+-    private val cursor: Cursor, // Cursor is Indexed<RowVec>
+-    private val agent: Agent<RowVec, A>
+-) : Environment<RowVec, A> {
+-    private lateinit var currentState: RowVec
+-    private var done = false
+-    private val cursorList: List<RowVec> = cursor.toList()  // Convert to list
+-    private var cursorIterator: Iterator<RowVec> = cursorList.iterator()
+-
+-    override fun reset(): RowVec {
+-        cursorIterator = cursorList.iterator() // Reset iterator using list
+-        if (!cursorIterator.hasNext()) throw IllegalStateException("Cursor is empty, cannot reset environment.")
+-        currentState = cursorIterator.next()
+-        done = false
+-        return currentState
+-    }
+-
+-    override fun step(action: A): Triple<RowVec, Double, Boolean> {
+-        // TODO: execute action on simulator (e.g., place trade based on 'action' and 'currentState')
+-        // This part requires domain-specific logic for how actions affect the Binance simulation
+-
+-        // advance cursor to next event
+-        done = !cursorIterator.hasNext()
+-        val nextState = if (!done) cursorIterator.next() else currentState
+-        val reward = 0.0 // TODO: compute reward based on action, currentState, and nextState
+-        currentState = nextState
+-        return Triple(nextState, reward, done)
+-    }
+-}
+\ No newline at end of file

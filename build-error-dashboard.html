@@ -1,0 +1,1048 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Gradle Build Error Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            background: #0f172a; 
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .error-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+            transition: all 0.3s;
+        }
+        .error-card:hover {
+            background: #334155;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .high-severity {
+            border-left: 4px solid #ef4444;
+        }
+        .medium-severity {
+            border-left: 4px solid #f59e0b;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-6xl font-bold gradient-text mb-4">🔥 Gradle Build Error Dashboard 🔥</h1>
+            <p class="text-xl text-gray-400">Generated: 2025-07-06 03:06:37</p>
+            <div class="mt-4 flex justify-center gap-8">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-red-500 pulse">116</div>
+                    <div class="text-sm text-gray-400">Total Errors</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-orange-500">8</div>
+                    <div class="text-sm text-gray-400">High Severity</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-yellow-500">108</div>
+                    <div class="text-sm text-gray-400">Medium Severity</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <!-- Error Type Distribution -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Error Type Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="errorTypePie"></canvas>
+                </div>
+            </div>
+
+            <!-- Error Timeline -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Error Timeline</h2>
+                <div class="chart-container">
+                    <canvas id="errorTimeline"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Error Patterns -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Top Error Patterns</h2>
+                <div class="chart-container">
+                    <canvas id="topPatterns"></canvas>
+                </div>
+            </div>
+
+            <!-- Severity Gauge -->
+            <div class="bg-slate-800 rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-4">Severity Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="severityDoughnut"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error List -->
+        <div class="bg-slate-800 rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">Error Details</h2>
+            <div class="space-y-2 max-h-96 overflow-y-auto">
+                
+            <div class="error-card high-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">task_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 11</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-red-900">
+                        high
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    Could not determine the dependencies of task ':trikeshed-sumo:transformCommonMainDependenciesMetadata'.
+                </div>
+            </div>
+        
+
+            <div class="error-card high-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">dependency_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 12</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-red-900">
+                        high
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > Could not resolve all dependencies for configuration ':trikeshed-sumo:linuxX64CompilationDependenciesMetadata'.
+                </div>
+            </div>
+        
+
+            <div class="error-card high-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">module_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 13</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-red-900">
+                        high
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > Could not resolve project :trikeshed-lib.
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">module_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 15</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    project :trikeshed-sumo
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">module_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 16</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > No matching variant of project :trikeshed-lib was found. The consumer was configured to find a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.native.target' with value 'linux_x64', attribute 'org.jetbrains.kotlin.platform.type
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 16</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > No matching variant of project :trikeshed-lib was found. The consumer was configured to find a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.native.target' with value 'linux_x64', attribute 'org.jetbrains.kotlin.platform.type
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 16</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > No matching variant of project :trikeshed-lib was found. The consumer was configured to find a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.native.target' with value 'linux_x64', attribute 'org.jetbrains.kotlin.platform.type
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 18</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'jvm' and the consumer needed a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 22</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'jvm' and the consumer needed a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 26</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'jvm' and the consumer needed a library, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 29</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 29</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 31</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64CInteropApiElements' declares a library, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 32</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component for use during 'kotlin-cinterop', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_arm64' and the consumer needed a component for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.targ
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 33</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64MetadataElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 33</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64MetadataElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 35</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64SourcesElements' declares a component, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 36</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation for use during 'kotlin-runtime', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_arm64' and the consumer needed a library for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.targe
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 37</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 37</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 39</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64CInteropApiElements' declares a library, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 40</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component for use during 'kotlin-cinterop', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_x64' and the consumer needed a component for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.target
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 41</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64MetadataElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 41</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64MetadataElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 43</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64SourcesElements' declares a component, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 44</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation for use during 'kotlin-runtime', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_x64' and the consumer needed a library for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.target'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 45</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'metadataApiElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm:
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 46</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'common' and the consumer needed a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 50</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation for use during 'kotlin-runtime', as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'common' and the consumer needed a library for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.platform.type' wi
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 50</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation for use during 'kotlin-runtime', as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'common' and the consumer needed a library for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.platform.type' wi
+                </div>
+            </div>
+        
+
+            <div class="error-card high-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">module_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 53</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-red-900">
+                        high
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > Could not resolve project :trikeshed-common.
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">module_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 55</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    project :trikeshed-sumo
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">module_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 56</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > No matching variant of project :trikeshed-common was found. The consumer was configured to find a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.native.target' with value 'linux_x64', attribute 'org.jetbrains.kotlin.platform.t
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 56</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > No matching variant of project :trikeshed-common was found. The consumer was configured to find a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.native.target' with value 'linux_x64', attribute 'org.jetbrains.kotlin.platform.t
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 56</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    > No matching variant of project :trikeshed-common was found. The consumer was configured to find a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.native.target' with value 'linux_x64', attribute 'org.jetbrains.kotlin.platform.t
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 58</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'jvm' and the consumer needed a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 62</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'jvm' and the consumer needed a component, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 66</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'jvm' and the consumer needed a library, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native'
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 69</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 69</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 71</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64CInteropApiElements' declares a library, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 72</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component for use during 'kotlin-cinterop', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_arm64' and the consumer needed a component for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.targ
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 73</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64MetadataElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 73</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64MetadataElements' declares a library for use during 'kotlin-metadata', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 75</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosArm64SourcesElements' declares a component, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 76</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares documentation for use during 'kotlin-runtime', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_arm64' and the consumer needed a library for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.targe
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 77</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 77</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64ApiElements' declares a library for use during 'kotlin-api', preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">platform_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 79</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Variant 'macosX64CInteropApiElements' declares a library, preferably optimized for non-jvm, as well as attribute 'org.jetbrains.kotlin.platform.type' with value 'native':
+                </div>
+            </div>
+        
+
+            <div class="error-card medium-severity">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-sm font-semibold text-purple-400">kotlin_error</span>
+                        <span class="text-xs text-gray-500 ml-2">Line 80</span>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded bg-orange-900">
+                        medium
+                    </span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300 font-mono">
+                    - Incompatible because this component declares a component for use during 'kotlin-cinterop', as well as attribute 'org.jetbrains.kotlin.native.target' with value 'macos_x64' and the consumer needed a component for use during 'kotlin-metadata', as well as attribute 'org.jetbrains.kotlin.native.target
+                </div>
+            </div>
+        
+            </div>
+        </div>
+
+        <!-- Fix Recommendations -->
+        <div class="bg-slate-800 rounded-lg p-6 mt-8">
+            <h2 class="text-2xl font-bold mb-4">🛠️ Recommended Fixes</h2>
+            <div class="space-y-4">
+                
+            <div class="bg-slate-700 rounded p-4">
+                <h3 class="font-bold text-lg mb-2">🔧 Fix Dependency Issues</h3>
+                <p class="text-sm text-gray-400">Update kotlinx-serialization-json to a version that supports WASM</p>
+                <code class="block mt-2 p-2 bg-slate-900 rounded text-xs">
+                    val kotlinxSerializationJsonVersion = "1.7.3"
+                </code>
+            </div>
+        
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart configuration
+        Chart.defaults.color = '#e2e8f0';
+        Chart.defaults.borderColor = '#334155';
+
+        // Error Type Pie Chart
+        new Chart(document.getElementById('errorTypePie'), {
+            type: 'doughnut',
+            data: {
+                labels: ["task_error", "dependency_error", "module_error", "platform_error", "kotlin_error"],
+                datasets: [{
+                    data: [2, 2, 12, 56, 44],
+                    backgroundColor: [
+                        '#ef4444', '#f59e0b', '#10b981', '#3b82f6', 
+                        '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+
+        // Error Timeline
+        new Chart(document.getElementById('errorTimeline'), {
+            type: 'line',
+            data: {
+                labels: [0, 100, 200, 300],
+                datasets: [{
+                    label: 'Error Density',
+                    data: [64, 23, 1, 28],
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Build Progress (line number)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Error Count'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Top Patterns Bar Chart
+        new Chart(document.getElementById('topPatterns'), {
+            type: 'bar',
+            data: {
+                labels: ["native", "metadata", "trikeshed", "jvm", "runtime", "api", "cinterop", "common"],
+                datasets: [{
+                    label: 'Occurrences',
+                    data: [36, 16, 12, 12, 12, 8, 8, 8],
+                    backgroundColor: '#8b5cf6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Severity Doughnut
+        new Chart(document.getElementById('severityDoughnut'), {
+            type: 'doughnut',
+            data: {
+                labels: ['High Severity', 'Medium Severity'],
+                datasets: [{
+                    data: [8, 108],
+                    backgroundColor: ['#ef4444', '#f59e0b'],
+                    borderWidth: 2,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
