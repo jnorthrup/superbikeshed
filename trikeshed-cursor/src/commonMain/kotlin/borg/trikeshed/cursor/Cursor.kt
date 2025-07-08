@@ -59,6 +59,17 @@ infix fun Cursor.at(r: IntRange): Cursor {
 }
 
 /** Get cursor with specified row indices */
+
+/**
+ * Transforms the Cursor into a MetaSeries, allowing for specialized DSL transformations.
+ * This provides a flexible way to project the cursor data into a new structure.
+ */
+inline fun <T> Cursor.asMetaSeries(crossinline transform: (RowVec) -> T): MetaSeries<CursorRowIndex, T> {
+    return MetaSeries(CursorRowIndex(size)) { iy: CursorRowIndex ->
+        transform(this[iy.value])
+    }
+}
+
 operator fun Cursor.get(vararg indices: Int): Cursor = 
     Cursor(MetaSeries(CursorRowIndex(indices.size)) { iy: CursorRowIndex -> data.b(CursorRowIndex(indices[iy.value])) })
 
