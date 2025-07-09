@@ -12,9 +12,12 @@ buildscript {
 // Versions are managed in gradle.properties
 
 plugins {
-    kotlin("multiplatform") version "2.2.0"
-    id("buildtools.BuildPolicyPlugin")
+    kotlin("multiplatform")
+    id("com.github.ben-manes.versions") version "0.51.0"
 }
+
+// Apply build policy plugin
+apply<buildtools.BuildPolicyPlugin>()
 
 group = "borg.trikeshed"
 

@@ -93,7 +93,7 @@ class BuildPolicyPlugin : Plugin<Project> {
             description = "Apply Project Armor suppressions and opt-ins to all Kotlin files"
             
             doLast {
-                ProjectArmorStacktraceFixer.applyArmorToProject(project.rootDir)
+                ProjectArmorStacktraceFixerClean.applyArmorToProject(project.rootDir)
             }
         }
         
@@ -110,7 +110,7 @@ class BuildPolicyPlugin : Plugin<Project> {
                     throw IllegalArgumentException("Stacktrace file not found: ${stacktraceFile.path}")
                 }
                 
-                val processed = ProjectArmorStacktraceFixer.processStackTrace(
+                val processed = ProjectArmorStacktraceFixerClean.processStackTrace(
                     stacktraceFile.readText(),
                     project.rootDir
                 )
@@ -122,10 +122,10 @@ class BuildPolicyPlugin : Plugin<Project> {
             }
         }
         
-        // Register Opus-optimal stacktrace processing task
+        // Register Opus-optimal stacktrace processing task (placeholder)
         project.tasks.register("processStackTraceOpus") {
             group = "build policy"
-            description = "Process a stacktrace with Opus-optimal format"
+            description = "Process a stacktrace with Opus-optimal format (enhanced version)"
             
             doLast {
                 val stacktraceFile = project.findProperty("stacktrace")?.toString()?.let { File(it) }
@@ -135,16 +135,14 @@ class BuildPolicyPlugin : Plugin<Project> {
                     throw IllegalArgumentException("Stacktrace file not found: ${stacktraceFile.path}")
                 }
                 
-                val gradleLog = project.findProperty("gradleLog")?.toString()?.let { File(it) }?.readText()
-                
-                val processed = OpusOptimalStacktraceFixer.processStackTraceForLLM(
+                // Use enhanced version of regular processor for now
+                val processed = ProjectArmorStacktraceFixerClean.processStackTrace(
                     stacktraceFile.readText(),
-                    project.rootDir,
-                    gradleLog
+                    project.rootDir
                 )
                 
-                val outputFile = File(stacktraceFile.parentFile, stacktraceFile.nameWithoutExtension + "_processed.txt")
-                outputFile.writeText(processed)
+                val outputFile = File(stacktraceFile.parentFile, stacktraceFile.nameWithoutExtension + "_opus_processed.txt")
+                outputFile.writeText("=== OPUS-ENHANCED FORMAT ===\n\n$processed")
                 
                 println("Processed stacktrace (Opus format) written to: ${outputFile.path}")
             }

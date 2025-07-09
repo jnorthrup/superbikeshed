@@ -155,7 +155,7 @@ object InfixLambdaTypeFixer {
                 param // Already typed
             } else {
                 // Infer type based on context
-                val inferredType = inferLambdaParamType(param, functionName, receiver)
+                val inferredType = inferLambdaParamType(param, functionName, receiver, params)
                 "$param: $inferredType"
             }
         }
@@ -167,7 +167,8 @@ object InfixLambdaTypeFixer {
     private fun inferLambdaParamType(
         param: String,
         functionName: String,
-        receiver: String
+        receiver: String,
+        allParams: List<String>
     ): String {
         // Context-based type inference
         return when {
@@ -187,7 +188,7 @@ object InfixLambdaTypeFixer {
                 }
             }
             functionName.contains("fold", ignoreCase = true) -> {
-                if (param == params.first()) "R" else "T"
+                if (param == allParams.firstOrNull()) "R" else "T"
             }
             // TrikeShed specific patterns
             param.contains("twin", ignoreCase = true) -> "Twin<*>"
