@@ -39,7 +39,7 @@ ${YELLOW}Commands:${NC}
     ${GREEN}validate-build${NC}      Validate build file immutability
     ${GREEN}grant-permission${NC}    Grant permission to modify build files
     ${GREEN}apply-armor${NC}         Apply Project Armor to all Kotlin files
-    ${GREEN}fix-stacktrace${NC}      Process stacktrace, apply armor to dirty+stacktrace files
+    ${GREEN}fix-stacktrace${NC}      Process stacktrace, apply armor to bugfix+stacktrace files
     ${GREEN}fix-lambdas${NC}         Fix infix lambda type annotations
     ${GREEN}pre-build${NC}           Run all pre-build policies
     ${GREEN}post-error${NC}          Process gradle errors with Opus-optimal format
@@ -65,7 +65,7 @@ ${YELLOW}Examples:${NC}
     # Apply armor to all Kotlin files
     $0 apply-armor
 
-    # Fix a stacktrace with full context (armor applied to dirty+stacktrace files only)
+    # Fix a stacktrace with full context (armor applied to bugfix+stacktrace files only)
     $0 fix-stacktrace -f error.log
 
     # Process gradle error with Opus-optimal format

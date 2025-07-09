@@ -399,6 +399,11 @@ object ProjectArmorStacktraceFixer {
         
         return output.lines()
             .filter { it.isNotBlank() }
+            .filter { line ->
+                // Only include modified files (M), not new files (A) or other states
+                // This focuses on files dirty from bugfix work, not new feature additions
+                line.startsWith(" M") || line.startsWith("M ")
+            }
             .mapNotNull { line ->
                 // Git status format: XY filename
                 val filename = line.substring(3).trim()
