@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "2.2.0"
+    kotlin("plugin.serialization")
     
     
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -25,7 +25,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
-                implementation("org.json:json:20231013")
+                implementation("org.json:json")
                 // Remove Maven dependencies for now - not needed for basic functionality
             }
         }

@@ -16,8 +16,10 @@ plugins {
     id("com.github.ben-manes.versions") version "0.51.0"
 }
 
-// Apply build policy plugin
+// Apply build policy plugins
 apply<buildtools.BuildPolicyPlugin>()
+apply<buildtools.BuildRulesPlugin>()
+apply<buildtools.VersionAbsorptionPlugin>()
 
 group = "borg.trikeshed"
 

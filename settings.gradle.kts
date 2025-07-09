@@ -18,6 +18,7 @@ pluginManagement {
     plugins {
         kotlin("multiplatform") version "1.9.23"
         kotlin("native") version "1.9.23" apply false
+        kotlin("plugin.serialization") version "1.9.23"
         // id("com.github.ben-manes.versions") version "0.52.0"
         // id("io.gitlab.arturbosch.detekt") version "1.23.6"
     }

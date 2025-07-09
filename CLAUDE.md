@@ -39,3 +39,7 @@
 ## Versioning Strategy
 
 - We will operate under latest versions and adapt e.g. postpone wasm
+
+## Protocol Implementation Notes
+
+- All mentions to couchdb and couch servers, quic, ipfs, ssh, rest, wave, and so many more protocols are ALWAYS for the internal dogfooding implementations ESPECIALLY WHEN WE DONT HAVE ONE YET

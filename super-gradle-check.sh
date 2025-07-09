@@ -39,4 +39,10 @@ else
   fi
 fi
 
+# 4. Integration with Project Armor Stacktrace Fixer
+if [ -f "./armor-stacktrace-nvidia-tasker.sh" ]; then
+  echo "[INFO] Project Armor integration available"
+  echo "[INFO] Run './armor-stacktrace-nvidia-tasker.sh demo' to test TrikeShed stacktrace methodology"
+fi
+
 echo "[OK] super-gradle-check passed." 

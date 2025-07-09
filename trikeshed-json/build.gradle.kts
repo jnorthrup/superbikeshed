@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "2.2.0"
+    kotlin("plugin.serialization")"
 }
 
 group = "borg.trikeshed"
@@ -47,8 +47,8 @@ kotlin {
         }
         getByName("jvmTest") {
             dependencies {
-                implementation("com.google.code.gson:gson:2.10.1")
-                implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
+                implementation("com.google.code.gson:gson")
+                implementation("com.fasterxml.jackson.core:jackson-databind")
             }
         }
     }
