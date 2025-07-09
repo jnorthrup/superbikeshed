@@ -54,11 +54,43 @@ object OpusOptimalStacktraceFixer {
         gradleLog: String? = null
     ): String {
         val frames = parseStackTrace(stackTrace)
+        
+        // Apply armor only to files that are BOTH dirty AND in stacktrace
+        val stacktraceFiles = frames.mapNotNull { frame ->
+            findSourceFile(sourceRoot, frame.className)
+        }.toSet()
+        
+        val dirtyFiles = getDirtyKotlinFiles(sourceRoot).toSet()
+        val filesToArmor = stacktraceFiles.intersect(dirtyFiles)
+        
+        filesToArmor.forEach { file ->
+            ProjectArmorStacktraceFixer.applyArmorToFile(file)
+            println("Applied armor to dirty stacktrace file: ${file.path}")
+        }
+        
         val enrichedFrames = frames.map { frame ->
             enrichFrame(frame, sourceRoot, gradleLog)
         }
         
         return formatForOptimalComprehension(enrichedFrames, stackTrace, gradleLog)
+    }
+    
+    private fun getDirtyKotlinFiles(rootDir: File): List<File> {
+        val processBuilder = ProcessBuilder("git", "status", "--porcelain", "*.kt")
+        processBuilder.directory(rootDir)
+        
+        val process = processBuilder.start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        process.waitFor()
+        
+        return output.lines()
+            .filter { it.isNotBlank() }
+            .mapNotNull { line ->
+                // Git status format: XY filename
+                val filename = line.substring(3).trim()
+                val file = File(rootDir, filename)
+                if (file.exists() && file.name.endsWith(".kt")) file else null
+            }
     }
     
     private fun enrichFrame(

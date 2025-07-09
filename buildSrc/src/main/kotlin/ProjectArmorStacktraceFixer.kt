@@ -181,7 +181,38 @@ object ProjectArmorStacktraceFixer {
         val processedLines = mutableListOf<String>()
         val annotationCache = mutableMapOf<String, SourceFileAnnotations>()
         val zoomOutSegments = mutableListOf<ZoomOutSegment>()
+        val stacktraceFiles = mutableSetOf<File>()
         
+        // First pass: collect all files involved in stacktrace
+        lines.forEach { line ->
+            val match = stackTracePattern.find(line)
+            if (match != null) {
+                val frame = StackTraceFrame(
+                    className = match.groupValues[1],
+                    methodName = match.groupValues[2],
+                    fileName = match.groupValues[3],
+                    lineNumber = match.groupValues[4].toInt(),
+                    rawLine = line
+                )
+                
+                val sourceFile = findSourceFile(sourceRoot, frame.className)
+                if (sourceFile != null) {
+                    stacktraceFiles.add(sourceFile)
+                }
+            }
+        }
+        
+        // Get dirty files and find intersection with stacktrace files
+        val dirtyFiles = getDirtyKotlinFiles(sourceRoot).toSet()
+        val filesToArmor = stacktraceFiles.intersect(dirtyFiles)
+        
+        // Apply armor only to files that are BOTH dirty AND in stacktrace
+        filesToArmor.forEach { file ->
+            applyArmorToFile(file)
+            println("Applied armor to dirty stacktrace file: ${file.path}")
+        }
+        
+        // Second pass: process the stacktrace
         lines.forEach { line ->
             val match = stackTracePattern.find(line)
             if (match != null) {
@@ -199,9 +230,6 @@ object ProjectArmorStacktraceFixer {
                     if (!annotationCache.containsKey(sourceFile.path)) {
                         annotationCache[sourceFile.path] = scanSourceFile(sourceFile)
                     }
-                    
-                    // Apply armor to the file if needed
-                    applyArmorToFile(sourceFile)
                     
                     // Get zoom-out context
                     val zoomOut = getZoomOutContext(sourceFile, frame.lineNumber, 20)
