@@ -1,49 +1,55 @@
 package rtsgame
 
-import borg.trikeshed.lib.*
-import rtsgame.demo.*
 import kotlinx.coroutines.*
 import javax.swing.*
 import java.awt.*
 import java.awt.event.*
 
 actual fun platformMain() {
+    println("🚀 Starting RTS Game on JVM")
+    
     runBlocking {
-        val demo = runInteractiveWebGPUDemo()
+        // Create and launch the game
+        val launcher = RTSGameLauncher()
         
-        // Create Swing window with canvas for interaction
+        // Create Swing window for the game
         SwingUtilities.invokeLater {
-            createInteractiveWindow(demo)
+            createGameWindow(launcher)
         }
         
-        // Keep running for interactive demo
+        // Keep running
         while (true) {
             delay(1000)
         }
     }
 }
 
-internal fun createInteractiveWindow(demo: InteractiveWebGPUDemo) {
-    val frame = JFrame("Interactive RTS WebGPU Demo")
+internal fun createGameWindow(launcher: RTSGameLauncher) {
+    val frame = JFrame("RTS Game - JVM")
     frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     frame.setSize(1024, 768)
+    frame.setLocationRelativeTo(null)
     
     val canvas = object : JPanel() {
-        internal var lastState: InteractiveDemoState? = null
-        
         init {
             background = Color.BLACK
             preferredSize = Dimension(1024, 768)
             
-            // Mouse handling
+            // Add mouse handling
             addMouseListener(object : MouseAdapter() {
                 override fun mousePressed(e: MouseEvent) {
-                    demo.handleMouseClick(e.x.toFloat(), e.y.toFloat())
+                    handleMouseClick(e.x.toFloat(), e.y.toFloat(), launcher)
                     repaint()
                 }
                 
                 override fun mouseReleased(e: MouseEvent) {
-                    demo.handleMouseRelease(e.x.toFloat(), e.y.toFloat())
+                    handleMouseRelease(e.x.toFloat(), e.y.toFloat(), launcher)
+                }
+            })
+            
+            addMouseMotionListener(object : MouseMotionAdapter() {
+                override fun mouseMoved(e: MouseEvent) {
+                    handleMouseMove(e.x.toFloat(), e.y.toFloat(), launcher)
                 }
             })
         }
@@ -53,91 +59,101 @@ internal fun createInteractiveWindow(demo: InteractiveWebGPUDemo) {
             val g2d = g as Graphics2D
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
             
-            // Render current state
-            runBlocking {
-                lastState = demo.renderFrame()
-            }
-            
-            lastState?.let { state ->
-                renderGameWorld(g2d, state)
-                renderUI(g2d, state)
-                renderMetrics(g2d, state)
-            }
-        }
-        
-        internal fun renderGameWorld(g2d: Graphics2D, state: InteractiveDemoState) {
-            // Render entities
-            state.gameState.entities.`play`.forEach { entity ->
-                val color = when (entity.playerId.value) {
-                    1 -> Color.BLUE
-                    2 -> Color.RED
-                    else -> Color.GRAY
-                }
-                
-                g2d.color = color
-                val x = entity.position.a.value.toInt() - 10
-                val y = entity.position.b.value.toInt() - 10
-                
-                if (entity.health.value > 80f) {
-                    g2d.fillOval(x, y, 20, 20) // Commander
-                } else {
-                    g2d.fillRect(x, y, 15, 15) // Unit
-                }
-                
-                // Health bar
-                g2d.color = Color.WHITE
-                g2d.drawRect(x, y - 8, 20, 3)
-                g2d.color = Color.GREEN
-                g2d.fillRect(x + 1, y - 7, (18 * entity.health.value / 100f).toInt(), 2)
-            }
-        }
-        
-        internal fun renderUI(g2d: Graphics2D, state: InteractiveDemoState) {
-            // Render control panel
-            g2d.color = Color.DARK_GRAY
-            g2d.fillRect(0, 0, width, 100)
-            
-            // Render buttons
-            state.panelState.buttons.play.forEach { button ->
-                val x = button.position.x.toInt()
-                val y = button.position.y.toInt()
-                val w = button.size.x.toInt()
-                val h = button.size.y.toInt()
-                
-                // Button background
-                g2d.color = if (button.enabled) Color.LIGHT_GRAY else Color.GRAY
-                g2d.fillRect(x, y, w, h)
-                
-                // Button border
-                g2d.color = Color.WHITE
-                g2d.drawRect(x, y, w, h)
-                
-                // Button text
-                g2d.color = Color.BLACK
-                val fm = g2d.fontMetrics
-                val textX = x + (w - fm.stringWidth(button.label)) / 2
-                val textY = y + (h + fm.ascent) / 2
-                g2d.drawString(button.label, textX, textY)
-            }
-        }
-        
-        internal fun renderMetrics(g2d: Graphics2D, state: InteractiveDemoState) {
-            g2d.color = Color.WHITE
-            g2d.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
-            g2d.drawString(state.metricsText, 10, height - 10)
+            // Render the game state
+            renderGameState(g2d, launcher)
         }
     }
     
     frame.add(canvas)
-    frame.setLocationRelativeTo(null)
     frame.isVisible = true
     
-    // Animation timer
+    // Start the game loop
     Timer(16) { // ~60 FPS
         canvas.repaint()
     }.start()
 }
 
-fun main() {
-    platformMain()
+private fun handleMouseClick(x: Float, y: Float, launcher: RTSGameLauncher) {
+    // Convert screen coordinates to world coordinates
+    val worldX = x * 2f // Simple scaling
+    val worldY = y * 2f
+    
+    // Issue move command to selected units
+    val selectedUnits = listOf(EntityId(0)) // TODO: Implement unit selection
+    val moveCommand = CommandComponent("move", targetX = worldX, targetY = worldY)
+    launcher.simulation.issueCommand(selectedUnits, moveCommand)
+}
+
+private fun handleMouseRelease(x: Float, y: Float, launcher: RTSGameLauncher) {
+    // Handle mouse release events
+}
+
+private fun handleMouseMove(x: Float, y: Float, launcher: RTSGameLauncher) {
+    // Handle mouse movement events
+}
+
+private fun renderGameState(g2d: Graphics2D, launcher: RTSGameLauncher) {
+    // Clear background
+    g2d.color = Color(20, 20, 40)
+    g2d.fillRect(0, 0, width, height)
+    
+    // Render entities
+    val world = launcher.simulation.world
+    val entities = world.getAllEntities()
+    
+    entities.forEach { entityId ->
+        val position = world.getComponent<PositionComponent>(entityId, ComponentTypeId.POSITION)
+        val owner = world.getComponent<OwnerComponent>(entityId, ComponentTypeId.OWNER)
+        val entityType = world.getComponent<EntityTypeComponent>(entityId, ComponentTypeId.ENTITY_TYPE)
+        
+        if (position != null && owner != null && entityType != null) {
+            // Convert world coordinates to screen coordinates
+            val screenX = (position.x / 2f).toInt()
+            val screenY = (position.y / 2f).toInt()
+            
+            // Choose color based on team
+            g2d.color = when (owner.teamId) {
+                1 -> Color.BLUE
+                2 -> Color.RED
+                else -> Color.GRAY
+            }
+            
+            // Draw entity
+            when (entityType.category) {
+                "unit" -> {
+                    g2d.fillOval(screenX - 5, screenY - 5, 10, 10)
+                }
+                "building" -> {
+                    g2d.fillRect(screenX - 8, screenY - 8, 16, 16)
+                }
+                else -> {
+                    g2d.fillOval(screenX - 3, screenY - 3, 6, 6)
+                }
+            }
+            
+            // Draw entity type label
+            g2d.color = Color.WHITE
+            g2d.font = Font("Arial", Font.PLAIN, 10)
+            g2d.drawString(entityType.name, screenX + 8, screenY)
+        }
+    }
+    
+    // Draw UI
+    drawUI(g2d, launcher)
+}
+
+private fun drawUI(g2d: Graphics2D, launcher: RTSGameLauncher) {
+    g2d.color = Color.WHITE
+    g2d.font = Font("Arial", Font.BOLD, 14)
+    
+    val stats = """
+        Entities: ${launcher.simulation.getEntityCount()}
+        Tick: ${launcher.simulation.currentTick}
+        Update Time: ${launcher.simulation.updateTime / 1_000_000}ms
+    """.trimIndent()
+    
+    val lines = stats.split("\n")
+    lines.forEachIndexed { index, line ->
+        g2d.drawString(line, 10, 20 + index * 20)
+    }
 }

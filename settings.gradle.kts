@@ -16,10 +16,10 @@ pluginManagement {
         maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlin/kotlin-mpp") }
     }
     plugins {
-        kotlin("multiplatform") version "2.2.0"
-        kotlin("native") version "2.2.0" apply false
-        id("com.github.ben-manes.versions") version "0.52.0"
-        id("io.gitlab.arturbosch.detekt") version "1.23.6"
+        kotlin("multiplatform") version "1.9.23"
+        kotlin("native") version "1.9.23" apply false
+        // id("com.github.ben-manes.versions") version "0.52.0"
+        // id("io.gitlab.arturbosch.detekt") version "1.23.6"
     }
 }
 

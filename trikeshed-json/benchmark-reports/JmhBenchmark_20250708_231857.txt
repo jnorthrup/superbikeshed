@@ -1,0 +1,37 @@
+Calculating task graph as no cached configuration is available for tasks: :trikeshed-json:jvmTest --tests *JmhBenchmark*
+
+> Configure project :trikeshed-async-core
+w: [33m[1m⚠️ Unused Kotlin Source Sets[0m[0m
+The Kotlin source set nativeMain was configured but not added to any Kotlin compilation.
+[32m[1mSolution:[0m[0m
+[32m[3mYou can add a source set to a target's compilation by connecting it with the compilation's default source set using 'dependsOn'.[0m[0m
+[36mSee [0m[34mhttps://kotl.in/connecting-source-sets[0m[36m[0m
+
+
+[Incubating] Problems report is available at: file:///Users/jim/work/v2superbikeshed/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Configuration cache state could not be cached: field `provider` of `org.gradle.internal.serialize.codecs.core.ProviderBackedFileCollectionSpec` bean found in field `element` of `java.util.Collections$SingletonList` bean found in field `elements` of `org.gradle.internal.serialize.codecs.core.ResolutionBackedFileCollectionSpec` bean found in field `__classpathSnapshot__` of `org.jetbrains.kotlin.gradle.tasks.KotlinCompile$ClasspathSnapshotProperties_Decorated` bean found in field `__classpathSnapshotProperties__` of task `:trikeshed-json:compileKotlinJvm` of type `org.jetbrains.kotlin.gradle.tasks.KotlinCompile`: error writing value of type 'org.gradle.api.internal.provider.DefaultProvider'
+> Could not resolve all files for configuration ':trikeshed-json:jvmCompileClasspath'.
+   > Could not resolve all dependencies for configuration ':trikeshed-json:jvmCompileClasspath'.
+      > Could not find org.jetbrains.kotlinx:kotlinx-serialization-json:.
+        Required by:
+            project :trikeshed-json
+   > Could not resolve all dependencies for configuration ':trikeshed-json:jvmCompileClasspath'.
+      > Could not find org.jetbrains.kotlinx:kotlinx-coroutines-core:.
+        Required by:
+            project :trikeshed-json
+
+* Try:
+> The project declares repositories, effectively ignoring the repositories you have declared in the settings.
+   To determine how project repositories are declared, configure your build to fail on project repositories.
+   For more information, please refer to https://docs.gradle.org/8.14.3/userguide/declaring_repositories.html#sub:fail_build_on_project_repositories in the Gradle documentation.
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+Configuration cache entry discarded due to serialization error.

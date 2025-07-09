@@ -1,8 +1,6 @@
-@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 group = "borg.trikeshed"
@@ -27,9 +25,9 @@ kotlin {
         commonMain {
             dependencies {
                 // Core library has minimal dependencies
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             }
         }
         

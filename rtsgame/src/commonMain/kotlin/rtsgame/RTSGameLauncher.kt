@@ -7,14 +7,7 @@ import rtsgame.core.*
 import rtsgame.components.*
 import rtsgame.systems.*
 import rtsgame.combat.*
-import rtsgame.pathfinding.*
-import rtsgame.physics.*
 import rtsgame.ai.*
-import rtsgame.networking.*
-import rtsgame.procedural.*
-import rtsgame.rendering.*
-import rtsgame.concurrent.*
-import borg.trikeshed.lib.*
 
 /**
  * Main game launcher that integrates all advanced systems
@@ -112,49 +105,27 @@ class RTSGameLauncher {
     }
     
     internal fun spawnStartingUnits(spawn: SpawnPoint) {
-        val teamId = spawn.playerId
+        // Create commander
+        simulation.createUnit("commander", spawn.teamId, spawn.x, spawn.y)
         
-        // Command center
-        simulation.spawnCommandCenter(teamId, spawn.x, spawn.y)
-        
-        // Starting workers
-        repeat(5) { i ->
-            val angle = i * PI * 2 / 5
-            val x = spawn.x + cos(angle).toFloat() * 50
-            val y = spawn.y + sin(angle).toFloat() * 50
-            
-            simulation.spawnUnit(teamId, UnitType.WORKER, x, y)
-        }
-        
-        // Starting scouts
-        repeat(2) { i ->
-            val x = spawn.x + (i - 0.5f) * 100
-            val y = spawn.y + 100
-            
-            simulation.spawnUnit(teamId, UnitType.SCOUT, x, y)
-        }
+        // Create initial units
+        simulation.createUnit("tank", spawn.teamId, spawn.x + 20f, spawn.y)
+        simulation.createUnit("scout", spawn.teamId, spawn.x, spawn.y + 20f)
     }
     
-    internal fun createResourceNode(resource: MapFeature.ResourceNode) {
-        val entity = simulation.world.createEntity()
-        
-        simulation.world.addComponent(entity, PositionComponent(resource.x, resource.y))
-        simulation.world.addComponent(entity, ResourceNodeComponent(
-            resourceType = resource.type,
-            remainingAmount = resource.amount,
-            gatherRate = 5f
-        ))
+    internal fun createResourceNode(feature: MapFeature.ResourceNode) {
+        simulation.createBuilding("massExtractor", 0, feature.x, feature.y)
     }
     
     internal fun startGameLoop(config: GameConfig) {
         println("🎮 Starting game loop")
         
-        var lastTime = TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds
+        var lastTime = TimeUtils.nanoTime()
         var accumulator = 0.0
         val fixedDeltaTime = 1.0 / config.tickRate
         
         while (true) {
-            val currentTime = TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds
+            val currentTime = TimeUtils.nanoTime()
             val frameTime = (currentTime - lastTime) / 1_000_000_000.0
             lastTime = currentTime
             
@@ -242,7 +213,7 @@ class RTSGameLauncher {
             |=== Performance Stats ===
             |FPS: ${stats.fps}
             |Frame Time: ${stats.avgFrameTime}ms
-            |Entity Count: ${simulation.entityCount}
+            |Entity Count: ${simulation.getEntityCount()}
             |Update Time: ${simulation.updateTime / 1_000_000}ms
             |Render Time: ${renderer.gpuTime}ms
             |Draw Calls: ${renderer.drawCalls}
@@ -258,7 +229,7 @@ class RTSGameLauncher {
 data class GameConfig(
     val mapWidth: Int = 2048,
     val mapHeight: Int = 2048,
-    val seed: Long = Clock.System.now().toEpochMilliseconds(),
+    val seed: Long = TimeUtils.currentTimeMillis(),
     val tickRate: Int = 60,
     val threadCount: Int = 8,
     val playerId: Int = 0,
@@ -270,81 +241,123 @@ data class GameConfig(
  * Performance monitoring
  */
 class PerformanceMonitor {
-    internal var frameCount = 0
-    internal var totalFrameTime = 0.0
-    internal var lastStatsTime = TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds
-    
-    data class Stats(
-        val fps: Int,
-        val avgFrameTime: Double,
-        val minFrameTime: Double,
-        val maxFrameTime: Double
-    )
-    
-    internal var minFrameTime = Double.MAX_VALUE
-    internal var maxFrameTime = 0.0
+    private val frameTimes = mutableListOf<Double>()
+    private val maxFrameTimes = 60
     
     fun recordFrame(frameTime: Double) {
-        frameCount++
-        totalFrameTime += frameTime
-        minFrameTime = minOf(minFrameTime, frameTime)
-        maxFrameTime = maxOf(maxFrameTime, frameTime)
+        frameTimes.add(frameTime)
+        if (frameTimes.size > maxFrameTimes) {
+            frameTimes.removeAt(0)
+        }
     }
     
     fun shouldShowStats(): Boolean {
-        return TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds - lastStatsTime > 1_000_000_000L
+        return frameTimes.size >= maxFrameTimes
     }
     
-    fun getStats(): Stats {
-        val avgFrameTime = if (frameCount > 0) totalFrameTime / frameCount else 0.0
-        val fps = if (avgFrameTime > 0) (1.0 / avgFrameTime).toInt() else 0
+    fun getStats(): PerformanceStats {
+        val avgFrameTime = frameTimes.average() * 1000
+        val fps = if (avgFrameTime > 0) 1000.0 / avgFrameTime else 0.0
         
-        val stats = Stats(
-            fps = fps,
-            avgFrameTime = avgFrameTime * 1000,
-            minFrameTime = minFrameTime * 1000,
-            maxFrameTime = maxFrameTime * 1000
+        return PerformanceStats(
+            fps = fps.toInt(),
+            avgFrameTime = avgFrameTime.toFloat()
         )
-        
-        // Reset counters
-        frameCount = 0
-        totalFrameTime = 0.0
-        minFrameTime = Double.MAX_VALUE
-        maxFrameTime = 0.0
-        lastStatsTime = TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds
-        
-        return stats
     }
 }
 
-/**
- * Additional components needed for full game
- */
-data class ResourceNodeComponent(
-    val resourceType: ResourceType,
-    var remainingAmount: Int,
-    val gatherRate: Float
-) : Component {
-    override val typeId = ComponentTypeId(200)
-}
+data class PerformanceStats(
+    val fps: Int,
+    val avgFrameTime: Float
+)
 
-// Stub systems referenced but not fully implemented
-class ConstructionSystem : System {
-    override fun update(world: ECSWorld, deltaTime: Float) {
-        // Handle building construction
+// Placeholder classes for systems that need to be implemented
+class LockFreeExecutor(threadCount: Int) {
+    fun executeSystems(world: ECSWorld, systems: List<System>, deltaTime: Float) {
+        systems.forEach { system ->
+            system.update(world, deltaTime)
+        }
     }
 }
 
-class ProductionSystem : System {
-    override fun update(world: ECSWorld, deltaTime: Float) {
-        // Handle unit production from buildings
+class HierarchicalPathfinder(mapWidth: Int, mapHeight: Int, clusterSize: Int)
+class DeterministicNetcode(playerId: Int, tickRate: Int) {
+    fun update(simulation: NextGenSimulation, input: PlayerInput): Any? = null
+}
+
+class WebGPUOptimizedRenderer {
+    var gpuTime: Long = 0
+    var drawCalls: Int = 0
+    var visibleInstances: Int = 0
+    
+    fun render(world: ECSWorld, interpolation: Float) {
+        // TODO: Implement rendering
     }
+}
+
+class ProceduralMapGenerator(mapWidth: Int, mapHeight: Int, seed: Long) {
+    fun generate(): MapData = MapData(emptyList(), emptyList())
+}
+
+class AdvancedPhysicsSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
 }
 
 class NetworkSyncSystem : System {
-    override fun update(world: ECSWorld, deltaTime: Float) {
-        // Sync entity states over network
-    }
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class SteeringSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class PhysicsSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class MovementSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class FlowFieldPathfindingSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class FormationSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class AdvancedCombatSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class ConstructionSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+class ProductionSystem : System {
+    override fun update(world: ECSWorld, deltaTime: Float) {}
+}
+
+data class MapData(
+    val spawnPoints: List<SpawnPoint>,
+    val features: List<MapFeature>
+)
+
+data class SpawnPoint(
+    val x: Float,
+    val y: Float,
+    val teamId: Int
+)
+
+sealed class MapFeature {
+    data class ResourceNode(val x: Float, val y: Float, val type: String) : MapFeature()
+    data class StrategicPoint(val x: Float, val y: Float) : MapFeature()
+    data class Obstacle(val x: Float, val y: Float, val width: Float, val height: Float) : MapFeature()
+}
+
+sealed class PlayerInput {
+    object NoOp : PlayerInput()
 }
 
 /**

@@ -1,273 +1,281 @@
 import kotlin.math.*
 package rtsgame.components
-import kotlinx.datetime.*
-import kotlin.time.*
-
-import rtsgame.core.*
-import kotlin.jvm.JvmInline
 
 /**
- * High-performance RTS component definitions
- * Optimized for cache locality and SIMD operations
+ * Core component types for RTS game entities
  */
-
-object ComponentTypes {
-    val POSITION = ComponentTypeId(0)
-    val VELOCITY = ComponentTypeId(1)
-    val HEALTH = ComponentTypeId(2)
-    val TEAM = ComponentTypeId(3)
-    val UNIT_AI = ComponentTypeId(4)
-    val WEAPON = ComponentTypeId(5)
-    val BUILDING = ComponentTypeId(6)
-    val RESOURCE_GATHERER = ComponentTypeId(7)
-    val CONSTRUCTION = ComponentTypeId(8)
-    val VISION = ComponentTypeId(9)
-    val PATHFINDING = ComponentTypeId(10)
-    val FORMATION = ComponentTypeId(11)
-    val COMMAND_QUEUE = ComponentTypeId(12)
-    val PHYSICS = ComponentTypeId(13)
-    val NETWORK_SYNC = ComponentTypeId(14)
-}
-
-/**
- * Position component - hot path, optimized for batch processing
- */
-data class PositionComponent(
-    var x: Float,
-    var y: Float,
-    var rotation: Float = 0f
-) : Component {
-    override val typeId = ComponentTypes.POSITION
-}
-
-/**
- * Velocity component for movement
- */
-data class VelocityComponent(
-    var vx: Float,
-    var vy: Float,
-    var maxSpeed: Float
-) : Component {
-    override val typeId = ComponentTypes.VELOCITY
-}
-
-/**
- * Health component with shield support
- */
-data class HealthComponent(
-    var health: Float,
-    var maxHealth: Float,
-    var shield: Float = 0f,
-    var maxShield: Float = 0f,
-    var armor: Float = 0f,
-    var regeneration: Float = 0f
-) : Component {
-    override val typeId = ComponentTypes.HEALTH
-    
-    val isDead: Boolean get() = health <= 0f
-    val healthPercent: Float get() = health / maxHealth
-    val shieldPercent: Float get() = if (maxShield > 0) shield / maxShield else 0f
-}
-
-/**
- * Team/ownership component
- */
-value class TeamComponent(val teamId: Int) : Component {
-    override val typeId get() = ComponentTypes.TEAM
-}
-
-/**
- * AI state for units
- */
-data class UnitAIComponent(
-    var state: AIState = AIState.IDLE,
-    var targetEntity: EntityId? = null,
-    var targetPosition: PositionComponent? = null,
-    var aggroRange: Float = 150f,
-    var attackRange: Float = 100f,
-    var lastDecisionTime: Long = 0
-) : Component {
-    override val typeId = ComponentTypes.UNIT_AI
-}
-
-enum class AIState {
-    IDLE, MOVING, ATTACKING, FLEEING, GATHERING, BUILDING, PATROLLING
-}
-
-/**
- * Weapon component for combat units
- */
-data class WeaponComponent(
-    var damage: Float,
-    var attackSpeed: Float,
-    var range: Float,
-    var projectileSpeed: Float = 0f,
-    var lastAttackTime: Long = 0,
-    var damageType: DamageType = DamageType.KINETIC,
-    var areaOfEffect: Float = 0f
-) : Component {
-    override val typeId = ComponentTypes.WEAPON
-    
-    fun canAttack(currentTime: Long): Boolean {
-        return currentTime - lastAttackTime >= (1000f / attackSpeed).toLong()
+@JvmInline
+value class ComponentTypeId(val value: Int) {
+    companion object {
+        val POSITION = ComponentTypeId(1)
+        val HEALTH = ComponentTypeId(2)
+        val VELOCITY = ComponentTypeId(3)
+        val OWNER = ComponentTypeId(4)
+        val ENTITY_TYPE = ComponentTypeId(5)
+        val COMMAND = ComponentTypeId(6)
+        val WEAPON = ComponentTypeId(7)
+        val SHIELD = ComponentTypeId(8)
+        val RESOURCE = ComponentTypeId(9)
+        val COMPUTRONIUM = ComponentTypeId(10)
     }
 }
 
-enum class DamageType {
-    KINETIC, ENERGY, EXPLOSIVE, PLASMA, EMP
+/**
+ * Base component interface
+ */
+interface Component {
+    val typeId: ComponentTypeId
 }
 
 /**
- * Building component
+ * Position component for entity location
  */
-data class BuildingComponent(
-    var buildingType: BuildingType,
-    var constructionProgress: Float = 0f,
-    var powerConsumption: Float = 0f,
-    var isOperational: Boolean = false
+@JvmInline
+value class PositionComponent(
+    val x: Float,
+    val y: Float,
+    val z: Float = 0f
 ) : Component {
-    override val typeId = ComponentTypes.BUILDING
+    override val typeId: ComponentTypeId = ComponentTypeId.POSITION
     
-    val isConstructed: Boolean get() = constructionProgress >= 100f
-}
-
-enum class BuildingType {
-    COMMAND_CENTER, BARRACKS, FACTORY, POWER_PLANT, REFINERY, TURRET, WALL, RESEARCH_LAB
-}
-
-/**
- * Resource gathering component
- */
-data class ResourceGathererComponent(
-    var gatherRate: Float,
-    var capacity: Float,
-    var currentLoad: Float = 0f,
-    var targetResource: EntityId? = null,
-    var resourceType: ResourceType = ResourceType.MINERALS
-) : Component {
-    override val typeId = ComponentTypes.RESOURCE_GATHERER
+    fun distanceTo(other: PositionComponent): Float {
+        val dx = x - other.x
+        val dy = y - other.y
+        val dz = z - other.z
+        return kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+    }
     
-    val isFull: Boolean get() = currentLoad >= capacity
-}
-
-enum class ResourceType {
-    MINERALS, GAS, ENERGY, RARE_MINERALS
-}
-
-/**
- * Construction component for builders
- */
-data class ConstructionComponent(
-    var buildPower: Float,
-    var currentTarget: EntityId? = null,
-    var buildQueue: MutableList<BuildOrder> = mutableListOf()
-) : Component {
-    override val typeId = ComponentTypes.CONSTRUCTION
-}
-
-data class BuildOrder(
-    val buildingType: BuildingType,
-    val position: PositionComponent,
-    val cost: ResourceCost
-)
-
-data class ResourceCost(
-    val minerals: Int = 0,
-    val gas: Int = 0,
-    val energy: Int = 0
-)
-
-/**
- * Vision/fog of war component
- */
-data class VisionComponent(
-    var sightRange: Float,
-    var detectionRange: Float = 0f,
-    var isCloaked: Boolean = false,
-    var cloakEnergyCost: Float = 0f
-) : Component {
-    override val typeId = ComponentTypes.VISION
-}
-
-/**
- * Pathfinding component for movement
- */
-data class PathfindingComponent(
-    var path: MutableList<PositionComponent> = mutableListOf(),
-    var currentWaypoint: Int = 0,
-    var pathfindingPriority: Int = 0,
-    var avoidanceRadius: Float = 10f
-) : Component {
-    override val typeId = ComponentTypes.PATHFINDING
-    
-    fun hasPath(): Boolean = path.isNotEmpty()
-    fun isPathComplete(): Boolean = currentWaypoint >= path.size
-    fun getCurrentTarget(): PositionComponent? = path.getOrNull(currentWaypoint)
-}
-
-/**
- * Formation component for group movement
- */
-data class FormationComponent(
-    var formationType: FormationType,
-    var formationPosition: Int,
-    var formationLeader: EntityId? = null,
-    var spacing: Float = 20f
-) : Component {
-    override val typeId = ComponentTypes.FORMATION
-}
-
-enum class FormationType {
-    LINE, COLUMN, WEDGE, CIRCLE, SCATTER
-}
-
-/**
- * Command queue for unit orders
- */
-data class CommandQueueComponent(
-    val commands: MutableList<Command> = mutableListOf(),
-    var currentCommand: Command? = null
-) : Component {
-    override val typeId = ComponentTypes.COMMAND_QUEUE
-    
-    fun hasCommands(): Boolean = currentCommand != null || commands.isNotEmpty()
-    
-    fun nextCommand(): Command? {
-        if (currentCommand == null && commands.isNotEmpty()) {
-            currentCommand = commands.removeAt(0)
+    fun directionTo(other: PositionComponent): PositionComponent {
+        val dx = other.x - x
+        val dy = other.y - y
+        val dz = other.z - z
+        val length = kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+        return if (length > 0f) {
+            PositionComponent(dx / length, dy / length, dz / length)
+        } else {
+            PositionComponent(0f, 0f, 0f)
         }
-        return currentCommand
     }
 }
 
-sealed class Command
-data class MoveCommand(val target: PositionComponent, val formation: FormationType? = null) : Command()
-data class AttackCommand(val target: EntityId) : Command()
-data class AttackMoveCommand(val target: PositionComponent) : Command()
-data class GatherCommand(val resource: EntityId) : Command()
-data class BuildCommand(val building: BuildOrder) : Command()
-data class PatrolCommand(val waypoints: List<PositionComponent>) : Command()
-
 /**
- * Physics component for advanced movement
+ * Health component for entity vitality
  */
-data class PhysicsComponent(
-    var mass: Float = 1f,
-    var drag: Float = 0.1f,
-    var maxForce: Float = 100f,
-    var acceleration: VelocityComponent = VelocityComponent(0f, 0f, 0f)
+@JvmInline
+value class HealthComponent(
+    val currentHp: Float,
+    val maxHp: Float,
+    val lastAttacker: Int? = null
 ) : Component {
-    override val typeId = ComponentTypes.PHYSICS
+    override val typeId: ComponentTypeId = ComponentTypeId.HEALTH
+    
+    fun isAlive(): Boolean = currentHp > 0f
+    fun healthRatio(): Float = if (maxHp > 0f) currentHp / maxHp else 0f
+    
+    fun takeDamage(amount: Float): HealthComponent {
+        return HealthComponent(
+            currentHp = (currentHp - amount).coerceAtLeast(0f),
+            maxHp = maxHp,
+            lastAttacker = lastAttacker
+        )
+    }
+    
+    fun heal(amount: Float): HealthComponent {
+        return HealthComponent(
+            currentHp = (currentHp + amount).coerceAtMost(maxHp),
+            maxHp = maxHp,
+            lastAttacker = lastAttacker
+        )
+    }
 }
 
 /**
- * Network synchronization component
+ * Velocity component for entity movement
  */
-data class NetworkSyncComponent(
-    var lastSyncTime: Long = 0,
-    var syncPriority: Int = 0,
-    var isDirty: Boolean = true,
-    var owner: Int = -1
+@JvmInline
+value class VelocityComponent(
+    val vx: Float,
+    val vy: Float,
+    val vz: Float = 0f
 ) : Component {
-    override val typeId = ComponentTypes.NETWORK_SYNC
+    override val typeId: ComponentTypeId = ComponentTypeId.VELOCITY
+    
+    fun speed(): Float = kotlin.math.sqrt(vx * vx + vy * vy + vz * vz)
+    
+    fun normalize(): VelocityComponent {
+        val speed = speed()
+        return if (speed > 0f) {
+            VelocityComponent(vx / speed, vy / speed, vz / speed)
+        } else {
+            VelocityComponent(0f, 0f, 0f)
+        }
+    }
+}
+
+/**
+ * Owner component for team/player identification
+ */
+@JvmInline
+value class OwnerComponent(
+    val teamId: Int,
+    val playerId: String? = null
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.OWNER
+}
+
+/**
+ * Entity type component for unit/building classification
+ */
+@JvmInline
+value class EntityTypeComponent(
+    val type: String,
+    val name: String,
+    val category: String
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.ENTITY_TYPE
+}
+
+/**
+ * Command component for unit orders
+ */
+@JvmInline
+value class CommandComponent(
+    val commandType: String,
+    val targetId: Int? = null,
+    val targetX: Float? = null,
+    val targetY: Float? = null,
+    val priority: Int = 1
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.COMMAND
+}
+
+/**
+ * Weapon component for combat capabilities
+ */
+@JvmInline
+value class WeaponComponent(
+    val damage: Float,
+    val range: Float,
+    val cooldown: Float,
+    val currentCooldown: Float = 0f
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.WEAPON
+    
+    fun canFire(): Boolean = currentCooldown <= 0f
+    
+    fun updateCooldown(deltaTime: Float): WeaponComponent {
+        return WeaponComponent(
+            damage = damage,
+            range = range,
+            cooldown = cooldown,
+            currentCooldown = (currentCooldown - deltaTime).coerceAtLeast(0f)
+        )
+    }
+    
+    fun fire(): WeaponComponent {
+        return WeaponComponent(
+            damage = damage,
+            range = range,
+            cooldown = cooldown,
+            currentCooldown = cooldown
+        )
+    }
+}
+
+/**
+ * Shield component for defensive capabilities
+ */
+@JvmInline
+value class ShieldComponent(
+    val currentShields: Float,
+    val maxShields: Float,
+    val regenerationRate: Float = 1f
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.SHIELD
+    
+    fun shieldRatio(): Float = if (maxShields > 0f) currentShields / maxShields else 0f
+    
+    fun takeDamage(amount: Float): ShieldComponent {
+        return ShieldComponent(
+            currentShields = (currentShields - amount).coerceAtLeast(0f),
+            maxShields = maxShields,
+            regenerationRate = regenerationRate
+        )
+    }
+    
+    fun regenerate(deltaTime: Float): ShieldComponent {
+        return ShieldComponent(
+            currentShields = (currentShields + regenerationRate * deltaTime).coerceAtMost(maxShields),
+            maxShields = maxShields,
+            regenerationRate = regenerationRate
+        )
+    }
+}
+
+/**
+ * Resource component for economic entities
+ */
+@JvmInline
+value class ResourceComponent(
+    val resourceType: String,
+    val amount: Float,
+    val maxAmount: Float,
+    val generationRate: Float = 0f
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.RESOURCE
+    
+    fun canExtract(amount: Float): Boolean = this.amount >= amount
+    
+    fun extract(amount: Float): ResourceComponent {
+        return ResourceComponent(
+            resourceType = resourceType,
+            amount = (this.amount - amount).coerceAtLeast(0f),
+            maxAmount = maxAmount,
+            generationRate = generationRate
+        )
+    }
+    
+    fun generate(deltaTime: Float): ResourceComponent {
+        return ResourceComponent(
+            resourceType = resourceType,
+            amount = (amount + generationRate * deltaTime).coerceAtMost(maxAmount),
+            maxAmount = maxAmount,
+            generationRate = generationRate
+        )
+    }
+}
+
+/**
+ * Computronium component for advanced AI capabilities
+ */
+@JvmInline
+value class ComputroniumComponent(
+    val currentComputronium: Float,
+    val maxComputronium: Float,
+    val generationRate: Float = 1f,
+    val focusMode: String = "balanced"
+) : Component {
+    override val typeId: ComponentTypeId = ComponentTypeId.COMPUTRONIUM
+    
+    fun computroniumRatio(): Float = if (maxComputronium > 0f) currentComputronium / maxComputronium else 0f
+    
+    fun canSpend(amount: Float): Boolean = currentComputronium >= amount
+    
+    fun spend(amount: Float): ComputroniumComponent {
+        return ComputroniumComponent(
+            currentComputronium = (currentComputronium - amount).coerceAtLeast(0f),
+            maxComputronium = maxComputronium,
+            generationRate = generationRate,
+            focusMode = focusMode
+        )
+    }
+    
+    fun generate(deltaTime: Float): ComputroniumComponent {
+        return ComputroniumComponent(
+            currentComputronium = (currentComputronium + generationRate * deltaTime).coerceAtMost(maxComputronium),
+            maxComputronium = maxComputronium,
+            generationRate = generationRate,
+            focusMode = focusMode
+        )
+    }
 }

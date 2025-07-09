@@ -10,17 +10,13 @@ import kotlin.coroutines.CoroutineContext
  * to compile and function properly.
  */
 
-// Core type aliases to replace missing borg.trikeshed.lib types
-typealias Indexed<T> = List<T>
-typealias Join<A, B> = Pair<A, B>
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.j
 
-// Extension functions to replace missing operators
-fun <T> Int.j(init: (Int) -> T): Indexed<T> {
-    return (0 until this).map { init(it) }
-}
-
-fun <T> Indexed<T>.a(): Int = this.size
-fun <T> Indexed<T>.b(): T = this.first()
+// Extension functions to adapt to canonical types
+fun <T> Indexed<T>.a(): Int = this.a
+fun <T> Indexed<T>.b(): T = this.b(0) // Assuming b(0) is a reasonable default for single-element access
 
 // Channel data type
 data class ChannelData(

@@ -10,10 +10,7 @@ repositories {
 
 kotlin {
     jvm {
-        withJava()
-        binaries {
-            executable()
-        }
+        // binaries block removed; not needed for JVM library/module
     }
     
     sourceSets {

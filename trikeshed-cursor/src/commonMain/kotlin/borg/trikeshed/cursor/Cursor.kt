@@ -151,12 +151,7 @@ fun <T> Cursor.map(transform: (RowVec) -> T): Indexed<T> =
 
 /** Filter cursor rows */
 fun Cursor.filter(predicate: (RowVec) -> Boolean): Cursor {
-    val matchingIndices = mutableListOf<Int>()
-    for (i in 0 until size) {
-        if (predicate(this[i])) {
-            matchingIndices.add(i)
-        }
-    }
+    val matchingIndices = (0 until size).filter { i -> predicate(this[i]) }.toList()
     return this[matchingIndices]
 }
 
@@ -172,12 +167,8 @@ fun Cursor.sortBy(columnIndex: Int): Cursor {
 
 /** Group cursor by column values */
 fun Cursor.groupBy(columnIndex: Int): Indexed<Cursor> {
-    val groups = mutableMapOf<Any?, MutableList<Int>>()
-    for (i in 0 until size) {
-        val key = this[i].b(columnIndex).a
-        groups.getOrPut(key) { mutableListOf() }.add(i)
-    }
-    val groupList = groups.values.toList()
+    val groupsMap = (0 until size).groupBy { i -> this[i].b(columnIndex).a }
+    val groupList = groupsMap.values.toList()
     return groupList.size j { i: Int -> this[groupList[i]] }
 }
 

@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    kotlin("plugin.serialization") version "2.2.0"
     
     
     id("com.github.johnrengelman.shadow") version "8.1.1"

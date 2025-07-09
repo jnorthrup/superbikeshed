@@ -154,13 +154,16 @@ inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Index
 // === IterableIndexed and play button ===
 
 @kotlin.jvm.JvmInline
-value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s {
+value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A> {
     override fun iterator(): Iterator<A> = object : Iterator<A> {
         internal var currentIndex = 0
         override fun hasNext(): Boolean = currentIndex < s.a
         override fun next(): A = s.b(currentIndex++)
     }
+    val size: Int get() = s.a
+    operator fun get(index: Int): A = s.b(index)
 }
+
 
 val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 

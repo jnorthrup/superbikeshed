@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 group = "borg.trikeshed"
@@ -17,8 +17,8 @@ kotlin {
             dependencies {
                 
                 implementation(project(":trikeshed-lib"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             }
         }
         commonTest {

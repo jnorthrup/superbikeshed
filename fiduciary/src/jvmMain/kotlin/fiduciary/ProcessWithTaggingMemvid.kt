@@ -4,6 +4,7 @@ import fiduciary.curator.*
 import fiduciary.pipeline.*
 import fiduciary.nlp.*
 import fiduciary.attention.*
+import fiduciary.memvid.*
 import fiduciary.fetch.*
 import borg.trikeshed.net.http.*
 import borg.trikeshed.lib.*
@@ -96,21 +97,55 @@ suspend fun main() {
 }
 
 /**
- * Create Memvid bridge instance
+ * Create Memvid bridge instance with real connector
  */
 fun createMemvidBridge(): MemvidAttentionBridge {
-    // Mock implementation - replace with actual Memvid connection
+    // Use real Memvid connector
+    val connector = RealMemvidConnector(
+        memvidBaseUrl = System.getenv("MEMVID_URL") ?: "http://localhost:8089/memvid",
+        apiKey = System.getenv("MEMVID_API_KEY")
+    )
+    
+    val videoEncoder = MemvidVideoEncoder(
+        frameWidth = 1280,
+        frameHeight = 720,
+        frameRate = 30
+    )
+    
     return object : MemvidAttentionBridge(
-        memvidEndpoint = MemvidEndpoint("http://localhost:8080/memvid"),
-        couchDB = null // Mock CouchDB service
+        memvidEndpoint = MemvidEndpoint("http://localhost:8089/memvid"),
+        couchDB = null // Could add CouchDB for provenance
     ) {
         private var eventCount = 0
         private var focusCount = 0
         private var conceptCount = 0
         private var totalIntensity = 0.0
+        private val eventFlow = MutableSharedFlow<AttentionEvent>()
+        
+        init {
+            // Start video encoding pipeline
+            GlobalScope.launch {
+                videoEncoder.encodeAttentionStream(eventFlow)
+                    .collect { frame ->
+                        // Send frame to Memvid
+                        println("📹 Generated video frame #${frame.frameNumber}")
+                    }
+            }
+        }
         
         override suspend fun recordEvent(event: AttentionEvent) {
             eventCount++
+            
+            // Send to real Memvid
+            val success = connector.registerEvent(event)
+            if (success) {
+                println("✅ Event sent to Memvid")
+            }
+            
+            // Emit for video encoding
+            eventFlow.emit(event)
+            
+            // Track statistics
             when (event) {
                 is AttentionEvent.DocumentFocus -> {
                     focusCount++
@@ -120,6 +155,8 @@ fun createMemvidBridge(): MemvidAttentionBridge {
                 else -> {}
             }
         }
+        
+        suspend fun getMemory() = connector.getAttentionMemory()
         
         fun getStatistics() = MemvidStats(
             totalEvents = eventCount,

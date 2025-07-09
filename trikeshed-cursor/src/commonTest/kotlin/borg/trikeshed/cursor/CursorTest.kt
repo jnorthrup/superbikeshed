@@ -177,10 +177,9 @@ class CursorTest {
         )
         val cursor = cursorOf(data)
         
-        val names = mutableListOf<String>()
-        cursor.forEach { row ->
-            names.add(row.getString(0) ?: "")
-        }
+        val names = cursor.play.map { row ->
+            row.getString(0) ?: ""
+        }.toList()
         
         assertEquals(listOf("A", "B", "C"), names)
     }

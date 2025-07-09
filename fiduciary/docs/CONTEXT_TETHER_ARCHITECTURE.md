@@ -15,7 +15,7 @@ graph TB
         ANALYTICS_CTX[AnalyticsContext]:::context
         INGESTION_CTX[IngestionContext]:::context
     end
-
+ 
     %% === COMPONENTS LAYER ===
     subgraph ComponentLayer["📦 Component Layer"]
         subgraph StorageComp["StorageComponent"]
@@ -38,8 +38,7 @@ graph TB
         
         subgraph CRDTComp["CRDTComponent"]
             CRDT_IMPL[CRDTContextImpl]:::impl
-            CRDT_PROTOCOL[CRDT Protocol]:::internal
-            CRDT_MUTEX[Mutex]:::internal
+             CRDT_MUTEX[Mutex]:::internal
         end
         
         subgraph AnalyticsComp["AnalyticsComponent"]
