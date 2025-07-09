@@ -1,0 +1,9 @@
+# Ignore Gradle build output
+/build/
+
+# Ignore IntelliJ IDEA project files
+.idea/
+*.iml
+
+# Ignore other common files
+out/ 

@@ -5,9 +5,7 @@ plugins {
 
 group = "borg.trikeshed"
 
-repositories {
-    mavenCentral()
-}
+
 
 kotlin {
     jvm()

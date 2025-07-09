@@ -4,7 +4,7 @@ plugins {
 
 kotlin {
     jvm()
-    // js { nodejs() }  // Disabled - focus on JVM/native
+    
     sourceSets {
         commonMain {
             dependencies {

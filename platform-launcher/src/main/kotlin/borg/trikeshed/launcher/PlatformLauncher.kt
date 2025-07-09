@@ -9,6 +9,10 @@ import java.net.URLClassLoader
 import java.nio.file.Paths
 import javax.tools.ToolProvider
 import kotlin.concurrent.thread
+import fiduciary.memvid.MemvidEncoder
+import fiduciary.memvid.MemvidRetriever
+import fiduciary.memvid.MemvidIndex
+import kotlinx.serialization.json.Json
 
 /**
  * Platform Launcher - Dynamically loads JVM and manages WASM execution
@@ -395,6 +399,32 @@ class SimpleWASMEngine {
 
 // Platform launcher entry point
 fun main(args: Array<String>) = runBlocking {
+    if (args.isNotEmpty() && args[0] == "--memvid-encode" && args.size >= 3) {
+        val inputFile = File(args[1])
+        val outputFile = File(args[2])
+        val indexFile = File(outputFile.parentFile, outputFile.nameWithoutExtension + "-index.json")
+        val encoder = MemvidEncoder()
+        val textChunks = inputFile.readLines().filter { it.isNotBlank() }
+        encoder.addChunks(textChunks)
+        val (videoData, index) = encoder.buildVideo()
+        outputFile.writeBytes(videoData)
+        indexFile.writeText(Json.encodeToString(MemvidIndex.serializer(), index))
+        println("Memvid video written to: ${outputFile.absolutePath}")
+        println("Memvid index written to: ${indexFile.absolutePath}")
+        return@runBlocking
+    }
+    if (args.isNotEmpty() && args[0] == "--memvid-search" && args.size >= 3) {
+        val indexFile = File(args[1])
+        val query = args[2]
+        val index = Json.decodeFromString(MemvidIndex.serializer(), indexFile.readText())
+        val retriever = MemvidRetriever(index)
+        val results = retriever.search(query, topK = 5)
+        println("Search results for '$query':")
+        results.forEach { result ->
+            println("- [Score: %.3f] %s".format(result.score, result.chunk.text.take(120)))
+        }
+        return@runBlocking
+    }
     val launcher = PlatformLauncher()
     
     // Initialize with custom JVM options

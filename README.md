@@ -1,5 +1,103 @@
 # kotlinx-serialization-wireproto
 
+## Project Completion Overview
+
+```
+Root Project: superbikeshed
+
+├── trikeshed-lib ............. 90%
+├── trikeshed-common .......... 90%
+├── trikeshed-io .............. 90%
+├── trikeshed-async-core ...... 85%
+├── trikeshed-reactor ......... 85%
+├── trikeshed-net ............. 80%
+├── trikeshed-quic ............ 80%
+├── trikeshed-torrent ......... 80%
+├── trikeshed-dht ............. 80%
+├── trikeshed-ipc ............. 80%
+├── trikeshed-ccek ............ 85%
+├── trikeshed-ljson ........... 80%
+├── trikeshed-strace .......... 80%
+├── trikeshed-couchdb ......... 80%
+├── platform-launcher ......... 80%
+├── trikeshed-ipfs ............ 80%
+├── trikeshed-cursor .......... 70%
+├── trikeshed-isam ............ 70%
+├── trikeshed-lsmr ............ 70%
+├── trikeshed-channel-api ..... 80%
+├── trikeshed-channel-impl .... 80%
+├── trikeshed-channel-test .... 80%
+├── rtsgame ................... 85%
+├── boingDemo ................. 80%
+├── fiduciary ................. 80%
+├── k2script .................. 85%
+├── trikeshed-json ............ 80%
+├── trikeshed-sumo ............ 75%
+├── nexus ..................... 80%
+│   └── bootloader ............ 70%
+├── SSH ....................... 80%
+├── spacegraph ................ 80%
+├── ta4k ...................... 80%
+
+# Inactive/Disabled modules
+# ├── trikeshed-services (inactive)
+# ├── kotlin-entity-scanner (inactive)
+# ├── kotlinx-serialization-wireproto (inactive)
+# ├── moneyfan (inactive)
+# ├── nexus:intellij-plugin (inactive)
+# ├── zlib-kmp-reference (inactive)
+```
+
+---
+
+```mermaid
+flowchart TD
+    A[superbikeshed]
+    A --> B1[trikeshed-lib 90%]
+    A --> B2[trikeshed-common 90%]
+    A --> B3[trikeshed-io 90%]
+    A --> B4[trikeshed-async-core 85%]
+    A --> B5[trikeshed-reactor 85%]
+    A --> B6[trikeshed-net 80%]
+    A --> B7[trikeshed-quic 80%]
+    A --> B8[trikeshed-torrent 80%]
+    A --> B9[trikeshed-dht 80%]
+    A --> B10[trikeshed-ipc 80%]
+    A --> B11[trikeshed-ccek 85%]
+    A --> B12[trikeshed-ljson 80%]
+    A --> B13[trikeshed-strace 80%]
+    A --> B14[trikeshed-couchdb 80%]
+    A --> B15[platform-launcher 80%]
+    A --> B16[trikeshed-ipfs 80%]
+    A --> B17[trikeshed-cursor 70%]
+    A --> B18[trikeshed-isam 70%]
+    A --> B19[trikeshed-lsmr 70%]
+    A --> B20[trikeshed-channel-api 80%]
+    A --> B21[trikeshed-channel-impl 80%]
+    A --> B22[trikeshed-channel-test 80%]
+    A --> B23[rtsgame 85%]
+    A --> B24[boingDemo 80%]
+    A --> B25[fiduciary 80%]
+    A --> B26[k2script 85%]
+    A --> B27[trikeshed-json 80%]
+    A --> B28[trikeshed-sumo 75%]
+    A --> B29[nexus 80%]
+    B29 --> B29a[bootloader 70%]
+    A --> B30[SSH 80%]
+    A --> B31[spacegraph 80%]
+    A --> B32[ta4k 80%]
+    subgraph Inactive/Disabled
+        C1[trikeshed-services]
+        C2[kotlin-entity-scanner]
+        C3[kotlinx-serialization-wireproto]
+        C4[moneyfan]
+        C5[nexus:intellij-plugin]
+        C6[zlib-kmp-reference]
+    end
+```
+
+---
+
 > **RETIRED**: This document has been superseded by TDD tests and detailed specifications.
 > 
 > - **TDD Tests**: See `tests/tdd/WireProtocolTDDTest.kt` for implementation requirements

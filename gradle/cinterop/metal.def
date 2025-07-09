@@ -1,0 +1,12 @@
+package = platform.Metal
+headers = Metal/Metal.h MetalKit/MetalKit.h MetalPerformanceShaders/MetalPerformanceShaders.h
+headerFilter = Metal/** MetalKit/** MetalPerformanceShaders/**
+
+compilerOpts = -framework Metal -framework MetalKit -framework MetalPerformanceShaders
+linkerOpts = -framework Metal -framework MetalKit -framework MetalPerformanceShaders -framework Foundation -framework CoreGraphics
+
+---
+
+// Metal GPU Programming for macOS/iOS
+// Provides low-level GPU access for compute and graphics
+// Used by MLX for machine learning operations

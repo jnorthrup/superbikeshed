@@ -13,6 +13,7 @@ buildscript {
 
 plugins {
     kotlin("multiplatform") version "2.2.0"
+    id("buildtools.BuildPolicyPlugin")
 }
 
 group = "borg.trikeshed"

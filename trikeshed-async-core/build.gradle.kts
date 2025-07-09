@@ -52,11 +52,6 @@ kotlin {
             }
         }
         
-        // wasmJsMain disabled until trikeshed-lib supports WASM
-        // wasmJsMain {
-        //     dependencies {
-        //         // WASM-specific async dependencies
-        //     }
-        // }
+        
     }
 }

@@ -12,9 +12,7 @@ kotlin {
     jvm()
     macosArm64()
     macosX64()
-    js(IR) {
-        browser()
-    }
+    
     
     sourceSets {
         commonMain {
@@ -42,10 +40,6 @@ kotlin {
                 // Native dependencies for macOS
             }
         }
-        jsMain {
-            dependencies {
-                // JS-specific dependencies
-            }
-        }
+        
     }
 }

@@ -29,6 +29,7 @@ dependencyResolutionManagement {
         google()
         maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
+        maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlin/kotlin-mpp") }
     }
     
     // Version management handled by ben-manes plugin and gradle.properties

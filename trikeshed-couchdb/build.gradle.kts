@@ -4,17 +4,35 @@ plugins {
 
 group = "borg.trikeshed"
 
-repositories {
-    mavenCentral()
-}
+
 
 kotlin {
-    jvm {
-        // binaries block removed; not needed for JVM library/module
+    jvm {        
+    }
+    
+    val hostOs = System.getProperty("os.name")
+    val hostArch = System.getProperty("os.arch")
+    
+    when {
+        hostOs == "Mac OS X" && hostArch == "aarch64" -> {
+            macosArm64()
+        }
+        hostOs == "Mac OS X" -> {
+            macosX64()
+        }
+        hostOs.contains("Windows", ignoreCase = true) -> {
+            mingwX64()
+        }
+        hostOs == "Linux" && hostArch == "aarch64" -> {
+            linuxArm64()
+        }
+        hostOs == "Linux" -> {
+            linuxX64()
+        }
     }
     
     sourceSets {
-        commonMain {
+        getByName("commonMain") {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-cursor"))
@@ -25,12 +43,12 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0")
             }
         }
-        jvmMain {
+        getByName("jvmMain") {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
             }
         }
-        commonTest {
+        getByName("commonTest") {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-cursor"))
@@ -41,4 +59,3 @@ kotlin {
         }
     }
 }
-

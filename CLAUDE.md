@@ -20,3 +20,21 @@
 ## Gradle Permissions
 
 - Gradle lock is enforced. Highest executive permission needed
+
+## Build File Policy
+
+- Immutable file policy: Edits only with explicit permission for specific files and purposes
+- No versions allowed in child Gradle files
+- Run super-project Benmanes active rewrite before each build
+- TODO: Develop a linter to:
+  - Strip out versions from child projects
+  - Target changes from common/JVM/local-detected configurations
+- TODO: Project Armor - Global stacktrace fixer
+  - Agglomerate source Kotlin file pre-and post package suppressions
+  - Implement opt-ins
+  - Quiet distracting elements
+  - Fix infix lambda lint type annotations
+
+## Versioning Strategy
+
+- We will operate under latest versions and adapt e.g. postpone wasm

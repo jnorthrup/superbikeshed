@@ -1,0 +1,15 @@
+package = platform.Vulkan
+headers = vulkan/vulkan.h
+headerFilter = vulkan/**
+
+compilerOpts.linux = -I/usr/include
+compilerOpts.mingw = -I$VULKAN_SDK/Include
+
+linkerOpts.linux = -lvulkan -lpthread -ldl
+linkerOpts.mingw = -L$VULKAN_SDK/Lib -lvulkan-1
+
+---
+
+// Vulkan - Cross-platform GPU API
+// Low-level control over GPU hardware
+// Supports compute shaders and graphics pipelines
