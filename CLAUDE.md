@@ -20,6 +20,7 @@
 ## Gradle Permissions
 
 - Gradle lock is enforced. Highest executive permission needed
+- Gradle freedom is restored but also 1) version info stripped, 2) benmanes runs. 3 deviating from targets in triekshed-lib will get stomped by trikeshed lib gradle file replacement
 
 ## Build File Policy
 

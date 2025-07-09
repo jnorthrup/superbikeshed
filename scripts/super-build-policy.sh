@@ -35,7 +35,7 @@ ${YELLOW}Usage:${NC}
     $0 [command] [options]
 
 ${YELLOW}Commands:${NC}
-    ${GREEN}strip-versions${NC}      Strip version declarations from child gradle files
+    ${GREEN}strip-versions${NC}      Strip versions & stomp deviating targets in child gradle files
     ${GREEN}validate-build${NC}      Validate build file immutability
     ${GREEN}grant-permission${NC}    Grant permission to modify build files
     ${GREEN}apply-armor${NC}         Apply Project Armor to all Kotlin files
@@ -153,13 +153,14 @@ parse_args() {
 
 # Command implementations
 cmd_strip_versions() {
-    echo -e "${CYAN}Stripping versions from child gradle files...${NC}"
+    echo -e "${CYAN}Stripping versions & enforcing target consistency...${NC}"
+    echo -e "${YELLOW}This will stomp any deviating targets to match trikeshed-lib${NC}"
     cd "$PROJECT_ROOT"
     
     # Run gradle task
     ./gradlew stripVersions
     
-    echo -e "${GREEN}✓ Version stripping complete${NC}"
+    echo -e "${GREEN}✓ Version stripping & target enforcement complete${NC}"
 }
 
 cmd_validate_build() {

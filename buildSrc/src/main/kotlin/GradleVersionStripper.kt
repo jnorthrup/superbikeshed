@@ -8,6 +8,7 @@ import kotlin.io.path.writeText
 /**
  * Strips version declarations from child project build.gradle.kts files.
  * Versions should only be declared in the root project.
+ * Also enforces platform target consistency with trikeshed-lib.
  */
 object GradleVersionStripper {
     
@@ -22,6 +23,20 @@ object GradleVersionStripper {
         Regex("""val\s+\w*[Vv]ersion\s*=\s*"[^"]+""""),
         Regex("""const\s+val\s+\w*[Vv]ersion\s*=\s*"[^"]+"""")
     )
+    
+    // Reference target configuration from trikeshed-lib
+    private val referenceTargets = """
+        jvm()
+        
+        // Native target based on host OS
+        val hostOs = System.getProperty("os.name")
+        val hostArch = System.getProperty("os.arch")
+        when {
+            hostOs == "Mac OS X" && hostArch == "aarch64" -> macosArm64()
+            hostOs == "Mac OS X" -> macosX64()
+            hostOs == "Linux" -> linuxX64()
+        }
+    """.trimIndent()
     
     fun stripVersionsFromFile(file: File): Boolean {
         if (!file.exists() || !file.name.endsWith(".gradle.kts")) {
@@ -85,6 +100,49 @@ object GradleVersionStripper {
                 println("Would process: ${file.path}")
             } else {
                 stripVersionsFromFile(file)
+                enforceTargetConsistency(file)
+            }
+        }
+    }
+    
+    /**
+     * Enforces target consistency by replacing deviating targets with trikeshed-lib reference.
+     * This "stomps" any custom target configurations.
+     */
+    fun enforceTargetConsistency(file: File) {
+        if (!file.exists() || !file.name.endsWith(".gradle.kts")) {
+            return
+        }
+        
+        val content = file.readText()
+        val kotlinBlockPattern = Regex("""kotlin\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}""", RegexOption.DOT_MATCHES_ALL)
+        
+        val match = kotlinBlockPattern.find(content)
+        if (match != null) {
+            val kotlinBlock = match.groupValues[1]
+            
+            // Check if this deviates from reference targets
+            val hasCustomTargets = kotlinBlock.contains(Regex("""(js|wasm|mingw|ios|watchos|tvos|linux.*(?<!X64)|android)"""))
+            val hasStandardTargets = kotlinBlock.contains("jvm()") && 
+                                    kotlinBlock.contains("System.getProperty")
+            
+            if (hasCustomTargets || !hasStandardTargets) {
+                println("Stomping deviating targets in: ${file.path}")
+                
+                // Extract source sets if any
+                val sourceSetsPattern = Regex("""sourceSets\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}""", RegexOption.DOT_MATCHES_ALL)
+                val sourceSetsMatch = sourceSetsPattern.find(kotlinBlock)
+                val sourceSets = sourceSetsMatch?.value ?: ""
+                
+                // Build new kotlin block with reference targets
+                val newKotlinBlock = """
+    $referenceTargets
+    
+    $sourceSets
+""".trimIndent()
+                
+                val newContent = content.replace(match.value, "kotlin {\n$newKotlinBlock\n}")
+                file.writeText(newContent)
             }
         }
     }
