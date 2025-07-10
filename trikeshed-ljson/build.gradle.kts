@@ -1,1 +1,0 @@
-../trikeshed-lib/build.gradle.kts
