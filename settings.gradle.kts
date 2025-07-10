@@ -82,6 +82,8 @@ include(":rtsgame")      // Real-time strategy game example.
 
 include(":boingDemo")    // Simple physics demo.
 include(":fiduciary") // Patrick Devine Agent TDD implementation
+include(":platform-launcher:hello-world-native") // Simple hello world native executable
+include(":platform-launcher:ccek-main") // CCEK main executable
 
 include(":k2script")      // Scripting engine.
 // include(":kotlin-entity-scanner") // Has syntax errors - disabled temporarily.

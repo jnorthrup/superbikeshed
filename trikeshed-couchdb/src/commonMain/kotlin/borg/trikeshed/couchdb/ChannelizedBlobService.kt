@@ -11,11 +11,15 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.Serializer
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import borg.trikeshed.channel.api.ChannelizedService
+import borg.trikeshed.lsmr.SimpleLSMR
+import borg.trikeshed.ccek.*
 
 // Define a simple context element for CouchDB operations
 data class CouchDBContext(val dbName: String, val baseUrl: String) : CoroutineContext.Element {
@@ -75,7 +79,7 @@ object ByteArraySerializer : kotlinx.serialization.KSerializer<ByteArray> {
  * Channelized mock service for CouchDB blob operations.
  * This simulates an end-to-end round trip using channels.
  */
-class ChannelizedBlobService {
+class ChannelizedBlobService : ChannelizedService {
 
     // Channels for put operations
     val putRequestChannel = Channel<BlobPutRequest>()
@@ -108,11 +112,11 @@ class ChannelizedBlobService {
     val bulkDocsResponseChannel = Channel<BulkDocsResponse>()
 
 
-    // In-memory store to simulate blob storage (our "tiny CRUD table")
-    // dbName -> docId -> docContent
-    private val blobStore = ConcurrentHashMap<String, ConcurrentHashMap<String, ByteArray>>()
-    // dbName -> docId -> rev
-    private val revisions = ConcurrentHashMap<String, ConcurrentHashMap<String, String>>()
+    // LSMR-based storage for CouchDB operations
+    private val lsmrStorage = LSMRCouchDBStorage()
+    
+    // CCEK orchestrator for all operations
+    private val ccekOrchestrator = CouchDBCCEKOrchestrator()
 
     private val json = Json { prettyPrint = true }
 
@@ -122,19 +126,21 @@ class ChannelizedBlobService {
 
     private suspend fun logStoreState(operation: String, context: CoroutineContext) {
         val dbContext = context[CouchDBContext]
-        println("\n--- Mock Server ($operation) - DB: ${dbContext?.dbName ?: "N/A"} --- ")
-        println("Current Blob Store (Tiny CRUD Table) State:")
-        if (blobStore.isEmpty()) {
+        println("\n--- LSMR Server ($operation) - DB: ${dbContext?.dbName ?: "N/A"} --- ")
+        println("Current LSMR Storage State:")
+        val databases = lsmrStorage.listDatabases()
+        if (databases.isEmpty()) {
             println("  (empty)")
         } else {
-            blobStore.forEach { (dbName, dbContent) ->
+            databases.forEach { dbName ->
                 println("  DB: $dbName")
-                if (dbContent.isEmpty()) {
+                val documents = lsmrStorage.listDocuments(dbName)
+                if (documents.isEmpty()) {
                     println("    (empty)")
                 } else {
-                    dbContent.forEach { (id, data) ->
-                        val rev = revisions[dbName]?.get(id) ?: "N/A"
-                        println("    ID: \"$id\", Rev: \"$rev\", Data: \"${data.decodeToString()}\"")
+                    documents.forEach { docId ->
+                        val data = lsmrStorage.getDocument(dbName, docId)
+                        println("    ID: \"$docId\", Data: \"${data?.decodeToString() ?: "null"}\"")
                     }
                 }
             }
@@ -150,15 +156,15 @@ class ChannelizedBlobService {
     suspend fun processPutRequests(context: CoroutineContext) = withContext(context) {
         putRequestChannel.consumeAsFlow()
             .onEach { request ->
-                val db = blobStore.getOrPut(request.dbName) { ConcurrentHashMap() }
-                val dbRevs = revisions.getOrPut(request.dbName) { ConcurrentHashMap() }
-                val currentRev = dbRevs[request.id]
-                val newRev = generateRev()
-
-                println("Mock Server (Put/Update): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
-                db[request.id] = request.data
-                dbRevs[request.id] = newRev
-                putResponseChannel.send(BlobPutResponse(request.id, true, "Blob stored/updated successfully", newRev))
+                println("CCEK+LSMR Server (Put/Update): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
+                val response = ccekOrchestrator.executeput(
+                    dbName = request.dbName,
+                    docId = request.id,
+                    data = request.data,
+                    storage = lsmrStorage,
+                    baseContext = context
+                )
+                putResponseChannel.send(response)
                 logStoreState("Put/Update", context)
             }
             .collect()
@@ -171,10 +177,14 @@ class ChannelizedBlobService {
     suspend fun processGetRequests(context: CoroutineContext) = withContext(context) {
         getRequestChannel.consumeAsFlow()
             .onEach { request ->
-                val db = blobStore[request.dbName]
-                println("Mock Server (Get): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
-                val data = db?.get(request.id)
-                getResponseChannel.send(BlobGetResponse(request.id, data, data != null))
+                println("CCEK+LSMR Server (Get): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
+                val response = ccekOrchestrator.executeGet(
+                    dbName = request.dbName,
+                    docId = request.id,
+                    storage = lsmrStorage,
+                    baseContext = context
+                )
+                getResponseChannel.send(response)
                 logStoreState("Get", context)
             }
             .collect()
@@ -187,22 +197,16 @@ class ChannelizedBlobService {
     suspend fun processUpdateRequests(context: CoroutineContext) = withContext(context) {
         updateRequestChannel.consumeAsFlow()
             .onEach { request ->
-                val db = blobStore[request.dbName]
-                val dbRevs = revisions[request.dbName]
-                println("Mock Server (Update): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
-                if (db != null && dbRevs != null && db.containsKey(request.id)) {
-                    // Basic revision check
-                    if (request.rev != null && request.rev != dbRevs[request.id]) {
-                        updateResponseChannel.send(BlobUpdateResponse(request.id, false, "Conflict", dbRevs[request.id]))
-                    } else {
-                        val newRev = generateRev()
-                        db[request.id] = request.data
-                        dbRevs[request.id] = newRev
-                        updateResponseChannel.send(BlobUpdateResponse(request.id, true, "Blob updated successfully", newRev))
-                    }
-                } else {
-                    updateResponseChannel.send(BlobUpdateResponse(request.id, false, "Blob not found for update"))
-                }
+                println("CCEK+LSMR Server (Update): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
+                val response = ccekOrchestrator.executeUpdate(
+                    dbName = request.dbName,
+                    docId = request.id,
+                    data = request.data,
+                    revision = request.rev,
+                    storage = lsmrStorage,
+                    baseContext = context
+                )
+                updateResponseChannel.send(response)
                 logStoreState("Update", context)
             }
             .collect()
@@ -215,22 +219,15 @@ class ChannelizedBlobService {
     suspend fun processDeleteRequests(context: CoroutineContext) = withContext(context) {
         deleteRequestChannel.consumeAsFlow()
             .onEach { request ->
-                val db = blobStore[request.dbName]
-                val dbRevs = revisions[request.dbName]
-                println("Mock Server (Delete): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
-                if (db != null && dbRevs != null && db.containsKey(request.id)) {
-                    // Basic revision check
-                    if (request.rev != null && request.rev != dbRevs[request.id]) {
-                        deleteResponseChannel.send(BlobDeleteResponse(request.id, false, "Conflict", dbRevs[request.id]))
-                    } else {
-                        val newRev = "2-" + generateRev().substringAfter("-") // Simulate new revision for deletion
-                        db.remove(request.id)
-                        dbRevs.remove(request.id)
-                        deleteResponseChannel.send(BlobDeleteResponse(request.id, true, "Blob deleted successfully", newRev))
-                    }
-                } else {
-                    deleteResponseChannel.send(BlobDeleteResponse(request.id, false, "Blob not found for deletion"))
-                }
+                println("CCEK+LSMR Server (Delete): Received request for blob \"${request.id}\" for DB: ${request.dbName}")
+                val response = ccekOrchestrator.executeDelete(
+                    dbName = request.dbName,
+                    docId = request.id,
+                    revision = request.rev,
+                    storage = lsmrStorage,
+                    baseContext = context
+                )
+                deleteResponseChannel.send(response)
                 logStoreState("Delete", context)
             }
             .collect()
@@ -246,8 +243,8 @@ class ChannelizedBlobService {
                 if (blobStore.containsKey(request.dbName)) {
                     createDbResponseChannel.send(DbCreateResponse(request.dbName, false, "Database already exists"))
                 } else {
-                    blobStore[request.dbName] = ConcurrentHashMap()
-                    revisions[request.dbName] = ConcurrentHashMap()
+                    blobStore[request.dbName] = mutableMapOf()
+                    revisions[request.dbName] = mutableMapOf()
                     createDbResponseChannel.send(DbCreateResponse(request.dbName, true, "Database created successfully"))
                 }
                 logStoreState("Create DB", context)
@@ -293,24 +290,14 @@ class ChannelizedBlobService {
     suspend fun processBulkDocsRequests(context: CoroutineContext) = withContext(context) {
         bulkDocsRequestChannel.consumeAsFlow()
             .onEach { request ->
-                val db = blobStore.getOrPut(request.dbName) { ConcurrentHashMap() }
-                val dbRevs = revisions.getOrPut(request.dbName) { ConcurrentHashMap() }
-                val results = mutableListOf<BlobPutResponse>()
-                println("Mock Server (Bulk Docs): Received request for DB \"${request.dbName}\" with ${request.docs.size} documents")
-                request.docs.forEach { docBytes ->
-                    // Assuming docBytes is a JSON string with an _id field
-                    val docJson = Json.parseToJsonElement(docBytes.decodeToString()).jsonObject
-                    val id = docJson["_id"]?.jsonPrimitive?.content
-                    if (id != null) {
-                        val newRev = generateRev()
-                        db[id] = docBytes
-                        dbRevs[id] = newRev
-                        results.add(BlobPutResponse(id, true, "Document processed", newRev))
-                    } else {
-                        results.add(BlobPutResponse("", false, "Document missing _id"))
-                    }
-                }
-                bulkDocsResponseChannel.send(BulkDocsResponse(results, true, "Bulk operation completed"))
+                println("CCEK+LSMR Server (Bulk Docs): Received request for DB \"${request.dbName}\" with ${request.docs.size} documents")
+                val response = ccekOrchestrator.executeBulkDocs(
+                    dbName = request.dbName,
+                    docs = request.docs,
+                    storage = lsmrStorage,
+                    baseContext = context
+                )
+                bulkDocsResponseChannel.send(response)
                 logStoreState("Bulk Docs", context)
             }
             .collect()
@@ -406,7 +393,7 @@ class ChannelizedBlobService {
     /**
      * Client-side function to list all databases.
      */
-    suspend fun listDbs(context: CoroutineContext): DbListResponse = withWithContext(context) {
+    suspend fun listDbs(context: CoroutineContext): DbListResponse = withContext(context) {
         listDbsRequestChannel.send(DbListRequest())
         listDbsResponseChannel.receive()
     }

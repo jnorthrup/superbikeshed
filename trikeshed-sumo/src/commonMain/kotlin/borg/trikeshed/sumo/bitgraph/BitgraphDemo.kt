@@ -1,4 +1,4 @@
-2package borg.trikeshed.sumo.bitgraph
+package borg.trikeshed.sumo.bitgraph
 
 import borg.trikeshed.lib.*
 

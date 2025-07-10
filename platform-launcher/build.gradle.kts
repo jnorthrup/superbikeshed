@@ -63,12 +63,9 @@ kotlin {
         // JVM-specific dependencies only
         val jvmMain by getting {
             dependencies {
-                implementation(project(":trikeshed-lib"))
-                implementation(project(":trikeshed-couchdb"))
-                implementation(project(":trikeshed-net"))
-                implementation(project(":trikeshed-ipfs"))
-                implementation(project(":fiduciary"))
-                implementation("com.sun.jna:jna:5.14.0")
+                // Use the working KMP uring module
+                implementation(project(":trikeshed-uring"))
+                implementation(kotlin("stdlib"))
             }
         }
         
@@ -81,9 +78,9 @@ kotlin {
     }
 }
 
-// Emergency run task for blob server
+// Simple launcher task (working)
 tasks.register<JavaExec>("run") {
-    mainClass.set("borg.trikeshed.launcher.LaunchFiduciary")
+    mainClass.set("borg.trikeshed.launcher.SimpleLauncher")
     classpath = sourceSets["jvmMain"].runtimeClasspath
     
     jvmArgs = listOf(
@@ -96,7 +93,7 @@ tasks.register<JavaExec>("run") {
 }
 
 tasks.register<JavaExec>("runFiduciary") {
-    mainClass.set("borg.trikeshed.launcher.LaunchFiduciary")
+    mainClass.set("borg.trikeshed.launcher.FiduciaryBlobstoreLauncher")
     classpath = sourceSets["jvmMain"].runtimeClasspath
     
     jvmArgs = listOf(

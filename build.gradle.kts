@@ -16,8 +16,7 @@ plugins {
     id("com.github.ben-manes.versions") version "0.51.0"
 }
 
-// Apply build policy plugin
-apply<buildtools.BuildPolicyPlugin>()
+// Build policy plugin removed for simplification
 
 group = "borg.trikeshed"
 
