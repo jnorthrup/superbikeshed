@@ -1,3 +1,4 @@
+@file:OptIn(kotlin.ExperimentalStdlibApi::class)
 package k2script.launcher
 
 import borg.trikeshed.lib.*

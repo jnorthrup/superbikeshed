@@ -5,7 +5,7 @@ import borg.trikeshed.lib.j
 
 // Use the existing CharSeries from TokenStairway.kt
 typealias CharSeries = Indexed<PositionedChar>
-typealias ByteIndexed = Indexed<Byte>
+
 
 /**
  * Represents a contiguous block (island) in the source, by index.

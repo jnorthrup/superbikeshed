@@ -21,8 +21,8 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":trikeshed-lib"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime")
+                implementation(libs.coroutines)
+                implementation(libs.datetime)
             }
         }
         commonTest {

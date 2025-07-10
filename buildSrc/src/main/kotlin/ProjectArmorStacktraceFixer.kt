@@ -1,3 +1,4 @@
+@file:OptIn(kotlin.ExperimentalStdlibApi::class)
 package buildtools
 
 import java.io.File

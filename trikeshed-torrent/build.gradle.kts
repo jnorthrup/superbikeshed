@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization") version "2.1.21"
+    kotlin("plugin.serialization")
 }
 
 group = "borg.trikeshed"
@@ -11,16 +11,21 @@ repositories {
 
 kotlin {
     jvm()
-    
+
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
             }
         }
-        commonTest {
+        val jvmMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.8.1")
+            }
+        }
+        val commonTest by getting {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(kotlin("test"))

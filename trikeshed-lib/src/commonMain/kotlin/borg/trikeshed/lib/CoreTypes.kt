@@ -41,6 +41,13 @@ typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 typealias ColumnMeta = Join<String, KClassifier>
+
+typealias InfoHash = ByteArray
+
+@kotlin.jvm.JvmInline
+value class PeerId(val bytes: ByteArray) {
+    
+}
 // Trait for array-like access - WHENEVER THEY NEED get[i] OPERATOR
 interface ArrayLike<I, T> {
     operator fun get(index: I): T

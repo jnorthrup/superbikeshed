@@ -1,3 +1,4 @@
+@file:OptIn(kotlin.ExperimentalStdlibApi::class)
 package borg.trikeshed.lib
 
 import kotlinx.datetime.*

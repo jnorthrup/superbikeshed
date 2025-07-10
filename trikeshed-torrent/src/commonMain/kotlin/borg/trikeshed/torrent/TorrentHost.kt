@@ -1,4 +1,5 @@
-@file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
+/*
+/*
 @file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
 package borg.trikeshed.torrent
 
@@ -13,8 +14,8 @@ import kotlinx.coroutines.flow.flow
  */
 class TorrentHost(
     internal val port: Int = 6881,
-    internal val uploadDir: String = "./uploads",
-    internal val downloadDir: String = "./downloads"
+    internal val uploadDir: String = ".",
+    internal val downloadDir: String = "."
 ) {
     
     internal var isRunning = false
@@ -146,4 +147,4 @@ class TorrentHost(
         println("Announcing ${infoHash.contentToString()} to DHT")
         delay(100)
     }
-} 
+} */ */ 

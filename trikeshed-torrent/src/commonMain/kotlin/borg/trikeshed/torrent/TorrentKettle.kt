@@ -3,11 +3,11 @@
 package borg.trikeshed.torrent
 
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.ByteIndexed
-import borg.trikeshed.lib.IntIndexed
+
 import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
+import borg.trikeshed.lib.InfoHash
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -17,10 +17,11 @@ import kotlin.coroutines.CoroutineContext
 // Type aliases for torrent domain
 typealias PieceIndex = Int
 typealias PeerAddress = String
-typealias InfoHash = ByteArray
+
 typealias PieceHash = ByteArray
 typealias ByteOffset = Long
 typealias ChunkSize = Int
+typealias IntIndexed = Indexed<Int>
 
 /**
  * Torrent Kettle - Segregates peer connections into coroutine context boxes
@@ -45,12 +46,12 @@ sealed class TorrentKettle {
         ) : ChunkStrategy()
         
         data class RandomAccess(
-            val hotspots: IntIndexed,  // Frequently accessed pieces
+            val hotspots: Indexed<Int>,  // Frequently accessed pieces
             val cacheSize: Int = 20
         ) : ChunkStrategy()
         
         data class Selective(
-            val fileIndexes: IntIndexed,
+            val fileIndexes: Indexed<Int>,
             val priorityMap: Join<PieceIndex, Int>  // Piece -> Priority
         ) : ChunkStrategy()
         
@@ -139,7 +140,7 @@ class StreamingKettle(
             // Prefetch ahead of playhead
             launch {
                 while (isActive) {
-                    val prefetchRange: IntIndexed = (playheadPiece until minOf(
+                    val prefetchRange: Indexed<Int> = (playheadPiece until minOf(
                         playheadPiece + strategy.bufferAhead,
                         totalPieces
                     )) j { it }
@@ -214,7 +215,7 @@ class StreamingKettle(
         }
     }
     
-    internal suspend fun requestPieces(pieces: IntIndexed) {
+    internal suspend fun requestPieces(pieces: Indexed<Int>) {
         // Distribute piece requests among peers
         val availablePeers: Indexed<PeerBox> = peerBoxes.values.filter { 
             it.outputChannel.trySend(PeerMessage.Interested).isSuccess 
@@ -223,9 +224,9 @@ class StreamingKettle(
         if (availablePeers.a == 0) return
         
         for (i in 0 until pieces.a) {
-            val piece: Int = pieces[i]
+            val piece: Int = pieces.b.invoke(i)
             if (!pieceBuffer.containsKey(piece)) {
-                val peer: PeerBox = availablePeers[i % availablePeers.a]
+                val peer: PeerBox = availablePeers.b.invoke(i % availablePeers.a)
                 peer.outputChannel.send(
                     PeerMessage.Request(piece, 0, pieceSize)
                 )
@@ -271,7 +272,7 @@ class RandomAccessKettle(
         val result: ByteIndexed = totalSize j { byteIdx ->
             val pieceIdx = byteIdx / pieceSize
             val offsetInPiece = byteIdx % pieceSize
-            pieces[pieceIdx].data[offsetInPiece]
+            pieces.b.invoke(pieceIdx).data[offsetInPiece]
         }
         
         val startOffset = (startByte % pieceSize).toInt()
@@ -304,7 +305,7 @@ class RandomAccessKettle(
         
         // LRU eviction
         val strategy = ChunkStrategy.RandomAccess(
-            hotspots = accessHistory.takeLast(10).toIntArray() j { it },
+            hotspots = (accessHistory.takeLast(10).size) j { i -> accessHistory.takeLast(10)[i] },
             cacheSize = 20
         )
         
@@ -348,10 +349,10 @@ object TorrentKettleFactory {
     }
     
     internal fun isLinuxWithUring(): Boolean {
-        return borg.trikeshed.lib.platform.isLinuxWithUring()
+        return borg.trikeshed.lib.platform.PlatformDetection.hasIoUringSupport()
     }
     
     internal fun isMacOS(): Boolean {
-        return System.getProperty("os.name").lowercase().contains("mac")
+        return borg.trikeshed.lib.platform.PlatformDetection.getPlatformInfo().os == borg.trikeshed.lib.platform.OperatingSystem.MACOS
     }
 }

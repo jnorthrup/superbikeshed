@@ -13,8 +13,13 @@ import fiduciary.memvid.MemvidEncoder
 import fiduciary.memvid.MemvidRetriever
 import fiduciary.memvid.MemvidIndex
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonArray
 import javax.naming.*
 import java.util.Hashtable
+import borg.trikeshed.dht.kademlia.id.NUID
+import fiduciary.concentric.*
 
 /**
  * Platform Launcher - Dynamically loads JVM and manages WASM execution
@@ -513,6 +518,10 @@ fun main(args: Array<String>) = runBlocking {
         }
         return@runBlocking
     }
+    if (args.isNotEmpty() && args[0] == "--couchdb-server") {
+        launchCouchDBServer()
+        return@runBlocking
+    }
     val launcher = PlatformLauncher()
     
     // Initialize with custom JVM options
@@ -574,4 +583,143 @@ fun main(args: Array<String>) = runBlocking {
     
     // Shutdown
     launcher.shutdown()
+}
+
+/**
+ * Launch the CouchDB server with concentric QUIC agents
+ */
+suspend fun launchCouchDBServer() {
+    println("🚀 Launching CouchDB Server with io_uring and concentric QUIC agents...")
+    
+    val launcher = PlatformLauncher()
+    launcher.initialize()
+    
+    // Create CouchDB server
+    val couchServer = UringCouchDBServer(
+        port = 5984,
+        quicPort = 5985,
+        ipfsPort = 5986,
+        launcher = launcher
+    )
+    
+    couchServer.initialize()
+    couchServer.start()
+    
+    println("✅ CouchDB Server started:")
+    println("  - REST API: http://localhost:5984")
+    println("  - QUIC API: quic://localhost:5985")
+    println("  - IPFS API: http://localhost:5986")
+    
+    // Create concentric agents for Patrick Devine ingestion
+    println("\n🤖 Creating concentric agents...")
+    
+    // Core agent for coordination
+    val coreAgent = QuicConcentricAgent(
+        agentId = NUID.random(),
+        ring = ConcentricRing.CORE,
+        capabilities = setOf(
+            AgentCapability.CONSENSUS_BUILDING,
+            AgentCapability.RESULT_AGGREGATION,
+            AgentCapability.TASK_SCHEDULING
+        ),
+        server = couchServer,
+        quicEndpoint = QuicEndpoint("localhost", 5985)
+    )
+    coreAgent.initialize()
+    
+    // Triad agents for analysis
+    val analysisAgents = (1..3).map { i ->
+        val agent = QuicConcentricAgent(
+            agentId = NUID.random(),
+            ring = ConcentricRing.TRIAD,
+            capabilities = setOf(
+                AgentCapability.NLP_PROCESSING,
+                AgentCapability.TOPIC_MODELING,
+                AgentCapability.ENTITY_EXTRACTION
+            ),
+            server = couchServer,
+            quicEndpoint = QuicEndpoint("localhost", 5985 + i)
+        )
+        agent.initialize()
+        agent
+    }
+    
+    // Pentad agents for ingestion
+    val ingestionAgents = (1..5).map { i ->
+        val agent = QuicConcentricAgent(
+            agentId = NUID.random(),
+            ring = ConcentricRing.PENTAD,
+            capabilities = setOf(
+                AgentCapability.TRANSCRIPTION,
+                AgentCapability.TRANSLATION
+            ),
+            server = couchServer,
+            quicEndpoint = QuicEndpoint("localhost", 5990 + i)
+        )
+        agent.initialize()
+        agent
+    }
+    
+    println("✅ Created ${1 + analysisAgents.size + ingestionAgents.size} agents")
+    
+    // Submit initial Patrick Devine archive tasks
+    println("\n📚 Submitting Patrick Devine archive tasks...")
+    
+    fiduciary.fetch.ZipRangeFetcher.ARCHIVES.forEach { archiveUrl ->
+        val ingestionTask = ConcentricTask(
+            id = NUID.random(),
+            type = TaskType.CONTENT_INGESTION,
+            payload = Json.encodeToString(buildJsonObject {
+                put("url", archiveUrl)
+                put("type", "archive")
+                put("action", "extract_metadata")
+            }).toByteArray(),
+            requiredCapabilities = setOf(AgentCapability.TRANSCRIPTION),
+            priority = TaskPriority.HIGH,
+            submittedBy = coreAgent.agentId
+        )
+        
+        couchServer.submitTaskToAgent(ingestionAgents.first().toConcentricAgent(), ingestionTask)
+    }
+    
+    println("✅ Submitted archive ingestion tasks")
+    
+    // Monitor task and discovery flows
+    launch {
+        couchServer.getTaskFlow().collect { task ->
+            println("📋 Task ${task.id.toShortString()}: ${task.type} [${task.priority}]")
+        }
+    }
+    
+    launch {
+        couchServer.getDiscoveryFlow().collect { discovery ->
+            println("💡 Discovery: ${discovery.type} - ${discovery.content} [${discovery.importance}]")
+        }
+    }
+    
+    // Keep server running
+    println("\n✅ Server is running. Press Ctrl+C to stop.")
+    
+    // Wait for shutdown signal
+    Runtime.getRuntime().addShutdownHook(Thread {
+        runBlocking {
+            println("\n🛑 Shutting down...")
+            
+            // Shutdown agents
+            coreAgent.shutdown()
+            analysisAgents.forEach { it.shutdown() }
+            ingestionAgents.forEach { it.shutdown() }
+            
+            // Shutdown server
+            couchServer.stop()
+            launcher.shutdown()
+            
+            println("✅ Shutdown complete")
+        }
+    })
+    
+    // Keep main thread alive
+    while (true) {
+        delay(1000)
+    }
 }

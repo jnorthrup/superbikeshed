@@ -1,5 +1,4 @@
 @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
-@file:OptIn(RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
 @file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
 
 @file:OptIn(ExperimentalForeignApi::class)
