@@ -1,4 +1,4 @@
-@file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
+@file:OptIn(kotlin.kotlin.ExperimentalStdlibApi::class)
 #!/usr/bin/env kscript
 
 //DEPS log4j:log4j:1.2.14

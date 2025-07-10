@@ -4,7 +4,7 @@ benmanes = "0.51.0"
 kotlin = { strictly = "[1.0, 2.2[", prefer = "2.1.21" }
 coroutines = { strictly = "[1.0, 2.2[", prefer = "1.10.2" }
 serialization = { strictly = "[1.0, 2.2[", prefer = "1.7.3" }
-datetime = { strictly = "[0.4, 2.0[", prefer = "0.6.1" }
+datetime = { strictly = "[0.4, 2.0[", prefer = "0.6.2" }
 scripting-dependencies = { strictly = "[1.0, 2.2[", prefer = "2.1.21" }
 scripting-dependencies-maven = { strictly = "[1.0, 2.2[", prefer = "2.1.21" }
 

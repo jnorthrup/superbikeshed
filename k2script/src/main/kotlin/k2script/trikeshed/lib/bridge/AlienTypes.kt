@@ -1,4 +1,4 @@
-@file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
+@file:OptIn(kotlin.kotlin.ExperimentalStdlibApi::class)
 @file:Suppress("UNCHECKED_CAST", "FunctionName", "NonAsciiCharacters", "NOTHING_TO_INLINE")
 
 package k2script.trikeshed.lib.bridge

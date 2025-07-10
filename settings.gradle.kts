@@ -82,6 +82,7 @@ include(":rtsgame")      // Real-time strategy game example.
 
 include(":boingDemo")    // Simple physics demo.
 include(":fiduciary") // Patrick Devine Agent TDD implementation
+include(":fiduciary-demo") // Standalone Fiduciary CouchDB Service Demo
 include(":platform-launcher:hello-world-native") // Simple hello world native executable
 include(":platform-launcher:ccek-main") // CCEK main executable
 

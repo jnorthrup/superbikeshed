@@ -1,10 +1,49 @@
 package borg.trikeshed.couchdb
 
-import borg.trikeshed.net.*
 import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
+
+/**
+ * Minimal HTTP types for CouchDB networking (temporary stubs)
+ */
+data class HttpRequest(
+    val method: String,
+    val path: String,
+    val headers: Map<String, String> = emptyMap(),
+    val body: String = ""
+)
+
+data class HttpResponse(
+    val status: Int,
+    val statusText: String,
+    val body: String,
+    val contentType: String = "application/json"
+)
+
+/**
+ * Stub C10K Server for minimal HTTP functionality
+ */
+open class C10KServer(
+    internal val port: Int,
+    internal val staticRoot: String,
+    internal val enableQuic: Boolean = true,
+    internal val deterministicMode: Boolean = false
+) {
+    open suspend fun processRequest(request: HttpRequest): HttpResponse {
+        return HttpResponse(501, "Not Implemented", "{\"error\":\"stub_implementation\"}")
+    }
+    
+    open suspend fun handleGet(request: HttpRequest): HttpResponse = processRequest(request)
+    open suspend fun handlePost(request: HttpRequest): HttpResponse = processRequest(request)
+    open suspend fun handlePut(request: HttpRequest): HttpResponse = processRequest(request)
+    open suspend fun handleDelete(request: HttpRequest): HttpResponse = processRequest(request)
+    
+    suspend fun start() {
+        println("📋 Stub C10K Server started on port $port (not actually listening)")
+    }
+}
 
 /**
  * KMP Network Bridge for CouchDB using trikeshed-net infrastructure

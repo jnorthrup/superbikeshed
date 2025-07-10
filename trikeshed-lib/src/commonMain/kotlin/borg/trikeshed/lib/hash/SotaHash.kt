@@ -82,8 +82,15 @@ fun anchorKeyHash(
     hashType: SotaHashType = SotaHashType.BLAKE3
 ): ByteArray {
     val canonical = inferences.sortedWith(compareBy({ it.first }, { it.second }, { it.third }))
-    val bytes = canonical.flatMap { listOf(it.first, it.second, it.third) }
-        .flatMap { it.toString().toByteArray().asIterable() }
-        .toByteArray()
+    val byteList = mutableListOf<Byte>()
+    canonical.forEach { t ->
+        listOf(t.first, t.second, t.third).forEach { n ->
+            n.toString().encodeToByteArray().forEach { b -> byteList.add(b) }
+        }
+    }
+    val bytes = ByteArray(byteList.size)
+    for (i in byteList.indices) {
+        bytes[i] = byteList[i]
+    }
     return SotaHashers.get(hashType).hash(bytes)
 } 

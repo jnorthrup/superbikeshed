@@ -1,4 +1,4 @@
-@file:OptIn(kotlin.RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class)
+@file:OptIn(kotlin.kotlin.ExperimentalStdlibApi::class)
 package k2script.bus
 
 import borg.trikeshed.lib.j

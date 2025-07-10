@@ -1,4 +1,4 @@
-@file:OptIn(RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class, kotlin.ExperimentalUnsignedTypes::class)
+@file:OptIn(kotlin.ExperimentalStdlibApi::class, kotlin.ExperimentalUnsignedTypes::class)
 package borg.trikeshed.net
 
 import borg.trikeshed.lib.*

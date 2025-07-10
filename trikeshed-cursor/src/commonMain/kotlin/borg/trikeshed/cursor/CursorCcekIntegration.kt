@@ -1,4 +1,4 @@
-@file:OptIn(RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class, kotlin.ExperimentalUnsignedTypes::class)
+@file:OptIn(kotlin.ExperimentalStdlibApi::class, kotlin.ExperimentalUnsignedTypes::class)
 @file:Suppress("ANNOTATION_CLASS_MEMBER")
 package borg.trikeshed.cursor
 

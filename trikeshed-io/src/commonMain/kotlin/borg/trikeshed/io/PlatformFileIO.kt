@@ -1,14 +1,11 @@
-@file:OptIn(RequiresOptIn::class, kotlin.ExperimentalStdlibApi::class, kotlin.ExperimentalUnsignedTypes::class)
 package borg.trikeshed.io
 
-import borg.trikeshed.lib.*
-
-expect interface PlatformFileIO {
-    suspend fun readFile(path: String): Join<Int, (Int) -> Byte>?
-    suspend fun writeFile(path: String, content: Join<Int, (Int) -> Byte>): Boolean
-}
-
-expect class PlatformFileIOImpl() : PlatformFileIO {
-    override suspend fun readFile(path: String): Join<Int, (Int) -> Byte>?
-    override suspend fun writeFile(path: String, content: Join<Int, (Int) -> Byte>): Boolean
+/**
+ * PlatformFileIO stub for trikeshed-ccek compatibility
+ */
+interface PlatformFileIO {
+    suspend fun readFile(path: String): ByteArray
+    suspend fun writeFile(path: String, data: ByteArray)
+    suspend fun deleteFile(path: String): Boolean
+    suspend fun exists(path: String): Boolean
 }
