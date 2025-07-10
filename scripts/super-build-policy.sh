@@ -25,6 +25,8 @@ PURPOSE=""
 DURATION=""
 GRADLE_LOG=""
 OPUS_MODE=false
+LLM_PROVIDER="claude"
+LLM_MODEL="claude-3-sonnet-20240229"
 
 # Function to print usage
 print_usage() {
@@ -41,6 +43,7 @@ ${YELLOW}Commands:${NC}
     ${GREEN}apply-armor${NC}         Apply Project Armor to all Kotlin files
     ${GREEN}fix-stacktrace${NC}      Process stacktrace, apply armor to bugfix+stacktrace files
     ${GREEN}fix-lambdas${NC}         Fix infix lambda type annotations
+    ${GREEN}llm-fix${NC}             Process stacktrace and feed to LLM for quick fixing
     ${GREEN}pre-build${NC}           Run all pre-build policies
     ${GREEN}post-error${NC}          Process gradle errors with Opus-optimal format
 
@@ -50,6 +53,8 @@ ${YELLOW}Options:${NC}
     -d, --duration MINUTES   Permission duration in minutes
     -g, --gradle-log FILE    Gradle log file for context
     -o, --opus               Use Opus-optimal stacktrace format
+    -l, --llm-provider PROVIDER  LLM provider (claude, gpt, gemini) [default: claude]
+    -m, --model MODEL        LLM model name [default: claude-3-sonnet-20240229]
     -h, --help               Show this help message
 
 ${YELLOW}Examples:${NC}
@@ -68,6 +73,12 @@ ${YELLOW}Examples:${NC}
     # Fix a stacktrace with full context (armor applied to bugfix+stacktrace files only)
     $0 fix-stacktrace -f error.log
 
+    # Process stacktrace and get LLM fix suggestions
+    $0 llm-fix -f error.log
+
+    # Use specific LLM provider and model
+    $0 llm-fix -f error.log -l gpt -m gpt-4
+
     # Process gradle error with Opus-optimal format
     $0 post-error -f build.log -g gradle.log --opus
 
@@ -78,6 +89,9 @@ ${YELLOW}Environment Variables:${NC}
     ENFORCE_IMMUTABILITY     Enable build file immutability checks
     ARMOR_ALL               Apply armor to all files automatically
     OPUS_DEFAULT            Use Opus format by default
+    ANTHROPIC_API_KEY       API key for Claude
+    OPENAI_API_KEY          API key for GPT
+    GOOGLE_API_KEY          API key for Gemini
 
 EOF
 }
@@ -100,7 +114,7 @@ parse_args() {
                     echo -e "${RED}Error: --file requires an argument${NC}"
                     exit 1
                 fi
-                if [[ "$MODE" == "fix-stacktrace" || "$MODE" == "post-error" ]]; then
+                if [[ "$MODE" == "fix-stacktrace" || "$MODE" == "post-error" || "$MODE" == "llm-fix" ]]; then
                     STACKTRACE_FILE="$1"
                 else
                     BUILD_FILE="$1"
@@ -136,6 +150,24 @@ parse_args() {
                 ;;
             -o|--opus)
                 OPUS_MODE=true
+                shift
+                ;;
+            -l|--llm-provider)
+                shift
+                if [ $# -eq 0 ]; then
+                    echo -e "${RED}Error: --llm-provider requires an argument${NC}"
+                    exit 1
+                fi
+                LLM_PROVIDER="$1"
+                shift
+                ;;
+            -m|--model)
+                shift
+                if [ $# -eq 0 ]; then
+                    echo -e "${RED}Error: --model requires an argument${NC}"
+                    exit 1
+                fi
+                LLM_MODEL="$1"
                 shift
                 ;;
             -h|--help)
@@ -266,6 +298,202 @@ cmd_fix_lambdas() {
     echo -e "${GREEN}✓ Lambda type annotations fixed${NC}"
 }
 
+cmd_llm_fix() {
+    if [ -z "$STACKTRACE_FILE" ]; then
+        echo -e "${RED}Error: --file is required for llm-fix${NC}"
+        exit 1
+    fi
+    
+    if [ ! -f "$STACKTRACE_FILE" ]; then
+        echo -e "${RED}Error: Stacktrace file not found: $STACKTRACE_FILE${NC}"
+        exit 1
+    fi
+    
+    echo -e "${CYAN}Processing stacktrace: $STACKTRACE_FILE${NC}"
+    cd "$PROJECT_ROOT"
+    
+    # First, process the stacktrace to get clean format
+    TEMP_PROCESSED="/tmp/stacktrace_processed_$$.txt"
+    
+    # Choose processor based on mode
+    if [ "$OPUS_MODE" = true ] || [ "$OPUS_DEFAULT" = true ]; then
+        echo -e "${PURPLE}Using Opus-optimal format${NC}"
+        TASK="processStackTraceOpus"
+    else
+        TASK="processStackTrace"
+    fi
+    
+    # Build gradle arguments
+    GRADLE_ARGS="-Pstacktrace=$STACKTRACE_FILE"
+    if [ -n "$GRADLE_LOG" ]; then
+        GRADLE_ARGS="$GRADLE_ARGS -PgradleLog=$GRADLE_LOG"
+    fi
+    
+    # Process stacktrace first
+    ./gradlew $TASK $GRADLE_ARGS
+    
+    # Get the processed output
+    PROCESSED_FILE="${STACKTRACE_FILE%.*}_processed.txt"
+    if [ ! -f "$PROCESSED_FILE" ]; then
+        echo -e "${RED}Error: Processed stacktrace file not found${NC}"
+        exit 1
+    fi
+    
+    # Create LLM prompt
+    echo -e "${CYAN}Creating LLM prompt for quick fixing...${NC}"
+    
+    # Read project context
+    PROJECT_CONTEXT=""
+    if [ -f "README.md" ]; then
+        PROJECT_CONTEXT=$(head -n 100 README.md | grep -v "^#" | tr '\n' ' ' | sed 's/  */ /g')
+    fi
+    
+    # Create the prompt
+    PROMPT_FILE="/tmp/llm_prompt_$$.txt"
+    cat > "$PROMPT_FILE" << EOF
+You are an expert Kotlin/Gradle developer working on the v2superbikeshed project. 
+
+Project Context:
+$PROJECT_CONTEXT
+
+Please analyze this stacktrace and provide:
+1. Root cause analysis
+2. Specific fix suggestions with code examples
+3. Files that need to be modified
+4. Any additional context or warnings
+
+Stacktrace:
+$(cat "$PROCESSED_FILE")
+
+Provide your analysis in a clear, actionable format suitable for immediate implementation.
+EOF
+    
+    # Call LLM based on provider
+    echo -e "${CYAN}Calling LLM ($LLM_PROVIDER/$LLM_MODEL) for fix suggestions...${NC}"
+    
+    case "$LLM_PROVIDER" in
+        claude)
+            call_claude_api "$PROMPT_FILE"
+            ;;
+        gpt)
+            call_gpt_api "$PROMPT_FILE"
+            ;;
+        gemini)
+            call_gemini_api "$PROMPT_FILE"
+            ;;
+        *)
+            echo -e "${RED}Error: Unsupported LLM provider: $LLM_PROVIDER${NC}"
+            exit 1
+            ;;
+    esac
+    
+    # Cleanup
+    rm -f "$PROMPT_FILE" "$TEMP_PROCESSED"
+    
+    echo -e "${GREEN}✓ LLM fix suggestions complete${NC}"
+}
+
+# LLM API calling functions
+call_claude_api() {
+    local prompt_file="$1"
+    local output_file="${STACKTRACE_FILE%.*}_llm_fix.txt"
+    
+    if [ -z "$ANTHROPIC_API_KEY" ]; then
+        echo -e "${RED}Error: ANTHROPIC_API_KEY environment variable not set${NC}"
+        echo -e "${YELLOW}Please set your Anthropic API key: export ANTHROPIC_API_KEY=your_key_here${NC}"
+        exit 1
+    fi
+    
+    # Use curl to call Claude API
+    curl -s -X POST "https://api.anthropic.com/v1/messages" \
+        -H "Content-Type: application/json" \
+        -H "x-api-key: $ANTHROPIC_API_KEY" \
+        -H "anthropic-version: 2023-06-01" \
+        -d "{
+            \"model\": \"$LLM_MODEL\",
+            \"max_tokens\": 4000,
+            \"messages\": [
+                {
+                    \"role\": \"user\",
+                    \"content\": \"$(cat "$prompt_file" | sed 's/"/\\"/g' | tr '\n' ' ')\"
+                }
+            ]
+        }" | jq -r '.content[0].text' > "$output_file"
+    
+    echo -e "${GREEN}✓ Claude response written to: $output_file${NC}"
+    
+    # Show preview
+    echo -e "\n${YELLOW}Preview:${NC}"
+    head -n 20 "$output_file"
+}
+
+call_gpt_api() {
+    local prompt_file="$1"
+    local output_file="${STACKTRACE_FILE%.*}_llm_fix.txt"
+    
+    if [ -z "$OPENAI_API_KEY" ]; then
+        echo -e "${RED}Error: OPENAI_API_KEY environment variable not set${NC}"
+        echo -e "${YELLOW}Please set your OpenAI API key: export OPENAI_API_KEY=your_key_here${NC}"
+        exit 1
+    fi
+    
+    # Use curl to call GPT API
+    curl -s -X POST "https://api.openai.com/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $OPENAI_API_KEY" \
+        -d "{
+            \"model\": \"$LLM_MODEL\",
+            \"max_tokens\": 4000,
+            \"messages\": [
+                {
+                    \"role\": \"user\",
+                    \"content\": \"$(cat "$prompt_file" | sed 's/"/\\"/g' | tr '\n' ' ')\"
+                }
+            ]
+        }" | jq -r '.choices[0].message.content' > "$output_file"
+    
+    echo -e "${GREEN}✓ GPT response written to: $output_file${NC}"
+    
+    # Show preview
+    echo -e "\n${YELLOW}Preview:${NC}"
+    head -n 20 "$output_file"
+}
+
+call_gemini_api() {
+    local prompt_file="$1"
+    local output_file="${STACKTRACE_FILE%.*}_llm_fix.txt"
+    
+    if [ -z "$GOOGLE_API_KEY" ]; then
+        echo -e "${RED}Error: GOOGLE_API_KEY environment variable not set${NC}"
+        echo -e "${YELLOW}Please set your Google API key: export GOOGLE_API_KEY=your_key_here${NC}"
+        exit 1
+    fi
+    
+    # Use curl to call Gemini API
+    curl -s -X POST "https://generativelanguage.googleapis.com/v1beta/models/$LLM_MODEL:generateContent" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"contents\": [
+                {
+                    \"parts\": [
+                        {
+                            \"text\": \"$(cat "$prompt_file" | sed 's/"/\\"/g' | tr '\n' ' ')\"
+                        }
+                    ]
+                }
+            ],
+            \"generationConfig\": {
+                \"maxOutputTokens\": 4000
+            }
+        }?key=$GOOGLE_API_KEY" | jq -r '.candidates[0].content.parts[0].text' > "$output_file"
+    
+    echo -e "${GREEN}✓ Gemini response written to: $output_file${NC}"
+    
+    # Show preview
+    echo -e "\n${YELLOW}Preview:${NC}"
+    head -n 20 "$output_file"
+}
+
 cmd_pre_build() {
     echo -e "${CYAN}Running pre-build policy checks...${NC}"
     cd "$PROJECT_ROOT"
@@ -344,6 +572,9 @@ main() {
             ;;
         fix-lambdas)
             cmd_fix_lambdas
+            ;;
+        llm-fix)
+            cmd_llm_fix
             ;;
         pre-build)
             cmd_pre_build

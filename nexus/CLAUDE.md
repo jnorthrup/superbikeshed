@@ -37,6 +37,6 @@ This project implements agentic intelligence capabilities with TrikeShed integra
 ## Shunned anti-patterns
 
 - All agent state should use TrikeShed data structures
-List<T> shunned - Indexed <T> -- only allowed when not escaping, return Indexed<T> anyways
-Series<T> shunned - Indexed <T>
+List<T> shunned - use Indexed<T>.  for mutability try ListCowView or ArrayCowView
 Pair shunned - Join<A,B>  ctor is `a j b` 
+String shunned - use Indexed and buffers without pointer aliasing; String is a great Comparable but do not create them

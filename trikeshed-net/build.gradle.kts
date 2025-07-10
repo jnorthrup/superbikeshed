@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization")"
+    kotlin("plugin.serialization")
 }
 
 group = "borg.trikeshed"
@@ -37,8 +37,7 @@ kotlin {
         getByName("commonMain") {
             dependencies {
                 implementation(project(":trikeshed-lib"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-channels:1.7.3")
+                implementation(libs.coroutines)
                 implementation(project(":trikeshed-quic"))
                 implementation(project(":trikeshed-reactor"))
             }

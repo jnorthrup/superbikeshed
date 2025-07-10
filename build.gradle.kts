@@ -5,21 +5,19 @@ buildscript {
         maven { url = uri("https://maven.pkg.jetbrains.space/public/p/kotlin/kotlin-mpp") }
     }
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21")
     }
 }
 
 // Versions are managed in gradle.properties
 
-plugins {
+plugins { 
     kotlin("multiplatform")
     id("com.github.ben-manes.versions") version "0.51.0"
 }
 
-// Apply build policy plugins
+// Apply build policy plugin
 apply<buildtools.BuildPolicyPlugin>()
-apply<buildtools.BuildRulesPlugin>()
-apply<buildtools.VersionAbsorptionPlugin>()
 
 group = "borg.trikeshed"
 
@@ -29,24 +27,8 @@ repositories {
 
 kotlin {
     jvm()
-    
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                // JVM-specific dependencies can be added here
-            }
-        }
-    }
 }
+
+
 
 

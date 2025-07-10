@@ -1,12 +1,12 @@
 [versions]
-gradle = "9.0"
-benmanes = "0.52.0"
-kotlin = "2.2.0"
-coroutines = "1.7.3"
-serialization = "1.7.3"
-datetime = "0.4.0"
-scripting-dependencies = "2.2.0"
-scripting-dependencies-maven = "2.2.0"
+gradle =  "8.14.2"
+benmanes = "0.51.0"
+kotlin = { strictly = "[1.0, 2.2[", prefer = "2.1.21" }
+coroutines = { strictly = "[1.0, 2.2[", prefer = "1.10.2" }
+serialization = { strictly = "[1.0, 2.2[", prefer = "1.7.3" }
+datetime = { strictly = "[0.4, 2.0[", prefer = "0.6.1" }
+scripting-dependencies = { strictly = "[1.0, 2.2[", prefer = "2.1.21" }
+scripting-dependencies-maven = { strictly = "[1.0, 2.2[", prefer = "2.1.21" }
 
 [libraries]
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }

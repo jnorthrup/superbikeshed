@@ -863,3 +863,25 @@ object PatrickDevineSharding {
         )
     }
 }
+
+/**
+ * Task sharding wrapper for compatibility with WorkerPoolEvolution
+ */
+class TaskSharding(
+    private val subnetId: NUID,
+    private val quicProtocol: QuicConcentricProtocol
+) {
+    private val networkManager = ConcentricNetworkManager(subnetId)
+    private val taskSharder = TaskSharder(networkManager)
+    
+    suspend fun shardTask(
+        task: ConcentricTask,
+        strategy: ShardingStrategy,
+        targetAgents: List<ConcentricAgent>? = null
+    ): List<TaskShard> {
+        return taskSharder.shardTask(task, strategy, targetAgents)
+    }
+    
+    fun getShardRegistry() = taskSharder.shardRegistry
+    fun getShardFlow() = taskSharder.shardFlow
+}

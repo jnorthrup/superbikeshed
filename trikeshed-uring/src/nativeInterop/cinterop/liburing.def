@@ -1,0 +1,11 @@
+headers = liburing_compat.h
+headerFilter = liburing_compat.h
+package = borg.trikeshed.uring.cinterop
+
+---
+
+// This makes our Kotlin Native code exportable as a C library
+// that satisfies liburing interfaces on Darwin!
+
+compilerOpts = -I/usr/include -I/usr/local/include
+linkerOpts = -L/usr/lib -L/usr/local/lib

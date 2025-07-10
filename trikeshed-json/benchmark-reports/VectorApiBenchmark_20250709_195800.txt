@@ -1,0 +1,73 @@
+Calculating task graph as no cached configuration is available for tasks: :trikeshed-json:jvmTest --tests *VectorApiBenchmark*
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin FROM-CACHE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors
+> Task :buildSrc:processResources
+> Task :buildSrc:classes
+> Task :buildSrc:jar
+
+> Configure project :trikeshed-async-core
+w: [33m[1m⚠️ Unused Kotlin Source Sets[0m[0m
+The Kotlin source set nativeMain was configured but not added to any Kotlin compilation.
+[32m[1mSolution:[0m[0m
+[32m[3mYou can add a source set to a target's compilation by connecting it with the compilation's default source set using 'dependsOn'.[0m[0m
+[36mSee [0m[34mhttps://kotl.in/connecting-source-sets[0m[36m[0m
+
+
+> Configure project :trikeshed-uring
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':trikeshed-uring'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[darwinMain, macosArm64Main, macosX64Main]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+w: [33m[1m⚠️ CInterop Commonization Disabled[0m[0m
+The project is using Kotlin Multiplatform with hierarchical structure and disabled 'cinterop commonization'
+
+'cinterop commonization' can be enabled in your 'gradle.properties'
+kotlin.mpp.enableCInteropCommonization=true
+
+To hide this message, add to your 'gradle.properties'
+kotlin.mpp.enableCInteropCommonization.nowarn=true 
+
+The following source sets are affected: 
+[darwinMain]
+
+The following cinterops are affected: 
+[cinterop:compilation/compileKotlinMacosArm64/liburing, cinterop:compilation/compileKotlinMacosX64/liburing]
+[32m[1mSolution:[0m[0m
+[32m[3mPlease enable 'cinterop commonization' in your 'gradle.properties'[0m[0m
+[36mSee: [0m[34mhttps://kotlinlang.org/docs/mpp-share-on-platforms.html#use-native-libraries-in-the-hierarchical-structure[0m[36m[0m
+
+
+[Incubating] Problems report is available at: file:///Users/jim/work/v2superbikeshed/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Configuration cache state could not be cached: field `provider` of `org.gradle.internal.serialize.codecs.core.ProviderBackedFileCollectionSpec` bean found in field `element` of `java.util.Collections$SingletonList` bean found in field `elements` of `org.gradle.internal.serialize.codecs.core.ResolutionBackedFileCollectionSpec` bean found in field `__classpathSnapshot__` of `org.jetbrains.kotlin.gradle.tasks.KotlinCompile$ClasspathSnapshotProperties_Decorated` bean found in field `__classpathSnapshotProperties__` of task `:trikeshed-json:compileKotlinJvm` of type `org.jetbrains.kotlin.gradle.tasks.KotlinCompile`: error writing value of type 'org.gradle.api.internal.provider.DefaultProvider'
+> Could not resolve all files for configuration ':trikeshed-json:jvmCompileClasspath'.
+   > Could not find org.jetbrains.kotlinx:kotlinx-serialization-json:.
+     Required by:
+         project :trikeshed-json
+   > Could not find org.jetbrains.kotlinx:kotlinx-coroutines-core:.
+     Required by:
+         project :trikeshed-json
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 18s
+4 actionable tasks: 3 executed, 1 from cache
+Configuration cache entry discarded due to serialization error.

@@ -13,6 +13,8 @@ import fiduciary.memvid.MemvidEncoder
 import fiduciary.memvid.MemvidRetriever
 import fiduciary.memvid.MemvidIndex
 import kotlinx.serialization.json.Json
+import javax.naming.*
+import java.util.Hashtable
 
 /**
  * Platform Launcher - Dynamically loads JVM and manages WASM execution
@@ -21,6 +23,7 @@ import kotlinx.serialization.json.Json
  * 1. Dynamically load a JVM instance in-process
  * 2. Manage WASM modules using GraalVM's Truffle framework
  * 3. Provide seamless interop between native, JVM, and WASM code
+ * 4. Provide io_uring-backed JNDI naming services for high-performance service discovery
  */
 
 // Native library interfaces
@@ -65,6 +68,7 @@ class PlatformLauncher {
     internal var jniEnv: Pointer? = null
     internal var wasmEngine: Any? = null
     internal val loadedModules = mutableMapOf<String, WASMModule>()
+    internal var namingContext: Context? = null
     
     /**
      * Initialize the platform launcher
@@ -79,6 +83,9 @@ class PlatformLauncher {
         
         // Initialize WASM engine
         initializeWASMEngine()
+        
+        // Initialize io_uring-backed naming service
+        initializeNamingService()
     }
     
     /**
@@ -203,6 +210,7 @@ class PlatformLauncher {
             }
             
             loadedModules[name] = module
+            registerWASMModule(module)
             println("Loaded WASM module: $name")
             
         } catch (e: Exception) {
@@ -351,9 +359,89 @@ class PlatformLauncher {
     }
     
     /**
+     * Initialize io_uring-backed naming service
+     */
+    internal fun initializeNamingService() {
+        try {
+            // Set up io_uring JNDI provider
+            System.setProperty(Context.INITIAL_CONTEXT_FACTORY, 
+                "borg.trikeshed.launcher.UringNamingService")
+            
+            val env = Hashtable<String, String>()
+            env[Context.PROVIDER_URL] = "uring://localhost"
+            
+            namingContext = InitialContext(env)
+            
+            // Register platform services
+            registerPlatformServices()
+            
+            println("io_uring naming service initialized")
+            
+        } catch (e: Exception) {
+            println("Failed to initialize naming service: ${e.message}")
+        }
+    }
+    
+    /**
+     * Register core platform services in JNDI
+     */
+    internal fun registerPlatformServices() {
+        namingContext?.let { ctx ->
+            // Register JVM service
+            ctx.bind("platform/jvm", object {
+                val javaVM = this@PlatformLauncher.javaVM
+                val jniEnv = this@PlatformLauncher.jniEnv
+                override fun toString() = "JVMService[pid=${ProcessHandle.current().pid()}]"
+            })
+            
+            // Register WASM engine service
+            ctx.bind("platform/wasm", object {
+                val engine = wasmEngine
+                val modules = loadedModules
+                override fun toString() = "WASMService[modules=${modules.size}]"
+            })
+            
+            // Register io_uring service info
+            ctx.bind("platform/uring", object {
+                val type = "Darwin kqueue facade"
+                val performance = "High"
+                override fun toString() = "UringService[$type]"
+            })
+            
+            // Create services namespace
+            ctx.createSubcontext("services")
+            ctx.createSubcontext("modules")
+        }
+    }
+    
+    /**
+     * Register a service in the naming context
+     */
+    fun registerService(name: String, service: Any) {
+        namingContext?.bind("services/$name", service)
+    }
+    
+    /**
+     * Lookup a service from the naming context
+     */
+    fun <T> lookupService(name: String): T? {
+        return namingContext?.lookup("services/$name") as? T
+    }
+    
+    /**
+     * Register a loaded WASM module in JNDI
+     */
+    internal fun registerWASMModule(module: WASMModule) {
+        namingContext?.bind("modules/${module.name}", module)
+    }
+    
+    /**
      * Shutdown the platform
      */
     fun shutdown() {
+        // Close naming context
+        namingContext?.close()
+        
         // Unload WASM modules
         loadedModules.clear()
         
@@ -433,6 +521,19 @@ fun main(args: Array<String>) = runBlocking {
         "-XX:+UseG1GC",
         "-Dpolyglot.engine.WarnInterpreterOnly=false"
     ))
+    
+    // Register services using io_uring-backed JNDI
+    launcher.registerService("database", object {
+        override fun toString() = "DatabaseService[io_uring-backed]"
+    })
+    
+    launcher.registerService("cache", object {
+        override fun toString() = "CacheService[io_uring-backed]"
+    })
+    
+    // Lookup services
+    val dbService = launcher.lookupService<Any>("database")
+    println("Found service: $dbService")
     
     // Example: Load a WASM module
     launcher.loadWASMModule(

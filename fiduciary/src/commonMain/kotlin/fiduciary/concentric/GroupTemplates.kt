@@ -661,3 +661,26 @@ sealed class CollaborationEvent {
         val decision: QuorumDecision
     ) : CollaborationEvent()
 }
+
+/**
+ * Group templates manager for compatibility with WorkerPoolEvolution
+ */
+class GroupTemplates(
+    private val subnetId: NUID,
+    private val quicProtocol: QuicConcentricProtocol
+) {
+    private val groupManager = GroupManager()
+    
+    fun getTemplate(size: Int): GroupTemplate? {
+        return groupManager.getTemplate(size)
+    }
+    
+    fun createGroup(template: GroupTemplate, members: Set<NUID>): Result<ConcentricGroup> {
+        return groupManager.createGroup(template, members)
+    }
+    
+    fun getNeighbors(agentId: NUID): List<NUID> {
+        // Stub implementation - return empty list for now
+        return emptyList()
+    }
+}

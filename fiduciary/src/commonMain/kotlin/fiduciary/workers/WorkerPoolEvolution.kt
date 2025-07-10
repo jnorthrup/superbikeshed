@@ -561,12 +561,14 @@ class WorkerPoolEvolution(
         return fiduciary.concentric.GroupTemplates(subnetId, quicProtocol)
     }
     
+    private val monitoringScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    
     /**
      * Start resource monitoring and rebalancing
      */
     private fun startResourceMonitoring() {
         // Implementation for continuous resource monitoring
-        GlobalScope.launch {
+        monitoringScope.launch {
             while (isActive) {
                 delay(30000) // Monitor every 30 seconds
                 rebalanceResources()

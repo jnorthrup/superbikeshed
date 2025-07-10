@@ -9,26 +9,11 @@ group = "borg.trikeshed"
 kotlin {
     jvm()
     
-    val hostOs = System.getProperty("os.name")
-    val hostArch = System.getProperty("os.arch")
-    
-    when {
-        hostOs == "Mac OS X" && hostArch == "aarch64" -> {
-            macosArm64()
-        }
-        hostOs == "Mac OS X" -> {
-            macosX64()
-        }
-        hostOs.contains("Windows", ignoreCase = true) -> {
-            mingwX64()
-        }
-        hostOs == "Linux" && hostArch == "aarch64" -> {
-            linuxArm64()
-        }
-        hostOs == "Linux" -> {
-            linuxX64()
-        }
-    }
+    macosArm64()
+    macosX64()
+    linuxX64()
+    linuxArm64()
+    mingwX64()
     
     sourceSets {
         getByName("commonMain") {
@@ -36,8 +21,8 @@ kotlin {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-io"))
                 implementation(project(":trikeshed-channel-api"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             }
         }
         getByName("commonTest") {

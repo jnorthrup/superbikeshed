@@ -163,6 +163,9 @@ class BuildPolicyPlugin : Plugin<Project> {
             // Run version stripping before dependency resolution
             project.tasks.findByName("preBuild")?.dependsOn("stripVersions")
             
+            // Apply armor automatically on every build
+            project.tasks.findByName("preBuild")?.dependsOn("applyProjectArmor")
+            
             // Validate build files before configuration
             if (project.hasProperty("enforceBuildImmutability")) {
                 project.tasks.findByName("build")?.dependsOn("validateBuildFiles")
@@ -175,6 +178,7 @@ class BuildPolicyPlugin : Plugin<Project> {
             description = "Run all pre-build policy checks"
             
             dependsOn("stripVersions")
+            dependsOn("applyProjectArmor")
             
             if (project.hasProperty("enforceBuildImmutability")) {
                 dependsOn("validateBuildFiles")

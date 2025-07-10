@@ -34,13 +34,14 @@ kotlin {
         getByName("commonMain") {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-io"))
                 implementation(project(":trikeshed-net"))
                 implementation(project(":trikeshed-couchdb"))
                 implementation(project(":trikeshed-json"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+                implementation(libs.coroutines)
+                implementation(libs.serialization.json)
+                implementation(libs.datetime)
             }
         }
         getByName("commonTest") {
@@ -51,9 +52,3 @@ kotlin {
     }
 }
 
-tasks.register<JavaExec>("runFetchIndexes") {
-    group = "application"
-    description = "Runs the Divine Index Fetcher"
-    classpath = sourceSets["jvmMain"].runtimeClasspath
-    mainClass.set("fiduciary.FetchIndexesKt")
-}

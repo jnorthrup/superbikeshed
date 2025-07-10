@@ -22,6 +22,7 @@ kotlin {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
             }
         }
     }

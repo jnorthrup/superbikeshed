@@ -4,11 +4,12 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.id.NUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.*
 import kotlinx.serialization.*
 import kotlinx.datetime.Instant
 import kotlinx.datetime.Clock
-import java.util.concurrent.ConcurrentLinkedDeque
-import java.util.concurrent.atomic.AtomicInteger
+// Note: ConcurrentLinkedDeque and AtomicInteger are JVM-specific
+// For multiplatform, we'll use coroutine-safe alternatives
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -29,10 +30,12 @@ class WorkStealing(
 ) {
 
     // Local work queue for tasks assigned to this agent
-    private val localWorkQueue: ConcurrentLinkedDeque<TaskShard> = ConcurrentLinkedDeque()
+    private val localWorkQueue = kotlinx.coroutines.sync.Mutex()
+    private val taskQueue = mutableListOf<TaskShard>()
 
     // Counter for tasks stolen from other agents
-    private val stolenTaskCount: AtomicInteger = AtomicInteger(0)
+    private var stolenTaskCount: Int = 0
+    private val countMutex = kotlinx.coroutines.sync.Mutex()
 
     // Configuration for work stealing
     private val config = WorkStealingConfig()
@@ -41,16 +44,20 @@ class WorkStealing(
      * Adds a task to the local work queue.
      * @param task The task shard to add.
      */
-    fun addTask(task: TaskShard) {
-        localWorkQueue.addLast(task)
+    suspend fun addTask(task: TaskShard) {
+        localWorkQueue.withLock {
+            taskQueue.add(task)
+        }
     }
 
     /**
      * Retrieves a task from the local work queue.
      * @return The next task shard, or null if the queue is empty.
      */
-    fun getNextTask(): TaskShard? {
-        return localWorkQueue.pollFirst()
+    suspend fun getNextTask(): TaskShard? {
+        return localWorkQueue.withLock {
+            taskQueue.removeFirstOrNull()
+        }
     }
 
     /**
@@ -70,15 +77,21 @@ class WorkStealing(
      * Attempts to steal work from a randomly selected neighbor.
      */
     private suspend fun attemptToStealWork() {
-        if (localWorkQueue.isEmpty()) {
+        val isEmpty = localWorkQueue.withLock { taskQueue.isEmpty() }
+        if (isEmpty) {
             val potentialNeighbors = groupManager.getNeighbors(agentId)
             if (potentialNeighbors.isNotEmpty()) {
                 val targetAgent = potentialNeighbors.random(Random.Default)
                 val stolenTask = requestWorkFromNeighbor(targetAgent)
                 if (stolenTask != null) {
-                    localWorkQueue.addFirst(stolenTask)
-                    stolenTaskCount.incrementAndGet()
-                    println("Agent $agentId stole a task from $targetAgent. Total stolen: ${stolenTaskCount.get()}")
+                    localWorkQueue.withLock {
+                        taskQueue.add(0, stolenTask)
+                    }
+                    countMutex.withLock {
+                        stolenTaskCount++
+                    }
+                    val count = countMutex.withLock { stolenTaskCount }
+                    println("Agent $agentId stole a task from $targetAgent. Total stolen: $count")
                 } else {
                     println("Agent $agentId failed to steal from $targetAgent.")
                 }
@@ -124,10 +137,12 @@ class WorkStealing(
      * @param amount The amount of work requested.
      * @return A list of task shards to be given to the requesting agent.
      */
-    fun handleWorkStealingRequest(requestingAgent: NUID, amount: Int): List<TaskShard> {
+    suspend fun handleWorkStealingRequest(requestingAgent: NUID, amount: Int): List<TaskShard> {
         val tasksToSteal = mutableListOf<TaskShard>()
-        repeat(amount) {
-            localWorkQueue.pollLast()?.let { tasksToSteal.add(it) }
+        localWorkQueue.withLock {
+            repeat(amount) {
+                taskQueue.removeLastOrNull()?.let { tasksToSteal.add(it) }
+            }
         }
         println("Agent $agentId provided ${tasksToSteal.size} tasks to $requestingAgent.")
         return tasksToSteal
@@ -148,14 +163,14 @@ class WorkStealing(
     /**
      * Returns the current number of tasks in the local work queue.
      */
-    fun getLocalWorkQueueSize(): Int {
-        return localWorkQueue.size
+    suspend fun getLocalWorkQueueSize(): Int {
+        return localWorkQueue.withLock { taskQueue.size }
     }
 
     /**
      * Returns the total number of tasks stolen by this agent.
      */
-    fun getTotalStolenTasks(): Int {
-        return stolenTaskCount.get()
+    suspend fun getTotalStolenTasks(): Int {
+        return countMutex.withLock { stolenTaskCount }
     }
 }

@@ -12,14 +12,11 @@ kotlin {
     jvm()
     
     // Native target based on host OS
-    val hostOs = System.getProperty("os.name")
-    val hostArch = System.getProperty("os.arch")
-    when {
-        hostOs == "Mac OS X" && hostArch == "aarch64" -> macosArm64()
-        hostOs == "Mac OS X" -> macosX64()
-        hostOs == "Linux" && hostArch == "aarch64" -> linuxArm64()
-        hostOs == "Linux" -> linuxX64()
-    }
+    macosArm64()
+    macosX64()
+    linuxX64()
+    linuxArm64()
+    mingwX64()
     
     sourceSets {
         commonMain {

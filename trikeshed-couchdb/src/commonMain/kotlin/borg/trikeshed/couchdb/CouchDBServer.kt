@@ -59,6 +59,10 @@ class CouchDBServer(
         println("CouchDB Server started and listening for requests.")
     }
 
+    fun stop() {
+        blobService.stop()
+    }
+
     private suspend fun handleHttpRequest(request: MockHttpRequest): MockHttpResponse {
         println("CouchDB Server: Received HTTP request: ${request.method} ${request.path}")
 

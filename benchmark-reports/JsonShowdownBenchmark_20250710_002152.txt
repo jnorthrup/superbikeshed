@@ -1,0 +1,66 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: :trikeshed-json:jvmTest --tests *JsonShowdownBenchmark*
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :
+w: [33m[1m⚠️ Deprecated Gradle Property 'kotlin.experimental.tryK2' Used[0m[0m
+The `kotlin.experimental.tryK2` deprecated property is used in your build.
+[32m[1mSolution:[0m[0m
+[32m[3mIt is unsupported, please stop using it.[0m[0m
+
+
+> Configure project :fiduciary
+e: file:///Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts:42:37: Unresolved reference: kotlinx
+e: file:///Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts:43:37: Unresolved reference: kotlinx
+e: file:///Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts:57:64: Unresolved reference: KotlinJvmTarget
+e: file:///Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts:57:81: Type mismatch: inferred type is () -> TaskProvider<JavaExec> but Class<TypeVariable(S)!>! was expected
+e: file:///Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts:61:21: Unresolved reference: compilations
+e: file:///Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts:61:67: Unresolved reference: compilations
+
+[Incubating] Problems report is available at: file:///Users/jim/work/v2superbikeshed/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/Users/jim/work/v2superbikeshed/fiduciary/build.gradle.kts' line: 42
+
+* What went wrong:
+Script compilation errors:
+
+  Line 42:                 implementation(libs.kotlinx.coroutines.core)
+                                               ^ Unresolved reference: kotlinx
+
+  Line 43:                 implementation(libs.kotlinx.coroutines.channels)
+                                               ^ Unresolved reference: kotlinx
+
+  Line 57: kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmTarget> {
+                                                                          ^ Unresolved reference: KotlinJvmTarget
+
+  Line 57: kotlin.targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmTarget> {
+                                                                                           ^ Type mismatch: inferred type is () -> TaskProvider<JavaExec> but Class<TypeVariable(S)!>! was expected
+
+  Line 61:         classpath = compilations["main"].runtimeDependencyFiles + compilations["main"].output.allOutputs
+                               ^ Unresolved reference: compilations
+
+  Line 61:         classpath = compilations["main"].runtimeDependencyFiles + compilations["main"].output.allOutputs
+                                                                             ^ Unresolved reference: compilations
+
+6 errors
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 40s
+4 actionable tasks: 4 up-to-date
+Configuration cache entry stored.

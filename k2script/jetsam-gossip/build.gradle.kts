@@ -1,6 +1,6 @@
 plugins {
     kotlin("multiplatform")
-    kotlin("plugin.serialization")"
+    kotlin("plugin.serialization")
 }
 
 group = "org.k2script.jetsamgossip"

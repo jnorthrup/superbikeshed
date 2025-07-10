@@ -27,7 +27,7 @@ Root Project: superbikeshed
 ├── trikeshed-channel-api ..... 80%
 ├── trikeshed-channel-impl .... 80%
 ├── trikeshed-channel-test .... 80%
-├── rtsgame ................... 85%
+├── rtsgame ................... 85% 
 ├── boingDemo ................. 80%
 ├── fiduciary ................. 80%
 ├── k2script .................. 85%
@@ -51,7 +51,7 @@ Root Project: superbikeshed
 ---
 
 ```mermaid
-flowchart TD
+flowchart LR
     A[superbikeshed]
     A --> B1[trikeshed-lib 90%]
     A --> B2[trikeshed-common 90%]
@@ -92,7 +92,7 @@ flowchart TD
         C3[kotlinx-serialization-wireproto]
         C4[moneyfan]
         C5[nexus:intellij-plugin]
-        C6[zlib-kmp-reference]
+        C6[zlib-kmp-reference] 
     end
 ```
 

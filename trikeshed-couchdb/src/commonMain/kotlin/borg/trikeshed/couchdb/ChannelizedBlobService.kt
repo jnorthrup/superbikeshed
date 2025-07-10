@@ -321,6 +321,40 @@ class ChannelizedBlobService {
      * Client-side function to put/create a blob.
      * Sends a request through the channel and waits for a response.
      */
+    override fun start(scope: CoroutineScope) {
+        scope.launch { processPutRequests(coroutineContext) }
+        scope.launch { processGetRequests(coroutineContext) }
+        scope.launch { processUpdateRequests(coroutineContext) }
+        scope.launch { processDeleteRequests(coroutineContext) }
+        scope.launch { processCreateDbRequests(coroutineContext) }
+        scope.launch { processDeleteDbRequests(coroutineContext) }
+        scope.launch { processListDbsRequests(coroutineContext) }
+        scope.launch { processBulkDocsRequests(coroutineContext) }
+    }
+
+    override fun stop() {
+        putRequestChannel.close()
+        putResponseChannel.close()
+        getRequestChannel.close()
+        getResponseChannel.close()
+        updateRequestChannel.close()
+        updateResponseChannel.close()
+        deleteRequestChannel.close()
+        deleteResponseChannel.close()
+        createDbRequestChannel.close()
+        createDbResponseChannel.close()
+        deleteDbRequestChannel.close()
+        deleteDbResponseChannel.close()
+        listDbsRequestChannel.close()
+        listDbsResponseChannel.close()
+        bulkDocsRequestChannel.close()
+        bulkDocsResponseChannel.close()
+    }
+
+    /**
+     * Client-side function to put/create a blob.
+     * Sends a request through the channel and waits for a response.
+     */
     suspend fun putBlob(dbName: String, id: String, data: ByteArray, context: CoroutineContext): BlobPutResponse = withContext(context) {
         putRequestChannel.send(BlobPutRequest(dbName, id, data))
         putResponseChannel.receive()

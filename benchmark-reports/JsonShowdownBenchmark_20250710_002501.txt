@@ -1,0 +1,48 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as no cached configuration is available for tasks: :trikeshed-json:jvmTest --tests *JsonShowdownBenchmark*
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+
+> Configure project :
+e: file:///Users/jim/work/v2superbikeshed/build.gradle.kts:35:1: Unresolved reference: implementation
+e: file:///Users/jim/work/v2superbikeshed/build.gradle.kts:35:16: Too many characters in a character literal ''com.google.code.gson:gson:2.10.1''
+w: [33m[1m⚠️ Deprecated Gradle Property 'kotlin.experimental.tryK2' Used[0m[0m
+The `kotlin.experimental.tryK2` deprecated property is used in your build.
+[32m[1mSolution:[0m[0m
+[32m[3mIt is unsupported, please stop using it.[0m[0m
+
+
+[Incubating] Problems report is available at: file:///Users/jim/work/v2superbikeshed/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/Users/jim/work/v2superbikeshed/build.gradle.kts' line: 35
+
+* What went wrong:
+Script compilation errors:
+
+  Line 35: implementation 'com.google.code.gson:gson:2.10.1'
+           ^ Unresolved reference: implementation
+
+  Line 35: implementation 'com.google.code.gson:gson:2.10.1'
+                          ^ Too many characters in a character literal ''com.google.code.gson:gson:2.10.1''
+
+2 errors
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 41s
+4 actionable tasks: 4 up-to-date
+Configuration cache entry stored.

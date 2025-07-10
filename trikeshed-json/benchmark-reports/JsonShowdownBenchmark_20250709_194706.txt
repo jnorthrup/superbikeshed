@@ -1,0 +1,50 @@
+Starting a Gradle Daemon, 2 stopped Daemons could not be reused, use --status for details
+Calculating task graph as no cached configuration is available for tasks: :trikeshed-json:jvmTest --tests *JsonShowdownBenchmark*
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin FROM-CACHE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors
+> Task :buildSrc:processResources
+> Task :buildSrc:classes
+> Task :buildSrc:jar
+
+> Configure project :platform-launcher
+w: [33m[1m⚠️ Default Kotlin Hierarchy Template Not Applied Correctly[0m[0m
+The Default Kotlin Hierarchy Template was not applied to 'project ':platform-launcher'':
+Explicit .dependsOn() edges were configured for the following source sets:
+[macosArm64Main, macosArm64Test, nativeMain, nativeTest]
+
+Consider removing dependsOn-calls or disabling the default template by adding
+    'kotlin.mpp.applyDefaultHierarchyTemplate=false'
+to your gradle.properties
+[32m[1mSolution:[0m[0m
+[32m[3mPlease remove the dependsOn-calls or disable the default template.[0m[0m
+[36mLearn more about hierarchy templates: [0m[34mhttps://kotl.in/hierarchy-template[0m[36m[0m
+
+
+> Configure project :trikeshed-async-core
+w: [33m[1m⚠️ Unused Kotlin Source Sets[0m[0m
+The Kotlin source set nativeMain was configured but not added to any Kotlin compilation.
+[32m[1mSolution:[0m[0m
+[32m[3mYou can add a source set to a target's compilation by connecting it with the compilation's default source set using 'dependsOn'.[0m[0m
+[36mSee [0m[34mhttps://kotl.in/connecting-source-sets[0m[36m[0m
+
+
+[Incubating] Problems report is available at: file:///Users/jim/work/v2superbikeshed/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring project ':trikeshed-sumo'.
+> Failed to store cache entry 2b0f93a67f5f9209a5f2f38bdeff6bf2 for Kotlin DSL script compilation (Project/TopLevel/stage2): java.nio.file.NoSuchFileException: /Users/jim/.gradle/caches/build-cache-1/2b0f93a67f5f9209a5f2f38bdeff6bf2-14466726075419381730.part
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 3s
+4 actionable tasks: 3 executed, 1 from cache
+Configuration cache entry stored.

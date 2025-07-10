@@ -36,6 +36,7 @@ Cursor = Join<CursorIndex, (CursorIndex) -> RowVec>
 ### Phase 1: Core Cursor Infrastructure 🏗️
 
 #### 1.1 Enhanced TableMeta
+
 ```kotlin
 @JvmInline
 value class TableMeta(val context: DatabaseContext) {
@@ -54,6 +55,7 @@ data class DatabaseContext(
 ```
 
 #### 1.2 CursorIndex Operations
+
 ```kotlin
 // Index construction
 fun TableMeta.rowAt(position: Int): CursorIndex = this j position
@@ -66,6 +68,7 @@ fun CursorIndex.sameTable(other: CursorIndex): Boolean = a.name == other.a.name
 ```
 
 #### 1.3 ColumnMeta Enhancement
+
 ```kotlin
 @JvmInline
 value class ColumnMeta(val definition: ColumnDefinition) {
@@ -94,6 +97,7 @@ enum class SqlType {
 ### Phase 2: Cursor Operations 🚀
 
 #### 2.1 Core Cursor API
+
 ```kotlin
 // Construction
 fun createCursor(
@@ -115,6 +119,7 @@ fun Cursor.at(position: Int): RowVec = this[position]
 ```
 
 #### 2.2 Cursor Transformations
+
 ```kotlin
 // Cursor-specific α operator
 inline infix fun Cursor.αc(crossinline transform: (RowVec) -> RowVec): Cursor =
@@ -156,6 +161,7 @@ fun Cursor.orderBy(columnName: String, ascending: Boolean = true): Cursor {
 ```
 
 #### 2.3 Cursor Aggregations
+
 ```kotlin
 // Grouping
 fun Cursor.groupBy(keyExtractor: (RowVec) -> String): Map<String, Cursor> {
@@ -186,6 +192,7 @@ fun Cursor.max(columnName: String): Any? =
 ### Phase 3: Database Integration 🔌
 
 #### 3.1 JDBC Integration
+
 ```kotlin
 interface CursorFactory {
     suspend fun fromResultSet(
@@ -253,6 +260,7 @@ class JdbcCursorFactory(private val connection: Connection) : CursorFactory {
 ```
 
 #### 3.2 Connection Management
+
 ```kotlin
 class CursorConnectionManager {
     private val connections = mutableMapOf<String, Connection>()
@@ -277,6 +285,7 @@ class CursorConnectionManager {
 ### Phase 4: Performance Optimization ⚡
 
 #### 4.1 Lazy Loading
+
 ```kotlin
 class LazyCursor(
     private val tableMeta: TableMeta,
@@ -305,6 +314,7 @@ class LazyCursor(
 ```
 
 #### 4.2 Streaming Operations  
+
 ```kotlin
 fun Cursor.asFlow(): Flow<RowVec> = flow {
     for (i in 0 until rowCount) {
@@ -326,6 +336,7 @@ suspend fun <R> Cursor.fold(
 ```
 
 #### 4.3 Parallel Processing
+
 ```kotlin
 suspend fun Cursor.mapParallel<R>(
     concurrency: Int = 4,
@@ -360,6 +371,7 @@ suspend fun Cursor.filterParallel(
 ### Phase 5: Advanced Features 🎯
 
 #### 5.1 Cursor Joins
+
 ```kotlin
 fun Cursor.innerJoin(
     other: Cursor,
@@ -405,6 +417,7 @@ private fun combineRows(left: RowVec, right: RowVec): RowVec {
 ```
 
 #### 5.2 Schema Validation
+
 ```kotlin
 class CursorValidator {
     fun validate(cursor: Cursor, expectedSchema: TableSchema): ValidationResult {
@@ -459,6 +472,7 @@ sealed class ValidationError {
 ### Phase 6: Testing Strategy 🧪
 
 #### 6.1 Unit Tests
+
 ```kotlin
 class CursorTest {
     
@@ -505,6 +519,7 @@ class CursorTest {
 ```
 
 #### 6.2 Integration Tests
+
 ```kotlin
 class CursorIntegrationTest {
     
@@ -548,6 +563,7 @@ class CursorIntegrationTest {
 ```
 
 #### 6.3 Performance Benchmarks
+
 ```kotlin
 class CursorPerformanceBenchmark {
     
@@ -582,6 +598,7 @@ class CursorPerformanceBenchmark {
 ### Phase 7: Production Deployment 🚀
 
 #### 7.1 Configuration
+
 ```kotlin
 data class CursorConfig(
     val defaultPageSize: Int = 1000,
@@ -606,6 +623,7 @@ class CursorEnvironment(private val config: CursorConfig) {
 ```
 
 #### 7.2 Monitoring
+
 ```kotlin
 class CursorMetrics {
     private val queryCounter = AtomicLong(0)
@@ -633,12 +651,14 @@ class CursorMetrics {
 ## Success Metrics
 
 ### Technical KPIs
+
 - **Type Safety**: 100% compile-time type checking for cursor operations
 - **Performance**: Sub-100ms response for 10K row operations
 - **Memory Efficiency**: Constant memory usage for streaming operations
 - **Concurrency**: 4x performance improvement with parallel processing
 
 ### Business KPIs  
+
 - **Developer Productivity**: 50% reduction in database-related bugs
 - **Code Maintainability**: Type-driven API prevents runtime errors
 - **Integration Speed**: Drop-in replacement for existing cursor implementations
@@ -647,12 +667,14 @@ class CursorMetrics {
 ## Risk Mitigation
 
 ### Technical Risks
+
 1. **Performance Overhead**: Mitigated by zero-cost abstractions and benchmarking
 2. **Memory Usage**: Addressed through lazy loading and streaming APIs
 3. **Type Complexity**: Resolved with comprehensive documentation and examples
 4. **Integration Issues**: Prevented by gradual rollout and compatibility layers
 
 ### Operational Risks
+
 1. **Database Compatibility**: Handled through adapter pattern and testing
 2. **Migration Complexity**: Minimized with backward-compatible APIs
 3. **Team Adoption**: Supported by training and comprehensive documentation
@@ -661,18 +683,21 @@ class CursorMetrics {
 ## Implementation Timeline
 
 ### Month 1: Foundation (Weeks 1-4)
+
 - Core MetaSeries Cursor types and operations
 - Basic JDBC integration
 - Unit test suite
 - Documentation framework
 
 ### Month 2: Features (Weeks 5-8)  
+
 - Advanced cursor operations (joins, aggregations)
 - Performance optimizations (lazy loading, parallel processing)
 - Integration tests
 - Schema validation
 
 ### Month 3: Production (Weeks 9-12)
+
 - Production configuration and monitoring
 - Performance benchmarking
 - Migration tools and guides

@@ -1,3 +1,4 @@
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
 package borg.trikeshed.lib.simd
 
 import platform.posix.*

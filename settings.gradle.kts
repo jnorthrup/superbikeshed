@@ -19,7 +19,9 @@ pluginManagement {
         kotlin("multiplatform") version "1.9.23"
         kotlin("native") version "1.9.23" apply false
         kotlin("plugin.serialization") version "1.9.23"
-        // id("com.github.ben-manes.versions") version "0.52.0"
+        
+        
+        
         // id("io.gitlab.arturbosch.detekt") version "1.23.6"
     }
 }
@@ -68,6 +70,7 @@ include(":trikeshed-ipfs")    // IPFS integration.
 include(":trikeshed-cursor")  // Cursor-based data access.
 include(":trikeshed-isam")    // Indexed Sequential Access Method implementation.
 include(":trikeshed-lsmr")    // Log-Structured Merge-Tree implementation.
+include(":trikeshed-uring")   // io_uring facade with CCEK orchestration.
 
 // Channel-based protocol architecture
 include(":trikeshed-channel-api")     // Protocol channelization API

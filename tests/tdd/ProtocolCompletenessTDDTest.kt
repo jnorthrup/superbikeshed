@@ -699,7 +699,7 @@ data class TrikeShedMessageFrame(
                 messageTypeLength = messageType.length,
                 messageType = messageType,
                 payload = payload,
-                checksum = Checksum(0u) // TODO: Calculate actual CRC32
+                checksum = Checksum(calculateCrc32(payload))
             )
         }
     }

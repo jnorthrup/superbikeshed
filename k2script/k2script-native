@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# K2Script Native Launcher
+# Uses the existing JAR file for immediate functionality
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JAR_FILE="$SCRIPT_DIR/test-surrogate.jar"
+
+if [ ! -f "$JAR_FILE" ]; then
+    echo "Error: JAR file not found at $JAR_FILE"
+    exit 1
+fi
+
+# Execute the script with kotlin
+kotlin -cp "$JAR_FILE" "$@" 
