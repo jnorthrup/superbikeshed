@@ -22,6 +22,23 @@ import fiduciary.concentric.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
+// Data classes for server responses
+data class HttpResponse(
+    val statusCode: Int,
+    val headers: Map<String, String>,
+    val body: String
+)
+
+data class ConcentricRingInfo(
+    val rings: List<ConcentricRing>,
+    val activeAgents: Int
+)
+
+data class QuicEndpoint(
+    val address: String,
+    val port: Int
+)
+
 /**
  * io_uring-backed CouchDB Server with multi-protocol support
  * 
@@ -529,9 +546,106 @@ class UringCouchDBServer(
     fun isUringActive(): Boolean = uringActive.get()
     fun getUringType(): String = "Darwin kqueue facade"
     
+    fun initializeAgentNetwork(): Map<ConcentricRing, List<ConcentricAgent>> {
+        val network = mutableMapOf<ConcentricRing, MutableList<ConcentricAgent>>()
+        
+        // Create agents for each ring using the pre-defined configurations
+        val rings = listOf(
+            ConcentricRing.CORE,
+            ConcentricRing.DYAD,
+            ConcentricRing.TRIAD,
+            ConcentricRing.PENTAD,
+            ConcentricRing.DODECAD,
+            ConcentricRing.SENATE
+        )
+        
+        rings.forEach { ring ->
+            val ringAgents = mutableListOf<ConcentricAgent>()
+            repeat(ring.groupSize) {
+                val agent = ConcentricAgent(
+                    id = NUID.random(),
+                    ring = ring,
+                    capabilities = getCapabilitiesForRing(ring.level)
+                )
+                agents[agent.id] = agent
+                agentTasks[agent.id] = ConcentricWorkQueue(agent.id, ring)
+                ringAgents.add(agent)
+            }
+            network[ring] = ringAgents
+        }
+        
+        return network
+    }
+    
+    fun handleRestRequest(method: String, path: String, body: String?): HttpResponse {
+        // Simple REST handling without actual HTTP server
+        return when {
+            path == "/" && method == "GET" -> {
+                HttpResponse(200, mapOf(), """{"couchdb":"Welcome","version":"1.0","uring_active":${isUringActive()}}""")
+            }
+            path == "/_all_dbs" && method == "GET" -> {
+                val dbs = databases.keys.toList()
+                HttpResponse(200, mapOf(), Json.encodeToString(dbs))
+            }
+            path.startsWith("/") && path.count { it == '/' } == 1 && method == "PUT" -> {
+                val dbName = path.substring(1)
+                databases[dbName] = CouchDatabase(dbName)
+                HttpResponse(201, mapOf(), """{"ok":true}""")
+            }
+            else -> HttpResponse(404, mapOf(), """{"error":"not_found"}""")
+        }
+    }
+    
+    fun getActiveAgents(): List<ConcentricAgent> = agents.values.toList()
+    
+    fun submitTask(task: ConcentricTask) {
+        runBlocking {
+            _taskFlow.emit(task)
+            
+            // Find suitable agent
+            val suitableAgents = findAgentsForTask(task.requiredCapabilities)
+            if (suitableAgents.isNotEmpty()) {
+                val agent = suitableAgents.first()
+                submitTaskToAgent(agent, task)
+            }
+        }
+    }
+    
+    private fun getCapabilitiesForRing(level: Int): Set<AgentCapability> {
+        return when (level) {
+            0 -> setOf(
+                AgentCapability.CONSENSUS_PARTICIPATION,
+                AgentCapability.SECURITY_ENFORCEMENT,
+                AgentCapability.CRITICAL_OPERATIONS
+            )
+            1 -> setOf(
+                AgentCapability.QUORUM_FORMATION,
+                AgentCapability.TASK_COORDINATION,
+                AgentCapability.QUALITY_ASSESSMENT
+            )
+            2 -> setOf(
+                AgentCapability.CONSENSUS_PARTICIPATION,
+                AgentCapability.NLP_PROCESSING,
+                AgentCapability.ENTITY_EXTRACTION
+            )
+            else -> setOf(
+                AgentCapability.CONTENT_INGESTION,
+                AgentCapability.HTTP_RANGE_REQUESTS,
+                AgentCapability.ARCHIVE_PROCESSING
+            )
+        }
+    }
+    
     fun getConcentricRingInfo(): ConcentricRingInfo {
         return ConcentricRingInfo(
-            rings = ConcentricRing.ALL_RINGS,
+            rings = listOf(
+                ConcentricRing.CORE,
+                ConcentricRing.DYAD,
+                ConcentricRing.TRIAD,
+                ConcentricRing.PENTAD,
+                ConcentricRing.DODECAD,
+                ConcentricRing.SENATE
+            ),
             activeAgents = agents.size
         )
     }

@@ -59,3 +59,11 @@ kotlin {
         }
     }
 }
+
+// Add run task for the KMP main  
+tasks.register<JavaExec>("run") {
+    mainClass.set("borg.trikeshed.couchdb.MainKt")
+    classpath = sourceSets["jvmMain"].runtimeClasspath + sourceSets["commonMain"].runtimeClasspath
+    
+    standardInput = System.`in`
+}

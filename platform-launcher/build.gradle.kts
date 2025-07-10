@@ -64,6 +64,9 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-couchdb"))
+                implementation(project(":trikeshed-net"))
+                implementation(project(":trikeshed-ipfs"))
                 implementation(project(":fiduciary"))
                 implementation("com.sun.jna:jna:5.14.0")
             }
@@ -76,4 +79,32 @@ kotlin {
         
         
     }
+}
+
+// Emergency run task for blob server
+tasks.register<JavaExec>("run") {
+    mainClass.set("borg.trikeshed.launcher.LaunchFiduciary")
+    classpath = sourceSets["jvmMain"].runtimeClasspath
+    
+    jvmArgs = listOf(
+        "-Xmx2g",
+        "-XX:+UseG1GC",
+        "-Dfile.encoding=UTF-8"
+    )
+    
+    standardInput = System.`in`
+}
+
+tasks.register<JavaExec>("runFiduciary") {
+    mainClass.set("borg.trikeshed.launcher.LaunchFiduciary")
+    classpath = sourceSets["jvmMain"].runtimeClasspath
+    
+    jvmArgs = listOf(
+        "-Xmx4g",
+        "-XX:+UseG1GC",
+        "-Dfile.encoding=UTF-8",
+        "-Dfiduciary.mode=production"
+    )
+    
+    standardInput = System.`in`
 }

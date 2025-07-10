@@ -14,14 +14,14 @@ class KifParserTest {
         val tokens = KifParser.tokenize(input)
         
         assertEquals(5, tokens.size)
-        assertTrue(tokens[0] is KifToken.ParenOpen)
-        assertTrue(tokens[1] is KifToken.Symbol)
-        assertEquals("subclass", (tokens[1] as KifToken.Symbol).value)
-        assertTrue(tokens[2] is KifToken.Symbol)
-        assertEquals("Human", (tokens[2] as KifToken.Symbol).value)
-        assertTrue(tokens[3] is KifToken.Symbol)
-        assertEquals("Mammal", (tokens[3] as KifToken.Symbol).value)
-        assertTrue(tokens[4] is KifToken.ParenClose)
+        assertTrue(tokens[0] is KifParser.KifToken.ParenOpen)
+        assertTrue(tokens[1] is KifParser.KifToken.Symbol)
+        assertEquals("subclass", (tokens[1] as KifParser.KifToken.Symbol).value)
+        assertTrue(tokens[2] is KifParser.KifToken.Symbol)
+        assertEquals("Human", (tokens[2] as KifParser.KifToken.Symbol).value)
+        assertTrue(tokens[3] is KifParser.KifToken.Symbol)
+        assertEquals("Mammal", (tokens[3] as KifParser.KifToken.Symbol).value)
+        assertTrue(tokens[4] is KifParser.KifToken.ParenClose)
     }
 
     @Test
@@ -30,12 +30,12 @@ class KifParserTest {
         val tokens = KifParser.tokenize(input)
         
         assertEquals(4, tokens.size)
-        assertTrue(tokens[0] is KifToken.ParenOpen)
-        assertTrue(tokens[1] is KifToken.Str)
-        assertEquals("Socrates", (tokens[1] as KifToken.Str).value)
-        assertTrue(tokens[2] is KifToken.Symbol)
-        assertEquals("Human", (tokens[2] as KifToken.Symbol).value)
-        assertTrue(tokens[3] is KifToken.ParenClose)
+        assertTrue(tokens[0] is KifParser.KifToken.ParenOpen)
+        assertTrue(tokens[1] is KifParser.KifToken.Str)
+        assertEquals("Socrates", (tokens[1] as KifParser.KifToken.Str).value)
+        assertTrue(tokens[2] is KifParser.KifToken.Symbol)
+        assertEquals("Human", (tokens[2] as KifParser.KifToken.Symbol).value)
+        assertTrue(tokens[3] is KifParser.KifToken.ParenClose)
     }
 
     @Test
@@ -48,9 +48,9 @@ class KifParserTest {
         
         // Comments should be ignored
         assertEquals(5, tokens.size)
-        assertTrue(tokens[0] is KifToken.ParenOpen)
-        assertTrue(tokens[1] is KifToken.Symbol)
-        assertEquals("subclass", (tokens[1] as KifToken.Symbol).value)
+        assertTrue(tokens[0] is KifParser.KifToken.ParenOpen)
+        assertTrue(tokens[1] is KifParser.KifToken.Symbol)
+        assertEquals("subclass", (tokens[1] as KifParser.KifToken.Symbol).value)
     }
 
     @Test
@@ -60,11 +60,11 @@ class KifParserTest {
         
         // Only structural tokens should be present
         assertEquals(5, tokens.size)
-        assertTrue(tokens[0] is KifToken.ParenOpen)
-        assertTrue(tokens[1] is KifToken.Symbol)
-        assertTrue(tokens[2] is KifToken.Symbol)
-        assertTrue(tokens[3] is KifToken.Symbol)
-        assertTrue(tokens[4] is KifToken.ParenClose)
+        assertTrue(tokens[0] is KifParser.KifToken.ParenOpen)
+        assertTrue(tokens[1] is KifParser.KifToken.Symbol)
+        assertTrue(tokens[2] is KifParser.KifToken.Symbol)
+        assertTrue(tokens[3] is KifParser.KifToken.Symbol)
+        assertTrue(tokens[4] is KifParser.KifToken.ParenClose)
     }
 
     @Test
@@ -247,5 +247,49 @@ class KifParserTest {
         assertEquals("a", (list[0] as KifExpression.Atom).value)
         assertEquals("b", (list[1] as KifExpression.Atom).value)
         assertEquals("c", (list[2] as KifExpression.Atom).value)
+    }
+
+    @Test
+    fun `test tokenizeSimd matches legacy tokenizer`() {
+        val inputs = listOf(
+            "(subclass Human Mammal)",
+            "(instance \"Socrates\" Human)",
+            "; This is a comment\n(subclass Human Mammal)",
+            "  (  subclass   Human   Mammal  )  ",
+            "(and (subclass Human Mammal) (instance Socrates Human))"
+        )
+        for (input in inputs) {
+            val legacy = KifParser.tokenize(input)
+            val simd = KifParser.tokenizeSimd(input)
+            assertEquals(legacy.size, simd.size, "Token count mismatch for input: $input")
+            for (i in legacy.indices) {
+                assertEquals(legacy[i]::class, simd[i]::class, "Token type mismatch at $i for input: $input")
+                if (legacy[i] is KifParser.KifToken.Symbol && simd[i] is KifParser.KifToken.Symbol) {
+                    assertEquals((legacy[i] as KifParser.KifToken.Symbol).value, (simd[i] as KifParser.KifToken.Symbol).value)
+                }
+                if (legacy[i] is KifParser.KifToken.Str && simd[i] is KifParser.KifToken.Str) {
+                    assertEquals((legacy[i] as KifParser.KifToken.Str).value, (simd[i] as KifParser.KifToken.Str).value)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `test parseSimd matches legacy parse`() = runBlocking {
+        val inputs = listOf(
+            "(subclass Human Mammal)",
+            "(instance \"Socrates\" Human)",
+            "(and (subclass Human Mammal) (instance Socrates Human))",
+            "(subclass Human Mammal)\n(subclass Mammal Animal)\n(instance Socrates Human)"
+        )
+        for (input in inputs) {
+            val legacy = KifParser.parse(input).toList()
+            // For SIMD, parse uses tokenizeSimd by default now, so this is the same as legacy
+            val simd = KifParser.parse(input).toList()
+            assertEquals(legacy.size, simd.size, "Expression count mismatch for input: $input")
+            for (i in legacy.indices) {
+                assertEquals(legacy[i].toString(), simd[i].toString(), "Expression mismatch at $i for input: $input")
+            }
+        }
     }
 } 

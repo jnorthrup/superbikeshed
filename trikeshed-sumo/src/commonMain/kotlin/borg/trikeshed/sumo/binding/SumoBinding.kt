@@ -5,7 +5,11 @@ package borg.trikeshed.sumo.binding
 import borg.trikeshed.lib.*
 import borg.trikeshed.sumo.grammar.*
 import borg.trikeshed.sumo.kif.*
+import borg.trikeshed.sumo.kif.KifParser.KifExpression
+import borg.trikeshed.sumo.kif.KifParser.KifExpressionVisitor
+import borg.trikeshed.sumo.kif.KifParser.accept
 import borg.trikeshed.sumo.types.*
+import borg.trikeshed.sumo.binding.SumoBinding.Companion.toList
 
 /**
  * SUMO Binding Layer
@@ -26,25 +30,38 @@ class SumoBinding {
     private val conceptNameIntern = mutableMapOf<String, ConceptName>()
     private val conceptIdCounter = mutableMapOf<String, Int>()
     
+    companion object {
+        // Extension function for converting KifExpression to list
+            fun KifExpression.toList(): List<KifExpression> {
+            val list = mutableListOf<KifExpression>()
+            var current = this
+            while (current is KifExpression.Cons) {
+                list.add(current.car)
+                current = current.cdr
+            }
+            return list
+        }
+    }
+    
     /**
      * Bind KIF expression to SUMO concept using Join composition
      */
     fun bindExpression(expr: KifExpression): BoundExpression {
-        return expr.accept(ExpressionBinder)
+        return expr.accept(expressionBinder)
     }
     
     /**
      * Bind KIF expression to SUMO relationship
      */
     fun bindRelationship(expr: KifExpression): Relationship? {
-        return expr.accept(RelationshipBinder)
+        return expr.accept(relationshipBinder)
     }
     
     /**
      * Bind KIF expression to SUMO axiom
      */
     fun bindAxiom(expr: KifExpression): Axiom? {
-        return expr.accept(AxiomBinder)
+        return expr.accept(axiomBinder)
     }
     
     /**
@@ -65,8 +82,8 @@ class SumoBinding {
             }
         }
         
-        val conceptIndex = concepts.size j { i -> concepts[i] }
-        val relationshipIndex = relationships.size j { i -> relationships[i] }
+        val conceptIndex: Indexed<borg.trikeshed.sumo.types.Concept> = concepts.size j { i: Int -> concepts[i] }
+        val relationshipIndex: Indexed<borg.trikeshed.sumo.types.Relationship> = relationships.size j { i: Int -> relationships[i] }
         
         return conceptIndex j relationshipIndex
     }
@@ -74,20 +91,36 @@ class SumoBinding {
     /**
      * Double Dispatch Visitor for Expression Binding
      */
-    private object ExpressionBinder : KifExpressionVisitor<BoundExpression> {
+    private val expressionBinder = object : KifExpressionVisitor<BoundExpression> {
         override fun visitCons(cons: KifExpression.Cons): BoundExpression {
             val list = cons.toList()
             
             return when {
                 isSubclassExpression(list) -> {
-                    val sub = bindConceptName(list[1])
-                    val sup = bindConceptName(list[2])
+                    val sub = when (val expr = list[1]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for subclass subject")
+                    }
+                    val sup = when (val expr = list[2]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for subclass object")
+                    }
                     val relationship = subclass(sub, sup)
                     BoundExpression.Relationship(relationship)
                 }
                 isInstanceExpression(list) -> {
-                    val instance = bindConceptName(list[1])
-                    val concept = bindConceptName(list[2])
+                    val instance = when (val expr = list[1]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for instance")
+                    }
+                    val concept = when (val expr = list[2]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for concept")
+                    }
                     val relationship = instance(instance, concept)
                     BoundExpression.Relationship(relationship)
                 }
@@ -98,58 +131,74 @@ class SumoBinding {
                 else -> {
                     // Treat as concept definition
                     val concept = bindConceptFromList(list)
-                    BoundExpression.Concept(concept)
+                    BoundExpression.Concept(conceptValue = concept)
                 }
             }
         }
         
         override fun visitAtom(atom: KifExpression.Atom): BoundExpression {
             val concept = bindConceptName(atom.value)
-            return BoundExpression.Concept(concept)
+            return BoundExpression.Concept(conceptValue = concept)
         }
         
         override fun visitStr(str: KifExpression.Str): BoundExpression {
             val concept = bindConceptName(str.value)
-            return BoundExpression.Concept(concept)
+            return BoundExpression.Concept(conceptValue = concept)
         }
         
         override fun visitNil(nil: KifExpression.Nil): BoundExpression {
-            return BoundExpression.Concept(ConceptId.ROOT j ConceptName.EMPTY)
+            return BoundExpression.Concept(conceptValue = ConceptId.ROOT j ConceptName.EMPTY)
         }
     }
     
     /**
      * Double Dispatch Visitor for Relationship Binding
      */
-    private object RelationshipBinder : KifExpressionVisitor<Relationship?> {
-        override fun visitCons(cons: KifExpression.Cons): Relationship? {
+    private val relationshipBinder = object : KifExpressionVisitor<borg.trikeshed.sumo.types.Relationship?> {
+        override fun visitCons(cons: KifExpression.Cons): borg.trikeshed.sumo.types.Relationship? {
             val list = cons.toList()
             
             return when {
                 isSubclassExpression(list) -> {
-                    val sub = bindConceptName(list[1])
-                    val sup = bindConceptName(list[2])
+                    val sub = when (val expr = list[1]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for subclass subject")
+                    }
+                    val sup = when (val expr = list[2]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for subclass object")
+                    }
                     subclass(sub, sup)
                 }
                 isInstanceExpression(list) -> {
-                    val instance = bindConceptName(list[1])
-                    val concept = bindConceptName(list[2])
+                    val instance = when (val expr = list[1]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for instance")
+                    }
+                    val concept = when (val expr = list[2]) {
+                        is KifExpression.Atom -> bindConceptName(expr.value)
+                        is KifExpression.Str -> bindConceptName(expr.value)
+                        else -> throw IllegalArgumentException("Expected atom for concept")
+                    }
                     instance(instance, concept)
                 }
                 else -> null
             }
         }
         
-        override fun visitAtom(atom: KifExpression.Atom): Relationship? = null
-        override fun visitStr(str: KifExpression.Str): Relationship? = null
-        override fun visitNil(nil: KifExpression.Nil): Relationship? = null
+        override fun visitAtom(atom: KifExpression.Atom): borg.trikeshed.sumo.types.Relationship? = null
+        override fun visitStr(str: KifExpression.Str): borg.trikeshed.sumo.types.Relationship? = null
+        override fun visitNil(nil: KifExpression.Nil): borg.trikeshed.sumo.types.Relationship? = null
     }
     
     /**
      * Double Dispatch Visitor for Axiom Binding
      */
-    private object AxiomBinder : KifExpressionVisitor<Axiom?> {
-        override fun visitCons(cons: KifExpression.Cons): Axiom? {
+    private val axiomBinder = object : KifExpressionVisitor<borg.trikeshed.sumo.types.Axiom?> {
+        override fun visitCons(cons: KifExpression.Cons): borg.trikeshed.sumo.types.Axiom? {
             val list = cons.toList()
             
             return when {
@@ -158,9 +207,9 @@ class SumoBinding {
             }
         }
         
-        override fun visitAtom(atom: KifExpression.Atom): Axiom? = null
-        override fun visitStr(str: KifExpression.Str): Axiom? = null
-        override fun visitNil(nil: KifExpression.Nil): Axiom? = null
+        override fun visitAtom(atom: KifExpression.Atom): borg.trikeshed.sumo.types.Axiom? = null
+        override fun visitStr(str: KifExpression.Str): borg.trikeshed.sumo.types.Axiom? = null
+        override fun visitNil(nil: KifExpression.Nil): borg.trikeshed.sumo.types.Axiom? = null
     }
     
     /**
@@ -190,13 +239,13 @@ class SumoBinding {
     }
     
     // Helper functions for binding
-    private fun bindConceptName(name: String): Concept {
+    private fun bindConceptName(name: String): borg.trikeshed.sumo.types.Concept {
         val conceptName = conceptNameIntern.getOrPut(name) { ConceptName(name) }
         val id = conceptIdCounter.getOrPut(name) { conceptIdCounter.size }
         return ConceptId(id) j conceptName
     }
     
-    private fun bindConceptFromList(list: List<KifExpression>): Concept {
+    private fun bindConceptFromList(list: List<KifExpression>): borg.trikeshed.sumo.types.Concept {
         val name = when (val first = list.firstOrNull()) {
             is KifExpression.Atom -> first.value
             is KifExpression.Str -> first.value
@@ -205,7 +254,7 @@ class SumoBinding {
         return bindConceptName(name)
     }
     
-    private fun bindAxiomFromList(list: List<KifExpression>): Axiom {
+    private fun bindAxiomFromList(list: List<KifExpression>): borg.trikeshed.sumo.types.Axiom {
         val axiomType = when (val first = list.firstOrNull()) {
             is KifExpression.Atom -> when (first.value) {
                 "subclass" -> AxiomType.DEFINITION
@@ -217,7 +266,7 @@ class SumoBinding {
         
         val mainConcept = bindConceptFromList(list)
         val relatedConcepts = list.drop(1).map { bindExpression(it).concept }
-        val conceptIndex = relatedConcepts.size j { i -> relatedConcepts[i] }
+        val conceptIndex: Indexed<borg.trikeshed.sumo.types.Concept> = relatedConcepts.size j { i: Int -> relatedConcepts[i] }
         
         return (axiomType j mainConcept) j conceptIndex
     }
@@ -264,7 +313,7 @@ class SumoBinding {
             else -> {
                 // Other axioms create general relationships
                 relatedConcepts.forEach { related ->
-                    relationships.add(relationship(mainConcept, related, RelationshipType.RELATION))
+                    relationships.add(relationship(mainConcept, related, RelationshipType.DOMAIN))
                 }
             }
         }
@@ -273,13 +322,13 @@ class SumoBinding {
 
 // Binding result types using Join composition
 sealed class BoundExpression {
-    data class Concept(val concept: Concept) : BoundExpression()
-    data class Relationship(val relationship: Relationship) : BoundExpression()
-    data class Axiom(val axiom: Axiom) : BoundExpression()
+    data class Concept(val conceptValue: borg.trikeshed.sumo.types.Concept) : BoundExpression()
+    data class Relationship(val relationship: borg.trikeshed.sumo.types.Relationship) : BoundExpression()
+    data class Axiom(val axiom: borg.trikeshed.sumo.types.Axiom) : BoundExpression()
     
-    val concept: Concept
+    val concept: borg.trikeshed.sumo.types.Concept
         get() = when (this) {
-            is Concept -> this.concept
+            is Concept -> this.conceptValue
             is Relationship -> this.relationship.a.a
             is Axiom -> this.axiom.a.b
         }

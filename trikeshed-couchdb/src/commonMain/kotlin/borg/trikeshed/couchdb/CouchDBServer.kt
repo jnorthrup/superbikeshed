@@ -12,15 +12,15 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 
-// Mock HTTP Request and Response classes
-data class MockHttpRequest(
+// Channelized HTTP Request and Response compositions
+data class ChannelizedHttpRequest(
     val method: String,
     val path: String,
     val headers: Map<String, String> = emptyMap(),
     val body: String? = null
 )
 
-data class MockHttpResponse(
+data class ChannelizedHttpResponse(
     val status: Int,
     val headers: Map<String, String> = emptyMap(),
     val body: String? = null
@@ -32,9 +32,9 @@ class CouchDBServer(
 ) {
     private val json = Json { prettyPrint = true }
 
-    // Channels for mock HTTP requests and responses
-    val httpRequestChannel = Channel<MockHttpRequest>()
-    val httpResponseChannel = Channel<MockHttpResponse>()
+    // Channels for channelized HTTP compositions
+    val httpRequestChannel = Channel<ChannelizedHttpRequest>()
+    val httpResponseChannel = Channel<ChannelizedHttpResponse>()
 
     suspend fun start() = coroutineScope {
         println("CouchDB Server starting...")
@@ -63,7 +63,7 @@ class CouchDBServer(
         blobService.stop()
     }
 
-    private suspend fun handleHttpRequest(request: MockHttpRequest): MockHttpResponse {
+    private suspend fun handleHttpRequest(request: ChannelizedHttpRequest): ChannelizedHttpResponse {
         println("CouchDB Server: Received HTTP request: ${request.method} ${request.path}")
 
         val pathParts = request.path.split("/").filter { it.isNotEmpty() }
@@ -71,8 +71,8 @@ class CouchDBServer(
         // Handle root path
         if (request.path == "/") {
             return when (request.method) {
-                "GET" -> MockHttpResponse(200, body = json.encodeToString(mapOf("couchdb" to "Welcome", "version" to "1.7.2")))
-                else -> MockHttpResponse(405, body = "Method Not Allowed")
+                "GET" -> ChannelizedHttpResponse(200, body = json.encodeToString(mapOf("couchdb" to "Welcome", "version" to "1.7.2", "channelized" to true)))
+                else -> ChannelizedHttpResponse(405, body = "Method Not Allowed")
             }
         }
 
@@ -82,12 +82,12 @@ class CouchDBServer(
                 "GET" -> {
                     val listResponse = blobService.listDbs(serverContext)
                     if (listResponse.success) {
-                        MockHttpResponse(200, body = json.encodeToString(listResponse.dbNames))
+                        ChannelizedHttpResponse(200, body = json.encodeToString(listResponse.dbNames))
                     } else {
-                        MockHttpResponse(500, body = json.encodeToString(mapOf("error" to "internal_error", "reason" to listResponse.message)))
+                        ChannelizedHttpResponse(500, body = json.encodeToString(mapOf("error" to "internal_error", "reason" to listResponse.message)))
                     }
                 }
-                else -> MockHttpResponse(405, body = "Method Not Allowed")
+                else -> ChannelizedHttpResponse(405, body = "Method Not Allowed")
             }
         }
 
@@ -99,20 +99,20 @@ class CouchDBServer(
                 "PUT" -> {
                     val createResponse = blobService.createDb(dbName, dbContext)
                     if (createResponse.success) {
-                        MockHttpResponse(201, body = json.encodeToString(mapOf("ok" to true)))
+                        ChannelizedHttpResponse(201, body = json.encodeToString(mapOf("ok" to true)))
                     } else {
-                        MockHttpResponse(412, body = json.encodeToString(mapOf("error" to "file_exists", "reason" to createResponse.message)))
+                        ChannelizedHttpResponse(412, body = json.encodeToString(mapOf("error" to "file_exists", "reason" to createResponse.message)))
                     }
                 }
                 "DELETE" -> {
                     val deleteResponse = blobService.deleteDb(dbName, dbContext)
                     if (deleteResponse.success) {
-                        MockHttpResponse(200, body = json.encodeToString(mapOf("ok" to true)))
+                        ChannelizedHttpResponse(200, body = json.encodeToString(mapOf("ok" to true)))
                     } else {
-                        MockHttpResponse(404, body = json.encodeToString(mapOf("error" to "not_found", "reason" to deleteResponse.message)))
+                        ChannelizedHttpResponse(404, body = json.encodeToString(mapOf("error" to "not_found", "reason" to deleteResponse.message)))
                     }
                 }
-                else -> MockHttpResponse(405, body = "Method Not Allowed")
+                else -> ChannelizedHttpResponse(405, body = "Method Not Allowed")
             }
         }
 
@@ -126,39 +126,39 @@ class CouchDBServer(
                 "GET" -> {
                     val getResponse = blobService.getBlob(dbName, docId, dbContext)
                     if (getResponse.found && getResponse.data != null) {
-                        MockHttpResponse(200, body = getResponse.data.decodeToString())
+                        ChannelizedHttpResponse(200, body = getResponse.data.decodeToString())
                     } else {
-                        MockHttpResponse(404, body = json.encodeToString(mapOf("error" to "not_found", "reason" to "missing")))
+                        ChannelizedHttpResponse(404, body = json.encodeToString(mapOf("error" to "not_found", "reason" to "missing")))
                     }
                 }
                 "PUT" -> {
                     if (request.body == null) {
-                        MockHttpResponse(400, body = "Bad Request: Missing body for PUT")
+                        ChannelizedHttpResponse(400, body = "Bad Request: Missing body for PUT")
                     } else {
                         val putResponse = blobService.putBlob(dbName, docId, request.body.encodeToByteArray(), dbContext)
                         if (putResponse.success) {
-                            MockHttpResponse(201, body = json.encodeToString(mapOf("ok" to true, "id" to putResponse.id, "rev" to putResponse.rev)))
+                            ChannelizedHttpResponse(201, body = json.encodeToString(mapOf("ok" to true, "id" to putResponse.id, "rev" to putResponse.rev)))
                         } else {
-                            MockHttpResponse(500, body = json.encodeToString(mapOf("error" to "failed_to_create", "reason" to putResponse.message)))
+                            ChannelizedHttpResponse(500, body = json.encodeToString(mapOf("error" to "failed_to_create", "reason" to putResponse.message)))
                         }
                     }
                 }
                 "DELETE" -> {
                     val rev = request.headers["If-Match"]?.removePrefix("\"")?.removeSuffix("\"") ?: request.headers["rev"]
                     if (rev == null) {
-                        MockHttpResponse(400, body = "Bad Request: Missing revision for DELETE (use If-Match header or rev query param)")
+                        ChannelizedHttpResponse(400, body = "Bad Request: Missing revision for DELETE (use If-Match header or rev query param)")
                     } else {
                         val deleteResponse = blobService.deleteBlob(dbName, docId, rev, dbContext)
                         if (deleteResponse.success) {
-                            MockHttpResponse(200, body = json.encodeToString(mapOf("ok" to true, "id" to deleteResponse.id, "rev" to deleteResponse.rev)))
+                            ChannelizedHttpResponse(200, body = json.encodeToString(mapOf("ok" to true, "id" to deleteResponse.id, "rev" to deleteResponse.rev)))
                         } else if (deleteResponse.message == "Conflict") {
-                            MockHttpResponse(409, body = json.encodeToString(mapOf("error" to "conflict", "reason" to "Document update conflict.")))
+                            ChannelizedHttpResponse(409, body = json.encodeToString(mapOf("error" to "conflict", "reason" to "Document update conflict.")))
                         } else {
-                            MockHttpResponse(404, body = json.encodeToString(mapOf("error" to "not_found", "reason" to deleteResponse.message)))
+                            ChannelizedHttpResponse(404, body = json.encodeToString(mapOf("error" to "not_found", "reason" to deleteResponse.message)))
                         }
                     }
                 }
-                else -> MockHttpResponse(405, body = "Method Not Allowed")
+                else -> ChannelizedHttpResponse(405, body = "Method Not Allowed")
             }
         }
 
@@ -169,29 +169,29 @@ class CouchDBServer(
             return when (request.method) {
                 "POST" -> {
                     if (request.body == null) {
-                        MockHttpResponse(400, body = "Bad Request: Missing body for _bulk_docs")
+                        ChannelizedHttpResponse(400, body = "Bad Request: Missing body for _bulk_docs")
                     } else {
                         val requestBodyJson = Json.parseToJsonElement(request.body).jsonObject
                         val docsJsonArray = requestBodyJson["docs"]?.jsonArray
 
                         if (docsJsonArray == null) {
-                            MockHttpResponse(400, body = "Bad Request: Missing 'docs' array in body")
+                            ChannelizedHttpResponse(400, body = "Bad Request: Missing 'docs' array in body")
                         }
 
                         val docs = docsJsonArray.map { it.toString().encodeToByteArray() }
                         val bulkResponse = blobService.bulkDocs(dbName, docs, dbContext)
 
                         if (bulkResponse.success) {
-                            MockHttpResponse(201, body = json.encodeToString(bulkResponse.results.map { mapOf("ok" to it.success, "id" to it.id, "rev" to it.rev) }))
+                            ChannelizedHttpResponse(201, body = json.encodeToString(bulkResponse.results.map { mapOf("ok" to it.success, "id" to it.id, "rev" to it.rev) }))
                         } else {
-                            MockHttpResponse(500, body = json.encodeToString(mapOf("error" to "internal_error", "reason" to bulkResponse.message)))
+                            ChannelizedHttpResponse(500, body = json.encodeToString(mapOf("error" to "internal_error", "reason" to bulkResponse.message)))
                         }
                     }
                 }
-                else -> MockHttpResponse(405, body = "Method Not Allowed")
+                else -> ChannelizedHttpResponse(405, body = "Method Not Allowed")
             }
         }
 
-        return MockHttpResponse(404, body = "Not Found")
+        return ChannelizedHttpResponse(404, body = "Not Found")
     }
 }
