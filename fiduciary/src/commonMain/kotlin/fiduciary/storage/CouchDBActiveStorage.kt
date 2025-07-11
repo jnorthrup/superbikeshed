@@ -10,23 +10,27 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.coroutines.CoroutineContext
 
 /**
  * CouchDB Active Storage for Fiduciary 24/7 Data Acquisition
- * 
+ *
  * Production-ready storage layer that handles:
  * - Continuous data ingestion
  * - Document versioning
  * - Replication management
  * - Error recovery
  * - Performance monitoring
+ *
+ * This class should be injected via coroutine context for testability and modularity.
  */
 class CouchDBActiveStorage(
     private val config: CouchDBConfig,
-    private val httpClient: HttpClient = HttpClientBuilder()
-        .ioContext(IOContext.NioContext("couchdb-storage"))
-        .build()
-) {
+    private val httpClient: HttpClient
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<CouchDBActiveStorage>
+    override val key: CoroutineContext.Key<*> get() = Key
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -429,6 +433,13 @@ class CouchDBActiveStorage(
         connectionPool.close()
     }
 }
+
+/**
+ * Get the [CouchDBActiveStorage] from the current coroutine context.
+ * @throws IllegalStateException if not present.
+ */
+val CoroutineContext.couchStorage: CouchDBActiveStorage
+    get() = this[CouchDBActiveStorage] ?: error("CouchDBActiveStorage not found in context")
 
 // Data models
 

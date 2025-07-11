@@ -1,42 +1,31 @@
-import kotlin.math.*
 package rtsgame.components
+
+import kotlin.math.*
 
 /**
  * Core component types for RTS game entities
  */
-@JvmInline
-value class ComponentTypeId(val value: Int) {
-    companion object {
-        val POSITION = ComponentTypeId(1)
-        val HEALTH = ComponentTypeId(2)
-        val VELOCITY = ComponentTypeId(3)
-        val OWNER = ComponentTypeId(4)
-        val ENTITY_TYPE = ComponentTypeId(5)
-        val COMMAND = ComponentTypeId(6)
-        val WEAPON = ComponentTypeId(7)
-        val SHIELD = ComponentTypeId(8)
-        val RESOURCE = ComponentTypeId(9)
-        val COMPUTRONIUM = ComponentTypeId(10)
-    }
-}
-
-/**
- * Base component interface
- */
-interface Component {
-    val typeId: ComponentTypeId
+object ComponentTypeId {
+    const val POSITION = 1
+    const val HEALTH = 2
+    const val VELOCITY = 3
+    const val OWNER = 4
+    const val ENTITY_TYPE = 5
+    const val COMMAND = 6
+    const val WEAPON = 7
+    const val SHIELD = 8
+    const val RESOURCE = 9
+    const val COMPUTRONIUM = 10
 }
 
 /**
  * Position component for entity location
  */
-@JvmInline
-value class PositionComponent(
+data class PositionComponent(
     val x: Float,
     val y: Float,
     val z: Float = 0f
-) : Component {
-    override val typeId: ComponentTypeId = ComponentTypeId.POSITION
+) {
     
     fun distanceTo(other: PositionComponent): Float {
         val dx = x - other.x
@@ -61,13 +50,11 @@ value class PositionComponent(
 /**
  * Health component for entity vitality
  */
-@JvmInline
-value class HealthComponent(
-    val currentHp: Float,
-    val maxHp: Float,
+data class HealthComponent(
+    val current: Float,
+    val maximum: Float,
     val lastAttacker: Int? = null
-) : Component {
-    override val typeId: ComponentTypeId = ComponentTypeId.HEALTH
+) {
     
     fun isAlive(): Boolean = currentHp > 0f
     fun healthRatio(): Float = if (maxHp > 0f) currentHp / maxHp else 0f

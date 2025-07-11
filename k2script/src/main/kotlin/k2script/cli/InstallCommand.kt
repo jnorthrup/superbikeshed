@@ -229,4 +229,31 @@ exec "\$JAVA_CMD" -cp "\$LIB_DIR/*" k2script.runner.ScriptRunner "\$SHARE_DIR/${
         println("Script: $shareDir/${scriptFile.name}")
         checkPath(binDir)
     }
+
+    fun installToPrefix(prefix: String) {
+        val prefixDir = File(prefix).absoluteFile
+        val binDir = File(prefixDir, "bin")
+        binDir.mkdirs()
+
+        // JVM launcher
+        val jvmJar = findK2scriptJar()
+        if (jvmJar != null && jvmJar.exists()) {
+            val jvmLauncher = File(binDir, "k2script")
+            createLauncher(jvmLauncher, jvmJar)
+            println("Installed JVM k2script launcher to ${jvmLauncher.absolutePath}")
+        } else {
+            println("Warning: JVM k2script jar not found, skipping JVM install.")
+        }
+
+        // Native binary
+        val nativeBinary = File("build/bin/native/releaseExecutable/k2script.kexe")
+        if (nativeBinary.exists()) {
+            val nativeTarget = File(binDir, "k2script-native")
+            nativeBinary.copyTo(nativeTarget, overwrite = true)
+            nativeTarget.setExecutable(true)
+            println("Installed native k2script to ${nativeTarget.absolutePath}")
+        } else {
+            println("Warning: Native k2script binary not found, skipping native install.")
+        }
+    }
 }

@@ -2,7 +2,9 @@
 package borg.trikeshed.torrent.rpc
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.services.*
+import borg.trikeshed.torrent.TrikeDownloader
+import borg.trikeshed.torrent.DownloadTask
+import borg.trikeshed.services.RequestFactoryService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.*

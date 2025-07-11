@@ -166,7 +166,7 @@ actual class KernelVersion actual constructor(
     }
     
     actual companion object {
-        actual val IO_URING_MINIMUM = KernelVersion(5, 1, 0)
+        actual val IO_URING_MINIMUM: KernelVersion = KernelVersion(5, 1, 0)
     }
 }
 

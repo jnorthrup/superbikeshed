@@ -15,6 +15,8 @@ repositories {
     google()
 }
 
+val singleTarget: String? = rootProject.findProperty("singleTarget") as String?
+
 kotlin {
     jvm {
         withJava()
@@ -28,52 +30,63 @@ kotlin {
             }
         }
     }
-    
+    macosArm64("native") {
+        binaries {
+            executable {
+                entryPoint = "k2script.main"
+            }
+        }
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-                implementation("org.jetbrains.kotlin:kotlin-scripting-common")
-                implementation("org.jetbrains.kotlin:kotlin-scripting-jvm")
-                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies")
-                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven")
+                implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-io"))
+                implementation(project(":trikeshed-cursor"))
+                implementation(project(":trikeshed-reactor"))
+                implementation(project(":trikeshed-net"))
+                implementation(project(":trikeshed-services"))
+                implementation(project(":trikeshed-json"))
+                implementation(project(":trikeshed-rest"))
+                implementation(project(":trikeshed-wave"))
+                implementation(project(":trikeshed-sumo"))
+                implementation(project(":trikeshed-ccek"))
+                implementation(project(":trikeshed-couchdb"))
+                // Add more as needed if referenced
             }
         }
-        
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
             }
         }
-        
         val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-jsr223")
+                implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies")
                 implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven")
-                
-                // HTTP client for AI integration
-                implementation("io.ktor:ktor-client-core:2.3.7")
-                implementation("io.ktor:ktor-client-cio:2.3.7")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-                
-                // Process execution
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-                
-                // File operations
                 implementation("commons-io:commons-io:2.15.1")
             }
         }
-        
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
                 implementation("junit:junit:4.13.2")
+            }
+        }
+        val nativeMain by getting {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+            }
+        }
+        val nativeTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
             }
         }
     }
@@ -83,76 +96,6 @@ application {
     mainClass.set("k2script.K2scriptKt")
 }
 
-tasks.withType<Jar> {
-    manifest {
-        attributes(
-            "Main-Class" to "k2script.K2scriptKt",
-            "Implementation-Title" to "K2Script",
-            "Implementation-Version" to version,
-            "Implementation-Vendor" to "K2Script Team"
-        )
-    }
-    
-    // Create fat JAR with all dependencies
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
-}
-
-// Create distribution
-tasks.register<Jar>("fatJar") {
-    group = "build"
-    description = "Creates a fat JAR with all dependencies"
-    
-    archiveClassifier.set("all")
-    from(sourceSets.main.get().output)
-    
-    dependsOn(configurations.runtimeClasspath)
-    from({
-        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
-    })
-    
-    manifest {
-        attributes(
-            "Main-Class" to "k2script.K2scriptKt",
-            "Implementation-Title" to "K2Script",
-            "Implementation-Version" to version,
-            "Implementation-Vendor" to "K2Script Team"
-        )
-    }
-    
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
-// Update version in package.json and setup.py
-tasks.register("updateVersions") {
-    group = "versioning"
-    description = "Updates version in package.json and setup.py"
-    
-    doLast {
-        // Update package.json
-        val packageJson = file("package.json")
-        val packageJsonContent = packageJson.readText()
-        val updatedPackageJson = packageJsonContent.replace(
-            "\"version\": \"[^\"]*\"",
-            "\"version\": \"$projectVersion\""
-        )
-        packageJson.writeText(updatedPackageJson)
-        
-        // Update setup.py
-        val setupPy = file("setup.py")
-        val setupPyContent = setupPy.readText()
-        val updatedSetupPy = setupPyContent.replace(
-            "version='[^']*'",
-            "version='$projectVersion'"
-        )
-        setupPy.writeText(updatedSetupPy)
-        
-        println("✅ Updated version to $projectVersion in package.json and setup.py")
-    }
-}
-
-// Test task
 tasks.test {
     useJUnit()
     testLogging {
@@ -160,7 +103,6 @@ tasks.test {
     }
 }
 
-// Clean task
 tasks.clean {
     delete("build")
     delete("out")

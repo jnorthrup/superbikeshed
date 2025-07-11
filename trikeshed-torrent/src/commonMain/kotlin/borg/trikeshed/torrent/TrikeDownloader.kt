@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.serialization.Serializable
 
 /**
  * TrikeDownloader - Unified downloader combining aria2c and curl functionality
@@ -26,15 +27,14 @@ class TrikeDownloader(
     internal val downloadQueue = Channel<DownloadTask>(capacity = 100)
     internal var isRunning = false
     
-    /**
-     * Download task representing either HTTP or torrent download
-     */
+    @Serializable
     sealed class DownloadTask {
         abstract val id: String
         abstract val url: String
         abstract val outputPath: String
         abstract val status: DownloadStatus
         
+        @Serializable
         data class HttpDownload(
             override val id: String,
             override val url: String,
@@ -46,6 +46,7 @@ class TrikeDownloader(
             val timeout: Long = 30000
         ) : DownloadTask()
         
+        @Serializable
         data class TorrentDownload(
             override val id: String,
             override val url: String, // magnet link or torrent file URL

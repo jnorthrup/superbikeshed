@@ -64,6 +64,7 @@ object K2script {
                 args[0] == "--tmux" -> handleTmuxCommand(args.drop(1).toTypedArray())
                 args[0] == "--byobo" -> handleByoboCommand(args.drop(1).toTypedArray())
                 args[0] == "--strace" -> handleStraceCommand(args.drop(1).toTypedArray())
+                args[0] == "--gradle-surrogate" -> handleGradleSurrogateCommand(args)
                 else -> executeScript(args)
             }
             // LiteLLMClient.stopService() should be called here in a finally block
@@ -100,6 +101,7 @@ object K2script {
               --tmux            Launch a new tmux session
               --byobo           Bring Your Own Build Output (placeholder)
               --strace <cmd>    Run a command with strace (Linux only)
+              --gradle-surrogate <script.kts> [args...]  Run script using Gradle surrogate driven by Maven surrogate
         """.trimIndent())
     }
     
@@ -541,6 +543,35 @@ object K2script {
         if (result.exitCode != 0) {
             System.err.println("Strace command failed with exit code ${result.exitCode}: ${result.stderr}")
             exitProcess(1)
+        }
+    }
+
+    internal suspend fun handleGradleSurrogateCommand(args: Array<String>) {
+        if (args.size < 2) {
+            println("Usage: k2script --gradle-surrogate <script.kts> [args...]")
+            return
+        }
+        val scriptFile = File(args[1])
+        if (!scriptFile.exists()) {
+            println("Script not found: ${args[1]}")
+            return
+        }
+        val scriptArgs = args.drop(2).toTypedArray()
+        // 1. Create Maven surrogate project if needed
+        val mavenLauncher = k2script.launcher.StandaloneSurrogateMavenLauncher()
+        val scriptHash = scriptFile.readText().hashCode().toString(16)
+        val surrogateName = "${'$'}{scriptFile.nameWithoutExtension}-${'$'}scriptHash"
+        val surrogatesDir = java.nio.file.Paths.get(System.getProperty("user.home"), ".k2script", "surrogates")
+        val surrogateDir = surrogatesDir.resolve(surrogateName)
+        if (!java.nio.file.Files.exists(surrogateDir.resolve("pom.xml"))) {
+            mavenLauncher.runScript(scriptFile, scriptArgs) // This will create the surrogate project
+        }
+        // 2. Parse pom.xml and generate build.gradle.kts/settings.gradle.kts
+        k2script.util.MavenToGradleConverter.generateGradleFromPom(surrogateDir)
+        // 3. Run the Gradle surrogate
+        kotlinx.coroutines.runBlocking {
+            val gradleLauncher = k2script.launcher.SurrogateGradleLauncher()
+            gradleLauncher.runScript(scriptFile, scriptArgs)
         }
     }
 }

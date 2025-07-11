@@ -7,9 +7,7 @@ group = "borg.trikeshed"
 
 kotlin {
     jvm()
-    
-    // Native targets removed for now - focus on JVM only
-    // macosArm64()
+    macosArm64()
     
     sourceSets {
         commonMain {

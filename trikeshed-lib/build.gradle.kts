@@ -1,15 +1,20 @@
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    kotlin("multiplatform") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
 }
+
+val projectVersion = file("../VERSION").readText().trim()
+version = projectVersion
 
 group = "borg.trikeshed"
 
+repositories {
+    mavenCentral()
+}
+
 kotlin {
     jvm()
-    
-    // Native targets removed for now - focus on JVM only
-    // macosArm64()
+    macosArm64()
     
     sourceSets {
         commonMain {

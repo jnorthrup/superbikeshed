@@ -5,11 +5,11 @@ plugins {
 
 group = "borg.trikeshed"
 
+val enabledTargets = (rootProject.findProperty("enabledTargets") as? String)?.split(",")?.map { it.trim() } ?: listOf("jvm")
+
 kotlin {
     jvm()
-    
-    // Native targets removed for now - focus on JVM only
-    // macosArm64()
+    macosArm64()
     
     sourceSets {
         commonMain {
