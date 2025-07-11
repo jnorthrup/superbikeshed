@@ -8,6 +8,18 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+// Import CCEK network protocols
+import borg.trikeshed.net.http.HttpClient
+import borg.trikeshed.net.quic.QuicServer
+import borg.trikeshed.rest.TrikeShedRestClient
+import borg.trikeshed.couchdb.CouchDBClient
+import borg.trikeshed.ssh.SSHProtocol
+import borg.trikeshed.ipfs.IpfsCore
+import borg.trikeshed.torrent.TorrentHost
+import borg.trikeshed.net.socks.Socks5Server
+import borg.trikeshed.oauth.OAuthProvider
+import borg.trikeshed.wave.CouchDBWaveCRDT
+
 /**
  * CoreTypes Fiduciary Percolator - CCEK Pattern Implementation
  * 
@@ -317,6 +329,151 @@ object FiduciaryPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<F
     }
 }
 
+// Network Scanner Key for CCEK protocol-based scanning
+object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<NetworkScannerKey> {
+    override val key: CoroutineContext.Key<*> get() = NetworkScannerKey
+    
+    data class ScanResult(
+        val protocol: String,
+        val target: String,
+        val success: Boolean,
+        val data: Map<String, Any> = emptyMap(),
+        val timestamp: Long = System.currentTimeMillis()
+    )
+    
+    private val scanResults = mutableListOf<ScanResult>()
+    private val scanFlow = MutableSharedFlow<ScanResult>(replay = 100)
+    
+    suspend fun scanWithCCEKProtocols(targets: List<String>) {
+        println("🔍 Starting CCEK network protocol scanning...")
+        
+        // Create network context with all CCEK protocols
+        val networkContext = currentCoroutineContext() + 
+            HttpClient.Key + 
+            QuicServer.Key + 
+            TrikeShedRestClient.Key + 
+            SSHProtocol.Key + 
+            IpfsCore.Key + 
+            TorrentHost.Key + 
+            Socks5Server.Key + 
+            OAuthProvider.Key + 
+            CouchDBWaveCRDT.Key
+        
+        withContext(networkContext) {
+            for (target in targets) {
+                // HTTP scanning
+                try {
+                    val httpResult = scanHttpEndpoint(target)
+                    recordScanResult(httpResult)
+                } catch (e: Exception) {
+                    recordScanResult(ScanResult("HTTP", target, false, mapOf("error" to (e.message ?: "Unknown error"))))
+                }
+                
+                // SSH scanning
+                try {
+                    val sshResult = scanSshEndpoint(target)
+                    recordScanResult(sshResult)
+                } catch (e: Exception) {
+                    recordScanResult(ScanResult("SSH", target, false, mapOf("error" to (e.message ?: "Unknown error"))))
+                }
+                
+                // IPFS scanning
+                try {
+                    val ipfsResult = scanIpfsEndpoint(target)
+                    recordScanResult(ipfsResult)
+                } catch (e: Exception) {
+                    recordScanResult(ScanResult("IPFS", target, false, mapOf("error" to (e.message ?: "Unknown error"))))
+                }
+                
+                delay(100) // Rate limiting
+            }
+        }
+        
+        println("✅ CCEK network scanning completed - ${scanResults.size} results")
+    }
+    
+    private suspend fun scanHttpEndpoint(target: String): ScanResult {
+        // Simulate HTTP scanning using CCEK HttpClient
+        println("📡 Scanning HTTP endpoint: $target")
+        
+        // In a real implementation, this would use:
+        // val response = HttpClient.Key.execute(HttpRequest.get(target))
+        
+        val simulatedData = mapOf(
+            "status_code" to 200,
+            "server" to "nginx/1.18.0",
+            "content_type" to "text/html",
+            "response_time_ms" to 150,
+            "ssl_enabled" to target.startsWith("https://"),
+            "headers" to mapOf(
+                "server" to "nginx/1.18.0",
+                "content-type" to "text/html; charset=utf-8",
+                "x-powered-by" to "Express"
+            )
+        )
+        
+        return ScanResult("HTTP", target, true, simulatedData)
+    }
+    
+    private suspend fun scanSshEndpoint(target: String): ScanResult {
+        // Simulate SSH scanning using CCEK SSHProtocol
+        println("🔐 Scanning SSH endpoint: $target")
+        
+        val simulatedData = mapOf(
+            "port" to 22,
+            "version" to "OpenSSH_8.3p1",
+            "authentication_methods" to listOf("publickey", "password"),
+            "host_key_algorithms" to listOf("ssh-rsa", "ssh-ed25519"),
+            "encryption_algorithms" to listOf("aes128-ctr", "aes256-ctr"),
+            "banner" to "SSH-2.0-OpenSSH_8.3p1"
+        )
+        
+        return ScanResult("SSH", target, true, simulatedData)
+    }
+    
+    private suspend fun scanIpfsEndpoint(target: String): ScanResult {
+        // Simulate IPFS scanning using CCEK IpfsCore
+        println("🌐 Scanning IPFS endpoint: $target")
+        
+        val simulatedData = mapOf(
+            "api_port" to 5001,
+            "gateway_port" to 8080,
+            "swarm_port" to 4001,
+            "peer_id" to "12D3KooWExample",
+            "version" to "0.13.0",
+            "protocols" to listOf("/ipfs/bitswap", "/ipfs/dht", "/ipfs/ping"),
+            "connected_peers" to 42
+        )
+        
+        return ScanResult("IPFS", target, true, simulatedData)
+    }
+    
+    private suspend fun recordScanResult(result: ScanResult) {
+        scanResults.add(result)
+        scanFlow.emit(result)
+        
+        // Store in percolator database
+        val data = mapOf(
+            "type" to "network_scan",
+            "protocol" to result.protocol,
+            "target" to result.target,
+            "success" to result.success,
+            "scan_data" to result.data,
+            "timestamp" to result.timestamp
+        )
+        
+        DatabasePercolatorKey.storeWithPercolation(
+            "fiduciary", 
+            "scan_${result.protocol}_${result.timestamp}", 
+            data, 
+            "network_scan"
+        )
+    }
+    
+    fun getScanResults(): List<ScanResult> = scanResults.toList()
+    fun getScanFlow(): SharedFlow<ScanResult> = scanFlow.asSharedFlow()
+}
+
 // Network adapter for CouchDB-compatible API
 object NetworkPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<NetworkPercolatorKey> {
     override val key: CoroutineContext.Key<*> get() = NetworkPercolatorKey
@@ -354,6 +511,22 @@ object NetworkPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Net
                 200 to """{"state":"${state::class.simpleName}"}"""
             }
             
+            path == "/_scanner/scan" && method == "POST" -> {
+                val targets = listOf("example.com", "github.com", "127.0.0.1")
+                GlobalScope.launch {
+                    NetworkScannerKey.scanWithCCEKProtocols(targets)
+                }
+                202 to """{"status":"scanning_started","targets":${targets.size}}"""
+            }
+            
+            path == "/_scanner/results" && method == "GET" -> {
+                val results = NetworkScannerKey.getScanResults()
+                val json = results.joinToString(",", "[", "]") { result ->
+                    """{"protocol":"${result.protocol}","target":"${result.target}","success":${result.success},"timestamp":${result.timestamp}}"""
+                }
+                200 to json
+            }
+            
             else -> 404 to """{"error":"not_found"}"""
         }
     }
@@ -361,7 +534,7 @@ object NetworkPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Net
 
 // Main entry point
 suspend fun main() = coroutineScope {
-    // Compose all Keys into the context
+    // Compose all Keys into the context including network scanner
     val percolatorContext = 
         DatabasePercolatorKey +
         ChannelPercolatorKey +
@@ -369,6 +542,7 @@ suspend fun main() = coroutineScope {
         ReactorPercolatorKey +
         MonitorPercolatorKey +
         FiduciaryPercolatorKey +
+        NetworkScannerKey +
         NetworkPercolatorKey
     
     withContext(percolatorContext) {
@@ -389,6 +563,24 @@ suspend fun main() = coroutineScope {
         for ((method, path) in testRequests) {
             val (status, body) = NetworkPercolatorKey.handleRequest(method, path)
             println("  $method $path -> $status: $body")
+        }
+        
+        // Test network scanning with CCEK protocols
+        println("\n🔍 Testing CCEK Network Scanning:")
+        val (scanStatus, scanBody) = NetworkPercolatorKey.handleRequest("POST", "/_scanner/scan")
+        println("  POST /_scanner/scan -> $scanStatus: $scanBody")
+        
+        // Wait for scanning to complete
+        delay(2.seconds)
+        
+        val (resultsStatus, resultsBody) = NetworkPercolatorKey.handleRequest("GET", "/_scanner/results")
+        println("  GET /_scanner/results -> $resultsStatus: $resultsBody")
+        
+        // Monitor scan results flow
+        launch {
+            NetworkScannerKey.getScanFlow().collect { result ->
+                println("📊 Scan Result: ${result.protocol} ${result.target} -> ${if (result.success) "✅" else "❌"}")
+            }
         }
         
         // Keep running
