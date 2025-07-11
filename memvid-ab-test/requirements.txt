@@ -1,0 +1,38 @@
+# Memvid A/B Test Requirements
+# Hermetic Python environment for video memory experiments
+
+# Core dependencies
+numpy>=1.24.0
+opencv-python>=4.7.0
+matplotlib>=3.6.0
+pandas>=1.5.0
+tqdm>=4.64.0
+
+# Video processing
+imageio>=2.25.0
+imageio-ffmpeg>=0.4.8
+
+# QR code generation/detection
+qrcode>=7.4.2
+pyzbar>=0.1.9
+pillow>=9.4.0
+
+# Machine learning for loss analysis
+scikit-learn>=1.2.0
+scipy>=1.10.0
+
+# Text processing
+transformers>=4.25.0
+sentence-transformers>=2.2.0
+
+# Metrics and analysis
+seaborn>=0.12.0
+plotly>=5.12.0
+statsmodels>=0.13.0
+
+# Embedding similarity
+faiss-cpu>=1.7.4
+
+# Performance monitoring
+psutil>=5.9.0
+memory-profiler>=0.61.0

@@ -6,10 +6,13 @@ import borg.trikeshed.io.IOContext
 import borg.trikeshed.io.AsyncIOEngine
 import borg.trikeshed.reactor.SelectableChannel
 import borg.trikeshed.reactor.Reactor
+import borg.trikeshed.reactor.SocketFactory
 import kotlinx.coroutines.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.coroutines.CoroutineContext
 import borg.trikeshed.ccek.AsyncChannelContext
+import java.nio.ByteBuffer
 
 /**
  * HTTP Client implementation with attention-based request handling
@@ -18,7 +21,9 @@ import borg.trikeshed.ccek.AsyncChannelContext
 class HttpClient(
     internal val ioContext: IOContext,
     internal val reactor: Reactor? = null
-) {
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<HttpClient>
+    override val key: CoroutineContext.Key<*> get() = Key
     internal val connections = mutableMapOf<String, HttpConnection>()
     
     // Configuration
@@ -26,15 +31,32 @@ class HttpClient(
     var readTimeout: Duration = 30.seconds
     var maxConnectionsPerHost: Int = 6
     var keepAliveTimeout: Duration = 90.seconds
+    var maxRetries: Int = 3
+    var retryDelay: Duration = 1.seconds
     
     /**
      * Execute an HTTP request with attention-based optimization
      */
     suspend fun execute(request: HttpRequest): HttpResponse {
-        val host = extractHost(request)
-        val connection = getOrCreateConnection(host)
+        var lastException: Exception? = null
         
-        return connection.sendRequest(request)
+        repeat(maxRetries) { attempt ->
+            try {
+                val host = extractHost(request)
+                val connection = getOrCreateConnection(host)
+                return connection.sendRequest(request)
+            } catch (e: Exception) {
+                lastException = e
+                if (attempt < maxRetries - 1) {
+                    delay(retryDelay)
+                    // Remove failed connection from pool
+                    val host = extractHost(request)
+                    connections.remove(host)?.close()
+                }
+            }
+        }
+        
+        throw lastException ?: NetworkException("Request failed after $maxRetries attempts")
     }
     
     /**
@@ -87,6 +109,11 @@ class HttpClient(
         connections.values.forEach { it.close() }
         connections.clear()
     }
+    
+    /**
+     * Get active connection count for testing
+     */
+    fun getActiveConnectionCount(): Int = connections.size
     
     internal suspend fun getOrCreateConnection(host: String): HttpConnection {
         val existing = connections[host]
@@ -146,34 +173,6 @@ class HttpClient(
     
     // Use context-driven channel for all I/O
     internal suspend fun getChannel(): AsyncChannelContext? = coroutineContext[AsyncChannelContext.AsyncChannelKey]
-
-    suspend fun sendRequest(request: HttpRequest): HttpResponse {
-        val deferred = CompletableDeferred<HttpResponse>()
-        requestQueue.add(deferred)
-        val channel = getChannel()
-        val requestBytes = request.toByteArray()
-        channel?.let {
-            it.write(requestBytes)
-        } ?: channel?.write(requestBytes)
-        lastActivity = System.currentTimeMillis()
-        return deferred.await()
-    }
-
-    suspend fun streamRequest(
-        request: HttpRequest,
-        onChunk: suspend (ByteArray) -> Unit
-    ) {
-        val channel = getChannel()
-        val requestBytes = request.toByteArray()
-        channel?.write(requestBytes)
-        val buffer = ByteArray(8192)
-        while (true) {
-            val read = channel?.read(buffer) ?: break
-            if (read <= 0) break
-            onChunk(buffer.sliceArray(0 until read))
-            lastActivity = System.currentTimeMillis()
-        }
-    }
 }
 
 /**
@@ -210,12 +209,15 @@ internal class HttpConnection(
     suspend fun sendRequest(request: HttpRequest): HttpResponse {
         val deferred = CompletableDeferred<HttpResponse>()
         requestQueue.add(deferred)
-        val channel = getChannel()
+        
         val requestBytes = request.toByteArray()
-        channel?.let {
-            it.write(requestBytes)
-        } ?: channel?.write(requestBytes)
-        lastActivity = System.currentTimeMillis()
+        val buffer = ByteBuffer.wrap(requestBytes)
+        
+        channel?.let { ch ->
+            ch.write(buffer)
+            lastActivity = System.currentTimeMillis()
+        } ?: throw NetworkException("No active channel")
+        
         return deferred.await()
     }
     
@@ -223,21 +225,29 @@ internal class HttpConnection(
         request: HttpRequest,
         onChunk: suspend (ByteArray) -> Unit
     ) {
-        val channel = getChannel()
         val requestBytes = request.toByteArray()
-        channel?.write(requestBytes)
-        val buffer = ByteArray(8192)
-        while (true) {
-            val read = channel?.read(buffer) ?: break
-            if (read <= 0) break
-            onChunk(buffer.sliceArray(0 until read))
+        val buffer = ByteBuffer.wrap(requestBytes)
+        
+        channel?.let { ch ->
+            ch.write(buffer)
             lastActivity = System.currentTimeMillis()
-        }
+            
+            val readBuffer = ByteBuffer.allocate(8192)
+            while (true) {
+                val read = ch.read(readBuffer)
+                if (read <= 0) break
+                
+                val chunk = readBuffer.array().sliceArray(0 until read)
+                onChunk(chunk)
+                readBuffer.clear()
+                lastActivity = System.currentTimeMillis()
+            }
+        } ?: throw NetworkException("No active channel")
     }
     
     fun isAlive(): Boolean {
         val idle = System.currentTimeMillis() - lastActivity
-        return channel != null && idle < 90_000  // 90 second timeout
+        return channel != null && idle < keepAliveTimeout.inWholeMilliseconds
     }
     
     fun close() {
@@ -253,7 +263,7 @@ internal class HttpConnection(
     }
     
     internal suspend fun processPipeline() {
-        val buffer = ByteArray(65536)
+        val buffer = ByteBuffer.allocate(65536)
         var accumulated = ByteArray(0)
         
         while (isActive) {
@@ -261,7 +271,9 @@ internal class HttpConnection(
                 val read = channel?.read(buffer) ?: break
                 if (read <= 0) break
                 
-                accumulated += buffer.sliceArray(0 until read)
+                val newData = buffer.array().sliceArray(0 until read)
+                accumulated += newData
+                buffer.clear()
                 
                 // Try to parse response
                 val response = tryParseResponse(accumulated)
@@ -314,8 +326,8 @@ internal class HttpConnection(
     }
     
     internal suspend fun createNioSocket(host: String, port: Int): SelectableChannel {
-        // NIO socket implementation
-        TODO("NIO socket creation") 
+        // Use JVM NIO implementation
+        return SocketFactory.createClientSocket(host, port)
     }
     
     internal suspend fun createKQueueSocket(host: String, port: Int): SelectableChannel {
@@ -329,8 +341,8 @@ internal class HttpConnection(
     }
     
     internal suspend fun createDefaultSocket(host: String, port: Int): SelectableChannel {
-        // Fallback implementation
-        TODO("default socket creation")
+        // Fallback to NIO implementation
+        return createNioSocket(host, port)
     }
 }
 
@@ -343,12 +355,16 @@ class HttpClientBuilder {
     internal var connectTimeout: Duration = 30.seconds
     internal var readTimeout: Duration = 30.seconds
     internal var maxConnectionsPerHost: Int = 6
+    internal var maxRetries: Int = 3
+    internal var retryDelay: Duration = 1.seconds
     
     fun ioContext(context: IOContext) = apply { this.ioContext = context }
     fun reactor(reactor: Reactor) = apply { this.reactor = reactor }
     fun connectTimeout(timeout: Duration) = apply { this.connectTimeout = timeout }
     fun readTimeout(timeout: Duration) = apply { this.readTimeout = timeout }
     fun maxConnectionsPerHost(max: Int) = apply { this.maxConnectionsPerHost = max }
+    fun maxRetries(retries: Int) = apply { this.maxRetries = retries }
+    fun retryDelay(delay: Duration) = apply { this.retryDelay = delay }
     
     fun build(): HttpClient {
         val context = ioContext ?: IOContext.createDefault()
@@ -356,6 +372,8 @@ class HttpClientBuilder {
             this.connectTimeout = this@HttpClientBuilder.connectTimeout
             this.readTimeout = this@HttpClientBuilder.readTimeout
             this.maxConnectionsPerHost = this@HttpClientBuilder.maxConnectionsPerHost
+            this.maxRetries = this@HttpClientBuilder.maxRetries
+            this.retryDelay = this@HttpClientBuilder.retryDelay
         }
     }
 }
@@ -374,4 +392,67 @@ internal fun findEndOfHeaders(bytes: ByteArray): Int {
         }
     }
     return -1
+}
+
+// Exception classes
+class NetworkException(message: String) : Exception(message)
+class ConnectionException(message: String) : Exception(message)
+class TimeoutException(message: String) : Exception(message)
+
+// CCEK Key-based API extensions
+/**
+ * Execute an HTTP request using the HttpClient from context
+ */
+suspend fun HttpClient.Key.execute(request: HttpRequest): HttpResponse {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("HttpClient not found in context")
+    return client.execute(request)
+}
+
+/**
+ * Execute a range request using the HttpClient from context
+ */
+suspend fun HttpClient.Key.executeRange(
+    url: String,
+    start: Long,
+    end: Long
+): HttpResponse {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("HttpClient not found in context")
+    return client.executeRange(url, start, end)
+}
+
+/**
+ * Execute multiple range requests in parallel using the HttpClient from context
+ */
+suspend fun HttpClient.Key.executeMultiRange(
+    url: String,
+    ranges: Indexed<Twin<Long>>
+): Indexed<HttpResponse> {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("HttpClient not found in context")
+    return client.executeMultiRange(url, ranges)
+}
+
+/**
+ * Stream response body using the HttpClient from context
+ */
+suspend fun HttpClient.Key.stream(
+    request: HttpRequest,
+    onChunk: suspend (ByteArray) -> Unit
+) {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("HttpClient not found in context")
+    client.stream(request, onChunk)
+}
+
+/**
+ * Create and configure HttpClient in context
+ */
+fun HttpClient.Key.create(
+    ioContext: IOContext,
+    reactor: Reactor? = null,
+    configure: HttpClient.() -> Unit = {}
+): HttpClient {
+    return HttpClient(ioContext, reactor).apply(configure)
 }

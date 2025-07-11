@@ -23,7 +23,9 @@ interface SSHRsyncClient {
 // Rsync Client implementation
 class SSHRsyncClientImpl(
     private val connection: SSHConnection
-) : SSHRsyncClient {
+) : SSHRsyncClient, CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<SSHRsyncClientImpl>
+    override val key: CoroutineContext.Key<*> get() = Key
     
     override suspend fun executeRsync(command: String, context: SSHRsyncContext): String {
         return withContext(context.b) {
@@ -256,4 +258,81 @@ object SSHRsyncClientFactory {
     fun createRsyncClient(connection: SSHConnection): SSHRsyncClient {
         return SSHRsyncClientImpl(connection)
     }
+}
+
+// CCEK Key-based API extensions for SSH Rsync Client
+/**
+ * Execute rsync command using SSHRsyncClient from context
+ */
+suspend fun SSHRsyncClientImpl.Key.executeRsync(
+    command: String,
+    context: SSHRsyncContext = SSHRsyncContext()
+): String {
+    val rsyncClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHRsyncClient not found in context")
+    return rsyncClient.executeRsync(command, context)
+}
+
+/**
+ * Sync directory using SSHRsyncClient from context
+ */
+suspend fun SSHRsyncClientImpl.Key.syncDirectory(
+    sourcePath: String,
+    destinationPath: String,
+    context: SSHRsyncContext = SSHRsyncContext()
+): SyncResult {
+    val rsyncClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHRsyncClient not found in context")
+    return rsyncClient.syncDirectory(sourcePath, destinationPath, context)
+}
+
+/**
+ * Sync with delete using SSHRsyncClient from context
+ */
+suspend fun SSHRsyncClientImpl.Key.syncWithDelete(
+    sourcePath: String,
+    destinationPath: String,
+    context: SSHRsyncContext = SSHRsyncContext()
+): SyncResult {
+    val rsyncClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHRsyncClient not found in context")
+    return rsyncClient.syncWithDelete(sourcePath, destinationPath, context)
+}
+
+/**
+ * Sync with exclude patterns using SSHRsyncClient from context
+ */
+suspend fun SSHRsyncClientImpl.Key.syncWithExclude(
+    sourcePath: String,
+    destinationPath: String,
+    excludePatterns: List<String>,
+    context: SSHRsyncContext = SSHRsyncContext()
+): SyncResult {
+    val rsyncClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHRsyncClient not found in context")
+    return rsyncClient.syncWithExclude(sourcePath, destinationPath, excludePatterns, context)
+}
+
+/**
+ * Sync with bandwidth limit using SSHRsyncClient from context
+ */
+suspend fun SSHRsyncClientImpl.Key.syncWithBandwidthLimit(
+    sourcePath: String,
+    destinationPath: String,
+    bandwidthLimit: Int,
+    context: SSHRsyncContext = SSHRsyncContext()
+): SyncResult {
+    val rsyncClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHRsyncClient not found in context")
+    return rsyncClient.syncWithBandwidthLimit(sourcePath, destinationPath, bandwidthLimit, context)
+}
+
+/**
+ * Create SSH Rsync client in context
+ */
+fun SSHRsyncClientImpl.Key.create(
+    connection: SSHConnection,
+    configure: SSHRsyncClientImpl.() -> Unit = {}
+): SSHRsyncClientImpl {
+    return SSHRsyncClientImpl(connection).apply(configure)
 } 

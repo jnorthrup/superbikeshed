@@ -964,4 +964,72 @@ object SSHSftpClientFactory {
     fun createSftpClient(connection: SSHConnection, fileSystem: SSHFileSystem): SSHSftpClient {
         return SSHSftpClientImpl(connection, fileSystem)
     }
+}
+
+// CCEK Key-based API extensions for SFTP
+/**
+ * SFTP Client as CoroutineContext.Element
+ */
+class SSHSftpClientCCEK(
+    private val client: SSHSftpClient
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<SSHSftpClientCCEK>
+    override val key: CoroutineContext.Key<*> get() = Key
+    
+    suspend fun listDirectory(path: String): List<String> {
+        val context = SSHSftpContext(coroutineContext)
+        return client.listDirectory(path, context)
+    }
+    
+    suspend fun uploadFile(localPath: String, remotePath: String, data: ByteArray) {
+        val context = SSHSftpContext(coroutineContext)
+        val handle = client.openFile(remotePath, "write", context)
+        if (handle != null) {
+            client.writeFile(handle, 0, data, context)
+            client.closeFile(handle, context)
+        }
+    }
+    
+    suspend fun downloadFile(remotePath: String): ByteArray {
+        val context = SSHSftpContext(coroutineContext)
+        val handle = client.openFile(remotePath, "read", context)
+        return if (handle != null) {
+            val data = client.readFile(handle, 0, 8192, context)
+            client.closeFile(handle, context)
+            data.toByteArray()
+        } else {
+            ByteArray(0)
+        }
+    }
+}
+
+/**
+ * Upload file using SFTP client from context
+ */
+suspend fun SSHSftpClientCCEK.Key.uploadFile(
+    localPath: String,
+    remotePath: String,
+    data: ByteArray
+) {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHSftpClientCCEK not found in context")
+    client.uploadFile(localPath, remotePath, data)
+}
+
+/**
+ * Download file using SFTP client from context
+ */
+suspend fun SSHSftpClientCCEK.Key.downloadFile(remotePath: String): ByteArray {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHSftpClientCCEK not found in context")
+    return client.downloadFile(remotePath)
+}
+
+/**
+ * List directory using SFTP client from context
+ */
+suspend fun SSHSftpClientCCEK.Key.listDirectory(path: String): List<String> {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHSftpClientCCEK not found in context")
+    return client.listDirectory(path)
 } 

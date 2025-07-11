@@ -37,11 +37,11 @@ kotlin {
     }
 }
 
-// Add run task for the fiduciary service (minimal demo)
+// Add run task for the fiduciary service (CCEK implementation)
 tasks.register<JavaExec>("runCouchDB") {
     dependsOn("jvmMainClasses")
     classpath = configurations["jvmRuntimeClasspath"]
-    mainClass.set("borg.trikeshed.couchdb.MinimalMainKt")
+    mainClass.set("borg.trikeshed.couchdb.FiduciaryCCEKKt")
     standardInput = System.`in`
 }
 

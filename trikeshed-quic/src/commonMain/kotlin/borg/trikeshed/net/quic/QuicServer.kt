@@ -6,6 +6,7 @@ import borg.trikeshed.io.IOContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
+import kotlin.coroutines.CoroutineContext
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
@@ -21,7 +22,9 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 class QuicServer(
     internal val config: QuicServerConfig
-) {
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<QuicServer>
+    override val key: CoroutineContext.Key<*> get() = Key
     internal var isRunning = false
     internal var serverJob: Job? = null
     internal val connections = ConcurrentHashMap<String, QuicConnection>()
@@ -451,22 +454,103 @@ class Http3Client(
     suspend fun get(path: String): HttpResponse {
         val stream = connection.createBidirectionalStream()
         
-        // Simplified HTTP/3 request
-        val request = "GET $path HTTP/3\r\n\r\n".toByteArray()
+        // Build proper HTTP/3 request
+        val request = buildHttp3Request("GET", path, emptyMap())
         stream.send(request)
         
-        val response = stream.receive()
+        // Read response
+        val responseData = stream.receive()
         
-        // Simplified response parsing
+        // Parse HTTP/3 response
+        return parseHttp3Response(responseData)
+    }
+    
+    suspend fun post(path: String, headers: Map<String, String> = emptyMap(), body: ByteArray): HttpResponse {
+        val stream = connection.createBidirectionalStream()
+        
+        // Build HTTP/3 POST request with body
+        val request = buildHttp3Request("POST", path, headers, body)
+        stream.send(request)
+        
+        // Read response
+        val responseData = stream.receive()
+        
+        // Parse HTTP/3 response
+        return parseHttp3Response(responseData)
+    }
+    
+    private fun buildHttp3Request(
+        method: String, 
+        path: String, 
+        headers: Map<String, String>, 
+        body: ByteArray = ByteArray(0)
+    ): ByteArray {
+        val requestBuilder = StringBuilder()
+        
+        // HTTP/3 request line
+        requestBuilder.append("$method $path HTTP/3\r\n")
+        
+        // Headers
+        headers.forEach { (name, value) ->
+            requestBuilder.append("$name: $value\r\n")
+        }
+        
+        // Content-Length if body present
+        if (body.isNotEmpty()) {
+            requestBuilder.append("Content-Length: ${body.size}\r\n")
+        }
+        
+        // End of headers
+        requestBuilder.append("\r\n")
+        
+        // Body
+        val headerBytes = requestBuilder.toString().toByteArray()
+        return headerBytes + body
+    }
+    
+    private fun parseHttp3Response(responseData: ByteArray): HttpResponse {
+        val responseString = String(responseData)
+        val lines = responseString.split("\r\n")
+        
+        // Parse status line
+        val statusLine = lines.firstOrNull() ?: "HTTP/3 500 Internal Server Error"
+        val statusCode = statusLine.split(" ").getOrNull(1)?.toIntOrNull() ?: 500
+        
+        // Parse headers
+        val headers = mutableMapOf<String, String>()
+        var bodyStartIndex = -1
+        
+        for (i in 1 until lines.size) {
+            val line = lines[i]
+            if (line.isEmpty()) {
+                bodyStartIndex = i + 1
+                break
+            }
+            
+            val colonIndex = line.indexOf(':')
+            if (colonIndex > 0) {
+                val name = line.substring(0, colonIndex).trim()
+                val value = line.substring(colonIndex + 1).trim()
+                headers[name] = value
+            }
+        }
+        
+        // Extract body
+        val body = if (bodyStartIndex > 0 && bodyStartIndex < lines.size) {
+            lines.subList(bodyStartIndex, lines.size).joinToString("\r\n").toByteArray()
+        } else {
+            ByteArray(0)
+        }
+        
         return HttpResponse(
-            status = 200,
-            headers = mapOf("Content-Type" to "text/plain"),
-            body = response
+            status = statusCode,
+            headers = headers,
+            body = body
         )
     }
     
     fun close() {
-        // Close HTTP/3 client
+        connection.close()
     }
 }
 
@@ -478,6 +562,8 @@ class HttpServer(
 ) {
     internal val routes = mutableMapOf<String, HttpHandler>()
     internal var running = false
+    private var serverChannel: ServerChannel? = null
+    private var serverJob: Job? = null
     
     fun route(path: String, method: String = "GET", handler: HttpHandler) {
         val key = "$method:$path"
@@ -486,12 +572,108 @@ class HttpServer(
     
     suspend fun start() {
         running = true
-        // Simplified HTTP server start
-        // In real implementation, this would start a TCP server
+        
+        // Create server socket
+        serverChannel = SocketFactory.createServerSocket(config.port)
+        
+        // Start server loop
+        serverJob = GlobalScope.launch {
+            while (running) {
+                try {
+                    val clientChannel = serverChannel?.accept()
+                    if (clientChannel != null) {
+                        // Handle client connection
+                        launch {
+                            handleClientConnection(clientChannel)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Handle server errors
+                    if (running) {
+                        println("Server error: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+    
+    private suspend fun handleClientConnection(clientChannel: ClientChannel) {
+        try {
+            val buffer = ByteBuffer.allocate(8192)
+            val bytesRead = clientChannel.read(buffer)
+            
+            if (bytesRead > 0) {
+                val requestData = buffer.array().sliceArray(0 until bytesRead)
+                val request = parseHttpRequest(requestData)
+                
+                // Find handler
+                val key = "${request.method}:${request.path}"
+                val handler = routes[key] ?: routes["GET:${request.path}"] ?: defaultHandler
+                
+                // Execute handler
+                val response = handler(request)
+                
+                // Send response
+                val responseData = response.toByteArray()
+                val responseBuffer = ByteBuffer.wrap(responseData)
+                clientChannel.write(responseBuffer)
+            }
+        } finally {
+            clientChannel.close()
+        }
+    }
+    
+    private fun parseHttpRequest(data: ByteArray): HttpRequest {
+        val requestString = String(data)
+        val lines = requestString.split("\r\n")
+        
+        // Parse request line
+        val requestLine = lines.firstOrNull() ?: "GET / HTTP/1.1"
+        val parts = requestLine.split(" ")
+        val method = parts.getOrNull(0) ?: "GET"
+        val path = parts.getOrNull(1) ?: "/"
+        
+        // Parse headers
+        val headers = mutableMapOf<String, String>()
+        var bodyStartIndex = -1
+        
+        for (i in 1 until lines.size) {
+            val line = lines[i]
+            if (line.isEmpty()) {
+                bodyStartIndex = i + 1
+                break
+            }
+            
+            val colonIndex = line.indexOf(':')
+            if (colonIndex > 0) {
+                val name = line.substring(0, colonIndex).trim()
+                val value = line.substring(colonIndex + 1).trim()
+                headers[name] = value
+            }
+        }
+        
+        // Extract body
+        val body = if (bodyStartIndex > 0 && bodyStartIndex < lines.size) {
+            lines.subList(bodyStartIndex, lines.size).joinToString("\r\n").toByteArray()
+        } else {
+            ByteArray(0)
+        }
+        
+        return HttpRequest(method, path, headers, body)
+    }
+    
+    private val defaultHandler: HttpHandler = { request ->
+        HttpResponse(
+            status = HttpStatus.NOT_FOUND,
+            headers = mapOf("Content-Type" to "text/plain"),
+            body = "404 Not Found".toByteArray()
+        )
     }
     
     suspend fun stop() {
         running = false
+        serverJob?.cancel()
+        serverChannel?.close()
     }
     
     fun isRunning(): Boolean = running
@@ -501,27 +683,81 @@ class HttpServer(
  * HTTP Client implementation
  */
 class HttpClient {
+    private val httpClient = borg.trikeshed.net.http.HttpClient(
+        borg.trikeshed.io.IOContext.NioContext("quic-http-client")
+    )
+    
     suspend fun get(url: String): HttpResponse {
-        // Simplified HTTP client
-        // In real implementation, this would make actual HTTP requests
+        val request = borg.trikeshed.net.http.HttpRequest(
+            method = HttpMethod.GET,
+            path = HttpRequestPath(extractPath(url)),
+            headers = arrayOf(
+                HttpHeaderName("Host") j HttpHeaderValue(extractHost(url)),
+                HttpHeaderName("User-Agent") j HttpHeaderValue("TrikeShed-HTTP/1.0")
+            )
+        )
+        
+        val response = httpClient.execute(request)
+        
         return HttpResponse(
-            status = 200,
-            headers = mapOf("Content-Type" to "text/plain"),
-            body = "Hello HTTP!".toByteArray()
+            status = response.status.value,
+            headers = convertHeaders(response.headers),
+            body = response.body
         )
     }
     
     suspend fun post(url: String, headers: Map<String, String> = emptyMap(), body: ByteArray): HttpResponse {
-        // Simplified HTTP POST
+        val requestHeaders = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
+        
+        // Add default headers
+        requestHeaders.add(HttpHeaderName("Host") j HttpHeaderValue(extractHost(url)))
+        requestHeaders.add(HttpHeaderName("Content-Type") j HttpHeaderValue("application/json"))
+        requestHeaders.add(HttpHeaderName("Content-Length") j HttpHeaderValue(body.size.toString()))
+        
+        // Add custom headers
+        headers.forEach { (name, value) ->
+            requestHeaders.add(HttpHeaderName(name) j HttpHeaderValue(value))
+        }
+        
+        val request = borg.trikeshed.net.http.HttpRequest(
+            method = HttpMethod.POST,
+            path = HttpRequestPath(extractPath(url)),
+            headers = requestHeaders.size j requestHeaders::get,
+            body = body
+        )
+        
+        val response = httpClient.execute(request)
+        
         return HttpResponse(
-            status = 200,
-            headers = mapOf("Content-Type" to "application/json"),
-            body = """{"uploaded": ${body.size}}""".toByteArray()
+            status = response.status.value,
+            headers = convertHeaders(response.headers),
+            body = response.body
         )
     }
     
+    private fun extractHost(url: String): String {
+        val withoutProtocol = url.removePrefix("http://").removePrefix("https://")
+        val firstSlash = withoutProtocol.indexOf('/')
+        return if (firstSlash == -1) withoutProtocol else withoutProtocol.substring(0, firstSlash)
+    }
+    
+    private fun extractPath(url: String): String {
+        val withoutProtocol = url.removePrefix("http://").removePrefix("https://")
+        val firstSlash = withoutProtocol.indexOf('/')
+        return if (firstSlash == -1) "/" else withoutProtocol.substring(firstSlash)
+    }
+    
+    private fun convertHeaders(httpHeaders: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): Map<String, String> {
+        val headers = mutableMapOf<String, String>()
+        for (i in 0 until httpHeaders.a) {
+            val header = httpHeaders.b(i)
+            headers[header.a.value] = header.b.value
+        }
+        return headers
+    }
+    
     fun close() {
-        // Close HTTP client
+        httpClient.close()
     }
 }
 
@@ -558,4 +794,79 @@ data class HttpRequest(
     val headers: Map<String, String>,
     val body: ByteArray
 )
+
+// CCEK Key-based API extensions for QuicServer
+/**
+ * Start a QUIC server using the QuicServer from context
+ */
+suspend fun QuicServer.Key.start(): QuicServer {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    server.start()
+    return server
+}
+
+/**
+ * Stop the QUIC server using the QuicServer from context
+ */
+suspend fun QuicServer.Key.stop() {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    server.stop()
+}
+
+/**
+ * Check if server is running using the QuicServer from context
+ */
+fun QuicServer.Key.isRunning(): Boolean {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    return server.isRunning()
+}
+
+/**
+ * Add connection handler using the QuicServer from context
+ */
+fun QuicServer.Key.onConnection(handler: ConnectionHandler) {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    server.onConnection(handler)
+}
+
+/**
+ * Add stream handler using the QuicServer from context
+ */
+fun QuicServer.Key.onStream(streamId: Long, handler: StreamHandler) {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    server.onStream(streamId, handler)
+}
+
+/**
+ * Accept a stream from connection using the QuicServer from context
+ */
+suspend fun QuicServer.Key.acceptStream(): QuicStream? {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    return server.acceptStream()
+}
+
+/**
+ * Get server statistics using the QuicServer from context
+ */
+fun QuicServer.Key.getStats(): QuicServerStats {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("QuicServer not found in context")
+    return server.getStats()
+}
+
+/**
+ * Create and configure QuicServer in context
+ */
+fun QuicServer.Key.create(
+    config: QuicServerConfig,
+    configure: QuicServer.() -> Unit = {}
+): QuicServer {
+    return QuicServer(config).apply(configure)
+}
 

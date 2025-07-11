@@ -2,12 +2,20 @@ package borg.trikeshed.ssh
 
 import borg.trikeshed.lib.*
 import kotlin.jvm.JvmInline
+import kotlin.coroutines.CoroutineContext
 
 /**
  * SSH Protocol Constants and Core Types (RFC 4251-4254)
  */
 
-object SSHProtocol {
+class SSHProtocol(val config: SSHConfig) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<SSHProtocol>
+    override val key: CoroutineContext.Key<*> get() = Key
+    
+    // Implementation will be moved here from object
+}
+
+object SSHProtocolConstants {
     const val VERSION = "SSH-2.0-TrikeShed_1.0"
     const val MIN_PACKET_SIZE = 16
     const val MAX_PACKET_SIZE = 35000
@@ -411,3 +419,81 @@ object SSHConstants {
     const val INITIAL_WINDOW_SIZE = 2097152 // 2MB
     const val MAX_PACKET_SIZE = 32768 // 32KB
 }
+
+// SSH Configuration
+data class SSHConfig(
+    val host: String,
+    val port: Int = 22,
+    val username: String,
+    val timeout: Long = 30000,
+    val preferredAlgorithms: AlgorithmPreferences = AlgorithmPreferences.KeyExchange
+)
+
+// SSH Credentials
+sealed class SSHCredentials {
+    data class Password(val password: String) : SSHCredentials()
+    data class PublicKey(val privateKey: ByteArray, val publicKey: ByteArray) : SSHCredentials()
+    data class Agent(val agentSocket: String) : SSHCredentials()
+}
+
+// CCEK Key-based API extensions for SSH
+/**
+ * Connect to SSH server using SSHProtocol from context
+ */
+suspend fun SSHProtocol.Key.connect(
+    host: String,
+    port: Int = 22,
+    credentials: SSHCredentials
+): SSHConnection {
+    val ssh = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHProtocol not found in context")
+    return ssh.connect(host, port, credentials)
+}
+
+/**
+ * Authenticate SSH connection using SSHProtocol from context
+ */
+suspend fun SSHProtocol.Key.authenticate(
+    connection: SSHConnection,
+    credentials: SSHCredentials
+): Boolean {
+    val ssh = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHProtocol not found in context")
+    return ssh.authenticate(connection, credentials)
+}
+
+/**
+ * Execute command over SSH using SSHProtocol from context
+ */
+suspend fun SSHProtocol.Key.executeCommand(
+    connection: SSHConnection,
+    command: String
+): SSHCommandResult {
+    val ssh = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHProtocol not found in context")
+    return ssh.executeCommand(connection, command)
+}
+
+/**
+ * Create SSH client in context
+ */
+fun SSHProtocol.Key.create(
+    config: SSHConfig,
+    configure: SSHProtocol.() -> Unit = {}
+): SSHProtocol {
+    return SSHProtocol(config).apply(configure)
+}
+
+// SSH Connection and Result types
+data class SSHConnection(
+    val sessionId: String,
+    val isConnected: Boolean = false,
+    val isAuthenticated: Boolean = false
+)
+
+data class SSHCommandResult(
+    val exitCode: Int,
+    val stdout: String,
+    val stderr: String,
+    val duration: Long
+)

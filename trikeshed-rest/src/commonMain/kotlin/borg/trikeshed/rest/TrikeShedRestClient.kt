@@ -1,10 +1,12 @@
 package borg.trikeshed.rest
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.net.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration
 import kotlin.time.measureTime
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Implementation of RestClient using TrikeShed data structures
@@ -24,10 +26,13 @@ abstract class TrikeShedRestClient(
     protected val connectionPoolSize: Int,
     protected val defaultTimeout: Duration?,
     protected val interceptors: Indexed<RequestInterceptor>
-) : RestClient {
+) : RestClient, CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<TrikeShedRestClient>
+    override val key: CoroutineContext.Key<*> get() = Key
     
     private val connectionPool = ConnectionPool(connectionPoolSize)
     private val logger = RequestLogger()
+    private val httpClient = createHttpClient()
     
     override suspend fun execute(request: HttpRequest): HttpResponse = coroutineScope {
         // Apply interceptors
@@ -90,32 +95,74 @@ abstract class TrikeShedRestClient(
     }
     
     private suspend fun executeInternal(request: HttpRequest): HttpResponse {
-        // This would use actual HTTP client (ktor, okhttp, etc)
-        // For now, return a mock response
-        delay(100) // Simulate network delay
+        // Convert to HTTP request format
+        val httpRequest = convertToHttpRequest(request)
         
-        return ResponseMeta(
-            statusCode = 200,
-            headers = headersOf(
-                "content-type" j "application/json",
-                "content-length" j "42"
-            ),
-            duration = Duration.ZERO
-        ) j "Mock response for ${request.a.url}".encodeToByteArray()
+        // Execute using HTTP client
+        val httpResponse = httpClient.execute(httpRequest)
+        
+        // Convert back to REST response format
+        return convertToRestResponse(httpResponse)
     }
     
     private fun streamInternal(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> = flow {
-        // Mock streaming implementation
+        // Convert to HTTP request format
+        val httpRequest = convertToHttpRequest(request)
+        
+        // Stream using HTTP client
+        httpClient.stream(httpRequest) { chunk ->
+            val meta = ResponseMeta(
+                statusCode = 200, // Would need to parse from HTTP response
+                headers = headersOf("content-type" j "application/octet-stream"),
+                duration = Duration.ZERO
+            )
+            emit(meta j chunk)
+        }
+    }
+    
+    private fun convertToHttpRequest(request: HttpRequest): borg.trikeshed.net.http.HttpRequest {
+        val method = when (request.a.method.uppercase()) {
+            "GET" -> HttpMethod.GET
+            "POST" -> HttpMethod.POST
+            "PUT" -> HttpMethod.PUT
+            "DELETE" -> HttpMethod.DELETE
+            "PATCH" -> HttpMethod.PATCH
+            "HEAD" -> HttpMethod.HEAD
+            "OPTIONS" -> HttpMethod.OPTIONS
+            else -> HttpMethod.GET
+        }
+        
+        val path = HttpRequestPath(request.a.url)
+        
+        val headers = Array(request.a.headers.a) { i ->
+            val header = request.a.headers.b(i)
+            HttpHeaderName(header.a) j HttpHeaderValue(header.b)
+        }
+        
+        return borg.trikeshed.net.http.HttpRequest(
+            method = method,
+            path = path,
+            headers = headers.size j headers::get,
+            body = request.b ?: ByteArray(0)
+        )
+    }
+    
+    private fun convertToRestResponse(httpResponse: borg.trikeshed.net.http.HttpResponse): HttpResponse {
         val meta = ResponseMeta(
-            statusCode = 200,
-            headers = headersOf("content-type" j "text/event-stream"),
+            statusCode = httpResponse.status.value,
+            headers = convertHeaders(httpResponse.headers),
             duration = Duration.ZERO
         )
         
-        repeat(5) { i ->
-            emit(meta j "Chunk $i\n".encodeToByteArray())
-            delay(500)
+        return meta j httpResponse.body
+    }
+    
+    private fun convertHeaders(httpHeaders: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): HttpHeaders {
+        val headers = Array(httpHeaders.a) { i ->
+            val header = httpHeaders.b(i)
+            header.a.value j header.b.value
         }
+        return headers.size j headers::get
     }
     
     private fun resolveUrl(url: String): String {
@@ -147,6 +194,19 @@ abstract class TrikeShedRestClient(
             val entry = headerMap.entries.elementAt(i)
             entry.key j entry.value
         }
+    }
+    
+    private fun createHttpClient(): borg.trikeshed.net.http.HttpClient {
+        val ioContext = borg.trikeshed.io.IOContext.NioContext("rest-client")
+        return borg.trikeshed.net.http.HttpClient(ioContext).apply {
+            connectTimeout = defaultTimeout ?: 30.seconds
+            readTimeout = defaultTimeout ?: 30.seconds
+            maxConnectionsPerHost = connectionPoolSize
+        }
+    }
+    
+    fun close() {
+        httpClient.close()
     }
 }
 
@@ -198,17 +258,25 @@ class SseClient(private val restClient: RestClient) {
         for (line in lines) {
             when {
                 line.startsWith("data:") -> {
-                    currentEvent = currentEvent.copy(data = line.substring(5).trim())
+                    currentEvent = currentEvent.copy(
+                        data = currentEvent.data + line.substring(5).trim()
+                    )
                 }
                 line.startsWith("event:") -> {
-                    currentEvent = currentEvent.copy(event = line.substring(6).trim())
+                    currentEvent = currentEvent.copy(
+                        event = line.substring(6).trim()
+                    )
                 }
                 line.startsWith("id:") -> {
-                    currentEvent = currentEvent.copy(id = line.substring(3).trim())
+                    currentEvent = currentEvent.copy(
+                        id = line.substring(3).trim()
+                    )
                 }
-                line.isEmpty() && currentEvent.data != null -> {
-                    events.add(currentEvent)
-                    currentEvent = SseEvent()
+                line.isEmpty() -> {
+                    if (currentEvent.data.isNotEmpty()) {
+                        events.add(currentEvent)
+                        currentEvent = SseEvent()
+                    }
                 }
             }
         }
@@ -218,11 +286,36 @@ class SseClient(private val restClient: RestClient) {
 }
 
 data class SseEvent(
-    val data: String? = null,
-    val event: String? = null,
-    val id: String? = null,
-    val retry: Long? = null
+    val data: String = "",
+    val event: String = "message",
+    val id: String = ""
 )
+
+// Connection pool implementation
+class ConnectionPool(private val maxConnections: Int) {
+    private val connections = mutableListOf<Any>()
+    
+    suspend fun acquire(): Any? {
+        // Implementation would manage connection lifecycle
+        return null
+    }
+    
+    suspend fun release(connection: Any) {
+        // Implementation would return connection to pool
+    }
+}
+
+// Request logger implementation
+class RequestLogger {
+    fun log(request: HttpRequest, response: HttpResponse) {
+        // Implementation would log request/response details
+    }
+}
+
+// Request interceptor interface
+interface RequestInterceptor {
+    suspend fun intercept(request: HttpRequest): HttpRequest
+}
 
 // Rate limiting using TrikeShed
 class RateLimiter(
@@ -361,5 +454,61 @@ class MultipartFormData {
         }.encodeToByteArray()
         
         return headersOf("Content-Type" j contentType) j body
+    }
+}
+
+// CCEK Key-based API extensions for TrikeShedRestClient
+/**
+ * Execute an HTTP request using the TrikeShedRestClient from context
+ */
+suspend fun TrikeShedRestClient.Key.execute(request: HttpRequest): HttpResponse {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("TrikeShedRestClient not found in context")
+    return client.execute(request)
+}
+
+/**
+ * Stream an HTTP request using the TrikeShedRestClient from context
+ */
+suspend fun TrikeShedRestClient.Key.stream(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("TrikeShedRestClient not found in context")
+    return client.stream(request)
+}
+
+/**
+ * Execute batch HTTP requests using the TrikeShedRestClient from context
+ */
+suspend fun TrikeShedRestClient.Key.batch(requests: Indexed<HttpRequest>): Indexed<HttpResponse> {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("TrikeShedRestClient not found in context")
+    return client.batch(requests)
+}
+
+/**
+ * Close the REST client using the TrikeShedRestClient from context
+ */
+fun TrikeShedRestClient.Key.close() {
+    val client = coroutineContext[this] 
+        ?: throw IllegalStateException("TrikeShedRestClient not found in context")
+    client.close()
+}
+
+/**
+ * Create a concrete implementation of TrikeShedRestClient
+ */
+fun TrikeShedRestClient.Key.create(
+    baseUrl: String,
+    defaultHeaders: HttpHeaders = 0 j { _: Int -> "" j "" },
+    connectionPoolSize: Int = 10,
+    defaultTimeout: Duration? = null,
+    interceptors: Indexed<RequestInterceptor> = 0 j { _: Int -> 
+        object : RequestInterceptor {
+            override suspend fun intercept(request: HttpRequest): HttpRequest = request
+        }
+    }
+): TrikeShedRestClient {
+    return object : TrikeShedRestClient(baseUrl, defaultHeaders, connectionPoolSize, defaultTimeout, interceptors) {
+        // Concrete implementation
     }
 }

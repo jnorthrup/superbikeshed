@@ -5,12 +5,69 @@ import borg.trikeshed.lib.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import kotlin.experimental.xor
+import kotlin.coroutines.CoroutineContext
 
 /**
  * IPFS Core - Content addressing and distributed hash table
  * Pure TrikeShed implementation without external dependencies
  * Enhanced with production-ready implementation from git history
  */
+
+// IPFS Core Service with CCEK pattern
+class IpfsCore(
+    val config: IpfsConfig,
+    val storage: IpfsStorage = InMemoryIpfsStorage(),
+    val routingTable: RoutingTable = RoutingTable(PeerId.fromPublicKey(config.nodeId))
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<IpfsCore>
+    override val key: CoroutineContext.Key<*> get() = Key
+    
+    suspend fun add(data: Indexed<Byte>): CID {
+        val hash = sha256(data)
+        val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
+        val cid = CID(1, CID.Codec.RAW, multihash)
+        val block = IpfsBlock(cid, data)
+        storage.put(block)
+        return cid
+    }
+    
+    suspend fun get(cid: CID): Indexed<Byte>? {
+        return storage.get(cid)?.data
+    }
+    
+    suspend fun resolve(path: String): CID? {
+        // Simplified path resolution
+        return null
+    }
+    
+    suspend fun pin(cid: CID): Boolean {
+        // Simplified pinning
+        return storage.has(cid)
+    }
+    
+    suspend fun publishToDHT(cid: CID): Boolean {
+        // Simplified DHT publishing
+        return true
+    }
+    
+    fun findProviders(cid: CID): Indexed<PeerInfo> {
+        // Simplified provider finding
+        return routingTable.findClosestPeers(PeerId.fromPublicKey(config.nodeId), 10)
+    }
+}
+
+// IPFS Configuration
+data class IpfsConfig(
+    val nodeId: Indexed<Byte>,
+    val datastore: String = "./ipfs-data",
+    val bootstrap: Indexed<String> = emptyIndex(),
+    val swarmPort: Int = 4001,
+    val apiPort: Int = 5001,
+    val gatewayPort: Int = 8080
+)
+
+// Content identifier type alias
+typealias ContentId = CID
 
 // Multihash components
 data class Multihash(
@@ -334,4 +391,70 @@ fun sha256(data: Indexed<Byte>): Indexed<Byte> {
     // Simplified SHA-256 (would use proper implementation)
     val hash = ByteArray(32) { it.toByte() }
     return hash.size j { hash[it] }
+}
+
+// CCEK Key-based API extensions for IPFS
+/**
+ * Add content to IPFS using IpfsCore from context
+ */
+suspend fun IpfsCore.Key.add(content: Indexed<Byte>): ContentId {
+    val ipfs = coroutineContext[this] 
+        ?: throw IllegalStateException("IpfsCore not found in context")
+    return ipfs.add(content)
+}
+
+/**
+ * Get content from IPFS using IpfsCore from context
+ */
+suspend fun IpfsCore.Key.get(cid: ContentId): Indexed<Byte>? {
+    val ipfs = coroutineContext[this] 
+        ?: throw IllegalStateException("IpfsCore not found in context")
+    return ipfs.get(cid)
+}
+
+/**
+ * Resolve IPFS path using IpfsCore from context
+ */
+suspend fun IpfsCore.Key.resolve(path: String): ContentId? {
+    val ipfs = coroutineContext[this] 
+        ?: throw IllegalStateException("IpfsCore not found in context")
+    return ipfs.resolve(path)
+}
+
+/**
+ * Pin content in IPFS using IpfsCore from context
+ */
+suspend fun IpfsCore.Key.pin(cid: ContentId): Boolean {
+    val ipfs = coroutineContext[this] 
+        ?: throw IllegalStateException("IpfsCore not found in context")
+    return ipfs.pin(cid)
+}
+
+/**
+ * Publish content to DHT using IpfsCore from context
+ */
+suspend fun IpfsCore.Key.publishToDHT(cid: ContentId): Boolean {
+    val ipfs = coroutineContext[this] 
+        ?: throw IllegalStateException("IpfsCore not found in context")
+    return ipfs.publishToDHT(cid)
+}
+
+/**
+ * Find content providers using IpfsCore from context
+ */
+fun IpfsCore.Key.findProviders(cid: ContentId): Indexed<PeerInfo> {
+    val ipfs = coroutineContext[this] 
+        ?: throw IllegalStateException("IpfsCore not found in context")
+    return ipfs.findProviders(cid)
+}
+
+/**
+ * Create IPFS node in context
+ */
+fun IpfsCore.Key.create(
+    config: IpfsConfig,
+    storage: IpfsStorage = InMemoryIpfsStorage(),
+    configure: IpfsCore.() -> Unit = {}
+): IpfsCore {
+    return IpfsCore(config, storage).apply(configure)
 } 

@@ -23,7 +23,9 @@ interface SSHScpClient {
 class SSHScpClientImpl(
     private val connection: SSHConnection,
     private val fileSystem: SSHFileSystem
-) : SSHScpClient {
+) : SSHScpClient, CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<SSHScpClientImpl>
+    override val key: CoroutineContext.Key<*> get() = Key
     
     override suspend fun upload(localPath: String, remotePath: String, context: SSHScpContext): Boolean {
         return withContext(context.b) {
@@ -299,4 +301,68 @@ object SSHScpClientFactory {
     fun createScpClient(connection: SSHConnection, fileSystem: SSHFileSystem): SSHScpClient {
         return SSHScpClientImpl(connection, fileSystem)
     }
+}
+
+// CCEK Key-based API extensions for SSH SCP Client
+/**
+ * Upload file using SSHScpClient from context
+ */
+suspend fun SSHScpClientImpl.Key.upload(
+    localPath: String,
+    remotePath: String,
+    context: SSHScpContext = SSHScpContext()
+): Boolean {
+    val scpClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHScpClient not found in context")
+    return scpClient.upload(localPath, remotePath, context)
+}
+
+/**
+ * Download file using SSHScpClient from context
+ */
+suspend fun SSHScpClientImpl.Key.download(
+    remotePath: String,
+    localPath: String,
+    context: SSHScpContext = SSHScpContext()
+): Boolean {
+    val scpClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHScpClient not found in context")
+    return scpClient.download(remotePath, localPath, context)
+}
+
+/**
+ * Upload directory using SSHScpClient from context
+ */
+suspend fun SSHScpClientImpl.Key.uploadDirectory(
+    localDir: String,
+    remoteDir: String,
+    context: SSHScpContext = SSHScpContext()
+): Boolean {
+    val scpClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHScpClient not found in context")
+    return scpClient.uploadDirectory(localDir, remoteDir, context)
+}
+
+/**
+ * Download directory using SSHScpClient from context
+ */
+suspend fun SSHScpClientImpl.Key.downloadDirectory(
+    remoteDir: String,
+    localDir: String,
+    context: SSHScpContext = SSHScpContext()
+): Boolean {
+    val scpClient = coroutineContext[this] 
+        ?: throw IllegalStateException("SSHScpClient not found in context")
+    return scpClient.downloadDirectory(remoteDir, localDir, context)
+}
+
+/**
+ * Create SSH SCP client in context
+ */
+fun SSHScpClientImpl.Key.create(
+    connection: SSHConnection,
+    fileSystem: SSHFileSystem,
+    configure: SSHScpClientImpl.() -> Unit = {}
+): SSHScpClientImpl {
+    return SSHScpClientImpl(connection, fileSystem).apply(configure)
 } 

@@ -293,6 +293,58 @@ interface OAuthClient {
     suspend fun validateIdToken(idToken: String, context: OAuthCCekContext): Boolean
 }
 
+// OAuth Provider with CCEK pattern
+class OAuthProvider(
+    val config: OAuthConfig,
+    val client: OAuthClient = OAuthClientImpl()
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<OAuthProvider>
+    override val key: CoroutineContext.Key<*> get() = Key
+    
+    suspend fun authorize(clientId: String, scopes: List<String>): AuthorizationResult {
+        val context = OAuthCCekContext(
+            clientId = clientId,
+            clientSecret = config.clientSecret,
+            redirectUri = config.redirectUri,
+            scope = scopes.size j { scopes[it] },
+            grantType = OAuthGrantType.AUTHORIZATION_CODE,
+            channels = 0 j { null },
+            authorizationUrl = config.authorizationUrl,
+            tokenEndpoint = config.tokenEndpoint
+        )
+        
+        val authUrl = client.createAuthorizationUrl(context)
+        return AuthorizationResult(authUrl, context)
+    }
+    
+    suspend fun exchangeCodeForToken(code: String, context: OAuthCCekContext): OAuthResponse.TokenResponse {
+        return client.exchangeCodeForToken(code, context)
+    }
+    
+    suspend fun refreshToken(refreshToken: String, context: OAuthCCekContext): OAuthResponse.TokenResponse {
+        return client.refreshToken(refreshToken, context)
+    }
+}
+
+// OAuth Configuration
+data class OAuthConfig(
+    val clientId: String,
+    val clientSecret: String?,
+    val redirectUri: String,
+    val authorizationUrl: String,
+    val tokenEndpoint: String,
+    val userinfoEndpoint: String? = null,
+    val introspectEndpoint: String? = null,
+    val revokeEndpoint: String? = null,
+    val usePKCE: Boolean = true
+)
+
+// Authorization Result
+data class AuthorizationResult(
+    val authorizationUrl: String,
+    val context: OAuthCCekContext
+)
+
 // OAuth Client Implementation
 class OAuthClientImpl : OAuthClient {
     
@@ -442,4 +494,52 @@ fun generateState(): String {
     val bytes = ByteArray(16)
     java.security.SecureRandom().nextBytes(bytes)
     return encodeBase64(bytes).replace("+", "-").replace("/", "_").replace("=", "")
+}
+
+// CCEK Key-based API extensions for OAuth Provider
+/**
+ * Authorize using OAuthProvider from context
+ */
+suspend fun OAuthProvider.Key.authorize(
+    clientId: String,
+    scopes: List<String>
+): AuthorizationResult {
+    val oauth = coroutineContext[this] 
+        ?: throw IllegalStateException("OAuthProvider not found in context")
+    return oauth.authorize(clientId, scopes)
+}
+
+/**
+ * Exchange authorization code for tokens using OAuthProvider from context
+ */
+suspend fun OAuthProvider.Key.exchangeCodeForToken(
+    code: String,
+    context: OAuthCCekContext
+): OAuthResponse.TokenResponse {
+    val oauth = coroutineContext[this] 
+        ?: throw IllegalStateException("OAuthProvider not found in context")
+    return oauth.exchangeCodeForToken(code, context)
+}
+
+/**
+ * Refresh access token using OAuthProvider from context
+ */
+suspend fun OAuthProvider.Key.refreshToken(
+    refreshToken: String,
+    context: OAuthCCekContext
+): OAuthResponse.TokenResponse {
+    val oauth = coroutineContext[this] 
+        ?: throw IllegalStateException("OAuthProvider not found in context")
+    return oauth.refreshToken(refreshToken, context)
+}
+
+/**
+ * Create OAuth provider in context
+ */
+fun OAuthProvider.Key.create(
+    config: OAuthConfig,
+    client: OAuthClient = OAuthClientImpl(),
+    configure: OAuthProvider.() -> Unit = {}
+): OAuthProvider {
+    return OAuthProvider(config, client).apply(configure)
 } 

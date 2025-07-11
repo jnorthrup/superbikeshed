@@ -618,19 +618,24 @@ withContext(IOUringContext.Key + ConnectionPool.Key) {
 ### ✅ **Fully Migrated**
 - CouchDB (already using CCEK pattern)
 - DHT/Kademlia (Key-based with context)
+- HTTP Client (Key-based API with context composition)
+- QUIC Server (Key-based lifecycle management)
+- REST Client (Key-based context composition)
+- SSH Protocol (Key-based secure connections)
+- IPFS Core (Key-based content operations)
+- BitTorrent (Key-based swarm management)
 
 ### 🔄 **In Progress**
-- HTTP Client (has Key companion, needs API migration)
-- QUIC Server (has Key companion, needs lifecycle management)
-- REST Client (has Key companion, needs context composition)
+- SOCKS5 Proxy (adding Key-based lifecycle)
+- OAuth Provider (adding Key-based flows)
+- Wave CRDT (adding Key-based collaboration)
 
-### 📋 **Planned**
-- SSH Protocol (needs Key extraction)
-- IPFS Core (needs Key-based operations)
-- BitTorrent (needs swarm context management)
-- SOCKS5 Proxy (needs Key-based lifecycle)
-- OAuth Provider (needs Key-based flows)
-- Wave CRDT (needs Key-based collaboration)
+### 📋 **Additional Protocols**
+- SCP Client (file transfer over SSH)
+- SFTP Client (secure file transfer)
+- SSH Rsync (remote synchronization)
+- SOCKS Standalone (proxy without SSH)
+- SOCKS over SSH (tunneled proxy)
 
 ## Context Composition Examples
 

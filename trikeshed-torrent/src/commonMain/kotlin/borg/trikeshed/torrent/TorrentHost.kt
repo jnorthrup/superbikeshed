@@ -4,6 +4,7 @@
 package borg.trikeshed.torrent
 
 import borg.trikeshed.lib.*
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +17,9 @@ class TorrentHost(
     internal val port: Int = 6881,
     internal val uploadDir: String = ".",
     internal val downloadDir: String = "."
-) {
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<TorrentHost>
+    override val key: CoroutineContext.Key<*> get() = Key
     
     internal var isRunning = false
     internal val activeTorrents = mutableMapOf<String, TorrentInfo>()
@@ -147,4 +150,45 @@ class TorrentHost(
         println("Announcing ${infoHash.contentToString()} to DHT")
         delay(100)
     }
-} */ */ 
+} */ */
+
+// CCEK Key-based API extensions for TorrentHost
+/**
+ * Start torrent host using TorrentHost from context
+ */
+suspend fun TorrentHost.Key.start(): TorrentHost {
+    val host = coroutineContext[this] 
+        ?: throw IllegalStateException("TorrentHost not found in context")
+    host.start()
+    return host
+}
+
+/**
+ * Add torrent using TorrentHost from context
+ */
+suspend fun TorrentHost.Key.addTorrent(magnetUri: String): String {
+    val host = coroutineContext[this] 
+        ?: throw IllegalStateException("TorrentHost not found in context")
+    return host.addTorrent(magnetUri)
+}
+
+/**
+ * Download torrent using TorrentHost from context
+ */
+suspend fun TorrentHost.Key.download(magnetUri: String): String {
+    val host = coroutineContext[this] 
+        ?: throw IllegalStateException("TorrentHost not found in context")
+    return host.downloadTorrent(magnetUri)
+}
+
+/**
+ * Create torrent host in context
+ */
+fun TorrentHost.Key.create(
+    port: Int = 6881,
+    uploadDir: String = ".",
+    downloadDir: String = ".",
+    configure: TorrentHost.() -> Unit = {}
+): TorrentHost {
+    return TorrentHost(port, uploadDir, downloadDir).apply(configure)
+} 

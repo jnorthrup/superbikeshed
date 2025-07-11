@@ -2,6 +2,7 @@
 package borg.trikeshed.net.socks
 
 import borg.trikeshed.lib.*
+import kotlin.coroutines.CoroutineContext
 import borg.trikeshed.io.IOContext
 import borg.trikeshed.ccek.*
 import kotlinx.coroutines.*
@@ -102,7 +103,9 @@ class Socks5Server(
     internal val bindPort: Int,
     internal val ioContext: IOContext.UringContext, // Now a direct dependency, not just a config object
     internal val scope: CoroutineScope = GlobalScope
-) {
+) : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<Socks5Server>
+    override val key: CoroutineContext.Key<*> get() = Key
     // Server state
     internal var serverChannel: AsyncChannel? = null
     internal var serverJob: Job? = null
@@ -862,3 +865,60 @@ class UringClientChannel(
 class UringUdpChannel(
     context: IOContext.UringContext
 ) : UringChannel(context.createUdpSocket(), context)
+
+// CCEK Key-based API extensions for SOCKS5 Server
+/**
+ * Start SOCKS5 server using Socks5Server from context
+ */
+suspend fun Socks5Server.Key.start(): Socks5Server {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("Socks5Server not found in context")
+    server.start()
+    return server
+}
+
+/**
+ * Stop SOCKS5 server using Socks5Server from context
+ */
+suspend fun Socks5Server.Key.stop() {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("Socks5Server not found in context")
+    server.stop()
+}
+
+/**
+ * Get server stats using Socks5Server from context
+ */
+fun Socks5Server.Key.getStats(): Socks5Stats {
+    val server = coroutineContext[this] 
+        ?: throw IllegalStateException("Socks5Server not found in context")
+    return Socks5Stats(
+        isRunning = server.serverJob?.isActive == true,
+        bindAddress = server.bindAddress,
+        bindPort = server.bindPort,
+        activeConnections = server.activeConnections.size
+    )
+}
+
+/**
+ * Create SOCKS5 server in context
+ */
+fun Socks5Server.Key.create(
+    bindAddress: String = "0.0.0.0",
+    bindPort: Int = 1080,
+    ioContext: IOContext.UringContext,
+    scope: CoroutineScope = GlobalScope,
+    configure: Socks5Server.() -> Unit = {}
+): Socks5Server {
+    return Socks5Server(bindAddress, bindPort, ioContext, scope).apply(configure)
+}
+
+/**
+ * Server statistics
+ */
+data class Socks5Stats(
+    val isRunning: Boolean,
+    val bindAddress: String,
+    val bindPort: Int,
+    val activeConnections: Int
+)
