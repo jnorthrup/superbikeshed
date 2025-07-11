@@ -1,25 +1,29 @@
 package borg.trikeshed.lib.platform
 
+import kotlinx.cinterop.*
+import platform.posix.*
+
 /**
  * Native implementation of GPU framework detection
  */
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
 actual object GPUDetection {
     actual fun getAvailableFrameworks(): Set<GPUFramework> {
         val frameworks = mutableSetOf<GPUFramework>()
         
         // Platform-specific detection
-        when (PlatformInfo.current.os) {
-            OperatingSystem.MACOS -> {
+        when (Platform.osFamily) {
+            OsFamily.MACOSX -> {
                 frameworks.add(GPUFramework.METAL)
                 frameworks.add(GPUFramework.MLX)
                 frameworks.add(GPUFramework.OPENGL)
             }
-            OperatingSystem.IOS -> {
+            OsFamily.IOS -> {
                 frameworks.add(GPUFramework.METAL)
                 frameworks.add(GPUFramework.MLX)
                 frameworks.add(GPUFramework.OPENGL)
             }
-            OperatingSystem.LINUX -> {
+            OsFamily.LINUX -> {
                 frameworks.add(GPUFramework.OPENGL)
                 frameworks.add(GPUFramework.VULKAN)
                 frameworks.add(GPUFramework.OPENCL)
@@ -28,7 +32,7 @@ actual object GPUDetection {
                 if (isROCMAvailable()) frameworks.add(GPUFramework.ROCM)
                 if (isOneAPIAvailable()) frameworks.add(GPUFramework.ONEAPI)
             }
-            OperatingSystem.WINDOWS -> {
+            OsFamily.WINDOWS -> {
                 frameworks.add(GPUFramework.OPENGL)
                 frameworks.add(GPUFramework.VULKAN)
                 frameworks.add(GPUFramework.DIRECTX12)
@@ -36,7 +40,7 @@ actual object GPUDetection {
                 if (isCUDAAvailable()) frameworks.add(GPUFramework.CUDA)
                 if (isOneAPIAvailable()) frameworks.add(GPUFramework.ONEAPI)
             }
-            else -> {
+            OsFamily.UNKNOWN, OsFamily.ANDROID, OsFamily.WASM, OsFamily.TVOS, OsFamily.WATCHOS -> {
                 frameworks.add(GPUFramework.OPENGL)
             }
         }
@@ -47,15 +51,15 @@ actual object GPUDetection {
     actual fun hasFramework(framework: GPUFramework): Boolean {
         return when (framework) {
             GPUFramework.METAL, GPUFramework.MLX -> 
-                PlatformInfo.current.os in setOf(OperatingSystem.MACOS, OperatingSystem.IOS)
+                Platform.osFamily in setOf(OsFamily.MACOSX, OsFamily.IOS)
             GPUFramework.DIRECTX12 -> 
-                PlatformInfo.current.os == OperatingSystem.WINDOWS
+                Platform.osFamily == OsFamily.WINDOWS
             GPUFramework.VULKAN -> 
-                PlatformInfo.current.os in setOf(OperatingSystem.LINUX, OperatingSystem.WINDOWS, OperatingSystem.ANDROID)
+                Platform.osFamily in setOf(OsFamily.LINUX, OsFamily.WINDOWS, OsFamily.ANDROID)
             GPUFramework.CUDA -> 
                 isCUDAAvailable()
             GPUFramework.ROCM -> 
-                PlatformInfo.current.os == OperatingSystem.LINUX && isROCMAvailable()
+                Platform.osFamily == OsFamily.LINUX && isROCMAvailable()
             GPUFramework.ONEAPI -> 
                 isOneAPIAvailable()
             GPUFramework.OPENCL -> 
@@ -63,7 +67,7 @@ actual object GPUDetection {
             GPUFramework.OPENGL -> 
                 true // Available on most platforms
             GPUFramework.WEBGPU -> 
-                PlatformInfo.current.os in setOf(OperatingSystem.LINUX, OperatingSystem.WINDOWS, OperatingSystem.MACOS)
+                Platform.osFamily in setOf(OsFamily.LINUX, OsFamily.WINDOWS, OsFamily.MACOSX)
             GPUFramework.NONE -> 
                 true
         }
@@ -74,10 +78,10 @@ actual object GPUDetection {
         val devices = mutableListOf<GPUDevice>()
         
         // Platform-specific device detection
-        when (PlatformInfo.current.os) {
-            OperatingSystem.MACOS -> {
+        when (Platform.osFamily) {
+            OsFamily.MACOSX -> {
                 // Apple Silicon detection
-                if (PlatformInfo.current.arch == Architecture.ARM64) {
+                if (Platform.cpuArchitecture == CpuArchitecture.ARM64) {
                     devices.add(GPUDevice(
                         name = "Apple Silicon GPU",
                         vendor = GPUVendor.APPLE,
@@ -87,7 +91,7 @@ actual object GPUDetection {
                     ))
                 }
             }
-            OperatingSystem.LINUX -> {
+            OsFamily.LINUX -> {
                 // Linux GPU detection
                 if (isCUDAAvailable()) {
                     devices.add(GPUDevice(
@@ -99,7 +103,7 @@ actual object GPUDetection {
                     ))
                 }
             }
-            OperatingSystem.WINDOWS -> {
+            OsFamily.WINDOWS -> {
                 // Windows GPU detection
                 devices.add(GPUDevice(
                     name = "Windows GPU",
@@ -109,6 +113,9 @@ actual object GPUDetection {
                     framework = GPUFramework.DIRECTX12
                 ))
             }
+            OsFamily.UNKNOWN, OsFamily.IOS, OsFamily.ANDROID, OsFamily.WASM, OsFamily.TVOS, OsFamily.WATCHOS -> {
+                // Other platforms - no GPU detection
+            }
         }
         
         // Add CPU fallback
@@ -116,22 +123,22 @@ actual object GPUDetection {
             name = "Native CPU",
             vendor = GPUVendor.UNKNOWN,
             memoryGB = 16.0f,
-            computeUnits = PlatformInfo.current.processorCount,
+            computeUnits = 8, // Default CPU cores
             framework = GPUFramework.NONE
         ))
         
         return GPUCapabilities(
             availableFrameworks = frameworks,
             devices = devices,
-            unifiedMemory = PlatformInfo.current.os in setOf(OperatingSystem.MACOS, OperatingSystem.IOS),
-            computeCapability = when (PlatformInfo.current.os) {
-                OperatingSystem.MACOS -> ComputeCapability.METAL_3_0
+            unifiedMemory = Platform.osFamily in setOf(OsFamily.MACOSX, OsFamily.IOS),
+            computeCapability = when (Platform.osFamily) {
+                OsFamily.MACOSX -> ComputeCapability.METAL_3_0
                 else -> ComputeCapability.NONE
             },
             maxMemoryGB = 16.0f,
-            tensorCores = PlatformInfo.current.os in setOf(OperatingSystem.MACOS, OperatingSystem.IOS),
+            tensorCores = Platform.osFamily in setOf(OsFamily.MACOSX, OsFamily.IOS),
             rayTracingCores = false,
-            neuralCores = PlatformInfo.current.os in setOf(OperatingSystem.MACOS, OperatingSystem.IOS)
+            neuralCores = Platform.osFamily in setOf(OsFamily.MACOSX, OsFamily.IOS)
         )
     }
     

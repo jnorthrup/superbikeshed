@@ -103,7 +103,7 @@ class CharIndexed(
 class ByteIndexedBuffer(
     internal val buffer: ByteIndexed
 ) {
-    constructor(bytes: ByteArray) : this(ByteIndexed(bytes.toIdx()))
+    constructor(bytes: ByteArray) : this(ByteIndexed(bytes.toIndexed()))
     constructor(input: String) : this(input.encodeToByteArray())
     constructor(indexed: Indexed<Byte>) : this(ByteIndexed(indexed))
     

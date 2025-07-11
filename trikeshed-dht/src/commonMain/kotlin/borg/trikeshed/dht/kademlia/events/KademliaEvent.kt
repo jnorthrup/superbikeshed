@@ -4,6 +4,11 @@ package borg.trikeshed.dht.kademlia.events
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.dht.kademlia.id.NUID
+import borg.trikeshed.dht.kademlia.id.IndexedByteSerializer
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
+import kotlinx.serialization.builtins.*
 
 /**
  * Base interface for all Kademlia DHT events
@@ -60,6 +65,7 @@ data class FoundNodesEvent(
     override val sourceNodeId: NUID,
     val respondingToMessageId: NUID,
     val targetNodeId: NUID,
+    @Serializable(with = IndexedNodeInfoSerializer::class)
     val nodes: Indexed<NodeInfo>
 ) : KademliaEvent
 
@@ -110,6 +116,7 @@ data class FoundValueEvent(
     val respondingToMessageId: NUID,
     val key: Indexed<Byte>,
     val value: Indexed<Byte>,
+    @Serializable(with = IndexedNodeInfoSerializer::class)
     val providingNodes: Indexed<NodeInfo>
 ) : KademliaEvent
 
@@ -135,18 +142,56 @@ data class JoinResponseEvent(
     val respondingToMessageId: NUID,
     val accepted: Boolean,
     val message: String,
+    @Serializable(with = IndexedNodeInfoSerializer::class)
     val knownNodes: Indexed<NodeInfo> = 0 j { NodeInfo(NUID.ZERO, "", 0, 0 j { "" }) }
 ) : KademliaEvent
 
 /**
  * Node information for DHT operations
  */
+@Serializable
 data class NodeInfo(
     val nodeId: NUID,
     val ipAddress: String,
     val port: Int,
+    @Serializable(with = IndexedStringSerializer::class)
     val subnets: Indexed<String>,
+    @Serializable(with = IndexedByteSerializer::class)
     val publicKey: Indexed<Byte> = 0 j { 0.toByte() },
     val lastSeen: Long = 0,
     val reliability: Double = 1.0
 )
+
+/**
+ * Custom serializer for Indexed<String>
+ */
+object IndexedStringSerializer : KSerializer<Indexed<String>> {
+    override val descriptor: SerialDescriptor = ListSerializer(String.serializer()).descriptor
+    
+    override fun serialize(encoder: Encoder, value: Indexed<String>) {
+        val list = List(value.a) { i -> value[i] }
+        encoder.encodeSerializableValue(ListSerializer(String.serializer()), list)
+    }
+    
+    override fun deserialize(decoder: Decoder): Indexed<String> {
+        val list = decoder.decodeSerializableValue(ListSerializer(String.serializer()))
+        return list.size j { i: Int -> list[i] }
+    }
+}
+
+/**
+ * Custom serializer for Indexed<NodeInfo>
+ */
+object IndexedNodeInfoSerializer : KSerializer<Indexed<NodeInfo>> {
+    override val descriptor: SerialDescriptor = ListSerializer(NodeInfo.serializer()).descriptor
+    
+    override fun serialize(encoder: Encoder, value: Indexed<NodeInfo>) {
+        val list = List(value.a) { i -> value[i] }
+        encoder.encodeSerializableValue(ListSerializer(NodeInfo.serializer()), list)
+    }
+    
+    override fun deserialize(decoder: Decoder): Indexed<NodeInfo> {
+        val list = decoder.decodeSerializableValue(ListSerializer(NodeInfo.serializer()))
+        return list.size j { i: Int -> list[i] }
+    }
+}

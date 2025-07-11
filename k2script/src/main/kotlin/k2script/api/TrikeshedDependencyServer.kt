@@ -510,6 +510,34 @@ class TrikeshedDependencyServer(
         println("🗑️ Dependency cache cleared")
     }
     
+    /**
+     * Streams dependencies over a provided in-memory channel.
+     */
+    suspend fun streamDependencies(channel: Channel<String>, dependencies: List<String>) {
+        dependencies.forEach { channel.send(it) }
+        channel.close()
+    }
+
+    /**
+     * Streams dependencies over a Unix socket (stub).
+     * TODO: Implement actual Unix socket streaming logic.
+     */
+    suspend fun streamDependenciesUnix(socket: SocketChannel, dependencies: List<String>) {
+        // TODO: Serialize and write each dependency to the Unix socket
+        // Example: dependencies.forEach { socket.write(ByteBuffer.wrap(it.toByteArray())) }
+        throw NotImplementedError("Unix socket streaming not implemented yet")
+    }
+
+    /**
+     * Streams dependencies over a TCP socket (stub).
+     * TODO: Implement actual TCP socket streaming logic.
+     */
+    suspend fun streamDependenciesTcp(socket: Socket, dependencies: List<String>) {
+        // TODO: Serialize and write each dependency to the TCP socket
+        // Example: val out = socket.getOutputStream(); dependencies.forEach { out.write((it + "\n").toByteArray()) }
+        throw NotImplementedError("TCP socket streaming not implemented yet")
+    }
+    
     // TODO: Add support for dependency streaming
     TODO("Implement realtime dependency streaming")
     

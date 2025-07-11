@@ -10,15 +10,6 @@ val enabledTargets = (rootProject.findProperty("enabledTargets") as? String)?.sp
 kotlin {
     jvm()
     macosArm64()
-    js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport {
-                    enabled.set(true)
-                }
-            }
-        }
-    }
     
     sourceSets {
         commonMain {
@@ -39,16 +30,6 @@ kotlin {
                 implementation("org.graphstream:gs-core:2.0")
                 implementation("org.graphstream:gs-ui-javafx:2.0")
                 implementation("guru.nidi:graphviz-java:0.18.1")
-            }
-        }
-        jsMain {
-            dependencies {
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-react:18.2.0-pre.385")
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-react-dom:18.2.0-pre.385")
-                implementation("org.jetbrains.kotlin-wrappers:kotlin-emotion:11.9.3-pre.385")
-                implementation(npm("d3", "^7.8.5"))
-                implementation(npm("dagre", "^0.8.5"))
-                implementation(npm("dagre-d3", "^0.6.4"))
             }
         }
         commonTest {

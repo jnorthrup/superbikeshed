@@ -13,6 +13,8 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":trikeshed-lib"))
+                implementation(project(":trikeshed-net"))
+                // implementation(project(":trikeshed-ccek")) // Circular dependency
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")

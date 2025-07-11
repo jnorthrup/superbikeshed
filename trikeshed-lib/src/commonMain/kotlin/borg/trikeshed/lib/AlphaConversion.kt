@@ -83,7 +83,6 @@ fun <T> Indexed<T>.toList(): AbstractList<T> = object : AbstractList<T>() {
 // Specialized toArray conversions
 fun Indexed<Byte>.toByteArray(): ByteArray = ByteArray(a, b)
 fun Indexed<Char>.toCharArray(): CharArray = CharArray(a, b)
-fun Indexed<Int>.toIntArray(): IntArray = IntArray(a, b)
 fun Indexed<Boolean>.toBooleanArray(): BooleanArray = BooleanArray(a, b)
 fun Indexed<Long>.toLongArray(): LongArray = LongArray(a, b)
 fun Indexed<Float>.toFloatArray(): FloatArray = FloatArray(a, b)
@@ -234,4 +233,7 @@ inline fun <T> Indexed<T>.partition(predicate: (T) -> Boolean): Join<Indexed<T>,
     return (first.size j { i: Int -> first[i] }) j (second.size j { i: Int -> second[i] })
 }
 
-fun ByteArray.toIdx(): Indexed<Byte> = size j { this[it] }
+// Canonical conversion utilities
+fun ByteArray.toIndexed(): Indexed<Byte> = size j { this[it] }
+fun IntArray.toIndexed(): Indexed<Int> = size j { this[it] }
+fun Indexed<Int>.toIntArray(): IntArray = IntArray(a) { b(it) }

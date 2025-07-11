@@ -14,6 +14,7 @@ rootProject.name = "v2superbikeshed"
 
 // Include k2script as a subproject
 include(":k2script")
+include(":platform-launcher")
 include(":trikeshed-lib")
 include(":trikeshed-io")
 include(":trikeshed-cursor")
@@ -29,4 +30,7 @@ include(":trikeshed-couchdb")
 include(":trikeshed-torrent")
 include(":trikeshed-channel-api")
 include(":trikeshed-dht")
+include(":trikeshed-uring")
+include(":trikeshed-lsmr")
+include(":fiduciary")
 // Add more as needed if referenced

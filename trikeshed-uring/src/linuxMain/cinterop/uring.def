@@ -1,0 +1,8 @@
+headers = uring.h
+headerFilter = uring.h
+package = trikeshed.uring.native.linux
+linkerOpts.linux = -luring
+
+# Path to native headers relative to this .def file
+# The header file is in src/nativeInterop/cinterop/
+headers = ../../../nativeInterop/cinterop/uring.h

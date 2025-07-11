@@ -6,10 +6,9 @@ import borg.trikeshed.lib.*
 /**
  * Unique identifier for a channel instance.
  */
-@JvmInline
-value class ChannelId(val value: String) {
+expect value class ChannelId(val value: String) {
     companion object {
-        fun generate(): ChannelId = ChannelId(kotlin.random.Random.nextLong().toString(36))
+        fun generate(): ChannelId
     }
 }
 

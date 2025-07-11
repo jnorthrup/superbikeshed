@@ -2,11 +2,12 @@
 package borg.trikeshed.net
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.net.quic.*
-import borg.trikeshed.reactor.*
+// import borg.trikeshed.net.quic.*
+// import borg.trikeshed.reactor.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlin.coroutines.*
+import kotlinx.datetime.Clock
 
 /**
  * C10K Server - Production-ready high-performance server
@@ -29,7 +30,7 @@ class C10KServer(
     internal val tickQueue = Channel<SimulationCommand>(Channel.UNLIMITED)
     
     // QUIC engine for HTTP/3
-    internal val quicEngine = if (enableQuic) {
+    internal val quicEngine = null /*if (enableQuic) {
         QuicEngine(
             QuicEngine.Role.SERVER,
             QuicConnectionState(
@@ -42,7 +43,7 @@ class C10KServer(
                 )
             )
         )
-    } else null
+    } else null*/
     
     /**
      * Start the C10K server
@@ -170,7 +171,7 @@ class C10KServer(
         }
         
         // Cache it
-        staticCache[path] = CachedResource(content, contentType, System.currentTimeMillis())
+        staticCache[path] = CachedResource(content, contentType, Clock.System.now().toEpochMilliseconds())
         
         return HttpResponse(200, "OK", content, contentType)
     }
@@ -202,7 +203,7 @@ class C10KServer(
             gamePath.startsWith("command/") -> {
                 // Queue command for deterministic processing
                 val command = gamePath.removePrefix("command/")
-                tickQueue.send(SimulationCommand(command, System.currentTimeMillis()))
+                tickQueue.send(SimulationCommand(command, Clock.System.now().toEpochMilliseconds()))
                 HttpResponse(200, "OK", "{\"queued\": true}")
             }
             else -> HttpResponse(404, "Game endpoint not found")
@@ -264,7 +265,7 @@ class C10KServer(
     /**
      * Static file watcher for development
      */
-    internal suspend fun staticFileWatcher() {
+    internal suspend fun staticFileWatcher() = coroutineScope {
         while (isActive) {
             delay(5000) // Check every 5 seconds
             // In real implementation, would watch file system events
@@ -276,7 +277,7 @@ class C10KServer(
     /**
      * Deterministic tick loop for RTS simulation
      */
-    internal suspend fun deterministicTickLoop() {
+    internal suspend fun deterministicTickLoop() = coroutineScope {
         while (isActive) {
             delay(16) // ~60 FPS
             
@@ -290,7 +291,7 @@ class C10KServer(
             simulationTick++
             
             // Broadcast state to all clients
-            val stateUpdate = "{\"tick\": $simulationTick, \"timestamp\": ${System.currentTimeMillis()}}"
+            val stateUpdate = "{\"tick\": $simulationTick, \"timestamp\": ${Clock.System.now().toEpochMilliseconds()}}"
             connections.values.forEach { conn ->
                 conn.sendResponse(HttpResponse(200, "OK", stateUpdate))
             }
@@ -300,13 +301,13 @@ class C10KServer(
     /**
      * QUIC processor loop
      */
-    internal suspend fun quicProcessorLoop() {
+    internal suspend fun quicProcessorLoop() = coroutineScope {
         while (isActive) {
             delay(1) // Process QUIC packets at high frequency
             
             // In real implementation, would process QUIC packets from network
             // For now, simulate QUIC packet processing
-            quicEngine?.let { engine ->
+            /*quicEngine?.let { engine ->
                 // Process any pending QUIC packets
                 val activeStreams = engine.getActiveStreams()
                 for (i in 0 until activeStreams.a) {
@@ -314,7 +315,7 @@ class C10KServer(
                     val stream = engine.getStream(streamId)
                     // Process stream data
                 }
-            }
+            }*/
         }
     }
     
@@ -389,7 +390,7 @@ data class CachedResource(
     val contentType: String,
     val timestamp: Long
 ) {
-    fun isValid(): Boolean = System.currentTimeMillis() - timestamp < 300000 // 5 minutes
+    fun isValid(): Boolean = Clock.System.now().toEpochMilliseconds() - timestamp < 300000 // 5 minutes
 }
 
 data class SimulationCommand(

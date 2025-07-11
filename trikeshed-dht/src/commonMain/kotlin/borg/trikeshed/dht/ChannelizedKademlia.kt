@@ -2,7 +2,7 @@
 package borg.trikeshed.dht
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.ccek.*
+// import borg.trikeshed.ccek.* // Circular dependency - need to refactor
 import borg.trikeshed.dht.kademlia.subnet.ConcentricSubnet
 import borg.trikeshed.dht.kademlia.id.NUID
 import borg.trikeshed.dht.kademlia.events.NodeInfo

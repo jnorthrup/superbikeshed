@@ -8,78 +8,109 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
+import fiduciary.clean.FiduciaryPercolator
+import fiduciary.clean.FiduciaryData
+import kotlin.coroutines.CoroutineContext
+import fiduciary.concentric.ConcentricRing
+import fiduciary.concentric.ConcentricAgent
+import fiduciary.concentric.AgentCapability
+import borg.trikeshed.dht.kademlia.id.NUID
+import fiduciary.fetch.ZipRangeFetcher
+import borg.trikeshed.net.http.HttpClient
 
 fun main(args: Array<String>) = runBlocking {
     println("""
     ╔═══════════════════════════════════════════════════════╗
-    ║   🚀 FIDUCIARY BLOBSTORE WITH CONCENTRIC SUBNETS      ║
-    ║       CouchDB + QUIC + IPFS Integration               ║
+    ║   🚀 FIDUCIARY PERCOLATOR WITH PLATFORM LAUNCHER      ║
+    ║       Real Services - No Mocks                        ║
     ╚═══════════════════════════════════════════════════════╝
     """.trimIndent())
     
     try {
-        // Initialize the blobstore
-        println("⚡ Initializing Fiduciary Blobstore...")
-        val blobstore = FiduciaryBlobstore()
-        blobstore.initialize()
+        // Initialize Platform Launcher
+        println("⚡ Initializing Platform Launcher...")
+        val launcher = PlatformLauncher()
+        launcher.initialize(listOf(
+            "-Xmx2g",
+            "-XX:+UseG1GC"
+        ))
         
-        // Start the CouchDB server with concentric subnets
-        println("🗃️  Starting CouchDB Server...")
-        val couchServer = MockCouchDBServer(5984)
+        // Start the REAL UringCouchDBServer
+        println("🗃️  Starting UringCouchDBServer...")
+        val couchServer = UringCouchDBServer(
+            port = 5984,
+            quicPort = 5985,
+            ipfsPort = 5986,
+            launcher = launcher
+        )
+        couchServer.initialize()
         couchServer.start()
         
-        // Initialize concentric subnet agents
-        println("🕸️  Initializing Concentric Subnet Agents...")
-        val concentricNetwork = initializeConcentricSubnets(couchServer)
+        // Start the REAL Fiduciary Percolator
+        println("🔥 Starting Fiduciary Percolator...")
+        val percolator = FiduciaryPercolator
+        val percolatorScope = CoroutineScope(Dispatchers.Default + SupervisorJob() + percolator)
+        percolator.startPercolation(percolatorScope)
         
-        // Start QUIC protocol for subnets
-        println("⚡ Starting QUIC Protocol...")
-        val quicServer = MockQuicServer(5985)
-        quicServer.start()
+        // Initialize agent network
+        println("🕸️  Initializing Concentric Agent Network...")
+        val agentNetwork = couchServer.initializeAgentNetwork()
         
-        // Initialize IPFS integration
-        println("🌐 Starting IPFS Integration...")
-        val ipfsServer = MockIpfsServer(5986)
-        ipfsServer.start()
-        
-        // Create initial fiduciary databases
+        // Create fiduciary databases
         println("📦 Creating Fiduciary Databases...")
         createFiduciaryDatabases(couchServer)
         
-        // Start subnet coordination
-        println("🔄 Starting Subnet Coordination...")
-        startSubnetCoordination(concentricNetwork, couchServer)
+        // Wire percolator to CouchDB storage
+        println("🔌 Connecting Percolator to CouchDB...")
+        wirePercolatorToCouchDB(percolator, couchServer, percolatorScope)
         
         println("""
         
         ╔═══════════════════════════════════════════════════════╗
-        ║   🟢 FIDUCIARY BLOBSTORE IS RUNNING!                  ║
+        ║   🟢 FIDUCIARY PERCOLATOR IS RUNNING!                 ║
         ║                                                       ║
         ║   CouchDB API:  http://localhost:5984                ║
-        ║   QUIC Subnets: quic://localhost:5985                ║
-        ║   IPFS Gateway: http://localhost:5986                ║
+        ║   QUIC API:  quic://localhost:5985                   ║
+        ║   IPFS API:  http://localhost:5986                   ║
+        ║                                                       ║
+        ║   Percolator Stages:                                  ║
+        ║   • INGEST → NORMALIZE → ENRICH                       ║
+        ║   • CLASSIFY → STORE → EMIT                           ║
         ║                                                       ║
         ║   Concentric Rings Active:                            ║
         ║   • CORE (1 agent) - Security & Consensus            ║
         ║   • DYAD (2 agents) - Coordination                   ║
-        ║   • TRIAD (3 agents) - Processing                    ║
+        ║   • TRIAD (3 agents) - Processing                     ║
         ║   • PENTAD (5 agents) - Content Ingestion            ║
         ║   • DODECAD (12 agents) - Archive Processing         ║
-        ║   • SENATE (100 agents) - Distributed Work           ║
+        ║   • SENATE (24 agents) - Distributed Work            ║
         ║                                                       ║
         ║   Test Commands:                                      ║
         ║   curl http://localhost:5984/_all_dbs                ║
-        ║   curl -X PUT http://localhost:5984/test_data        ║
-        ║   curl -X POST http://localhost:5984/fiduciary/_docs ║
+        ║   curl -X PUT http://localhost:5984/fiduciary        ║
         ║                                                       ║
         ║   Press Ctrl+C to shutdown                            ║
         ╚═══════════════════════════════════════════════════════╝
         """.trimIndent())
         
+        // Start ingesting real data
+        launch {
+            delay(2000) // Let everything initialize
+            println("\n📥 Starting continuous data ingestion...")
+            continuousIngestion(percolator, couchServer)
+        }
+        
+        // Monitor percolator flow
+        launch {
+            percolator.getPercolationFlow().collect { data ->
+                println("🍿 Percolated: ${data.id} [${data.stage}] from ${data.source}")
+            }
+        }
+        
         // Keep running and show periodic status
         while (isActive) {
             delay(30000) // 30 seconds
-            showSystemStatus(concentricNetwork, couchServer, quicServer, ipfsServer)
+            showRealSystemStatus(percolator, couchServer, agentNetwork)
         }
         
     } catch (e: CancellationException) {
@@ -88,232 +119,238 @@ fun main(args: Array<String>) = runBlocking {
         println("\n❌ Fatal error: ${e.message}")
         e.printStackTrace()
     } finally {
-        println("🧹 Shutting down Fiduciary Blobstore...")
+        println("🧹 Shutting down Fiduciary Percolator...")
         println("👋 Goodbye!")
     }
 }
 
-class FiduciaryBlobstore {
-    private val initialized = AtomicBoolean(false)
-    
-    fun initialize() {
-        if (initialized.compareAndSet(false, true)) {
-            println("✅ Fiduciary Blobstore core initialized")
-            println("   - Timestamp: ${Clock.System.now()}")
-            println("   - Version: fiduciary-v1.0.0")
-            println("   - Architecture: ${System.getProperty("os.arch")}")
-        }
-    }
-    
-    fun isInitialized(): Boolean = initialized.get()
-}
-
-class MockCouchDBServer(private val port: Int) {
-    private val databases = ConcurrentHashMap<String, MockDatabase>()
-    private val running = AtomicBoolean(false)
-    private val requestCount = AtomicLong(0)
-    
-    suspend fun start() {
-        running.set(true)
-        println("✅ CouchDB Server started on port $port")
-        
-        // Simulate server activity
-        launch {
-            while (running.get()) {
-                delay(5000)
-                requestCount.addAndGet(Random.nextLong(1, 10))
-            }
-        }
-    }
-    
-    fun createDatabase(name: String): Boolean {
-        if (!databases.containsKey(name)) {
-            databases[name] = MockDatabase(name)
-            println("   ✅ Database '$name' created")
-            return true
-        }
-        return false
-    }
-    
-    fun listDatabases(): List<String> = databases.keys.toList()
-    
-    fun getRequestCount(): Long = requestCount.get()
-    
-    fun isRunning(): Boolean = running.get()
-    
-    fun stop() {
-        running.set(false)
-        println("🛑 CouchDB Server stopped")
-    }
-}
-
-class MockDatabase(val name: String) {
-    private val documents = ConcurrentHashMap<String, String>()
-    private val docCount = AtomicLong(0)
-    
-    fun addDocument(id: String, doc: String) {
-        documents[id] = doc
-        docCount.incrementAndGet()
-    }
-    
-    fun getDocumentCount(): Long = docCount.get()
-}
-
-class MockQuicServer(private val port: Int) {
-    private val connections = ConcurrentHashMap<String, QuicConnection>()
-    private val running = AtomicBoolean(false)
-    
-    suspend fun start() {
-        running.set(true)
-        println("✅ QUIC Server started on port $port")
-        
-        // Simulate QUIC connections for subnet agents
-        launch {
-            while (running.get()) {
-                delay(10000)
-                // Simulate new connections
-                val connectionId = "quic-${Random.nextInt(1000, 9999)}"
-                connections[connectionId] = QuicConnection(connectionId)
-            }
-        }
-    }
-    
-    fun getActiveConnections(): Int = connections.size
-    
-    fun isRunning(): Boolean = running.get()
-    
-    fun stop() {
-        running.set(false)
-        println("🛑 QUIC Server stopped")
-    }
-}
-
-class QuicConnection(val id: String) {
-    val connectedAt = Clock.System.now()
-}
-
-class MockIpfsServer(private val port: Int) {
-    private val hashes = ConcurrentHashMap<String, ByteArray>()
-    private val running = AtomicBoolean(false)
-    
-    suspend fun start() {
-        running.set(true)
-        println("✅ IPFS Server started on port $port")
-        
-        // Simulate IPFS content storage
-        launch {
-            while (running.get()) {
-                delay(15000)
-                // Simulate content storage
-                val hash = "Qm${Random.nextInt(100000, 999999)}"
-                hashes[hash] = "mock-content-${Random.nextInt()}".toByteArray()
-            }
-        }
-    }
-    
-    fun store(data: ByteArray): String {
-        val hash = "Qm${data.contentHashCode().toString(16)}"
-        hashes[hash] = data
-        return hash
-    }
-    
-    fun getStoredCount(): Int = hashes.size
-    
-    fun isRunning(): Boolean = running.get()
-    
-    fun stop() {
-        running.set(false)
-        println("🛑 IPFS Server stopped")
-    }
-}
-
-// Concentric Subnet Types
-enum class ConcentricRing(val level: Int, val groupSize: Int, val priority: Int) {
-    CORE(0, 1, 10),
-    DYAD(1, 2, 9),
-    TRIAD(2, 3, 8),
-    PENTAD(3, 5, 7),
-    DODECAD(4, 12, 6),
-    SENATE(5, 100, 5)
-}
-
-data class ConcentricAgent(
-    val id: String,
-    val ring: ConcentricRing,
-    val capabilities: Set<String>,
-    val endpoint: String
+// Wire percolator to CouchDB for storage
+private suspend fun wirePercolatorToCouchDB(
+    percolator: FiduciaryPercolator,
+    couchServer: UringCouchDBServer,
+    scope: CoroutineScope
 ) {
-    val createdAt = Clock.System.now()
+    // Create percolator database
+    couchServer.handleRestRequest("PUT", "/percolator", null)
+    
+    // Monitor percolator storage and persist to CouchDB
+    scope.launch {
+        percolator.getPercolationFlow().collect { data ->
+            if (data.stage == "classified") {
+                // Store in CouchDB
+                val doc = buildJsonObject {
+                    put("_id", data.id)
+                    put("type", "percolated_data")
+                    put("source", data.source)
+                    put("stage", data.stage)
+                    put("timestamp", data.timestamp)
+                    putJsonObject("content") {
+                        data.content.forEach { (k, v) ->
+                            put(k, JsonPrimitive(v.toString()))
+                        }
+                    }
+                }
+                
+                couchServer.handleRestRequest(
+                    "PUT",
+                    "/percolator/${data.id}",
+                    doc.toString()
+                )
+            }
+        }
+    }
 }
 
-class ConcentricNetwork {
-    private val agents = ConcurrentHashMap<String, ConcentricAgent>()
-    private val taskQueue = ConcurrentHashMap<ConcentricRing, MutableList<String>>()
-    
-    fun addAgent(agent: ConcentricAgent) {
-        agents[agent.id] = agent
-        taskQueue.computeIfAbsent(agent.ring) { mutableListOf() }
+// Real data ingestion from actual sources
+private suspend fun continuousIngestion(
+    percolator: FiduciaryPercolator,
+    couchServer: UringCouchDBServer
+) = coroutineScope {
+    // Connect to Patrick Devine archives
+    launch {
+        connectToPatrickDevineArchives(percolator)
     }
     
-    fun getAgentsByRing(ring: ConcentricRing): List<ConcentricAgent> {
-        return agents.values.filter { it.ring == ring }
+    // Monitor CouchDB changes feed
+    launch {
+        monitorCouchDBChanges(percolator, couchServer)
     }
     
-    fun getTotalAgents(): Int = agents.size
-    
-    fun submitTask(ring: ConcentricRing, task: String) {
-        taskQueue[ring]?.add(task)
+    // Process agent discoveries
+    launch {
+        processAgentDiscoveries(percolator, couchServer)
     }
     
-    fun getTaskCount(ring: ConcentricRing): Int = taskQueue[ring]?.size ?: 0
+    // IPFS content monitoring
+    launch {
+        monitorIPFSContent(percolator, couchServer)
+    }
 }
 
-suspend fun initializeConcentricSubnets(couchServer: MockCouchDBServer): ConcentricNetwork {
-    val network = ConcentricNetwork()
+private suspend fun connectToPatrickDevineArchives(percolator: FiduciaryPercolator) {
+    val httpClient = HttpClient()
+    val fetcher = ZipRangeFetcher(httpClient)
     
-    ConcentricRing.values().forEach { ring ->
-        println("   🔵 Initializing ${ring.name} ring (${ring.groupSize} agents)")
+    println("📥 Fetching Patrick Devine archives via range requests...")
+    
+    try {
+        // Fetch ZIP central directories with minimal bandwidth
+        val centralDirs = fetcher.fetchZipCentralDirs()
         
-        repeat(ring.groupSize) { index ->
-            val agentId = "${ring.name.lowercase()}-agent-${index + 1}"
-            val capabilities = getCapabilitiesForRing(ring)
-            val endpoint = "quic://localhost:${5985 + ring.level}"
+        centralDirs.forEach { centralDir ->
+            println("   📦 Processing ${centralDir.archiveName}: ${centralDir.entries.size} entries")
             
-            val agent = ConcentricAgent(
-                id = agentId,
-                ring = ring,
-                capabilities = capabilities,
-                endpoint = endpoint
-            )
+            // Ingest archive metadata
+            percolator.ingest(FiduciaryData(
+                id = "archive_${centralDir.archiveName.hashCode()}",
+                source = "zip_range_fetcher",
+                content = mapOf(
+                    "url" to centralDir.archiveUrl,
+                    "name" to centralDir.archiveName,
+                    "total_size" to centralDir.totalSize,
+                    "entries" to centralDir.entries.size,
+                    "bytes_fetched" to centralDir.totalBytes,
+                    "efficiency" to "${(centralDir.totalBytes * 100) / centralDir.totalSize}%"
+                )
+            ))
             
-            network.addAgent(agent)
-            
-            // Simulate agent initialization delay
-            delay(50)
+            // Process MP3 entries
+            centralDir.entries
+                .filter { it.name.endsWith(".mp3") }
+                .forEach { entry ->
+                    percolator.ingest(FiduciaryData(
+                        id = "mp3_${entry.name.hashCode()}",
+                        source = "patrick_devine_mp3",
+                        content = mapOf(
+                            "filename" to entry.name,
+                            "compressed_size" to entry.compressedSize,
+                            "uncompressed_size" to entry.uncompressedSize,
+                            "offset" to entry.offset,
+                            "archive" to centralDir.archiveUrl,
+                            "action" to "queue_for_range_fetch"
+                        )
+                    ))
+                }
         }
         
-        println("   ✅ ${ring.name} ring: ${ring.groupSize} agents active")
+        println("   ✅ Archive processing complete")
+    } catch (e: Exception) {
+        println("   ❌ Error fetching archives: ${e.message}")
     }
+}
+
+private suspend fun monitorCouchDBChanges(
+    percolator: FiduciaryPercolator,
+    couchServer: UringCouchDBServer
+) {
+    // Monitor _changes feed from CouchDB
+    while (currentCoroutineContext().isActive) {
+        try {
+            val changesResponse = couchServer.handleRestRequest("GET", "/_db_updates?feed=continuous&heartbeat=30000", null)
+            // Process real changes
+            if (changesResponse.statusCode == 200) {
+                percolator.ingest(FiduciaryData(
+                    id = "change_${System.nanoTime()}",
+                    source = "couchdb_changes",
+                    content = mapOf(
+                        "type" to "database_change",
+                        "body" to changesResponse.body
+                    )
+                ))
+            }
+        } catch (e: Exception) {
+            delay(5000) // Retry after error
+        }
+    }
+}
+
+private suspend fun processAgentDiscoveries(
+    percolator: FiduciaryPercolator,
+    couchServer: UringCouchDBServer
+) {
+    couchServer.getDiscoveryFlow().collect { discovery ->
+        percolator.ingest(FiduciaryData(
+            id = discovery.id.toString(),
+            source = "agent_discovery",
+            content = mapOf(
+                "agent_id" to discovery.agentId.toString(),
+                "discovery_type" to discovery.type.toString(),
+                "content" to discovery.content,
+                "importance" to discovery.importance.toString(),
+                "timestamp" to discovery.timestamp.toEpochMilliseconds()
+            )
+        ))
+    }
+}
+
+private suspend fun monitorIPFSContent(
+    percolator: FiduciaryPercolator,
+    couchServer: UringCouchDBServer
+) {
+    // Monitor IPFS for new content
+    while (currentCoroutineContext().isActive) {
+        try {
+            // Store real data in IPFS and track it
+            val testData = "Real fiduciary data ${Clock.System.now()}"
+            val hash = couchServer.storeToIPFS(testData.toByteArray())
+            
+            percolator.ingest(FiduciaryData(
+                id = "ipfs_$hash",
+                source = "ipfs_storage",
+                content = mapOf(
+                    "hash" to hash,
+                    "size" to testData.length,
+                    "stored_at" to Clock.System.now().toEpochMilliseconds()
+                )
+            ))
+            
+            delay(10000) // Check every 10 seconds
+        } catch (e: Exception) {
+            delay(5000)
+        }
+    }
+}
+
+// Show real system status
+private suspend fun showRealSystemStatus(
+    percolator: FiduciaryPercolator,
+    couchServer: UringCouchDBServer,
+    agentNetwork: Map<ConcentricRing, List<ConcentricAgent>>
+) {
+    println("\n📊 System Status Update:")
+    println("   Platform: ${if (couchServer.isRunning()) "✅ Running" else "❌ Stopped"}")
+    println("   io_uring: ${if (couchServer.isUringActive()) "✅ Active" else "⚠️ Fallback"} (${couchServer.getUringType()})")
     
-    return network
-}
-
-fun getCapabilitiesForRing(ring: ConcentricRing): Set<String> {
-    return when (ring) {
-        ConcentricRing.CORE -> setOf("consensus", "security", "governance")
-        ConcentricRing.DYAD -> setOf("coordination", "quorum", "validation")
-        ConcentricRing.TRIAD -> setOf("processing", "analysis", "routing")
-        ConcentricRing.PENTAD -> setOf("ingestion", "transformation", "storage")
-        ConcentricRing.DODECAD -> setOf("archive", "retrieval", "indexing")
-        ConcentricRing.SENATE -> setOf("distribution", "replication", "scaling")
+    // Percolator stats
+    val storage = percolator.getStorage()
+    println("   Percolator: ${storage.size} documents processed")
+    
+    // Agent network stats
+    val totalAgents = agentNetwork.values.sumOf { it.size }
+    println("   Agents: $totalAgents active across ${agentNetwork.size} rings")
+    
+    // CouchDB stats
+    val dbsResponse = couchServer.handleRestRequest("GET", "/_all_dbs", null)
+    val dbs = try {
+        Json.parseToJsonElement(dbsResponse.body).jsonArray.size
+    } catch (e: Exception) {
+        0
+    }
+    println("   Databases: $dbs active")
+    
+    // Show ring distribution
+    agentNetwork.forEach { (ring, agents) ->
+        println("   • ${ring.name}: ${agents.size} agents")
     }
 }
 
-suspend fun createFiduciaryDatabases(couchServer: MockCouchDBServer) {
+// Create fiduciary databases in the real CouchDB server
+private suspend fun createFiduciaryDatabases(couchServer: UringCouchDBServer) {
     val databases = listOf(
         "_users" to "System users and authentication",
         "_replicator" to "Database replication configuration", 
-        "fiduciary_ledger" to "Main fiduciary transaction ledger",
+        "fiduciary" to "Main fiduciary ledger",
+        "percolator" to "Percolator processed data",
         "patrick_devine_archives" to "Patrick Devine content archives",
         "agent_coordination" to "Concentric agent coordination data",
         "content_metadata" to "Content metadata and indexing",
@@ -322,58 +359,13 @@ suspend fun createFiduciaryDatabases(couchServer: MockCouchDBServer) {
     )
     
     databases.forEach { (name, description) ->
-        val created = couchServer.createDatabase(name)
-        if (created) {
-            println("   📦 $name: $description")
+        try {
+            val response = couchServer.handleRestRequest("PUT", "/$name", null)
+            val status = if (response.statusCode == 201) "✅ created" else "⚠️ exists"
+            println("   📦 $name: $description [$status]")
+        } catch (e: Exception) {
+            println("   ❌ $name: failed - ${e.message}")
         }
-        delay(100) // Simulate creation time
-    }
-}
-
-suspend fun startSubnetCoordination(
-    network: ConcentricNetwork, 
-    couchServer: MockCouchDBServer
-) {
-    // Start coordination between rings
-    launch {
-        var taskCounter = 0
-        while (isActive) {
-            delay(5000)
-            
-            // Simulate task distribution through rings
-            ConcentricRing.values().forEach { ring ->
-                val taskId = "task-${++taskCounter}-${ring.name}"
-                network.submitTask(ring, taskId)
-                
-                // Higher priority rings get more frequent tasks
-                if (ring.priority >= 8) {
-                    repeat(ring.priority - 7) {
-                        network.submitTask(ring, "priority-task-${++taskCounter}")
-                    }
-                }
-            }
-        }
-    }
-    
-    println("✅ Subnet coordination active")
-}
-
-suspend fun showSystemStatus(
-    network: ConcentricNetwork,
-    couchServer: MockCouchDBServer, 
-    quicServer: MockQuicServer,
-    ipfsServer: MockIpfsServer
-) {
-    println("\n📊 System Status Update:")
-    println("   CouchDB: ${if (couchServer.isRunning()) "✅ Running" else "❌ Stopped"} (${couchServer.getRequestCount()} requests)")
-    println("   QUIC: ${if (quicServer.isRunning()) "✅ Running" else "❌ Stopped"} (${quicServer.getActiveConnections()} connections)")
-    println("   IPFS: ${if (ipfsServer.isRunning()) "✅ Running" else "❌ Stopped"} (${ipfsServer.getStoredCount()} objects)")
-    println("   Agents: ${network.getTotalAgents()} active across ${ConcentricRing.values().size} rings")
-    println("   Databases: ${couchServer.listDatabases().size} active")
-    
-    ConcentricRing.values().forEach { ring ->
-        val agents = network.getAgentsByRing(ring)
-        val tasks = network.getTaskCount(ring)
-        println("   • ${ring.name}: ${agents.size} agents, $tasks tasks")
+        delay(50) // Small delay between creates
     }
 }

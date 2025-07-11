@@ -24,4 +24,16 @@ actual class PlatformFileIOImpl : PlatformFileIO {
         // TODO: Implement using FileSystem Access API if available
         return false
     }
+
+    actual override suspend fun asyncReadFile(path: String): ByteArray? {
+        // WasmJS file reading - limited in browser environment
+        // TODO: Implement using FileSystem Access API if available
+        return null
+    }
+
+    actual override suspend fun asyncWriteFile(path: String, content: ByteArray): Boolean {
+        // WasmJS file writing - limited in browser environment
+        // TODO: Implement using FileSystem Access API if available
+        return false
+    }
 }

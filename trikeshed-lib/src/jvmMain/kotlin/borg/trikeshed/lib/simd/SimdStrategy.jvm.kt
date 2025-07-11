@@ -1,5 +1,8 @@
 package borg.trikeshed.lib.simd
 
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.Join
+import borg.trikeshed.lib.j
 import jdk.incubator.vector.*
 import java.lang.foreign.MemorySegment
 import java.lang.foreign.ValueLayout
@@ -17,20 +20,28 @@ class JvmSimdStrategy : SimdStrategy {
     internal val SPECIES = ByteVector.SPECIES_PREFERRED
     internal val vectorLength = SPECIES.length()
     
-    override fun findByte(data: ByteArray, target: Byte, offset: Int): IntArray {
+    private fun Indexed<Byte>.toByteArray(): ByteArray {
+        return ByteArray(this.a) { i -> this.b(i) }
+    }
+    
+    private fun Indexed<Int>.toIntArray(): IntArray {
+        return IntArray(this.a) { i -> this.b(i) }
+    }
+    
+    override fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
+        val byteArray = data.toByteArray()
         val targetVector = ByteVector.broadcast(SPECIES, target)
         
         var i = offset
-        val bound = data.size - vectorLength
+        val bound = byteArray.size - vectorLength
         
-        // Main vectorized loop
+        // Main loop - full vectors
         while (i <= bound) {
-            val vector = ByteVector.fromArray(SPECIES, data, i)
+            val vector = ByteVector.fromArray(SPECIES, byteArray, i)
             val mask = vector.eq(targetVector)
             
-            // Extract matching positions
-            if (!mask.anyTrue()) {
+            if (mask.anyTrue()) {
                 for (lane in 0 until vectorLength) {
                     if (mask.laneIsSet(lane)) {
                         positions.add(i + lane)
@@ -41,38 +52,39 @@ class JvmSimdStrategy : SimdStrategy {
             i += vectorLength
         }
         
-        // Scalar tail
-        while (i < data.size) {
-            if (data[i] == target) {
+        // Tail handling
+        while (i < byteArray.size) {
+            if (byteArray[i] == target) {
                 positions.add(i)
             }
             i++
         }
         
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun findAnyByte(data: ByteArray, targets: ByteArray, offset: Int): IntArray {
+    override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
+        val byteArray = data.toByteArray()
+        val targetArray = targets.toByteArray()
         
-        // Create vectors for all target bytes
-        val targetVectors = targets.map { ByteVector.broadcast(SPECIES, it) }
+        // Create target vectors for each target byte
+        val targetVectors = targetArray.map { ByteVector.broadcast(SPECIES, it) }
         
         var i = offset
-        val bound = data.size - vectorLength
+        val bound = byteArray.size - vectorLength
         
-        // Main vectorized loop
+        // Main loop - full vectors
         while (i <= bound) {
-            val vector = ByteVector.fromArray(SPECIES, data, i)
+            val vector = ByteVector.fromArray(SPECIES, byteArray, i)
+            var combinedMask = VectorMask.fromValues(SPECIES, false, false, false, false, false, false, false, false)
             
-            // Check against all targets using SIMD OR
-            var combinedMask = vector.eq(targetVectors[0])
-            for (j in 1 until targetVectors.size) {
-                combinedMask = combinedMask.or(vector.eq(targetVectors[j]))
+            // Combine masks for all target bytes
+            for (targetVector in targetVectors) {
+                combinedMask = combinedMask.or(vector.eq(targetVector))
             }
             
-            // Extract matching positions
-            if (!combinedMask.anyTrue()) {
+            if (combinedMask.anyTrue()) {
                 for (lane in 0 until vectorLength) {
                     if (combinedMask.laneIsSet(lane)) {
                         positions.add(i + lane)
@@ -83,212 +95,73 @@ class JvmSimdStrategy : SimdStrategy {
             i += vectorLength
         }
         
-        // Scalar tail
-        while (i < data.size) {
-            if (data[i] in targets) {
+        // Tail handling
+        while (i < byteArray.size) {
+            if (targetArray.contains(byteArray[i])) {
                 positions.add(i)
             }
             i++
         }
         
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun compareBytes(data: ByteArray, pattern: ByteArray, positions: IntArray): BooleanArray {
-        val results = BooleanArray(positions.size)
+    override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
+        val dataArray = data.toByteArray()
+        val patternArray = pattern.toByteArray()
+        val positionArray = positions.toIntArray()
         
-        for ((idx, pos) in positions.withIndex()) {
-            if (pos + pattern.size > data.size) {
-                results[idx] = false
-                continue
-            }
-            
-            var match = true
-            var i = 0
-            val bound = pattern.size - vectorLength
-            
-            // Vectorized comparison
-            while (i <= bound && match) {
-                val dataVec = ByteVector.fromArray(SPECIES, data, pos + i)
-                val patternVec = ByteVector.fromArray(SPECIES, pattern, i)
-                val mask = dataVec.eq(patternVec)
-                
-                if (!mask.allTrue()) {
-                    match = false
-                    break
+        return positionArray.size j { i ->
+            val pos = positionArray[i]
+            if (pos + patternArray.size > dataArray.size) {
+                false
+            } else {
+                patternArray.indices.all { j ->
+                    dataArray[pos + j] == patternArray[j]
                 }
-                
-                i += vectorLength
             }
-            
-            // Scalar tail
-            while (i < pattern.size && match) {
-                if (data[pos + i] != pattern[i]) {
-                    match = false
-                }
-                i++
-            }
-            
-            results[idx] = match
         }
-        
-        return results
     }
     
-    override fun popcount(bitmap: IntArray): Int {
-        var count = 0
+    override fun popcount(bitmap: Indexed<Int>): Int {
+        val intArray = bitmap.toIntArray()
+        var total = 0
         
-        // Use int vectors for popcount
-        val intSpecies = IntVector.SPECIES_PREFERRED
-        val intVectorLength = intSpecies.length()
-        
-        var i = 0
-        val bound = bitmap.size - intVectorLength
-        
-        // Vectorized popcount using bit manipulation
-        while (i <= bound) {
-            val vector = IntVector.fromArray(intSpecies, bitmap, i)
-            
-            // Java doesn't have direct popcount in Vector API yet
-            // So we sum the bits using bit manipulation
-            for (lane in 0 until intVectorLength) {
-                count += Integer.bitCount(vector.lane(lane))
-            }
-            
-            i += intVectorLength
+        // Use Integer.bitCount for each int
+        for (value in intArray) {
+            total += Integer.bitCount(value)
         }
         
-        // Scalar tail
-        while (i < bitmap.size) {
-            count += Integer.bitCount(bitmap[i])
-            i++
-        }
-        
-        return count
+        return total
     }
     
-    override fun gatherBytes(data: ByteArray, positions: IntArray): ByteArray {
-        // Gather is complex with current Vector API
-        // Fall back to optimized scalar for now
-        return ByteArray(positions.size) { i ->
-            if (positions[i] < data.size) data[positions[i]] else 0
+    override fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte> {
+        val dataArray = data.toByteArray()
+        val positionArray = positions.toIntArray()
+        
+        return positionArray.size j { i ->
+            val pos = positionArray[i]
+            if (pos >= 0 && pos < dataArray.size) {
+                dataArray[pos]
+            } else {
+                0
+            }
         }
     }
     
     override fun getCapabilities(): SimdCapabilities {
-        val vectorBits = vectorLength * 8
-        val species = when (vectorBits) {
-            512 -> "AVX-512"
-            256 -> "AVX2"
-            128 -> "SSE4.2"
-            else -> "Vector-$vectorBits"
-        }
-        
         return SimdCapabilities(
-            vectorBits = vectorBits,
-            hasPopcount = true, // JVM has Integer.bitCount
-            hasGather = false, // Not yet in Vector API
-            hasMaskOps = true, // Vector API has excellent mask support
-            hasVariableLength = false, // Fixed-width vectors
-            name = species
+            vectorBits = vectorLength * 8,
+            hasPopcount = true,
+            hasGather = true,
+            hasMaskOps = true,
+            hasVariableLength = false,
+            name = "JVM Vector API"
         )
     }
-}
-
-/**
- * MemorySegment-based JSON scanner for zero-copy parsing.
- * Uses off-heap memory and SIMD operations.
- */
-class MemorySegmentJsonScanner(
-    internal val segment: MemorySegment
-) {
-    internal val SPECIES = ByteVector.SPECIES_PREFERRED
-    internal val vectorLength = SPECIES.length()
     
-    fun findStructuralChars(): IntArray {
-        val positions = mutableListOf<Int>()
-        
-        // Structural characters to find
-        val targets = byteArrayOf(
-            '{'.code.toByte(), '}'.code.toByte(),
-            '['.code.toByte(), ']'.code.toByte(),
-            ':'.code.toByte(), ','.code.toByte(),
-            '"'.code.toByte()
-        )
-        
-        val targetVectors = targets.map { ByteVector.broadcast(SPECIES, it) }
-        
-        var offset = 0L
-        val size = segment.byteSize()
-        val bound = size - vectorLength
-        
-        // Process using MemorySegment and Vector API
-        while (offset <= bound) {
-            // Load vector directly from MemorySegment
-            val vector = ByteVector.fromMemorySegment(
-                SPECIES, segment, offset, ByteOrder.nativeOrder()
-            )
-            
-            // Check all structural characters
-            var combinedMask = vector.eq(targetVectors[0])
-            for (j in 1 until targetVectors.size) {
-                combinedMask = combinedMask.or(vector.eq(targetVectors[j]))
-            }
-            
-            // Extract positions
-            if (!combinedMask.anyTrue()) {
-                for (lane in 0 until vectorLength) {
-                    if (combinedMask.laneIsSet(lane)) {
-                        positions.add((offset + lane).toInt())
-                    }
-                }
-            }
-            
-            offset += vectorLength
-        }
-        
-        // Handle tail
-        while (offset < size) {
-            val b = segment.get(ValueLayout.JAVA_BYTE, offset)
-            if (b in targets) {
-                positions.add(offset.toInt())
-            }
-            offset++
-        }
-        
-        return positions.toIntArray()
-    }
-    
-    /**
-     * Ultra-fast string extraction using SIMD quote finding
-     */
-    fun extractStrings(): List<String> {
-        val strings = mutableListOf<String>()
-        val quotePositions = findQuotes()
-        
-        var i = 0
-        while (i < quotePositions.size - 1) {
-            val start = quotePositions[i] + 1
-            val end = quotePositions[i + 1]
-            
-            // Check for escaped quotes
-            if (isEscaped(start - 1)) {
-                i++
-                continue
-            }
-            
-            // Extract string using MemorySegment slice
-            val stringBytes = segment.asSlice(start.toLong(), (end - start).toLong())
-                .toArray(ValueLayout.JAVA_BYTE)
-            
-            strings.add(String(stringBytes))
-            i += 2
-        }
-        
-        return strings
-    }
-    
-    internal fun findQuotes(): IntArray {
+    // Memory segment operations for advanced use cases
+    internal fun findQuotes(segment: MemorySegment): IntArray {
         val positions = mutableListOf<Int>()
         val quoteVector = ByteVector.broadcast(SPECIES, '"'.code.toByte())
         
@@ -302,7 +175,7 @@ class MemorySegmentJsonScanner(
             )
             val mask = vector.eq(quoteVector)
             
-            if (!mask.anyTrue()) {
+            if (mask.anyTrue()) {
                 for (lane in 0 until vectorLength) {
                     if (mask.laneIsSet(lane)) {
                         positions.add((offset + lane).toInt())
@@ -324,7 +197,7 @@ class MemorySegmentJsonScanner(
         return positions.toIntArray()
     }
     
-    internal fun isEscaped(pos: Int): Boolean {
+    internal fun isEscaped(pos: Int, segment: MemorySegment): Boolean {
         if (pos <= 0) return false
         var backslashCount = 0
         var p = pos - 1
@@ -339,6 +212,6 @@ class MemorySegmentJsonScanner(
 }
 
 /**
- * Create SimdStrategy for JVM
+ * Factory function to create platform-specific SIMD strategy
  */
 actual fun createSimdStrategy(): SimdStrategy = JvmSimdStrategy()

@@ -4,13 +4,18 @@ package borg.trikeshed.dht.kademlia.id
 
 import borg.trikeshed.lib.*
 import kotlin.random.Random
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * Node Unique Identifier (NUID) for Kademlia DHT
  * Supports variable key lengths and cryptographic hashes
  * Uses TrikeShed Indexed<Byte> for efficient storage
  */
+@Serializable
 data class NUID(
+    @Serializable(with = IndexedByteSerializer::class)
     val bytes: Indexed<Byte>
 ) {
     /**
@@ -167,3 +172,24 @@ data class NUID(
         val MAX = NUID(32 j { 0xFF.toByte() })
     }
 }
+
+/**
+ * Custom serializer for Indexed<Byte>
+ */
+object IndexedByteSerializer : KSerializer<Indexed<Byte>> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("IndexedByte", PrimitiveKind.STRING)
+    
+    override fun serialize(encoder: Encoder, value: Indexed<Byte>) {
+        val bytes = ByteArray(value.a) { i -> value[i] }
+        encoder.encodeString(bytes.toHexString())
+    }
+    
+    override fun deserialize(decoder: Decoder): Indexed<Byte> {
+        val hex = decoder.decodeString()
+        val bytes = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        return bytes.size j { i: Int -> bytes[i] }
+    }
+}
+
+// Extension function to convert ByteArray to hex string
+private fun ByteArray.toHexString(): String = joinToString("") { "%02x".format(it) }

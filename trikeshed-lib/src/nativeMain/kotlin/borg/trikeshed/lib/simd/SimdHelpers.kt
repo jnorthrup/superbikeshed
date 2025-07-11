@@ -1,9 +1,15 @@
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
+
 package borg.trikeshed.lib.simd
 
 import platform.posix.*
 import kotlinx.cinterop.*
 import kotlin.experimental.ExperimentalNativeApi
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+// Remove all toIndexed and toIntArray extension function definitions from this file.
+
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
 
 /**
  * Helper functions for SIMD detection and utilities

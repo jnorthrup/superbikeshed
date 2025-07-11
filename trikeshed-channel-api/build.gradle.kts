@@ -10,7 +10,7 @@ kotlin {
     macosArm64()
     
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-io"))
@@ -19,12 +19,18 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             }
         }
-        jvmMain {
+        val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib"))
             }
         }
-        commonTest {
+        val nativeMain by creating {
+            dependsOn(commonMain)
+        }
+        val macosArm64Main by getting {
+            dependsOn(nativeMain)
+        }
+        val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")

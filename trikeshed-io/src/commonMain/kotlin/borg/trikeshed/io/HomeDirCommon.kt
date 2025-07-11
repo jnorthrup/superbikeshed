@@ -7,4 +7,4 @@ expect fun rm(path: String): Boolean
 expect fun mkdir(path: String): Boolean
 
 /** emulates shell command*/
- val homedir: String by lazy { homedirGet }
+val homedir: String get() = homedirGet

@@ -4,21 +4,47 @@ package borg.trikeshed.net.ssh
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.crypto.*
-import borg.trikeshed.net.quic.*
+// import borg.trikeshed.net.quic.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmInline
+import kotlin.coroutines.CoroutineContext
 import borg.trikeshed.net.ssh.SSHPacketParser
 import borg.trikeshed.net.ssh.KexInitParser
 import borg.trikeshed.net.ssh.KexDhReplyParser
 import borg.trikeshed.net.ssh.SftpPacketParser
-import borg.trikeshed.net.socks.socksIngress
-import borg.trikeshed.net.socks.socksEgress
+// import borg.trikeshed.net.socks.socksIngress
+// import borg.trikeshed.net.socks.socksEgress
 import kotlinx.coroutines.channels.Channel
-import borg.trikeshed.nio.PlatformByteBuffer
-import borg.trikeshed.io.PlatformFileIO
-import borg.trikeshed.io.PlatformFileIOImpl
+// import borg.trikeshed.nio.PlatformByteBuffer
+// import borg.trikeshed.io.PlatformFileIO
+// import borg.trikeshed.io.PlatformFileIOImpl
 
 // === SSH TAXONOMICAL TYPEALIASES ===
+
+// Missing crypto types
+typealias SymmetricKey = ByteArray
+typealias PacketSequence = Long
+typealias PrivateKey = ByteArray
+typealias PublicKey = ByteArray
+
+// State enum
+enum class State {
+    INITIAL,
+    VERSION_EXCHANGED,
+    KEX_INITIATED,
+    KEX_COMPLETED,
+    AUTHENTICATED,
+    DISCONNECTED
+}
+
+// Key exchange algorithm
+enum class KeyExchangeAlgorithm {
+    DH_GROUP14_SHA256,
+    DH_GROUP16_SHA512,
+    ECDH_SHA2_NISTP256,
+    ECDH_SHA2_NISTP384,
+    ECDH_SHA2_NISTP521
+}
 
 // Protocol types
 typealias SSHVersion = String
@@ -26,6 +52,23 @@ typealias SSHPacketType = Byte
 typealias SSHChannelType = String
 typealias SSHChannelID = UInt
 typealias SSHWindowSize = UInt
+typealias ChannelWindow = UInt
+typealias ChannelPacketSize = UInt
+
+// Missing crypto types
+typealias CommonCrypto = Any
+typealias CryptoFactory = Any
+typealias TicketNonce = ByteArray
+
+// Crypto helper functions
+fun getSecureRandom(): ByteArray = ByteArray(16) { it.toByte() } // TODO: Use proper random
+fun randomBytes(size: Int): ByteArray = ByteArray(size) { it.toByte() } // TODO: Use proper random
+
+// QUIC types (temporary)
+interface QuicConnection {
+    suspend fun createStream(): QuicStream?
+}
+interface QuicStream
 typealias SSHPacketLength = UInt
 typealias SSHPaddingLength = Byte
 typealias SSHSequenceNumber = UInt
@@ -42,6 +85,7 @@ typealias SSHPublicKey = Indexed<Byte>
 typealias SSHPrivateKey = Indexed<Byte>
 typealias SSHSessionID = Indexed<Byte>
 typealias SSHCookie = Indexed<Byte>
+typealias Signature = Indexed<Byte>
 
 // Data types
 typealias SSHPayload = Indexed<Byte>
@@ -145,7 +189,7 @@ object SSHProtocol {
         var sequenceNumberIn: PacketSequence,
         val channels: MutableMap<SSHChannelID, SSHChannel>,
         var nextChannelId: SSHChannelID,
-        var state: State, // Reference to the connection's state
+        var state: SSHConnection.State, // Reference to the connection's state
         var ephemeralPrivateKey: PrivateKey? = null, // Store ephemeral internal key for KEX
         var negotiatedKexAlgorithm: KeyExchangeAlgorithm? = null // Store negotiated KEX algorithm
     ) : CoroutineContext.Element {
@@ -171,7 +215,7 @@ data class SSHPacket(
         // Packet length (does not include MAC or packet length field itself)
         val length = 1 + payload.a + padding.a // padding_length + payload + padding
         packet.add((length shr 24).toByte())
-        payload[1] = (length shr 16).toByte()
+        packet.add((length shr 16).toByte())
         packet.add((length shr 8).toByte())
         packet.add(length.toByte())
         
@@ -338,11 +382,11 @@ data class SSHChannel(
     }
 
     fun adjustRemoteWindow(bytes: UInt) {
-        remoteWindow = ChannelWindow(remoteWindow.bytes - bytes)
+        remoteWindow = remoteWindow - bytes
     }
     
     fun canSend(): Boolean {
-        return state == ChannelState.OPEN_CONFIRMED && remoteWindow.bytes > 0u
+        return state == ChannelState.OPEN_CONFIRMED && remoteWindow > 0u
     }
 }
 
@@ -422,11 +466,11 @@ class SSHConnection(
             decryptionKey = null,
             integrityKeyOut = null,
             integrityKeyIn = null,
-            sequenceNumberOut = PacketSequence(0u),
-            sequenceNumberIn = PacketSequence(0u),
+            sequenceNumberOut = 0L,
+            sequenceNumberIn = 0L,
             channels = mutableMapOf(),
             nextChannelId = 0u,
-            state = State.INIT
+            state = SSHConnection.State.INIT
         )
 
         // Create a dedicated QUIC stream for SSH communication
@@ -437,11 +481,11 @@ class SSHConnection(
 
         // Exchange version strings
         sendVersionString()
-        sessionContext.state = State.VERSION_EXCHANGED
+        sessionContext.state = SSHConnection.State.VERSION_EXCHANGED
         
         // Start listening for incoming packets on the dedicated stream
         CoroutineScope(Dispatchers.Default + sessionContext).launch {
-            while (sessionContext.state != State.DISCONNECTED) {
+            while (sessionContext.state != SSHConnection.State.DISCONNECTED) {
                 val packet = receivePacket()
                 if (packet != null) {
                     processPacket(packet)
@@ -451,7 +495,7 @@ class SSHConnection(
 
         // Send KEXINIT
         sendKexInit()
-        sessionContext.state = State.KEX_INIT_SENT
+        sessionContext.state = SSHConnection.State.KEX_INIT_SENT
     }
 
     /**
@@ -469,7 +513,7 @@ class SSHConnection(
 
         // Increment sequence number for incoming packets
         coroutineContext[SSHProtocol.SshSessionContext.Key]?.let { ctx ->
-            ctx.sequenceNumberIn = PacketSequence(ctx.sequenceNumberIn.value + 1u)
+            ctx.sequenceNumberIn = ctx.sequenceNumberIn + 1L
         }
 
         return SSHPacketParser.parse(buffer)

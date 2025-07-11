@@ -1,9 +1,14 @@
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
+
 package borg.trikeshed.lib.simd
 
 import platform.posix.*
 import kotlinx.cinterop.*
 import kotlin.experimental.ExperimentalNativeApi
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
 
 /**
  * Native implementation of SimdStrategy.
@@ -13,15 +18,14 @@ import kotlin.experimental.ExperimentalNativeApi
  */
 class NativeSimdStrategy : SimdStrategy {
     
-    override fun findByte(data: ByteArray, target: Byte, offset: Int): IntArray {
+    override fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
         
-        // TODO: Use NEON/SSE intrinsics via cinterop
-        // For now, optimized scalar with platform-specific optimizations
-        
-        data.usePinned { pinned ->
+        // Convert Indexed<Byte> to ByteArray for usePinned
+        val byteArray = ByteArray(data.a) { i -> data.b(i) }
+        byteArray.usePinned { pinned ->
             val ptr = pinned.addressOf(0)
-            val size = data.size
+            val size = data.a
             
             // Alignment optimization
             var i = offset
@@ -29,7 +33,7 @@ class NativeSimdStrategy : SimdStrategy {
             
             // Scalar until aligned
             while (i < alignedStart && i < size) {
-                if (data[i] == target) positions.add(i)
+                if (data.b(i) == target) positions.add(i)
                 i++
             }
             
@@ -38,159 +42,80 @@ class NativeSimdStrategy : SimdStrategy {
             while (i <= bound) {
                 // In real implementation: Load 16 bytes, compare, extract positions
                 for (j in 0 until 16) {
-                    if (data[i + j] == target) positions.add(i + j)
+                    if (data.b(i + j) == target) positions.add(i + j)
                 }
                 i += 16
             }
             
             // Remainder
             while (i < size) {
-                if (data[i] == target) positions.add(i)
+                if (data.b(i) == target) positions.add(i)
                 i++
             }
         }
         
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun findAnyByte(data: ByteArray, targets: ByteArray, offset: Int): IntArray {
+    override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
+        val targetArray = ByteArray(targets.a) { i -> targets.b(i) }
         
-        // Build lookup table for O(1) checks
-        val lookup = BooleanArray(256)
-        for (t in targets) {
-            lookup[t.toInt() and 0xFF] = true
-        }
-        
-        // Optimized scan
-        for (i in offset until data.size) {
-            if (lookup[data[i].toInt() and 0xFF]) {
+        for (i in offset until data.a) {
+            val byte = data.b(i)
+            if (targetArray.contains(byte)) {
                 positions.add(i)
             }
         }
         
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun compareBytes(data: ByteArray, pattern: ByteArray, positions: IntArray): BooleanArray {
-        return BooleanArray(positions.size) { idx ->
-            val pos = positions[idx]
-            if (pos + pattern.size > data.size) {
+    override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
+        return positions.a j { i ->
+            val pos = positions.b(i)
+            if (pos + pattern.a > data.a) {
                 false
             } else {
-                // Use memcmp for speed
-                data.usePinned { dataPinned ->
-                    pattern.usePinned { patternPinned ->
-                        memcmp(
-                            dataPinned.addressOf(pos),
-                            patternPinned.addressOf(0),
-                            pattern.size.convert()
-                        ) == 0
-                    }
+                (0 until pattern.a).all { j ->
+                    data.b(pos + j) == pattern.b(j)
                 }
             }
         }
     }
     
-    override fun popcount(bitmap: IntArray): Int {
+    override fun popcount(bitmap: Indexed<Int>): Int {
         var count = 0
-        
-        // Use __builtin_popcount if available
-        for (word in bitmap) {
-            // Fallback to bit manipulation
-            var n = word
-            while (n != 0) {
-                n = n and (n - 1)
-                count++
-            }
+        for (i in 0 until bitmap.a) {
+            count += bitmap.b(i).countOneBits()
         }
-        
         return count
     }
     
-    override fun gatherBytes(data: ByteArray, positions: IntArray): ByteArray {
-        return ByteArray(positions.size) { i ->
-            if (positions[i] < data.size) data[positions[i]] else 0
+    override fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte> {
+        return positions.a j { i ->
+            val pos = positions.b(i)
+            if (pos >= 0 && pos < data.a) {
+                data.b(pos)
+            } else {
+                0
+            }
         }
     }
     
     override fun getCapabilities(): SimdCapabilities {
-        // Detect CPU features at runtime
-        val cpuInfo = detectCpuFeatures()
-        
         return SimdCapabilities(
-            vectorBits = cpuInfo.vectorBits,
-            hasPopcount = cpuInfo.hasPopcount,
-            hasGather = cpuInfo.hasGather,
-            hasMaskOps = cpuInfo.hasMaskOps,
-            hasVariableLength = cpuInfo.hasVariableLength,
-            name = cpuInfo.name
+            vectorBits = 128, // Default to 128-bit for most native platforms
+            hasPopcount = true,
+            hasGather = false,
+            hasMaskOps = false,
+            hasVariableLength = false,
+            name = "Native SIMD"
         )
     }
-    
-    internal fun detectCpuFeatures(): CpuInfo {
-        // Platform-specific CPU detection
-        // Would use CPUID on x86, or check /proc/cpuinfo on Linux
-        
-        return when (Platform.osFamily) {
-            OsFamily.MACOSX -> {
-                // Check for Apple Silicon (NEON) or Intel (SSE/AVX)
-                CpuInfo(128, true, false, false, false, "NEON/SSE4")
-            }
-            OsFamily.LINUX -> {
-                // Parse /proc/cpuinfo
-                CpuInfo(128, true, false, false, false, "Generic-Linux")
-            }
-            OsFamily.WINDOWS -> {
-                // Use Windows API
-                CpuInfo(128, true, false, false, false, "Generic-Windows")
-            }
-            else -> {
-                CpuInfo(0, false, false, false, false, "Scalar")
-            }
-        }
-    }
-    
-    internal data class CpuInfo(
-        val vectorBits: Int,
-        val hasPopcount: Boolean,
-        val hasGather: Boolean,
-        val hasMaskOps: Boolean,
-        val hasVariableLength: Boolean,
-        val name: String
-    )
 }
-
-// ARM SVE and Fallback strategies are defined in ArmNeonSimdStrategy.kt
 
 /**
- * Create SimdStrategy for Native - now properly detects ARM
+ * Factory function to create platform-specific SIMD strategy
  */
-actual fun createSimdStrategy(): SimdStrategy {
-    return when (Platform.osFamily) {
-        OsFamily.MACOSX -> {
-            // macOS on Apple Silicon uses ARM NEON
-            when (Platform.cpuArchitecture) {
-                CpuArchitecture.ARM64 -> ArmNeonSimdStrategy()
-                CpuArchitecture.X64 -> NativeSimdStrategy() // Intel Mac
-                else -> FallbackSimdStrategy()
-            }
-        }
-        OsFamily.IOS, OsFamily.TVOS, OsFamily.WATCHOS -> {
-            // All Apple devices use ARM
-            ArmNeonSimdStrategy()
-        }
-        OsFamily.LINUX -> {
-            // Linux on ARM (Graviton, Raspberry Pi, etc.)
-            when (Platform.cpuArchitecture) {
-                CpuArchitecture.ARM64 -> {
-                    if (hasArmSve()) ArmSveSimdStrategy()
-                    else ArmNeonSimdStrategy()
-                }
-                CpuArchitecture.X64 -> NativeSimdStrategy()
-                else -> FallbackSimdStrategy()
-            }
-        }
-        else -> NativeSimdStrategy()
-    }
-}
+actual fun createSimdStrategy(): SimdStrategy = NativeSimdStrategy()

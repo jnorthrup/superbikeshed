@@ -2,9 +2,22 @@ package borg.trikeshed.lib.bbcursive
 
 import borg.trikeshed.lib.simd.*
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+// Conversion utilities
 
 // Explicitly import only the expect declaration for createSimdStrategy
 import borg.trikeshed.lib.simd.createSimdStrategy as expectCreateSimdStrategy
+
+/**
+ * Strategy for SIMD/autovec scanning
+ */
+enum class ScanStrategy {
+    SCALAR,     // Pure scalar implementation
+    VECTOR,     // Vector operations (e.g., NEON, SSE)
+    SIMD,       // Explicit SIMD intrinsics
+    AUTOVEC     // Auto-vectorization (default)
+}
 
 /**
  * BBCursive SIMD/Autovec Utility (commonMain)
@@ -35,7 +48,8 @@ object BBCursiveSimdAutovec {
         return when (strategy) {
             ScanStrategy.SCALAR -> scanForByteScalar(data, target)
             ScanStrategy.SIMD, ScanStrategy.VECTOR, ScanStrategy.AUTOVEC ->
-                expectCreateSimdStrategy().findByte(data, target)
+                expectCreateSimdStrategy().findByte(data.toIndexed(), target).toIntArray()
+            else -> expectCreateSimdStrategy().findByte(data.toIndexed(), target).toIntArray()
         }
     }
 
@@ -62,7 +76,8 @@ object BBCursiveSimdAutovec {
         return when (strategy) {
             ScanStrategy.SCALAR -> scanForAnyByteScalar(data, targets)
             ScanStrategy.SIMD, ScanStrategy.VECTOR, ScanStrategy.AUTOVEC ->
-                expectCreateSimdStrategy().findAnyByte(data, targets)
+                expectCreateSimdStrategy().findAnyByte(data.toIndexed(), targets.toIndexed()).toIntArray()
+            else -> expectCreateSimdStrategy().findAnyByte(data.toIndexed(), targets.toIndexed()).toIntArray()
         }
     }
 
@@ -110,7 +125,8 @@ object BBCursiveSimdAutovec {
         return when (strategy) {
             ScanStrategy.SCALAR -> positions.map { data[it] }.toByteArray()
             ScanStrategy.SIMD, ScanStrategy.VECTOR, ScanStrategy.AUTOVEC ->
-                expectCreateSimdStrategy().gatherBytes(data, positions)
+                expectCreateSimdStrategy().gatherBytes(data.toIndexed(), positions.toIndexed()).toByteArray()
+            else -> expectCreateSimdStrategy().gatherBytes(data.toIndexed(), positions.toIndexed()).toByteArray()
         }
     }
 
@@ -124,7 +140,8 @@ object BBCursiveSimdAutovec {
         return when (strategy) {
             ScanStrategy.SCALAR -> bitmap.sum()
             ScanStrategy.SIMD, ScanStrategy.VECTOR, ScanStrategy.AUTOVEC ->
-                expectCreateSimdStrategy().popcount(bitmap)
+                expectCreateSimdStrategy().popcount(bitmap.toIndexed())
+            else -> expectCreateSimdStrategy().popcount(bitmap.toIndexed())
         }
     }
 

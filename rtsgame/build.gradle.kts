@@ -31,6 +31,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
                 implementation("org.jetbrains.kotlin:kotlin-reflect:1.9.22")
+                implementation(project(":trikeshed-lib"))
             }
         }
         
@@ -74,4 +75,44 @@ tasks.register<JavaExec>("runDense") {
     classpath = kotlin.jvm().compilations.getByName("main").output.allOutputs +
                 kotlin.jvm().compilations.getByName("main").runtimeDependencyFiles
     mainClass.set("rtsgame.core.DenseLauncherKt")
+}
+
+// Concentric Network RTS launcher
+tasks.register<JavaExec>("runRTS") {
+    group = "application"
+    description = "Run the RTS game with concentric network"
+    classpath = kotlin.jvm().compilations.getByName("main").output.allOutputs +
+                kotlin.jvm().compilations.getByName("main").runtimeDependencyFiles
+    mainClass.set("rtsgame.RTSLauncherKt")
+    args = listOf("demo")
+}
+
+// Solo game task
+tasks.register<JavaExec>("runSolo") {
+    group = "application"
+    description = "Run solo RTS game"
+    classpath = kotlin.jvm().compilations.getByName("main").output.allOutputs +
+                kotlin.jvm().compilations.getByName("main").runtimeDependencyFiles
+    mainClass.set("rtsgame.RTSLauncherKt")
+    args = listOf("solo")
+}
+
+// Host multiplayer task
+tasks.register<JavaExec>("runHost") {
+    group = "application"
+    description = "Host multiplayer RTS game"
+    classpath = kotlin.jvm().compilations.getByName("main").output.allOutputs +
+                kotlin.jvm().compilations.getByName("main").runtimeDependencyFiles
+    mainClass.set("rtsgame.RTSLauncherKt")
+    args = listOf("host")
+}
+
+// Join multiplayer task
+tasks.register<JavaExec>("runJoin") {
+    group = "application"
+    description = "Join multiplayer RTS game"
+    classpath = kotlin.jvm().compilations.getByName("main").output.allOutputs +
+                kotlin.jvm().compilations.getByName("main").runtimeDependencyFiles
+    mainClass.set("rtsgame.RTSLauncherKt")
+    args = listOf("join")
 }

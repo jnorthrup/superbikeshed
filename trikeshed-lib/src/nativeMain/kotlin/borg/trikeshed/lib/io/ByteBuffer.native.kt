@@ -1,5 +1,8 @@
 package borg.trikeshed.lib.io
 
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+
 actual class ByteBuffer internal constructor(
     internal val array: ByteArray,
     internal var _position: Int = 0,
@@ -76,4 +79,7 @@ actual class ByteBuffer internal constructor(
     actual fun hasRemaining(): Boolean = _position < _limit
     actual fun remaining(): Int = _limit - _position
     actual fun array(): ByteArray = array.copyOf()
+    // Add a property to expose ByteSeries (Indexed<Byte>)
+    val byteSeries: Indexed<Byte>
+        get() = _limit j { array[it] }
 } 

@@ -145,7 +145,8 @@ fun initializeAgentNetwork(): Map<ConcentricRing, List<ConcentricAgent>> {
             ConcentricRing.TRIAD -> 3
             ConcentricRing.PENTAD -> 5
             ConcentricRing.DODECAD -> 12
-            ConcentricRing.SENATE -> 100
+            ConcentricRing.SENATE -> 24
+            ConcentricRing.CONGRESS -> 100
         }
         
         val ringAgents = mutableListOf<ConcentricAgent>()

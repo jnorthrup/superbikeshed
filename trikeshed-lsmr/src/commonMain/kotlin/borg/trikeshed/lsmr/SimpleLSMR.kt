@@ -93,13 +93,13 @@ class SimpleLSMR {
             rows,
             listOf("device", "facility", "region", "timestamp", "cpu", "memory", "disk"),
             listOf(
-                IOMemento.IoString,
-                IOMemento.IoString,
-                IOMemento.IoString,
-                IOMemento.IoString,
-                IOMemento.IoDouble,
-                IOMemento.IoDouble,
-                IOMemento.IoDouble
+                String::class,
+                String::class,
+                String::class,
+                String::class,
+                Double::class,
+                Double::class,
+                Double::class
             )
         )
     }

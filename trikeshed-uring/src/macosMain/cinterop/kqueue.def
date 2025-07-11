@@ -1,0 +1,9 @@
+headers = kqueue.h
+headerFilter = kqueue.h
+package = trikeshed.uring.native.macos
+
+# Path to native headers relative to this .def file
+# The header file is in src/nativeInterop/cinterop/
+headers = ../../../nativeInterop/cinterop/kqueue.h
+
+# No specific linker options needed for kqueue (it's part of the system)

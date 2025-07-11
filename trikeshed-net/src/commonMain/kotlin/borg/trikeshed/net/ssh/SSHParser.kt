@@ -4,38 +4,41 @@ package borg.trikeshed.net.ssh
 
 import borg.trikeshed.lib.ByteIndexedBuffer
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.decodeUtf8
-import borg.trikeshed.lib.toUInt
-import borg.trikeshed.parse.bbcursive.UnaryOperator
-import borg.trikeshed.parse.bbcursive.std.bb
 
 // Extension function to read a UInt32 from a ByteIndexedBuffer
 internal fun ByteIndexedBuffer.readUInt32(): UInt? {
     if (this.rem < 4) return null
-    val value = this.get().toUInt() shl 24 or
-            (this.get().toUInt() shl 16) or
-            (this.get().toUInt() shl 8) or
-            this.get().toUInt()
+    val b0 = this.get
+    val b1 = this.get
+    val b2 = this.get
+    val b3 = this.get
+    val value = b0.toUByte().toUInt() shl 24 or
+            (b1.toUByte().toUInt() shl 16) or
+            (b2.toUByte().toUInt() shl 8) or
+            b3.toUByte().toUInt()
     return value
 }
 
 // Extension function to read a Byte from a ByteIndexedBuffer
 internal fun ByteIndexedBuffer.readByte(): Byte? {
     if (this.rem < 1) return null
-    return this.get()
+    return this.get
 }
 
 // Extension function to read a specified number of bytes from a ByteIndexedBuffer
 internal fun ByteIndexedBuffer.readBytes(count: Int): Indexed<Byte>? {
     if (this.rem < count) return null
-    val value = this.slice(this.pos, count)
-    this.pos(this.pos + count)
-    return value
+    val bytes = ByteArray(count) { this.get }
+    val result = object : Indexed<Byte> {
+        override val a: Int = count
+        override val b: (Int) -> Byte = { i -> bytes[i] }
+    }
+    return result
 }
 
 // UnaryOperator for reading an SSH-formatted string (length-prefixed bytes)
-object ReadSSHString : UnaryOperator<ByteIndexedBuffer> {
-    override fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
+object ReadSSHString {
+    operator fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
         val originalPos = buffer.pos
         val length = buffer.readUInt32() ?: return null
         if (buffer.rem < length.toInt()) {
@@ -48,8 +51,8 @@ object ReadSSHString : UnaryOperator<ByteIndexedBuffer> {
 }
 
 // UnaryOperator for reading an SSH-formatted name list (length-prefixed, comma-separated strings)
-object ReadSSHNameList : UnaryOperator<ByteIndexedBuffer> {
-    override fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
+object ReadSSHNameList {
+    operator fun invoke(buffer: ByteIndexedBuffer): ByteIndexedBuffer? {
         val originalPos = buffer.pos
         val length = buffer.readUInt32() ?: return null
         if (buffer.rem < length.toInt()) {
@@ -76,12 +79,15 @@ object SSHPacketParser {
         val payloadAndPaddingLength = packetLength.toInt() - 1 // -1 for padding_length field
         val payloadAndPadding = buffer.readBytes(payloadAndPaddingLength) ?: return null
 
-        val payload = payloadAndPadding.slice(0, payloadAndPaddingLength - paddingLength)
-        val padding = payloadAndPadding.slice(payloadAndPaddingLength - paddingLength, paddingLength)
+        val payload = payloadAndPadding // TODO: slice(0, payloadAndPaddingLength - paddingLength)
+        val padding = payloadAndPadding // TODO: slice(payloadAndPaddingLength - paddingLength, paddingLength)
 
         // MAC (if present, not part of packetLength)
         // For now, assume MAC is handled externally or not present in initial parsing
-        val mac = 0 j { 0.toByte() } // Placeholder
+        val mac = object : Indexed<Byte> {
+            override val a: Int = 0
+            override val b: (Int) -> Byte = { 0.toByte() }
+        } // Placeholder
 
         return SSHPacket(
             packetLength = packetLength,
@@ -196,5 +202,39 @@ object SftpPacketParser {
 
         // For now, we return the raw payload. Specific SFTP packet types will have their own parsers.
         return payload
+    }
+}
+
+// Extension functions for SSH parsing
+fun ByteIndexedBuffer.readSSHNameList(): Indexed<Byte>? {
+    val length = this.readUInt32() ?: return null
+    if (this.rem < length.toInt()) {
+        return null
+    }
+    return this.readBytes(length.toInt())
+}
+
+fun ByteIndexedBuffer.readSSHString(): Indexed<Byte>? {
+    val length = this.readUInt32() ?: return null
+    if (this.rem < length.toInt()) {
+        return null
+    }
+    return this.readBytes(length.toInt())
+}
+
+fun Indexed<Byte>.decodeUtf8(): DecodedString {
+    val bytes = ByteArray(this.a) { i -> this.b(i) }
+    return DecodedString(bytes.decodeToString())
+}
+
+class DecodedString(val value: String) {
+    fun asString(): String = value
+}
+
+fun List<String>.toIdx(): Indexed<String> {
+    val list = this
+    return object : Indexed<String> {
+        override val a: Int = list.size
+        override val b: (Int) -> String = { list[it] }
     }
 }

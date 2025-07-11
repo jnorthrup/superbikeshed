@@ -1,4 +1,3 @@
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
 package borg.trikeshed.lib.platform
 
 import kotlinx.cinterop.*
@@ -8,6 +7,7 @@ import kotlin.experimental.ExperimentalNativeApi
 /**
  * Native implementation of platform detection
  */
+@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
 actual object PlatformDetection {
     
     actual fun getPlatformInfo(): PlatformInfo {
@@ -149,7 +149,7 @@ actual class KernelVersion actual constructor(
     }
     
     actual companion object {
-        actual val IO_URING_MINIMUM = KernelVersion(5, 1, 0)
+        actual val IO_URING_MINIMUM: KernelVersion = KernelVersion(5, 1, 0)
     }
 }
 

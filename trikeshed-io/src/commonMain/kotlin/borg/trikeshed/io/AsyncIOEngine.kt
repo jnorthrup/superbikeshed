@@ -4,6 +4,11 @@ package borg.trikeshed.io
 import kotlinx.coroutines.flow.Flow
 
 /**
+ * Platform-specific creation of AsyncIOEngine
+ */
+expect fun createAsyncIOEngine(): AsyncIOEngine
+
+/**
  * Common interface for async I/O engines
  */
 interface AsyncIOEngine {
@@ -30,17 +35,69 @@ interface AsyncIOEngine {
     /**
      * Submit multiple operations and wait for completion
      */
-    suspend fun submitBatch(operations: List<IOOperation>): List<IOResult>
-    
+    suspend fun submitBatch(operations: List<IOOperation>): List<IOResult> {
+        return operations.map { operation ->
+            when (operation.type) {
+                IOOperation.IOType.READ -> {
+                    val bytesRead = read(operation.handle, operation.buffer, operation.offset)
+                    IOResult(operation.id, bytesRead, if (bytesRead >= 0) 0 else 1)
+                }
+                IOOperation.IOType.WRITE -> {
+                    val bytesWritten = write(operation.handle, operation.buffer, operation.offset)
+                    IOResult(operation.id, bytesWritten, if (bytesWritten >= 0) 0 else 1)
+                }
+            }
+        }
+    }
+
+    /**
+     * Submit operations with progress tracking
+     */
+    suspend fun submitBatchWithProgress(
+        operations: List<IOOperationWithProgress>,
+        totalSize: Long
+    ): List<IOResult> {
+        var completedBytes = 0L
+        return operations.map { opWithProgress ->
+            val result = when (opWithProgress.operation.type) {
+                IOOperation.IOType.READ -> {
+                    val bytesRead = read(opWithProgress.operation.handle, opWithProgress.operation.buffer, opWithProgress.operation.offset)
+                    IOResult(opWithProgress.operation.id, bytesRead, if (bytesRead >= 0) 0 else 1)
+                }
+                IOOperation.IOType.WRITE -> {
+                    val bytesWritten = write(opWithProgress.operation.handle, opWithProgress.operation.buffer, opWithProgress.operation.offset)
+                    IOResult(opWithProgress.operation.id, bytesWritten, if (bytesWritten >= 0) 0 else 1)
+                }
+            }
+            
+            completedBytes += result.bytesTransferred.coerceAtLeast(0)
+            opWithProgress.progressCallback?.invoke(completedBytes, totalSize)
+            result
+        }
+    }
+
     /**
      * Get a flow of completed operations
      */
-    fun completedOperations(): Flow<IOResult>
+    fun completedOperations(): Flow<IOResult> = throw NotImplementedError("Flow-based completion not implemented yet")
     
     companion object {
-        fun create(): AsyncIOEngine = TODO("Platform-specific implementation required")
+        fun create(): AsyncIOEngine = createAsyncIOEngine()
     }
 }
+
+/**
+ * Progress callback for long-running operations
+ */
+typealias ProgressCallback = suspend (Long, Long) -> Unit
+
+/**
+ * Represents an I/O operation with progress tracking
+ */
+data class IOOperationWithProgress(
+    val operation: IOOperation,
+    val progressCallback: ProgressCallback? = null
+)
 
 /**
  * Represents an I/O operation

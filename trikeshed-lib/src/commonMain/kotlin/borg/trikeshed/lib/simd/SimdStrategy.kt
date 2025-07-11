@@ -1,5 +1,14 @@
 package borg.trikeshed.lib.simd
 
+import borg.trikeshed.lib.Indexed
+
+/**
+ * Scan strategies for register-at-a-time scanning
+ */
+enum class ScanStrategy {
+    SCALAR, SIMD, VECTOR, AUTOVEC
+}
+
 /**
  * SIMD Strategy: Take any register size we can get and maximize throughput.
  * 
@@ -24,31 +33,31 @@ interface SimdStrategy {
      * Find all occurrences of a byte value in parallel.
      * This is THE fundamental operation for scanning.
      */
-    fun findByte(data: ByteArray, target: Byte, offset: Int = 0): IntArray
+    fun findByte(data: Indexed<Byte>, target: Byte, offset: Int = 0): Indexed<Int>
     
     /**
      * Find any of multiple byte values (e.g., '{', '[', '"' for JSON).
      * Uses SIMD OR operations to combine comparisons.
      */
-    fun findAnyByte(data: ByteArray, targets: ByteArray, offset: Int = 0): IntArray
+    fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int = 0): Indexed<Int>
     
     /**
      * Parallel string comparison - check multiple positions at once.
      * Critical for header field matching.
      */
-    fun compareBytes(data: ByteArray, pattern: ByteArray, positions: IntArray): BooleanArray
+    fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean>
     
     /**
      * Population count - count set bits in parallel.
      * Useful for counting structural characters.
      */
-    fun popcount(bitmap: IntArray): Int
+    fun popcount(bitmap: Indexed<Int>): Int
     
     /**
      * Parallel extraction - gather bytes from multiple positions.
      * Perfect for extracting field values after scanning.
      */
-    fun gatherBytes(data: ByteArray, positions: IntArray): ByteArray
+    fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte>
     
     /**
      * Get characteristics of this SIMD implementation

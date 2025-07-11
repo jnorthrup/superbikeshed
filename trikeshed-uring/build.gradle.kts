@@ -5,9 +5,16 @@ plugins {
 
 group = "borg.trikeshed"
 
+val hostOs = System.getProperty("os.name")
+val hostArch = System.getProperty("os.arch")
+
 kotlin {
     jvm()
-    macosArm64()
+    when {
+        hostOs == "Mac OS X" -> macosArm64()
+        hostOs == "Linux" && (hostArch == "amd64" || hostArch == "x86_64") -> linuxX64()
+        hostOs == "Linux" && (hostArch == "aarch64" || hostArch == "arm64") -> linuxArm64()
+    }
     
     sourceSets {
         commonMain {

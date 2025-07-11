@@ -29,6 +29,15 @@ kotlin {
                 implementation(kotlin("stdlib"))
             }
         }
+        val nativeMain by creating {
+            dependsOn(getByName("commonMain"))
+        }
+        val macosArm64Main by getting {
+            dependsOn(getByName("nativeMain"))
+            dependencies {
+                // Native dependencies if needed
+            }
+        }
         commonTest {
             dependencies {
                 implementation(kotlin("test"))

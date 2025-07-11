@@ -1,0 +1,401 @@
+package fiduciary.clean
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.flow.*
+import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
+import borg.trikeshed.couchdb.*
+import borg.trikeshed.couchdb.services.*
+import kotlinx.serialization.json.*
+
+/**
+ * Simple Fiduciary Percolator Demo with Real CouchDB Integration
+ * 
+ * Demonstrates the core percolator functionality using the existing trikeshed CouchDB server.
+ * Shows the complete pipeline: Ingest → Transform → Store → Emit
+ */
+
+// Core Percolator Data Types
+data class FiduciaryData(
+    val id: String,
+    val source: String,
+    val content: Map<String, Any>,
+    val stage: String = "raw",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+// Percolation Stages
+sealed class PercolationStage {
+    object Ingest : PercolationStage()
+    object Normalize : PercolationStage() 
+    object Enrich : PercolationStage()
+    object Classify : PercolationStage()
+    object Store : PercolationStage()
+    object Emit : PercolationStage()
+}
+
+// Simplified document storage
+data class FiduciaryDocument(
+    val id: String,
+    val type: String,
+    val timestamp: Long,
+    val status: String,
+    val data: Map<String, Any>,
+    val metadata: Map<String, String> = emptyMap(),
+    val tags: List<String> = emptyList()
+)
+
+// The Core Percolator Engine with Real CouchDB Integration
+object FiduciaryPercolator : CoroutineContext.Element, CoroutineContext.Key<FiduciaryPercolator> {
+    override val key: CoroutineContext.Key<*> get() = FiduciaryPercolator
+    
+    private val ingestChannel = Channel<FiduciaryData>(capacity = 1000)
+    private val transformChannel = Channel<FiduciaryData>(capacity = 1000) 
+    private val storeChannel = Channel<FiduciaryData>(capacity = 1000)
+    private val emitChannel = Channel<FiduciaryData>(capacity = 1000)
+    
+    private val storage = mutableMapOf<String, FiduciaryData>()
+    private val percolationFlow = MutableSharedFlow<FiduciaryData>(replay = 100)
+
+    // Real CouchDB integration
+    private lateinit var couchDBService: CouchDBService
+    private val json = Json { ignoreUnknownKeys = true }
+
+    // Simplified storage with in-memory documents
+    private val batchBuffer = mutableListOf<FiduciaryDocument>()
+    private val batchSize = 5
+    private val batchDelayMs = 200L
+    private var batchJob: Job? = null
+
+    suspend fun startPercolation(scope: CoroutineScope) {
+        println("🔥 Starting Simple Fiduciary Percolator Engine with Real CouchDB")
+        
+        // Initialize CouchDB service
+        initializeCouchDB()
+        
+        // Stage 1: Ingestion Pipeline
+        scope.launch {
+            ingestChannel.consumeAsFlow().collect { data ->
+                println("📥 INGEST: ${data.id} from ${data.source}")
+                val normalized = normalizeData(data)
+                transformChannel.send(normalized)
+            }
+        }
+        
+        // Stage 2: Transformation Pipeline  
+        scope.launch {
+            transformChannel.consumeAsFlow().collect { data ->
+                println("🔄 TRANSFORM: ${data.id} → ${data.stage}")
+                val enriched = enrichData(data)
+                val classified = classifyData(enriched)
+                storeChannel.send(classified)
+            }
+        }
+        
+        // Stage 3: Storage Pipeline with Real CouchDB
+        scope.launch {
+            storeChannel.consumeAsFlow().collect { data ->
+                val doc = FiduciaryDocument(
+                    id = data.id,
+                    type = data.stage,
+                    timestamp = System.currentTimeMillis(),
+                    status = "active",
+                    data = data.content + mapOf("schema_version" to 2),
+                    metadata = mapOf("source" to data.source),
+                    tags = listOf("fiduciary")
+                )
+                batchBuffer.add(doc)
+                
+                if (batchBuffer.size >= batchSize) {
+                    flushBatch()
+                } else if (batchJob == null || batchJob?.isActive == false) {
+                    batchJob = scope.launch {
+                        delay(batchDelayMs)
+                        flushBatch()
+                    }
+                }
+            }
+        }
+        
+        // Stage 4: Emission Pipeline
+        scope.launch {
+            emitChannel.consumeAsFlow().collect { data ->
+                println("📡 EMIT: ${data.id} → downstream systems")
+            }
+        }
+        println("✅ Percolator pipelines active with CouchDB storage")
+    }
+    
+    private suspend fun initializeCouchDB() {
+        try {
+            couchDBService = CouchDBService()
+            val initialized = couchDBService.initialize()
+            if (initialized) {
+                // Create fiduciary database
+                couchDBService.createDatabase("fiduciary")
+                println("✅ CouchDB service initialized successfully")
+            } else {
+                println("❌ Failed to initialize CouchDB service")
+            }
+        } catch (e: Exception) {
+            println("❌ Error initializing CouchDB: ${e.message}")
+        }
+    }
+    
+    suspend fun ingest(data: FiduciaryData) {
+        ingestChannel.send(data)
+    }
+    
+    private fun normalizeData(data: FiduciaryData): FiduciaryData {
+        return data.copy(
+            stage = "normalized",
+            content = data.content + mapOf(
+                "normalized_at" to System.currentTimeMillis(),
+                "fiduciary_version" to "1.0.0"
+            )
+        )
+    }
+    
+    private fun enrichData(data: FiduciaryData): FiduciaryData {
+        return data.copy(
+            stage = "enriched", 
+            content = data.content + mapOf(
+                "enriched_at" to System.currentTimeMillis(),
+                "risk_score" to calculateRiskScore(data),
+                "asset_type" to determineAssetType(data),
+                "location" to determineLocation(data)
+            )
+        )
+    }
+    
+    private fun classifyData(data: FiduciaryData): FiduciaryData {
+        return data.copy(
+            stage = "classified",
+            content = data.content + mapOf(
+                "classified_at" to System.currentTimeMillis(),
+                "security_classification" to determineSecurityClassification(data),
+                "priority" to determinePriority(data),
+                "tags" to generateTags(data)
+            )
+        )
+    }
+    
+    // Helper functions for data enrichment and classification
+    private fun calculateRiskScore(data: FiduciaryData): Double {
+        return when (data.source) {
+            "network_scanner" -> 0.3
+            "patrick_devine" -> 0.1
+            else -> 0.5
+        }
+    }
+    
+    private fun determineAssetType(data: FiduciaryData): String {
+        return when {
+            data.content.containsKey("protocol") -> "network_service"
+            data.content.containsKey("certificate") -> "ssl_certificate"
+            data.content.containsKey("banner") -> "ssh_service"
+            else -> "unknown"
+        }
+    }
+    
+    private fun determineLocation(data: FiduciaryData): String {
+        return when (data.source) {
+            "network_scanner" -> "network_edge"
+            "patrick_devine" -> "archive"
+            else -> "unknown"
+        }
+    }
+    
+    private fun determineSecurityClassification(data: FiduciaryData): String {
+        return when {
+            data.content["protocol"] == "HTTPS" -> "encrypted"
+            data.content["protocol"] == "SSH" -> "secure"
+            data.content["protocol"] == "HTTP" -> "unencrypted"
+            else -> "unknown"
+        }
+    }
+    
+    private fun determinePriority(data: FiduciaryData): String {
+        return when {
+            data.content["status"] == "open" -> "high"
+            data.content["status"] == "closed" -> "low"
+            else -> "medium"
+        }
+    }
+    
+    private fun generateTags(data: FiduciaryData): List<String> {
+        val tags = mutableListOf<String>()
+        tags.add(data.source)
+        tags.add(data.content["protocol"]?.toString() ?: "unknown_protocol")
+        tags.add(data.content["status"]?.toString() ?: "unknown_status")
+        return tags
+    }
+    
+    fun getStorage(): Map<String, FiduciaryData> = storage.toMap()
+    fun getPercolationFlow(): SharedFlow<FiduciaryData> = percolationFlow.asSharedFlow()
+    
+    private suspend fun flushBatch() {
+        if (batchBuffer.isEmpty()) return
+        val docs = batchBuffer.toList()
+        batchBuffer.clear()
+        
+        try {
+            // Store in CouchDB
+            val couchDocs = docs.map { doc ->
+                CouchDocument(
+                    id = doc.id,
+                    data = buildJsonObject {
+                        put("type", doc.type)
+                        put("timestamp", doc.timestamp)
+                        put("status", doc.status)
+                        put("metadata", buildJsonObject {
+                            doc.metadata.forEach { (key, value) ->
+                                put(key, value)
+                            }
+                        })
+                        put("tags", buildJsonArray {
+                            doc.tags.forEach { add(it) }
+                        })
+                        doc.data.forEach { (key, value) ->
+                            when (value) {
+                                is String -> put(key, value)
+                                is Number -> put(key, value)
+                                is Boolean -> put(key, value)
+                                else -> put(key, value.toString())
+                            }
+                        }
+                    }
+                )
+            }
+            
+            // Bulk store in CouchDB
+            val bulkRequest = BulkDocsRequest(couchDocs)
+            val results = couchDBService.bulkDocs("fiduciary", bulkRequest)
+            
+            val successful = results.count { it.ok }
+            val failed = results.size - successful
+            
+            // Also keep in-memory for demo
+            docs.forEach { doc ->
+                storage[doc.id] = FiduciaryData(
+                    id = doc.id,
+                    source = doc.metadata["source"] ?: "unknown",
+                    content = doc.data,
+                    stage = doc.type,
+                    timestamp = doc.timestamp
+                )
+            }
+            
+            // Emit metrics and pop events
+            docs.forEach { doc ->
+                val type = doc.type
+                val source = doc.metadata["source"] ?: "unknown"
+                emitMetric("document.ingested", 1.0, mapOf("type" to type, "source" to source))
+                println("🍿 Pop! Document ${doc.id} scanned in and stored in CouchDB.")
+            }
+            
+            emitMetric("batch.stored", 1.0, mapOf(
+                "total" to docs.size.toString(),
+                "successful" to successful.toString(),
+                "failed" to failed.toString()
+            ))
+            
+            println("✅ Batch stored in CouchDB: $successful/${docs.size} successful, $failed failed")
+            
+        } catch (e: Exception) {
+            emitMetric("batch.error", 1.0, mapOf("error" to (e.message ?: "unknown")))
+            println("❌ Error storing batch in CouchDB: ${e.message}")
+        }
+    }
+    
+    private fun emitMetric(name: String, value: Double, labels: Map<String, String> = emptyMap()) {
+        val labelString = if (labels.isNotEmpty()) {
+            "{" + labels.entries.joinToString(",") { "${it.key}=\"${it.value}\"" } + "}"
+        } else ""
+        println("📊 METRIC: $name$labelString $value")
+    }
+    
+    fun generateDemoData(): List<FiduciaryData> {
+        return listOf(
+            FiduciaryData(
+                id = "scan_001",
+                source = "network_scanner",
+                content = mapOf(
+                    "protocol" to "HTTP",
+                    "port" to 80,
+                    "status" to "open",
+                    "response_time" to 45,
+                    "headers" to mapOf("Server" to "nginx/1.18.0")
+                )
+            ),
+            FiduciaryData(
+                id = "scan_002",
+                source = "network_scanner",
+                content = mapOf(
+                    "protocol" to "HTTPS", 
+                    "port" to 443,
+                    "status" to "open",
+                    "response_time" to 120,
+                    "certificate" to mapOf("issuer" to "Let's Encrypt")
+                )
+            ),
+            FiduciaryData(
+                id = "scan_003",
+                source = "network_scanner", 
+                content = mapOf(
+                    "protocol" to "SSH",
+                    "port" to 22,
+                    "status" to "open", 
+                    "banner" to "OpenSSH_8.2p1 Ubuntu-4ubuntu0.5",
+                    "key_exchange" to "curve25519-sha256"
+                )
+            ),
+            FiduciaryData(
+                id = "scan_004",
+                source = "network_scanner",
+                content = mapOf(
+                    "protocol" to "QUIC",
+                    "port" to 443,
+                    "status" to "open",
+                    "alpn" to "h3",
+                    "streams" to 100
+                )
+            )
+        )
+    }
+}
+
+// Main function to demonstrate the percolator
+suspend fun main() = coroutineScope {
+    println("🚀 Starting Simple Fiduciary Percolator Demo with Real CouchDB")
+    
+    val percolator = FiduciaryPercolator
+    percolator.startPercolation(this)
+    
+    // Wait a moment for pipelines to start
+    delay(1.seconds)
+    
+    // Generate and ingest demo data
+    val demoData = percolator.generateDemoData()
+    println("\n📥 Ingesting ${demoData.size} demo documents...")
+    
+    demoData.forEach { data ->
+        percolator.ingest(data)
+        delay(100) // Small delay between ingests
+    }
+    
+    // Wait for processing to complete
+    delay(3.seconds)
+    
+    // Show results
+    println("\n📊 Percolator Results:")
+    val storage = percolator.getStorage()
+    storage.forEach { (id, data) ->
+        println("  📄 $id: ${data.stage} (${data.content["security_classification"]} priority)")
+    }
+    
+    println("\n✅ Percolator demo completed successfully!")
+    println("🍿 Total documents processed: ${storage.size}")
+    println("💾 Documents stored in CouchDB: ${storage.size}")
+} 

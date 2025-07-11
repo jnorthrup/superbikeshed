@@ -6,6 +6,7 @@ import borg.trikeshed.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
+import kotlinx.datetime.Clock
 
 /**
  * Protocol channelization framework following BBCursor integration pattern.
@@ -60,10 +61,9 @@ abstract class AbstractProtocolAdapter<TMessage, TConfig>(
     internal suspend inline fun <reified THandler : CoroutineContext.Element, TResponse> 
         handleWithService(
             context: ProtocolContext,
-            handlerType: Class<THandler>,
             message: TMessage,
             defaultResponse: TResponse,
-            handlerCall: (THandler) -> TResponse
+            crossinline handlerCall: (THandler) -> TResponse
         ): TResponse {
         val handler = context.currentService<THandler>()
         return if (handler != null) {
@@ -81,7 +81,7 @@ abstract class AbstractProtocolAdapter<TMessage, TConfig>(
             context: ProtocolContext,
             message: TMessage,
             defaultResponse: TMessage,
-            handlerCall: (THandler) -> TMessage
+            crossinline handlerCall: (THandler) -> TMessage
         ): Flow<TMessage> = flow {
         val handler = context.currentService<THandler>()
         val response = if (handler != null) {
@@ -97,16 +97,23 @@ abstract class AbstractProtocolAdapter<TMessage, TConfig>(
  * Protocol context for dependency injection and service composition.
  */
 class ProtocolContext(
-    internal val context: CoroutineContext
+    val context: CoroutineContext
 ) : CoroutineContext by context {
     
     inline fun <reified T : CoroutineContext.Element> requireService(): T {
-        return context[T::class.java as CoroutineContext.Key<T>]
-            ?: error("Required service ${T::class.simpleName} not found in protocol context")
+        @Suppress("UNCHECKED_CAST")
+        return context.fold(null as T?) { found, element ->
+            if (found != null) found
+            else element as? T
+        } ?: error("Required service not found in protocol context")
     }
     
     inline fun <reified T : CoroutineContext.Element> currentService(): T? {
-        return context[T::class.java as CoroutineContext.Key<T>]
+        @Suppress("UNCHECKED_CAST")
+        return context.fold(null as T?) { found, element ->
+            if (found != null) found
+            else element as? T
+        }
     }
     
     fun withService(element: CoroutineContext.Element): ProtocolContext {
@@ -166,7 +173,7 @@ abstract class AbstractProtocolChannel<TMessage>(
                 
                 // Parse messages from accumulated data
                 var position = 0
-                val indexed = accumulated.toIndexed()
+                val indexed = ByteIndexed(accumulated.toIndexed())
                 
                 while (position < accumulated.size) {
                     val result = adapter.parseMessage(indexed, position)
@@ -230,7 +237,7 @@ abstract class EnhancedProtocolChannel<TMessage>(
      * Common pattern for extracting data from filtered messages.
      */
     internal inline fun <reified T : TMessage, R> filterAndTransform(
-        transform: (T) -> R
+        crossinline transform: (T) -> R
     ): Flow<R> = flow {
         filterIncomingMessages<T>().collect { message ->
             emit(transform(message))
@@ -403,7 +410,11 @@ object ProtocolUtils {
      */
     fun readString(data: ByteIndexed, position: Int): String {
         val length = readUint32(data, position).toInt()
-        return data.slice(position + 4 until position + 4 + length).decodeToString()
+        val bytes = ByteArray(length)
+        for (i in 0 until length) {
+            bytes[i] = data[position + 4 + i]
+        }
+        return bytes.decodeToString()
     }
     
     /**
@@ -420,13 +431,17 @@ object ProtocolUtils {
      */
     fun readNameList(data: ByteIndexed, position: Int): List<String> {
         val length = readUint32(data, position).toInt()
-        val listData = data.slice(position + 4 until position + 4 + length)
+        val listData = ByteIndexed(data.buf, position + 4, position + 4 + length)
         val names = mutableListOf<String>()
         var offset = 0
         
         while (offset < listData.size) {
             val nameLength = readUint32(listData, offset).toInt()
-            val name = listData.slice(offset + 4 until offset + 4 + nameLength).decodeToString()
+            val nameBytes = ByteArray(nameLength)
+            for (i in 0 until nameLength) {
+                nameBytes[i] = listData[offset + 4 + i]
+            }
+            val name = nameBytes.decodeToString()
             names.add(name)
             offset += 4 + nameLength
         }
@@ -444,7 +459,7 @@ object ProtocolUtils {
         
         names.forEach { name ->
             writeString(data, offset, name)
-            offset += 4 + name.length
+            offset += 4 + name.encodeToByteArray().size
         }
     }
     
@@ -455,17 +470,17 @@ object ProtocolUtils {
         return when {
             value < 0x40 -> listOf(value.toByte())
             value < 0x4000 -> listOf(
-                (0x40 or (value shr 8)).toByte(),
+                (0x40 or (value shr 8).toInt()).toByte(),
                 value.toByte()
             )
             value < 0x40000000 -> listOf(
-                (0x80 or (value shr 24)).toByte(),
+                (0x80 or (value shr 24).toInt()).toByte(),
                 (value shr 16).toByte(),
                 (value shr 8).toByte(),
                 value.toByte()
             )
             else -> listOf(
-                (0xC0 or (value shr 56)).toByte(),
+                (0xC0 or (value shr 56).toInt()).toByte(),
                 (value shr 48).toByte(),
                 (value shr 40).toByte(),
                 (value shr 32).toByte(),
@@ -481,12 +496,12 @@ object ProtocolUtils {
 /**
  * Extension functions for ByteArray channelization compatibility.
  */
-fun ByteArray.toIndexed(): ByteIndexed = size j { i -> this[i] }
+fun ByteArray.toByteIndexed(): ByteIndexed = ByteIndexed(this.toIndexed())
 
 fun ByteIndexed.toByteArray(): ByteArray {
-    val result = ByteArray(a)
-    for (i in 0 until a) {
-        result[i] = b(i)
+    val result = ByteArray(size)
+    for (i in 0 until size) {
+        result[i] = this[i]
     }
     return result
 }
@@ -495,8 +510,11 @@ fun ByteIndexed.toByteArray(): ByteArray {
  * Context extension for service requirements.
  */
 suspend inline fun <reified T : CoroutineContext.Element> CoroutineContext.requireService(): T {
-    return this[T::class.java as CoroutineContext.Key<T>]
-        ?: error("Required service ${T::class.simpleName} not found in context")
+    @Suppress("UNCHECKED_CAST")
+    return this.fold(null as T?) { found, element ->
+        if (found != null) found
+        else element as? T
+    } ?: error("Required service not found in context")
 }
 
 /**
@@ -546,31 +564,38 @@ object ProtocolComposition {
         channels: Indexed<ProtocolChannel<TMessage>>
     ): ProtocolChannel<TMessage> = object : ProtocolChannel<TMessage> {
         override val channelId: ChannelId = channels[0].channelId
-        override val isActive: Boolean = channels.any { it.isActive }
+        override val isActive: Boolean get() {
+            for (i in 0 until channels.size) {
+                if (channels[i].isActive) return true
+            }
+            return false
+        }
         
-        override fun incomingMessages(): Flow<TMessage> = flow {
-            channels.forEach { channel ->
-                channel.incomingMessages().collect { message ->
-                    emit(message)
+        override fun incomingMessages(): Flow<TMessage> = channelFlow {
+            for (i in 0 until channels.size) {
+                launch {
+                    channels[i].incomingMessages().collect { message ->
+                        send(message)
+                    }
                 }
             }
         }
         
         override suspend fun sendMessage(message: TMessage) {
-            channels.forEach { channel ->
-                channel.sendMessage(message)
+            for (i in 0 until channels.size) {
+                channels[i].sendMessage(message)
             }
         }
         
         override suspend fun sendMessages(messages: Flow<TMessage>) {
-            channels.forEach { channel ->
-                channel.sendMessages(messages)
+            for (i in 0 until channels.size) {
+                channels[i].sendMessages(messages)
             }
         }
         
         override suspend fun close() {
-            channels.forEach { channel ->
-                channel.close()
+            for (i in 0 until channels.size) {
+                channels[i].close()
             }
         }
     }
@@ -640,7 +665,7 @@ class ProtocolMonitor(
         internal var messagesProcessed = 0L
         internal var bytesTransferred = 0L
         internal var errors = 0L
-        internal val startTime = System.currentTimeMillis()
+        internal val startTime = Clock.System.now().toEpochMilliseconds()
         
         override fun incomingMessages(): Flow<TMessage> = flow {
             channel.incomingMessages()
@@ -673,7 +698,7 @@ class ProtocolMonitor(
         }
         
         override suspend fun close() {
-            val endTime = System.currentTimeMillis()
+            val endTime = Clock.System.now().toEpochMilliseconds()
             val latency = (endTime - startTime).toDouble()
             
             _metrics.emit(ProtocolMetrics(
@@ -869,43 +894,71 @@ class ProtocolChannelImpl(
 object ProtocolFactory {
     suspend fun createChannel(protocol: String, config: ChannelConfig): UnifiedProtocolChannel {
         val underlyingChannel = when (config.type) {
-            ChannelType.NIO -> createNioChannel(config)
-            ChannelType.IOURING -> createIoUringChannel(config)
-            ChannelType.TEST -> createTestChannel(config)
+            ChannelType.TCP -> createTcpChannel(config)
+            ChannelType.UDP -> createUdpChannel(config)
+            ChannelType.MEMORY -> createMemoryChannel(config)
+            ChannelType.FILE -> createFileChannel(config)
+            ChannelType.UNIX_SOCKET -> createUnixSocketChannel(config)
+            ChannelType.PIPE -> createPipeChannel(config)
+            ChannelType.QUIC -> createQuicChannel(config)
+            ChannelType.SCTP -> createSctpChannel(config)
+            ChannelType.CUSTOM -> createCustomChannel(config)
         }
         
         return ProtocolChannelImpl(protocol, underlyingChannel)
     }
     
-    internal suspend fun createNioChannel(config: ChannelConfig): Channel {
+    internal suspend fun createTcpChannel(config: ChannelConfig): Channel {
         // NIO implementation
         return object : Channel {
+            override val id: ChannelId = ChannelId.generate()
+            override val config: ChannelConfig = config
             override val isOpen: Boolean = true
+            override val isActive: Boolean = true
+            override fun isReadable(): Boolean = false
+            override fun isWritable(): Boolean = true
             override suspend fun close() {}
             override suspend fun send(data: ByteIndexed) {}
-            override suspend fun receive(): ByteIndexed = emptyByteIndexed()
+            override suspend fun receive(): ByteIndexed = ByteIndexed(ByteArray(0).toIndexed())
         }
     }
     
-    internal suspend fun createIoUringChannel(config: ChannelConfig): Channel {
+    internal suspend fun createUdpChannel(config: ChannelConfig): Channel {
         // io_uring implementation
         return object : Channel {
+            override val id: ChannelId = ChannelId.generate()
+            override val config: ChannelConfig = config
             override val isOpen: Boolean = true
+            override val isActive: Boolean = true
+            override fun isReadable(): Boolean = false
+            override fun isWritable(): Boolean = true
             override suspend fun close() {}
             override suspend fun send(data: ByteIndexed) {}
-            override suspend fun receive(): ByteIndexed = emptyByteIndexed()
+            override suspend fun receive(): ByteIndexed = ByteIndexed(ByteArray(0).toIndexed())
         }
     }
     
-    internal suspend fun createTestChannel(config: ChannelConfig): Channel {
+    internal suspend fun createMemoryChannel(config: ChannelConfig): Channel {
         // Test implementation
         return object : Channel {
+            override val id: ChannelId = ChannelId.generate()
+            override val config: ChannelConfig = config
             override val isOpen: Boolean = true
+            override val isActive: Boolean = true
+            override fun isReadable(): Boolean = false
+            override fun isWritable(): Boolean = true
             override suspend fun close() {}
             override suspend fun send(data: ByteIndexed) {}
-            override suspend fun receive(): ByteIndexed = emptyByteIndexed()
+            override suspend fun receive(): ByteIndexed = ByteIndexed(ByteArray(0).toIndexed())
         }
     }
+    
+    internal suspend fun createFileChannel(config: ChannelConfig): Channel = createMemoryChannel(config)
+    internal suspend fun createUnixSocketChannel(config: ChannelConfig): Channel = createMemoryChannel(config)
+    internal suspend fun createPipeChannel(config: ChannelConfig): Channel = createMemoryChannel(config)
+    internal suspend fun createQuicChannel(config: ChannelConfig): Channel = createMemoryChannel(config)
+    internal suspend fun createSctpChannel(config: ChannelConfig): Channel = createMemoryChannel(config)
+    internal suspend fun createCustomChannel(config: ChannelConfig): Channel = createMemoryChannel(config)
 }
 
 // === PROTOCOL ROUTER - UNIFIED ROUTING ===
@@ -919,7 +972,10 @@ class ProtocolRouter {
     
     suspend fun routeMessage(protocol: String, message: ProtocolMessage): ProtocolMessage? {
         val channel = channels.getOrPut(protocol) {
-            ProtocolFactory.createChannel(protocol, ChannelConfig.default())
+            ProtocolFactory.createChannel(protocol, ChannelConfig(
+                type = ChannelType.MEMORY,
+                mode = ChannelMode.READ_WRITE
+            ))
         }
         
         return channel.processMessage(message)
@@ -933,7 +989,7 @@ class ProtocolRouter {
 
 // === UTILITY FUNCTIONS ===
 
-internal fun emptyByteIndexed(): ByteIndexed = 0 j { ByteArray(0)[0] }
+internal fun emptyByteIndexed(): ByteIndexed = ByteIndexed(ByteArray(0).toIndexed())
 
 internal fun ByteIndexed.transform(transform: (ByteIndexed) -> ByteIndexed): ByteIndexed = transform(this)
 
@@ -943,23 +999,35 @@ internal fun ByteIndexed.transform(transform: (ByteIndexed) -> ByteIndexed): Byt
  * Migration helpers to convert existing protocol-specific code
  */
 object ProtocolMigration {
-    fun migrateHttpStateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
+    suspend fun migrateHttpStateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
         // Convert HttpStateMachine to UnifiedProtocolChannel
-        return ProtocolFactory.createChannel("HTTP", ChannelConfig.default())
+        return ProtocolFactory.createChannel("HTTP", ChannelConfig(
+            type = ChannelType.TCP,
+            mode = ChannelMode.READ_WRITE
+        ))
     }
     
-    fun migrateSocksStateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
+    suspend fun migrateSocksStateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
         // Convert SocksConnectionState to UnifiedProtocolChannel
-        return ProtocolFactory.createChannel("SOCKS", ChannelConfig.default())
+        return ProtocolFactory.createChannel("SOCKS", ChannelConfig(
+            type = ChannelType.TCP,
+            mode = ChannelMode.READ_WRITE
+        ))
     }
     
-    fun migrateQuicStateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
+    suspend fun migrateQuicStateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
         // Convert ConnectionState to UnifiedProtocolChannel
-        return ProtocolFactory.createChannel("QUIC", ChannelConfig.default())
+        return ProtocolFactory.createChannel("QUIC", ChannelConfig(
+            type = ChannelType.QUIC,
+            mode = ChannelMode.READ_WRITE
+        ))
     }
     
-    fun migrateHttp2StateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
+    suspend fun migrateHttp2StateMachine(oldStateMachine: Any): UnifiedProtocolChannel {
         // Convert HTTP2ConnectionState to UnifiedProtocolChannel
-        return ProtocolFactory.createChannel("HTTP2", ChannelConfig.default())
+        return ProtocolFactory.createChannel("HTTP2", ChannelConfig(
+            type = ChannelType.TCP,
+            mode = ChannelMode.READ_WRITE
+        ))
     }
 }

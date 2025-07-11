@@ -2,6 +2,9 @@ package borg.trikeshed.lib.simd
 
 import kotlinx.cinterop.*
 import platform.posix.*
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+// Conversion utilities
 
 /**
  * ARM NEON SIMD implementation for ARM64 processors.
@@ -14,15 +17,20 @@ import platform.posix.*
  */
 class ArmNeonSimdStrategy : SimdStrategy {
     
-    override fun findByte(data: ByteArray, target: Byte, offset: Int): IntArray {
+    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+    override fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
         
-        data.usePinned { pinned ->
+        // Convert Indexed<Byte> to ByteArray for usePinned
+        val byteArray = ByteArray(data.a) { i -> data.b(i) }
+        @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+        byteArray.usePinned { pinned ->
+            @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
             val ptr = pinned.addressOf(0)
             var i = offset
             
             // Process 16-byte chunks with NEON
-            val bound = data.size - 16
+            val bound = data.a - 16
             while (i <= bound) {
                 // In real implementation, we'd use NEON intrinsics:
                 // vld1q_u8 - Load 16 bytes
@@ -31,7 +39,7 @@ class ArmNeonSimdStrategy : SimdStrategy {
                 // vmovmaskq_u8 - Extract mask
                 
                 // For now, simulated NEON operation
-                val chunk = ByteArray(16) { j -> data[i + j] }
+                val chunk = ByteArray(16) { j -> data.b(i + j) }
                 for (j in 0 until 16) {
                     if (chunk[j] == target) {
                         positions.add(i + j)
@@ -42,29 +50,32 @@ class ArmNeonSimdStrategy : SimdStrategy {
             }
             
             // Process remaining bytes
-            while (i < data.size) {
-                if (data[i] == target) {
+            while (i < data.a) {
+                if (data.b(i) == target) {
                     positions.add(i)
                 }
                 i++
             }
         }
         
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun findAnyByte(data: ByteArray, targets: ByteArray, offset: Int): IntArray {
+    override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
         
         // Create lookup table for O(1) checks
         val isTarget = BooleanArray(256)
-        for (t in targets) {
-            isTarget[t.toInt() and 0xFF] = true
+        for (i in 0 until targets.a) {
+            isTarget[targets.b(i).toInt() and 0xFF] = true
         }
         
-        data.usePinned { pinned ->
+        // Convert Indexed<Byte> to ByteArray for usePinned
+        val byteArray = ByteArray(data.a) { i -> data.b(i) }
+        @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+        byteArray.usePinned { pinned ->
             var i = offset
-            val bound = data.size - 16
+            val bound = data.a - 16
             
             // NEON processing of 16-byte chunks
             while (i <= bound) {
@@ -74,7 +85,7 @@ class ArmNeonSimdStrategy : SimdStrategy {
                 // - Process 16 bytes in parallel
                 
                 for (j in 0 until 16) {
-                    if (isTarget[data[i + j].toInt() and 0xFF]) {
+                    if (isTarget[data.b(i + j).toInt() and 0xFF]) {
                         positions.add(i + j)
                     }
                 }
@@ -83,30 +94,35 @@ class ArmNeonSimdStrategy : SimdStrategy {
             }
             
             // Scalar remainder
-            while (i < data.size) {
-                if (isTarget[data[i].toInt() and 0xFF]) {
+            while (i < data.a) {
+                if (isTarget[data.b(i).toInt() and 0xFF]) {
                     positions.add(i)
                 }
                 i++
             }
         }
         
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun compareBytes(data: ByteArray, pattern: ByteArray, positions: IntArray): BooleanArray {
-        return BooleanArray(positions.size) { idx ->
-            val pos = positions[idx]
-            if (pos + pattern.size > data.size) {
+    override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
+        return Indexed(positions.a) { idx ->
+            val pos = positions.b(idx)
+            if (pos + pattern.a > data.a) {
                 false
             } else {
-                data.usePinned { dataPinned ->
-                    pattern.usePinned { patternPinned ->
+                // Convert Indexed<Byte> to ByteArray for usePinned
+                val dataArray = ByteArray(data.a) { i -> data.b(i) }
+                val patternArray = ByteArray(pattern.a) { i -> pattern.b(i) }
+                @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+                dataArray.usePinned { dataPinned ->
+                    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+                    patternArray.usePinned { patternPinned ->
                         // Use memcmp for now, NEON would vectorize this
-                        memcmp(
+                        platform.posix.memcmp(
                             dataPinned.addressOf(pos),
                             patternPinned.addressOf(0),
-                            pattern.size.convert()
+                            pattern.a.toULong()
                         ) == 0
                     }
                 }
@@ -114,13 +130,13 @@ class ArmNeonSimdStrategy : SimdStrategy {
         }
     }
     
-    override fun popcount(bitmap: IntArray): Int {
+    override fun popcount(bitmap: Indexed<Int>): Int {
         var count = 0
         
         // ARM has efficient popcount
-        for (word in bitmap) {
+        for (i in 0 until bitmap.a) {
             // __builtin_popcount is available on ARM
-            var w = word
+            var w = bitmap.b(i)
             while (w != 0) {
                 count++
                 w = w and (w - 1)
@@ -130,10 +146,10 @@ class ArmNeonSimdStrategy : SimdStrategy {
         return count
     }
     
-    override fun gatherBytes(data: ByteArray, positions: IntArray): ByteArray {
+    override fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte> {
         // NEON doesn't have gather, but we can optimize with prefetch
-        return ByteArray(positions.size) { i ->
-            if (positions[i] < data.size) data[positions[i]] else 0
+        return Indexed(positions.a) { i ->
+            if (positions.b(i) < data.a) data.b(positions.b(i)) else 0
         }
     }
     
@@ -157,63 +173,62 @@ class ArmNeonSimdStrategy : SimdStrategy {
 class ArmSveSimdStrategy : SimdStrategy {
     internal val vectorLength = getSveVectorLength()
     
-    override fun findByte(data: ByteArray, target: Byte, offset: Int): IntArray {
+    override fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
         
         // SVE can process variable-length vectors
         val bytesPerVector = vectorLength / 8
         
-        data.usePinned { pinned ->
-            var i = offset
-            val bound = data.size - bytesPerVector
+        // SVE can process variable-length vectors without usePinned for now
+        var i = offset
+        val bound = data.a - bytesPerVector
+        
+        while (i <= bound) {
+            // SVE instructions:
+            // - LD1B: Load bytes with predication
+            // - CMPEQ: Compare with predication
+            // - COMPACT: Compress matching indices
             
-            while (i <= bound) {
-                // SVE instructions:
-                // - LD1B: Load bytes with predication
-                // - CMPEQ: Compare with predication
-                // - COMPACT: Compress matching indices
-                
-                // Simulated SVE operation
-                for (j in 0 until bytesPerVector) {
-                    if (i + j < data.size && data[i + j] == target) {
-                        positions.add(i + j)
-                    }
+            // Simulated SVE operation
+            for (j in 0 until bytesPerVector) {
+                if (i + j < data.a && data.b(i + j) == target) {
+                    positions.add(i + j)
                 }
-                
-                i += bytesPerVector
             }
             
-            // Process remainder with predication (SVE feature)
-            while (i < data.size) {
-                if (data[i] == target) {
-                    positions.add(i)
-                }
-                i++
-            }
+            i += bytesPerVector
         }
         
-        return positions.toIntArray()
+        // Process remainder with predication (SVE feature)
+        while (i < data.a) {
+            if (data.b(i) == target) {
+                positions.add(i)
+            }
+            i++
+        }
+        
+        return positions.size j { positions[it] }
     }
     
-    override fun findAnyByte(data: ByteArray, targets: ByteArray, offset: Int): IntArray {
+    override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
         // Similar to NEON but with flexible vector length
         return ArmNeonSimdStrategy().findAnyByte(data, targets, offset)
     }
     
-    override fun compareBytes(data: ByteArray, pattern: ByteArray, positions: IntArray): BooleanArray {
+    override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
         // SVE can use predicated loads for efficient comparison
         return ArmNeonSimdStrategy().compareBytes(data, pattern, positions)
     }
     
-    override fun popcount(bitmap: IntArray): Int {
+    override fun popcount(bitmap: Indexed<Int>): Int {
         // SVE has CNT instruction for population count
         return ArmNeonSimdStrategy().popcount(bitmap)
     }
     
-    override fun gatherBytes(data: ByteArray, positions: IntArray): ByteArray {
+    override fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte> {
         // SVE2 has gather load instructions!
-        return ByteArray(positions.size) { i ->
-            if (positions[i] < data.size) data[positions[i]] else 0
+        return Indexed(positions.a) { i ->
+            if (positions.b(i) < data.a) data.b(positions.b(i)) else 0
         }
     }
     
@@ -248,38 +263,54 @@ internal fun hasArmNeon(): Boolean {
  * Fallback for older ARM or when SIMD unavailable
  */
 class FallbackSimdStrategy : SimdStrategy {
-    override fun findByte(data: ByteArray, target: Byte, offset: Int): IntArray {
+    override fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
-        for (i in offset until data.size) {
-            if (data[i] == target) positions.add(i)
+        for (i in offset until data.a) {
+            if (data.b(i) == target) positions.add(i)
         }
-        return positions.toIntArray()
+        return positions.size j { positions[it] }
     }
     
-    override fun findAnyByte(data: ByteArray, targets: ByteArray, offset: Int): IntArray {
+    override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
-        val targetSet = targets.toSet()
-        for (i in offset until data.size) {
-            if (data[i] in targetSet) positions.add(i)
+        val targetSet = mutableSetOf<Byte>()
+        for (i in 0 until targets.a) {
+            targetSet.add(targets.b(i))
         }
-        return positions.toIntArray()
+        for (i in offset until data.a) {
+            if (data.b(i) in targetSet) positions.add(i)
+        }
+        return positions.size j { positions[it] }
     }
     
-    override fun compareBytes(data: ByteArray, pattern: ByteArray, positions: IntArray): BooleanArray {
-        return BooleanArray(positions.size) { idx ->
-            val pos = positions[idx]
-            if (pos + pattern.size > data.size) false
-            else pattern.indices.all { data[pos + it] == pattern[it] }
+    override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
+        return Indexed(positions.a) { idx ->
+            val pos = positions.b(idx)
+            if (pos + pattern.a > data.a) false
+            else {
+                var matches = true
+                for (i in 0 until pattern.a) {
+                    if (data.b(pos + i) != pattern.b(i)) {
+                        matches = false
+                        break
+                    }
+                }
+                matches
+            }
         }
     }
     
-    override fun popcount(bitmap: IntArray): Int {
-        return bitmap.sumOf { it.countOneBits() }
+    override fun popcount(bitmap: Indexed<Int>): Int {
+        var count = 0
+        for (i in 0 until bitmap.a) {
+            count += bitmap.b(i).countOneBits()
+        }
+        return count
     }
     
-    override fun gatherBytes(data: ByteArray, positions: IntArray): ByteArray {
-        return ByteArray(positions.size) { i ->
-            if (positions[i] < data.size) data[positions[i]] else 0
+    override fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte> {
+        return Indexed(positions.a) { i ->
+            if (positions.b(i) < data.a) data.b(positions.b(i)) else 0
         }
     }
     

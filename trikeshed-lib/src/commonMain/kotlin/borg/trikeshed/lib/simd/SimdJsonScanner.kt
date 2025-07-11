@@ -1,5 +1,10 @@
 package borg.trikeshed.lib.simd
 
+import borg.trikeshed.lib.Indexed
+import borg.trikeshed.lib.j
+import borg.trikeshed.lib.toIndexed
+import borg.trikeshed.lib.toIntArray
+
 /**
  * SIMD JSON Scanner that adapts to any vector width.
  * 
@@ -31,17 +36,18 @@ class SimdJsonScanner(
         )
         
         // Find all structural characters using SIMD
-        val positions = simd.findAnyByte(jsonBytes, structuralChars)
+        val positions = simd.findAnyByte(jsonBytes.toIndexed(), structuralChars.toIndexed())
         
         // Build bitmap - naturally uses full SIMD width
         val bitmap = IntArray((jsonBytes.size + 31) / 32)
-        for (pos in positions) {
+        for (i in 0 until positions.a) {
+            val pos = positions.b(i)
             val wordIndex = pos shr 5
             val bitIndex = pos and 31
             bitmap[wordIndex] = bitmap[wordIndex] or (1 shl bitIndex)
         }
         
-        return StructuralIndex(bitmap, positions, capabilities.vectorBits)
+        return StructuralIndex(bitmap, positions.toIntArray(), capabilities.vectorBits)
     }
     
     /**
@@ -49,21 +55,25 @@ class SimdJsonScanner(
      * Finds quote pairs, handling escapes
      */
     fun findStrings(): StringIndex {
-        val quotes = simd.findByte(jsonBytes, '"'.code.toByte())
-        val backslashes = simd.findByte(jsonBytes, '\\'.code.toByte())
+        val quotes = simd.findByte(jsonBytes.toIndexed(), '"'.code.toByte())
+        val backslashes = simd.findByte(jsonBytes.toIndexed(), '\\'.code.toByte())
         
         // Process quotes in SIMD-width chunks
         val stringRanges = mutableListOf<IntRange>()
         var i = 0
-        while (i < quotes.size) {
-            val start = quotes[i]
-            var end = if (i + 1 < quotes.size) quotes[i + 1] else jsonBytes.size
+        while (i < quotes.a) {
+            val start = quotes.b(i)
+            var end = if (i + 1 < quotes.a) quotes.b(i + 1) else jsonBytes.size
             
             // Check for escapes between start and end
             // This could also be SIMD-accelerated
-            val escapeCount = backslashes.count { it in (start + 1) until end }
-            if (escapeCount % 2 == 1 && i + 2 < quotes.size) {
-                end = quotes[i + 2]
+            var escapeCount = 0
+            for (j in 0 until backslashes.a) {
+                val escapePos = backslashes.b(j)
+                if (escapePos in (start + 1) until end) escapeCount++
+            }
+            if (escapeCount % 2 == 1 && i + 2 < quotes.a) {
+                end = quotes.b(i + 2)
                 i += 3
             } else {
                 i += 2
@@ -146,8 +156,12 @@ class AdaptiveSimdAlgorithms {
         // Process full vectors
         while (offset + cap.bytesPerVector <= data.size) {
             // Real SIMD: Load vector, compare all bytes, count matches
-            val matches = simd.findByte(data, target, offset)
-            count += matches.count { it < offset + cap.bytesPerVector }
+            val matches = simd.findByte(data.toIndexed(), target, offset)
+            var matchCount = 0
+            for (i in 0 until matches.a) {
+                if (matches.b(i) < offset + cap.bytesPerVector) matchCount++
+            }
+            count += matchCount
             offset += cap.bytesPerVector
         }
         

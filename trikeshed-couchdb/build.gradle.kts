@@ -13,9 +13,9 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":trikeshed-lib"))
-                // implementation(project(":trikeshed-net")) // Disabled due to QUIC/reactor dependency issues
-                // implementation(project(":trikeshed-lsmr")) // Removed due to cursor dependency issues
-                // implementation(project(":trikeshed-channel-api")) // Removed due to compilation errors
+                implementation(project(":trikeshed-net"))
+                implementation(project(":trikeshed-lsmr"))
+                implementation(project(":trikeshed-channel-api"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")

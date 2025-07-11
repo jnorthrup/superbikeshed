@@ -45,4 +45,4 @@ actual value class TimeToLive(val seconds: Int)
 actual value class TrikeShedProtocol(val id: UByte)
 
 @Serializable
-actual value class Duration(val millis: Long)
+actual value class Duration(actual val millis: Long)
