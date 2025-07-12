@@ -40,19 +40,7 @@ infix fun <X, C, Subject : Iterable<X>> Subject.α(xform: (X) -> C) = object : I
 
 // Extension functions in the spirit of Indexed
 
-/**
- * Provides unbounded access to first and last rows beyond the existing bounds
- */
-val <T> Indexed<T>.infinite: Indexed<T>
-    get() = Int.MAX_VALUE j { x: Int ->
-        this.b(
-            when {
-                x < 0 -> 0
-                a <= x -> a.dec()
-                else -> x
-            }
-        )
-    }
+
 
 /**
  * Enum-driven domain-specific MetaSeries controller
