@@ -33,7 +33,7 @@ infix fun Cursor.at(r: IntRange): Cursor {
         "Invalid range $r for cursor size ${this.data.a.value}"
     }
     val sliceSize = actualEnd - actualStart + 1
-    return Cursor(MetaSeries(CursorRowIndex(sliceSize)) { iy: CursorRowIndex ->
+    return Cursor(MetaSeries.create(CursorRowIndex(sliceSize)) { iy: CursorRowIndex ->
         this[iy.value + actualStart]
     })
 }
@@ -43,20 +43,20 @@ infix fun Cursor.at(r: IntRange): Cursor {
  * This provides a flexible way to project the cursor data into a new structure.
  */
 inline fun <T> Cursor.asMetaSeries(crossinline transform: (RowVec) -> T): MetaSeries<CursorRowIndex, T> {
-    return MetaSeries(CursorRowIndex(this.data.a.value)) { iy: CursorRowIndex ->
+    return MetaSeries.create(CursorRowIndex(this.data.a.value)) { iy: CursorRowIndex ->
         transform(this[iy.value])
     }
 }
 
 operator fun Cursor.get(vararg indices: Int): Cursor {
     val indexedIndices = indices.size j { i: Int -> indices[i] }
-    return Cursor(MetaSeries(CursorRowIndex(indexedIndices.a)) { iy: CursorRowIndex -> this.data.b(CursorRowIndex(indexedIndices.b(iy.value))) })
+    return Cursor(MetaSeries.create(CursorRowIndex(indexedIndices.a)) { iy: CursorRowIndex -> this.data.b(CursorRowIndex(indexedIndices.b(iy.value))) })
 }
 
 /** Get cursor with specified row indices from iterable */
 operator fun Cursor.get(indices: Iterable<Int>): Cursor {
     val array = indices.toList().toIntArray()
-    return Cursor(MetaSeries(CursorRowIndex(array.size)) { iy: CursorRowIndex -> this.data.b(CursorRowIndex(array[iy.value])) })
+    return Cursor(MetaSeries.create(CursorRowIndex(array.size)) { iy: CursorRowIndex -> this.data.b(CursorRowIndex(array[iy.value])) })
 }
 
 // Core cursor operations
@@ -85,9 +85,9 @@ internal fun Cursor.findColumnIndex(name: String): Int {
 
 /** Get multiple columns */
 fun Cursor.columns(vararg indices: Int): Cursor =
-    Cursor(MetaSeries(CursorRowIndex(this.data.a.value)) { rowIndex: CursorRowIndex ->
+    Cursor(MetaSeries.create(CursorRowIndex(this.data.a.value)) { rowIndex: CursorRowIndex ->
         val oldRow = this[rowIndex.value]
-        Indexed(indices.size) { colIdx: Int ->
+        indices.size j { colIdx: Int ->
             oldRow.b(indices[colIdx])
         }
     })
@@ -119,25 +119,25 @@ val Cursor.colIdx: Map<String, Int>
 
 /** Get Int value with type safety */
 fun RowVec.getInt(index: Int): Int? {
-    val cell = this[index]
+    val cell = this.b(index)
     return cell.a as? Int
 }
 
 /** Get String value with type safety */
 fun RowVec.getString(index: Int): String? {
-    val cell = this[index]
+    val cell = this.b(index)
     return cell.a as? String
 }
 
 /** Get Float value with type safety */
 fun RowVec.getFloat(index: Int): Float? {
-    val cell = this[index]
+    val cell = this.b(index)
     return cell.a as? Float
 }
 
 /** Get Double value with type safety */
 fun RowVec.getDouble(index: Int): Double? {
-    val cell = this[index]
+    val cell = this.b(index)
     return cell.a as? Double
 }
 
@@ -247,7 +247,7 @@ fun cursorOf(
         Join(columnNames[i], columnTypes[i])
     }
 
-    val metaSeries = MetaSeries(CursorRowIndex(data.size)) { rowIndex: CursorRowIndex ->
+    val metaSeries = MetaSeries.create(CursorRowIndex(data.size)) { rowIndex: CursorRowIndex ->
         val rowData = data[rowIndex.value]
         val rowVec: RowVec = rowData.size j { colIndex: Int ->
             val cellValue = rowData[colIndex]

@@ -40,7 +40,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":trikeshed-lib"))
                 implementation(project(":trikeshed-io"))
                 implementation(project(":trikeshed-cursor"))
                 implementation(project(":trikeshed-reactor"))

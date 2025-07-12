@@ -19,46 +19,28 @@ sealed interface Either<out L, out R> {
     }
 }
 
-data class Join<A, B>(val a: A, val b: B)
-
-@kotlin.jvm.JvmInline
-value class Indexed<T>(val data: Join<Int, (Int) -> T>) {
-    val a: Int get() = data.a
-    val b: (Int) -> T get() = data.b
-    
-    operator fun plus(other: Indexed<T>): Indexed<T> = Indexed(Join(a + other.a) { 
-        if (it < a) b(it) else other.b(it - a)
-    })
-    operator fun get(index: Int): T = b(index)
-    
+interface Join<A, B> {
+    val a: A
+    val b: B
+    operator fun component1(): A = a
+    operator fun component2(): B = b
+    val pair: Pair<A, B> get() = Pair(a, b)
     companion object {
-        fun <T> create(a: Int, b: (Int) -> T): Indexed<T> = Indexed(Join(a, b))
+        operator fun <A, B> invoke(a: A, b: B): Join<A, B> = object : Join<A, B> {
+            override val a: A = a
+            override val b: B = b
+        }
     }
 }
 
-@kotlin.jvm.JvmInline
-value class MetaSeries<I, T>(val data: Join<I, (I) -> T>) {
-    val a: I get() = data.a
-    val b: (I) -> T get() = data.b
-    
-    companion object {
-        fun <I, T> create(a: I, b: (I) -> T): MetaSeries<I, T> = MetaSeries(Join(a, b))
-    }
-}
-
-typealias LongIndexed<T> = Indexed<T>
+typealias MetaSeries<A, T> = Join<A, (A) -> T>
+typealias Indexed<T> = Join<Int, (Int) -> T>
+typealias LongIndexed<T> = Join<Long, (Long) -> T>
 typealias Twin<T> = Join<T, T>
 typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 typealias ColumnMeta = Join<String, KClassifier>
-
-typealias InfoHash = ByteArray
-
-@kotlin.jvm.JvmInline
-value class PeerId(val bytes: ByteArray) {
-    
-}
 // Trait for array-like access - WHENEVER THEY NEED get[i] OPERATOR
 interface ArrayLike<I, T> {
     operator fun get(index: I): T
@@ -72,7 +54,6 @@ value class CursorRowIndex(val value: Int) {
 }
 
 // Canonical RowVec and Cursor definitions
-
 typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
 
 // Cursor with ArrayLike trait - WHENEVER THEY NEED get[i] OPERATOR
@@ -117,12 +98,6 @@ val ULong.z: Boolean get() = 0UL == this
 infix fun <T> T.d(other: T): T { println(other); return this }
 
 infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
-
-// Overload for creating Indexed<T> from size and generator function
-infix fun <T> Int.j(generator: (Int) -> T): Indexed<T> = Indexed.create(this, generator)
-
-// Overload for creating MetaSeries<I,T> from index and generator function
-infix fun <I, T> I.j(generator: (I) -> T): MetaSeries<I, T> = MetaSeries.create(this, generator)
 
 /**
  * Reverse composition operator (◂) - Compose in reverse order
@@ -179,20 +154,17 @@ inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Index
 // === IterableIndexed and play button ===
 
 @kotlin.jvm.JvmInline
-value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A> {
+value class IterableIndexed<A>(val s: Indexed<A>) : Iterable<A>, Indexed<A> by s {
     override fun iterator(): Iterator<A> = object : Iterator<A> {
         internal var currentIndex = 0
         override fun hasNext(): Boolean = currentIndex < s.a
         override fun next(): A = s.b(currentIndex++)
     }
-    val size: Int get() = s.a
-    operator fun get(index: Int): A = s.b(index)
 }
-
 
 val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 
 val <T> Indexed<T>.size: Int get() = a
 
 // Clean array-like access for Indexed<T> - no more .b(i)!
-operator fun <T> Indexed<T>.get(index: Int): T = b(index)
+operator fun <T> Indexed<T>.get(index: Int): T = b(index) 
