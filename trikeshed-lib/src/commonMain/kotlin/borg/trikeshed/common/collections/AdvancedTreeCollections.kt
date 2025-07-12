@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.flow
 // === RADIX TREE ===
 
 /**
- * Radix Tree node using Join patterns
+ * Radix Tree node using Join patterns - Pristine Columnar pattern
+ * Structure: key j (value j children)
  */
 typealias RadixTreeNode<T> = Join<String, Join<T?, Indexed<RadixTreeNode<T>>>>
 
@@ -32,9 +33,7 @@ class BBCursiveRadixTree<T> {
     }
     
     private fun insertRecursive(node: RadixTreeNode<T>?, key: String, value: T): RadixTreeNode<T> {
-        if (node == null) {
-            return key j (value j (0 j { _ -> null }))
-        }
+        if (node == null) return key j (value j (0 j { _: Int -> null as RadixTreeNode<T>? }))
         
         val nodeKey = node.a
         val nodeValue = node.b.a
@@ -43,63 +42,38 @@ class BBCursiveRadixTree<T> {
         val commonPrefix = findCommonPrefix(nodeKey, key)
         
         if (commonPrefix == nodeKey) {
-            // Key is a prefix of node key
-            if (key == nodeKey) {
-                // Exact match, update value
-                return key j (value j children)
-            } else {
-                // Key is shorter, split node
-                val remainingKey = key.substring(commonPrefix.length)
-                val newChild = insertRecursive(null, remainingKey, value)
-                val newChildren = (children.size + 1) j { i ->
-                    if (i < children.size) children[i] else newChild
-                }
-                return commonPrefix j (nodeValue j newChildren)
-            }
+            if (key == nodeKey) return key j (value j children)
+            val remainingKey = key.substring(commonPrefix.length)
+            val newChild = insertRecursive(null, remainingKey, value)
+            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
+            return commonPrefix j (nodeValue j newChildren)
         } else if (commonPrefix == key) {
-            // Node key is a prefix of key
             val remainingKey = nodeKey.substring(commonPrefix.length)
             val newChild = insertRecursive(null, remainingKey, nodeValue)
-            val newChildren = (children.size + 1) j { i ->
-                if (i < children.size) children[i] else newChild
-            }
+            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
             return commonPrefix j (value j newChildren)
         } else {
-            // Partial match, split both
             val nodeRemaining = nodeKey.substring(commonPrefix.length)
             val keyRemaining = key.substring(commonPrefix.length)
             
             val nodeChild = insertRecursive(null, nodeRemaining, nodeValue)
             val keyChild = insertRecursive(null, keyRemaining, value)
             
-            val newChildren = 2 j { i ->
-                when (i) {
-                    0 -> nodeChild
-                    1 -> keyChild
-                    else -> null
-                }
-            }
-            
+            val newChildren = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }
             return commonPrefix j (null j newChildren)
         }
     }
     
     private fun findCommonPrefix(str1: String, str2: String): String {
         val minLength = minOf(str1.length, str2.length)
-        for (i in 0 until minLength) {
-            if (str1[i] != str2[i]) {
-                return str1.substring(0, i)
-            }
-        }
+        for (i in 0 until minLength) if (str1[i] != str2[i]) return str1.substring(0, i)
         return str1.substring(0, minLength)
     }
     
     /**
      * Search using bbcursive pattern
      */
-    fun search(key: String): T? {
-        return searchRecursive(root, key)
-    }
+    fun search(key: String): T? = searchRecursive(root, key)
     
     private fun searchRecursive(node: RadixTreeNode<T>?, key: String): T? {
         if (node == null) return null
@@ -110,20 +84,16 @@ class BBCursiveRadixTree<T> {
         
         if (key.startsWith(nodeKey)) {
             val remainingKey = key.substring(nodeKey.length)
-            if (remainingKey.isEmpty()) {
-                return nodeValue
-            }
+            if (remainingKey.isEmpty()) return nodeValue
             
-            // Search in children
-            for (i in 0 until children.size) {
-                val child = children[i]
+            for (i in 0 until children.a) {
+                val child = children.b(i)
                 if (child != null) {
                     val result = searchRecursive(child, remainingKey)
                     if (result != null) return result
                 }
             }
         }
-        
         return null
     }
 }
@@ -135,11 +105,13 @@ class BBCursiveRadixTree<T> {
  */
 typealias SortedMapEntry<K, V> = Join<K, V>
 
+// Binary tree node removed - using direct Join pattern to avoid recursive type alias
+
 /**
  * Sorted Map implementation using binary search tree
  */
 class BBCursiveSortedMap<K : Comparable<K>, V> {
-    private var root: BinaryTreeNode<SortedMapEntry<K, V>>? = null
+    private var root: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>? = null
     
     /**
      * Insert key-value pair using bbcursive pattern
@@ -149,14 +121,12 @@ class BBCursiveSortedMap<K : Comparable<K>, V> {
         root = insertRecursive(root, entry)
     }
     
-    private fun insertRecursive(node: BinaryTreeNode<SortedMapEntry<K, V>>?, entry: SortedMapEntry<K, V>): BinaryTreeNode<SortedMapEntry<K, V>> {
-        if (node == null) {
-            return entry j (null j null)
-        }
+    private fun insertRecursive(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?, entry: SortedMapEntry<K, V>): Join<SortedMapEntry<K, V>, Join<Any?, Any?>> {
+        if (node == null) return entry j (null j null)
         
         val currentEntry = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val left = node.b.a as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
+        val right = node.b.b as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         
         val currentKey = currentEntry.a
         val entryKey = entry.a
@@ -170,26 +140,21 @@ class BBCursiveSortedMap<K : Comparable<K>, V> {
                 val newRight = insertRecursive(right, entry)
                 currentEntry j (left j newRight)
             }
-            else -> {
-                // Key already exists, update value
-                entry j (left j right)
-            }
+            else -> entry j (left j right)
         }
     }
     
     /**
      * Get value by key using bbcursive pattern
      */
-    fun get(key: K): V? {
-        return getRecursive(root, key)
-    }
+    fun get(key: K): V? = getRecursive(root, key)
     
-    private fun getRecursive(node: BinaryTreeNode<SortedMapEntry<K, V>>?, key: K): V? {
+    private fun getRecursive(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?, key: K): V? {
         if (node == null) return null
         
         val currentEntry = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val left = node.b.a as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
+        val right = node.b.b as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         
         val currentKey = currentEntry.a
         val currentValue = currentEntry.b
@@ -210,12 +175,12 @@ class BBCursiveSortedMap<K : Comparable<K>, V> {
         return entries.size j { i -> entries[i] }
     }
     
-    private fun collectEntries(node: BinaryTreeNode<SortedMapEntry<K, V>>?, entries: MutableList<SortedMapEntry<K, V>>) {
+    private fun collectEntries(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?, entries: MutableList<SortedMapEntry<K, V>>) {
         if (node == null) return
         
         val currentEntry = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val left = node.b.a as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
+        val right = node.b.b as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         
         collectEntries(left, entries)
         entries.add(currentEntry)
@@ -228,57 +193,50 @@ class BBCursiveSortedMap<K : Comparable<K>, V> {
 /**
  * Navigable Map implementation with additional navigation methods
  */
-class BBCursiveNavigableMap<K : Comparable<K>, V> : BBCursiveSortedMap<K, V>() {
+class BBCursiveNavigableMap<K : Comparable<K>, V> {
+    private val sortedMap = BBCursiveSortedMap<K, V>()
+    
+    // Delegate basic operations to sorted map
+    fun put(key: K, value: V) = sortedMap.put(key, value)
+    fun get(key: K): V? = sortedMap.get(key)
+    fun entries() = sortedMap.entries()
+    
+    // Access to root for navigation methods
+    private var root: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>? = null
     
     /**
      * Get the first (smallest) key
      */
-    fun firstKey(): K? {
-        return findFirstKey(root)
-    }
+    fun firstKey(): K? = findFirstKey(root)
     
-    private fun findFirstKey(node: BinaryTreeNode<SortedMapEntry<K, V>>?): K? {
+    private fun findFirstKey(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?): K? {
         if (node == null) return null
-        
         val left = node.b.a
-        return if (left != null) {
-            findFirstKey(left)
-        } else {
-            node.a.a
-        }
+        return if (left != null) findFirstKey(left) else node.a.a
     }
     
     /**
      * Get the last (largest) key
      */
-    fun lastKey(): K? {
-        return findLastKey(root)
-    }
+    fun lastKey(): K? = findLastKey(root)
     
-    private fun findLastKey(node: BinaryTreeNode<SortedMapEntry<K, V>>?): K? {
+    private fun findLastKey(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?): K? {
         if (node == null) return null
-        
         val right = node.b.b
-        return if (right != null) {
-            findLastKey(right)
-        } else {
-            node.a.a
-        }
+        return if (right != null) findLastKey(right) else node.a.a
     }
     
     /**
      * Get the greatest key less than the given key
      */
-    fun lowerKey(key: K): K? {
-        return findLowerKey(root, key)
-    }
+    fun lowerKey(key: K): K? = findLowerKey(root, key)
     
-    private fun findLowerKey(node: BinaryTreeNode<SortedMapEntry<K, V>>?, key: K): K? {
+    private fun findLowerKey(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?, key: K): K? {
         if (node == null) return null
         
         val currentEntry = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val left = node.b.a as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
+        val right = node.b.b as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         
         val currentKey = currentEntry.a
         
@@ -294,16 +252,14 @@ class BBCursiveNavigableMap<K : Comparable<K>, V> : BBCursiveSortedMap<K, V>() {
     /**
      * Get the least key greater than the given key
      */
-    fun higherKey(key: K): K? {
-        return findHigherKey(root, key)
-    }
+    fun higherKey(key: K): K? = findHigherKey(root, key)
     
-    private fun findHigherKey(node: BinaryTreeNode<SortedMapEntry<K, V>>?, key: K): K? {
+    private fun findHigherKey(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?, key: K): K? {
         if (node == null) return null
         
         val currentEntry = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val left = node.b.a as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
+        val right = node.b.b as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         
         val currentKey = currentEntry.a
         
@@ -320,7 +276,8 @@ class BBCursiveNavigableMap<K : Comparable<K>, V> : BBCursiveSortedMap<K, V>() {
 // === TRIE WITH COMPRESSION ===
 
 /**
- * Compressed Trie node using Join patterns
+ * Compressed Trie node using Join pattern - Pristine Columnar pattern
+ * Structure: key j (value j children)
  */
 typealias CompressedTrieNode<T> = Join<String, Join<T?, Indexed<CompressedTrieNode<T>>>>
 
@@ -338,9 +295,7 @@ class BBCursiveCompressedTrie<T> {
     }
     
     private fun insertCompressed(node: CompressedTrieNode<T>?, key: String, value: T): CompressedTrieNode<T> {
-        if (node == null) {
-            return key j (value j (0 j { _ -> null }))
-        }
+        if (node == null) return key j (value j (0 j { _: Int -> null as CompressedTrieNode<T>? }))
         
         val nodeKey = node.a
         val nodeValue = node.b.a
@@ -349,69 +304,42 @@ class BBCursiveCompressedTrie<T> {
         val commonPrefix = findCommonPrefix(nodeKey, key)
         
         if (commonPrefix.isEmpty()) {
-            // No common prefix, create new root
-            val newRoot = "" j (null j (2 j { i ->
-                when (i) {
-                    0 -> node
-                    1 -> key j (value j (0 j { _ -> null }))
-                    else -> null
-                }
-            }))
+            val newRoot = "" j (null j (2 j { i -> when (i) { 0 -> node; 1 -> key j (value j (0 j { _: Int -> null as CompressedTrieNode<T>? })); else -> null } }))
             return newRoot
         }
         
         if (commonPrefix == nodeKey) {
-            // Node key is a prefix
             val remainingKey = key.substring(commonPrefix.length)
             val newChild = insertCompressed(null, remainingKey, value)
-            val newChildren = (children.size + 1) j { i ->
-                if (i < children.size) children[i] else newChild
-            }
+            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
             return commonPrefix j (nodeValue j newChildren)
         } else if (commonPrefix == key) {
-            // Key is a prefix
             val remainingNodeKey = nodeKey.substring(commonPrefix.length)
             val newChild = insertCompressed(null, remainingNodeKey, nodeValue)
-            val newChildren = (children.size + 1) j { i ->
-                if (i < children.size) children[i] else newChild
-            }
+            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
             return commonPrefix j (value j newChildren)
         } else {
-            // Partial match, split both
             val nodeRemaining = nodeKey.substring(commonPrefix.length)
             val keyRemaining = key.substring(commonPrefix.length)
             
             val nodeChild = insertCompressed(null, nodeRemaining, nodeValue)
             val keyChild = insertCompressed(null, keyRemaining, value)
             
-            val newChildren = 2 j { i ->
-                when (i) {
-                    0 -> nodeChild
-                    1 -> keyChild
-                    else -> null
-                }
-            }
-            
+            val newChildren = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }
             return commonPrefix j (null j newChildren)
         }
     }
     
     private fun findCommonPrefix(str1: String, str2: String): String {
         val minLength = minOf(str1.length, str2.length)
-        for (i in 0 until minLength) {
-            if (str1[i] != str2[i]) {
-                return str1.substring(0, i)
-            }
-        }
+        for (i in 0 until minLength) if (str1[i] != str2[i]) return str1.substring(0, i)
         return str1.substring(0, minLength)
     }
     
     /**
      * Search with compression using bbcursive pattern
      */
-    fun search(key: String): T? {
-        return searchCompressed(root, key)
-    }
+    fun search(key: String): T? = searchCompressed(root, key)
     
     private fun searchCompressed(node: CompressedTrieNode<T>?, key: String): T? {
         if (node == null) return null
@@ -422,20 +350,16 @@ class BBCursiveCompressedTrie<T> {
         
         if (key.startsWith(nodeKey)) {
             val remainingKey = key.substring(nodeKey.length)
-            if (remainingKey.isEmpty()) {
-                return nodeValue
-            }
+            if (remainingKey.isEmpty()) return nodeValue
             
-            // Search in children
-            for (i in 0 until children.size) {
-                val child = children[i]
+            for (i in 0 until children.a) {
+                val child = children.b(i)
                 if (child != null) {
                     val result = searchCompressed(child, remainingKey)
                     if (result != null) return result
                 }
             }
         }
-        
         return null
     }
 }
@@ -452,12 +376,9 @@ object AdvancedTreePackingProfiler {
      */
     fun <T> profileRadixTree(tree: BBCursiveRadixTree<T>): JoinPackingReport {
         val report = JoinPackingReport()
-        
-        // Profile string operations
         report.registerUsagePatterns.add("radix_traversal" j "prefix_matching")
         report.registerUsagePatterns.add("string_compression" j "shared_prefixes")
         report.registerUsagePatterns.add("node_splitting" j "memory_efficiency")
-        
         return report
     }
     
@@ -466,12 +387,9 @@ object AdvancedTreePackingProfiler {
      */
     fun <K : Comparable<K>, V> profileSortedMap(map: BBCursiveSortedMap<K, V>): JoinPackingReport {
         val report = JoinPackingReport()
-        
-        // Profile map operations
         report.registerUsagePatterns.add("key_value_pairs" j "join_composition")
         report.registerUsagePatterns.add("binary_search" j "logarithmic_access")
         report.registerUsagePatterns.add("in_order_traversal" j "sorted_iteration")
-        
         return report
     }
     
@@ -480,12 +398,9 @@ object AdvancedTreePackingProfiler {
      */
     fun <K : Comparable<K>, V> profileNavigableMap(map: BBCursiveNavigableMap<K, V>): JoinPackingReport {
         val report = JoinPackingReport()
-        
-        // Profile navigation operations
         report.registerUsagePatterns.add("boundary_queries" j "range_operations")
         report.registerUsagePatterns.add("successor_predecessor" j "pointer_chasing")
         report.registerUsagePatterns.add("submap_operations" j "view_creation")
-        
         return report
     }
     
@@ -494,12 +409,9 @@ object AdvancedTreePackingProfiler {
      */
     fun <T> profileCompressedTrie(trie: BBCursiveCompressedTrie<T>): JoinPackingReport {
         val report = JoinPackingReport()
-        
-        // Profile compression operations
         report.registerUsagePatterns.add("prefix_compression" j "memory_optimization")
         report.registerUsagePatterns.add("node_merging" j "space_efficiency")
         report.registerUsagePatterns.add("string_operations" j "character_scanning")
-        
         return report
     }
 } 

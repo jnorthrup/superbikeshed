@@ -2,7 +2,7 @@ package borg.trikeshed
 
 import kotlin.reflect.KClass
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS, AnnotationTarget.OBJECT)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class TrikeShedCommand(
     val name: String,                  // Command name/alias
@@ -22,7 +22,7 @@ annotation class TrikeShedCommand(
     )
 }
 
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS, AnnotationTarget.OBJECT)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class TrikeShedParms(
     val parmsName: String,           // Name/alias for the parameter set

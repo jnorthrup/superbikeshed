@@ -27,6 +27,11 @@ kotlin {
     linuxX64()
     
     sourceSets {
+        val jvmMain by getting
+        val jvmTest by getting
+        val commonMain by getting
+        val commonTest by getting
+        
         commonMain {
             dependencies {
                 // Coroutines
