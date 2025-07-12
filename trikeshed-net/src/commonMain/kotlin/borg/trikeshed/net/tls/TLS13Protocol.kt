@@ -1,10 +1,7 @@
 @file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
 package borg.trikeshed.net.tls
 
-
 import borg.trikeshed.lib.*
-import borg.trikeshed.crypto.*
-import borg.trikeshed.net.quic.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmInline
 
@@ -30,6 +27,9 @@ typealias PSKIdentity = Indexed<Byte>
 typealias Certificate = Indexed<Byte>
 typealias CertificateVerify = Indexed<Byte>
 typealias Finished = Indexed<Byte>
+
+// Missing types
+data class ProtocolVersion(val value: UShort)
 
 // Value classes for type safety
 
@@ -277,7 +277,7 @@ data class Extension(
         
         // Data
         for (i in 0 until data.a) {
-            encoded.add(data[i])
+            encoded.add(data.b(i))
         }
         
         return encoded.size j { i: Int -> encoded[i] }
@@ -304,13 +304,13 @@ data class ClientHello(
         
         // Random
         for (i in 0 until 32) {
-            body.add(if (i < random.a) random[i] else 0.toByte())
+            body.add(if (i < random.a) random.b(i) else 0.toByte())
         }
         
         // Legacy session ID
         body.add(legacySessionId.a.toByte())
         for (i in 0 until legacySessionId.a) {
-            body.add(legacySessionId[i])
+            body.add(legacySessionId.b(i))
         }
         
         // Cipher suites
@@ -318,23 +318,23 @@ data class ClientHello(
         body.add((cipherSuitesLength shr 8).toByte())
         body.add(cipherSuitesLength.toByte())
         for (i in 0 until cipherSuites.a) {
-            val suite = cipherSuites[i]
-            body.add((suite.value shr 8).toByte())
-            body.add(suite.value.toByte())
+            val suite = cipherSuites.b(i)
+            body.add((suite.toInt() shr 8).toByte())
+            body.add(suite.toByte())
         }
         
         // Legacy compression methods
         body.add(legacyCompressionMethods.a.toByte())
         for (i in 0 until legacyCompressionMethods.a) {
-            body.add(legacyCompressionMethods[i])
+            body.add(legacyCompressionMethods.b(i))
         }
         
         // Extensions
         val encodedExtensions = mutableListOf<Byte>()
         for (i in 0 until extensions.a) {
-            val encoded = extensions[i].encode()
+            val encoded = extensions.b(i).encode()
             for (j in 0 until encoded.a) {
-                encodedExtensions.add(encoded[j])
+                encodedExtensions.add(encoded.b(j))
             }
         }
         
@@ -366,18 +366,18 @@ data class ServerHello(
         
         // Random
         for (i in 0 until 32) {
-            body.add(if (i < random.a) random[i] else 0.toByte())
+            body.add(if (i < random.a) random.b(i) else 0.toByte())
         }
         
         // Legacy session ID echo
         body.add(legacySessionIdEcho.a.toByte())
         for (i in 0 until legacySessionIdEcho.a) {
-            body.add(legacySessionIdEcho[i])
+            body.add(legacySessionIdEcho.b(i))
         }
         
         // Cipher suite
-        body.add((cipherSuite.value shr 8).toByte())
-        body.add(cipherSuite.value.toByte())
+        body.add((cipherSuite.toInt() shr 8).toByte())
+        body.add(cipherSuite.toByte())
         
         // Legacy compression method
         body.add(legacyCompressionMethod)
@@ -385,9 +385,9 @@ data class ServerHello(
         // Extensions
         val encodedExtensions = mutableListOf<Byte>()
         for (i in 0 until extensions.a) {
-            val encoded = extensions[i].encode()
+            val encoded = extensions.b(i).encode()
             for (j in 0 until encoded.a) {
-                encodedExtensions.add(encoded[j])
+                encodedExtensions.add(encoded.b(j))
             }
         }
         
@@ -447,9 +447,9 @@ class TLS13Connection(
     )
     
     internal val supportedCipherSuites = listOf(
-        TLS13CipherSuites.TLS_AES_128_GCM_SHA256,
-        TLS13CipherSuites.TLS_AES_256_GCM_SHA384,
-        TLS13CipherSuites.TLS_CHACHA20_POLY1305_SHA256
+        TLS13CipherSuites.TLS_AES_128_GCM_SHA256.value,
+        TLS13CipherSuites.TLS_AES_256_GCM_SHA384.value,
+        TLS13CipherSuites.TLS_CHACHA20_POLY1305_SHA256.value
     )
     
     /**
@@ -665,10 +665,8 @@ class TLS13Connection(
         offset += 1 + sessionIdLength
         
         // Cipher suite
-        selectedCipherSuite = CipherSuite(
-            ((body[offset].toInt() and 0xFF) shl 8) or 
-            (body[offset + 1].toInt() and 0xFF)
-        )
+        selectedCipherSuite = (((body[offset].toInt() and 0xFF) shl 8) or 
+            (body[offset + 1].toInt() and 0xFF)).toUShort()
         offset += 2
         
         // Skip compression method
@@ -682,10 +680,8 @@ class TLS13Connection(
         // Parse extensions
         val extensionsEnd = offset + extensionsLength
         while (offset < extensionsEnd) {
-            val extType = ExtensionType(
-                (((body[offset].toInt() and 0xFF) shl 8) or 
-                (body[offset + 1].toInt() and 0xFF)).toShort()
-            )
+            val extType = (((body[offset].toInt() and 0xFF) shl 8) or 
+                (body[offset + 1].toInt() and 0xFF)).toUShort()
             offset += 2
             
             val extLength = ((body[offset].toInt() and 0xFF) shl 8) or 
@@ -695,10 +691,8 @@ class TLS13Connection(
             when (extType) {
                 TLS13Protocol.ExtensionTypes.KEY_SHARE -> {
                     // Parse server's key share
-                    val group = NamedGroup(
-                        (((body[offset].toInt() and 0xFF) shl 8) or 
-                        (body[offset + 1].toInt() and 0xFF)).toShort()
-                    )
+                    val group = (((body[offset].toInt() and 0xFF) shl 8) or 
+                        (body[offset + 1].toInt() and 0xFF)).toUShort()
                     offset += 2
                     
                     val keyExchangeLength = ((body[offset].toInt() and 0xFF) shl 8) or 

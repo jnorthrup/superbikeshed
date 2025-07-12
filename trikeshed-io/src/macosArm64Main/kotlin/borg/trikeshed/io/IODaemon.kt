@@ -6,30 +6,30 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
-actual class IODaemon actual constructor(scope: CoroutineScope) {
-    override suspend fun initialize(config: IODaemonConfig) {
+actual class IODaemon actual constructor(private val scope: CoroutineScope) {
+    actual suspend fun initialize(config: IODaemonConfig) {
         println("IODaemon.initialize() not implemented for macosArm64")
     }
 
-    override suspend fun shutdown() {
+    actual suspend fun shutdown() {
         println("IODaemon.shutdown() not implemented for macosArm64")
     }
 
-    override suspend fun submit(operation: IODaemonOperation): IODaemonResult {
+    actual suspend fun submit(operation: IODaemonOperation): IODaemonResult {
         println("IODaemon.submit() not implemented for macosArm64")
         return IODaemonResult(operation.id, -1, -1)
     }
 
-    override suspend fun submitBatch(operations: List<IODaemonOperation>): List<IODaemonResult> {
+    actual suspend fun submitBatch(operations: List<IODaemonOperation>): List<IODaemonResult> {
         println("IODaemon.submitBatch() not implemented for macosArm64")
         return operations.map { IODaemonResult(it.id, -1, -1) }
     }
 
-    override fun completedOperations(): Flow<IODaemonResult> {
+    actual fun completedOperations(): Flow<IODaemonResult> {
         throw NotImplementedError("Flow-based completion not implemented yet for macosArm64")
     }
 
-    override suspend fun getStats(): IODaemonStats {
+    actual suspend fun getStats(): IODaemonStats {
         println("IODaemon.getStats() not implemented for macosArm64")
         return IODaemonStats(0, 0, 0, 0, 0.0, 0, 0)
     }

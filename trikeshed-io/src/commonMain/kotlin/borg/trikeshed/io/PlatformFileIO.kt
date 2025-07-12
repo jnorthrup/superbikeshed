@@ -13,3 +13,5 @@ expect interface PlatformFileIO {
     suspend fun asyncReadFile(path: String): ByteArray?
     suspend fun asyncWriteFile(path: String, content: ByteArray): Boolean
 }
+
+expect fun getPlatformFileIO(): PlatformFileIO
