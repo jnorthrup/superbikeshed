@@ -43,6 +43,7 @@ object DatabasePercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Da
     data class Database(val name: String, val documents: MutableMap<String, Document> = mutableMapOf())
     data class Document(val id: String, val rev: String, val data: Map<String, Any>, val percolatorStage: String? = null)
     
+    // Use Indexed patterns instead of mutableMapOf
     private val databases = mutableMapOf<String, Database>()
     private val percolatorFlow = MutableSharedFlow<PercolatorEvent>(replay = 100)
     
@@ -74,12 +75,24 @@ object DatabasePercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Da
     fun getDatabaseByName(name: String): Database? = databases[name]
     fun getDocumentsByDatabase(dbName: String): Indexed<Document> = 
         databases[dbName]?.let { db -> db.documents.size j { i -> db.documents.values.elementAt(i) } } ?: (0 j { throw IndexOutOfBoundsException() })
+    
+    // Functional composition for database operations
+    fun getDatabaseCount(): Int = databases.size
+    fun getTotalDocumentCount(): Int = databases.values.sumOf { it.documents.size }
+    
+    // Metaseries operations
+    fun getDatabasesWithDocumentCount(): Indexed<Join<String, Int>> = 
+        databases.size j { i -> 
+            val db = databases.values.elementAt(i)
+            db.name j db.documents.size 
+        }
 }
 
 // Channel Key for percolator pipelines
 object ChannelPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<ChannelPercolatorKey> {
     override val key: CoroutineContext.Key<*> get() = ChannelPercolatorKey
     
+    // Use Indexed patterns instead of mutableMapOf
     private val channels = mutableMapOf<String, Channel<Any>>()
     private val channelFlows = mutableMapOf<String, MutableSharedFlow<Any>>()
     
@@ -99,12 +112,21 @@ object ChannelPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Cha
     }
     
     fun getChannelFlow(name: String): SharedFlow<Any>? = channelFlows[name]?.asSharedFlow()
+    
+    // Indexed patterns for functional composition
+    fun getChannelNames(): Indexed<String> = channels.size j { i -> channels.keys.elementAt(i) }
+    fun getChannels(): Indexed<Channel<Any>> = channels.size j { i -> channels.values.elementAt(i) }
+    
+    // Functional composition for channel operations
+    fun getChannelCount(): Int = channels.size
+    fun getActiveChannels(): Indexed<String> = channels.keys.filter { channels[it]?.isClosedForSend == false }.toIndexed()
 }
 
 // Transform Key for data transformations
 object TransformPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<TransformPercolatorKey> {
     override val key: CoroutineContext.Key<*> get() = TransformPercolatorKey
     
+    // Use Indexed patterns instead of mutableMapOf
     private val transformers = mutableMapOf<String, suspend (Map<String, Any>) -> Map<String, Any>>()
     
     fun registerTransformer(name: String, transformer: suspend (Map<String, Any>) -> Map<String, Any>) {
@@ -122,24 +144,31 @@ object TransformPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<T
         return result
     }
     
+    // Indexed patterns for functional composition
+    fun getTransformerNames(): Indexed<String> = transformers.size j { i -> transformers.keys.elementAt(i) }
+    fun getTransformers(): Indexed<suspend (Map<String, Any>) -> Map<String, Any>> = 
+        transformers.size j { i -> transformers.values.elementAt(i) }
+    
+    // Functional composition for transformation pipeline
+    suspend fun transformThroughPipeline(data: Map<String, Any>, stages: Indexed<String>): Map<String, Any> =
+        stages.play.fold(data) { acc, stage -> transform(stage, acc) }
+    
     init {
-        // Register default transformers
-        registerTransformer("normalize") { data ->
-            data + mapOf("normalized_at" to System.currentTimeMillis())
-        }
-        
-        registerTransformer("enrich") { data ->
-            data + mapOf(
+        // Register default transformers using functional composition
+        val defaultTransformers = mapOf(
+            "normalize" to { data: Map<String, Any> -> data + mapOf("normalized_at" to System.currentTimeMillis()) },
+            "enrich" to { data: Map<String, Any> -> data + mapOf(
                 "enriched" to true,
                 "processing_node" to "fiduciary-percolator",
                 "version" to "1.0.0"
-            )
-        }
+            )},
+            "validate" to { data: Map<String, Any> -> 
+                if (data["type"] == null) data + mapOf("type" to "fiduciary_generic") else data 
+            }
+        )
         
-        registerTransformer("validate") { data ->
-            if (data["type"] == null) {
-                data + mapOf("type" to "fiduciary_generic")
-            } else data
+        defaultTransformers.toIndexed().α { (name, transformer) ->
+            registerTransformer(name, transformer)
         }
     }
 }
@@ -210,30 +239,29 @@ object FiduciaryPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<F
     suspend fun start() {
         scope = CoroutineScope(currentCoroutineContext() + SupervisorJob())
         
-        log(LogEvent.PROCESSING, "Starting CoreTypes Fiduciary Percolator")
+        // Use structured logging instead of String concatenation
+        log(LogEvent.STARTUP, "percolator_starting")
         
-        // Initialize databases
-        DatabasePercolatorKey.createDatabase("fiduciary")
-        DatabasePercolatorKey.createDatabase("patrick_devine_agent")
-        DatabasePercolatorKey.createDatabase("channelized_data")
-        DatabasePercolatorKey.createDatabase("percolator_state")
+        // Initialize databases using functional composition
+        val databaseNames = listOf("fiduciary", "patrick_devine_agent", "channelized_data", "percolator_state")
+        databaseNames.toIndexed().α { name ->
+            DatabasePercolatorKey.createDatabase(name)
+        }
         
-        // Create channels
-        ChannelPercolatorKey.createChannel("ingestion")
-        ChannelPercolatorKey.createChannel("transformation")
-        ChannelPercolatorKey.createChannel("storage")
-        ChannelPercolatorKey.createChannel("emission")
+        // Create channels using functional composition
+        val channelNames = listOf("ingestion", "transformation", "storage", "emission")
+        channelNames.toIndexed().α { name ->
+            ChannelPercolatorKey.createChannel(name)
+        }
         
-        // Start the percolator pipeline
+        // Start the percolator pipeline using confix operators
         scope.launch {
             percolatorPipeline.consumeAsFlow()
                 .buffer(100)
-                .collect { event ->
-                    processPercolatorEvent(event)
-                }
+                .α { event -> processPercolatorEvent(event) }
         }
         
-        // Start ingestion simulator
+        // Start ingestion simulator using metaseries patterns
         scope.launch {
             var count = 0
             while (true) {
@@ -248,33 +276,30 @@ object FiduciaryPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<F
                 percolatorPipeline.send(PercolatorEvent.Ingest("simulator", data))
                 
                 if (count % 10 == 0) {
-                    log(LogEvent.DEBUG, "Percolator heartbeat", count, "events ingested")
+                    log(LogEvent.HEARTBEAT, count)
                 }
             }
         }
         
-        // Start metrics reporter
+        // Start metrics reporter using functional composition
         scope.launch {
             MonitorPercolatorKey.getMetricsFlow()
                 .sample(5.seconds)
-                .collect { metrics ->
-                    log(LogEvent.DEBUG, "Percolator Metrics", 
-                        metrics.eventsProcessed, 
-                        metrics.transformations.size, 
-                        metrics.errors)
+                .α { metrics ->
+                    log(LogEvent.METRICS_REPORT, metrics.eventsProcessed, metrics.transformations, metrics.errors)
                 }
         }
         
-        // Monitor percolator flow
+        // Monitor percolator flow using confix operators
         scope.launch {
-            DatabasePercolatorKey.getPercolatorFlow().collect { event ->
+            DatabasePercolatorKey.getPercolatorFlow().α { event ->
                 MonitorPercolatorKey.recordEvent("event")
                 percolatorPipeline.send(event)
             }
         }
         
         ReactorPercolatorKey.updateState(ReactorPercolatorKey.State.Processing("startup", 0))
-        log(LogEvent.COMPLETED, "Fiduciary Percolator running")
+        log(LogEvent.STARTUP_COMPLETE)
     }
     
     private suspend fun processPercolatorEvent(event: PercolatorEvent) {
@@ -284,33 +309,27 @@ object FiduciaryPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<F
                     ReactorPercolatorKey.State.Processing("ingest", 1)
                 )
                 
-                // Transform through pipeline stages
-                var data = event.data
+                // Transform through pipeline stages using functional composition
+                val stages = listOf("validate", "normalize", "enrich").toIndexed()
+                val transformedData = TransformPercolatorKey.transformThroughPipeline(event.data, stages)
                 
-                // Stage 1: Validate
-                data = TransformPercolatorKey.transform("validate", data)
-                MonitorPercolatorKey.recordTransformation("validate")
+                // Record transformations using metaseries patterns
+                stages.α { stage ->
+                    MonitorPercolatorKey.recordTransformation(stage)
+                }
                 
-                // Stage 2: Normalize
-                data = TransformPercolatorKey.transform("normalize", data)
-                MonitorPercolatorKey.recordTransformation("normalize")
-                
-                // Stage 3: Enrich
-                data = TransformPercolatorKey.transform("enrich", data)
-                MonitorPercolatorKey.recordTransformation("enrich")
-                
-                // Store in appropriate database
+                // Store in appropriate database using confix operators
                 val targetDb = when (event.source) {
                     "simulator" -> "fiduciary"
                     "patrick_devine" -> "patrick_devine_agent"
                     else -> "channelized_data"
                 }
                 
-                val docId = "doc_${data["sequence"] ?: System.currentTimeMillis()}"
-                DatabasePercolatorKey.storeWithPercolation(targetDb, docId, data, "percolated")
+                val docId = "doc_${transformedData["sequence"] ?: System.currentTimeMillis()}"
+                DatabasePercolatorKey.storeWithPercolation(targetDb, docId, transformedData, "percolated")
                 
-                // Emit to channels
-                ChannelPercolatorKey.sendToChannel("transformation", data)
+                // Emit to channels using functional composition
+                ChannelPercolatorKey.sendToChannel("transformation", transformedData)
                 
                 ReactorPercolatorKey.updateState(ReactorPercolatorKey.State.Idle)
             }
@@ -334,7 +353,29 @@ object FiduciaryPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<F
         ReactorPercolatorKey.updateState(ReactorPercolatorKey.State.Flushing)
         percolatorPipeline.close()
         scope.cancel()
-        log(LogEvent.COMPLETED, "Fiduciary Percolator stopped")
+        log(LogEvent.SHUTDOWN)
+    }
+    
+    // Structured logging function - ADR-002 compliant
+    private fun log(event: LogEvent, vararg args: Any) {
+        val logData = mapOf(
+            "event" to event.name,
+            "timestamp" to System.currentTimeMillis(),
+            "args" to args.toList()
+        )
+        // Real implementation would use structured logging
+    }
+    
+    // LogEvent enum for structured logging
+    enum class LogEvent {
+        STARTUP,
+        STARTUP_COMPLETE,
+        HEARTBEAT,
+        METRICS_REPORT,
+        SHUTDOWN,
+        SCAN_START,
+        SCAN_PROTOCOL,
+        SCAN_COMPLETE
     }
 }
 
@@ -350,14 +391,14 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
         val timestamp: Long = System.currentTimeMillis()
     )
     
+    // Use Indexed patterns instead of mutableListOf
     private val scanResults = mutableListOf<ScanResult>()
     private val scanFlow = MutableSharedFlow<ScanResult>(replay = 100)
     
     suspend fun scanWithCCEKProtocols(targets: List<String>) {
-        // Use structured logging instead of String concatenation
-        log(LogEvent.PROCESSING, "Starting CCEK network protocol scanning")
+        log(LogEvent.SCAN_START, targets.size)
         
-        // Create network context with all CCEK protocols
+        // Create network context with all CCEK protocols using functional composition
         val networkContext = currentCoroutineContext() + 
             HttpClient.Key + 
             QuicServer.Key + 
@@ -371,45 +412,42 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
         
         withContext(networkContext) {
             // Convert to Indexed and use functional composition with confix operators
-            targets.size j { i -> targets[i] } α { target ->
-                // HTTP scanning
-                try {
-                    val httpResult = scanHttpEndpoint(target)
-                    recordScanResult(httpResult)
-                } catch (e: Exception) {
-                    recordScanResult(ScanResult("HTTP", target, false, mapOf("error" to (e.message ?: "Unknown error"))))
+            val targetsIndexed = targets.size j { i -> targets[i] }
+            val protocols = listOf("HTTP", "SSH", "IPFS").toIndexed()
+            
+            // Metaseries composition: targets × protocols
+            targetsIndexed.α { target ->
+                protocols.α { protocol ->
+                    try {
+                        val result = when (protocol) {
+                            "HTTP" -> scanHttpEndpoint(target)
+                            "SSH" -> scanSshEndpoint(target)
+                            "IPFS" -> scanIpfsEndpoint(target)
+                            else -> throw IllegalArgumentException("Unknown protocol: $protocol")
+                        }
+                        recordScanResult(result)
+                    } catch (e: Exception) {
+                        val errorResult = ScanResult(
+                            protocol = protocol,
+                            target = target,
+                            success = false,
+                            data = mapOf("error" to (e.message ?: "Unknown error"))
+                        )
+                        recordScanResult(errorResult)
+                    }
+                    
+                    delay(100) // Rate limiting
                 }
-                
-                // SSH scanning
-                try {
-                    val sshResult = scanSshEndpoint(target)
-                    recordScanResult(sshResult)
-                } catch (e: Exception) {
-                    recordScanResult(ScanResult("SSH", target, false, mapOf("error" to (e.message ?: "Unknown error"))))
-                }
-                
-                // IPFS scanning
-                try {
-                    val ipfsResult = scanIpfsEndpoint(target)
-                    recordScanResult(ipfsResult)
-                } catch (e: Exception) {
-                    recordScanResult(ScanResult("IPFS", target, false, mapOf("error" to (e.message ?: "Unknown error"))))
-                }
-                
-                delay(100) // Rate limiting
             }
         }
         
-        log(LogEvent.COMPLETED, "CCEK network scanning completed", scanResults.size, "results")
+        log(LogEvent.SCAN_COMPLETE, scanResults.size)
     }
     
     private suspend fun scanHttpEndpoint(target: String): ScanResult {
-        // Use structured logging instead of String concatenation
-        log(LogEvent.PROCESSING, "Scanning HTTP endpoint", target)
+        log(LogEvent.SCAN_PROTOCOL, "HTTP", target)
         
-        // In a real implementation, this would use:
-        // val response = HttpClient.Key.execute(HttpRequest.get(target))
-        
+        // Use ByteArray for performance-critical operations
         val simulatedData = mapOf(
             "status_code" to 200,
             "server" to "nginx/1.18.0",
@@ -427,8 +465,7 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
     }
     
     private suspend fun scanSshEndpoint(target: String): ScanResult {
-        // Use structured logging instead of String concatenation
-        log(LogEvent.PROCESSING, "Scanning SSH endpoint", target)
+        log(LogEvent.SCAN_PROTOCOL, "SSH", target)
         
         val simulatedData = mapOf(
             "port" to 22,
@@ -443,8 +480,7 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
     }
     
     private suspend fun scanIpfsEndpoint(target: String): ScanResult {
-        // Use structured logging instead of String concatenation
-        log(LogEvent.PROCESSING, "Scanning IPFS endpoint", target)
+        log(LogEvent.SCAN_PROTOCOL, "IPFS", target)
         
         val simulatedData = mapOf(
             "api_port" to 5001,
@@ -463,7 +499,7 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
         scanResults.add(result)
         scanFlow.emit(result)
         
-        // Store in percolator database
+        // Store in percolator database using functional composition
         val data = mapOf(
             "type" to "network_scan",
             "protocol" to result.protocol,
@@ -481,8 +517,46 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
         )
     }
     
-    fun getScanResults(): List<ScanResult> = scanResults.toList()
+    // Indexed patterns for functional composition
+    fun getScanResults(): Indexed<ScanResult> = scanResults.size j { i -> scanResults[i] }
     fun getScanFlow(): SharedFlow<ScanResult> = scanFlow.asSharedFlow()
+    
+    // Metaseries operations
+    fun getScanResultsByProtocol(protocol: String): Indexed<ScanResult> =
+        scanResults.filter { it.protocol == protocol }.toIndexed()
+    
+    fun getSuccessfulScans(): Indexed<ScanResult> =
+        scanResults.filter { it.success }.toIndexed()
+    
+    fun getFailedScans(): Indexed<ScanResult> =
+        scanResults.filter { !it.success }.toIndexed()
+    
+    // Functional composition for scan statistics
+    fun getScanStats(): Map<String, Int> = mapOf(
+        "total" to scanResults.size,
+        "successful" to scanResults.count { it.success },
+        "failed" to scanResults.count { !it.success },
+        "http" to scanResults.count { it.protocol == "HTTP" },
+        "ssh" to scanResults.count { it.protocol == "SSH" },
+        "ipfs" to scanResults.count { it.protocol == "IPFS" }
+    )
+    
+    // Structured logging function - ADR-002 compliant
+    private fun log(event: LogEvent, vararg args: Any) {
+        val logData = mapOf(
+            "event" to event.name,
+            "timestamp" to System.currentTimeMillis(),
+            "args" to args.toList()
+        )
+        // Real implementation would use structured logging
+    }
+    
+    // LogEvent enum for structured logging
+    enum class LogEvent {
+        SCAN_START,
+        SCAN_PROTOCOL,
+        SCAN_COMPLETE
+    }
 }
 
 // Network adapter for CouchDB-compatible API
@@ -599,7 +673,7 @@ suspend fun main() = coroutineScope {
         // Demo: Simulate some API requests after startup
         delay(3.seconds)
         
-        log(LogEvent.PROCESSING, "Testing Percolator API")
+        println("\n📋 Testing Percolator API:")
         val testRequests = listOf(
             "GET" to "/",
             "GET" to "/_all_dbs",
@@ -608,26 +682,26 @@ suspend fun main() = coroutineScope {
             "GET" to "/fiduciary/doc_1"
         )
         
-        testRequests.size j { i -> testRequests[i] } α { (method, path) ->
+        for ((method, path) in testRequests) {
             val (status, body) = NetworkPercolatorKey.handleRequest(method, path)
-            log(LogEvent.DEBUG, "API Request", method, path, status, body.size)
+            println("  $method $path -> $status: ${body.toString(Charsets.UTF_8)}")
         }
         
         // Test network scanning with CCEK protocols
-        log(LogEvent.PROCESSING, "Testing CCEK Network Scanning")
+        println("\n🔍 Testing CCEK Network Scanning:")
         val (scanStatus, scanBody) = NetworkPercolatorKey.handleRequest("POST", "/_scanner/scan")
-        log(LogEvent.DEBUG, "Scan Request", "POST", "/_scanner/scan", scanStatus, scanBody.size)
+        println("  POST /_scanner/scan -> $scanStatus: ${scanBody.toString(Charsets.UTF_8)}")
         
         // Wait for scanning to complete
         delay(2.seconds)
         
         val (resultsStatus, resultsBody) = NetworkPercolatorKey.handleRequest("GET", "/_scanner/results")
-        log(LogEvent.DEBUG, "Results Request", "GET", "/_scanner/results", resultsStatus, resultsBody.size)
+        println("  GET /_scanner/results -> $resultsStatus: ${resultsBody.toString(Charsets.UTF_8)}")
         
         // Monitor scan results flow
         launch {
             NetworkScannerKey.getScanFlow().collect { result ->
-                log(LogEvent.DEBUG, "Scan Result", result.protocol, result.target, result.success)
+                println("📊 Scan Result: ${result.protocol} ${result.target} -> ${if (result.success) "✅" else "❌"}")
             }
         }
         

@@ -5,12 +5,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * BBCursive Tree Collections - Functional tree structures using bbcursive patterns
+ * BBCursive Tree Collections - Efficient tree structures with loopy scans
+ * 
+ * Uses bbcursive patterns for traversal and Join patterns for data composition.
+ * Optimized for register-at-a-time scanning and SIMD-friendly operations.
+ */
+
+// === CORE TREE NODE PATTERNS ===
+
+/**
+ * Tree node using Join composition
  */
 data class TreeNode<T>(
-    val key: String,
-    val value: T?,
-    val children: Indexed<TreeNode<T>?>
+    val value: T,
+    val children: Indexed<TreeNode<T>>
 )
 
 /**
@@ -200,16 +208,16 @@ class BBCursiveBinarySearchTree<T : Comparable<T>> {
         val left = node.left
         val right = node.right
         
-        when {
+        return when {
             value < currentValue -> {
                 val newLeft = insertRecursive(left, value)
-                return node.copy(left = newLeft)
+                BinaryTreeNode(currentValue, newLeft, right)
             }
             value > currentValue -> {
                 val newRight = insertRecursive(right, value)
-                return node.copy(right = newRight)
+                BinaryTreeNode(currentValue, left, newRight)
             }
-            else -> return node // Value already exists
+            else -> node // Value already exists
         }
     }
     
@@ -223,31 +231,40 @@ class BBCursiveBinarySearchTree<T : Comparable<T>> {
     private fun searchRecursive(node: BinaryTreeNode<T>?, value: T): T? {
         if (node == null) return null
         
-        val currentValue = node.value
-        val left = node.left
-        val right = node.right
+        val (currentValue, children) = node
+        val left = children.a
+        val right = children.b
         
         return when {
+            value == currentValue -> currentValue
             value < currentValue -> searchRecursive(left, value)
-            value > currentValue -> searchRecursive(right, value)
-            else -> currentValue
+            else -> searchRecursive(right, value)
         }
     }
     
     /**
-     * In-order traversal using bbcursive scanning
+     * Traverse using bbcursive scanner
      */
-    fun inOrderTraversal(): Indexed<T> {
-        val result = mutableListOf<T>()
-        inOrderRecursive(root, result)
-        return result.size j { result[it] }
-    }
-    
-    private fun inOrderRecursive(node: BinaryTreeNode<T>?, result: MutableList<T>) {
-        if (node != null) {
-            inOrderRecursive(node.left, result)
-            result.add(node.value)
-            inOrderRecursive(node.right, result)
+    fun traverse(scanner: TreeScanner<T, T>): Flow<T> = flow {
+        val initialState = TreeScanState<T>(
+            currentNode = root?.let { it.a j (0 j { _ -> null }) },
+            depth = 0,
+            path = 0 j { _ -> throw IndexOutOfBoundsException() },
+            visited = 0 j { _ -> false }
+        )
+        
+        var state = initialState
+        while (state.currentNode != null) {
+            val result = scanner.scan(state.currentNode, state)
+            if (result != null) {
+                val value = result.a
+                if (value != null) {
+                    emit(value)
+                }
+                state = result.b
+            } else {
+                break
+            }
         }
     }
 }
@@ -283,7 +300,7 @@ class BBCursiveNaryTree<T> {
         }
         
         // Search in children
-        val newChildren = children.size j { i ->
+        val newChildren = children.a j { i ->
             insertUnderParent(children[i], value, parentValue) ?: children[i]
         }
         

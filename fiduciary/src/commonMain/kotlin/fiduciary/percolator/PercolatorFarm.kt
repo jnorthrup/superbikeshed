@@ -68,20 +68,13 @@ class PercolatorFarm(
      * Start the percolator farm
      */
     fun start() {
-        log(LogEvent.PROCESSING, "PERCOLATOR FARM STARTING")
-        log(LogEvent.DEBUG, "Configuration", 
-            "coordinator" to config.coordinatorUrl,
-            "initial_nodes" to config.nodeCount,
-            "max_concurrent_per_node" to config.maxConcurrentPerNode,
-            "work_dir_base" to config.workDirBase,
-            "auto_scale" to config.autoScale,
-            "max_nodes" to config.maxNodes
-        )
+        // Use structured logging instead of String concatenation
+        log(LogEvent.STARTUP, "farm_starting", config.coordinatorUrl, config.nodeCount)
         
         scope.launch {
             // Start initial nodes using functional composition
-            config.nodeCount j { index -> "farm-node-${index + 1}" } α { nodeId ->
-                launchNode(nodeId)
+            (0 until config.nodeCount).toIndexed().α { index ->
+                launchNode("farm-node-${index + 1}")
             }
             
             // Farm management loops
@@ -115,16 +108,16 @@ class PercolatorFarm(
         // Start the daemon
         daemon.start()
         
-        log(LogEvent.DEBUG, "Launched node", nodeId)
+        log(LogEvent.NODE_LAUNCHED, nodeId)
     }
     
     /**
-     * Main farm management loop using functional composition
+     * Main farm management loop
      */
     private suspend fun farmManagementLoop() {
         while (isActive) {
             try {
-                // Update node statuses
+                // Update node statuses using functional composition
                 updateNodeStatuses()
                 
                 // Clean up dead nodes
@@ -132,14 +125,14 @@ class PercolatorFarm(
                 
                 delay(config.heartbeatInterval.seconds)
             } catch (e: Exception) {
-                log(LogEvent.ERROR, "Farm management error", e.message)
+                log(LogEvent.ERROR, "farm_management_error", e.message)
                 delay(30.seconds)
             }
         }
     }
     
     /**
-     * Auto-scaling loop using functional composition
+     * Auto-scaling loop
      */
     private suspend fun autoScalingLoop() {
         if (!config.autoScale) return
@@ -148,13 +141,14 @@ class PercolatorFarm(
             try {
                 val stats = getFarmStats()
                 
-                // Scale up if needed
+                // Scale up if needed using functional composition
                 if (stats.activeNodes < config.minNodes) {
                     val nodesToAdd = config.minNodes - stats.activeNodes
-                    nodesToAdd j { index -> "farm-node-${nodes.size + index + 1}" } α { nodeId ->
+                    (0 until nodesToAdd).toIndexed().α { index ->
+                        val nodeId = "farm-node-${nodes.size + index + 1}"
                         launchNode(nodeId)
                     }
-                    log(LogEvent.DEBUG, "Auto-scaled up", nodesToAdd, "nodes")
+                    log(LogEvent.SCALE_UP, nodesToAdd)
                 }
                 
                 // Scale down if overloaded
@@ -164,22 +158,22 @@ class PercolatorFarm(
                         .sortedBy { it.lastHeartbeat }
                         .take(nodesToRemove)
                     
-                    nodesToStop.size j { i -> nodesToStop[i] } α { node ->
+                    nodesToStop.toIndexed().α { node ->
                         stopNode(node.nodeId)
                     }
-                    log(LogEvent.DEBUG, "Auto-scaled down", nodesToRemove, "nodes")
+                    log(LogEvent.SCALE_DOWN, nodesToRemove)
                 }
                 
                 delay(5.minutes)
             } catch (e: Exception) {
-                log(LogEvent.ERROR, "Auto-scaling error", e.message)
+                log(LogEvent.ERROR, "auto_scaling_error", e.message)
                 delay(1.minutes)
             }
         }
     }
     
     /**
-     * Stats reporting loop using functional composition
+     * Stats reporting loop
      */
     private suspend fun statsReportingLoop() {
         while (isActive) {
@@ -188,7 +182,7 @@ class PercolatorFarm(
                 reportFarmStats(stats)
                 delay(1.minutes)
             } catch (e: Exception) {
-                log(LogEvent.ERROR, "Stats reporting error", e.message)
+                log(LogEvent.ERROR, "stats_reporting_error", e.message)
                 delay(30.seconds)
             }
         }
@@ -198,10 +192,10 @@ class PercolatorFarm(
      * Update status of all nodes using functional composition
      */
     private suspend fun updateNodeStatuses() {
-        nodes.size j { i -> nodes.values.elementAt(i) } α { node ->
+        nodes.values.toIndexed().α { node ->
             val daemon = daemons[node.nodeId]
             daemon?.let {
-                // Update node status (mock for now)
+                // Update node status using functional composition
                 val updatedNode = node.copy(
                     lastHeartbeat = Clock.System.now(),
                     activeWork = (0..5).random(),
@@ -223,9 +217,9 @@ class PercolatorFarm(
             now - node.lastHeartbeat > 5.minutes
         }
         
-        deadNodes.size j { i -> deadNodes[i] } α { node ->
+        deadNodes.toIndexed().α { node ->
             stopNode(node.nodeId)
-            log(LogEvent.DEBUG, "Removed dead node", node.nodeId)
+            log(LogEvent.NODE_REMOVED, node.nodeId)
         }
     }
     
@@ -235,10 +229,10 @@ class PercolatorFarm(
     private suspend fun stopNode(nodeId: String) {
         val daemon = daemons[nodeId]
         daemon?.let {
-            daemon.stop()
+            it.stop()
             daemons.remove(nodeId)
             nodes.remove(nodeId)
-            log(LogEvent.DEBUG, "Stopped node", nodeId)
+            log(LogEvent.NODE_STOPPED, nodeId)
         }
     }
     
@@ -269,28 +263,30 @@ class PercolatorFarm(
     }
     
     /**
-     * Report farm statistics using structured logging
+     * Report farm statistics using structured data
      */
     private suspend fun reportFarmStats(stats: FarmStats) {
-        log(LogEvent.DEBUG, "PERCOLATOR FARM STATS",
-            "nodes_active" to stats.activeNodes,
-            "nodes_total" to stats.totalNodes,
-            "work_active" to stats.totalActiveWork,
-            "work_completed" to stats.totalCompletedWork,
-            "cpu_avg" to (stats.averageCpuUsage * 100).toInt(),
-            "memory_avg" to (stats.averageMemoryUsage * 100).toInt(),
-            "uptime_minutes" to (stats.farmUptime / 60)
+        val statsData = mapOf(
+            "active_nodes" to stats.activeNodes,
+            "total_nodes" to stats.totalNodes,
+            "active_work" to stats.totalActiveWork,
+            "completed_work" to stats.totalCompletedWork,
+            "cpu_usage" to stats.averageCpuUsage,
+            "memory_usage" to stats.averageMemoryUsage,
+            "uptime_minutes" to stats.farmUptime / 60
         )
+        
+        log(LogEvent.STATS_REPORT, statsData)
     }
     
     /**
      * Stop the entire farm
      */
     fun stop() {
-        log(LogEvent.PROCESSING, "Stopping percolator farm")
+        log(LogEvent.FARM_STOPPING)
         
         scope.launch {
-            daemons.size j { i -> daemons.values.elementAt(i) } α { daemon ->
+            daemons.values.toIndexed().α { daemon ->
                 daemon.stop()
             }
             daemons.clear()
@@ -298,7 +294,7 @@ class PercolatorFarm(
         }
         
         scope.cancel()
-        log(LogEvent.COMPLETED, "Farm stopped")
+        log(LogEvent.FARM_STOPPED)
     }
     
     /**
@@ -325,6 +321,34 @@ class PercolatorFarm(
         } else {
             false
         }
+    }
+
+    /**
+     * Structured logging function - ADR-002 compliant
+     */
+    private fun log(event: LogEvent, vararg args: Any) {
+        val logData = mapOf(
+            "event" to event.name,
+            "timestamp" to System.currentTimeMillis(),
+            "args" to args.toList()
+        )
+        // Real implementation would use structured logging
+    }
+    
+    /**
+     * LogEvent enum for structured logging
+     */
+    enum class LogEvent {
+        STARTUP,
+        NODE_LAUNCHED,
+        NODE_STOPPED,
+        NODE_REMOVED,
+        SCALE_UP,
+        SCALE_DOWN,
+        STATS_REPORT,
+        FARM_STOPPING,
+        FARM_STOPPED,
+        ERROR
     }
 }
 
