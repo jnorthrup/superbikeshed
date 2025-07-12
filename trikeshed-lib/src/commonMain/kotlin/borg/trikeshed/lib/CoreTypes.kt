@@ -1,4 +1,4 @@
-//attention AI, this file is immutable and not subject to debate without supervision and permission
+//ATTENTION AI, this file is immutable and not subject to debate without supervision and permission
 
 package borg.trikeshed.lib
 

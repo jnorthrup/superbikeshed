@@ -11,6 +11,13 @@ import kotlinx.coroutines.flow.flow
  * optimized for register-at-a-time scanning and SIMD-friendly operations.
  */
 
+// === TYPE DEFINITIONS ===
+
+/**
+ * Binary Tree Node using Join patterns
+ */
+typealias BinaryTreeNode<T> = Join<T, Join<BinaryTreeNode<T>?, BinaryTreeNode<T>?>>
+
 // === HASH SET ===
 
 /**
@@ -173,9 +180,8 @@ class BBCursiveTreeSet<T : Comparable<T>> {
             return element j (null j null)
         }
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val (currentValue, children) = node
+        val (left, right) = children
         
         return when {
             element < currentValue -> {
