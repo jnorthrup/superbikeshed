@@ -14,7 +14,7 @@ object JsonBenchmarkRunner {
         println("🚀 JSON Parser Microbenchmark Competition Rematch")
         println("=".repeat(60))
         
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         // Parse command line arguments
         val config = parseArgs(args)
@@ -27,14 +27,14 @@ object JsonBenchmarkRunner {
             else -> runDefaultBenchmarks()
         }
         
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val duration = endTime - startTime
         
         println("\n" + "=".repeat(60))
         println("🏁 BENCHMARK COMPLETION SUMMARY")
         println("=".repeat(60))
         println("Total duration: ${duration}ms")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         println("Platform: JVM ${System.getProperty("java.version")}")
         println("Architecture: ${System.getProperty("os.arch")}")
         println("OS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}")
@@ -187,7 +187,7 @@ object JsonBenchmarkRunner {
             appendLine("- JVM: ${System.getProperty("java.version")}")
             appendLine("- Architecture: ${System.getProperty("os.arch")}")
             appendLine("- OS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}")
-            appendLine("- Timestamp: ${System.currentTimeMillis()}")
+            appendLine("- Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
             appendLine()
             appendLine("## Implementations Tested")
             appendLine("1. SimpleJsonScanner - Basic character-by-character parsing")
@@ -255,7 +255,7 @@ object JsonBenchmarkRunner {
         }
         
         // Write report to file
-        val reportFile = java.io.File("json-benchmark-report-${System.currentTimeMillis()}.md")
+        val reportFile = java.io.File("json-benchmark-report-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}.md")
         reportFile.writeText(report)
         
         println("📄 Detailed report written to: ${reportFile.absolutePath}")

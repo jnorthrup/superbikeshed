@@ -31,6 +31,7 @@ class HttpChannelization(
         val channel = channelProvider.createConnectedChannel(
             ChannelConfig(
                 type = ChannelType.TCP,
+                mode = ChannelMode.READ_WRITE,
                 bufferSize = 8192,
                 timeout = 30000
             ),
@@ -163,6 +164,7 @@ class HttpServer(
         serverChannel = channelProvider.createServerChannel(
             ChannelConfig(
                 type = ChannelType.TCP,
+                mode = ChannelMode.READ_WRITE,
                 bufferSize = 8192,
                 timeout = 30000
             ),

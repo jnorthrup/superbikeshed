@@ -635,7 +635,7 @@ class CouchDBServerTest {
         val bulkBody = """{"docs":[${docs.joinToString(",")}]}"""
 
         // When
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val request = MockHttpRequest(
             method = "POST",
             path = "/perfdb/_bulk_docs",
@@ -643,7 +643,7 @@ class CouchDBServerTest {
         )
         server.httpRequestChannel.send(request)
         val response = server.httpResponseChannel.receive()
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 
         // Then
         assertEquals(201, response.status)

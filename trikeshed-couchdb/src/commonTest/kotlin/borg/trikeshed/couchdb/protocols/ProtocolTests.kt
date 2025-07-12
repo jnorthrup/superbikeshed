@@ -579,7 +579,7 @@ class ProtocolTests {
     @Test
     fun `test protocol performance characteristics`() = runTest {
         // Test performance characteristics of different protocols
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 
         // HTTP operations
         val httpClient = HttpChannelizedClient()
@@ -598,7 +598,7 @@ class ProtocolTests {
             quicClient.connect(context)
         }
 
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val duration = endTime - startTime
 
         // Verify operations complete within reasonable time

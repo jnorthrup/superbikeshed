@@ -35,7 +35,7 @@ class QuicRequestFactoryDemo(
         
         // Create a simple GET request
         val request = QuicRequest(
-            id = "req-${System.currentTimeMillis()}",
+            id = "req-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             method = "GET",
             path = "https://api.example.com/users",
             headers = mapOf(
@@ -134,7 +134,7 @@ class QuicRequestFactoryDemo(
         
         // Create a request that will likely fail
         val failingRequest = QuicRequest(
-            id = "req-failing-${System.currentTimeMillis()}",
+            id = "req-failing-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             method = "GET",
             path = "https://nonexistent.example.com/error",
             priority = QuicRequest.RequestPriority.NORMAL,
@@ -180,14 +180,14 @@ class QuicRequestFactoryDemo(
         
         // Submit requests with different priorities
         val lowPriorityRequest = QuicRequest(
-            id = "req-low-${System.currentTimeMillis()}",
+            id = "req-low-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             method = "GET",
             path = "https://api.example.com/background",
             priority = QuicRequest.RequestPriority.LOW
         )
         
         val highPriorityRequest = QuicRequest(
-            id = "req-high-${System.currentTimeMillis()}",
+            id = "req-high-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             method = "GET",
             path = "https://api.example.com/critical",
             priority = QuicRequest.RequestPriority.URGENT

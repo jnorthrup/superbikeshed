@@ -15,7 +15,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                // implementation(project(":trikeshed-lib")) // Not present yet
+                implementation(project(":trikeshed-lib"))
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
             }

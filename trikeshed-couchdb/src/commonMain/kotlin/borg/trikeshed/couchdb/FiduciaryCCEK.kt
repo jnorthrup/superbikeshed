@@ -42,7 +42,7 @@ object CouchDBKey : CoroutineContext.Element, CoroutineContext.Key<CouchDBKey> {
         val database = databases[db] ?: return Result.failure(Exception("Database not found"))
         val docs = documents[db]!!
         
-        val rev = "1-${System.currentTimeMillis()}"
+        val rev = "1-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         val doc = Document(id, rev, data)
         docs[id] = doc
         database.docCount++
@@ -140,15 +140,15 @@ object MonitoringKey : CoroutineContext.Element, CoroutineContext.Key<Monitoring
     
     suspend fun recordMetric(name: String, value: Double) {
         metrics[name] = (metrics[name] ?: 0.0) + value
-        _events.emit(Event.Metric(name, value, System.currentTimeMillis()))
+        _events.emit(Event.Metric(name, value, kotlinx.datetime.Clock.System.now().toEpochMilliseconds()))
     }
     
     suspend fun recordStateChange(from: String, to: String) {
-        _events.emit(Event.StateChange(from, to, System.currentTimeMillis()))
+        _events.emit(Event.StateChange(from, to, kotlinx.datetime.Clock.System.now().toEpochMilliseconds()))
     }
     
     suspend fun recordError(error: Throwable) {
-        _events.emit(Event.Error(error, System.currentTimeMillis()))
+        _events.emit(Event.Error(error, kotlinx.datetime.Clock.System.now().toEpochMilliseconds()))
     }
     
     fun getMetric(name: String): Double = metrics[name] ?: 0.0
@@ -194,12 +194,12 @@ object TracingKey : CoroutineContext.Element, CoroutineContext.Key<TracingKey> {
     private val activeSpans = mutableMapOf<String, Span>()
     
     suspend fun <T> trace(name: String, block: suspend Span.() -> T): T {
-        val span = Span(name, System.nanoTime())
+        val span = Span(name, kotlinx.datetime.Clock.System.now().toEpochMilliseconds())
         activeSpans[name] = span
         
         return try {
             span.block().also {
-                span.endTime = System.nanoTime()
+                span.endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
                 val duration = (span.endTime!! - span.startTime) / 1_000_000
                 MonitoringKey.recordMetric("trace.$name.duration_ms", duration.toDouble())
                 println("TRACE: $name took ${duration}ms")
@@ -267,7 +267,7 @@ object FiduciaryServiceKey : CoroutineContext.Element, CoroutineContext.Key<Fidu
                 TracingKey.trace("ingest.document") {
                     val doc = mapOf(
                         "type" to "fiduciary_data",
-                        "timestamp" to System.currentTimeMillis(),
+                        "timestamp" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                         "value" to ingestCount++
                     )
                     CouchDBKey.putDocument("fiduciary", "doc_$ingestCount", doc)

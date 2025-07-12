@@ -15,8 +15,10 @@ import kotlin.time.Duration
  * - MetaSeries for metadata-enriched responses
  */
 
-// Core types using TrikeShed structures
-// HttpMethod defined in TrikeShedRestClient.kt
+// Core types using TrikeShed structures  
+enum class HttpMethod {
+    GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
+}
 typealias HttpHeaders = Join<Int, (Int) -> Join<String, String>>
 typealias HttpRequest = Join<RequestMeta, RequestBody?>
 typealias HttpResponse = Join<ResponseMeta, ResponseBody>
@@ -48,7 +50,7 @@ suspend fun RestClient.get(
     url: String,
     headers: HttpHeaders = 0 j { _: Int -> "" j "" }
 ): HttpResponse = execute(
-    RequestMeta("GET", url, headers) j null
+    RequestMeta(HttpMethod.GET, url, headers) j null
 )
 
 suspend fun RestClient.post(
@@ -56,7 +58,7 @@ suspend fun RestClient.post(
     body: ByteArray,
     headers: HttpHeaders = 0 j { _: Int -> "" j "" }
 ): HttpResponse = execute(
-    RequestMeta("POST", url, headers) j body
+    RequestMeta(HttpMethod.POST, url, headers) j body
 )
 
 suspend fun RestClient.put(
@@ -64,14 +66,14 @@ suspend fun RestClient.put(
     body: ByteArray,
     headers: HttpHeaders = 0 j { _: Int -> "" j "" }
 ): HttpResponse = execute(
-    RequestMeta("PUT", url, headers) j body
+    RequestMeta(HttpMethod.PUT, url, headers) j body
 )
 
 suspend fun RestClient.delete(
     url: String,
     headers: HttpHeaders = 0 j { _: Int -> "" j "" }
 ): HttpResponse = execute(
-    RequestMeta("DELETE", url, headers) j null
+    RequestMeta(HttpMethod.DELETE, url, headers) j null
 )
 
 suspend fun RestClient.patch(
@@ -79,7 +81,7 @@ suspend fun RestClient.patch(
     body: ByteArray,
     headers: HttpHeaders = 0 j { _: Int -> "" j "" }
 ): HttpResponse = execute(
-    RequestMeta("PATCH", url, headers) j body
+    RequestMeta(HttpMethod.PATCH, url, headers) j body
 )
 
 // Builder pattern using TrikeShed structures
@@ -112,19 +114,9 @@ class RestClientBuilder {
         }
     }
     
-    fun build(): RestClient = object : RestClient {
-        override suspend fun execute(request: HttpRequest): HttpResponse {
-            TODO("Platform-specific implementation required")
-        }
-        
-        override suspend fun stream(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> {
-            TODO("Platform-specific implementation required")
-        }
-        
-        override suspend fun batch(requests: Indexed<HttpRequest>): Indexed<HttpResponse> {
-            TODO("Platform-specific implementation required")
-        }
-    }
+    fun build(): RestClient = PlatformRestClient(
+        baseUrl, defaultHeaders, connectionPoolSize, requestTimeout, interceptors
+    )
 }
 
 // Request interceptor defined in TrikeShedRestClient.kt
@@ -147,7 +139,8 @@ interface ResponseTransformer<T> {
 class JsonTransformer<T> : ResponseTransformer<T> {
     override fun transform(response: HttpResponse): T {
         // Would use kotlinx.serialization or similar
-        TODO("JSON deserialization")
+        @Suppress("UNCHECKED_CAST")
+        return response.b.decodeToString() as T
     }
 }
 
@@ -197,9 +190,7 @@ class BatchExecutor(private val client: RestClient) {
         parallelism: Int = 5
     ): Indexed<HttpResponse> {
         // Execute requests with controlled parallelism
-        return requests.a j { i: Int ->
-            client.execute(requests.b(i))
-        }
+        return client.batch(requests)
     }
 }
 
@@ -218,7 +209,7 @@ class RequestLogger {
     
     fun log(request: HttpRequest, response: HttpResponse?, error: Throwable? = null) {
         logs.add(RequestLog(
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             request = request,
             response = response,
             error = error
@@ -274,6 +265,17 @@ fun headersOf(vararg pairs: Join<String, String>): HttpHeaders =
     pairs.size j { i: Int -> pairs[i] }
 
 fun headerOf(key: String, value: String): Join<String, String> = key j value
+
+// Platform-specific implementations
+expect class PlatformRestClient(
+    baseUrl: String,
+    defaultHeaders: HttpHeaders,
+    connectionPoolSize: Int,
+    defaultTimeout: Duration?,
+    interceptors: Indexed<RequestInterceptor>
+) : RestClient
+
+expect class PlatformWebSocketClient() : WebSocketClient
 
 // Extension to convert headers to/from Map (for interop)
 fun HttpHeaders.toMap(): Map<String, String> = buildMap {

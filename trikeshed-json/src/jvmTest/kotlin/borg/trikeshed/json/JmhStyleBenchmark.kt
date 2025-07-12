@@ -15,7 +15,7 @@ class JmhStyleBenchmark {
     fun runBenchmarks() {
         println("\n=== TrikeShed JSON Scanner Performance Benchmarks ===")
         println("JVM: ${System.getProperty("java.version")} ${System.getProperty("java.vm.name")}")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         
         warmup()
         
@@ -122,7 +122,7 @@ class JmhStyleBenchmark {
             println("%-6d | %11.2f | %11.2f | %s".format(size, simpleTime, bitmapTime, winner))
         }
         
-        println("\nBenchmark completed: ${System.currentTimeMillis()}")
+        println("\nBenchmark completed: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
     }
     
     internal inline fun measure(iterations: Int, block: () -> Unit): Double {

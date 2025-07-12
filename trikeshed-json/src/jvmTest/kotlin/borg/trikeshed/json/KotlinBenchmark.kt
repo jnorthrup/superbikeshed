@@ -19,7 +19,7 @@ class KotlinBenchmark {
     fun runAllBenchmarks() {
         println("\n=== TrikeShed JSON Kotlin Benchmarks ===")
         println("Platform: JVM ${System.getProperty("java.version")}")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         
         warmup()
         
@@ -234,7 +234,7 @@ class KotlinBenchmark {
         append("{\"data\":[")
         repeat(count) { i ->
             if (i > 0) append(",")
-            append("{\"id\":$i,\"timestamp\":${System.currentTimeMillis()},\"value\":${Math.random()}}")
+            append("{\"id\":$i,\"timestamp\":${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()},\"value\":${Math.random()}}")
         }
         append("]}")
     }

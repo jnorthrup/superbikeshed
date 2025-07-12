@@ -27,8 +27,8 @@ data class CcekContext(
     
     companion object CcekContextKey : CoroutineContext.Key<CcekContext>
     
-    private fun generateExecutionId(): String = "exec_${System.currentTimeMillis()}_${kotlin.random.Random.nextInt()}"
-    private fun generateSessionId(): String = "session_${System.currentTimeMillis()}"
+    private fun generateExecutionId(): String = "exec_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}_${kotlin.random.Random.nextInt()}"
+    private fun generateSessionId(): String = "session_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 }
 
 // === IO_URING CCEK EXTENSIONS ===

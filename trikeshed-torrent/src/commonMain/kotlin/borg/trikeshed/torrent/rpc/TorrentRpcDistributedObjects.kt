@@ -27,20 +27,20 @@ data class DownloadSession(
     val downloads: Map<String, DownloadTask> = emptyMap(),
     val stats: Map<String, DownloadProgress> = emptyMap(),
     val metadata: Map<String, String> = emptyMap(),
-    val createdAt: Long = System.currentTimeMillis(),
-    val lastModified: Long = System.currentTimeMillis()
+    val createdAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+    val lastModified: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 ) {
     fun updateDownload(downloadId: String, task: DownloadTask): DownloadSession {
         return copy(
             downloads = downloads + (downloadId to task),
-            lastModified = System.currentTimeMillis()
+            lastModified = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
     }
     
     fun updateProgress(downloadId: String, progress: DownloadProgress): DownloadSession {
         return copy(
             stats = stats + (downloadId to progress),
-            lastModified = System.currentTimeMillis()
+            lastModified = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
     }
     
@@ -48,7 +48,7 @@ data class DownloadSession(
         return copy(
             downloads = downloads - downloadId,
             stats = stats - downloadId,
-            lastModified = System.currentTimeMillis()
+            lastModified = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
     }
 }

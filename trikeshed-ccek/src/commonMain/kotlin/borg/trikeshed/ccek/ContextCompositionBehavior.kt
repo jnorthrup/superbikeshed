@@ -3,242 +3,278 @@ package borg.trikeshed.ccek
 
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
+import borg.trikeshed.channel.api.*
+import borg.trikeshed.dht.IKademliaNode
+import borg.trikeshed.dht.IMetaverseAgent
+import borg.trikeshed.dht.DHTFactory
+import borg.trikeshed.dht.kademlia.id.NUID
 
 /**
- * Analysis of CoroutineContext + operator behavior and element preservation.
+ * Context Composition Behavior Examples
+ * Demonstrates how context composition works with the + operator
+ * and how services can be combined, replaced, and validated.
  */
 
 /**
- * The + operator behavior:
- * - Preserves individual elements as separate context entries
- * - Same key = right-hand side wins (replacement, not merging)
- * - Different keys = both elements coexist
- * - Creates a CombinedContext internally
+ * Example 1: Basic context composition with + operator
  */
-
-// Example demonstrating context element preservation
-suspend fun demonstrateContextBehavior() {
-    val service1 = ChannelService(MemoryChannelProvider())
+suspend fun basicContextComposition() {
+    val service1 = ChannelService(ChannelProvider.Stub)
     val service2 = CRDTChannelEngine("node1", EmptyCoroutineContext)
-    val service3 = ChannelizedKademliaNode(NUID.generate(), EmptyCoroutineContext)
+    val service3 = DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext)
     
-    // Each element remains distinct
+    // Combine contexts with + operator
     val combined = service1 + service2 + service3
     
-    // All three can be retrieved independently
-    println("ChannelService: ${combined[ChannelService] != null}")           // true
-    println("CRDTChannelEngine: ${combined[CRDTChannelEngine] != null}")     // true
-    println("KademliaNode: ${combined[ChannelizedKademliaNode] != null}")    // true
-    
-    // Same key replacement demonstration
-    val service2Updated = CRDTChannelEngine("node2", EmptyCoroutineContext)
-    val replacedContext = combined + service2Updated
-    
-    println("Original node: ${combined[CRDTChannelEngine]?.nodeId}")         // "node1"  
-    println("Replaced node: ${replacedContext[CRDTChannelEngine]?.nodeId}")  // "node2"
-}
-
-/**
- * Enhanced withMetaContext that preserves element identity and provides introspection.
- */
-suspend fun <T> withMetaContextDetailed(
-    current: CoroutineContext.Element,
-    next: CoroutineContext.Element,
-    block: suspend CoroutineScope.() -> T
-): T {
-    val combinedContext = current + next
-    
-    // Verify both elements are present
-    require(combinedContext[current.key] != null) { 
-        "Current element ${current.key} not found in combined context" 
-    }
-    require(combinedContext[next.key] != null) { 
-        "Next element ${next.key} not found in combined context" 
-    }
-    
-    // Log context composition for debugging
-    println("Context transition: ${current.key} + ${next.key}")
-    
-    return withContext(combinedContext, block)
-}
-
-/**
- * Context introspection utilities.
- */
-object ContextIntrospection {
-    
-    /**
-     * Extract all elements from a context (flattens CombinedContext).
-     */
-    fun extractAllElements(context: CoroutineContext): List<CoroutineContext.Element> {
-        val elements = mutableListOf<CoroutineContext.Element>()
-        
-        context.fold(Unit) { _, element ->
-            elements.add(element)
-        }
-        
-        return elements
-    }
-    
-    /**
-     * Check if context contains all required service keys.
-     */
-    fun validateRequiredServices(
-        context: CoroutineContext,
-        vararg requiredKeys: CoroutineContext.Key<*>
-    ): Result<Unit> {
-        val missing = requiredKeys.filter { key -> context[key] == null }
-        
-        return if (missing.isEmpty()) {
-            Result.success(Unit)
-        } else {
-            Result.failure(IllegalStateException(
-                "Missing required services: ${missing.map { it.toString() }}"
-            ))
-        }
-    }
-    
-    /**
-     * Get context composition tree as string (for debugging).
-     */
-    fun contextTree(context: CoroutineContext): String {
-        val elements = extractAllElements(context)
-        return elements.joinToString(" + ") { it.key.toString() }
-    }
-    
-    /**
-     * Check for key conflicts (same key, different instances).
-     */
-    fun detectKeyConflicts(vararg elements: CoroutineContext.Element): List<String> {
-        val keyGroups = elements.groupBy { it.key }
-        return keyGroups.filter { it.value.size > 1 }.keys.map { it.toString() }
+    withContext(combined) {
+        println("ChannelService: ${combined[ChannelService] != null}")     // true
+        println("CRDTChannelEngine: ${combined[CRDTChannelEngine] != null}")     // true
+        println("KademliaNode: ${combined[IKademliaNode] != null}")    // true
     }
 }
 
 /**
- * Safe context builder that prevents key conflicts and validates composition.
+ * Example 2: Context replacement behavior
  */
-class SafeMetaContextBuilder {
-    internal val elements = mutableMapOf<CoroutineContext.Key<*>, CoroutineContext.Element>()
+suspend fun contextReplacement() {
+    val service1 = CRDTChannelEngine("node1", EmptyCoroutineContext)
+    val service2 = CRDTChannelEngine("node2", EmptyCoroutineContext) // Same key, different instance
     
-    fun <T : CoroutineContext.Element> add(element: T): SafeMetaContextBuilder = apply {
-        val existing = elements[element.key]
-        if (existing != null && existing !== element) {
-            println("Warning: Replacing ${element.key} (${existing::class.simpleName} -> ${element::class.simpleName})")
-        }
-        elements[element.key] = element
-    }
+    // Later service replaces earlier one with same key
+    val combined = service1 + service2
+    val replacedContext = service2 + service1 // Reverse order
     
-    fun remove(key: CoroutineContext.Key<*>): SafeMetaContextBuilder = apply {
-        elements.remove(key)
-    }
-    
-    fun build(): CoroutineContext {
-        return elements.values.fold(EmptyCoroutineContext as CoroutineContext) { acc, element ->
-            acc + element
-        }
-    }
-    
-    fun validate(): Result<CoroutineContext> {
-        // Add validation logic here
-        return Result.success(build())
-    }
-    
-    fun describe(): String {
-        return "Context[${elements.keys.joinToString { it.toString() }}]"
+    withContext(combined) {
+        println("Original node: ${combined[CRDTChannelEngine]?.nodeId}")         // "node1"
+        println("Replaced node: ${replacedContext[CRDTChannelEngine]?.nodeId}")  // "node2"
     }
 }
 
 /**
- * Enhanced withMetaContext with validation and conflict detection.
+ * Example 3: Progressive context building
  */
-suspend fun <T> withValidatedMetaContext(
-    vararg elements: CoroutineContext.Element,
-    block: suspend CoroutineScope.() -> T
-): T {
-    // Detect conflicts
-    val conflicts = ContextIntrospection.detectKeyConflicts(*elements)
-    if (conflicts.isNotEmpty()) {
-        println("Key conflicts detected: $conflicts (last wins)")
+suspend fun progressiveContextBuilding() {
+    var context: CoroutineContext = EmptyCoroutineContext
+    
+    // Add services progressively
+    context += ChannelService(ChannelProvider.Stub)
+    context += CRDTChannelEngine("progressive-node", context)
+    context += DHTFactory.createKademliaNode(NUID.random(), context)
+    context += ChannelizedRequestFactory(context)
+    
+    withContext(context) {
+        val channel = coroutineContext[ChannelService]!!
+        val crdt = coroutineContext[CRDTChannelEngine]!!
+        val kademlia = coroutineContext[IKademliaNode]!!
+        val requests = coroutineContext[ChannelizedRequestFactory]!!
+        
+        println("Progressive context built with ${crdt.nodeId}, ${kademlia.nodeId}")
     }
-    
-    // Build context safely
-    val context = SafeMetaContextBuilder().apply {
-        elements.forEach { add(it) }
-    }.build()
-    
-    // Log final composition
-    println("Final context: ${ContextIntrospection.contextTree(context)}")
-    
-    return withContext(context, block)
 }
 
 /**
- * Example usage demonstrating element preservation and conflict handling.
+ * Example 4: Context composition with validation
  */
-object ContextBehaviorExamples {
+suspend fun contextCompositionWithValidation() {
+    val context = EmptyCoroutineContext + 
+        ChannelService(ChannelProvider.Stub) +
+        CRDTChannelEngine("validated-node", EmptyCoroutineContext) +
+        DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext)
     
-    suspend fun elementPreservationExample() {
-        val channel = ChannelService(MemoryChannelProvider())
-        val crdt = CRDTChannelEngine("node1", EmptyCoroutineContext)
-        val kademlia = ChannelizedKademliaNode(NUID.generate(), EmptyCoroutineContext)
+    withContext(context) {
+        // Validate required services are present
+        val channel = coroutineContext[ChannelService]!!
+        val crdt = coroutineContext[CRDTChannelEngine]!!
+        val kademlia = coroutineContext[IKademliaNode]!!
         
-        withValidatedMetaContext(channel, crdt, kademlia) {
-            // All three elements are independently accessible
-            val channelSvc = coroutineContext[ChannelService]!!
-            val crdtEngine = coroutineContext[CRDTChannelEngine]!!
-            val kademliaNode = coroutineContext[ChannelizedKademliaNode]!!
-            
-            println("Channel provider: ${channelSvc.getProvider().name}")
-            println("CRDT node: ${crdtEngine.nodeId}")
-            println("Kademlia ID: ${kademliaNode.nodeId}")
-        }
+        println("Context validation passed: ${channel != null && crdt != null && kademlia != null}")
     }
-    
-    suspend fun keyReplacementExample() {
-        val crdt1 = CRDTChannelEngine("node1", EmptyCoroutineContext)
-        val crdt2 = CRDTChannelEngine("node2", EmptyCoroutineContext)
+}
+
+/**
+ * Example 5: Context composition with error handling
+ */
+suspend fun contextCompositionWithErrors(): Result<String> {
+    return try {
+        val context = EmptyCoroutineContext + 
+            ChannelService(ChannelProvider.Stub) +
+            CRDTChannelEngine("error-node", EmptyCoroutineContext)
         
-        // Demonstrate replacement behavior
-        val context1 = EmptyCoroutineContext + crdt1
-        val context2 = context1 + crdt2  // crdt2 replaces crdt1
-        
-        println("Context1 CRDT: ${context1[CRDTChannelEngine]?.nodeId}")  // "node1"
-        println("Context2 CRDT: ${context2[CRDTChannelEngine]?.nodeId}")  // "node2"
-    }
-    
-    suspend fun progressiveCompositionExample() {
-        // Start with empty context, add elements progressively
-        var context: CoroutineContext = EmptyCoroutineContext
-        
-        // Add channel service
-        context += ChannelService(MemoryChannelProvider())
-        println("After channel: ${ContextIntrospection.contextTree(context)}")
-        
-        // Add CRDT engine  
-        context += CRDTChannelEngine("progressive-node", context)
-        println("After CRDT: ${ContextIntrospection.contextTree(context)}")
-        
-        // Add Kademlia
-        context += ChannelizedKademliaNode(NUID.generate(), context)
-        println("After Kademlia: ${ContextIntrospection.contextTree(context)}")
-        
-        // Use the progressively built context
         withContext(context) {
-            println("Final context has ${ContextIntrospection.extractAllElements(coroutineContext).size} elements")
+            // Simulate an error condition
+            val crdt = coroutineContext[CRDTChannelEngine]!!
+            if (crdt.nodeId == "error-node") {
+                throw IllegalStateException("Error node detected")
+            }
+            "Context composition successful"
         }
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 }
 
 /**
- * Answer to the original question:
- * 
- * Yes, the + operator keeps elements single and distinct:
- * 1. Each CoroutineContext.Element with a unique key remains separate
- * 2. Same keys get replaced (right-hand side wins)  
- * 3. Different keys coexist independently
- * 4. You can retrieve each element by its key
- * 
- * The withMetaContext function preserves this behavior, allowing
- * progressive composition where each service remains accessible.
+ * Example 6: Context composition with multiple instances
  */
+suspend fun multipleInstanceComposition() {
+    val crdt1 = CRDTChannelEngine("node1", EmptyCoroutineContext)
+    val crdt2 = CRDTChannelEngine("node2", EmptyCoroutineContext)
+    val kademlia1 = DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext)
+    val kademlia2 = DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext)
+    
+    // Create separate contexts
+    val context1 = EmptyCoroutineContext + crdt1 + kademlia1
+    val context2 = EmptyCoroutineContext + crdt2 + kademlia2
+    
+    withContext(context1) {
+        println("Context1 CRDT: ${coroutineContext[CRDTChannelEngine]?.nodeId}")  // "node1"
+        println("Context1 Kademlia: ${coroutineContext[IKademliaNode]?.nodeId}")  // kademlia1.nodeId
+    }
+    
+    withContext(context2) {
+        println("Context2 CRDT: ${coroutineContext[CRDTChannelEngine]?.nodeId}")  // "node2"
+        println("Context2 Kademlia: ${coroutineContext[IKademliaNode]?.nodeId}")  // kademlia2.nodeId
+    }
+}
+
+/**
+ * Example 7: Context composition with dynamic building
+ */
+suspend fun dynamicContextBuilding() {
+    var context: CoroutineContext = EmptyCoroutineContext
+    
+    // Build context dynamically based on conditions
+    context += ChannelService(ChannelProvider.Stub)
+    
+    if (kotlinx.datetime.Clock.System.now().toEpochMilliseconds() % 2 == 0L) {
+        context += CRDTChannelEngine("even-node", context)
+    } else {
+        context += CRDTChannelEngine("odd-node", context)
+    }
+    
+    context += DHTFactory.createKademliaNode(NUID.random(), context)
+    
+    withContext(context) {
+        val crdt = coroutineContext[CRDTChannelEngine]!!
+        val kademlia = coroutineContext[IKademliaNode]!!
+        
+        println("Dynamic context: ${crdt.nodeId}, ${kademlia.nodeId}")
+    }
+}
+
+/**
+ * Example 8: Context composition with service dependencies
+ */
+suspend fun serviceDependencyComposition() {
+    // Create base context with channel service
+    val baseContext = EmptyCoroutineContext + ChannelService(ChannelProvider.Stub)
+    
+    // Add services that depend on the base context
+    val fullContext = baseContext + 
+        CRDTChannelEngine("dependent-node", baseContext) +
+        DHTFactory.createKademliaNode(NUID.random(), baseContext) +
+        ChannelizedRequestFactory(baseContext)
+    
+    withContext(fullContext) {
+        val channel = coroutineContext[ChannelService]!!
+        val crdt = coroutineContext[CRDTChannelEngine]!!
+        val kademlia = coroutineContext[IKademliaNode]!!
+        val requests = coroutineContext[ChannelizedRequestFactory]!!
+        
+        println("Service dependencies satisfied: ${crdt.nodeId}, ${kademlia.nodeId}")
+    }
+}
+
+/**
+ * Example 9: Context composition with validation utilities
+ */
+suspend fun validationUtilityComposition() {
+    val context = EmptyCoroutineContext + 
+        ChannelService(ChannelProvider.Stub) +
+        CRDTChannelEngine("validated-node", EmptyCoroutineContext) +
+        DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext)
+    
+    // Use validation utilities
+    val validation = ContextValidation.validateRequiredKeys(
+        context,
+        ChannelService.Key,
+        CRDTChannelEngine.Key,
+        IKademliaNode.Key
+    )
+    
+    if (validation.isSuccess) {
+        withContext(context) {
+            println("Context validation passed")
+        }
+    } else {
+        println("Context validation failed: ${validation.exceptionOrNull()?.message}")
+    }
+}
+
+/**
+ * Example 10: Context composition with type safety
+ */
+suspend fun typeSafeContextComposition(): String {
+    val context = EmptyCoroutineContext + 
+        ChannelService(ChannelProvider.Stub) +
+        CRDTChannelEngine("type-safe-node", EmptyCoroutineContext) +
+        DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext)
+    
+    return withContext(context) {
+        when {
+            context[ChannelService] == null ->
+                Result.failure(IllegalStateException("ChannelService required"))
+            context[CRDTChannelEngine] == null ->
+                Result.failure(IllegalStateException("CRDTChannelEngine required"))
+            context[IKademliaNode] == null ->
+                Result.failure(IllegalStateException("IKademliaNode required"))
+            else -> Result.success("Type-safe composition successful")
+        }.getOrThrow()
+    }
+}
+
+/**
+ * Example 11: Context composition with metaverse agent
+ */
+suspend fun metaverseAgentComposition() {
+    val context = EmptyCoroutineContext + 
+        ChannelService(ChannelProvider.Stub) +
+        CRDTChannelEngine("metaverse-node", EmptyCoroutineContext) +
+        DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext) +
+        DHTFactory.createMetaverseAgent(
+            DHTFactory.createKademliaNode(NUID.random(), EmptyCoroutineContext),
+            "metaverse-agent"
+        )
+    
+    withContext(context) {
+        val crdt = coroutineContext[CRDTChannelEngine]!!
+        val kademlia = coroutineContext[IKademliaNode]!!
+        val metaverse = coroutineContext[IMetaverseAgent]!!
+        
+        println("Metaverse context: ${crdt.nodeId}, ${kademlia.nodeId}, ${metaverse.agentId}")
+    }
+}
+
+/**
+ * Example 12: Context composition with error recovery
+ */
+suspend fun errorRecoveryComposition(): String {
+    return try {
+        // Try with problematic context
+        val problematicContext = EmptyCoroutineContext + 
+            CRDTChannelEngine("problematic-node", EmptyCoroutineContext)
+        
+        withContext(problematicContext) {
+            throw RuntimeException("Simulated error")
+        }
+    } catch (e: Exception) {
+        // Recover with safe context
+        val safeContext = EmptyCoroutineContext + 
+            ChannelService(ChannelProvider.Stub) +
+            CRDTChannelEngine("safe-node", EmptyCoroutineContext)
+        
+        withContext(safeContext) {
+            "Recovered from error with safe context"
+        }
+    }
+}

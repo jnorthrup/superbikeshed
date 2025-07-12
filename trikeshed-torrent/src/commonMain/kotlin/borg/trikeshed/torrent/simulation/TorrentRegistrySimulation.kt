@@ -61,8 +61,8 @@ class TorrentRegistrySimulation(
             downloadedPieces = 0,
             totalSize = torrent.totalSize,
             downloadedBytes = 0,
-            createdAt = System.currentTimeMillis(),
-            lastUpdated = System.currentTimeMillis()
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+            lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         registryChannel.send(RegistryEvent.TorrentRegistered(torrent))
@@ -80,8 +80,8 @@ class TorrentRegistrySimulation(
         torrentStats[infoHash]?.let { stats ->
             torrentStats[infoHash] = stats.copy(
                 totalPeers = torrentPeers[infoHash]?.size ?: 0,
-                activePeers = torrentPeers[infoHash]?.count { it.lastActivity > System.currentTimeMillis() - 300000 } ?: 0, // 5 minutes
-                lastUpdated = System.currentTimeMillis()
+                activePeers = torrentPeers[infoHash]?.count { it.lastActivity > kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 300000 } ?: 0, // 5 minutes
+                lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
         
@@ -100,8 +100,8 @@ class TorrentRegistrySimulation(
         torrentStats[infoHash]?.let { stats ->
             torrentStats[infoHash] = stats.copy(
                 totalPeers = torrentPeers[infoHash]?.size ?: 0,
-                activePeers = torrentPeers[infoHash]?.count { it.lastActivity > System.currentTimeMillis() - 300000 } ?: 0,
-                lastUpdated = System.currentTimeMillis()
+                activePeers = torrentPeers[infoHash]?.count { it.lastActivity > kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 300000 } ?: 0,
+                lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
         
@@ -122,7 +122,7 @@ class TorrentRegistrySimulation(
             torrentStats[infoHash] = stats.copy(
                 downloadedPieces = downloadedPieces,
                 downloadedBytes = downloadedBytes,
-                lastUpdated = System.currentTimeMillis()
+                lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
         

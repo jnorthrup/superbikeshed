@@ -444,9 +444,9 @@ class OAuthClientImpl : OAuthClient {
                 clientId = context.clientId,
                 username = "mock_user",
                 tokenType = OAuthTokenType.BEARER.value,
-                exp = System.currentTimeMillis() / 1000 + 3600,
-                iat = System.currentTimeMillis() / 1000,
-                nbf = System.currentTimeMillis() / 1000,
+                exp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() / 1000 + 3600,
+                iat = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() / 1000,
+                nbf = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() / 1000,
                 sub = "mock_user_id",
                 aud = context.clientId,
                 iss = "https://example.com"

@@ -728,7 +728,7 @@ class Socks5Server(
      * Generate unique connection ID
      */
     internal fun generateConnectionId(): String {
-        return "socks5-${System.currentTimeMillis()}-${(Math.random() * 10000).toInt()}"
+        return "socks5-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${(Math.random() * 10000).toInt()}"
     }
     
     /**

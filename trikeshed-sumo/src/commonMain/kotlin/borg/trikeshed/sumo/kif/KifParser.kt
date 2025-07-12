@@ -291,7 +291,7 @@ object KifParser {
          */
         suspend fun ingest(kifContent: String) {
             println("Ingesting KIF knowledge base...")
-            val startTime = System.currentTimeMillis()
+            val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             KifParser.parse(kifContent).collect { expr ->
                 // We are only interested in `(subclass ...)` expressions for this demo
                 if (expr is KifExpression.Cons &&
@@ -310,7 +310,7 @@ object KifParser {
             }
             // Second pass to compute transitive closure
             computeTransitiveClosure()
-            val duration = System.currentTimeMillis() - startTime
+            val duration = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime
             println("Ingestion complete in ${duration}ms. ${knowledgeBase.size} concepts indexed.")
         }
 

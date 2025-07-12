@@ -2,6 +2,7 @@
 package borg.trikeshed.dht
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.format.CommonFormatters
 // import borg.trikeshed.ccek.* // Circular dependency - need to refactor
 import borg.trikeshed.dht.kademlia.subnet.ConcentricSubnet
 import borg.trikeshed.dht.kademlia.id.NUID
@@ -48,7 +49,7 @@ class ChannelizedKademliaNode(
     ): Result<ConcentricSubnet> {
         return try {
             val subnet = ConcentricSubnet(subnetId, type, criteria.toMetadata())
-            subnet.addMember(nodeId, NodeInfo(nodeId, criteria.nodeAddress, criteria.capabilities))
+            subnet.addMember(nodeId, NodeInfo(nodeId, criteria.nodeAddress, 8080, criteria.capabilities.size j { i -> criteria.capabilities.elementAt(i) }))
             
             subnets[subnetId] = subnet
             
@@ -183,7 +184,7 @@ class ChannelizedKademliaNode(
         // Simplified distance calculation - in real implementation would use XOR distance
         return peers.values
             .filter { peer -> subnet.isMember(peer.nodeId) }
-            .sortedBy { peer -> calculateDistance(peer.nodeId.bytes, targetKey) }
+            .sortedBy { peer -> calculateDistance(peer.nodeId.bytes.let { indexed -> ByteArray(indexed.a) { i -> indexed.b(i) } }, targetKey) }
             .take(maxPeers)
     }
     
@@ -215,15 +216,15 @@ class ChannelizedKademliaNode(
                 when (subnet.type) {
                     ConcentricSubnet.SubnetType.GEOGRAPHIC -> {
                         // Geographic proximity logic
-                        peer.nodeInfo.capabilities.contains("geo") 
+                        (0 until peer.nodeInfo.subnets.a).any { i -> peer.nodeInfo.subnets.b(i) == "geo" } 
                     }
                     ConcentricSubnet.SubnetType.TRUST_LEVEL -> {
                         // Trust level assessment
-                        peer.nodeInfo.capabilities.contains("trusted")
+                        (0 until peer.nodeInfo.subnets.a).any { i -> peer.nodeInfo.subnets.b(i) == "trusted" }
                     }
                     ConcentricSubnet.SubnetType.PERFORMANCE -> {
                         // Performance criteria
-                        peer.nodeInfo.capabilities.contains("high-perf")
+                        (0 until peer.nodeInfo.subnets.a).any { i -> peer.nodeInfo.subnets.b(i) == "high-perf" }
                     }
                     else -> true
                 }
@@ -281,7 +282,7 @@ data class PerformanceMetrics(
 data class KademliaPeer(
     val nodeId: NUID,
     val nodeInfo: NodeInfo,
-    val lastSeen: Long = System.currentTimeMillis(),
+    val lastSeen: Long = CommonFormatters.currentTimeMillis(),
     val responseTime: Long = 0
 )
 
@@ -366,10 +367,10 @@ class MetaverseKademliaAgent(
         kademliaNode.peerEvents.collect { event ->
             when (event) {
                 is PeerEvent.StoreCompleted -> {
-                    emit(AttentionEvent.DataStored(String(event.key), event.storedNodes.size))
+                    emit(AttentionEvent.DataStored(event.key.decodeToString(), event.storedNodes.size))
                 }
                 is PeerEvent.RetrieveCompleted -> {
-                    emit(AttentionEvent.DataRetrieved(String(event.key), event.fromNode))
+                    emit(AttentionEvent.DataRetrieved(event.key.decodeToString(), event.fromNode))
                 }
                 else -> { /* Other events */ }
             }

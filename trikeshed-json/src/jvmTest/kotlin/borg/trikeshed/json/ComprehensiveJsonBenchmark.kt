@@ -39,7 +39,7 @@ class ComprehensiveJsonBenchmark {
         println("COMPREHENSIVE JSON PARSER MICROBENCHMARK SUITE")
         println("=".repeat(80))
         println("Platform: JVM ${System.getProperty("java.version")}")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         println("Testing ${getAllImplementations().size} JSON implementations")
         println()
         
@@ -559,7 +559,7 @@ class ComprehensiveJsonBenchmark {
         val elements = sizeKB * 10 // Rough estimate
         repeat(elements) { i ->
             if (i > 0) append(",")
-            append("{\"id\":$i,\"timestamp\":${System.currentTimeMillis()},\"value\":${Math.random()}}")
+            append("{\"id\":$i,\"timestamp\":${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()},\"value\":${Math.random()}}")
         }
         append("]}")
     }
@@ -577,7 +577,7 @@ class ComprehensiveJsonBenchmark {
         append("[")
         repeat(count) { i ->
             if (i > 0) append(",")
-            append("""{"id":$i,"timestamp":${System.currentTimeMillis()},"value":${Math.random()}}""")
+            append("""{"id":$i,"timestamp":${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()},"value":${Math.random()}}""")
         }
         append("]")
     }
@@ -640,7 +640,7 @@ class ComprehensiveJsonBenchmark {
         println("Total implementations tested: ${getAllImplementations().size}")
         println("Test sizes: ${testSizes.joinToString(", ")}")
         println("Benchmark runs per test: $benchmarkRuns")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         println("=".repeat(80))
     }
 }

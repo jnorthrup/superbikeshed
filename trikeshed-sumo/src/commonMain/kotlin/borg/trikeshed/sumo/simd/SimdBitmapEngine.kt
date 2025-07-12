@@ -408,7 +408,7 @@ class SimdBitmapEngine(
                     currentToken.append(byte.toInt().toChar())
                     if (byte == '"'.code.toByte() && !state.escaped[i]) {
                         // End of string
-                        emit(KifToken.String(currentToken.toString(), tokenStart, i + 1))
+                        emit(KifToken.StringToken(currentToken.toString(), tokenStart, i + 1))
                         currentToken.clear()
                         inString = false
                     }
@@ -460,10 +460,10 @@ class SimdBitmapEngine(
 // === KIF TOKEN TYPES ===
 
 sealed class KifToken(val start: Int, val end: Int) {
-    data class Symbol(val value: String, override val start: Int, override val end: Int) : KifToken(start, end)
-    data class String(val value: String, override val start: Int, override val end: Int) : KifToken(start, end)
-    data class ParenthesisOpen(override val start: Int) : KifToken(start, start + 1)
-    data class ParenthesisClose(override val start: Int) : KifToken(start, start + 1)
+    data class Symbol(val value: String, start: Int, end: Int) : KifToken(start, end)
+    data class StringToken(val value: String, start: Int, end: Int) : KifToken(start, end)
+    data class ParenthesisOpen(start: Int) : KifToken(start, start + 1)
+    data class ParenthesisClose(start: Int) : KifToken(start, start + 1)
 }
 
 // === PLATFORM-SPECIFIC IMPLEMENTATIONS ===

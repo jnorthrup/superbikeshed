@@ -136,7 +136,7 @@ class FileSystemSimulation(
             path = outputPath,
             size = totalSize.toLong(),
             data = assembledData,
-            createdAt = System.currentTimeMillis(),
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             isComplete = pieces.size == torrent.totalPieces
         )
         

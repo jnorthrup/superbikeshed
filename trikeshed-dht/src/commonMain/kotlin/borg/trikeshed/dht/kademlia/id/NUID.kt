@@ -3,6 +3,7 @@ package borg.trikeshed.dht.kademlia.id
 
 
 import borg.trikeshed.lib.*
+import borg.trikeshed.lib.format.toHexString
 import kotlin.random.Random
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -191,5 +192,4 @@ object IndexedByteSerializer : KSerializer<Indexed<Byte>> {
     }
 }
 
-// Extension function to convert ByteArray to hex string
-private fun ByteArray.toHexString(): String = joinToString("") { "%02x".format(it) }
+// Use common formatter from trikeshed-lib

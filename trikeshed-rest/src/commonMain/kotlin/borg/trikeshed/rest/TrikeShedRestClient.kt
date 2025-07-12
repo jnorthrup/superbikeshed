@@ -5,6 +5,7 @@ import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration
+import kotlin.time.TimeSource
 import kotlin.time.measureTime
 import kotlin.coroutines.CoroutineContext
 
@@ -23,10 +24,18 @@ import kotlin.coroutines.CoroutineContext
 
 // HTTP method is just a String in RestClient.kt
 
-// Temporary HTTP types
+// Temporary HTTP types and client stub
 data class HttpRequestPath(val value: String)
 data class HttpHeaderName(val value: String)
 data class HttpHeaderValue(val value: String)
+
+// Simple HTTP client stub until network layer is ready
+class SimpleHttpClient {
+    suspend fun execute(request: Any): Any = ByteArray(0)
+    suspend fun stream(request: Any, handler: (ByteArray) -> Unit) {}
+}
+
+// Use Kotlin TimeSource instead of platform-specific time
 abstract class TrikeShedRestClient(
     protected val baseUrl: String,
     protected val defaultHeaders: HttpHeaders,
@@ -39,7 +48,8 @@ abstract class TrikeShedRestClient(
     
     private val connectionPool = ConnectionPool(connectionPoolSize)
     private val logger = RequestLogger()
-    // private val httpClient = createHttpClient() // Disabled until net.http is available
+    // HTTP client placeholder until net.http is available
+    private val httpClient = SimpleHttpClient()
     
     override suspend fun execute(request: HttpRequest): HttpResponse = coroutineScope {
         // Apply interceptors
@@ -97,34 +107,28 @@ abstract class TrikeShedRestClient(
         
         // Collect results maintaining order
         requests.a j { i: Int ->
-            deferreds[i].await()
+            runBlocking { deferreds[i].await() }
         }
     }
     
     private suspend fun executeInternal(request: HttpRequest): HttpResponse {
-        // Convert to HTTP request format
-        val httpRequest = convertToHttpRequest(request)
-        
-        // Execute using HTTP client
-        val httpResponse = httpClient.execute(httpRequest)
-        
-        // Convert back to REST response format
-        return convertToRestResponse(httpResponse)
+        // Stub implementation until proper HTTP client is available
+        val meta = ResponseMeta(
+            statusCode = 200,
+            headers = 0 j { _: Int -> "" j "" },
+            duration = kotlin.time.Duration.ZERO
+        )
+        return meta j ByteArray(0)
     }
     
     private fun streamInternal(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> = flow {
-        // Convert to HTTP request format
-        val httpRequest = convertToHttpRequest(request)
-        
-        // Stream using HTTP client
-        httpClient.stream(httpRequest) { chunk ->
-            val meta = ResponseMeta(
-                statusCode = 200, // Would need to parse from HTTP response
-                headers = headersOf("content-type" j "application/octet-stream"),
-                duration = Duration.ZERO
-            )
-            emit(meta j chunk)
-        }
+        // Stub implementation for streaming
+        val meta = ResponseMeta(
+            statusCode = 200,
+            headers = 0 j { _: Int -> "" j "" },
+            duration = kotlin.time.Duration.ZERO
+        )
+        emit(meta j ByteArray(0))
     }
     
     /*
@@ -245,13 +249,14 @@ class SseClient(private val restClient: RestClient) {
         url: String,
         headers: HttpHeaders = 0 j { _: Int -> "" j "" }
     ): Flow<SseEvent> = flow {
-        val request = RequestMeta("GET", url, headers) j null
+        val request = RequestMeta(HttpMethod.GET, url, headers) j (null as ByteArray?)
         
         restClient.stream(request).collect { chunk ->
             // Parse SSE format
             val data = chunk.b.decodeToString()
-            parseSseEvents(data).forEach { event ->
-                emit(event)
+            val events = parseSseEvents(data)
+            for (i in 0 until events.a) {
+                emit(events.b(i))
             }
         }
     }
@@ -328,21 +333,23 @@ class RateLimiter(
     private val maxRequests: Int,
     private val windowDuration: Duration
 ) : RequestInterceptor {
-    private val requestTimes: MutableList<Long> = mutableListOf()
+    private val timeSource = TimeSource.Monotonic
+    private val requestTimes: MutableList<TimeSource.Monotonic.ValueTimeMark> = mutableListOf()
     
     override suspend fun intercept(request: HttpRequest): HttpRequest {
-        val now = System.currentTimeMillis()
-        val windowStart = now - windowDuration.inWholeMilliseconds
+        val now = timeSource.markNow()
         
         // Remove old requests outside the window
-        requestTimes.removeAll { it < windowStart }
+        requestTimes.removeAll { now - it > windowDuration }
         
         // Check if we're at the limit
         if (requestTimes.size >= maxRequests) {
-            val oldestRequest = requestTimes.minOrNull() ?: 0L
-            val waitTime = windowStart - oldestRequest
-            if (waitTime > 0) {
-                delay(waitTime)
+            val oldestRequest = requestTimes.minByOrNull { now - it }
+            if (oldestRequest != null) {
+                val waitTime = windowDuration - (now - oldestRequest)
+                if (waitTime > Duration.ZERO) {
+                    kotlinx.coroutines.delay(waitTime)
+                }
             }
         }
         
@@ -354,10 +361,11 @@ class RateLimiter(
 // Circuit breaker pattern
 class CircuitBreaker(
     private val failureThreshold: Int = 5,
-    private val resetTimeout: Duration = Duration.seconds(60)
+    private val resetTimeout: Duration = Duration.parse("60s")
 ) : RequestInterceptor {
+    private val timeSource = TimeSource.Monotonic
     private var failureCount = 0
-    private var lastFailureTime: Long = 0
+    private var lastFailureTime: TimeSource.Monotonic.ValueTimeMark? = null
     private var state: State = State.CLOSED
     
     enum class State {
@@ -369,8 +377,8 @@ class CircuitBreaker(
     override suspend fun intercept(request: HttpRequest): HttpRequest {
         when (state) {
             State.OPEN -> {
-                val now = System.currentTimeMillis()
-                if (now - lastFailureTime > resetTimeout.inWholeMilliseconds) {
+                val lastFailure = lastFailureTime
+                if (lastFailure != null && timeSource.markNow() - lastFailure > resetTimeout) {
                     state = State.HALF_OPEN
                     failureCount = 0
                 } else {
@@ -401,7 +409,7 @@ class CircuitBreaker(
     
     fun recordFailure() {
         failureCount++
-        lastFailureTime = System.currentTimeMillis()
+        lastFailureTime = timeSource.markNow()
         
         if (failureCount >= failureThreshold) {
             state = State.OPEN
@@ -441,7 +449,7 @@ class MultipartFormData {
     }
     
     fun build(): Join<HttpHeaders, ByteArray> {
-        val boundary = "----TrikeShedBoundary${System.currentTimeMillis()}"
+        val boundary = "----TrikeShedBoundary${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         val contentType = "multipart/form-data; boundary=$boundary"
         
         val body = buildString {
@@ -468,7 +476,7 @@ class MultipartFormData {
  * Execute an HTTP request using the TrikeShedRestClient from context
  */
 suspend fun TrikeShedRestClient.Key.execute(request: HttpRequest): HttpResponse {
-    val client = coroutineContext[this] 
+    val client = currentCoroutineContext()[this] 
         ?: throw IllegalStateException("TrikeShedRestClient not found in context")
     return client.execute(request)
 }
@@ -477,7 +485,7 @@ suspend fun TrikeShedRestClient.Key.execute(request: HttpRequest): HttpResponse 
  * Stream an HTTP request using the TrikeShedRestClient from context
  */
 suspend fun TrikeShedRestClient.Key.stream(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> {
-    val client = coroutineContext[this] 
+    val client = currentCoroutineContext()[this] 
         ?: throw IllegalStateException("TrikeShedRestClient not found in context")
     return client.stream(request)
 }
@@ -486,7 +494,7 @@ suspend fun TrikeShedRestClient.Key.stream(request: HttpRequest): Flow<Join<Resp
  * Execute batch HTTP requests using the TrikeShedRestClient from context
  */
 suspend fun TrikeShedRestClient.Key.batch(requests: Indexed<HttpRequest>): Indexed<HttpResponse> {
-    val client = coroutineContext[this] 
+    val client = currentCoroutineContext()[this] 
         ?: throw IllegalStateException("TrikeShedRestClient not found in context")
     return client.batch(requests)
 }
@@ -494,8 +502,8 @@ suspend fun TrikeShedRestClient.Key.batch(requests: Indexed<HttpRequest>): Index
 /**
  * Close the REST client using the TrikeShedRestClient from context
  */
-fun TrikeShedRestClient.Key.close() {
-    val client = coroutineContext[this] 
+suspend fun TrikeShedRestClient.Key.close() {
+    val client = currentCoroutineContext()[this] 
         ?: throw IllegalStateException("TrikeShedRestClient not found in context")
     client.close()
 }

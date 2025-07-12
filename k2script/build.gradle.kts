@@ -46,12 +46,12 @@ kotlin {
                 implementation(project(":trikeshed-net"))
                 implementation(project(":trikeshed-services"))
                 implementation(project(":trikeshed-json"))
-                // implementation(project(":trikeshed-rest")) // Temporarily disabled due to compilation issues
+                implementation(project(":trikeshed-rest"))
                 implementation(project(":trikeshed-wave"))
                 implementation(project(":trikeshed-sumo"))
                 implementation(project(":trikeshed-ccek"))
                 implementation(project(":trikeshed-couchdb"))
-                // Add more as needed if referenced
+                implementation(project(":trikeshed-dht"))
             }
         }
         val commonTest by getting {

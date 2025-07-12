@@ -4,6 +4,7 @@ package borg.trikeshed.sumo.compiler
 
 import borg.trikeshed.lib.*
 import borg.trikeshed.sumo.kif.*
+import borg.trikeshed.sumo.kif.KifParser.KifExpression
 import kotlinx.coroutines.flow.*
 
 /**
@@ -29,7 +30,7 @@ class SumoCorpusCompiler {
      */
     suspend fun ingestCorpus(kifFiles: List<String>): CorpusStats {
         println("=== Phase 1: Corpus Ingestion ===")
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         var totalExpressions = 0
         var subclassExpressions = 0
@@ -52,7 +53,7 @@ class SumoCorpusCompiler {
             }
         }
         
-        val duration = System.currentTimeMillis() - startTime
+        val duration = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime
         val graph = joinGraph.buildGraph()
         val uniqueConcepts = graph.a.size
         
@@ -140,7 +141,7 @@ class SumoCorpusCompiler {
      */
     fun computeTransitiveClosure(): ClosureStats {
         println("=== Phase 3: Transitive Closure ===")
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         var iterations = 0
         var totalRelationships = 0
@@ -162,7 +163,7 @@ class SumoCorpusCompiler {
         }
         
         totalRelationships = subclassMatrix.values.sumOf { it.size }
-        val duration = System.currentTimeMillis() - startTime
+        val duration = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime
         
         println("Transitive closure complete in ${iterations} iterations")
         println("  - Total relationships: ${totalRelationships}")

@@ -257,7 +257,7 @@ class BitmapISAMStreaming(
         val columnTypes = inferColumnTypes(rows, schemaHints)
         
         val cursor = cursorOf(rows, columnNames, columnTypes)
-        cursor.writeISAM("${outputPath}_batch_${System.currentTimeMillis()}")
+        cursor.writeISAM("${outputPath}_batch_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
     }
     
     internal fun inferColumnTypes(
@@ -338,14 +338,14 @@ class ReactiveBitmapStreaming(
         json: String,
         contextId: String
     ): Flow<BitmapPerformanceMetrics> = flow {
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         var elementsProcessed = 0
         
         streamWithEvents(json, contextId).collect { element ->
             elementsProcessed++
             
             if (elementsProcessed % 5000 == 0) {
-                val currentTime = System.currentTimeMillis()
+                val currentTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
                 val duration = currentTime - startTime
                 val throughput = if (duration > 0) {
                     (elementsProcessed * 1000.0) / duration

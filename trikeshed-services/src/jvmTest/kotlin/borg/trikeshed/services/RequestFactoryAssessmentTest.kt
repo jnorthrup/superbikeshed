@@ -65,7 +65,7 @@ class RequestFactoryAssessmentTest {
         val payload = createTestPayload()
         
         // Measure performance
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         val responses = coroutineScope {
             (1..concurrentRequests).map { 
@@ -73,7 +73,7 @@ class RequestFactoryAssessmentTest {
             }.awaitAll()
         }
         
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val duration = endTime - startTime
         
         // Verify all responses
@@ -144,9 +144,9 @@ class RequestFactoryAssessmentTest {
         // Create large payload (1MB)
         val largePayload = createLargePayload(1024 * 1024)
         
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val response = requestFactory.process(largePayload)
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         val duration = endTime - startTime
         

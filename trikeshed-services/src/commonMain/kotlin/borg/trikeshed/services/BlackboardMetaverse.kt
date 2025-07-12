@@ -6,6 +6,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import kotlinx.datetime.*
 import kotlin.random.Random
 
 /**
@@ -87,7 +88,7 @@ class BlackboardMetaverse(
             subspace = subspace,
             knowledge = anonymousKnowledge,
             contributorId = avatarId,
-            timestamp = System.currentTimeMillis()
+            timestamp = Clock.System.now().toEpochMilliseconds()
         )
         
         // Gossip the knowledge
@@ -98,7 +99,8 @@ class BlackboardMetaverse(
         knowledgeGraph.addFragment(anonymousKnowledge, subspace)
         
         // Update avatar reputation
-        avatar.reputation = calculateReputation(avatar, blackboardEntry)
+        val newReputation = calculateReputation(avatar, blackboardEntry)
+        activeAvatars[avatarId] = avatar.copy(reputation = newReputation)
         
         return ContributionResult.Success(blackboardEntry)
     }
@@ -252,8 +254,8 @@ class BlackboardMetaverse(
         return combined.distinctBy { it.id }
     }
 
-    internal fun generateSubspaceId(): String = "subspace-${System.currentTimeMillis()}-${Random.nextInt()}"
-    internal fun generateKnowledgeId(): String = "knowledge-${System.currentTimeMillis()}-${Random.nextInt()}"
+    internal fun generateSubspaceId(): String = "subspace-${Clock.System.now().toEpochMilliseconds()}-${Random.nextInt()}"
+    internal fun generateKnowledgeId(): String = "knowledge-${Clock.System.now().toEpochMilliseconds()}-${Random.nextInt()}"
     internal fun calculateConfidence(fragments: List<KnowledgeFragment>): Double = 
         fragments.map { it.confidence }.average()
 }
@@ -305,7 +307,7 @@ class MetaverseBlackboard {
         return entries[subspace]?.takeLast(limit) ?: emptyList()
     }
 
-    internal fun generateEntryId(): String = "entry-${System.currentTimeMillis()}-${Random.nextInt()}"
+    internal fun generateEntryId(): String = "entry-${Clock.System.now().toEpochMilliseconds()}-${Random.nextInt()}"
 }
 
 /**
@@ -347,7 +349,7 @@ class AnonymousIdentitySystem {
             avatarId = avatarId,
             pseudonym = finalPseudonym,
             publicKey = generatePublicKey(),
-            createdAt = System.currentTimeMillis()
+            createdAt = Clock.System.now().toEpochMilliseconds()
         )
         
         activeIdentities[avatarId] = identity
@@ -361,7 +363,7 @@ class AnonymousIdentitySystem {
         return verifySignature(identity.publicKey, signature)
     }
 
-    internal fun generateAvatarId(): String = "avatar-${System.currentTimeMillis()}-${Random.nextInt()}"
+    internal fun generateAvatarId(): String = "avatar-${Clock.System.now().toEpochMilliseconds()}-${Random.nextInt()}"
     internal fun generatePseudonym(): String = "anon-${Random.nextInt(10000, 99999)}"
     internal fun generatePublicKey(): String = "pk-${Random.nextBytes(32).joinToString("")}"
     internal fun verifySignature(publicKey: String, signature: String): Boolean = true // Simplified
@@ -548,12 +550,12 @@ data class GossipNetwork(
     }
     
     fun gossip(entry: BlackboardEntry) {
-        val trail = GossipTrail(entry.knowledge, System.currentTimeMillis())
+        val trail = GossipTrail(entry.knowledge, Clock.System.now().toEpochMilliseconds())
         gossipHistory.add(trail)
     }
     
     fun getRecentGossip(timeWindow: Long): List<BlackboardEntry> {
-        val cutoff = System.currentTimeMillis() - timeWindow
+        val cutoff = Clock.System.now().toEpochMilliseconds() - timeWindow
         return gossipHistory
             .filter { it.timestamp >= cutoff }
             .map { BlackboardEntry("", it.knowledge, "", it.timestamp, name) }
@@ -564,7 +566,7 @@ data class GossipNetwork(
     }
     
     fun propagate(knowledge: KnowledgeFragment, sourceId: String) {
-        val trail = GossipTrail(knowledge, System.currentTimeMillis())
+        val trail = GossipTrail(knowledge, Clock.System.now().toEpochMilliseconds())
         gossipHistory.add(trail)
     }
 }

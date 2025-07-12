@@ -1,73 +1,59 @@
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
-@file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
-@file:OptIn(ExperimentalForeignApi::class)
-
-
 package borg.trikeshed.io
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.cinterop.ExperimentalForeignApi
 
-/**
- * Native implementation of CCekEngine
- */
 actual class CCekEngine {
-    
     actual fun initialize(compressionLevel: Int, bufferSize: Int) {
-        // Native initialization
+        println("CCekEngine.initialize() not implemented for macosArm64")
     }
-    
+
     actual fun cleanup() {
-        // Native cleanup
+        println("CCekEngine.cleanup() not implemented for macosArm64")
     }
-    
+
     actual suspend fun send(target: String, data: ByteArray): Int {
-        // Native send implementation
-        return data.size
+        println("CCekEngine.send() not implemented for macosArm64")
+        return -1
     }
-    
+
     actual suspend fun <T> sendObject(target: String, obj: T): Int {
-        // Native sendObject implementation
-        return 0
+        println("CCekEngine.sendObject() not implemented for macosArm64")
+        return -1
     }
-    
+
     actual suspend fun receive(source: String, buffer: ByteArray): Int {
-        // Native receive implementation
-        return 0
+        println("CCekEngine.receive() not implemented for macosArm64")
+        return -1
     }
-    
+
     actual suspend fun <T> receiveObject(source: String): T? {
-        // Native receiveObject implementation
+        println("CCekEngine.receiveObject() not implemented for macosArm64")
         return null
     }
-    
+
     actual suspend fun broadcast(targets: List<String>, data: ByteArray): List<Int> {
-        // Native broadcast implementation
-        return targets.map { data.size }
+        println("CCekEngine.broadcast() not implemented for macosArm64")
+        return emptyList()
     }
-    
+
     actual fun incomingMessages(): Flow<CCekMessage> {
-        // Native incoming messages flow
-        return emptyFlow()
+        throw NotImplementedError("CCekEngine.incomingMessages() not implemented for macosArm64")
     }
-    
+
     actual fun outgoingMessages(): Flow<CCekMessage> {
-        // Native outgoing messages flow
-        return emptyFlow()
+        throw NotImplementedError("CCekEngine.outgoingMessages() not implemented for macosArm64")
     }
-    
+
     actual fun getCompressionStats(): CompressionStats {
+        println("CCekEngine.getCompressionStats() not implemented for macosArm64")
         return CompressionStats()
     }
-    
+
     actual fun setCompressionAlgorithm(algorithm: CompressionAlgorithm) {
-        // Native compression algorithm setting
+        println("CCekEngine.setCompressionAlgorithm() not implemented for macosArm64")
     }
-    
+
     actual companion object {
-        actual fun create(): CCekEngine {
-            return CCekEngine()
-        }
+        actual fun create(): CCekEngine = CCekEngine()
     }
 }

@@ -1,15 +1,55 @@
 package borg.trikeshed.services
 
-import borg.trikeshed.channel.api.ChannelizedConnection
-import borg.trikeshed.channel.api.LongPollChannel
-import borg.trikeshed.channel.api.RealtimeChannel
-import borg.trikeshed.channel.api.SecureChannel
-import borg.trikeshed.channel.api.ViewChannel
-import borg.trikeshed.couchdb.CouchDBRealtimeChannel
-import borg.trikeshed.reactor.ReactorRealtimeChannel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+
+// TODO: Channel dependencies not yet implemented
+// import borg.trikeshed.channel.api.ChannelizedConnection
+// import borg.trikeshed.channel.api.LongPollChannel
+// import borg.trikeshed.channel.api.RealtimeChannel
+// import borg.trikeshed.channel.api.SecureChannel
+// import borg.trikeshed.channel.api.ViewChannel
+// import borg.trikeshed.couchdb.CouchDBRealtimeChannel
+// import borg.trikeshed.reactor.ReactorRealtimeChannel
+
+// Stub interfaces for channel dependencies
+interface RealtimeChannel {
+    suspend fun realTimeUpdates(): kotlinx.coroutines.flow.Flow<ByteArray>
+}
+
+interface SecureChannel {
+    suspend fun performSecurityHandshake(): Boolean
+}
+
+interface ViewChannel {
+    suspend fun requestView(viewId: String): kotlinx.coroutines.flow.Flow<ByteArray>
+}
+
+interface LongPollChannel {
+    suspend fun longPoll(timeout: Long): kotlinx.coroutines.flow.Flow<ByteArray>
+}
+
+// Stub implementations
+class ReactorRealtimeChannel : RealtimeChannel {
+    override suspend fun realTimeUpdates() = kotlinx.coroutines.flow.flowOf(ByteArray(0))
+}
+
+class CouchDBRealtimeChannel : RealtimeChannel {
+    override suspend fun realTimeUpdates() = kotlinx.coroutines.flow.flowOf(ByteArray(0))
+}
+
+class StubSecureChannel : SecureChannel {
+    override suspend fun performSecurityHandshake() = true
+}
+
+class StubViewChannel : ViewChannel {
+    override suspend fun requestView(viewId: String) = kotlinx.coroutines.flow.flowOf(ByteArray(0))
+}
+
+class StubLongPollChannel : LongPollChannel {
+    override suspend fun longPoll(timeout: Long) = kotlinx.coroutines.flow.flowOf(ByteArray(0))
+}
 
 class ChannelizedServiceManager(
     private val reactorChannel: RealtimeChannel = ReactorRealtimeChannel(),
@@ -45,24 +85,24 @@ class ChannelizedServiceManager(
 
         // Demonstrate ViewChannel
         if (reactorChannel is ViewChannel) {
-            reactorChannel.requestView("myReactorView".encodeToByteArray()).collect {
+            reactorChannel.requestView("myReactorView").collect {
                 println("Reactor View Data: ${it.decodeToString()}")
             }
         }
         if (couchDBChannel is ViewChannel) {
-            couchDBChannel.requestView("myCouchDBView".encodeToByteArray()).collect {
+            couchDBChannel.requestView("myCouchDBView").collect {
                 println("CouchDB View Data: ${it.decodeToString()}")
             }
         }
 
         // Demonstrate LongPollChannel
         if (reactorChannel is LongPollChannel) {
-            reactorChannel.longPoll("reactorLongPollRequest".encodeToByteArray()).collect {
+            reactorChannel.longPoll(5000).collect {
                 println("Reactor Long Poll Response: ${it.decodeToString()}")
             }
         }
         if (couchDBChannel is LongPollChannel) {
-            couchDBChannel.longPoll("couchDBLongPollRequest".encodeToByteArray()).collect {
+            couchDBChannel.longPoll(5000).collect {
                 println("CouchDB Long Poll Response: ${it.decodeToString()}")
             }
         }

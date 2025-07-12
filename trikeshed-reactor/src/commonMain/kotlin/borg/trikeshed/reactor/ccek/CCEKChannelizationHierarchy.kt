@@ -67,7 +67,7 @@ class TcpAdapter : ProtocolAdapter("tcp") {
     override suspend fun performWrite(op: WriteOperation): Int = op.channel.write(op.buffer)
     override suspend fun performConnect(op: ConnectOperation): Channel = 
         op.provider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             op.address
         )
 }
@@ -76,7 +76,7 @@ class UdpAdapter : ProtocolAdapter("udp") {
     override suspend fun performRead(op: ReadOperation): Int = op.channel.read(op.buffer)
     override suspend fun performWrite(op: WriteOperation): Int = op.channel.write(op.buffer)
     override suspend fun performConnect(op: ConnectOperation): Channel = 
-        op.provider.createChannel(ChannelConfig(ChannelType.UDP))
+        op.provider.createChannel(ChannelConfig(ChannelType.UDP, ChannelMode.READ_WRITE))
 }
 
 // ===== LEVEL 1: PROTOCOL COMPOSITION (Branches) =====
@@ -140,7 +140,7 @@ class WebSocketOverHttp(http: HttpOverTcp) : ProtocolStack(http, "websocket") {
             base.dispatch(httpOp)
             // Return WebSocket channel
             WebSocketChannel(op.provider.createConnectedChannel(
-                ChannelConfig(ChannelType.TCP), op.address
+                ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE), op.address
             )) as T
         }
         else -> base.dispatch(op)

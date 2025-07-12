@@ -36,8 +36,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
-                // Temporarily removed Trikeshed dependency for zero compiler errors
-                // implementation(project(":Trikeshed"))
+                implementation(project(":trikeshed-lib"))
             }
         }
 

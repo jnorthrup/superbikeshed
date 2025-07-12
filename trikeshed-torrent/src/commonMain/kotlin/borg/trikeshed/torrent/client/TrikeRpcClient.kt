@@ -527,7 +527,7 @@ class TrikeRpcClient(
         }
     }
     
-    internal fun generateRequestId(): String = "client_${System.currentTimeMillis()}_${(0..999).random()}"
+    internal fun generateRequestId(): String = "client_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}_${(0..999).random()}"
     
     internal fun String.capitalize(): String = replaceFirstChar { it.uppercase() }
 }

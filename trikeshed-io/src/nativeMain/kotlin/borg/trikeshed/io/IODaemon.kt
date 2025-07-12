@@ -1,64 +1,40 @@
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
-@file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
-@file:OptIn(ExperimentalForeignApi::class)
-
-
 package borg.trikeshed.io
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.cinterop.*
-import platform.posix.*
-import kotlin.time.TimeSource
-/**
- * Native implementation of IODaemon
- */
-actual class IODaemon {
-    
-    actual suspend fun initialize(config: IODaemonConfig) {
-        // Native initialization - could use kqueue on macOS or epoll on Linux
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+
+actual class IODaemon actual constructor(scope: CoroutineScope) {
+    override suspend fun initialize(config: IODaemonConfig) {
+        println("IODaemon.initialize() not implemented for macosArm64")
     }
-    
-    actual suspend fun shutdown() {
-        // Native shutdown
+
+    override suspend fun shutdown() {
+        println("IODaemon.shutdown() not implemented for macosArm64")
     }
-    
-    actual suspend fun submit(operation: IODaemonOperation): IODaemonResult {
-        // Native operation execution
-        return IODaemonResult(
-            operationId = operation.id,
-            bytesTransferred = operation.buffer.size,
-            error = 0,
-            flags = 0,
-            timestamp = TimeSource.Monotonic.markNow().elapsedNow().inWholeMilliseconds
-        )
+
+    override suspend fun submit(operation: IODaemonOperation): IODaemonResult {
+        println("IODaemon.submit() not implemented for macosArm64")
+        return IODaemonResult(operation.id, -1, -1)
     }
-    
-    actual suspend fun submitBatch(operations: List<IODaemonOperation>): List<IODaemonResult> {
-        return operations.map { submit(it) }
+
+    override suspend fun submitBatch(operations: List<IODaemonOperation>): List<IODaemonResult> {
+        println("IODaemon.submitBatch() not implemented for macosArm64")
+        return operations.map { IODaemonResult(it.id, -1, -1) }
     }
-    
-    actual fun completedOperations(): Flow<IODaemonResult> {
-        // Native implementation - could use channels
-        return emptyFlow()
+
+    override fun completedOperations(): Flow<IODaemonResult> {
+        throw NotImplementedError("Flow-based completion not implemented yet for macosArm64")
     }
-    
-    actual suspend fun getStats(): IODaemonStats {
-        return IODaemonStats(
-            totalOperations = 0,
-            successfulOperations = 0,
-            failedOperations = 0,
-            totalBytesTransferred = 0,
-            averageLatencyMs = 0.0,
-            queueDepth = 0,
-            uptimeMs = 0L
-        )
+
+    override suspend fun getStats(): IODaemonStats {
+        println("IODaemon.getStats() not implemented for macosArm64")
+        return IODaemonStats(0, 0, 0, 0, 0.0, 0, 0)
     }
-    
+
     actual companion object {
-        actual fun create(scope: CoroutineScope): IODaemon {
-            return IODaemon()
-        }
+        actual fun create(scope: CoroutineScope): IODaemon = IODaemon(scope)
     }
 }

@@ -77,4 +77,4 @@ actual class IOOperation actual constructor(actual val value: Int) {
     }
 }
 
-actual fun currentTimeMillis(): Long = System.currentTimeMillis()
+actual fun currentTimeMillis(): Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()

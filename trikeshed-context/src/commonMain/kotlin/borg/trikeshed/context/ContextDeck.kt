@@ -25,7 +25,7 @@ data class ContextMeta(
     val name: String,
     val priority: Int = 0,
     val tags: Set<String> = emptySet(),
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 )
 
 // DSL entry point

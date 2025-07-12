@@ -49,8 +49,8 @@ abstract class AbstractChannel(
     
     internal var _lifecycle: ChannelLifecycle = ChannelLifecycle.Created
     internal var _metadata: ChannelMetadata = ChannelMetadata(
-        createdAt = System.currentTimeMillis(),
-        lastActivity = System.currentTimeMillis(),
+        createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+        lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
         bytesRead = 0,
         bytesWritten = 0,
         errors = 0
@@ -71,7 +71,7 @@ abstract class AbstractChannel(
     }
     
     internal fun updateLastActivity() {
-        _metadata = _metadata.copy(lastActivity = System.currentTimeMillis())
+        _metadata = _metadata.copy(lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds())
     }
     
     internal fun recordBytesRead(bytes: Int) {
@@ -96,7 +96,7 @@ abstract class AbstractChannel(
                 _metadata.errors > 10 -> HealthStatus.DEGRADED
                 else -> HealthStatus.HEALTHY
             },
-            lastCheck = System.currentTimeMillis(),
+            lastCheck = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             details = mapOf(
                 "lifecycle" to _lifecycle,
                 "bytesRead" to _metadata.bytesRead,

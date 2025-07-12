@@ -32,7 +32,7 @@ data class CouchChannelMetadata(
     val sequence: String,
     val database: String,
     val filter: String? = null,
-    val lastUpdate: Long = System.currentTimeMillis()
+    val lastUpdate: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 )
 
 /**
@@ -65,7 +65,7 @@ data class CouchCCekContext(
     
     companion object CouchCCekContextKey : CoroutineContext.Key<CouchCCekContext>
     
-    private fun generateSessionId(): String = "couch_${System.currentTimeMillis()}"
+    private fun generateSessionId(): String = "couch_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
     private fun generateExecutionId(): String = "exec_${kotlin.random.Random.nextInt()}"
 }
 
@@ -251,7 +251,7 @@ class CouchCursorOperations(
      * Generate unique channel ID
      */
     private fun generateChannelId(): String = 
-        "couch_${System.currentTimeMillis()}_${kotlin.random.Random.nextInt()}"
+        "couch_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}_${kotlin.random.Random.nextInt()}"
 }
 
 /**

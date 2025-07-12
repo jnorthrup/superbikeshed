@@ -418,7 +418,7 @@ object YamatoBitgraph {
         val process = YamatoProcess(
             name = name,
             processBits = allocateBitPattern(),
-            temporalExtent = System.currentTimeMillis()
+            temporalExtent = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         processes[name] = process
         return process

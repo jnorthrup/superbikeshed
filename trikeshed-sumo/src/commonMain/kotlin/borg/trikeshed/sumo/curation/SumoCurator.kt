@@ -157,7 +157,7 @@ class SumoCurator(
         zipUrl: String,
         progressCallback: ((CurationProgress) -> Unit)? = null
     ): CurationResult {
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         try {
             // Stage 1: Download and extract
@@ -205,7 +205,7 @@ class SumoCurator(
             
             val ontology = buildOntology(parsedData, zipIndex.metadata)
             
-            val processingTime = System.currentTimeMillis() - startTime
+            val processingTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime
             
             progressCallback?.invoke(CurationProgress(
                 stage = CurationStage.COMPLETED,

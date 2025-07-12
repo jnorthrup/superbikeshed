@@ -213,7 +213,7 @@ class VectorApiBenchmark {
         {
             "metadata": {
                 "version": "1.0",
-                "timestamp": ${System.currentTimeMillis()},
+                "timestamp": ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()},
                 "size": $size
             },
             "data": [

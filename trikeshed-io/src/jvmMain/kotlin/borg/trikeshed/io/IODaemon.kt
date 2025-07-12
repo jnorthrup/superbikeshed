@@ -25,7 +25,7 @@ actual class IODaemon {
             bytesTransferred = operation.buffer.size,
             error = 0,
             flags = 0,
-            timestamp = System.currentTimeMillis()
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
     }
     

@@ -54,7 +54,7 @@ class FiduciaryNetworkService : NetworkService {
             request.path.startsWith("/fiduciary/") -> {
                 val docId = request.path.removePrefix("/fiduciary/")
                 HttpResponse(200, "OK", 
-                    """{"_id":"$docId","type":"fiduciary_data","ingested_at":${System.currentTimeMillis()}}""")
+                    """{"_id":"$docId","type":"fiduciary_data","ingested_at":${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}}""")
             }
             else -> {
                 HttpResponse(404, "Not Found", """{"error":"not_found"}""")

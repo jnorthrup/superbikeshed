@@ -18,7 +18,7 @@ fun webRequestContextDeck() = contextDeck<WebContext> {
     }
     
     // Middle: Session context
-    card("session", WebContext.Session("sess-123", "user-456", System.currentTimeMillis())) {
+    card("session", WebContext.Session("sess-123", "user-456", kotlinx.datetime.Clock.System.now().toEpochMilliseconds())) {
         priority = 50
         tags = setOf("session", "auth")
     }
@@ -307,7 +307,7 @@ fun compositionExample() {
     // Create base decks
     val authDeck = contextDeck<AuthContext> {
         card("user", AuthContext.User("123", "alice@example.com"))
-        card("session", AuthContext.Session("sess-123", System.currentTimeMillis()))
+        card("session", AuthContext.Session("sess-123", kotlinx.datetime.Clock.System.now().toEpochMilliseconds()))
         card("permissions", AuthContext.Permissions(setOf("read", "write")))
     }
     

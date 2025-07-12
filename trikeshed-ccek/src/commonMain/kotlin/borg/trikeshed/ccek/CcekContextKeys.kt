@@ -132,7 +132,7 @@ suspend fun CoroutineContext.httpRequest(request: HttpCapability.Request): Corou
     val httpCapability = object : HttpCapability {}
     val executionCapability = object : ExecutionCapability {
         override val state = ExecutionCapability.State(
-            id = "http_${System.nanoTime()}",
+            id = "http_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             status = ExecutionCapability.Status.RUNNING
         )
     }
@@ -147,7 +147,7 @@ suspend fun CoroutineContext.dbQuery(query: DbCapability.Query): CoroutineContex
     val dbCapability = object : DbCapability {}
     val executionCapability = object : ExecutionCapability {
         override val state = ExecutionCapability.State(
-            id = "db_${System.nanoTime()}",
+            id = "db_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             status = ExecutionCapability.Status.RUNNING
         )
     }
@@ -162,7 +162,7 @@ suspend fun CoroutineContext.fileStream(stream: FileCapability.Stream): Coroutin
     val fileCapability = object : FileCapability {}
     val executionCapability = object : ExecutionCapability {
         override val state = ExecutionCapability.State(
-            id = "file_${System.nanoTime()}",
+            id = "file_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             status = ExecutionCapability.Status.RUNNING
         )
     }
@@ -177,7 +177,7 @@ suspend fun CoroutineContext.dhtDiscover(discovery: DhtCapability.Discovery): Co
     val dhtCapability = object : DhtCapability {}
     val executionCapability = object : ExecutionCapability {
         override val state = ExecutionCapability.State(
-            id = "dht_${System.nanoTime()}",
+            id = "dht_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             status = ExecutionCapability.Status.RUNNING
         )
     }

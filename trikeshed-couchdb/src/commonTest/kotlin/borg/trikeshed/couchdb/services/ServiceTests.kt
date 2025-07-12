@@ -293,8 +293,8 @@ class ServiceTests {
         couchService.initialize()
         forensicsService.initializeForensics("test_repo")
 
-        val startTime = System.currentTimeMillis() - 3600000 // 1 hour ago
-        val endTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - 3600000 // 1 hour ago
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 
         val replay = forensicsService.createSceneReplay(
             repoId = "test_repo",
@@ -347,7 +347,7 @@ class ServiceTests {
             commitId = "abc123",
             author = "test@example.com",
             message = "Initial commit",
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             parentIds = emptyList()
         )
 
@@ -388,7 +388,7 @@ class ServiceTests {
                 commitId = "commit$i",
                 author = "test@example.com",
                 message = "Commit $i",
-                timestamp = System.currentTimeMillis() + i
+                timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() + i
             )
         }
 
@@ -430,7 +430,7 @@ class ServiceTests {
                 commitId = "commit$i",
                 author = "author$i@example.com",
                 message = "Commit $i",
-                timestamp = System.currentTimeMillis() + i
+                timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() + i
             )
         }
 
@@ -507,7 +507,7 @@ class ServiceTests {
         )
 
         val context = ProcessingContext(
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             user = "test_user",
             source = "test_source"
         )
@@ -677,7 +677,7 @@ class ServiceTests {
 
     @Test
     fun `test service performance characteristics`() = runTest {
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 
         val couchService = CouchDBService()
         val gitHistoryService = GitHistoryService()
@@ -702,7 +702,7 @@ class ServiceTests {
             couchService.createDocument(dbName, document)
         }
 
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val duration = endTime - startTime
 
         // Verify operations complete within reasonable time

@@ -2,7 +2,7 @@
 package borg.trikeshed.reactor
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.lib.io.ByteBuffer
+// import borg.trikeshed.lib.io.ByteBuffer // Temporarily disabled - missing in lib
 import borg.trikeshed.channel.api.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -12,13 +12,31 @@ import kotlinx.coroutines.flow.*
  * Single-class converters that turn every protocol into channel operations.
  */
 
+// Bridge functions to map new channel API to old reactor API
+suspend fun borg.trikeshed.channel.api.Channel.write(data: ByteArray) = send(data.size j { i: Int -> data[i] })
+suspend fun borg.trikeshed.channel.api.Channel.read(): ByteArray {
+    val indexed = receive()
+    return indexed.toByteArray()
+}
+suspend fun borg.trikeshed.channel.api.Channel.flush() {} // No-op in new API
+
+suspend fun ConnectedChannel.write(data: ByteArray) = send(data.size j { i: Int -> data[i] })
+suspend fun ConnectedChannel.read(): ByteArray {
+    val indexed = receive()
+    return indexed.toByteArray()
+}
+suspend fun ConnectedChannel.flush() {} // No-op in new API
+
+// Extension function to convert Indexed<Byte> to ByteArray
+fun Indexed<Byte>.toByteArray(): ByteArray = ByteArray(a) { i -> b(i) }
+
 // ===== TCP CHANNELIZATION =====
 
 class TcpChannelization(internal val channelProvider: ChannelProvider) {
     
     suspend fun connect(host: String, port: Int): ConnectedChannel =
         channelProvider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress(host, port)
         )
     
@@ -36,7 +54,7 @@ class TcpServer(
     
     suspend fun start() {
         serverChannel = channelProvider.createServerChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress("0.0.0.0", port)
         ).also { it.bind() }
         
@@ -60,7 +78,7 @@ class TcpServer(
 class UdpChannelization(internal val channelProvider: ChannelProvider) {
     
     suspend fun socket(port: Int = 0): Channel =
-        channelProvider.createChannel(ChannelConfig(ChannelType.UDP))
+        channelProvider.createChannel(ChannelConfig(ChannelType.UDP, ChannelMode.READ_WRITE))
     
     suspend fun sendTo(channel: Channel, data: ByteArray, host: String, port: Int) {
         val buffer = ByteBuffer.wrap(data)
@@ -82,7 +100,7 @@ class WebSocketChannelization(internal val channelProvider: ChannelProvider) {
     suspend fun connect(url: String): WebSocketChannel {
         val parsedUrl = parseWebSocketUrl(url)
         val channel = channelProvider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress(parsedUrl.host, parsedUrl.port)
         )
         
@@ -167,7 +185,7 @@ class SshChannelization(internal val channelProvider: ChannelProvider) {
     
     suspend fun connect(host: String, port: Int = 22, username: String, password: String): SshChannel {
         val channel = channelProvider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress(host, port)
         )
         
@@ -215,7 +233,7 @@ class FtpChannelization(internal val channelProvider: ChannelProvider) {
     
     suspend fun connect(host: String, port: Int = 21, username: String, password: String): FtpChannel {
         val controlChannel = channelProvider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress(host, port)
         )
         
@@ -259,7 +277,7 @@ class FtpChannel(
         
         // Open data connection
         val dataChannel = channelProvider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress("localhost", dataPort) // Simplified
         )
         
@@ -300,7 +318,7 @@ class SmtpChannelization(internal val channelProvider: ChannelProvider) {
     
     suspend fun connect(host: String, port: Int = 25): SmtpChannel {
         val channel = channelProvider.createConnectedChannel(
-            ChannelConfig(ChannelType.TCP),
+            ChannelConfig(ChannelType.TCP, ChannelMode.READ_WRITE),
             ChannelAddress.InetAddress(host, port)
         )
         
@@ -375,7 +393,7 @@ class SmtpChannel(internal val underlying: ConnectedChannel) {
 class DnsChannelization(internal val channelProvider: ChannelProvider) {
     
     suspend fun resolve(hostname: String, dnsServer: String = "8.8.8.8"): String {
-        val channel = channelProvider.createChannel(ChannelConfig(ChannelType.UDP))
+        val channel = channelProvider.createChannel(ChannelConfig(ChannelType.UDP, ChannelMode.READ_WRITE))
         
         // Build DNS query
         val query = buildDnsQuery(hostname)

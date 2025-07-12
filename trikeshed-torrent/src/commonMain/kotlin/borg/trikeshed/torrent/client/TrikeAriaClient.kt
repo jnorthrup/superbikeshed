@@ -549,10 +549,10 @@ class TrikeAriaClient(
     }
     
     suspend fun monitorBatch(batchId: String, intervalMs: Long = 1000, maxDuration: Long = 300000): List<Map<String, Any>> {
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val statuses = mutableListOf<Map<String, Any>>()
         
-        while (System.currentTimeMillis() - startTime < maxDuration) {
+        while (kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime < maxDuration) {
             val status = getBatchStatus(batchId)
             if (status != null) {
                 statuses.add(status)

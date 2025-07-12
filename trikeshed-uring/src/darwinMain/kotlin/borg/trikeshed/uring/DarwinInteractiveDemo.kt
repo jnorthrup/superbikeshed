@@ -69,7 +69,7 @@ suspend fun asyncFileStorm() = coroutineScope {
         println("🌩️  Created $numFiles files, submitting ${numFiles * numOpsPerFile} operations...")
         println("📊 Watch the chaos unfold:\n")
         
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val completions = Channel<String>(Channel.UNLIMITED)
         
         // Visualizer coroutine
@@ -83,7 +83,7 @@ suspend fun asyncFileStorm() = coroutineScope {
                 print("\r[$progress] $completed/$total - $msg")
                 
                 if (completed >= total) {
-                    val elapsed = System.currentTimeMillis() - startTime
+                    val elapsed = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime
                     println("\n\n✅ Storm complete! ${elapsed}ms total")
                     println("🚀 ${(total * 1000.0 / elapsed).toInt()} ops/sec")
                     break
@@ -209,7 +209,7 @@ suspend fun kqueueEventVisualizer() = coroutineScope {
                 if (n > 0) {
                     repeat(n) { i ->
                         val event = resultEvents[i]
-                        val timestamp = System.currentTimeMillis() % 100000
+                        val timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() % 100000
                         
                         when (event.filter.toInt()) {
                             EVFILT_TIMER -> {
@@ -355,10 +355,10 @@ fun ByteArray.toHexString() = joinToString("") { "%02x".format(it) }
 
 suspend fun animateProgress(message: String, durationMs: Long = 1000) {
     val frames = listOf("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
-    val startTime = System.currentTimeMillis()
+    val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
     
-    while (System.currentTimeMillis() - startTime < durationMs) {
-        val frame = frames[((System.currentTimeMillis() / 100) % frames.size).toInt()]
+    while (kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime < durationMs) {
+        val frame = frames[((kotlinx.datetime.Clock.System.now().toEpochMilliseconds() / 100) % frames.size).toInt()]
         print("\r$frame $message")
         delay(100)
     }

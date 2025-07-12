@@ -3,17 +3,18 @@ package borg.trikeshed.reactor
 
 /**
  * Minimal channel abstraction - one responsibility per class
+ * Renamed to avoid conflicts with borg.trikeshed.channel.api
  */
-interface Channel {
+interface ReactorChannel {
     val isOpen: Boolean
     suspend fun close()
 }
 
-interface ReadableChannel : Channel {
+interface ReactorReadableChannel : ReactorChannel {
     suspend fun read(buffer: ByteBuffer): Int
 }
 
-interface WritableChannel : Channel {
+interface ReactorWritableChannel : ReactorChannel {
     suspend fun write(buffer: ByteBuffer): Int  
 }
 

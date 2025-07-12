@@ -273,7 +273,7 @@ class KifSimdScanner(
                     currentToken.append(byte.toInt().toChar())
                     if (charClass == KifCharClass.QUOTE && !state.escaped[i]) {
                         // End of string
-                        emit(KifToken.String(currentToken.toString(), tokenStart, i + 1))
+                        emit(KifToken.StringToken(currentToken.toString(), tokenStart, i + 1))
                         currentToken.clear()
                         inString = false
                     }
@@ -325,10 +325,10 @@ class KifSimdScanner(
 // === KIF TOKEN TYPES ===
 
 sealed class KifToken(val start: Int, val end: Int) {
-    data class Symbol(val value: String, override val start: Int, override val end: Int) : KifToken(start, end)
-    data class String(val value: String, override val start: Int, override val end: Int) : KifToken(start, end)
-    data class ParenthesisOpen(override val start: Int) : KifToken(start, start + 1)
-    data class ParenthesisClose(override val start: Int) : KifToken(start, start + 1)
+    data class Symbol(val value: String, start: Int, end: Int) : KifToken(start, end)
+    data class StringToken(val value: String, start: Int, end: Int) : KifToken(start, end)
+    data class ParenthesisOpen(start: Int) : KifToken(start, start + 1)
+    data class ParenthesisClose(start: Int) : KifToken(start, start + 1)
 }
 
 // === SCAN STRATEGY ===
@@ -339,7 +339,6 @@ enum class ScanStrategy {
 
 // === REGISTER-AT-A-TIME TYPES ===
 
-@JvmInline
 value class RegisterJoin<A, B>(val word: Long) {
     fun unpackA(packer: Packable<A>): A = packer.unpack(word)
     fun unpackB(packerA: Packable<A>, packerB: Packable<B>): B = 

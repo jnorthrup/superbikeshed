@@ -17,7 +17,7 @@ import borg.trikeshed.lib.*
 /**
  * Concept Identifier - Unique integer ID for each concept
  */
-@JvmInline value class ConceptId(val value: Int) {
+value class ConceptId(val value: Int) {
     companion object {
         val INVALID = ConceptId(-1)
         val ROOT = ConceptId(0)
@@ -27,7 +27,7 @@ import borg.trikeshed.lib.*
 /**
  * Concept Name - Interned string representation
  */
-@JvmInline value class ConceptName(val value: String) {
+value class ConceptName(val value: String) {
     companion object {
         val EMPTY = ConceptName("")
         val THING = ConceptName("Thing")
@@ -43,7 +43,7 @@ typealias Concept = Join<ConceptId, ConceptName>
 /**
  * Relationship Type - Defines the kind of ontological relationship
  */
-@JvmInline value class RelationshipType(val value: Int) {
+value class RelationshipType(val value: Int) {
     companion object {
         val SUBCLASS = RelationshipType(1)
         val INSTANCE = RelationshipType(2)
@@ -86,7 +86,7 @@ typealias InstanceQuery = Query<Join<ConceptName, ConceptName>, Boolean>
 /**
  * Hierarchy Level - Depth in the ontological hierarchy
  */
-@JvmInline value class HierarchyLevel(val value: Int) {
+value class HierarchyLevel(val value: Int) {
     companion object {
         val ROOT = HierarchyLevel(0)
         val TOP_LEVEL = HierarchyLevel(1)
@@ -115,7 +115,7 @@ typealias HierarchyTree = Join<Concept, Indexed<HierarchicalConcept>>
 /**
  * Semantic Type - Defines the semantic category of a concept
  */
-@JvmInline value class SemanticType(val value: Int) {
+value class SemanticType(val value: Int) {
     companion object {
         val PHYSICAL = SemanticType(1)
         val ABSTRACT = SemanticType(2)
@@ -141,7 +141,7 @@ typealias SemanticQuery = Query<Join<TypedConcept, TypedConcept>, Boolean>
 /**
  * Axiom Type - Defines the kind of logical axiom
  */
-@JvmInline value class AxiomType(val value: Int) {
+value class AxiomType(val value: Int) {
     companion object {
         val DEFINITION = AxiomType(1)
         val THEOREM = AxiomType(2)
@@ -166,7 +166,7 @@ typealias AxiomBase = Indexed<Axiom>
 /**
  * Compile-Time Query - Pre-computed query result
  */
-@JvmInline value class CompileTimeQuery(val value: Boolean) {
+value class CompileTimeQuery(val value: Boolean) {
     companion object {
         val TRUE = CompileTimeQuery(true)
         val FALSE = CompileTimeQuery(false)
@@ -188,7 +188,7 @@ typealias QueryCache = Join<Indexed<Concept>, Indexed<CompileTimeQuery>>
 /**
  * SIMD Register - Packed data for vector operations
  */
-@JvmInline value class SimdRegister(val value: Long) {
+value class SimdRegister(val value: Long) {
     companion object {
         val EMPTY = SimdRegister(0L)
     }

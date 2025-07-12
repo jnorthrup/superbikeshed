@@ -27,7 +27,7 @@ class RealtimeGraphDemo(
         println("🚀 Starting Mermaid Collaboration Demo")
         
         // Create a collaborative mermaid document
-        val documentId = "mermaid-demo-${System.currentTimeMillis()}"
+        val documentId = "mermaid-demo-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         val initialMermaid = """
             graph TD
                 A[Start] --> B[Process]
@@ -88,7 +88,7 @@ class RealtimeGraphDemo(
                 label = "Decision",
                 attributes = mapOf("shape" to "diamond")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = user1
         )
         
@@ -107,7 +107,7 @@ class RealtimeGraphDemo(
                 label = "Check",
                 attributes = mapOf("style" to "dashed")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = user2
         )
         
@@ -125,7 +125,7 @@ class RealtimeGraphDemo(
                 newLabel = "Initialize",
                 newAttributes = mapOf("color" to "green")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = user3
         )
         
@@ -161,7 +161,7 @@ class RealtimeGraphDemo(
     suspend fun demonstrateDotCollaboration() = coroutineScope {
         println("🚀 Starting DOT Collaboration Demo")
         
-        val documentId = "dot-demo-${System.currentTimeMillis()}"
+        val documentId = "dot-demo-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         val initialDot = """
             digraph G {
                 rankdir=LR;
@@ -213,7 +213,7 @@ class RealtimeGraphDemo(
                 label = "Validate",
                 attributes = mapOf("shape" to "box", "style" to "filled", "color" to "lightblue")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = user1
         )
         
@@ -225,7 +225,7 @@ class RealtimeGraphDemo(
                 label = "validate",
                 attributes = mapOf("color" to "red")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = user2
         )
         
@@ -264,7 +264,7 @@ class RealtimeGraphDemo(
     suspend fun demonstrateGitStyleWorkflow() = coroutineScope {
         println("🚀 Starting Git-style Workflow Demo")
         
-        val documentId = "git-demo-${System.currentTimeMillis()}"
+        val documentId = "git-demo-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         val initialContent = """
             graph TD
                 A[Main Feature] --> B[Sub Feature 1]
@@ -296,7 +296,7 @@ class RealtimeGraphDemo(
                 label = "New Feature",
                 attributes = mapOf("color" to "green")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = "developer"
         )
         
@@ -311,7 +311,7 @@ class RealtimeGraphDemo(
                 newLabel = "Enhanced Main Feature",
                 newAttributes = mapOf("color" to "blue")
             ),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = "maintainer"
         )
         

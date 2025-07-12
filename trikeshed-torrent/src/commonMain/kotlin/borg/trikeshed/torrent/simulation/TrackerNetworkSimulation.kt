@@ -65,7 +65,7 @@ class TrackerNetworkSimulation(
                 url = url,
                 protocol = if (url.startsWith("udp://")) "UDP" else "HTTP",
                 isActive = true,
-                lastSeen = System.currentTimeMillis(),
+                lastSeen = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                 totalAnnouncements = 0,
                 totalPeers = 0
             )
@@ -88,7 +88,7 @@ class TrackerNetworkSimulation(
             downloaded = 0L,
             left = torrent.totalSize,
             event = "started",
-            announcedAt = System.currentTimeMillis()
+            announcedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         trackerAnnouncements.getOrPut(torrent.infoHash) { mutableSetOf() }.add(announcement)
@@ -97,7 +97,7 @@ class TrackerNetworkSimulation(
         trackers[announcement.trackerUrl]?.let { tracker ->
             trackers[announcement.trackerUrl] = tracker.copy(
                 totalAnnouncements = tracker.totalAnnouncements + 1,
-                lastSeen = System.currentTimeMillis()
+                lastSeen = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
         
@@ -124,7 +124,7 @@ class TrackerNetworkSimulation(
         trackers.values.firstOrNull()?.let { tracker ->
             trackers[tracker.url] = tracker.copy(
                 totalPeers = tracker.totalPeers + newPeers.size,
-                lastSeen = System.currentTimeMillis()
+                lastSeen = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
         
@@ -149,7 +149,7 @@ class TrackerNetworkSimulation(
             downloaded = downloaded,
             left = left,
             event = "progress",
-            updatedAt = System.currentTimeMillis()
+            updatedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         trackerChannel.send(TrackerEvent.ProgressUpdated(update))

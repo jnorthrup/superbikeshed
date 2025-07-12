@@ -27,7 +27,7 @@ data class QuicRequest(
     val path: String,
     val headers: Map<String, String> = emptyMap(),
     val body: ByteArray? = null,
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
     val priority: RequestPriority = RequestPriority.NORMAL,
     val timeout: Duration = 30.seconds,
     val retries: Int = 3
@@ -53,7 +53,7 @@ data class QuicResponse(
     val statusCode: Int,
     val headers: Map<String, String> = emptyMap(),
     val body: ByteArray? = null,
-    val timestamp: Long = System.currentTimeMillis(),
+    val timestamp: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
     val processingTime: Duration = Duration.ZERO
 ) {
     override fun equals(other: Any?): Boolean {
@@ -72,8 +72,8 @@ data class QuicConnection(
     val localAddress: String,
     val streamId: Long,
     val state: ConnectionState = ConnectionState.ESTABLISHING,
-    val createdAt: Long = System.currentTimeMillis(),
-    val lastActivity: Long = System.currentTimeMillis()
+    val createdAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+    val lastActivity: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 ) {
     @Serializable
     enum class ConnectionState {
@@ -132,7 +132,7 @@ class QuicRequestFactory(
             "type" to "quic-request",
             "request" to request,
             "status" to "pending",
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         couchDB.saveDocument("quic-requests", requestDoc)
@@ -147,7 +147,7 @@ class QuicRequestFactory(
         // Start metrics tracking
         metrics[request.id] = RequestMetrics(
             requestId = request.id,
-            startTime = System.currentTimeMillis()
+            startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         return request.id
@@ -157,7 +157,7 @@ class QuicRequestFactory(
      * Get response for a request
      */
     suspend fun getResponse(requestId: String, timeout: Duration = 30.seconds): QuicResponse? {
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         return withTimeout(timeout) {
             responseFlow
@@ -173,8 +173,8 @@ class QuicRequestFactory(
         remoteAddress: String,
         localAddress: String = "0.0.0.0:0"
     ): QuicConnection {
-        val connectionId = "conn-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt()}"
-        val streamId = System.nanoTime()
+        val connectionId = "conn-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt()}"
+        val streamId = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         val connection = QuicConnection(
             id = connectionId,
@@ -188,7 +188,7 @@ class QuicRequestFactory(
             "_id" to connectionId,
             "type" to "quic-connection",
             "connection" to connection,
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         couchDB.saveDocument("quic-connections", connectionDoc)
@@ -211,7 +211,7 @@ class QuicRequestFactory(
         
         // Update connection state
         connection.state = QuicConnection.ConnectionState.ESTABLISHED
-        connection.lastActivity = System.currentTimeMillis()
+        connection.lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         // Prepare QUIC packet
         val packet = prepareQuicPacket(request, connection)
@@ -228,7 +228,7 @@ class QuicRequestFactory(
             "type" to "quic-response",
             "response" to response,
             "connectionId" to connectionId,
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         couchDB.saveDocument("quic-responses", responseDoc)
@@ -281,7 +281,7 @@ class QuicRequestFactory(
             "_id" to connectionId,
             "type" to "quic-connection",
             "connection" to connection,
-            "closedAt" to System.currentTimeMillis()
+            "closedAt" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         couchDB.updateDocument("quic-connections", updateDoc)
@@ -351,7 +351,7 @@ class QuicRequestFactory(
             while (isActive) {
                 try {
                     // Clean up stale connections
-                    val now = System.currentTimeMillis()
+                    val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
                     connections.values
                         .filter { now - it.lastActivity > 300000 } // 5 minutes
                         .forEach { connection ->
@@ -380,7 +380,7 @@ class QuicRequestFactory(
                 "type" to "quic-request",
                 "status" to "completed",
                 "responseId" to response.id,
-                "completedAt" to System.currentTimeMillis()
+                "completedAt" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
             
             couchDB.updateDocument("quic-requests", updateDoc)
@@ -427,12 +427,12 @@ class QuicRequestFactory(
         val responseJson = Json.parseToJsonElement(String(responseData)).jsonObject
         
         return QuicResponse(
-            id = "resp-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt()}",
+            id = "resp-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt()}",
             requestId = requestId,
             statusCode = responseJson["statusCode"]?.jsonPrimitive?.int ?: 200,
             headers = responseJson["headers"]?.jsonObject?.entries?.associate { it.key to it.value.jsonPrimitive.content } ?: emptyMap(),
             body = responseJson["body"]?.jsonPrimitive?.content?.toByteArray(),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             processingTime = Duration.milliseconds(responseJson["processingTime"]?.jsonPrimitive?.long ?: 0)
         )
     }
@@ -461,7 +461,7 @@ class QuicRequestFactory(
             "type" to "quic-request",
             "status" to "failed",
             "error" to error.message,
-            "failedAt" to System.currentTimeMillis()
+            "failedAt" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         couchDB.updateDocument("quic-requests", errorDoc)
@@ -477,7 +477,7 @@ class QuicRequestFactory(
     private fun updateMetrics(requestId: String, response: QuicResponse) {
         metrics[requestId]?.let { metric ->
             metrics[requestId] = metric.copy(
-                endTime = System.currentTimeMillis(),
+                endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                 bytesReceived = response.body?.size?.toLong() ?: 0
             )
         }

@@ -48,8 +48,8 @@ data class BatchStatus(
     val downloadSpeed: Double,
     val eta: Duration?,
     val mediaPlayerState: MediaPlayerState? = null,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val createdAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+    val updatedAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 )
 
 @Serializable
@@ -74,7 +74,7 @@ class TorrentBatchController {
     
     suspend fun createBatch(config: BatchConfig): String {
         return mutex.withLock {
-            val batchId = "batch_${System.currentTimeMillis()}_${config.name.hashCode()}"
+            val batchId = "batch_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}_${config.name.hashCode()}"
             val batch = TorrentBatch(batchId, config)
             batches[batchId] = batch
             batchQueue.add(batchId)
@@ -254,8 +254,8 @@ class TorrentBatch(
             downloadedSize = downloadedSize,
             downloadSpeed = torrents.values.sumOf { it.downloadSpeed },
             eta = calculateEta(),
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis()
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+            updatedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
     }
     

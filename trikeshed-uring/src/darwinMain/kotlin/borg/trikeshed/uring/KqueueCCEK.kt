@@ -418,7 +418,7 @@ suspend fun <T> withKqueueContext(
 ): T {
     val ccekContext = CcekContext(
         executionId = "kqueue_${operation.userData}",
-        sessionId = "kqueue_session_${System.currentTimeMillis()}",
+        sessionId = "kqueue_session_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
         phase = ExecutionPhase.INIT,
         action = "kqueue_${operation::class.simpleName}",
         payload = mapOf(

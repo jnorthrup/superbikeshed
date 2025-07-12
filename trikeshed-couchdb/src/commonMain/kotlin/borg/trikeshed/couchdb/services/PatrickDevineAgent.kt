@@ -21,7 +21,7 @@ import kotlinx.datetime.Clock
 class PatrickDevineAgent(
     private val couchService: CouchDBService,
     private val gitForensicsService: GitForensicsService,
-    private val agentId: String = "patrick_devine_${System.currentTimeMillis()}"
+    private val agentId: String = "patrick_devine_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 ) {
     private val processingSessions = mutableMapOf<String, ProcessingSession>()
     private val documentAnalyzers = mutableMapOf<String, DocumentAnalyzer>()
@@ -358,7 +358,7 @@ class PatrickDevineAgent(
         // Generate actions based on analysis and intelligence
         if (analysis.metrics["sentiment"] != null && analysis.metrics["sentiment"]!! < 0.3) {
             actions.add(AgentAction(
-                id = "action_${System.currentTimeMillis()}",
+                id = "action_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
                 type = ActionType.FLAG_NEGATIVE_SENTIMENT,
                 target = document._id,
                 parameters = mapOf("sentiment_score" to analysis.metrics["sentiment"]),
@@ -368,7 +368,7 @@ class PatrickDevineAgent(
 
         if (intelligence.insights.containsKey("anomaly")) {
             actions.add(AgentAction(
-                id = "action_${System.currentTimeMillis()}",
+                id = "action_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
                 type = ActionType.INVESTIGATE_ANOMALY,
                 target = document._id,
                 parameters = intelligence.insights,
@@ -378,7 +378,7 @@ class PatrickDevineAgent(
 
         if (analysis.features.contains("json_structure") && analysis.metrics["validation_score"] != null && analysis.metrics["validation_score"]!! < 0.7) {
             actions.add(AgentAction(
-                id = "action_${System.currentTimeMillis()}",
+                id = "action_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
                 type = ActionType.VALIDATE_SCHEMA,
                 target = document._id,
                 parameters = mapOf("validation_score" to analysis.metrics["validation_score"]),

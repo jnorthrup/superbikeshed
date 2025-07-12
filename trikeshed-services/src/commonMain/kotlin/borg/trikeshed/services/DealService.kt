@@ -6,7 +6,7 @@ import borg.trikeshed.lib.*
 /**
  * Service interface for managing deals and vendors.
  */
-interface DealService {
+interface DealServiceInterface {
     suspend fun findDeal(id: String): DealProxy?
     suspend fun findDealsByProduct(query: String): Indexed<DealProxy>
     suspend fun persistDeal(deal: DealProxy): CouchTxProxy

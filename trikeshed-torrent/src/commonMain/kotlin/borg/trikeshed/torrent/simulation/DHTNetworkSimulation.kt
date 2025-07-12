@@ -66,7 +66,7 @@ class DHTNetworkSimulation(
                 nodeId = generateNodeId(),
                 address = host,
                 port = port.toInt(),
-                lastSeen = System.currentTimeMillis(),
+                lastSeen = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                 isActive = true
             )
             dhtNodes[node.nodeId] = node
@@ -84,7 +84,7 @@ class DHTNetworkSimulation(
             nodeId = generateNodeId(),
             address = "127.0.0.1",
             port = (6881..6889).random(),
-            announcedAt = System.currentTimeMillis()
+            announcedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         torrentAnnouncements.getOrPut(torrent.infoHash) { mutableSetOf() }.add(announcement)

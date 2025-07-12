@@ -376,7 +376,7 @@ class QuicConnection(
             QuicSessionData(
                 ticket = ByteArray(32) { it.toByte() }, // Mock session ticket
                 transportParams = mapOf("max_streams" to "100"),
-                createdAt = System.currentTimeMillis()
+                createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
     }

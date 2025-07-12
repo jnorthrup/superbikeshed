@@ -184,7 +184,7 @@ internal class HttpConnection(
     internal val reactor: Reactor?
 ) {
     internal var channel: SelectableChannel? = null
-    internal var lastActivity: Long = System.currentTimeMillis()
+    internal var lastActivity: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
     internal val requestQueue = mutableListOf<CompletableDeferred<HttpResponse>>()
     internal var pipelineJob: Job? = null
     
@@ -215,7 +215,7 @@ internal class HttpConnection(
         
         channel?.let { ch ->
             ch.write(buffer)
-            lastActivity = System.currentTimeMillis()
+            lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         } ?: throw NetworkException("No active channel")
         
         return deferred.await()
@@ -230,7 +230,7 @@ internal class HttpConnection(
         
         channel?.let { ch ->
             ch.write(buffer)
-            lastActivity = System.currentTimeMillis()
+            lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             
             val readBuffer = ByteBuffer.allocate(8192)
             while (true) {
@@ -240,13 +240,13 @@ internal class HttpConnection(
                 val chunk = readBuffer.array().sliceArray(0 until read)
                 onChunk(chunk)
                 readBuffer.clear()
-                lastActivity = System.currentTimeMillis()
+                lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             }
         } ?: throw NetworkException("No active channel")
     }
     
     fun isAlive(): Boolean {
-        val idle = System.currentTimeMillis() - lastActivity
+        val idle = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - lastActivity
         return channel != null && idle < keepAliveTimeout.inWholeMilliseconds
     }
     

@@ -20,7 +20,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3")
-                // Remove TrikeShed dependency for zero compiler errors
+                implementation(project(":trikeshed-lib"))
             }
         }
         

@@ -57,7 +57,7 @@ class CouchDBService(
             compact_running = false,
             disk_size = 0,
             data_size = 0,
-            instance_start_time = System.currentTimeMillis().toString(),
+            instance_start_time = kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString(),
             disk_format_version = 8,
             committed_update_seq = 0
         )
@@ -95,7 +95,7 @@ class CouchDBService(
             compact_running = false,
             disk_size = 0,
             data_size = 0,
-            instance_start_time = System.currentTimeMillis().toString(),
+            instance_start_time = kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString(),
             disk_format_version = 8,
             committed_update_seq = 0
         )
@@ -118,7 +118,7 @@ class CouchDBService(
 
         // Emit change event
         emitChange(dbName, CouchChange(
-            sequenceNumber = System.currentTimeMillis(),
+            sequenceNumber = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             documentId = document._id,
             revision = putResponse.rev,
             deleted = false
@@ -166,7 +166,7 @@ class CouchDBService(
 
         // Emit change event
         emitChange(dbName, CouchChange(
-            sequenceNumber = System.currentTimeMillis(),
+            sequenceNumber = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             documentId = document._id,
             revision = putResponse.rev,
             deleted = false
@@ -185,7 +185,7 @@ class CouchDBService(
         if (deleteResponse.success) {
             // Emit change event
             emitChange(dbName, CouchChange(
-                sequenceNumber = System.currentTimeMillis(),
+                sequenceNumber = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                 documentId = docId,
                 revision = deleteResponse.rev,
                 deleted = true
@@ -269,7 +269,7 @@ class CouchDBService(
         val context = databases[dbName] ?: throw CouchDBServiceException("Database not found: $dbName")
         
         val connection = CouchDBConnection(
-            id = "conn-${System.currentTimeMillis()}",
+            id = "conn-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             databaseName = dbName,
             context = context,
             isActive = true

@@ -225,7 +225,7 @@ class DHTServiceImpl(
     
     internal suspend fun cleanupStaleProviders() {
         // Remove providers that haven't been seen recently
-        val now = System.currentTimeMillis()
+        val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val staleThreshold = now - config.providerStaleThreshold
         
         // Simplified cleanup - would track last seen timestamps

@@ -25,7 +25,7 @@ fun RowVec.getString(index: Int): String? {
 /** Get Float value with type safety */
 fun RowVec.getFloat(index: Int): Float? {
     val cell = this.b(index)
-    return cell.a as? Float
+    return cell.a as? Float 
 }
 
 /** Get Double value with type safety */

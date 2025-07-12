@@ -214,10 +214,10 @@ object AsyncFlows {
     ): Flow<T> = flow {
         val semaphore = AsyncSemaphore(permits)
         val window = windowMs
-        var lastReset = System.currentTimeMillis()
+        var lastReset = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         collect { value ->
-            val now = System.currentTimeMillis()
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             if (now - lastReset >= window) {
                 // Reset the window
                 repeat(permits - semaphore.availablePermits) {

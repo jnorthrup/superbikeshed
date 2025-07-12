@@ -23,7 +23,7 @@ import java.security.MessageDigest
  */
 class TorrentSimulation(
     internal val context: CoroutineContext = Dispatchers.IO,
-    internal val simulationId: String = "sim_${System.currentTimeMillis()}"
+    internal val simulationId: String = "sim_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 ) {
     
     // Simulation state
@@ -131,7 +131,7 @@ class TorrentSimulation(
             pieceSize = pieceSize,
             files = files,
             totalPieces = (totalSize / pieceSize).toInt() + 1,
-            createdAt = System.currentTimeMillis()
+            createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         // Register with all simulation components
@@ -164,7 +164,7 @@ class TorrentSimulation(
             hasPieces = hasPieces.toMutableSet(),
             downloadSpeed = (1024..10240).random().toLong(), // 1-10 KB/s
             uploadSpeed = (512..5120).random().toLong(), // 0.5-5 KB/s
-            joinedAt = System.currentTimeMillis()
+            joinedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         )
         
         // Register peer
@@ -202,7 +202,7 @@ class TorrentSimulation(
                     
                     // Update peer stats
                     peer.downloadedPieces.add(pieceIndex)
-                    peer.lastActivity = System.currentTimeMillis()
+                    peer.lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
                     
                     // Notify simulation
                     simulationChannel.send(SimulationEvent.PieceCompleted(
@@ -320,7 +320,7 @@ class TorrentSimulation(
             activeDownloads = torrents.count { it.isActive },
             totalPiecesDownloaded = torrents.sumOf { it.downloadedPieces.size },
             totalDataTransferred = torrents.sumOf { it.downloadedBytes },
-            simulationUptime = System.currentTimeMillis() - torrents.firstOrNull()?.createdAt ?: 0
+            simulationUptime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - torrents.firstOrNull()?.createdAt ?: 0
         )
     }
     
@@ -371,7 +371,7 @@ data class SimulatedPeer(
     val downloadSpeed: Long,
     val uploadSpeed: Long,
     val joinedAt: Long,
-    val lastActivity: Long = System.currentTimeMillis(),
+    val lastActivity: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
     val downloadedPieces: MutableSet<Int> = mutableSetOf(),
     val uploadedPieces: MutableSet<Int> = mutableSetOf()
 )

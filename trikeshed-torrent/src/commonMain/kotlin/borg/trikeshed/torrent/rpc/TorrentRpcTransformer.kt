@@ -131,7 +131,7 @@ class TorrentRpcTransformer(
         // Add metadata
         transformed = transformed.copy(
             metadata = transformed.metadata + mapOf(
-                "transformed_at" to System.currentTimeMillis(),
+                "transformed_at" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                 "transformer_node" to nodeId,
                 "source_protocol" to context.sourceProtocol,
                 "target_protocol" to context.targetProtocol
@@ -163,7 +163,7 @@ class TorrentRpcTransformer(
         // Add transformation metadata
         transformed = transformed.copy(
             metadata = transformed.metadata + mapOf(
-                "transformed_at" to System.currentTimeMillis(),
+                "transformed_at" to kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
                 "transformer_node" to nodeId
             )
         )
@@ -374,7 +374,7 @@ class RestProtocolHandler : ProtocolHandler {
     internal fun extractServiceFromPath(path: String): String = "aria2"
     internal fun createHttpRequest(request: TransformedRequest): HttpRequest = HttpRequest()
     internal fun createHttpResponse(response: TransformedResponse): HttpResponse = HttpResponse()
-    internal fun generateId(): String = "rest_${System.currentTimeMillis()}"
+    internal fun generateId(): String = "rest_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 }
 
 /**
@@ -413,7 +413,7 @@ class GrpcProtocolHandler : ProtocolHandler {
     
     override fun supportsProtocol(protocol: String): Boolean = protocol == "grpc"
     
-    internal fun generateId(): String = "grpc_${System.currentTimeMillis()}"
+    internal fun generateId(): String = "grpc_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 }
 
 /**
@@ -451,7 +451,7 @@ class WebSocketProtocolHandler : ProtocolHandler {
     
     override fun supportsProtocol(protocol: String): Boolean = protocol == "websocket"
     
-    internal fun generateId(): String = "ws_${System.currentTimeMillis()}"
+    internal fun generateId(): String = "ws_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 }
 
 /**
@@ -489,7 +489,7 @@ class NativeProtocolHandler : ProtocolHandler {
     
     override fun supportsProtocol(protocol: String): Boolean = protocol == "native"
     
-    internal fun generateId(): String = "native_${System.currentTimeMillis()}"
+    internal fun generateId(): String = "native_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
 }
 
 /**

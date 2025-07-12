@@ -97,7 +97,7 @@ class GitForensicsService(
         val session = forensicSessions[repoId] ?: throw GitForensicsException("Forensic session not found: $repoId")
 
         val event = GitForensicEvent(
-            id = "event_${System.currentTimeMillis()}",
+            id = "event_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             eventType = eventType,
             timestamp = Clock.System.now().toEpochMilliseconds(),
             data = eventData,
@@ -143,7 +143,7 @@ class GitForensicsService(
         val session = forensicSessions[repoId] ?: throw GitForensicsException("Forensic session not found: $repoId")
 
         val replay = GitSceneReplay(
-            id = "replay_${System.currentTimeMillis()}",
+            id = "replay_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             startTime = startTime,
             endTime = endTime,
             events = getForensicEvents(repoId, startTime),
@@ -193,7 +193,7 @@ class GitForensicsService(
 
     private fun createAttentionModel(): GitAttentionModel {
         return GitAttentionModel(
-            id = "attention_${System.currentTimeMillis()}",
+            id = "attention_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             weights = mapOf(
                 "commit_frequency" to 0.3,
                 "file_changes" to 0.25,
@@ -206,7 +206,7 @@ class GitForensicsService(
 
     private fun createPatternDetector(): GitPatternDetector {
         return GitPatternDetector(
-            id = "pattern_${System.currentTimeMillis()}",
+            id = "pattern_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}",
             patterns = listOf(
                 "rapid_commits",
                 "large_files",

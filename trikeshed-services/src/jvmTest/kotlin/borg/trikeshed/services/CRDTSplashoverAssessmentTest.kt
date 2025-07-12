@@ -125,7 +125,7 @@ class CRDTSplashoverAssessmentTest {
         val entities = (1..entityCount).map { "entity-$it" }
         
         // Simulate concurrent updates across all entities
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         val results = coroutineScope {
             entities.map { entityId ->
@@ -135,7 +135,7 @@ class CRDTSplashoverAssessmentTest {
             }.awaitAll()
         }
         
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val totalTime = endTime - startTime
         
         // Calculate splashover metrics
@@ -159,7 +159,7 @@ class CRDTSplashoverAssessmentTest {
         val loadLevels = listOf(10, 50, 100, 200)
         
         loadLevels.forEach { concurrentRequests ->
-            val startTime = System.currentTimeMillis()
+            val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             
             val results = coroutineScope {
                 (1..concurrentRequests).map {
@@ -169,7 +169,7 @@ class CRDTSplashoverAssessmentTest {
                 }.awaitAll()
             }
             
-            val endTime = System.currentTimeMillis()
+            val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val duration = endTime - startTime
             
             val successCount = results.count { it.isSuccess }
@@ -190,7 +190,7 @@ class CRDTSplashoverAssessmentTest {
         // Simulate network partition
         val partitionDuration = 1000L // 1 second partition
         
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         // Start operations that will be affected by partition
         val operations = coroutineScope {
@@ -208,7 +208,7 @@ class CRDTSplashoverAssessmentTest {
         // Resume operations
         val results = operations.awaitAll()
         
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val totalTime = endTime - startTime
         
         // Should handle partition gracefully
@@ -247,7 +247,7 @@ class CRDTSplashoverAssessmentTest {
         serviceToken: String, 
         strategy: ConflictStrategy
     ): ConflictResolutionResult {
-        val startTime = System.currentTimeMillis()
+        val startTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         var conflicts = 0
         var resolutions = 0
         
@@ -271,7 +271,7 @@ class CRDTSplashoverAssessmentTest {
             }
         }
         
-        val endTime = System.currentTimeMillis()
+        val endTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         val resolutionTime = endTime - startTime
         val successRate = if (conflicts + resolutions > 0) {
             (resolutions.toDouble() / (conflicts + resolutions)) * 100
@@ -380,7 +380,7 @@ class TestEntityService {
     internal val versions = mutableMapOf<String, Long>()
     
     fun createEntity(initialState: Map<String, Any?>): String {
-        val entityId = "entity-${System.currentTimeMillis()}"
+        val entityId = "entity-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
         entities[entityId] = initialState
         versions[entityId] = 1L
         return entityId

@@ -318,7 +318,7 @@ class TorrentRpcServer(
     }
     
     internal fun generateDownloadId(): String {
-        return "trike_${System.currentTimeMillis()}_${(0..999).random()}"
+        return "trike_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}_${(0..999).random()}"
     }
     
     // Validation Methods

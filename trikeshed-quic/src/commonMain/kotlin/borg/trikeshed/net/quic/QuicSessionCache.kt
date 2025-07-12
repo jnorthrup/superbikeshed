@@ -18,7 +18,7 @@ data class QuicSessionData(
     val ticket: ByteArray,
     val expirationTime: Long = 0,
     val transportParams: Map<String, Any> = emptyMap(), // Keep existing transportParams
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 ) {
     // Convenience constructor for compatibility
     constructor(

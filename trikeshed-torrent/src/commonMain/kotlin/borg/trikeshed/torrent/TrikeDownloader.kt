@@ -346,7 +346,7 @@ class TrikeDownloader(
         }
     }
     
-    internal fun generateId(): String = "download_${System.currentTimeMillis()}"
+    internal fun generateId(): String = "download_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}"
     
     internal suspend fun pauseHttpDownload(task: DownloadTask.HttpDownload) {
         activeDownloads[task.id] = task.copy(status = DownloadStatus.Paused)

@@ -126,7 +126,7 @@ data class HttpCCekContext(
 ) {
     companion object {
         private fun generateRequestId(): String {
-            return "http-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt(1000, 9999)}"
+            return "http-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt(1000, 9999)}"
         }
     }
 }

@@ -20,7 +20,7 @@ class KotlinBenchmarkFixed {
     fun runAllBenchmarks() {
         println("\n=== TrikeShed JSON Kotlin Benchmarks (Fixed) ===")
         println("Platform: JVM ${System.getProperty("java.version")}")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         
         warmup()
         

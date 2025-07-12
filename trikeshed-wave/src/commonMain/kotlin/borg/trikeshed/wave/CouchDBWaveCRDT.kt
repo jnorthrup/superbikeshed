@@ -31,8 +31,8 @@ data class CouchWaveDocument(
     val participants: MutableSet<String> = mutableSetOf(),
     val history: MutableList<DocumentSnapshot> = mutableListOf(),
     val metadata: DocumentMetadata = DocumentMetadata(),
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val createdAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+    val updatedAt: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
 )
 
 @Serializable
@@ -136,7 +136,7 @@ class CouchDBWaveCRDT(
             content = initialContent,
             operations = emptyList(),
             participants = emptySet(),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = metadata.author.ifEmpty { "anonymous" },
             commitMessage = "Initial document creation"
         )
@@ -163,7 +163,7 @@ class CouchDBWaveCRDT(
         // Add participant
         document.participants.add(participantId)
         document.metadata.collaborators.add(participantId)
-        document.updatedAt = System.currentTimeMillis()
+        document.updatedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         // Update in CouchDB
         couchDB.updateDocument(databaseName, document)
@@ -203,14 +203,14 @@ class CouchDBWaveCRDT(
             content = document.content,
             operations = document.operations.toList(),
             participants = document.participants.toSet(),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = participantId,
             commitMessage = generateCommitMessage(finalOperation),
             parentVersions = listOf(document.version - 1)
         )
         
         document.history.add(snapshot)
-        document.updatedAt = System.currentTimeMillis()
+        document.updatedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         // Save to CouchDB
         couchDB.updateDocument(databaseName, document)
@@ -278,7 +278,7 @@ class CouchDBWaveCRDT(
             position = 0,
             oldContent = document.content,
             newContent = targetSnapshot.content,
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = participantId
         )
         
@@ -329,7 +329,7 @@ class CouchDBWaveCRDT(
             position = 0,
             oldContent = targetDoc.content,
             newContent = mergeContent(targetDoc.content, sourceDoc.content),
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = participantId
         )
         
@@ -376,7 +376,7 @@ class CouchDBWaveCRDT(
     ): ConflictResolution? {
         // Check for concurrent edits
         val recentOps = document.operations.takeLastWhile { 
-            System.currentTimeMillis() - it.timestamp < 5000 // 5 second window
+            kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - it.timestamp < 5000 // 5 second window
         }
         
         if (recentOps.any { it.author != operation.author }) {
@@ -387,7 +387,7 @@ class CouchDBWaveCRDT(
                 transformedOperation = transformedOp,
                 conflictType = ConflictType.CONCURRENT_EDIT,
                 resolutionStrategy = "operational-transformation",
-                timestamp = System.currentTimeMillis()
+                timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
         }
         
@@ -457,11 +457,11 @@ class CouchDBWaveCRDT(
         data: Map<String, Any?>
     ) {
         val logEntry = WaveOperationLog(
-            _id = "op-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt()}",
+            _id = "op-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt()}",
             documentId = documentId,
             operation = data["operation"] as? DocumentOperation ?: DocumentOperation.Insert(0, "", 0, ""),
             version = (data["version"] as? Long) ?: 0,
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             author = participantId,
             sessionId = "doc-$documentId"
         )
@@ -503,7 +503,7 @@ class CouchDBWaveCRDT(
     }
     
     private fun generateGitCommitId(): String {
-        return "commit-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt()}"
+        return "commit-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt()}"
     }
     
     private fun generateCommitMessage(operation: DocumentOperation): String {

@@ -40,7 +40,7 @@ data class ScpCCekContext(
 ) {
     companion object {
         private fun generateTransferId(): String {
-            return "scp-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt(1000, 9999)}"
+            return "scp-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt(1000, 9999)}"
         }
     }
 }
@@ -164,7 +164,7 @@ data class RsyncCCekContext(
 ) {
     companion object {
         private fun generateSyncId(): String {
-            return "rsync-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt(1000, 9999)}"
+            return "rsync-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt(1000, 9999)}"
         }
     }
 }
@@ -301,7 +301,7 @@ data class SftpCCekContext(
 ) {
     companion object {
         private fun generateOperationId(): String {
-            return "sftp-${System.currentTimeMillis()}-${kotlin.random.Random.nextInt(1000, 9999)}"
+            return "sftp-${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}-${kotlin.random.Random.nextInt(1000, 9999)}"
         }
     }
 }

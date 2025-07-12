@@ -78,7 +78,7 @@ class JsonShowdownBenchmark {
         println("Platform: JVM ${System.getProperty("java.version")}")
         println("Architecture: ${System.getProperty("os.arch")}")
         println("OS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}")
-        println("Timestamp: ${System.currentTimeMillis()}")
+        println("Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
         println("Testing ${getAllLibraries().size} JSON libraries")
         println()
         
@@ -643,7 +643,7 @@ class JsonShowdownBenchmark {
             appendLine("- JVM: ${System.getProperty("java.version")}")
             appendLine("- Architecture: ${System.getProperty("os.arch")}")
             appendLine("- OS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}")
-            appendLine("- Timestamp: ${System.currentTimeMillis()}")
+            appendLine("- Timestamp: ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}")
             appendLine()
             appendLine("## Libraries Tested")
             getAllLibraries().forEach { (name, lib) ->
@@ -707,7 +707,7 @@ class JsonShowdownBenchmark {
         return TestData(
             users = users,
             total = userCount,
-            timestamp = System.currentTimeMillis(),
+            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
             version = "1.0.0"
         )
     }
@@ -717,7 +717,7 @@ class JsonShowdownBenchmark {
         {
             "metadata": {
                 "version": "1.0.0",
-                "timestamp": ${System.currentTimeMillis()},
+                "timestamp": ${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()},
                 "config": {
                     "features": {
                         "advanced": true,

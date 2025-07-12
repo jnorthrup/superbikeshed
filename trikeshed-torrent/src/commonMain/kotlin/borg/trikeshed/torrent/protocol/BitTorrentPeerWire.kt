@@ -71,7 +71,7 @@ class BitTorrentPeerWire(
         var pieces: MutableSet<Int> = mutableSetOf(),
         var downloadSpeed: Long = 0,
         var uploadSpeed: Long = 0,
-        var lastActivity: Long = System.currentTimeMillis()
+        var lastActivity: Long = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
     )
     
     // Peer messages
@@ -235,7 +235,7 @@ class BitTorrentPeerWire(
         withContext(connection.context) {
             try {
                 for (message in connection.inputChannel) {
-                    connection.lastActivity = System.currentTimeMillis()
+                    connection.lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
                     
                     when (message) {
                         is PeerMessage.Choke -> {

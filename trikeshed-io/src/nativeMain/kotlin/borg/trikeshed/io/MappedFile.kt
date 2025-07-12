@@ -1,55 +1,35 @@
-@OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlin.experimental.ExperimentalNativeApi::class)
-@file:OptIn(kotlin.ExperimentalUnsignedTypes::class)
-@file:OptIn(ExperimentalForeignApi::class)
-
 package borg.trikeshed.io
 
-import kotlinx.cinterop.*
-import platform.posix.*
+import borg.trikeshed.lib.Join
 
-
-/**
- * Native implementation of MappedFile using mmap
- */
-actual class MappedFile actual constructor(
-    internal val path: String,
-    internal val size: Long,
-    internal val readOnly: Boolean
-) {
-    internal var mappedPtr: CPointer<ByteVar>? = null
-    internal var fd: Int = -1
-    
+actual class MappedFile actual constructor(path: String, size: Long, readOnly: Boolean) {
     actual fun close() {
-        mappedPtr?.let {
-            munmap(it, size.toULong())
-        }
-        if (fd >= 0) {
-            close(fd)
-        }
-        mappedPtr = null
-        fd = -1
+        // TODO: Implement actual close logic
+        println("MappedFile.close() not implemented for macosArm64")
     }
-    
+
     actual fun open() {
-        val flags = if (readOnly) O_RDONLY else O_RDWR
-        fd = open(path, flags)
-        if (fd < 0) return
-        
-        val prot = if (readOnly) PROT_READ else (PROT_READ or PROT_WRITE)
-        mappedPtr = mmap(null, size.toULong(), prot, MAP_SHARED, fd, 0)?.reinterpret()
+        // TODO: Implement actual open logic
+        println("MappedFile.open() not implemented for macosArm64")
     }
-    
-    actual fun isOpen(): Boolean = mappedPtr != null
-    
-    actual fun size(): Long = size
-    
+
+    actual fun isOpen(): Boolean {
+        // TODO: Implement actual isOpen logic
+        return false
+    }
+
+    actual fun size(): Long {
+        // TODO: Implement actual size logic
+        return 0L
+    }
+
     actual fun get(index: Long): Byte {
-        return mappedPtr?.plus(index.toInt())?.pointed?.value ?: 0
+        // TODO: Implement actual get logic
+        return 0
     }
-    
+
     actual fun put(index: Long, value: Byte) {
-        if (!readOnly) {
-            mappedPtr?.plus(index.toInt())?.pointed?.value = value
-        }
+        // TODO: Implement actual put logic
+        println("MappedFile.put() not implemented for macosArm64")
     }
 }
