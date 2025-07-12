@@ -35,9 +35,9 @@ interface Join<A, B> {
     val b: B
     operator fun component1(): A = a
     operator fun component2(): B = b
-    val pair: Pair<A, B> get() = Pair(a, b)
+    val pair: Pair<A, B> get() =a to b //for emergency materialization
     companion object {
-        operator fun <A, B> invoke(a: A, b: B): Join<A, B> = object : Join<A, B> {
+    private/** 100% immutable, don't even ask, just use a j  b  */     operator fun <A, B> invoke(a: A, b: B): Join<A, B> = object : Join<A, B> {
             override val a: A = a
             override val b: B = b
         }
@@ -61,7 +61,8 @@ typealias Twin<T> = Join<T, T>
 typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
-typealias ColumnMeta = Join<String, KClassifier>
+// Cured: Replaced String with ByteArray for ColumnMeta
+typealias ColumnMeta = Join<ByteArray, KClassifier>
 // Trait for array-like access - WHENEVER THEY NEED get[i] OPERATOR
 interface ArrayLike<I, T> {
     operator fun get(index: I): T
@@ -72,7 +73,16 @@ interface ArrayLike<I, T> {
 typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
 
 // Cursor is now defined as a typealias below
-data class TableMeta(val name: String)
+// Cured: Replaced String with ByteArray for TableMeta
+data class TableMeta(val name: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as TableMeta
+        return name.contentEquals(other.name)
+    }
+    override fun hashCode(): Int = name.contentHashCode()
+}
 typealias CursorIndex = Join<TableMeta, Int>
 // Cursor is now defined in trikeshed-lib
 typealias Cursor = Indexed<RowVec>
@@ -106,76 +116,7 @@ val UInt.z: Boolean get() = 0U == this
 val ULong.z: Boolean get() = 0UL == this
 infix fun <T> T.d(other: T): T { println(other); return this }
 
-infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
-
-/**
- * Reverse composition operator (◂) - Compose in reverse order
- * f ◂ g means first f then g (opposite of traditional composition)
- * (f ◂ g)(x) = g(f(x))
- */
-infix fun <A, B, C> ((A) -> B).`◂`(g: (B) -> C): (A) -> C = { a: A -> g(this(a)) }
-
-/**
- * Reverse join operator (◂) - Join in reverse order
- * a ◂ b means b j a (reverse of j operator)
- */
-infix fun <A, B> A.`◂`(b: B): Join<B, A> = b j this
-
-/**
- * Reverse indexed construction operator (◂) - Indexed in reverse order
- * size ◂ generator means generator j size (reverse of j operator for Indexed)
- */
-infix fun <T> Int.`◂`(generator: (Int) -> T): Indexed<T> = generator j this
-
-/**
- * Reverse alpha transformation operator (◂) - Transform in reverse order
- * transform ◂ indexed means indexed α transform (reverse of α operator)
- */
-infix fun <X, C> ((X) -> C).`◂`(indexed: Indexed<X>): Indexed<C> = indexed α this
-
-/**
- * Reverse access operator (◂) - Access in reverse order
- * index ◂ indexed means indexed[index] (reverse of [] operator)
- */
-infix fun <T> Int.`◂`(indexed: Indexed<T>): T = indexed[this]
-
-/**
- * Reverse range access operator (◂) - Range access in reverse order
- * range ◂ indexed means indexed[range] (reverse of [] operator for ranges)
- */
-infix fun <T> IntRange.`◂`(indexed: Indexed<T>): Indexed<T> = indexed[this]
-
-/**
- * Reverse cursor access operator (◂) - Cursor access in reverse order
- * index ◂ cursor means cursor.at(index) (reverse of at operator)
- */
-infix fun <T> Int.`◂`(cursor: Cursor): RowVec = cursor.at(this)
-
-/**
- * Reverse cursor range access operator (◂) - Cursor range access in reverse order
- * range ◂ cursor means cursor.at(range) (reverse of at operator for ranges)
- */
-infix fun <T> IntRange.`◂`(cursor: Cursor): Cursor = cursor.at(this)
-
-/**
- * Reverse play operator (◂) - Play in reverse order
- * play ◂ indexed means indexed.play (reverse of .play property)
- */
-infix fun <T> Unit.`◂`(indexed: Indexed<T>): IterableIndexed<T> = indexed.play
-
-
-
-/**
- * Reverse column access operator (◂) - Column access in reverse order
- * name ◂ cursor means cursor.column(name) (reverse of .column() method)
- */
-infix fun String.`◂`(cursor: Cursor): Indexed<Any?> = cursor.column(this)
-
-/**
- * Reverse column index access operator (◂) - Column index access in reverse order
- * index ◂ cursor means cursor.column(index) (reverse of .column() method)
- */
-infix fun Int.`◂`(cursor: Cursor): Indexed<Any?> = cursor.column(this)
+infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b) 
 
 // === CATEGORICAL NOTATION OPERATORS FROM COLUMNAR ===
 
@@ -183,17 +124,17 @@ infix fun Int.`◂`(cursor: Cursor): Indexed<Any?> = cursor.column(this)
  * Sum operator (∑) - Aggregate reduction across cursor
  * cursor ∑ reducer means reduce all values using the reducer function
  */
-infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = Cursor(first) { iy: Int ->
-    val aggCell: RowVec = second(iy)
-    val valuesVect: Indexed<*> = aggCell.left
-    RowVec(aggCell.first) { ix: Int ->
+infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = a j { iy: Int ->
+    val aggCell: RowVec = b(iy)
+    val valuesVect: Indexed<*> = aggCell.a
+    aggCell.a j { ix: Int ->
         val cellContent = valuesVect[ix]
         val reducedValue = when (cellContent) {
-            is Indexed<*> -> if (cellContent.size > 0) cellContent.play.reduce(reducer) else null
+            is Indexed<*> -> if (cellContent.a > 0) cellContent.play.reduce(reducer) else null
             is Iterable<*> -> if (cellContent.iterator().hasNext()) cellContent.reduce(reducer) else null
             else -> cellContent
         }
-        reducedValue j aggCell[ix].second
+        reducedValue j aggCell.b(ix).b()
     }
 }
 
@@ -201,18 +142,16 @@ infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = Cursor(first) { 
  * Transform operator (α) - Apply unary function to cursor
  * cursor α transform means apply transform to all values
  */
-infix fun Cursor.α(unaryFunctor: (Any?) -> Any?): Cursor = run {
-    size j { iy: Int ->
-        val row: RowVec = (this at iy)
-        (row.left α unaryFunctor).zip(row.right)
-    }
+infix fun Cursor.α(unaryFunctor: (Any?) -> Any?): Cursor = a j { iy: Int ->
+    val row: RowVec = b(iy)
+    (row.a α unaryFunctor) j row.b
 }
 
 /**
- * List ellipsis operator (…) - Materialize to list
- * indexed … means indexed.toList()
+ * List ellipsis operator (…) - Materialize to Indexed
+ * indexed … means indexed (no materialization to List)
  */
-val <R> Indexed<R>.`…`: List<R> get() = this.play.toList()
+val <R> Indexed<R>.`…`: Indexed<R> get() = this
 
 /**
  * Function application operator (→) - Apply function
@@ -243,30 +182,30 @@ val <T> Indexed<T>.`➤`: IterableIndexed<T> get() = this.play
  * First element operator (f1rst) - Get first element
  * indexed f1rst means indexed[0]
  */
-val <T> Indexed<T>.f1rst: T get() = this[0]
+val <T> Indexed<T>.f1rst: T get() = b(0)
 
 /**
  * Last element operator (last) - Get last element
  * indexed last means indexed[size-1]
  */
-val <T> Indexed<T>.last: T get() = this[size - 1]
+val <T> Indexed<T>.last: T get() = b(a - 1)
 
 /**
  * Reverse operator (reverse) - Reverse the indexed collection
  * indexed reverse means indexed.reversed()
  */
-val <T> Indexed<T>.reverse: Indexed<T> get() = size j { x -> this[size - 1 - x] }
+val <T> Indexed<T>.reverse: Indexed<T> get() = a j { x -> b(a - 1 - x) }
 
 /**
  * Infinite operator (infinite) - Create infinite indexed with bounds checking
  * indexed infinite means infinite indexed with bounds checking
  */
 val <T> Indexed<T>.infinite: Indexed<T> get() = Int.MAX_VALUE j { x: Int ->
-    this[when {
+    b(when {
         x < 0 -> 0
-        size <= x -> size - 1
+        a <= x -> a - 1
         else -> x
-    }]
+    })
 }
 
 /**
@@ -274,7 +213,7 @@ val <T> Indexed<T>.infinite: Indexed<T> get() = Int.MAX_VALUE j { x: Int ->
  * range / parts means split range into parts
  */
 infix operator fun IntRange.div(denominator: Int): Indexed<IntRange> =
-    (last - first + 1) / denominator j { x: Int ->
+    ((last - first + 1) / denominator) j { x: Int ->
         val subSize = (last - first + 1) / denominator
         val lower = subSize * x
         lower..last.coerceAtMost(lower + subSize - 1)
@@ -285,8 +224,8 @@ infix operator fun IntRange.div(denominator: Int): Indexed<IntRange> =
  * indexed / parts means split indexed into parts
  */
 infix operator fun <T> Indexed<T>.div(denominator: Int): Indexed<Indexed<T>> =
-    (0 until size).div(denominator) α { rnge ->
-        this.slice(rnge.first, rnge.last + 1)
+    (0 until a).div(denominator) α { rnge ->
+        slice(rnge.first, rnge.last + 1)
     }
 
 // TODO: Add expect/actual assert implementations for platform targets
@@ -294,8 +233,8 @@ infix operator fun <T> Indexed<T>.div(denominator: Int): Indexed<Indexed<T>> =
 // expect fun assert(value: Boolean, lazyMessage: () -> Any)
 
         @Suppress("UNCHECKED_CAST")
-inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l -> 
-    l.size j l::get
+inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? Indexed<T>)?.let { l -> 
+    l
 } ?: error("Cannot convert to Indexed")
 
 // QOL helpers migrated from borg.trikeshed.common.collections
@@ -316,25 +255,25 @@ object _a {
     inline operator fun <reified T> get(vararg t: T): Array<T> = t as Array<T>
 }
 
-object _l {
-    operator fun <T> get(vararg t: T): List<T> = listOf(*t)
-}
+// Cured: Replaced List with Indexed
 object _i {
     operator fun <T> get(vararg t: T) = t.size j t::get
 }
 
+// Cured: Replaced Set with Indexed (unique elements handled by usage)
 object _s {
-    operator fun <T> get(vararg t: T): Set<T> = setOf(*t)
+    operator fun <T> get(vararg t: T): Indexed<T> = t.size j t::get
 }
 
+// Cured: Replaced Map with Indexed<Join<K, V>>
 object _m {
-    operator fun <K, V, P : Join<K, V>> get(p: List<P>): Map<K, V> = p.map { it.a to it.b }.toMap()
-    operator fun <K, V, P : Join<K, V>> get(vararg p: P): Map<K, V> = mapOf(*p.map { it.a to it.b }.toTypedArray())
+    operator fun <K, V, P : Join<K, V>> get(p: Indexed<P>): Indexed<Join<K, V>> = p
+    operator fun <K, V, P : Join<K, V>> get(vararg p: P): Indexed<Join<K, V>> = p.size j { p[it] }
 }
 
 // === Alpha (α) transformation operator ===
 
-inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = this.a j { index: Int -> xform(this.b(index)) }
+inline infix fun <X, C, V : Indexed<X>> V.α(crossinline xform: (X) -> C): Indexed<C> = a j { index: Int -> xform(b(index)) }
 
 // === IterableIndexed and play button ===
 
@@ -413,20 +352,20 @@ fun Cursor.rows(vararg indices: Int): Cursor = this[indices]
 
 /** Get column by index */
 fun Cursor.column(index: Int): Indexed<Any?> =
-    a j { at(it).b(index).a }
+    a j { b(it).b(index).a }
 
-/** Get column by name */
-fun Cursor.column(name: String): Indexed<Any?> {
+/** Get column by name - Cured: Uses ByteArray instead of String */
+fun Cursor.column(name: ByteArray): Indexed<Any?> {
     val columnIndex = findColumnIndex(name)
-    require(columnIndex >= 0) { "Column '$name' not found" }
+    require(columnIndex >= 0) { "Column not found" }
     return column(columnIndex)
 }
 
-/** Find column index by name */
-internal fun Cursor.findColumnIndex(name: String): Int {
+/** Find column index by name - Cured: Uses ByteArray instead of String */
+internal fun Cursor.findColumnIndex(name: ByteArray): Int {
     val columnMetas = scalars
     for (i in 0 until columnMetas.a) {
-        if (columnMetas.b(i).a == name) {
+        if (columnMetas.b(i).a.contentEquals(name)) {
             return i
         }
     }
@@ -436,22 +375,22 @@ internal fun Cursor.findColumnIndex(name: String): Int {
 /** Get column scalars/metadata */
 val Cursor.scalars: Indexed<ColumnMeta>
     get() = if (a > 0) {
-        val firstRow = at(0)
+        val firstRow = b(0)
         firstRow.a j { colIndex: Int ->
             firstRow.b(colIndex).b()
         }
     } else {
-        0 j { _: Int -> "" j String::class }
+        0 j { _: Int -> ByteArray(0) j String::class }
     }
 
-/** Get column names */
-val Cursor.columnNames: Indexed<String>
+/** Get column names - Cured: Returns Indexed<ByteArray> instead of Indexed<String> */
+val Cursor.columnNames: Indexed<ByteArray>
     get() = scalars.a j { i -> scalars.b(i).a }
 
-/** Get column index by name */
-val Cursor.colIdx: Map<String, Int>
+/** Get column index by name - Cured: Returns Indexed<Join<ByteArray, Int>> instead of Map */
+val Cursor.colIdx: Indexed<Join<ByteArray, Int>>
     get() = columnNames.let { names ->
-        (0 until names.a).associate { i -> names.b(i) to i }
+        names.a j { i -> names.b(i) j i }
     }
 
 // === CURSOR ITERATION SUPPORT ===
@@ -460,72 +399,64 @@ val Cursor.colIdx: Map<String, Int>
 fun Cursor.iterator(): Iterator<RowVec> = object : Iterator<RowVec> {
     internal var index = 0
     override fun hasNext(): Boolean = index < a
-    override fun next(): RowVec = at(index++)
+    override fun next(): RowVec = b(index++)
 }
 
 /** forEach for cursor rows */
 inline fun Cursor.forEach(action: (RowVec) -> Unit) {
     for (i in 0 until a) {
-        action(at(i))
+        action(b(i))
     }
 }
 
-/** Convert cursor to list of rows */
-fun Cursor.toList(): List<RowVec> = (0 until a).map { at(it) }
+/** Convert cursor to Indexed - Cured: Returns Indexed instead of List */
+fun Cursor.toIndexed(): Indexed<RowVec> = a j { b(it) }
 
 /** Play property for Iterable support */
 val Cursor.play: Iterable<RowVec>
     get() = object : Iterable<RowVec> {
-        override fun iterator(): Iterator<RowVec> = this@play.iterator()
+        override fun iterator(): Iterator<RowVec> = iterator()
     }
 
 // === CURSOR FACTORY FUNCTIONS ===
 
-/** Create simple cursor from data */
+/** Create simple cursor from data - Cured: Uses Indexed instead of List */
 fun cursorOf(
-    data: List<List<Any?>>,
-    columnNames: List<String> = data.firstOrNull()?.indices?.map { "col_$it" } ?: emptyList(),
-    columnTypes: List<KClassifier> = data.firstOrNull()?.map { inferType(it) } ?: emptyList()
+    data: Indexed<Indexed<Any?>>,
+    columnNames: Indexed<ByteArray> = data.firstOrNull()?.let { firstRow ->
+        firstRow.a j { i -> "col_$i".toByteArray() }
+    } ?: (0 j { ByteArray(0) }),
+    columnTypes: Indexed<KClassifier> = data.firstOrNull()?.let { firstRow ->
+        firstRow.a j { i -> inferType(firstRow.b(i)) }
+    } ?: (0 j { String::class })
 ): Cursor {
-    require(data.isNotEmpty()) { "Data cannot be empty" }
-    val firstRow = data.first()
-    require(columnNames.size == firstRow.size) { "Column names size mismatch" }
-    require(columnTypes.size == firstRow.size) { "Column types size mismatch" }
+    require(data.a > 0) { "Data cannot be empty" }
+    val firstRow = data.b(0)
+    require(columnNames.a == firstRow.a) { "Column names size mismatch" }
+    require(columnTypes.a == firstRow.a) { "Column types size mismatch" }
 
-    val scalars: Indexed<ColumnMeta> = columnNames.size j { i ->
-        columnNames[i] j columnTypes[i]
+    val scalars: Indexed<ColumnMeta> = columnNames.a j { i ->
+        columnNames.b(i) j columnTypes.b(i)
     }
 
-    return data.size j { rowIndex: Int ->
-        val rowData = data[rowIndex]
-        val rowVec: RowVec = rowData.size j { colIndex: Int ->
-            val cellValue = rowData[colIndex]
+    return data.a j { rowIndex: Int ->
+        val rowData = data.b(rowIndex)
+        rowData.a j { colIndex: Int ->
+            val cellValue = rowData.b(colIndex)
             val columnMeta = scalars.b(colIndex)
             cellValue j { columnMeta }
         }
-        rowVec
     }
 }
 
 /** Infer type from value */
 internal fun inferType(value: Any?): KClassifier = when (value) {
     is Int -> Int::class
-    is String -> String::class
+    is ByteArray -> ByteArray::class
     is Float -> Float::class
     is Double -> Double::class
     else -> String::class
 } 
-
-/**
- * Indexed<T> - Primary interface for mutable list operations
- * 
- * ADR-002 Compliance: Provides type-safe alternatives to String-based operations
- * Used throughout the codebase to avoid String allocations in loops
- */
-interface Indexed<T> {
-    val a: Int
-    fun b(index: Int): T
-}
 
 /**
  * LogEvent - Structured logging to avoid String concatenation
@@ -548,4 +479,21 @@ enum class LogEvent {
 fun log(event: LogEvent, vararg args: Any) {
     // Implementation uses structured logging
     // No String concatenation in hot path
+} 
+
+// === HELPER EXTENSIONS FOR INDEXED ===
+
+/** Convert Iterable to Indexed */
+fun <T> Iterable<T>.toIndexed(): Indexed<T> {
+    val list = this.toList()
+    return list.size j { list[it] }
+}
+
+/** Get first element or null */
+fun <T> Indexed<T>.firstOrNull(): T? = if (a > 0) b(0) else null
+
+/** Slice Indexed from start to end inclusive */
+fun <T> Indexed<T>.slice(start: Int, endInclusive: Int): Indexed<T> {
+    val sliceSize = endInclusive - start + 1
+    return sliceSize j { b(start + it) }
 } 
