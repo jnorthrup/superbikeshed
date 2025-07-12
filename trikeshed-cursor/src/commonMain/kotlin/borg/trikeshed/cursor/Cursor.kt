@@ -49,7 +49,7 @@ inline fun <T> Cursor.asMetaSeries(crossinline transform: (RowVec) -> T): MetaSe
 }
 
 operator fun Cursor.get(vararg indices: Int): Cursor {
-    val indexedIndices = indices.size j { i -> indices[i] }
+    val indexedIndices = indices.size j { i: Int -> indices[i] }
     return Cursor(MetaSeries(CursorRowIndex(indexedIndices.a)) { iy: CursorRowIndex -> this.data.b(CursorRowIndex(indexedIndices.b(iy.value))) })
 }
 
@@ -63,7 +63,7 @@ operator fun Cursor.get(indices: Iterable<Int>): Cursor {
 
 /** Get column by index */
 fun Cursor.column(index: Int): Indexed<Any?> =
-    this.data.a.value j { rowIndex: Int -> this[rowIndex].b(index).a }
+    this.data.a.value j { rowIndex: Int -> this.at(rowIndex).b(index).a }
 
 /** Get column by name */
 fun Cursor.column(name: String): Indexed<Any?> {
@@ -87,7 +87,7 @@ internal fun Cursor.findColumnIndex(name: String): Int {
 fun Cursor.columns(vararg indices: Int): Cursor =
     Cursor(MetaSeries(CursorRowIndex(this.data.a.value)) { rowIndex: CursorRowIndex ->
         val oldRow = this[rowIndex.value]
-        indices.size j { colIdx: Int ->
+        Indexed(indices.size) { colIdx: Int ->
             oldRow.b(indices[colIdx])
         }
     })

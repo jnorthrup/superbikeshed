@@ -15,9 +15,8 @@ import borg.trikeshed.net.ssh.SftpPacketParser
 // import borg.trikeshed.net.socks.socksIngress
 // import borg.trikeshed.net.socks.socksEgress
 import kotlinx.coroutines.channels.Channel
-// import borg.trikeshed.nio.PlatformByteBuffer
-// import borg.trikeshed.io.PlatformFileIO
-// import borg.trikeshed.io.PlatformFileIOImpl
+import borg.trikeshed.io.PlatformFileIO
+import borg.trikeshed.io.PlatformFileIOImpl
 
 // === SSH TAXONOMICAL TYPEALIASES ===
 
@@ -61,8 +60,8 @@ typealias CryptoFactory = Any
 typealias TicketNonce = ByteArray
 
 // Crypto helper functions
-fun getSecureRandom(): ByteArray = ByteArray(16) { it.toByte() } // TODO: Use proper random
-fun randomBytes(size: Int): ByteArray = ByteArray(size) { it.toByte() } // TODO: Use proper random
+expect fun getSecureRandom(): ByteArray
+expect fun randomBytes(size: Int): ByteArray
 
 // QUIC types (temporary)
 interface QuicConnection {

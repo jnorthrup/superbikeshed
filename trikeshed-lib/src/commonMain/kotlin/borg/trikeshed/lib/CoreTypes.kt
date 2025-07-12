@@ -19,23 +19,34 @@ sealed interface Either<out L, out R> {
     }
 }
 
-interface Join<A, B> {
-    val a: A
-    val b: B
-    operator fun component1(): A = a
-    operator fun component2(): B = b
-    val pair: Pair<A, B> get() = Pair(a, b)
+data class Join<A, B>(val a: A, val b: B)
+
+@kotlin.jvm.JvmInline
+value class Indexed<T>(val data: Join<Int, (Int) -> T>) {
+    val a: Int get() = data.a
+    val b: (Int) -> T get() = data.b
+    
+    operator fun plus(other: Indexed<T>): Indexed<T> = Indexed(Join(a + other.a) { 
+        if (it < a) b(it) else other.b(it - a)
+    })
+    operator fun get(index: Int): T = b(index)
+    
     companion object {
-        operator fun <A, B> invoke(a: A, b: B): Join<A, B> = object : Join<A, B> {
-            override val a: A = a
-            override val b: B = b
-        }
+        fun <T> create(a: Int, b: (Int) -> T): Indexed<T> = Indexed(Join(a, b))
     }
 }
 
-typealias MetaSeries<A, T> = Join<A, (A) -> T>
-typealias Indexed<T> = Join<Int, (Int) -> T>
-typealias LongIndexed<T> = Join<Long, (Long) -> T>
+@kotlin.jvm.JvmInline
+value class MetaSeries<I, T>(val data: Join<I, (I) -> T>) {
+    val a: I get() = data.a
+    val b: (I) -> T get() = data.b
+    
+    companion object {
+        fun <I, T> create(a: I, b: (I) -> T): MetaSeries<I, T> = MetaSeries(Join(a, b))
+    }
+}
+
+typealias LongIndexed<T> = Indexed<T>
 typealias Twin<T> = Join<T, T>
 typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
@@ -61,6 +72,7 @@ value class CursorRowIndex(val value: Int) {
 }
 
 // Canonical RowVec and Cursor definitions
+
 typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
 
 // Cursor with ArrayLike trait - WHENEVER THEY NEED get[i] OPERATOR
@@ -105,6 +117,12 @@ val ULong.z: Boolean get() = 0UL == this
 infix fun <T> T.d(other: T): T { println(other); return this }
 
 infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
+
+// Overload for creating Indexed<T> from size and generator function
+infix fun <T> Int.j(generator: (Int) -> T): Indexed<T> = Indexed.create(this, generator)
+
+// Overload for creating MetaSeries<I,T> from index and generator function
+infix fun <I, T> I.j(generator: (I) -> T): MetaSeries<I, T> = MetaSeries.create(this, generator)
 
 /**
  * Reverse composition operator (◂) - Compose in reverse order

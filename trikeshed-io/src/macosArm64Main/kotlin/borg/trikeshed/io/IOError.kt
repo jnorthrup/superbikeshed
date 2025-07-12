@@ -5,7 +5,7 @@ actual object IOError {
         kotlin.require(condition, message)
     }
 
-    actual fun check(condition: Boolean, message: () -> String): Boolean {
-        return kotlin.check(condition, message)
+    actual fun check(condition: Boolean, message: () -> String) {
+        kotlin.check(condition, message)
     }
 }
