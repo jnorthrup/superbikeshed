@@ -239,12 +239,12 @@ class IOContextManager {
         available: CapabilitySet, 
         required: CapabilitySet
     ): Boolean {
-        val availableSet: Set<IOCapability> = (0 until available.a.toInt()).map { 
-            available.b(it) 
+        val availableSet: Set<IOCapability> = (0 until available.component1().toInt()).map { 
+            available.component2()(it) 
         }.toSet()
         
-        for (i in 0 until required.a.toInt()) {
-            if (!availableSet.contains(required.b(i))) {
+        for (i in 0 until required.component1().toInt()) {
+            if (!availableSet.contains(required.component2()(i))) {
                 return false
             }
         }
@@ -255,8 +255,8 @@ class IOContextManager {
      * Create optimal context based on capability requirements
      */
     internal fun createOptimalContext(required: CapabilitySet): IOContext {
-        val requiredSet: Set<IOCapability> = (0 until required.a.toInt()).map { 
-            required.b(it) 
+        val requiredSet: Set<IOCapability> = (0 until required.component1().toInt()).map { 
+            required.component2()(it) 
         }.toSet()
         
         return when {

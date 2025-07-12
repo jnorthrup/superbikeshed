@@ -33,8 +33,8 @@ actual class PlatformFileIOImpl : PlatformFileIOInterface {
     
     override suspend fun writeFile(path: String, content: Join<Int, (Int) -> Byte>): Boolean {
         return try {
-            val size = content.a
-            val bytes = ByteArray(size) { i -> content.b(i) }
+            val size = content.component1()
+            val bytes = ByteArray(size) { i -> content.component2()(i) }
             File(path).writeBytes(bytes)
             true
         } catch (e: Exception) {

@@ -93,7 +93,7 @@ actual object Files {
     }
     
     actual fun readLinesSeq(path: String): Sequence<String> {
-        return streamLines(path, 4096).map { it.b.decodeToString() }
+        return streamLines(path, 4096).map { it.component2().decodeToString() }
     }
     
     actual fun readLines(path: String): List<String> {

@@ -72,8 +72,8 @@ object AnnotationBBParser {
         }
         
         return AnnotationSet(
-            dependencies = dependencies.size j { i -> dependencies[i] },
-            repositories = repositories.size j { i -> repositories[i] },
+            dependencies = \1 j { \2: Int -> dependencies[i] },
+            repositories = \1 j { \2: Int -> repositories[i] },
             sourceFile = "parsed"
         )
     }
@@ -141,7 +141,7 @@ class IntelligentBandwidthManager(
             val data = transport.fetch(testUrl)
             
             val elapsed = Clock.System.now().toEpochMilliseconds() - start
-            val bytesPerMs = data.a.toDouble() / elapsed.coerceAtLeast(1)
+            val bytesPerMs = data.component1().toDouble() / elapsed.coerceAtLeast(1)
             (bytesPerMs * 1000).toLong() // bytes per second
         } catch (e: Exception) {
             1_000_000L // Default to 1MB/s on error
@@ -254,14 +254,14 @@ class PerfectCacheManager(
     
     suspend fun put(key: String, data: ByteIndexed, etag: String? = null) {
         // Clean up if needed before adding
-        ensureSpace(data.a.toLong())
+        ensureSpace(data.component1().toLong())
         
         val entry = CacheEntry(
             key = key,
             data = data,
             timestamp = Clock.System.now().toEpochMilliseconds(),
             etag = etag,
-            size = data.a.toLong()
+            size = data.component1().toLong()
         )
         
         // Save to disk
@@ -316,7 +316,7 @@ class PerfectCacheManager(
     internal suspend fun saveToDisk(key: String, data: ByteIndexed) {
         val filePath = "$cacheDir/${key.replace(':', '_').replace('/', '_')}.jar"
         // Convert ByteIndexed back to ByteArray
-        val byteArray = ByteArray(data.a) { i -> data.buf.b(i) }
+        val byteArray = ByteArray(data.component1()) { i -> data.buf.component2()(i) }
         writeBytes(filePath, byteArray)
     }
     
@@ -367,7 +367,7 @@ class JarController(
     }
     
     suspend fun resolveDependencies(annotations: AnnotationSet): JarResolutionResult {
-        println("🚀 Resolving ${annotations.dependencies.a} dependencies with intelligent caching...")
+        println("🚀 Resolving ${annotations.dependencies.component1()} dependencies with intelligent caching...")
         
         val resolved = mutableListOf<ResolvedJar>()
         val failed = mutableListOf<String>()
@@ -376,8 +376,8 @@ class JarController(
         // Process dependencies in parallel with bandwidth management
         val tasks = mutableListOf<Deferred<SingleResolveResult>>()
         
-        for (i in 0 until annotations.dependencies.a) {
-            val dep = annotations.dependencies.b(i)
+        for (i in 0 until annotations.dependencies.component1()) {
+            val dep = annotations.dependencies.component2()(i)
             val task = ServiceManager.scope.async {
                 resolveSingleDependency(dep, annotations.repositories)
             }
@@ -408,9 +408,9 @@ class JarController(
         println("   💾 Cache hit rate: ${(stats.hitRate * 100).toInt()}%")
         
         return JarResolutionResult(
-            resolved = resolved.size j { i -> resolved[i] },
-            failed = failed.size j { i -> failed[i] },
-            cached = cached.size j { i -> cached[i] },
+            resolved = \1 j { \2: Int -> resolved[i] },
+            failed = \1 j { \2: Int -> failed[i] },
+            cached = \1 j { \2: Int -> cached[i] },
             stats = stats
         )
     }
@@ -440,8 +440,8 @@ class JarController(
         // Try repositories in priority order
         val repoList = buildRepositoryList(repositories)
         
-        for (i in 0 until repoList.a) {
-            val repo = repoList.b(i)
+        for (i in 0 until repoList.component1()) {
+            val repo = repoList.component2()(i)
             
             try {
                 val jarData = fetchFromRepository(repo, coordinate)
@@ -489,8 +489,8 @@ class JarController(
         val allRepos = mutableListOf<RepositoryAnnotation>()
         
         // Add script repositories
-        for (i in 0 until repositories.a) {
-            allRepos.add(repositories.b(i))
+        for (i in 0 until repositories.component1()) {
+            allRepos.add(repositories.component2()(i))
         }
         
         // Add defaults
@@ -499,7 +499,7 @@ class JarController(
         // Sort by priority (higher first)
         allRepos.sortByDescending { it.priority }
         
-        return allRepos.size j { i -> allRepos[i] }
+        return \1 j { \2: Int -> allRepos[i] }
     }
     
     internal fun generateCacheKey(coordinate: String): String {
@@ -519,8 +519,8 @@ class JarController(
     fun createClasspath(resolved: JarResolutionResult): String {
         val paths = mutableListOf<String>()
         
-        for (i in 0 until resolved.resolved.a) {
-            val jar = resolved.resolved.b(i)
+        for (i in 0 until resolved.resolved.component1()) {
+            val jar = resolved.resolved.component2()(i)
             // For now, return coordinate as path (in real impl, would be file path)
             paths.add(jar.artifact.coordinate)
         }

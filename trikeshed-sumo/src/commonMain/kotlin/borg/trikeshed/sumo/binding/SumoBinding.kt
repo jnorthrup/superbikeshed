@@ -290,14 +290,14 @@ class SumoBinding {
     }
     
     private fun extractFromAxiom(axiom: Axiom, concepts: MutableList<Concept>, relationships: MutableList<Relationship>) {
-        val mainConcept = axiom.a.b
+        val mainConcept = axiom.component1().component2()
         concepts.add(mainConcept)
         
-        val relatedConcepts = axiom.b.play
+        val relatedConcepts = axiom.component2().play
         concepts.addAll(relatedConcepts)
         
         // Create relationships based on axiom type
-        when (axiom.a.a) {
+        when (axiom.component1().component1()) {
             AxiomType.DEFINITION -> {
                 // Definition axioms create subclass relationships
                 relatedConcepts.forEach { related ->
@@ -329,8 +329,8 @@ sealed class BoundExpression {
     val concept: borg.trikeshed.sumo.types.Concept
         get() = when (this) {
             is Concept -> this.conceptValue
-            is Relationship -> this.relationship.a.a
-            is Axiom -> this.axiom.a.b
+            is Relationship -> this.relationship.component1().component1()
+            is Axiom -> this.axiom.component1().component2()
         }
 }
 

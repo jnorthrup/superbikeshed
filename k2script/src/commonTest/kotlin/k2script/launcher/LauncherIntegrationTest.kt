@@ -57,11 +57,11 @@ class LauncherIntegrationTest {
         val metadata = launcher.analyzeScript(scriptFile.toString())
         
         assertEquals(scriptFile.toString(), metadata.path, "Should have correct script path")
-        assertEquals(1, metadata.dependencies.a, "Should have one dependency")
-        assertEquals(1, metadata.repositories.a, "Should have one repository")
+        assertEquals(1, metadata.dependencies.component1(), "Should have one dependency")
+        assertEquals(1, metadata.repositories.component1(), "Should have one repository")
         assertEquals("MainKt", metadata.mainClass, "Should have correct main class")
         
-        val dependency = metadata.dependencies.b(0)
+        val dependency = metadata.dependencies.component2()(0)
         assertEquals("org.jetbrains.kotlinx", dependency.groupId, "Should have correct group ID")
         assertEquals("kotlinx-coroutines-core", dependency.artifactId, "Should have correct artifact ID")
         assertEquals("1.7.3", dependency.version, "Should have correct version")
@@ -80,8 +80,8 @@ class LauncherIntegrationTest {
         
         val metadata = launcher.analyzeScript(scriptFile.toString())
         
-        assertEquals(0, metadata.dependencies.a, "Should have no dependencies")
-        assertEquals(0, metadata.repositories.a, "Should have no repositories")
+        assertEquals(0, metadata.dependencies.component1(), "Should have no dependencies")
+        assertEquals(0, metadata.repositories.component1(), "Should have no repositories")
         assertEquals("MainKt", metadata.mainClass, "Should have correct main class")
     }
     
@@ -102,9 +102,9 @@ class LauncherIntegrationTest {
         
         val metadata = launcher.analyzeScript(scriptFile.toString())
         
-        assertEquals(3, metadata.dependencies.a, "Should have three dependencies")
+        assertEquals(3, metadata.dependencies.component1(), "Should have three dependencies")
         
-        val deps = (0 until metadata.dependencies.a).map { metadata.dependencies.b(it) }
+        val deps = (0 until metadata.dependencies.component1()).map { metadata.dependencies.component2()(it) }
         assertTrue(deps.any { it.artifactId == "kotlinx-coroutines-core" }, "Should have coroutines dependency")
         assertTrue(deps.any { it.artifactId == "kotlinx-serialization-json" }, "Should have serialization dependency")
         assertTrue(deps.any { it.artifactId == "kotlinx-datetime" }, "Should have datetime dependency")
@@ -128,8 +128,8 @@ class LauncherIntegrationTest {
         val metadata = launcher.analyzeScript(scriptFile.toString())
         val resolved = launcher.resolveDependencies(metadata)
         
-        assertTrue(resolved.failed.a == 0, "Should have no failed dependencies")
-        assertTrue(resolved.resolved.a > 0, "Should have resolved dependencies")
+        assertTrue(resolved.failed.component1() == 0, "Should have no failed dependencies")
+        assertTrue(resolved.resolved.component1() > 0, "Should have resolved dependencies")
     }
     
     @Test
@@ -148,8 +148,8 @@ class LauncherIntegrationTest {
         val metadata = launcher.analyzeScript(scriptFile.toString())
         val resolved = launcher.resolveDependencies(metadata)
         
-        assertTrue(resolved.failed.a > 0, "Should have failed dependencies")
-        assertTrue(resolved.resolved.a == 0, "Should have no resolved dependencies")
+        assertTrue(resolved.failed.component1() > 0, "Should have failed dependencies")
+        assertTrue(resolved.resolved.component1() == 0, "Should have no resolved dependencies")
     }
     
     // === Classpath Building Tests ===
@@ -171,11 +171,11 @@ class LauncherIntegrationTest {
         val resolved = launcher.resolveDependencies(metadata)
         val classpath = launcher.buildClasspath(resolved)
         
-        assertTrue(classpath.entries.a > 0, "Should have classpath entries")
+        assertTrue(classpath.entries.component1() > 0, "Should have classpath entries")
         
         // Should include system classpath
         val systemCp = System.getProperty("java.class.path")
-        assertTrue(classpath.entries.a > systemCp.split(System.getProperty("path.separator")).size, 
+        assertTrue(classpath.entries.component1() > systemCp.split(System.getProperty("path.separator")).size, 
                   "Should have more entries than system classpath")
     }
     

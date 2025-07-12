@@ -74,7 +74,7 @@ class GitForensicsServiceTest {
         val session = forensicsService.initializeForensics(repoId)
         
         // Create test git objects
-        val objectHashes = 3 j { i ->
+        val objectHashes = \1 j { \2: Int ->
             when (i) {
                 0 -> "abc1234567890abcdef1234567890abcdef1234"
                 1 -> "def2345678901def2345678901def2345678901"
@@ -94,8 +94,8 @@ class GitForensicsServiceTest {
         assertEquals(3, analysis.taxonomicClasses.size)
         
         // Check that all object hashes have attention scores
-        for (i in 0 until objectHashes.a) {
-            val hash = objectHashes.b(i)
+        for (i in 0 until objectHashes.component1()) {
+            val hash = objectHashes.component2()(i)
             assertTrue(analysis.attentionScores.containsKey(hash))
             assertTrue(analysis.taxonomicClasses.containsKey(hash))
         }
@@ -107,7 +107,7 @@ class GitForensicsServiceTest {
         val repoId = "test-repo-004"
         val session = forensicsService.initializeForensics(repoId)
         
-        val objectHashes = 2 j { i ->
+        val objectHashes = \1 j { \2: Int ->
             when (i) {
                 0 -> "high_attention_object_1234567890abcdef"
                 1 -> "low_attention_object_abcdef1234567890"

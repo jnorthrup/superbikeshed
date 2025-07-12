@@ -38,7 +38,7 @@ class JvmSSHTransportService(internal val context: CoroutineContext) : SSHTransp
                 val ch = AsynchronousSocketChannel.open()
                 channel = ch
                 
-                val address = InetSocketAddress(server.a, server.b)
+                val address = InetSocketAddress(server.component1(), server.component2())
                 
                 ch.connect(address, null, object : CompletionHandler<Void?, Nothing?> {
                     override fun completed(result: Void?, attachment: Nothing?) {
@@ -57,8 +57,8 @@ class JvmSSHTransportService(internal val context: CoroutineContext) : SSHTransp
     
     override suspend fun sendPacket(packet: SSHPacket, context: SSHTransportContext) {
         val data = packet.encode()
-        val buffer = ByteBuffer.allocate(data.a)
-        for (i in 0 until data.a) {
+        val buffer = ByteBuffer.allocate(data.component1())
+        for (i in 0 until data.component1()) {
             buffer.put(data[i])
         }
         buffer.flip()
@@ -115,7 +115,7 @@ class JvmSSHTransportService(internal val context: CoroutineContext) : SSHTransp
 class JvmSSHAuthService(internal val context: CoroutineContext) : SSHAuthService {
     override suspend fun authenticate(method: SSHAuthMethod, context: SSHAuthContext): SSHAuthResult {
         // Simplified authentication
-        return Join(true, 32 j { i: Int -> i.toByte() })
+        return true j 32 j { i: Int -> i.toByte( })
     }
     
     override suspend fun verifyHostKey(hostKey: SSHHostKey, context: SSHAuthContext): Boolean {
@@ -147,7 +147,7 @@ class JvmSSHAuthService(internal val context: CoroutineContext) : SSHAuthService
         val privateKey = privateKeyBytes.size j { i: Int -> privateKeyBytes[i] }
         val publicKey = publicKeyBytes.size j { i: Int -> publicKeyBytes[i] }
         
-        return Join(publicKey, privateKey)
+        return publicKey j privateKey
     }
 }
 
@@ -162,7 +162,7 @@ class JvmSSHCryptoService(internal val context: CoroutineContext) : SSHCryptoSer
         val mac = 1 j { "hmac-sha2-256" }
         val compression = 1 j { "none" }
         
-        return Join(kex, Join(cipher, Join(mac, compression)))
+        return kex j Join(cipher, Join(mac, compression))
     }
     
     override suspend fun performKex(algorithm: SSHKexAlgorithm, context: SSHTransportContext): SSHSharedSecret {
@@ -178,11 +178,11 @@ class JvmSSHCryptoService(internal val context: CoroutineContext) : SSHCryptoSer
     
     override suspend fun deriveKeys(secret: SSHSharedSecret, context: SSHTransportContext): SSHKeySet {
         // Derive keys from shared secret using HKDF
-        val encKey = 32 j { i: Int -> (secret[i % secret.a].toInt() xor i).toByte() }
-        val encIV = 12 j { i: Int -> (secret[i % secret.a].toInt() xor (i + 100)).toByte() }
-        val macKey = 32 j { i: Int -> (secret[i % secret.a].toInt() xor (i + 200)).toByte() }
+        val encKey = 32 j { i: Int -> (secret[i % secret.component1()].toInt() xor i).toByte() }
+        val encIV = 12 j { i: Int -> (secret[i % secret.component1()].toInt() xor (i + 100)).toByte() }
+        val macKey = 32 j { i: Int -> (secret[i % secret.component1()].toInt() xor (i + 200)).toByte() }
         
-        return Join(Join(encKey, encIV), Join(macKey, macKey))
+        return Join(encKey j encIV, macKey j macKey)
     }
     
     override suspend fun encrypt(data: SSHPayload, context: SSHTransportContext): SSHWirePacket {
@@ -240,9 +240,9 @@ class JvmSSHSessionService(internal val context: CoroutineContext) : SSHSessionS
     override suspend fun createSession(context: SSHSessionContext): SSHSession {
         val sessionId = 16 j { i: Int -> SecureRandom().nextInt(256).toByte() }
         val transportState = 1 j { StateToken(SSHState.DISCONNECTED.ordinal) }
-        val channelStream = 0 j { SSHChannelEvent(Join(0u, ChannelData(0 j { 0.toByte() }))) }
+        val channelStream = 0 j { SSHChannelEvent(0u j ChannelData(0 j { 0.toByte( }))) }
         
-        val session = Join(transportState, Join(channelStream, context))
+        val session = transportState j Join(channelStream, context)
         sessions[sessionId] = session
         
         return session
@@ -255,10 +255,10 @@ class JvmSSHSessionService(internal val context: CoroutineContext) : SSHSessionS
     
     override suspend fun getSessionInfo(session: SSHSession): SSHSessionInfo {
         val sessionId = 16 j { i: Int -> i.toByte() } // Placeholder
-        val serverInfo = session.b.b.a.b.a
+        val serverInfo = session.component2().component2().component1().component2().component1()
         val algorithms = Join(
             0 j { "" },
-            Join(0 j { "" }, Join(0 j { "" }, 0 j { "" }))
+            0 j { "" } j Join(0 j { "" }, 0 j { "" })
         )
         
         return SSHSessionInfo(

@@ -48,8 +48,8 @@ object BBCursiveSimdAutovec {
         return when (strategy) {
             ScanStrategy.SCALAR -> scanForByteScalar(data, target)
             ScanStrategy.SIMD, ScanStrategy.VECTOR, ScanStrategy.AUTOVEC ->
-                expectCreateSimdStrategy().findByte(data.toIndexed(), target).toIntArray()
-            else -> expectCreateSimdStrategy().findByte(data.toIndexed(), target).toIntArray()
+                expectCreateSimdStrategy().findByte(data.toIndexed(), target, 0).toIntArray()
+            else -> expectCreateSimdStrategy().findByte(data.toIndexed(), target, 0).toIntArray()
         }
     }
 
@@ -76,8 +76,8 @@ object BBCursiveSimdAutovec {
         return when (strategy) {
             ScanStrategy.SCALAR -> scanForAnyByteScalar(data, targets)
             ScanStrategy.SIMD, ScanStrategy.VECTOR, ScanStrategy.AUTOVEC ->
-                expectCreateSimdStrategy().findAnyByte(data.toIndexed(), targets.toIndexed()).toIntArray()
-            else -> expectCreateSimdStrategy().findAnyByte(data.toIndexed(), targets.toIndexed()).toIntArray()
+                expectCreateSimdStrategy().findAnyByte(data.toIndexed(), targets.toIndexed(), 0).toIntArray()
+            else -> expectCreateSimdStrategy().findAnyByte(data.toIndexed(), targets.toIndexed(), 0).toIntArray()
         }
     }
 

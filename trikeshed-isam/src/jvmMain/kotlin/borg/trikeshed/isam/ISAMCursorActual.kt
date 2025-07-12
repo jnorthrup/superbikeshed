@@ -17,7 +17,7 @@ actual class ISAMCursor actual constructor(
 ) : Cursor {
     
     actual val recordLength: Int = metadata.recordLength
-    actual val columnCount: Int = metadata.columnCoords.a  
+    actual val columnCount: Int = metadata.columnCoords.component1()  
     actual val rowCount: Int = metadata.rowCount
     
     // Cursor interface implementation
@@ -34,10 +34,10 @@ actual class ISAMCursor actual constructor(
         val rowData = fileAccess.readAt(position, recordLength)
         
         // Create RowVec with column accessors
-        return columnCount j { colIndex ->
-            val coord = metadata.columnCoords.b(colIndex)
-            val start = coord.a
-            val end = min(coord.b, rowData.size)
+        return \1 j { \2: Int ->
+            val coord = metadata.columnCoords.component2()(colIndex)
+            val start = coord.component1()
+            val end = min(coord.component2(), rowData.size)
             
             // Extract column data
             val columnData = if (start < rowData.size && end > start) {
@@ -47,9 +47,9 @@ actual class ISAMCursor actual constructor(
             }
             
             // Parse value based on type
-            val type = metadata.columnTypes.b(colIndex)
+            val type = metadata.columnTypes.component2()(colIndex)
             val value = parseValue(columnData, type)
-            val columnName = metadata.columnNames.b(colIndex)
+            val columnName = metadata.columnNames.component2()(colIndex)
             
             // Return value with metadata
             value j { createISAMScalar(type, columnName) }
@@ -128,20 +128,20 @@ actual fun Cursor.writeISAM(
     
     // Get cursor metadata
     val firstRow = at(0)
-    val columnCount = firstRow.a
+    val columnCount = firstRow.component1()
     
     // Extract column information
-    val columnTypes = columnCount j { i ->
-        firstRow.b(i).b().typeMemento
+    val columnTypes = \1 j { \2: Int ->
+        firstRow.component2()(i).component2()().typeMemento
     }
     
-    val columnNames = columnCount j { i ->
-        firstRow.b(i).b().columnName ?: "col_$i"
+    val columnNames = \1 j { \2: Int ->
+        firstRow.component2()(i).component2()().columnName ?: "col_$i"
     }
     
     // Calculate coordinates
     val coords = calculateNetworkCoords(columnTypes, defaultVarcharSize, varcharSizes)
-    val recordLength = coords.b(coords.a - 1).b
+    val recordLength = coords.component2()(coords.component1() - 1).component2()
     
     // Generate metadata
     val metaContent = generateISAMMetaContent(coords, columnNames, columnTypes)
@@ -156,12 +156,12 @@ actual fun Cursor.writeISAM(
             val rowBuffer = ByteArray(recordLength)
             
             for (colIndex in 0 until columnCount) {
-                val coord = coords.b(colIndex)
-                val type = columnTypes.b(colIndex)
-                val value = row.b(colIndex).a
+                val coord = coords.component2()(colIndex)
+                val type = columnTypes.component2()(colIndex)
+                val value = row.component2()(colIndex).component1()
                 
                 val columnData = serializeValue(value, type, coord.span)
-                val start = coord.a
+                val start = coord.component1()
                 val copyLength = min(columnData.size, coord.span)
                 
                 // Copy column data to row buffer

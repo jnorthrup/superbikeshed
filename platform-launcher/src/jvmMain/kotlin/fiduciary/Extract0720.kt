@@ -72,7 +72,7 @@ suspend fun fetchCompressedEntry(
     val request = HttpRequest(
         method = HttpMethod.GET,
         path = HttpRequestPath(archiveUrl),
-        headers = 2 j { i ->
+        headers = \1 j { \2: Int ->
             when (i) {
                 0 -> HttpHeaderName("Range") j HttpHeaderValue("bytes=$offset-${offset + headerSize + compressedSize}")
                 1 -> HttpHeaderName("User-Agent") j HttpHeaderValue("Extract0720/1.0")

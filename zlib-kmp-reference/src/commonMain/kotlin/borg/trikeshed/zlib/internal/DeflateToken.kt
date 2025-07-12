@@ -38,8 +38,8 @@ sealed interface DeflateToken {
     value class Match(internal val packed: Join<Int, Int>) : DeflateToken {
         constructor(length: Int, distance: Int) : this(length j distance)
 
-        val length: Int get() = packed.a
-        val distance: Int get() = packed.b
+        val length: Int get() = packed.component1()
+        val distance: Int get() = packed.component2()
 
         init {
             require(length >= 3) { "Match length must be at least 3." }

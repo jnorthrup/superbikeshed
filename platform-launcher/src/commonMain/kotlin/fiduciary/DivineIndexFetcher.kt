@@ -47,8 +47,8 @@ class DivineIndexFetcher(
         val totalBytesFetched = AtomicInteger(0)
         val errors = mutableListOf<ErrorMessage>()
         
-        for (i in 0 until config.archives.a) {
-            val archiveUrl = config.archives.b(i)
+        for (i in 0 until config.archives.component1()) {
+            val archiveUrl = config.archives.component2()(i)
             val archiveName = extractArchiveName(archiveUrl)
             
             try {
@@ -61,7 +61,7 @@ class DivineIndexFetcher(
                     }
                     is Either.Right -> {
                         successfulFetches.incrementAndGet()
-                        totalBytesFetched.addAndGet(result.value.a)
+                        totalBytesFetched.addAndGet(result.value.component1())
                         
                         // Store in LFS
                         val lfsResult = storeInLfs(archiveName, result.value)
@@ -83,7 +83,7 @@ class DivineIndexFetcher(
         val avgTime = if (successfulFetches.get() > 0) processingTime / successfulFetches.get() else 0L
         
         return FetchStats(
-            totalArchives = config.archives.a,
+            totalArchives = config.archives.component1(),
             successfulFetches = successfulFetches.get(),
             failedFetches = failedFetches.get(),
             totalBytesFetched = totalBytesFetched.get().toLong(),
@@ -126,11 +126,11 @@ class DivineIndexFetcher(
         val searchData = executeRangeRequest(archiveUrl, searchStart, searchEnd)
         
         // Search backwards for ZIP central directory signature
-        for (i in searchData.a - 4 downTo 0) {
-            val signature = (searchData.b(i).toLong() and 0xFF) or
-                           ((searchData.b(i + 1).toLong() and 0xFF) shl 8) or
-                           ((searchData.b(i + 2).toLong() and 0xFF) shl 16) or
-                           ((searchData.b(i + 3).toLong() and 0xFF) shl 24)
+        for (i in searchData.component1() - 4 downTo 0) {
+            val signature = (searchData.component2()(i).toLong() and 0xFF) or
+                           ((searchData.component2()(i + 1).toLong() and 0xFF) shl 8) or
+                           ((searchData.component2()(i + 2).toLong() and 0xFF) shl 16) or
+                           ((searchData.component2()(i + 3).toLong() and 0xFF) shl 24)
             
             if (signature == ZIP_CENTRAL_DIR_SIGNATURE) {
                 return searchStart + i
@@ -180,7 +180,7 @@ class DivineIndexFetcher(
         val request = HttpRequest(
             method = HttpMethod.GET,
             path = HttpRequestPath(url),
-            headers = 3 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("Range") j HttpHeaderValue("bytes=$start-$end")
                     1 -> HttpHeaderName("User-Agent") j HttpHeaderValue("DivineIndexFetcher/1.0")
@@ -208,7 +208,7 @@ class DivineIndexFetcher(
         val request = HttpRequest(
             method = HttpMethod.HEAD,
             path = HttpRequestPath(archiveUrl),
-            headers = 2 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("User-Agent") j HttpHeaderValue("DivineIndexFetcher/1.0")
                     1 -> HttpHeaderName("Accept") j HttpHeaderValue("*/*")
@@ -220,10 +220,10 @@ class DivineIndexFetcher(
         val response = httpClient.execute(request)
         
         // Find Content-Length header
-        for (i in 0 until response.headers.a) {
-            val header = response.headers.b(i)
-            if (header.a.value.equals("Content-Length", ignoreCase = true)) {
-                return header.b.value.toLong()
+        for (i in 0 until response.headers.component1()) {
+            val header = response.headers.component2()(i)
+            if (header.component1().value.equals("Content-Length", ignoreCase = true)) {
+                return header.component2().value.toLong()
             }
         }
         
@@ -243,7 +243,7 @@ class DivineIndexFetcher(
                 val pointerFile = File(lfsDir, "${archiveName}_central_dir.lfs")
                 
                 // Write binary data
-                val byteArray = ByteArray(binaryData.a) { binaryData.b(it) }
+                val byteArray = ByteArray(binaryData.component1()) { binaryData.component2()(it) }
                 binaryFile.writeBytes(byteArray)
                 
                 // Create LFS pointer
@@ -289,10 +289,10 @@ class DivineIndexFetcher(
      * Parse little-endian int from byte array
      */
     internal fun parseLittleEndianInt(data: ZipBinaryData, offset: Int): Int {
-        return (data.b(offset).toInt() and 0xFF) or
-               ((data.b(offset + 1).toInt() and 0xFF) shl 8) or
-               ((data.b(offset + 2).toInt() and 0xFF) shl 16) or
-               ((data.b(offset + 3).toInt() and 0xFF) shl 24)
+        return (data.component2()(offset).toInt() and 0xFF) or
+               ((data.component2()(offset + 1).toInt() and 0xFF) shl 8) or
+               ((data.component2()(offset + 2).toInt() and 0xFF) shl 16) or
+               ((data.component2()(offset + 3).toInt() and 0xFF) shl 24)
     }
     
     /**

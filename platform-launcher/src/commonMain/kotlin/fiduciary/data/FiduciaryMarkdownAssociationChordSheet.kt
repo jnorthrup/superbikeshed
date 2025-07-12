@@ -32,5 +32,5 @@ typealias MarkdownAssociationPlan = MetaSeries<FiduciaryMarkdownDocument, Associ
 
 object FiduciaryMarkdownAssociationChordSheet {
     // Orchestrates the mapping of markdowns to associated concepts and flows
-    // Example: markdownDoc j { doc -> AssociatedConcepts(...) }
+    // Example: \1 j { \2: Int -> AssociatedConcepts(...) }
 } 

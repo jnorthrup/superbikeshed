@@ -61,8 +61,8 @@ data class ChannelChainContext(
      * Chain another channel
      */
     infix fun chain(channel: AsyncChannelContext): ChannelChainContext {
-        val newChannels = Array(channels.a + 1) { i ->
-            if (i < channels.a) channels.b(i) else channel
+        val newChannels = Array(channels.component1() + 1) { i ->
+            if (i < channels.component1()) channels.component2()(i) else channel
         }
         return ChannelChainContext(newChannels.size j newChannels::get)
     }
@@ -273,8 +273,8 @@ class CCEKEngine(
     
     internal suspend fun executeValidation(data: Any, step: ValidationStep): Any {
         // Apply validation rules from context
-        for (i in 0 until ccekContext.constraints.a) {
-            val constraint = ccekContext.constraints.b(i)
+        for (i in 0 until ccekContext.constraints.component1()) {
+            val constraint = ccekContext.constraints.component2()(i)
             validateConstraint(data, constraint)
         }
         return data
@@ -282,7 +282,7 @@ class CCEKEngine(
     
     internal suspend fun executeTransformation(data: Any, step: TransformationStep): Any {
         // Apply transformation rules from context
-        val rulesList = (0 until ccekContext.rules.a).map { ccekContext.rules.b(it) }
+        val rulesList = (0 until ccekContext.rules.component1()).map { ccekContext.rules.component2()(it) }
         val sortedRules = rulesList.sortedByDescending { it.priority }
         
         var transformedData = data
@@ -488,7 +488,7 @@ suspend fun executeCCEK(
 
 // Step execution chord - maps step types to execution functions
 internal val stepExecutionChord: MetaSeries<PipelineStep, suspend (Any) -> Any> =
-    ValidationStep() j { step ->
+    \1 j { \2: Int ->
         when (step) {
             is ValidationStep -> { data -> data } // Validation handled in engine
             is TransformationStep -> { data -> data } // Transformation handled in engine
@@ -499,7 +499,7 @@ internal val stepExecutionChord: MetaSeries<PipelineStep, suspend (Any) -> Any> 
 
 // Serialization format chord - maps formats to serialization functions
 internal val serializationFormatChord: MetaSeries<SerializationFormat, (Any) -> Any> =
-    SerializationFormat.JSON j { format ->
+    \1 j { \2: Int ->
         when (format) {
             SerializationFormat.JSON -> { data -> "{}" } // JSON serialization placeholder
             SerializationFormat.PROTOBUF -> { data -> ByteArray(0) } // Protobuf placeholder
@@ -509,7 +509,7 @@ internal val serializationFormatChord: MetaSeries<SerializationFormat, (Any) -> 
 
 // Constraint validation chord - maps validation types to validation functions
 internal val constraintValidationChord: MetaSeries<ConstraintValidation, (Any, Constraint) -> Unit> =
-    ConstraintValidation.FieldRequired("") j { validation ->
+    \1 j { \2: Int ->
         when (validation) {
             is ConstraintValidation.FieldRequired -> { data, constraint -> 
                 // Validate field is present
@@ -528,7 +528,7 @@ internal val constraintValidationChord: MetaSeries<ConstraintValidation, (Any, C
 
 // Rule condition chord - maps conditions to evaluation functions
 internal val ruleConditionChord: MetaSeries<RuleCondition, (Any) -> Boolean> =
-    RuleCondition.FieldEquals("", "") j { condition ->
+    RuleCondition.FieldEquals("", \1 j { \2: Int ->
         when (condition) {
             is RuleCondition.FieldEquals -> { data -> true } // Placeholder
             is RuleCondition.FieldMatches -> { data -> true } // Placeholder
@@ -540,7 +540,7 @@ internal val ruleConditionChord: MetaSeries<RuleCondition, (Any) -> Boolean> =
 
 // Transformation action chord - maps actions to transformation functions
 internal val transformationActionChord: MetaSeries<TransformationAction, (Any) -> Any> =
-    TransformationAction.SetField("", "") j { action ->
+    TransformationAction.SetField("", \1 j { \2: Int ->
         when (action) {
             is TransformationAction.SetField -> { data -> data } // Placeholder
             is TransformationAction.TransformField -> { data -> data } // Placeholder
@@ -560,25 +560,25 @@ internal val transformationActionChord: MetaSeries<TransformationAction, (Any) -
 
 internal suspend fun executeStep(data: Any, step: PipelineStep): Any {
     // Use the step execution chord - like playing a chord on guitar
-    return stepExecutionChord.b(step)(data)
+    return stepExecutionChord.component2()(step)(data)
 }
 
 internal suspend fun executeSerialization(data: Any, step: SerializationStep): Any {
     // Use the serialization format chord
-    return serializationFormatChord.b(step.format)(data)
+    return serializationFormatChord.component2()(step.format)(data)
 }
 
 internal fun validateConstraint(data: Any, constraint: Constraint) {
     // Use the constraint validation chord
-    constraintValidationChord.b(constraint.validation)(data, constraint)
+    constraintValidationChord.component2()(constraint.validation)(data, constraint)
 }
 
 internal fun evaluateCondition(data: Any, condition: RuleCondition): Boolean {
     // Use the rule condition chord
-    return ruleConditionChord.b(condition)(data)
+    return ruleConditionChord.component2()(condition)(data)
 }
 
 internal fun applyAction(data: Any, action: TransformationAction): Any {
     // Use the transformation action chord
-    return transformationActionChord.b(action)(data)
+    return transformationActionChord.component2()(action)(data)
 } 

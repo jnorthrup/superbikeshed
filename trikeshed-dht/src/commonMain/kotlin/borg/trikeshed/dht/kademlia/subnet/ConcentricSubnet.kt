@@ -191,7 +191,7 @@ class SubnetManager(
     fun findNodesInSubnets(subnetIds: Indexed<String>): Indexed<NUID> {
         val nodes = mutableSetOf<NUID>()
         
-        for (i in 0 until subnetIds.a) {
+        for (i in 0 until subnetIds.component1()) {
             val subnet = subnets[subnetIds[i]]
             if (subnet != null) {
                 nodes.addAll(subnet.getMembers().play)
@@ -227,7 +227,7 @@ class SubnetManager(
     ): RoutingDecision {
         val paths = mutableListOf<SubnetPath>()
         
-        for (i in 0 until targetSubnets.a) {
+        for (i in 0 until targetSubnets.component1()) {
             val targetSubnet = targetSubnets[i]
             
             // Direct routing if we're in both subnets
@@ -243,7 +243,7 @@ class SubnetManager(
             
             // Find gateway path
             val gateways = findGatewaysBetween(sourceSubnet, targetSubnet)
-            if (gateways.a > 0) {
+            if (gateways.component1() > 0) {
                 paths.add(SubnetPath(
                     type = SubnetPath.Type.GATEWAY,
                     hops = listOf(localNodeId, gateways[0]),

@@ -47,7 +47,7 @@ fun CharSeries.toIslandsIndexed(): Indexed<IslandIndexed> {
         }
         islands.add(IslandIndexed(start, i, type))
     }
-    return islands.size j { idx -> islands[idx] }
+    return \1 j { \2: Int -> islands[idx] }
 }
 
 /**

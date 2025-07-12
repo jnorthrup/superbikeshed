@@ -59,8 +59,8 @@ object KlineViewUtil {
         }
         val candles: Cursor = pancake(pancakeInput)
 
-        val fiatValue = coins.pathValue(assetKey.a, assetKey.b)
-        val holdingAmount = todub(tradingWallet.holdings[assetKey.a]?.free, 0.0)
+        val fiatValue = coins.pathValue(assetKey.component1(), assetKey.component2())
+        val holdingAmount = todub(tradingWallet.holdings[assetKey.component1()]?.free, 0.0)
         val bankXferValue = holdingAmount * fiatValue
         val valueCursor: Cursor = s_[s_[bankXferValue j { ColumnMeta("BankXferValue", IoDouble) }]]
 

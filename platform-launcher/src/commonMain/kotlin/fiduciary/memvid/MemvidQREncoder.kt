@@ -43,7 +43,7 @@ class MemvidQREncoder(
     private fun createDocumentFocusChunk(event: AttentionEvent.DocumentFocus): MemvidChunk {
         val text = buildString {
             appendLine("Document Focus: ${event.docId}")
-            appendLine("Range: ${event.range.a}-${event.range.b}")
+            appendLine("Range: ${event.range.component1()}-${event.range.component2()}")
             appendLine("Duration: ${event.duration}ms")
             appendLine("Intensity: ${event.intensity}")
             appendLine("Timestamp: ${System.currentTimeMillis()}")
@@ -65,8 +65,8 @@ class MemvidQREncoder(
      * Create chunk for concept extraction event
      */
     private fun createConceptExtractionChunk(event: AttentionEvent.ConceptExtraction): MemvidChunk {
-        val relatedConcepts = (0 until event.relatedConcepts.a).map { 
-            event.relatedConcepts.b(it) 
+        val relatedConcepts = (0 until event.relatedConcepts.component1()).map { 
+            event.relatedConcepts.component2()(it) 
         }
         
         val text = buildString {

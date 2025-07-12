@@ -108,8 +108,8 @@ class WebGPUInterfaceWasm : WebGPUInterface {
         // Convert Indexed<VertexData> to Float32Array
         val floatData = Float32Array(data.size * 6)
         data.α { vertex ->
-            val pos = vertex.a
-            val norm = vertex.b
+            val pos = vertex.component1()
+            val norm = vertex.component2()
             floatData.set(pos, floatData.length - 6)
             floatData.set(norm, floatData.length - 3)
         }
@@ -135,8 +135,8 @@ class WebGPUInterfaceWasm : WebGPUInterface {
         
         // Convert UniformData to Float32Array
         val floatData = Float32Array(19) // 16 for matrix + 3 for camera
-        data.a.data.α { floatData.set(it, floatData.length - 19) }
-        data.b.data.α { floatData.set(it, floatData.length - 3) }
+        data.component1().data.α { floatData.set(it, floatData.length - 19) }
+        data.component2().data.α { floatData.set(it, floatData.length - 3) }
         
         // Copy data to buffer
         js("new Float32Array(buffer.getMappedRange()).set(floatData)")
@@ -207,8 +207,8 @@ class WebGPUInterfaceWasm : WebGPUInterface {
     }
     
     override fun render(renderData: RenderData): RenderResult {
-        val vertices = renderData.a
-        val uniforms = renderData.b
+        val vertices = renderData.component1()
+        val uniforms = renderData.component2()
         val device = device ?: return RenderResult(false, 0f, 0)
         
         // Create command encoder

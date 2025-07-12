@@ -605,7 +605,7 @@ object DesignDocumentHelpers {
             )
         )
         
-        return response.rows.size j { i ->
+        return \1 j { \2: Int ->
             val row = response.rows[i]
             FiduciaryRealtimeDocument.fromCouchDocument(row.doc ?: CouchDocument())
         }
@@ -631,7 +631,7 @@ object DesignDocumentHelpers {
             )
         )
         
-        return response.rows.size j { i ->
+        return \1 j { \2: Int ->
             val row = response.rows[i]
             FiduciaryRealtimeDocument.fromCouchDocument(row.doc ?: CouchDocument())
         }
@@ -657,7 +657,7 @@ object DesignDocumentHelpers {
             )
         )
         
-        return response.rows.size j { i ->
+        return \1 j { \2: Int ->
             val row = response.rows[i]
             FiduciaryRealtimeDocument.fromCouchDocument(row.doc ?: CouchDocument())
         }

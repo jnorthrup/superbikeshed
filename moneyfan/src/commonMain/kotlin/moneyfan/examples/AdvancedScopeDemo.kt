@@ -55,7 +55,7 @@ fun runAdvancedScopeDemo() {
     )
     val dataSeries: Indexed<DemoDataRecord> = sampleList.toSeries()
 
-    println("\n--- Original Data (${dataSeries.a} items) ---")
+    println("\n--- Original Data (${dataSeries.component1()} items) ---")
     dataSeries.`play`.forEach { println(it) }
 
     // 2. Setup Scope Components
@@ -86,7 +86,7 @@ fun runAdvancedScopeDemo() {
 
     // 4. Demonstrate what the HybridNlpAgentPoc produces (for transparency in the demo)
     // First, convert all items to strings for the agent
-    val allItemsAsStrings = dataSeries.a j { itemToStringConverter(dataSeries.b(it)) }
+    val allItemsAsStrings = dataSeries.component1() j { itemToStringConverter(dataSeries.component2()(it)) }
     val nlpAnalysisResult = agent.processQuery(query, allItemsAsStrings)
 
     println("\n--- NLP Agent Analysis Result (PoC) ---")
@@ -101,9 +101,9 @@ fun runAdvancedScopeDemo() {
     }
 
     println("\n  Semantic Scores for ALL original items (Query keywords: 'important', 'gadgets'):")
-    for (i in 0 until nlpAnalysisResult.relevanceScores.a) {
-        val record = dataSeries.b(i)
-        val score = nlpAnalysisResult.relevanceScores.b(i)
+    for (i in 0 until nlpAnalysisResult.relevanceScores.component1()) {
+        val record = dataSeries.component2()(i)
+        val score = nlpAnalysisResult.relevanceScores.component2()(i)
         println("    Item ID ${record.id} ('${record.name}'): Score = ${score.format(2)}")
     }
 
@@ -130,7 +130,7 @@ fun runAdvancedScopeDemo() {
     val focusedSeries = dataSeries.focus(scope)
 
     // 6. Print Final Focused Output
-    println("\n--- Final Focused Indexed (${focusedSeries.a} items) ---")
+    println("\n--- Final Focused Indexed (${focusedSeries.component1()} items) ---")
     if (focusedSeries.isEmpty()) {
         println("No items matched both RQL (if any) and semantic score threshold.")
     } else {

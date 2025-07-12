@@ -176,7 +176,7 @@ class KzranGzipReader(
             val bitmap = JsonBitmapSimd.createBitmap(ubyteData)
             val structuralBits = JsonBitmapProcessor.decodeToStructuralBits(
                 bitmap,
-                blockData.a
+                blockData.component1()
             )
             
             // Extract complete JSON objects from the block
@@ -250,7 +250,7 @@ class KzranGzipReader(
         var braceDepth = 0
         var objectStart = -1
         
-        for (i in 0 until blockData.a) {
+        for (i in 0 until blockData.component1()) {
             val structBits = getStructuralBits(structuralBits, i)
             
             when (structBits) {
@@ -387,7 +387,7 @@ class ZlibInflater {
     fun inflate(output: ByteArray): Int {
         if (finished) return 0
         val decompressed = Zlib.decompress(input.toIndexed())
-        val toCopy = min(output.size, decompressed.a)
+        val toCopy = min(output.size, decompressed.component1())
         for (i in 0 until toCopy) {
             output[i] = decompressed[i]
         }

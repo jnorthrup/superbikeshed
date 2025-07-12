@@ -35,13 +35,13 @@ typealias TimestampedCandle = Join<OHLCV, Instant>
 typealias CandleSeries = Indexed<TimestampedCandle>
 
 // Helper functions for OHLC access
-val OHLC.open: Price get() = this.a.a
-val OHLC.high: Price get() = this.a.b  
-val OHLC.low: Price get() = this.b.a
-val OHLC.close: Price get() = this.b.b
+val OHLC.open: Price get() = this.component1().component1()
+val OHLC.high: Price get() = this.component1().component2()  
+val OHLC.low: Price get() = this.component2().component1()
+val OHLC.close: Price get() = this.component2().component2()
 
-val OHLCV.ohlc: OHLC get() = this.a
-val OHLCV.volume: Volume get() = this.b
+val OHLCV.ohlc: OHLC get() = this.component1()
+val OHLCV.volume: Volume get() = this.component2()
 
 // Cursor slab with infinity padding for responsive data access
 class ResponsiveCursorSlab(

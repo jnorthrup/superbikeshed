@@ -56,7 +56,7 @@ class BitStream(internal val data: Indexed<Byte>) {
                 throw IllegalStateException("Unexpected end of stream while peeking bits.")
             }
 
-            val currentByte = data.b(currentBytePos).toInt() and 0xFF // Ensure unsigned byte
+            val currentByte = data.component2()(currentBytePos).toInt() and 0xFF // Ensure unsigned byte
             val bitsRemainingInByte = 8 - currentBitOff
             val bitsToPeekThisPass = minOf(numBits - bitsPeeked, bitsRemainingInByte)
 
@@ -116,7 +116,7 @@ class BitStream(internal val data: Indexed<Byte>) {
             throw IllegalStateException("Attempt to read byte beyond end of stream.")
         }
 
-        return data.b(bytePosition++).toInt() and 0xFF
+        return data.component2()(bytePosition++).toInt() and 0xFF
     }
 
     /**

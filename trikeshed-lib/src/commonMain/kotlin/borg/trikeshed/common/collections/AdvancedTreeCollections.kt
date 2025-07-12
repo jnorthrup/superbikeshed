@@ -52,14 +52,14 @@ class BBCursiveRadixTree<T> {
             return RadixTreeNode(commonPrefix, nodeValue, newChildren)
         } else if (commonPrefix == key) {
             val remainingKey = nodeKey.substring(commonPrefix.length)
-            val newChild = insertRecursive(null, remainingKey, nodeValue)
+            val newChild = insertRecursive(null, remainingKey, nodeValue!!)
             val newChildren: Indexed<RadixTreeNode<T>?> = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
             return RadixTreeNode(commonPrefix, value, newChildren)
         } else {
             val nodeRemaining = nodeKey.substring(commonPrefix.length)
             val keyRemaining = key.substring(commonPrefix.length)
             
-            val nodeChild = insertRecursive(null, nodeRemaining, nodeValue)
+            val nodeChild = insertRecursive(null, nodeRemaining, nodeValue!!)
             val keyChild = insertRecursive(null, keyRemaining, value)
             
             val newChildren: Indexed<RadixTreeNode<T>?> = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }
@@ -321,14 +321,14 @@ class BBCursiveCompressedTrie<T> {
             return CompressedTrieNode(commonPrefix, nodeValue, newChildren)
         } else if (commonPrefix == key) {
             val remainingNodeKey = nodeKey.substring(commonPrefix.length)
-            val newChild = insertCompressed(null, remainingNodeKey, nodeValue)
+            val newChild = insertCompressed(null, remainingNodeKey, nodeValue!!)
             val newChildren: Indexed<CompressedTrieNode<T>?> = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
             return CompressedTrieNode(commonPrefix, value, newChildren)
         } else {
             val nodeRemaining = nodeKey.substring(commonPrefix.length)
             val keyRemaining = key.substring(commonPrefix.length)
             
-            val nodeChild = insertCompressed(null, nodeRemaining, nodeValue)
+            val nodeChild = insertCompressed(null, nodeRemaining, nodeValue!!)
             val keyChild = insertCompressed(null, keyRemaining, value)
             
             val newChildren: Indexed<CompressedTrieNode<T>?> = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }

@@ -129,7 +129,7 @@ class ConcentricNetwork(
             
             // Announce presence
             bootstrapNodes.forEach { node ->
-                sendTo(node, RingMessage.Join(localNode, ring))
+                sendTo(node, RingMessage.localNode j ring)
             }
             
             // Listen for ring events
@@ -392,7 +392,7 @@ sealed class Message {
 }
 
 sealed class RingMessage {
-    data class Join(val node: Node, val ring: Ring) : RingMessage()
+    data class val node: Node j val ring: Ring : RingMessage()
     data class Leave(val nodeId: NodeId) : RingMessage()
     data class Update(val state: Any) : RingMessage()
 }

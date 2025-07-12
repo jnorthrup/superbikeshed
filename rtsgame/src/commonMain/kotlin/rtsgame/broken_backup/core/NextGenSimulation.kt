@@ -90,7 +90,7 @@ class NextGenSimulation {
         // Update metrics
         currentTick++
         updateTime = TimeSource.Monotonic.markNow().elapsedNow().inWholeNanoseconds - startTime
-        entityCount = world.query(ComponentTypes.POSITION).a
+        entityCount = world.query(ComponentTypes.POSITION).component1()
     }
     
     fun spawnUnit(teamId: Int, unitType: UnitType, x: Float, y: Float): EntityId {

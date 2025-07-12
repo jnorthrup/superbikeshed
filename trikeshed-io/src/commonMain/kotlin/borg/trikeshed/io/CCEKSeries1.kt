@@ -51,8 +51,8 @@ class ProtocolStack(
      * Add a layer to the stack
      */
     fun addLayer(layer: ProtocolLayer): ProtocolStack {
-        val newLayers = Array(layers.a + 1) { i ->
-            if (i < layers.a) layers.b(i) else layer
+        val newLayers = Array(layers.component1() + 1) { i ->
+            if (i < layers.component1()) layers.component2()(i) else layer
         }
         return ProtocolStack(newLayers.size j newLayers::get)
     }
@@ -62,7 +62,7 @@ class ProtocolStack(
      */
     fun removeLayer(layerId: String): ProtocolStack {
         val filteredLayers = layers.play.filter { it.layerId != layerId }
-        return ProtocolStack(filteredLayers.size j { i -> filteredLayers[i] })
+        return \1 j { \2: Int -> filteredLayers[i] })
     }
     
     /**

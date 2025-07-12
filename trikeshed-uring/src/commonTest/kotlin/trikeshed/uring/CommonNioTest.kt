@@ -90,7 +90,7 @@ class CommonNioTest {
         
         // Then should be able to iterate through completions
         val completions = emulator.io_uring_for_each_cqe(ring)
-        assertTrue(completions.a >= 0)
+        assertTrue(completions.component1() >= 0)
         
         emulator.io_uring_queue_exit(ring)
     }

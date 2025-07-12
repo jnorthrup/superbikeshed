@@ -135,8 +135,8 @@ class QuicCCEKOrchestrator(
                 }
                 is QuicOperation.AttentionRequest -> {
                     val attentionRanges = knowledge.applyAttention(operation.ranges, operation.priority)
-                    val results = attentionRanges.a j { i: Int ->
-                        val range = attentionRanges.b(i)
+                    val results = attentionRanges.component1() j { i: Int ->
+                        val range = attentionRanges.component2()(i)
                         executeRangeRequest(range)
                     }
                     QuicResult.Success(results)

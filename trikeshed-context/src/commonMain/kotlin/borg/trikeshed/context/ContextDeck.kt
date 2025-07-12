@@ -66,15 +66,15 @@ class ContextDeckBuilder<T> {
     
     // Import cards from another deck
     fun fromDeck(other: ContextDeck<T>) {
-        for (i in 0 until other.a) {
-            cards.add(other.b(i))
+        for (i in 0 until other.component1()) {
+            cards.add(other.component2()(i))
         }
     }
     
     fun build(): ContextDeck<T> {
         // Sort by priority (highest first)
-        val sorted = cards.sortedByDescending { it.a.priority }
-        return sorted.size j { i -> sorted[i] }
+        val sorted = cards.sortedByDescending { it.component1().priority }
+        return \1 j { \2: Int -> sorted[i] }
     }
 }
 
@@ -102,58 +102,58 @@ interface DeckOperations<T> {
 
 // Extension functions for deck operations
 fun <T> ContextDeck<T>.push(card: ContextCard<T>): ContextDeck<T> {
-    return (this.a + 1) j { i ->
-        if (i == 0) card else this.b(i - 1)
+    return (this.component1() + \1 j { \2: Int ->
+        if (i == 0) card else this.component2()(i - 1)
     }
 }
 
 fun <T> ContextDeck<T>.pop(): Join<ContextCard<T>?, ContextDeck<T>> {
-    return if (this.a == 0) {
+    return if (this.component1() == 0) {
         null j this
     } else {
-        val top = this.b(0)
-        val remaining = (this.a - 1) j { i -> this.b(i + 1) }
+        val top = this.component2()(0)
+        val remaining = (this.component1() - \1 j { \2: Int -> this.component2()(i + 1) }
         top j remaining
     }
 }
 
 fun <T> ContextDeck<T>.peek(): ContextCard<T>? {
-    return if (this.a > 0) this.b(0) else null
+    return if (this.component1() > 0) this.component2()(0) else null
 }
 
 fun <T> ContextDeck<T>.shuffle(): ContextDeck<T> {
-    val indices = (0 until this.a).shuffled()
-    return this.a j { i -> this.b(indices[i]) }
+    val indices = (0 until this.component1()).shuffled()
+    return \1 j { \2: Int -> this.component2()(indices[i]) }
 }
 
 fun <T> ContextDeck<T>.reverse(): ContextDeck<T> {
-    return this.a j { i -> this.b(this.a - 1 - i) }
+    return \1 j { \2: Int -> this.component2()(this.component1() - 1 - i) }
 }
 
 fun <T> ContextDeck<T>.filterByTag(tag: String): ContextDeck<T> {
     val filtered = mutableListOf<ContextCard<T>>()
-    for (i in 0 until this.a) {
-        val card = this.b(i)
-        if (tag in card.a.tags) {
+    for (i in 0 until this.component1()) {
+        val card = this.component2()(i)
+        if (tag in card.component1().tags) {
             filtered.add(card)
         }
     }
-    return filtered.size j { i -> filtered[i] }
+    return \1 j { \2: Int -> filtered[i] }
 }
 
 fun <T> ContextDeck<T>.deal(hands: Int): Indexed<ContextDeck<T>> {
     val dealt = Array(hands) { mutableListOf<ContextCard<T>>() }
-    for (i in 0 until this.a) {
-        dealt[i % hands].add(this.b(i))
+    for (i in 0 until this.component1()) {
+        dealt[i % hands].add(this.component2()(i))
     }
-    return hands j { h -> 
-        dealt[h].size j { i -> dealt[h][i] }
+    return \1 j { \2: Int -> 
+        \1 j { \2: Int -> dealt[h][i] }
     }
 }
 
 // Context switching DSL
 class ContextSwitcher<T> {
-    private var currentDeck: ContextDeck<T> = 0 j { _ -> throw IndexOutOfBoundsException() }
+    private var currentDeck: ContextDeck<T> = \1 j { \2: Int -> throw IndexOutOfBoundsException() }
     private val history = mutableListOf<ContextDeck<T>>()
     
     fun switchTo(deck: ContextDeck<T>) {
@@ -187,16 +187,16 @@ class DeckCoroutineContext<T>(
     companion object Key : CoroutineContext.Key<DeckCoroutineContext<*>>
     
     fun <R> withCard(index: Int, action: (T) -> R): R? {
-        return if (index < deck.a) {
-            action(deck.b(index).b)
+        return if (index < deck.component1()) {
+            action(deck.component2()(index).component2())
         } else null
     }
     
     fun findCard(name: String): T? {
-        for (i in 0 until deck.a) {
-            val card = deck.b(i)
-            if (card.a.name == name) {
-                return card.b
+        for (i in 0 until deck.component1()) {
+            val card = deck.component2()(i)
+            if (card.component1().name == name) {
+                return card.component2()
             }
         }
         return null
@@ -205,14 +205,14 @@ class DeckCoroutineContext<T>(
 
 // Suspend functions for async context operations
 suspend fun <T> ContextDeck<T>.forEachCard(action: suspend (ContextCard<T>) -> Unit) {
-    for (i in 0 until this.a) {
-        action(this.b(i))
+    for (i in 0 until this.component1()) {
+        action(this.component2()(i))
     }
 }
 
 suspend fun <T, R> ContextDeck<T>.mapCards(transform: suspend (ContextCard<T>) -> R): Indexed<R> {
-    return this.a j { i ->
-        transform(this.b(i))
+    return \1 j { \2: Int ->
+        transform(this.component2()(i))
     }
 }
 
@@ -247,18 +247,18 @@ fun exampleDeck() = contextDeck<AppContext> {
 
 // Merge multiple decks
 fun <T> mergeDeck(vararg decks: ContextDeck<T>): ContextDeck<T> {
-    val totalSize = decks.sumOf { it.a }
+    val totalSize = decks.sumOf { it.component1() }
     var offset = 0
-    return totalSize j { globalIndex ->
+    return \1 j { \2: Int ->
         var deckIndex = 0
         var localIndex = globalIndex
         
-        while (deckIndex < decks.size && localIndex >= decks[deckIndex].a) {
-            localIndex -= decks[deckIndex].a
+        while (deckIndex < decks.size && localIndex >= decks[deckIndex].component1()) {
+            localIndex -= decks[deckIndex].component1()
             deckIndex++
         }
         
-        decks[deckIndex].b(localIndex)
+        decks[deckIndex].component2()(localIndex)
     }
 }
 
@@ -276,26 +276,26 @@ class ContextCardMatcher<T, R>(private val card: ContextCard<T>) {
         private set
     
     fun byName(name: String, action: (T) -> R) {
-        if (result == null && card.a.name == name) {
-            result = action(card.b)
+        if (result == null && card.component1().name == name) {
+            result = action(card.component2())
         }
     }
     
     fun byTag(tag: String, action: (T) -> R) {
-        if (result == null && tag in card.a.tags) {
-            result = action(card.b)
+        if (result == null && tag in card.component1().tags) {
+            result = action(card.component2())
         }
     }
     
     fun byPriority(minPriority: Int, action: (T) -> R) {
-        if (result == null && card.a.priority >= minPriority) {
-            result = action(card.b)
+        if (result == null && card.component1().priority >= minPriority) {
+            result = action(card.component2())
         }
     }
     
     fun otherwise(action: (T) -> R) {
         if (result == null) {
-            result = action(card.b)
+            result = action(card.component2())
         }
     }
 }
@@ -308,16 +308,16 @@ infix fun <T> ContextDeck<T>.then(other: ContextDeck<T>): ContextDeck<T> {
 // Slicing operations
 fun <T> ContextDeck<T>.slice(range: IntRange): ContextDeck<T> {
     val start = range.first.coerceAtLeast(0)
-    val end = range.last.coerceAtMost(this.a - 1)
+    val end = range.last.coerceAtMost(this.component1() - 1)
     val size = if (end >= start) end - start + 1 else 0
-    return size j { i -> this.b(start + i) }
+    return \1 j { \2: Int -> this.component2()(start + i) }
 }
 
 // Top N cards by priority
 fun <T> ContextDeck<T>.topCards(n: Int): ContextDeck<T> {
-    val sorted = (0 until this.a)
-        .map { i -> this.b(i) }
-        .sortedByDescending { it.a.priority }
+    val sorted = (0 until this.component1())
+        .map { i -> this.component2()(i) }
+        .sortedByDescending { it.component1().priority }
         .take(n)
-    return sorted.size j { i -> sorted[i] }
+    return \1 j { \2: Int -> sorted[i] }
 }

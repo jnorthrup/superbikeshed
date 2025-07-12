@@ -38,7 +38,7 @@ class SSHSftpClientImpl(
     private val openHandles = mutableMapOf<String, SSHSftpFileHandle>()
     
     override suspend fun openChannel(context: SSHSftpContext): Int {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SFTP: Opening SFTP channel")
             
             val channel = getOrCreateChannel(context)
@@ -53,7 +53,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun closeChannel(context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Closing SFTP channel")
             
             // Close all open file handles
@@ -67,7 +67,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun listDirectory(path: String, context: SSHSftpContext): Indexed<String> {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SFTP: Listing directory $path")
             
             try {
@@ -113,7 +113,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun openFile(path: String, flags: String, context: SSHSftpContext): String? {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SFTP: Opening file $path with flags $flags")
             
             try {
@@ -149,7 +149,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun closeFile(handle: String, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Closing file with handle $handle")
             
             try {
@@ -175,7 +175,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun readFile(handle: String, offset: Long, length: Int, context: SSHSftpContext): Indexed<Byte> {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SFTP: Reading file with handle $handle")
             
             try {
@@ -201,7 +201,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun writeFile(handle: String, offset: Long, data: ByteArray, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Writing to file with handle $handle")
             
             try {
@@ -224,7 +224,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun createDirectory(path: String, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Creating directory $path")
             
             try {
@@ -247,7 +247,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun removeDirectory(path: String, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Removing directory $path")
             
             try {
@@ -270,7 +270,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun removeFile(path: String, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Removing file $path")
             
             try {
@@ -296,7 +296,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun renameFile(oldPath: String, newPath: String, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Renaming $oldPath to $newPath")
             
             try {
@@ -326,7 +326,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun getFileAttributes(path: String, context: SSHSftpContext): SSHSftpFileAttributes {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SFTP: Getting attributes for $path")
             
             try {
@@ -352,7 +352,7 @@ class SSHSftpClientImpl(
     }
     
     override suspend fun setFileAttributes(path: String, attributes: SSHSftpFileAttributes, context: SSHSftpContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             println("SFTP: Setting attributes for $path")
             
             try {
@@ -382,7 +382,7 @@ class SSHSftpClientImpl(
     
     private suspend fun createNewChannel(context: SSHSftpContext): SSHChannel {
         val channelManager = SSHConnectionManagerFactory.createConnectionManager()
-        return channelManager.openChannel(connection, "session", SSHConnectionContext(context.b))
+        return channelManager.openChannel(connection, "session", SSHConnectionContext(context.component2()))
     }
     
     private suspend fun initializeSftpSubsystem(channel: SSHChannel) {

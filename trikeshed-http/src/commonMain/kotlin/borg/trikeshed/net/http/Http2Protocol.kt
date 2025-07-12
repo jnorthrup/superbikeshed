@@ -79,7 +79,7 @@ class Http2Protocol {
         val streamId: Int,
         val payload: Indexed<Byte>
     ) {
-        val length: Int get() = payload.a
+        val length: Int get() = payload.component1()
         
         fun toByteArray(): ByteArray {
             val result = ByteArray(9 + length)
@@ -339,11 +339,11 @@ class Http2Protocol {
             )
             
             var offset = 0
-            while (offset < data.a) {
-                val chunkSize = minOf(maxSize, data.a - offset)
+            while (offset < data.component1()) {
+                val chunkSize = minOf(maxSize, data.component1() - offset)
                 val chunk = chunkSize j { i: Int -> data[offset + i] }
                 
-                val flags = if (endStream && offset + chunkSize >= data.a) {
+                val flags = if (endStream && offset + chunkSize >= data.component1()) {
                     FrameFlags.END_STREAM
                 } else {
                     0
@@ -393,7 +393,7 @@ class Http2Protocol {
             payload.add((promisedStreamId shr 8).toByte())
             payload.add(promisedStreamId.toByte())
             
-            for (i in 0 until encodedHeaders.a) {
+            for (i in 0 until encodedHeaders.component1()) {
                 payload.add(encodedHeaders[i])
             }
             
@@ -451,10 +451,10 @@ class HpackEncoder {
     fun encode(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): Indexed<Byte> {
         val output = mutableListOf<Byte>()
         
-        for (i in 0 until headers.a) {
+        for (i in 0 until headers.component1()) {
             val header = headers[i]
-            val name = header.a.value.lowercase()
-            val value = header.b.value
+            val name = header.component1().value.lowercase()
+            val value = header.component2().value
             
             // Check static table
             val staticIndex = HpackStaticTable.getIndex(name, value)
@@ -503,13 +503,13 @@ class HpackEncoder {
     }
     
     internal fun addToDynamicTable(name: String, value: String) {
-        val entry = Join(name, value)
+        val entry = name j value
         val entrySize = 32 + name.length + value.length
         
         // Evict entries if necessary
         while (dynamicTableSize + entrySize > maxDynamicTableSize && dynamicTable.isNotEmpty()) {
             val removed = dynamicTable.removeAt(dynamicTable.size - 1)
-            dynamicTableSize -= 32 + removed.a.length + removed.b.length
+            dynamicTableSize -= 32 + removed.component1().length + removed.component2().length
         }
         
         if (entrySize <= maxDynamicTableSize) {
@@ -529,7 +529,7 @@ class HpackDecoder {
         val headers = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
         var index = 0
         
-        while (index < data.a) {
+        while (index < data.component1()) {
             val byte = data[index]
             
             when {
@@ -541,8 +541,8 @@ class HpackDecoder {
                     val header = getHeader(headerIndex)
                     if (header != null) {
                         headers.add(Join(
-                            HttpHeaderName(header.a),
-                            HttpHeaderValue(header.b)
+                            HttpHeaderName(header.component1()),
+                            HttpHeaderValue(header.component2())
                         ))
                     }
                 }
@@ -575,8 +575,8 @@ class HpackDecoder {
                     
                     val value = valueBytes.decodeToString()
                     
-                    headers.add(Join(HttpHeaderName(name), HttpHeaderValue(value)))
-                    dynamicTable.add(0, Join(name, value))
+                    headers.add(HttpHeaderName(name) j HttpHeaderValue(value))
+                    dynamicTable.add(0, name j value)
                 }
                 
                 else -> index++ // Skip unknown patterns
@@ -598,7 +598,7 @@ class HpackDecoder {
         var multiplier = 1
         var index = startIndex + 1
         
-        while (index < data.a) {
+        while (index < data.component1()) {
             val byte = data[index].toInt() and 0xFF
             value += (byte and 0x7F) * multiplier
             
@@ -632,71 +632,71 @@ class HpackDecoder {
  */
 object HpackStaticTable {
     val entries = listOf(
-        Join(":authority", ""),
-        Join(":method", "GET"),
-        Join(":method", "POST"),
-        Join(":path", "/"),
-        Join(":path", "/index.html"),
-        Join(":scheme", "http"),
-        Join(":scheme", "https"),
-        Join(":status", "200"),
-        Join(":status", "204"),
-        Join(":status", "206"),
-        Join(":status", "304"),
-        Join(":status", "400"),
-        Join(":status", "404"),
-        Join(":status", "500"),
-        Join("accept-charset", ""),
-        Join("accept-encoding", "gzip, deflate"),
-        Join("accept-language", ""),
-        Join("accept-ranges", ""),
-        Join("accept", ""),
-        Join("access-control-allow-origin", ""),
-        Join("age", ""),
-        Join("allow", ""),
-        Join("authorization", ""),
-        Join("cache-control", ""),
-        Join("content-disposition", ""),
-        Join("content-encoding", ""),
-        Join("content-language", ""),
-        Join("content-length", ""),
-        Join("content-location", ""),
-        Join("content-range", ""),
-        Join("content-type", ""),
-        Join("cookie", ""),
-        Join("date", ""),
-        Join("etag", ""),
-        Join("expect", ""),
-        Join("expires", ""),
-        Join("from", ""),
-        Join("host", ""),
-        Join("if-match", ""),
-        Join("if-modified-since", ""),
-        Join("if-none-match", ""),
-        Join("if-range", ""),
-        Join("if-unmodified-since", ""),
-        Join("last-modified", ""),
-        Join("link", ""),
-        Join("location", ""),
-        Join("max-forwards", ""),
-        Join("proxy-authenticate", ""),
-        Join("proxy-authorization", ""),
-        Join("range", ""),
-        Join("referer", ""),
-        Join("refresh", ""),
-        Join("retry-after", ""),
-        Join("server", ""),
-        Join("set-cookie", ""),
-        Join("strict-transport-security", ""),
-        Join("transfer-encoding", ""),
-        Join("user-agent", ""),
-        Join("vary", ""),
-        Join("via", ""),
-        Join("www-authenticate", "")
+        ":authority" j "",
+        ":method" j "GET",
+        ":method" j "POST",
+        ":path" j "/",
+        ":path" j "/index.html",
+        ":scheme" j "http",
+        ":scheme" j "https",
+        ":status" j "200",
+        ":status" j "204",
+        ":status" j "206",
+        ":status" j "304",
+        ":status" j "400",
+        ":status" j "404",
+        ":status" j "500",
+        "accept-charset" j "",
+        "accept-encoding" j "gzip, deflate",
+        "accept-language" j "",
+        "accept-ranges" j "",
+        "accept" j "",
+        "access-control-allow-origin" j "",
+        "age" j "",
+        "allow" j "",
+        "authorization" j "",
+        "cache-control" j "",
+        "content-disposition" j "",
+        "content-encoding" j "",
+        "content-language" j "",
+        "content-length" j "",
+        "content-location" j "",
+        "content-range" j "",
+        "content-type" j "",
+        "cookie" j "",
+        "date" j "",
+        "etag" j "",
+        "expect" j "",
+        "expires" j "",
+        "from" j "",
+        "host" j "",
+        "if-match" j "",
+        "if-modified-since" j "",
+        "if-none-match" j "",
+        "if-range" j "",
+        "if-unmodified-since" j "",
+        "last-modified" j "",
+        "link" j "",
+        "location" j "",
+        "max-forwards" j "",
+        "proxy-authenticate" j "",
+        "proxy-authorization" j "",
+        "range" j "",
+        "referer" j "",
+        "refresh" j "",
+        "retry-after" j "",
+        "server" j "",
+        "set-cookie" j "",
+        "strict-transport-security" j "",
+        "transfer-encoding" j "",
+        "user-agent" j "",
+        "vary" j "",
+        "via" j "",
+        "www-authenticate" j ""
     )
     
     fun getIndex(name: String, value: String): Int? {
-        val index = entries.indexOfFirst { it.a == name && it.b == value }
+        val index = entries.indexOfFirst { it.component1() == name && it.component2() == value }
         return if (index >= 0) index + 1 else null
     }
 }

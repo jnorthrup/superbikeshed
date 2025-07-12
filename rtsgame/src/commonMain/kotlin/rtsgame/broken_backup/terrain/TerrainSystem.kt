@@ -314,12 +314,12 @@ class TerrainSystem(internal val random: DeterministicRandom) {
     }
     
     fun getResourceNodes(): Indexed<ResourceNode> {
-        return resourceNodes.size j { i -> resourceNodes[i] }
+        return \1 j { \2: Int -> resourceNodes[i] }
     }
     
     fun getTerrainData(): Indexed<Indexed<TerrainTile?>> {
-        return GRID_SIZE j { x ->
-            GRID_SIZE j { y -> terrain[x][y] }
+        return \1 j { \2: Int ->
+            \1 j { \2: Int -> terrain[x][y] }
         }
     }
     

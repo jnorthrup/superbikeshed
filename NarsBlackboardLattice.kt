@@ -188,7 +188,7 @@ object NarsBlackboardLattice {
                 }
             }
             
-            return solutions.distinctBy { it.a.name }
+            return solutions.distinctBy { it.component1().name }
         }
         
         internal fun extractBindings(pattern: Statement, solution: Statement): List<Join<Term.Variable, Term>> {
@@ -256,7 +256,7 @@ object NarsBlackboardLattice {
         )
         
         val solutions = blackboard.query(query)
-        println("Solutions: ${solutions.map { it.a }}")
+        println("Solutions: ${solutions.map { it.component1() }}")
         
         // Solve constraint satisfaction problem
         val constraints = listOf(
@@ -265,7 +265,7 @@ object NarsBlackboardLattice {
         )
         
         val bindings = blackboard.solve(constraints)
-        println("Variable bindings: ${bindings.map { "${it.a.name} = ${it.b}" }}")
+        println("Variable bindings: ${bindings.map { "${it.component1().name} = ${it.component2()}" }}")
     }
 }
 

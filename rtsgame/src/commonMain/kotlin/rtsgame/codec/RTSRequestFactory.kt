@@ -10,7 +10,7 @@ import kotlin.random.Random
 // TrikeShed-compatible types
 typealias Indexed<T> = List<T>
 data class Join<A, B>(val first: A, val second: B)
-infix fun <A, B> A.j(second: B): Join<A, B> = Join(this, second)
+infix fun <A, B> A.j(second: B): Join<A, B> = this j second
 
 // Mock RequestFactoryService interface
 interface RequestFactoryService {
@@ -42,7 +42,7 @@ sealed class RTSRequest {
     data class SetRallyPoint(val buildingId: Int, val x: Float, val y: Float, val frameNumber: Long) : RTSRequest()
     data class AIDecisionOverride(val team: Int, val decision: String, val frameNumber: Long) : RTSRequest()
     data class SimulationTick(val deltaTime: Float, val frameNumber: Long) : RTSRequest()
-    data class PlayerJoin(val playerId: Int, val teamId: Int, val frameNumber: Long) : RTSRequest()
+    data class Playerval playerId: Int j val teamId: Int, val frameNumber: Long : RTSRequest()
 }
 
 // RTS Response types
@@ -250,14 +250,14 @@ class RTSRequestFactory(
         // Reset simulation to initial state
         simulation.reset()
         return "replay.started".toByteArray().let { bytes ->
-            bytes.size j { i -> bytes[i] }
+            \1 j { \2: Int -> bytes[i] }
         }
     }
     
     internal fun stopReplay(): Indexed<Byte> {
         isReplaying = false
         return "replay.stopped".toByteArray().let { bytes ->
-            bytes.size j { i -> bytes[i] }
+            \1 j { \2: Int -> bytes[i] }
         }
     }
     
@@ -276,7 +276,7 @@ class RTSRequestFactory(
             state
         )
         return stateJson.toByteArray().let { bytes ->
-            bytes.size j { i -> bytes[i] }
+            \1 j { \2: Int -> bytes[i] }
         }
     }
     

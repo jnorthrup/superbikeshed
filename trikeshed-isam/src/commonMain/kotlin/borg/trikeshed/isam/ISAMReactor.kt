@@ -21,8 +21,8 @@ class ReactiveISAMCursor(
     internal val handle: ISAMHandle,
     internal val scope: CoroutineScope = GlobalScope
 ) {
-    internal val cursor = handle.a
-    internal val fileAccess = handle.b
+    internal val cursor = handle.component1()
+    internal val fileAccess = handle.component2()
     
     internal val _events = MutableSharedFlow<ISAMEvent>()
     val events: SharedFlow<ISAMEvent> = _events.asSharedFlow()
@@ -34,15 +34,15 @@ class ReactiveISAMCursor(
         bufferSize: Int = Channel.BUFFERED,
         batchSize: Int = 1000
     ): Flow<RowVec> = flow {
-        _events.emit(ISAMEvent.StreamStarted(cursor.a))
+        _events.emit(ISAMEvent.StreamStarted(cursor.component1()))
         
         var streamed = 0
-        for (i in 0 until cursor.a) {
+        for (i in 0 until cursor.component1()) {
             emit(cursor.at(i))
             streamed++
             
             if (streamed % batchSize == 0) {
-                _events.emit(ISAMEvent.BatchProcessed(streamed, cursor.a))
+                _events.emit(ISAMEvent.BatchProcessed(streamed, cursor.component1()))
                 yield() // Allow cancellation
             }
         }
@@ -70,7 +70,7 @@ class ReactiveISAMCursor(
         windowSize: Int = 10000,
         overlap: Int = 0
     ): Flow<Cursor> = flow {
-        val totalRows = cursor.a
+        val totalRows = cursor.component1()
         var start = 0
         
         while (start < totalRows) {

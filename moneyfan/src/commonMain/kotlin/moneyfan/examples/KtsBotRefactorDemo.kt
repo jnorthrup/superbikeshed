@@ -60,12 +60,12 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
         return
     }
     val portfolioSeries: Indexed<DemoPortfolioRow> = portfolioRows.toSeries()
-    println("Original portfolio size: ${portfolioSeries.a}")
+    println("Original portfolio size: ${portfolioSeries.component1()}")
 
     // 1. Demonstrate FractionalScope
     val fractionalScope = FractionalScope<DemoPortfolioRow>(0.5, seed = 123L) // Focus on 50% of items
     val focusedFractionalSeries = portfolioSeries.focus(fractionalScope)
-    println("\nFocused portfolio (FractionalScope 50%, seed 123): ${focusedFractionalSeries.a} items")
+    println("\nFocused portfolio (FractionalScope 50%, seed 123): ${focusedFractionalSeries.component1()} items")
     focusedFractionalSeries.`play`.forEachIndexed { index, row ->
         println("  Item $index (Fractional): $row")
         // Simulate strategy logic based on deviation
@@ -79,11 +79,11 @@ fun demonstrateAttentionScopeOnPortfolio(portfolioRows: List<DemoPortfolioRow>) 
     }
 
     // 2. Demonstrate RangeScope
-    val rangeEnd = if (portfolioSeries.a > 0) portfolioSeries.a / 2 else 0
+    val rangeEnd = if (portfolioSeries.component1() > 0) portfolioSeries.component1() / 2 else 0
     if (rangeEnd > 0) {
         val rangeScope = RangeScope<DemoPortfolioRow>(0, rangeEnd) // Focus on the first half
         val focusedRangeSeries = portfolioSeries.focus(rangeScope)
-        println("\nFocused portfolio (RangeScope first half): ${focusedRangeSeries.a} items")
+        println("\nFocused portfolio (RangeScope first half): ${focusedRangeSeries.component1()} items")
         focusedRangeSeries.`play`.forEachIndexed { index, row ->
             println("  Item $index (Range): $row")
             // Simulate strategy logic (can be a shared function)
@@ -125,27 +125,27 @@ fun demonstrateSparseAndExtendedHandling() {
 
     println("\n--- Demonstrating Indexed Extension ---")
     val baseSeries = listOf(1.0, 2.0, 3.0).toSeries()
-    println("Base series: ${baseSeries.`play`.joinToString { it.format(2) }} (Size: ${baseSeries.a})")
+    println("Base series: ${baseSeries.`play`.joinToString { it.format(2) }} (Size: ${baseSeries.component1()})")
 
     // Extend by clamping
     val clampedSeries = baseSeries.extendByClamping()
-    println("Extended by Clamping (size ${clampedSeries.a}):") // Size will be Int.MAX_VALUE
+    println("Extended by Clamping (size ${clampedSeries.component1()}):") // Size will be Int.MAX_VALUE
     print("  Access: [-2, -1, 0, 1, 2, 3, 4, 5] -> [")
-    listOf(-2, -1, 0, 1, 2, 3, 4, 5).forEach { print("${clampedSeries.b(it).format(2)}, ") }
+    listOf(-2, -1, 0, 1, 2, 3, 4, 5).forEach { print("${clampedSeries.component2()(it).format(2)}, ") }
     println("...]")
 
 
     // Extend with default
     val defaultExtendedSeries = baseSeries.extendWithDefault(-1.0)
-    println("Extended with Default (-1.0) (size ${defaultExtendedSeries.a}):")
+    println("Extended with Default (-1.0) (size ${defaultExtendedSeries.component1()}):")
     print("  Access: [-2, -1, 0, 1, 2, 3, 4, 5] -> [")
-    listOf(-2, -1, 0, 1, 2, 3, 4, 5).forEach { print("${defaultExtendedSeries.b(it).format(2)}, ") }
+    listOf(-2, -1, 0, 1, 2, 3, 4, 5).forEach { print("${defaultExtendedSeries.component2()(it).format(2)}, ") }
     println("...]")
 
     // Extend empty series by clamping (should throw on access)
     val emptyClamped = emptySeries<Double>().extendByClamping()
     try {
-        println("Accessing extended empty clamped series at index 0: ${emptyClamped.b(0)}")
+        println("Accessing extended empty clamped series at index 0: ${emptyClamped.component2()(0)}")
     } catch (e: Exception) {
         println("Accessing extended empty clamped series at index 0: Caught - ${e::class.simpleName}: ${e.message}")
     }

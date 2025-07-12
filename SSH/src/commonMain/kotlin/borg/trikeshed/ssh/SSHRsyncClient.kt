@@ -28,7 +28,7 @@ class SSHRsyncClientImpl(
     override val key: CoroutineContext.Key<*> get() = Key
     
     override suspend fun executeRsync(command: String, context: SSHRsyncContext): String {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Rsync: Executing command: $command")
             
             try {
@@ -48,7 +48,7 @@ class SSHRsyncClientImpl(
     }
     
     override suspend fun syncDirectory(sourcePath: String, destinationPath: String, context: SSHRsyncContext): SyncResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Rsync: Syncing directory $sourcePath to $destinationPath")
             
             try {
@@ -80,7 +80,7 @@ class SSHRsyncClientImpl(
     }
     
     override suspend fun syncWithDelete(sourcePath: String, destinationPath: String, context: SSHRsyncContext): SyncResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Rsync: Syncing with delete $sourcePath to $destinationPath")
             
             try {
@@ -112,7 +112,7 @@ class SSHRsyncClientImpl(
     }
     
     override suspend fun syncWithExclude(sourcePath: String, destinationPath: String, excludePatterns: List<String>, context: SSHRsyncContext): SyncResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Rsync: Syncing with exclusions $sourcePath to $destinationPath")
             
             try {
@@ -145,7 +145,7 @@ class SSHRsyncClientImpl(
     }
     
     override suspend fun syncWithBandwidthLimit(sourcePath: String, destinationPath: String, bandwidthLimit: Int, context: SSHRsyncContext): SyncResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Rsync: Syncing with bandwidth limit $sourcePath to $destinationPath")
             
             try {
@@ -184,7 +184,7 @@ class SSHRsyncClientImpl(
     
     private suspend fun createNewChannel(context: SSHRsyncContext): SSHChannel {
         val channelManager = SSHConnectionManagerFactory.createConnectionManager()
-        return channelManager.openChannel(connection, "session", SSHConnectionContext(context.b))
+        return channelManager.openChannel(connection, "session", SSHConnectionContext(context.component2()))
     }
     
     private suspend fun executeCommand(channel: SSHChannel, command: String): String {

@@ -4,7 +4,7 @@ package borg.trikeshed.reactor
 // Temporary local Join type until trikeshed-lib is fixed
 data class Join<A, B>(val a: A, val b: B)
 
-infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
+infix fun <A, B> A.j(b: B): Join<A, B> = this j b
 
 /**
  * UnaryAsyncReaction: WAM-Style Continuation for Event-Driven Attention

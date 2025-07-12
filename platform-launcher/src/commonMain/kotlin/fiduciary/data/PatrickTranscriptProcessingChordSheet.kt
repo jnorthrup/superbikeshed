@@ -53,7 +53,7 @@ typealias BatchProcessingPlan = MetaSeries<Indexed<PatrickTranscriptEntry>, Inde
 object PatrickTranscriptProcessingChordSheet {
     // Orchestrates the full processing pipeline
     // ZIP Central Directory → Transcript Filtering → Batch Processing → Cataloging
-    // Example: archiveUrl j { url -> readZIPDirectory(url) }
-    // Example: (zipDir, filterCriteria) j { (dir, criteria) -> filterTranscripts(dir, criteria) }
-    // Example: transcriptEntries j { entries -> createBatchStages(entries) }
+    // Example: \1 j { \2: Int -> readZIPDirectory(url) }
+    // Example: (zipDir, \1 j { \2: Int -> filterTranscripts(dir, criteria) }
+    // Example: \1 j { \2: Int -> createBatchStages(entries) }
 } 

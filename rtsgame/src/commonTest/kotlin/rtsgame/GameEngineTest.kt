@@ -49,7 +49,7 @@ class GameEngineTest {
         
         // At least one entity should have moved (due to randomization)
         val hasMoved = initialPositions.zip(nextPositions).any { (initial, next) ->
-            initial.a.value != next.a.value || initial.b.value != next.b.value
+            initial.component1().value != next.component1().value || initial.component2().value != next.component2().value
         }
         
         assertTrue(hasMoved, "At least one entity should move during simulation")
@@ -66,10 +66,10 @@ class GameEngineTest {
         
         // Check all entities are within reasonable bounds
         state.entities.`play`.forEach { entity ->
-            assertTrue(entity.position.a.value >= 20f, "X position should be >= 20")
-            assertTrue(entity.position.a.value <= 800f, "X position should be <= 800")
-            assertTrue(entity.position.b.value >= 120f, "Y position should be >= 120")
-            assertTrue(entity.position.b.value <= 600f, "Y position should be <= 600")
+            assertTrue(entity.position.component1().value >= 20f, "X position should be >= 20")
+            assertTrue(entity.position.component1().value <= 800f, "X position should be <= 800")
+            assertTrue(entity.position.component2().value >= 120f, "Y position should be >= 120")
+            assertTrue(entity.position.component2().value <= 600f, "Y position should be <= 600")
         }
     }
     
@@ -111,11 +111,11 @@ class GameEngineTest {
         val entity = state.entities.`play`.first()
         
         // Test Position (Join<XCoord, YCoord>)
-        assertNotNull(entity.position.a) // XCoord
-        assertNotNull(entity.position.b) // YCoord
+        assertNotNull(entity.position.component1()) // XCoord
+        assertNotNull(entity.position.component2()) // YCoord
         
-        assertTrue(entity.position.a.value is Float)
-        assertTrue(entity.position.b.value is Float)
+        assertTrue(entity.position.component1().value is Float)
+        assertTrue(entity.position.component2().value is Float)
     }
     
     @Test

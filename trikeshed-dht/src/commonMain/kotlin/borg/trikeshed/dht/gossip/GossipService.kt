@@ -134,24 +134,24 @@ class GossipService(
         val peers = mutableSetOf<NUID>()
         
         // If message targets specific subnets
-        if (message.targetSubnets.a > 0) {
-            for (i in 0 until message.targetSubnets.a) {
+        if (message.targetSubnets.component1() > 0) {
+            for (i in 0 until message.targetSubnets.component1()) {
                 val subnet = message.targetSubnets[i]
                 val subnetPeers = subnetManager.findNodesInSubnets(1 j { subnet })
                 
                 // Select random subset for fanout
-                val selected = subnetPeers.play.shuffled().take(defaultFanout / message.targetSubnets.a)
+                val selected = subnetPeers.play.shuffled().take(defaultFanout / message.targetSubnets.component1())
                 peers.addAll(selected)
             }
         } else {
             // Broadcast to all known subnets
             val mySubnets = subnetManager.getNodeSubnets(localNodeId)
-            for (i in 0 until mySubnets.a) {
+            for (i in 0 until mySubnets.component1()) {
                 val subnet = mySubnets[i]
                 val subnetPeers = subnetManager.findNodesInSubnets(1 j { subnet })
                 
                 // Select random subset
-                val selected = subnetPeers.play.shuffled().take(defaultFanout / maxOf(1, mySubnets.a))
+                val selected = subnetPeers.play.shuffled().take(defaultFanout / maxOf(1, mySubnets.component1()))
                 peers.addAll(selected)
             }
         }
@@ -206,7 +206,7 @@ sealed class GossipFilter {
     }
     
     data class ByPayloadSize(val maxSize: Int) : GossipFilter() {
-        override fun accepts(message: GossipMessage) = message.payload.a <= maxSize
+        override fun accepts(message: GossipMessage) = message.payload.component1() <= maxSize
     }
     
     data class Composite(val filters: List<GossipFilter>, val all: Boolean = true) : GossipFilter() {

@@ -29,7 +29,7 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should implement gossip digest request for anti-entropy`() {
         // Given: Message digests for anti-entropy
-        val digests = 3 j { i -> 
+        val digests = \1 j { \2: Int -> 
             MessageDigest(
                 messageId = MessageId(ByteArray(32) { i.toByte() }),
                 version = i.toLong(),
@@ -59,7 +59,7 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should implement gossip sync response for rumor spreading`() {
         // Given: Gossip messages for synchronization
-        val messages = 2 j { i ->
+        val messages = \1 j { \2: Int ->
             GossipMessage(
                 messageId = MessageId(ByteArray(32) { i.toByte() }),
                 publisherId = NodeId(ByteArray(32) { i.toByte() }),
@@ -197,7 +197,7 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should meet DHT operations throughput target of 10,000 ops/sec`() {
         // Given: DHT operation batch
-        val operations = 1000 j { i ->
+        val operations = \1 j { \2: Int ->
             PingRequest(
                 nodeId = KademliaNodeId(ByteArray(32) { i.toByte() }),
                 timestamp = Timestamp(System.currentTimeMillis())
@@ -222,7 +222,7 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should meet gossip message throughput target of 100,000 msg/sec`() {
         // Given: Gossip message batch
-        val messages = 1000 j { i ->
+        val messages = \1 j { \2: Int ->
             GossipMessage(
                 messageId = MessageId(ByteArray(32) { i.toByte() }),
                 publisherId = NodeId(ByteArray(32) { i.toByte() }),
@@ -252,8 +252,8 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should meet ISAM read throughput target of 1,000,000 rows/sec`() {
         // Given: ISAM cursor data
-        val rows = 10000 j { rowIndex ->
-            10 j { colIndex -> DataValue("row${rowIndex}_col$colIndex".encodeToByteArray().toUByteArray()) }
+        val rows = \1 j { \2: Int ->
+            \1 j { \2: Int -> DataValue("row${rowIndex}_col$colIndex".encodeToByteArray().toUByteArray()) }
         }
         
         val cursorData = CursorDataResponse(
@@ -370,8 +370,8 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should implement CBOR type extensions for TrikeShed types`() {
         // Given: TrikeShed types for CBOR serialization
-        val series = 3 j { i -> i * i }
-        val tensor = Tensor(2 j { 2 }, 4 j { i -> i.toDouble() })
+        val series = \1 j { \2: Int -> i * i }
+        val tensor = \1 j { \2: Int -> i.toDouble() })
         val join = 42.j("test")
         val memento = IOMemento.create("test", "Int", 4, false)
         
@@ -391,8 +391,8 @@ class ProtocolCompletenessTDDTest {
     @Test
     fun `should round-trip TrikeShed types through CBOR`() {
         // Given: TrikeShed objects
-        val originalSeries = 5 j { i -> "item$i" }
-        val originalTensor = Tensor(2 j { 3 }, 6 j { i -> i.toDouble() })
+        val originalSeries = \1 j { \2: Int -> "item$i" }
+        val originalTensor = \1 j { \2: Int -> i.toDouble() })
         
         // When: Serialized to CBOR and back
         val seriesRestored = originalSeries.toCbor().fromCbor<Series<String>>()
@@ -416,8 +416,8 @@ class ProtocolCompletenessTDDTest {
     fun `should achieve compression ratios for different data types`() {
         // Given: Different data types for compression testing
         val jsonMetadata = createJsonMetadata()
-        val intSeries = 1000 j { i -> i }
-        val stringSeries = 1000 j { i -> "string_$i" }
+        val intSeries = \1 j { \2: Int -> i }
+        val stringSeries = \1 j { \2: Int -> "string_$i" }
         val memento = IOMemento.create("test", "String", 100, false)
         
         // When: Compressed with different algorithms

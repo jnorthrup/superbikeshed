@@ -94,13 +94,13 @@ class BacktesterTest {
         val buyTrade = result.trades[0]
         assertEquals(TradingSignal.BUY, buyTrade.signal, "First trade signal should be BUY.")
         assertEquals(100.0, buyTrade.price, testDelta, "BUY price mismatch.")
-        assertEquals(klines[0].values[0].a as Long, buyTrade.timestamp, "BUY timestamp mismatch.")
+        assertEquals(klines[0].values[0].component1() as Long, buyTrade.timestamp, "BUY timestamp mismatch.")
 
         // Verify SELL trade details
         val sellTrade = result.trades[1]
         assertEquals(TradingSignal.SELL, sellTrade.signal, "Second trade signal should be SELL.")
         assertEquals(110.0, sellTrade.price, testDelta, "SELL price mismatch.")
-        assertEquals(klines[2].values[0].a as Long, sellTrade.timestamp, "SELL timestamp mismatch.")
+        assertEquals(klines[2].values[0].component1() as Long, sellTrade.timestamp, "SELL timestamp mismatch.")
 
         // Verify financial outcome:
         // Initial: 10000.0 equity.

@@ -102,7 +102,7 @@ object OHLCVCascade {
                 // Manual grouping (cursor doesn't have groupBy yet)
                 val groups = mutableMapOf<Pair<String, Long>, MutableList<RowVec>>()
                 
-                for (i in 0 until mappedCursor.a) {
+                for (i in 0 until mappedCursor.component1()) {
                     val (symbol, bucket, row) = mappedCursor.at(i)
                     groups.getOrPut(symbol to bucket) { mutableListOf() }.add(row)
                 }
@@ -186,7 +186,7 @@ object OHLCVCascade {
             .let { mapped ->
                 val groups = mutableMapOf<Pair<String, Long>, MutableList<RowVec>>()
                 
-                for (i in 0 until mapped.a) {
+                for (i in 0 until mapped.component1()) {
                     val (symbol, bucket, row) = mapped.at(i)
                     groups.getOrPut(symbol to bucket) { mutableListOf() }.add(row)
                 }
@@ -271,7 +271,7 @@ object OHLCVCascade {
         val colIndex = columnNames.toList().indexOf(column)
         require(colIndex >= 0) { "Column $column not found" }
         
-        return a j { rowIndex ->
+        return \1 j { \2: Int ->
             if (rowIndex < period - 1) {
                 null
             } else {
@@ -287,7 +287,7 @@ object OHLCVCascade {
         val closeIndex = columnNames.toList().indexOf("close")
         require(closeIndex >= 0) { "Close column not found" }
         
-        return a j { rowIndex ->
+        return \1 j { \2: Int ->
             if (rowIndex < period) {
                 null
             } else {
@@ -320,18 +320,18 @@ object OHLCVCascade {
         // This is a simplified version - real implementation would be more sophisticated
         val newRows = (0 until a).map { rowIndex ->
             val originalRow = at(rowIndex).let { row ->
-                (0 until row.a).map { i -> row.b(i).a }
+                (0 until row.component1()).map { i -> row.component2()(i).component1() }
             }
             
             val newValues = columns.map { (_, indexed) ->
-                indexed.b(rowIndex)
+                indexed.component2()(rowIndex)
             }
             
             originalRow + newValues
         }
         
         val newColumnNames = columnNames.toList() + columns.map { it.first }
-        val newColumnTypes = (0 until columnNames.a).map { IOMemento.IoDouble } +
+        val newColumnTypes = (0 until columnNames.component1()).map { IOMemento.IoDouble } +
                             columns.map { IOMemento.IoDouble }
         
         return cursorOf(newRows, newColumnNames, newColumnTypes)

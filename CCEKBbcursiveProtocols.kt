@@ -103,8 +103,8 @@ object SimpleLineProtocol {
             val msg = parseMessage(buf) ?: return null
             
             // Apply knowledge constraints
-            for (i in 0 until knowledge.constraints.a) {
-                val constraint = knowledge.constraints.b(i)
+            for (i in 0 until knowledge.constraints.component1()) {
+                val constraint = knowledge.constraints.component2()(i)
                 if (!validateConstraint(msg, constraint)) return null
             }
             
@@ -145,8 +145,8 @@ object SimpleHttpProtocol {
     
     // Protocol structures using Join
     typealias Headers = Indexed<Join<String, String>>
-    typealias Request = Join<RequestLine, Join<Headers, ByteArray?>>
-    typealias RequestLine = Join<String, Join<String, String>> // method j (path j version)
+    typealias Request = Join<RequestLine, Headers j ByteArray?>
+    typealias RequestLine = Join<String, String j String> // method j (path j version)
     
     // BBCursive parsers
     fun interface Op { fun apply(buf: ByteIndexedBuffer): ByteIndexedBuffer? }
@@ -238,8 +238,8 @@ object SimpleHttpProtocol {
             
             // Apply transformation rules
             var result: Any = req
-            for (i in 0 until knowledge.rules.a) {
-                val rule = knowledge.rules.b(i)
+            for (i in 0 until knowledge.rules.component1()) {
+                val rule = knowledge.rules.component2()(i)
                 // Apply rule transformations
             }
             

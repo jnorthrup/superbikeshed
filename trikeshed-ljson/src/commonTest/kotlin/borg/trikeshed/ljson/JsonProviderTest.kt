@@ -20,11 +20,11 @@ class JsonProviderTest {
         val json = """{"name": "test", "value": 42}"""
         val result = Json.parse(json)
         
-        assertNotNull(result.a)
-        assertNull(result.b)
+        assertNotNull(result.component1())
+        assertNull(result.component2())
         
-        val element = result.a as JsonElement.Obj
-        assertEquals(2, element.fields.a)
+        val element = result.component1() as JsonElement.Obj
+        assertEquals(2, element.fields.component1())
     }
     
     @Test
@@ -32,18 +32,18 @@ class JsonProviderTest {
         val json = """[1, 2, 3, "hello"]"""
         val result = Json.parse(json)
         
-        assertNotNull(result.a)
-        val array = result.a as JsonElement.Arr
-        assertEquals(4, array.elements.a)
+        assertNotNull(result.component1())
+        val array = result.component1() as JsonElement.Arr
+        assertEquals(4, array.elements.component1())
         
-        assertEquals(JsonElement.Num(1.0), array.elements.b(0))
-        assertEquals(JsonElement.Str("hello"), array.elements.b(3))
+        assertEquals(JsonElement.Num(1.0), array.elements.component2()(0))
+        assertEquals(JsonElement.Str("hello"), array.elements.component2()(3))
     }
     
     @Test
     fun testStringification() {
         val element = JsonElement.Obj(
-            2 j { i ->
+            \1 j { \2: Int ->
                 when (i) {
                     0 -> "name" j JsonElement.Str("test")
                     1 -> "value" j JsonElement.Num(42.0)
@@ -68,8 +68,8 @@ class JsonProviderTest {
         assertTrue(json.contains("true"))
         
         val decoded = json.decodeJson<TestData>()
-        assertNotNull(decoded.a)
-        assertEquals(testData, decoded.a)
+        assertNotNull(decoded.component1())
+        assertEquals(testData, decoded.component1())
     }
     
     @Test
@@ -78,11 +78,11 @@ class JsonProviderTest {
         val json = """{"test": true, "number": 123.45}"""
         
         val result = provider.parse(json)
-        assertNotNull(result.a)
-        assertNull(result.b)
+        assertNotNull(result.component1())
+        assertNull(result.component2())
         
-        val obj = result.a as JsonElement.Obj
-        assertEquals(2, obj.fields.a)
+        val obj = result.component1() as JsonElement.Obj
+        assertEquals(2, obj.fields.component1())
     }
     
     @Test
@@ -91,9 +91,9 @@ class JsonProviderTest {
         val json = """{"proxy": "test"}"""
         
         val result = proxy.parse(json)
-        assertNotNull(result.a)
+        assertNotNull(result.component1())
         
-        val stringified = proxy.stringify(result.a!!)
+        val stringified = proxy.stringify(result.component1()!!)
         assertTrue(stringified.contains("proxy"))
         assertTrue(stringified.contains("test"))
     }
@@ -101,23 +101,23 @@ class JsonProviderTest {
     @Test
     fun testJsonCursorIntegration() {
         val jsonArray = JsonElement.Arr(
-            3 j { i ->
+            \1 j { \2: Int ->
                 when (i) {
-                    0 -> JsonElement.Obj(2 j { j ->
+                    0 -> \1 j { \2: Int ->
                         when (j) {
                             0 -> "name" j JsonElement.Str("Alice")
                             1 -> "age" j JsonElement.Num(25.0)
                             else -> "unknown" j JsonElement.Null
                         }
                     })
-                    1 -> JsonElement.Obj(2 j { j ->
+                    1 -> \1 j { \2: Int ->
                         when (j) {
                             0 -> "name" j JsonElement.Str("Bob")
                             1 -> "age" j JsonElement.Num(30.0)
                             else -> "unknown" j JsonElement.Null
                         }
                     })
-                    2 -> JsonElement.Obj(2 j { j ->
+                    2 -> \1 j { \2: Int ->
                         when (j) {
                             0 -> "name" j JsonElement.Str("Charlie")
                             1 -> "age" j JsonElement.Num(35.0)
@@ -130,7 +130,7 @@ class JsonProviderTest {
         )
         
         val cursor = JsonCursor.fromJsonArray(jsonArray)
-        assertEquals(3, cursor.a)
+        assertEquals(3, cursor.component1())
         
         val firstRow = cursor.at(0)
         assertEquals("Alice", firstRow.getString(0))
@@ -138,7 +138,7 @@ class JsonProviderTest {
         
         // Convert back to JSON
         val backToJson = JsonCursor.toJsonArray(cursor)
-        assertEquals(3, backToJson.elements.a)
+        assertEquals(3, backToJson.elements.component1())
     }
     
     @Test
@@ -146,9 +146,9 @@ class JsonProviderTest {
         val invalidJson = """{"invalid": json syntax}"""
         val result = Json.parse(invalidJson)
         
-        assertNull(result.a)
-        assertNotNull(result.b)
-        assertTrue(result.b!!.isNotEmpty())
+        assertNull(result.component1())
+        assertNotNull(result.component2())
+        assertTrue(result.component2()!!.isNotEmpty())
     }
     
     @Test
@@ -156,17 +156,17 @@ class JsonProviderTest {
         val json = """{"nullValue": null, "trueValue": true, "falseValue": false}"""
         val result = Json.parse(json)
         
-        assertNotNull(result.a)
-        val obj = result.a as JsonElement.Obj
-        assertEquals(3, obj.fields.a)
+        assertNotNull(result.component1())
+        val obj = result.component1() as JsonElement.Obj
+        assertEquals(3, obj.fields.component1())
         
         // Find fields by name
-        for (i in 0 until obj.fields.a) {
-            val field = obj.fields.b(i)
-            when (field.a) {
-                "nullValue" -> assertEquals(JsonElement.Null, field.b)
-                "trueValue" -> assertEquals(JsonElement.Bool(true), field.b)
-                "falseValue" -> assertEquals(JsonElement.Bool(false), field.b)
+        for (i in 0 until obj.fields.component1()) {
+            val field = obj.fields.component2()(i)
+            when (field.component1()) {
+                "nullValue" -> assertEquals(JsonElement.Null, field.component2())
+                "trueValue" -> assertEquals(JsonElement.Bool(true), field.component2())
+                "falseValue" -> assertEquals(JsonElement.Bool(false), field.component2())
             }
         }
     }
@@ -187,10 +187,10 @@ class JsonProviderTest {
         """.trimIndent()
         
         val result = Json.parse(json)
-        assertNotNull(result.a)
+        assertNotNull(result.component1())
         
-        val obj = result.a as JsonElement.Obj
-        assertEquals(2, obj.fields.a)
+        val obj = result.component1() as JsonElement.Obj
+        assertEquals(2, obj.fields.component1())
     }
 
     @Test

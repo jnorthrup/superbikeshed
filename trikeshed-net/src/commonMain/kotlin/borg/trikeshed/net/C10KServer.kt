@@ -310,8 +310,8 @@ class C10KServer(
             /*quicEngine?.let { engine ->
                 // Process any pending QUIC packets
                 val activeStreams = engine.getActiveStreams()
-                for (i in 0 until activeStreams.a) {
-                    val streamId = activeStreams.b(i)
+                for (i in 0 until activeStreams.component1()) {
+                    val streamId = activeStreams.component2()(i)
                     val stream = engine.getStream(streamId)
                     // Process stream data
                 }

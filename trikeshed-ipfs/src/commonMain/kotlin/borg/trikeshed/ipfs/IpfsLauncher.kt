@@ -153,7 +153,7 @@ class IpfsLauncher(
                 val stats = server.getStats()
                 val network = IpfsServiceLocator.getNetwork()
                 
-                println("📊 IPFS Stats: ${stats.blocksStored} blocks stored, ${stats.blocksRetrieved} retrieved, ${network?.peers?.a ?: 0} peers")
+                println("📊 IPFS Stats: ${stats.blocksStored} blocks stored, ${stats.blocksRetrieved} retrieved, ${network?.peers?.component1() ?: 0} peers")
                 
                 delay(config.monitoringInterval)
             }
@@ -177,7 +177,7 @@ class IpfsLauncher(
                 // Example 2: Retrieve content
                 val retrieved = ipfsServer!!.get(cid)
                 if (retrieved != null) {
-                    val content = String(retrieved.a j { retrieved.b(it) }.toByteArray())
+                    val content = String(retrieved.component1() j { retrieved.component2()(it) }.toByteArray())
                     println("📖 Retrieved content: $content")
                 }
                 
@@ -187,7 +187,7 @@ class IpfsLauncher(
                 
                 // Example 4: List pinned content
                 val pinnedList = ipfsServer!!.listPinned()
-                println("📋 Pinned content count: ${pinnedList.a}")
+                println("📋 Pinned content count: ${pinnedList.component1()}")
                 
                 // Example 5: DHT operations
                 val dht = IpfsServiceLocator.getDHT()
@@ -195,7 +195,7 @@ class IpfsLauncher(
                 println("🌐 Announced content to DHT")
                 
                 val providers = dht.findProviders(cid)
-                println("🔍 Found ${providers.a} providers for content")
+                println("🔍 Found ${providers.component1()} providers for content")
                 
                 println("✅ Example operations completed")
             }

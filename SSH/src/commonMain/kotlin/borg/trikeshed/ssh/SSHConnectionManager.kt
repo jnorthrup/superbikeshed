@@ -15,7 +15,7 @@ class SSHConnectionManager(
 ) {
     private val connections = mutableMapOf<String, SSHConnection>()
     private val fsms = mutableMapOf<String, SSHUnifiedFSM>()
-    private val scope = CoroutineScope(context.b + SupervisorJob())
+    private val scope = CoroutineScope(context.component2() + SupervisorJob())
     
     /**
      * Create and manage a new SSH connection

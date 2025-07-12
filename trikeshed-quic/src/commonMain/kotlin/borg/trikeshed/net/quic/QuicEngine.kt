@@ -27,10 +27,10 @@ class QuicEngine(
         val allResponses = mutableListOf<QuicPacket>()
         
         // Process all packets in batch
-        for (i in 0 until packets.a) {
-            val responses = processPacket(packets.b(i))
-            for (j in 0 until responses.a) {
-                allResponses.add(responses.b(j))
+        for (i in 0 until packets.component1()) {
+            val responses = processPacket(packets.component2()(i))
+            for (j in 0 until responses.component1()) {
+                allResponses.add(responses.component2()(j))
             }
         }
         
@@ -44,8 +44,8 @@ class QuicEngine(
         val responses = mutableListOf<QuicPacket>()
         
         // Process each frame
-        for (i in 0 until packet.frames.a) {
-            val frame = packet.frames.b(i)
+        for (i in 0 until packet.frames.component1()) {
+            val frame = packet.frames.component2()(i)
             when (frame) {
                 is StreamFrame -> processStreamFrame(frame, responses)
                 is AckFrame -> processAckFrame(frame)
@@ -90,7 +90,7 @@ class QuicEngine(
         // Update stream state
         streamStates[streamId] = stream.copy(
             sendBuffer = appendToIndexed(stream.sendBuffer, data),
-            sendOffset = stream.sendOffset + data.a
+            sendOffset = stream.sendOffset + data.component1()
         )
         
         // Create packet
@@ -110,7 +110,7 @@ class QuicEngine(
         state = state.copy(
             sentPackets = appendToIndexed(state.sentPackets, packet),
             nextPacketNumber = state.nextPacketNumber + 1,
-            bytesInFlight = state.bytesInFlight + data.a
+            bytesInFlight = state.bytesInFlight + data.component1()
         )
         
         return packet
@@ -147,7 +147,7 @@ class QuicEngine(
         // Update stream receive buffer
         streamStates[frame.streamId] = stream.copy(
             receiveBuffer = appendToIndexed(stream.receiveBuffer, frame.data),
-            receiveOffset = frame.offset + frame.data.a
+            receiveOffset = frame.offset + frame.data.component1()
         )
         
         // Mark packet for ACK
@@ -157,10 +157,10 @@ class QuicEngine(
     internal fun processAckFrame(frame: AckFrame) {
         // Remove acknowledged packets from bytes in flight
         var ackedBytes = 0L
-        for (i in 0 until frame.ackRanges.a) {
-            val range = frame.ackRanges.b(i)
-            val start = range.a
-            val end = range.b
+        for (i in 0 until frame.ackRanges.component1()) {
+            val range = frame.ackRanges.component2()(i)
+            val start = range.component1()
+            val end = range.component2()
             
             // Calculate acked bytes (simplified)
             ackedBytes += (end - start + 1) * 1350 // Assume max packet size
@@ -218,16 +218,16 @@ class QuicEngine(
     }
     
     internal fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
-        val newSize = indexed.a + 1
-        return newSize j { i ->
-            if (i < indexed.a) indexed.b(i) else item
+        val newSize = indexed.component1() + 1
+        return \1 j { \2: Int ->
+            if (i < indexed.component1()) indexed.component2()(i) else item
         }
     }
     
     internal fun <T> appendToIndexed(indexed: Indexed<T>, items: Indexed<T>): Indexed<T> {
-        val newSize = indexed.a + items.a
-        return newSize j { i ->
-            if (i < indexed.a) indexed.b(i) else items.b(i - indexed.a)
+        val newSize = indexed.component1() + items.component1()
+        return \1 j { \2: Int ->
+            if (i < indexed.component1()) indexed.component2()(i) else items.component2()(i - indexed.component1())
         }
     }
     

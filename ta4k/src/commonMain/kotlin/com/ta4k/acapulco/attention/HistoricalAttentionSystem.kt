@@ -59,8 +59,8 @@ class HistoricalAttentionAnalyzer {
     internal fun calculateVolatilityScores(candles: CandleSeries): Indexed<VolatilityGauge> {
         // Calculate price volatility using Indexed transformations
         val priceChanges = Indexed.of(candles.size - 1) { i ->
-            val current = candles[i + 1].a.ohlc.close.value
-            val previous = candles[i].a.ohlc.close.value
+            val current = candles[i + 1].component1().ohlc.close.value
+            val previous = candles[i].component1().ohlc.close.value
             abs(current - previous) / previous
         }
         
@@ -73,13 +73,13 @@ class HistoricalAttentionAnalyzer {
         val windowSize = minOf(20, candles.size)
         
         return Indexed.of(candles.size) { i ->
-            val currentVolume = candles[i].a.volume.value
+            val currentVolume = candles[i].component1().volume.value
             
             // Calculate average volume in window
             val startIdx = maxOf(0, i - windowSize + 1)
             val endIdx = i + 1
             val avgVolume = (startIdx until endIdx).map { j -> 
-                candles[j].a.volume.value 
+                candles[j].component1().volume.value 
             }.average()
             
             // Normalize current volume by average
@@ -167,7 +167,7 @@ class HistoricalAttentionTracker(
         }
         
         // Sort by attention score (descending)
-        val sortedSymbols = weightedSymbols.sortedByDescending { it.b.value }
+        val sortedSymbols = weightedSymbols.sortedByDescending { it.component2().value }
         
         return Indexed.of(sortedSymbols.size) { i -> sortedSymbols[i] }
     }
@@ -191,17 +191,17 @@ class HistoricalAttentionTracker(
     fun getAttentionSummary(): AttentionSummary {
         val allWeighted = analyzeAllSymbols()
         val totalSymbols = allWeighted.size
-        val highAttentionCount = allWeighted.play.count { it.b.value > 5.0 }
+        val highAttentionCount = allWeighted.play.count { it.component2().value > 5.0 }
         
         val avgAttention = if (totalSymbols > 0) {
-            allWeighted.play.map { it.b.value }.average()
+            allWeighted.play.map { it.component2().value }.average()
         } else 0.0
         
         return AttentionSummary(
             totalSymbols = totalSymbols,
             highAttentionSymbols = highAttentionCount,
             averageAttentionScore = AttentionScore(avgAttention),
-            topSymbol = if (allWeighted.size > 0) allWeighted[0].a else Symbol("NONE")
+            topSymbol = if (allWeighted.size > 0) allWeighted[0].component1() else Symbol("NONE")
         )
     }
 }
@@ -223,7 +223,7 @@ class AttentionStrategyActivator(
         val topSymbols = attentionTracker.getMostAttentionSymbols(maxSymbols)
         
         // Extract just the symbols using Indexed.α transformation
-        return topSymbols.α { weightedSymbol -> weightedSymbol.a }
+        return topSymbols.α { weightedSymbol -> weightedSymbol.component1() }
     }
     
     fun shouldActivateStrategy(symbol: Symbol, strategy: String): Boolean {

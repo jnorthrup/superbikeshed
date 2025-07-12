@@ -64,7 +64,7 @@ class DeterministicMap<K, V> {
         }
     }
     
-    fun toIndexed(): Indexed<Pair<K, V>> = insertionOrder.size j { i -> insertionOrder[i] to map[insertionOrder[i]]!! }
+    fun toIndexed(): Indexed<Pair<K, V>> = \1 j { \2: Int -> insertionOrder[i] to map[insertionOrder[i]]!! }
 }
 
 data class SyncCheckpoint(

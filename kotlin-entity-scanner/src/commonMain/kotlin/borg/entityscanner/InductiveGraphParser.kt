@@ -40,7 +40,7 @@ value class AccuracyDelta(val delta: Double) // Change in accuracy
 
 // Core Evidence and Parse State Types
 typealias Evidence = Join<EvidenceType, EvidenceStrength>
-typealias ParseState = Join<ParseStateId, Join<ParsePosition, ParseConfidence>>
+typealias ParseState = Join<ParseStateId, ParsePosition j ParseConfidence>
 typealias ParseStateSeries = Indexed<ParseState>
 
 // Forward Chaining Types
@@ -53,7 +53,7 @@ typealias GraphRefinement = Join<ParsePosition, AccuracyDelta>
 typealias RefinementSeries = Indexed<GraphRefinement>
 
 // Parse Context for Evidence Gathering
-typealias ParseContext = Join<ParsePosition, Join<String, ParseStateSeries>>
+typealias ParseContext = Join<ParsePosition, String j ParseStateSeries>
 
 // ==== PREDICATE SYSTEM ====
 
@@ -458,7 +458,7 @@ object LearningParser {
 
 // ==== UTILITY EXTENSIONS ====
 
-fun <T> List<T>.toSeries(): Indexed<T> = size j { index -> this[index] }
+fun <T> List<T>.toSeries(): Indexed<T> = \1 j { \2: Int -> this[index] }
 fun <T> emptySeries(): Indexed<T> = 0 j { throw IndexOutOfBoundsException("Empty series") }
 
 /**

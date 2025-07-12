@@ -167,7 +167,7 @@ abstract class AbstractProtocolChannel<TMessage>(
         while (channel.isOpen) {
             val receivedData = channel.receive()
             
-            if (receivedData.a > 0) {
+            if (receivedData.component1() > 0) {
                 val newData = receivedData.toByteArray()
                 accumulated += newData
                 

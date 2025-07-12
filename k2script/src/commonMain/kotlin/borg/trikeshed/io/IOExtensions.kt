@@ -34,12 +34,12 @@ object IO {
  * ByteArray extensions for TrikeShed compatibility
  */
 fun ByteArray.toIndexed(): Indexed<Byte> {
-    return size j { i -> this[i] }
+    return \1 j { \2: Int -> this[i] }
 }
 
 /**
  * ByteArray to ByteIndexed conversion
  */
 fun ByteArray.toByteIndexed(): ByteIndexed {
-    return ByteIndexed(size j { i -> this[i] })
+    return \1 j { \2: Int -> this[i] })
 }

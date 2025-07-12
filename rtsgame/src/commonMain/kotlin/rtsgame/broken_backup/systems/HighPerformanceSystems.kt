@@ -14,12 +14,12 @@ class MovementSystem : System {
     override fun update(world: ECSWorld, deltaTime: Float) {
         // Batch process positions and velocities for cache efficiency
         world.forEachBatch<PositionComponent>(ComponentTypes.POSITION, 64) { entities, positions ->
-            val velocities = Array(entities.a) { i ->
+            val velocities = Array(entities.component1()) { i ->
                 world.getComponent<VelocityComponent>(entities[i], ComponentTypes.VELOCITY)
             }
             
             // Vectorized position update
-            for (i in 0 until entities.a) {
+            for (i in 0 until entities.component1()) {
                 val vel = velocities[i] ?: continue
                 val pos = positions[i]
                 
@@ -40,7 +40,7 @@ class MovementSystem : System {
  */
 class PhysicsSystem : ParallelSystem(ComponentTypes.POSITION, ComponentTypes.VELOCITY, ComponentTypes.PHYSICS) {
     override fun processBatch(world: ECSWorld, entities: Indexed<EntityId>, deltaTime: Float) {
-        for (i in 0 until entities.a) {
+        for (i in 0 until entities.component1()) {
             val entity = entities[i]
             val pos = world.getComponent<PositionComponent>(entity, ComponentTypes.POSITION) ?: continue
             val vel = world.getComponent<VelocityComponent>(entity, ComponentTypes.VELOCITY) ?: continue

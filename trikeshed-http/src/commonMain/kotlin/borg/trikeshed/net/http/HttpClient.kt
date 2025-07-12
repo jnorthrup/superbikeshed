@@ -78,10 +78,10 @@ class HttpClient(
         url: String,
         ranges: Indexed<Twin<Long>>
     ): Indexed<HttpResponse> = coroutineScope {
-        val deferreds = Array(ranges.a) { i ->
+        val deferreds = Array(ranges.component1()) { i ->
             async {
-                val range = ranges.b(i)
-                executeRange(url, range.a, range.b)
+                val range = ranges.component2()(i)
+                executeRange(url, range.component1(), range.component2())
             }
         }
         
@@ -133,10 +133,10 @@ class HttpClient(
     }
     
     internal fun extractHost(request: HttpRequest): String {
-        for (i in 0 until request.headers.a) {
-            val header = request.headers.b(i)
-            if (header.a.value.equals("Host", ignoreCase = true)) {
-                return header.b.value
+        for (i in 0 until request.headers.component1()) {
+            val header = request.headers.component2()(i)
+            if (header.component1().value.equals("Host", ignoreCase = true)) {
+                return header.component2().value
             }
         }
         throw IllegalArgumentException("No Host header in request")

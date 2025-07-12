@@ -65,9 +65,9 @@ fun randomAccessBytes(
     attentionBands: Indexed<Twin<Long>>
 ): Indexed<Byte> {
     
-    val totalBytes = (0 until attentionBands.a).sumOf { i ->
-        val band = attentionBands.b(i)
-        (band.b - band.a).toInt()
+    val totalBytes = (0 until attentionBands.component1()).sumOf { i ->
+        val band = attentionBands.component2()(i)
+        (band.component2() - band.component1()).toInt()
     }
     
     return totalBytes j { byteIndex: Int ->
@@ -75,12 +75,12 @@ fun randomAccessBytes(
         var bandIndex = 0
         
         // Find which band this byte belongs to
-        while (bandIndex < attentionBands.a) {
-            val band = attentionBands.b(bandIndex)
-            val bandSize = (band.b - band.a).toInt()
+        while (bandIndex < attentionBands.component1()) {
+            val band = attentionBands.component2()(bandIndex)
+            val bandSize = (band.component2() - band.component1()).toInt()
             
             if (currentByte < bandSize) {
-                val rangeData = index.extractRange(file, band.a, band.b)
+                val rangeData = index.extractRange(file, band.component1(), band.component2())
                 return@j rangeData[currentByte]
             }
             

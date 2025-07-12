@@ -22,7 +22,7 @@ import kotlin.math.abs // For absolute value in losses
  *               Must be greater than 0.
  * @return A `Indexed<Double>` containing the calculated RSI values (0-100), or `Double.NaN` for undefined values.
  *         Returns an `emptySeries()` if the input `prices` series does not have enough data
- *         (i.e., `prices.a < period + 1`, as at least `period` deltas are needed).
+ *         (i.e., `prices.component1() < period + 1`, as at least `period` deltas are needed).
  * @throws IllegalArgumentException if `period` is less than or equal to 0.
  */
 fun calculateRSI(prices: Indexed<Price>, period: Int): Indexed<Double> {
@@ -31,51 +31,51 @@ fun calculateRSI(prices: Indexed<Price>, period: Int): Indexed<Double> {
     }
 
     // Need at least 'period' number of changes, which means 'period + 1' prices.
-    // prices.a gives the number of elements.
-    // prices.b(i) is getter for index i.
-    // deltas will have prices.a elements, first is Price(0.0)
-    // gains/losses will have prices.a elements.
-    // avgGains/avgLosses (SMA on gains/losses) will have prices.a elements.
+    // prices.component1() gives the number of elements.
+    // prices.component2()(i) is getter for index i.
+    // deltas will have prices.component1() elements, first is Price(0.0)
+    // gains/losses will have prices.component1() elements.
+    // avgGains/avgLosses (SMA on gains/losses) will have prices.component1() elements.
     // First (period-1) elements of avgGains/avgLosses will be Price.UNDEFINED.
     // So, the first calculable RSI will be at index `period` of the original `prices` series.
-    if (prices.isEmpty() || prices.a < period +1 ) { // prices.a < period + 1 means not enough data for any RSI calculation
+    if (prices.isEmpty() || prices.component1() < period +1 ) { // prices.component1() < period + 1 means not enough data for any RSI calculation
          // Return a series of NaNs of the same size as prices if prices is not empty
         if (prices.isEmpty()) return emptySeries()
-        return prices.a j { Double.NaN }
+        return prices.component1() j { Double.NaN }
     }
 
     // a. Calculate Price Deltas
     // The first delta is undefined (or 0). For simplicity, using Price(0.0).
-    // Size of deltas series is prices.a
-    val deltas = prices.a j { i:Int ->
+    // Size of deltas series is prices.component1()
+    val deltas = prices.component1() j { i:Int ->
         if (i == 0) {
             Price(0.0) // Or Price.UNDEFINED, but 0.0 simplifies gain/loss separation
         } else {
-            Price(prices.b(i).value - prices.b(i - 1).value)
+            Price(prices.component2()(i).value - prices.component2()(i - 1).value)
         }
     }
 
     // b. Separate Gains and Losses
-    // Size of gains/losses series is prices.a
-    val gains = deltas.a j { i:Int ->
-        val deltaVal = deltas.b(i).value
+    // Size of gains/losses series is prices.component1()
+    val gains = deltas.component1() j { i:Int ->
+        val deltaVal = deltas.component2()(i).value
         if (deltaVal > 0) Price(deltaVal) else Price(0.0)
     }
 
-    val losses = deltas.a j { i:Int ->
-        val deltaVal = deltas.b(i).value
+    val losses = deltas.component1() j { i:Int ->
+        val deltaVal = deltas.component2()(i).value
         if (deltaVal < 0) Price(abs(deltaVal)) else Price(0.0) // Losses are positive values
     }
 
     // c. Calculate Average Gains and Average Losses using SMA
-    // Size of avgGains/avgLosses series is prices.a
+    // Size of avgGains/avgLosses series is prices.component1()
     // First `period-1` elements of these will be Price.UNDEFINED
     val avgGains = calculateSMA(gains, period)
     val avgLosses = calculateSMA(losses, period)
 
     // d. Calculate RS and RSI
-    // Size of rsiSeries is prices.a
-    return prices.a j { index:Int ->
+    // Size of rsiSeries is prices.component1()
+    return prices.component1() j { index:Int ->
         // avgGains/avgLosses have Price.UNDEFINED (which is Price(Double.NaN)) for the first `period-1` elements.
         // The delta calculation also means that the first meaningful gain/loss value is effectively at index 1 of the delta series.
         // So, the first `period-1` values of avgGains/avgLosses (corresponding to original price indices 0 to period-2) are UNDEFINED.
@@ -87,8 +87,8 @@ fun calculateRSI(prices: Indexed<Price>, period: Int): Indexed<Double> {
         if (index < period) { // RSI is typically undefined until the `period`-th index of prices
             Double.NaN
         } else {
-            val avgGain = avgGains.b(index).value
-            val avgLoss = avgLosses.b(index).value
+            val avgGain = avgGains.component2()(index).value
+            val avgLoss = avgLosses.component2()(index).value
 
             if (avgGain.isNaN() || avgLoss.isNaN()) { // Handles Price.UNDEFINED from SMA
                 Double.NaN
@@ -114,14 +114,14 @@ fun main() {
     val rsiPeriod = 14 // Common period for RSI
 
     // Test with enough data
-    if (prices.a >= rsiPeriod + 1) {
+    if (prices.component1() >= rsiPeriod + 1) {
         val rsi14 = calculateRSI(prices, rsiPeriod)
-        println("Prices (${prices.a}): ${prices.toList().map { "%.2f".format(it.value) }}")
-        println("RSI($rsiPeriod) (${rsi14.a}): ${rsi14.toList().map { if (it.isNaN()) "NaN" else "%.2f".format(it) }}")
+        println("Prices (${prices.component1()}): ${prices.toList().map { "%.2f".format(it.value) }}")
+        println("RSI($rsiPeriod) (${rsi14.component1()}): ${rsi14.toList().map { if (it.isNaN()) "NaN" else "%.2f".format(it) }}")
         // Expected: First `rsiPeriod` values of RSI are NaN.
         // For RSI(14), first 14 values (index 0 to 13) will be NaN. First calculated RSI at index 14.
     } else {
-        println("Not enough data to calculate RSI($rsiPeriod). Price points: ${prices.a}, Needed: ${rsiPeriod + 1}")
+        println("Not enough data to calculate RSI($rsiPeriod). Price points: ${prices.component1()}, Needed: ${rsiPeriod + 1}")
     }
 
 
@@ -159,7 +159,7 @@ fun main() {
     val tooShortPrices = listOf(10.0, 11.0).map { Price(it) }.toSeries() // Only 2 prices
     val rsiTooShort = calculateRSI(tooShortPrices, 2) // Needs 2+1=3 prices
     println("RSI(2) for too short series: ${rsiTooShort.toList().map { if (it.isNaN()) "NaN" else "%.2f".format(it) }}")
-    // Expected: [NaN, NaN] because prices.a < period + 1 condition
+    // Expected: [NaN, NaN] because prices.component1() < period + 1 condition
 
     try {
         calculateRSI(prices, 0)

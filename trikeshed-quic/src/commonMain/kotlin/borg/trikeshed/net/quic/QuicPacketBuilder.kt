@@ -98,14 +98,14 @@ object QuicPacketBuilder {
         
         // Destination connection ID
         buffer.add(packet.header.destinationConnectionId.length.toByte())
-        for (i in 0 until packet.header.destinationConnectionId.bytes.a) {
-            buffer.add(packet.header.destinationConnectionId.bytes.b(i))
+        for (i in 0 until packet.header.destinationConnectionId.bytes.component1()) {
+            buffer.add(packet.header.destinationConnectionId.bytes.component2()(i))
         }
         
         // Source connection ID  
         buffer.add(packet.header.sourceConnectionId.length.toByte())
-        for (i in 0 until packet.header.sourceConnectionId.bytes.a) {
-            buffer.add(packet.header.sourceConnectionId.bytes.b(i))
+        for (i in 0 until packet.header.sourceConnectionId.bytes.component1()) {
+            buffer.add(packet.header.sourceConnectionId.bytes.component2()(i))
         }
         
         // Packet number (variable length)
@@ -126,8 +126,8 @@ object QuicPacketBuilder {
         }
         
         // Payload
-        for (i in 0 until packet.payload.a) {
-            buffer.add(packet.payload.b(i))
+        for (i in 0 until packet.payload.component1()) {
+            buffer.add(packet.payload.component2()(i))
         }
         
         return buffer.size j { buffer[it] }

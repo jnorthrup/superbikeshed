@@ -27,7 +27,7 @@ class TorrentSimulationTDDTest {
         simulation.startSimulation()
         
         // Create a test torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "Test Torrent",
@@ -47,7 +47,7 @@ class TorrentSimulationTDDTest {
         // Create peers with different piece sets
         val peer1 = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = 20 j { i -> (i * 2).toByte() },
+            peerId = \1 j { \2: Int -> (i * 2).toByte() },
             address = "192.168.1.100",
             port = 6881,
             hasPieces = (0..31).toSet() // First half
@@ -55,7 +55,7 @@ class TorrentSimulationTDDTest {
         
         val peer2 = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = 20 j { i -> (i * 3).toByte() },
+            peerId = \1 j { \2: Int -> (i * 3).toByte() },
             address = "192.168.1.101",
             port = 6882,
             hasPieces = (32..63).toSet() // Second half
@@ -70,7 +70,7 @@ class TorrentSimulationTDDTest {
         // Create downloader peer
         val downloaderPeer = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = 20 j { i -> (i * 4).toByte() },
+            peerId = \1 j { \2: Int -> (i * 4).toByte() },
             address = "192.168.1.102",
             port = 6883,
             hasPieces = emptySet() // No pieces initially
@@ -97,7 +97,7 @@ class TorrentSimulationTDDTest {
         dht.start()
         
         // Create test torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = SimulatedTorrent(
             infoHash = infoHash,
             name = "DHT Test Torrent",
@@ -116,7 +116,7 @@ class TorrentSimulationTDDTest {
         assertTrue(peers.isNotEmpty())
         
         // Add peer to DHT
-        val peerId = 20 j { i -> (i * 5).toByte() }
+        val peerId = \1 j { \2: Int -> (i * 5).toByte() }
         dht.addPeer(infoHash, peerId)
         
         // Verify DHT stats
@@ -137,7 +137,7 @@ class TorrentSimulationTDDTest {
         tracker.start()
         
         // Create test torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = SimulatedTorrent(
             infoHash = infoHash,
             name = "Tracker Test Torrent",
@@ -176,7 +176,7 @@ class TorrentSimulationTDDTest {
         peerNetwork.start()
         
         // Create test torrent and peers
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = SimulatedTorrent(
             infoHash = infoHash,
             name = "Peer Test Torrent",
@@ -188,7 +188,7 @@ class TorrentSimulationTDDTest {
         )
         
         val peer1 = SimulatedPeer(
-            peerId = 20 j { i -> (i * 6).toByte() },
+            peerId = \1 j { \2: Int -> (i * 6).toByte() },
             address = "192.168.1.200",
             port = 6881,
             torrent = torrent,
@@ -199,7 +199,7 @@ class TorrentSimulationTDDTest {
         )
         
         val peer2 = SimulatedPeer(
-            peerId = 20 j { i -> (i * 7).toByte() },
+            peerId = \1 j { \2: Int -> (i * 7).toByte() },
             address = "192.168.1.201",
             port = 6882,
             torrent = torrent,
@@ -242,7 +242,7 @@ class TorrentSimulationTDDTest {
         fileSystem.start()
         
         // Create test torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = SimulatedTorrent(
             infoHash = infoHash,
             name = "File System Test Torrent",
@@ -255,7 +255,7 @@ class TorrentSimulationTDDTest {
         
         // Store pieces
         for (i in 0..3) {
-            val pieceData = 16384 j { j -> (j % 256).toByte() }
+            val pieceData = \1 j { \2: Int -> (j % 256).toByte() }
             fileSystem.storePiece(infoHash, i, pieceData)
         }
         
@@ -263,7 +263,7 @@ class TorrentSimulationTDDTest {
         for (i in 0..3) {
             val piece = fileSystem.retrievePiece(infoHash, i)
             assertNotNull(piece)
-            assertEquals(16384, piece.a)
+            assertEquals(16384, piece.component1())
         }
         
         // Check completion
@@ -300,7 +300,7 @@ class TorrentSimulationTDDTest {
         registry.start()
         
         // Create test torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = SimulatedTorrent(
             infoHash = infoHash,
             name = "Registry Test Torrent",
@@ -316,7 +316,7 @@ class TorrentSimulationTDDTest {
         
         // Create and add peer
         val peer = SimulatedPeer(
-            peerId = 20 j { i -> (i * 8).toByte() },
+            peerId = \1 j { \2: Int -> (i * 8).toByte() },
             address = "192.168.1.300",
             port = 6881,
             torrent = torrent,
@@ -372,7 +372,7 @@ class TorrentSimulationTDDTest {
         simulation.startSimulation()
         
         // Create torrent with context verification
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "Context Test Torrent",
@@ -386,7 +386,7 @@ class TorrentSimulationTDDTest {
         // Simulate peer operations
         val peer = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = 20 j { i -> (i * 9).toByte() },
+            peerId = \1 j { \2: Int -> (i * 9).toByte() },
             address = "192.168.1.400",
             port = 6881,
             hasPieces = setOf(0)
@@ -408,7 +408,7 @@ class TorrentSimulationTDDTest {
         simulation.startSimulation()
         
         // Create torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "Error Test Torrent",
@@ -419,7 +419,7 @@ class TorrentSimulationTDDTest {
         // Create peer with no pieces
         val peer = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = 20 j { i -> (i * 10).toByte() },
+            peerId = \1 j { \2: Int -> (i * 10).toByte() },
             address = "192.168.1.500",
             port = 6881,
             hasPieces = emptySet()

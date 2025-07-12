@@ -100,8 +100,8 @@ class KrakenSkimmerStrategy(
         val tracker = getOrCreateTracker(symbol, candles)
         
         // Get current price
-        val currentPrice = candles[candles.size - 1].a.ohlc.close
-        val currentTime = candles[candles.size - 1].b
+        val currentPrice = candles[candles.size - 1].component1().ohlc.close
+        val currentTime = candles[candles.size - 1].component2()
         
         // Update adaptive mode status
         updateAdaptiveMode(tracker, currentTime)
@@ -155,8 +155,8 @@ class KrakenSkimmerStrategy(
     internal fun getOrCreateTracker(symbol: Symbol, candles: CandleSeries): BaselineTracker {
         return baselineTrackers.getOrPut(symbol) {
             // Initialize baseline with current price
-            val currentPrice = candles[candles.size - 1].a.ohlc.close
-            val currentTime = candles[candles.size - 1].b
+            val currentPrice = candles[candles.size - 1].component1().ohlc.close
+            val currentTime = candles[candles.size - 1].component2()
             BaselineTracker(
                 baseline = BaselineValue(currentPrice.value),
                 lastUpdateTime = currentTime
@@ -229,8 +229,8 @@ class KrakenSkimmerStrategy(
         val startIdx = candles.size - recentCount
         
         val returns = (startIdx until candles.size - 1).map { i ->
-            val current = candles[i + 1].a.ohlc.close.value
-            val previous = candles[i].a.ohlc.close.value
+            val current = candles[i + 1].component1().ohlc.close.value
+            val previous = candles[i].component1().ohlc.close.value
             kotlin.math.ln(current / previous)
         }
         
@@ -360,10 +360,10 @@ data class PortfolioSkimmerAnalysis(
         }
     
     val portfolioDeviation: DeviationPercent
-        get() = portfolioState.b
+        get() = portfolioState.component2()
     
     val marketRegime: MarketRegime
-        get() = portfolioState.a
+        get() = portfolioState.component1()
 }
 
 // Attention-driven Kraken skimmer

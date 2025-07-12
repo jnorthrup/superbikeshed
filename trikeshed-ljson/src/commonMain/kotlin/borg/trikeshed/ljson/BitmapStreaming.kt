@@ -43,10 +43,10 @@ class BitmapStreamingProcessor(
         val provider = BitmapJsonProvider(enableParallel = false)
         val result = provider.parse(json)
         
-        when (val element = result.a) {
+        when (val element = result.component1()) {
             is JsonElement.Obj -> {
-                for (i in 0 until element.fields.a) {
-                    emit(element.fields.b(i))
+                for (i in 0 until element.fields.component1()) {
+                    emit(element.fields.component2()(i))
                     yield() // Allow cancellation
                 }
             }
@@ -68,7 +68,7 @@ class BitmapStreamingProcessor(
         lines.forEachIndexed { index, line ->
             if (line.isNotBlank()) {
                 val result = provider.parse(line.trim())
-                result.a?.let { emit(it) }
+                result.component1()?.let { emit(it) }
                 
                 if (index % 100 == 0) yield() // Periodic yield
             }
@@ -79,10 +79,10 @@ class BitmapStreamingProcessor(
         val provider = BitmapJsonProvider(enableParallel = false)
         val result = provider.parse(json)
         
-        when (val element = result.a) {
+        when (val element = result.component1()) {
             is JsonElement.Arr -> {
-                for (i in 0 until element.elements.a) {
-                    emit(element.elements.b(i))
+                for (i in 0 until element.elements.component1()) {
+                    emit(element.elements.component2()(i))
                 }
             }
             else -> {
@@ -99,10 +99,10 @@ class BitmapStreamingProcessor(
                 val provider = BitmapJsonProvider(enableParallel = true)
                 val result = provider.parse(chunk)
                 
-                when (val element = result.a) {
+                when (val element = result.component1()) {
                     is JsonElement.Arr -> {
-                        for (i in 0 until element.elements.a) {
-                            send(element.elements.b(i))
+                        for (i in 0 until element.elements.component1()) {
+                            send(element.elements.component2()(i))
                         }
                     }
                     else -> {
@@ -161,8 +161,8 @@ class BitmapStreamingCursor(
         val batchSize = 1000
         var processedRows = 0
         
-        while (processedRows < cursor.a) {
-            val endIndex = minOf(processedRows + batchSize, cursor.a)
+        while (processedRows < cursor.component1()) {
+            val endIndex = minOf(processedRows + batchSize, cursor.component1())
             val batch = cursor.at(processedRows until endIndex)
             
             val jsonArray = JsonCursor.toJsonArray(batch)
@@ -175,8 +175,8 @@ class BitmapStreamingCursor(
     
     internal fun elementToRow(element: JsonElement): List<Any?> = when (element) {
         is JsonElement.Obj -> {
-            (0 until element.fields.a).map { i ->
-                element.fields.b(i).b.toNativeValue()
+            (0 until element.fields.component1()).map { i ->
+                element.fields.component2()(i).component2().toNativeValue()
             }
         }
         else -> listOf(element.toNativeValue())
@@ -206,8 +206,8 @@ class BitmapISAMStreaming(
             processor.streamJsonArray(jsonChunk).collect { element ->
                 val row = when (element) {
                     is JsonElement.Obj -> {
-                        (0 until element.fields.a).map { i ->
-                            element.fields.b(i).b.toNativeValue()
+                        (0 until element.fields.component1()).map { i ->
+                            element.fields.component2()(i).component2().toNativeValue()
                         }
                     }
                     else -> listOf(element.toNativeValue())
@@ -235,7 +235,7 @@ class BitmapISAMStreaming(
      */
     fun streamISAMToJson(inputPath: String): Flow<String> = flow {
         val handle = openISAMCursor(inputPath)
-        val cursor = handle.a
+        val cursor = handle.component1()
         
         try {
             val converter = BitmapStreamingCursor()
@@ -243,7 +243,7 @@ class BitmapISAMStreaming(
                 emit(jsonString)
             }
         } finally {
-            handle.b.close()
+            handle.component2().close()
         }
     }
     
@@ -487,12 +487,12 @@ internal fun JsonElement.toNativeValue(): Any? = when (this) {
     is JsonElement.Bool -> value
     is JsonElement.Num -> value
     is JsonElement.Str -> value
-    is JsonElement.Arr -> (0 until elements.a).map { elements.b(it).toNativeValue() }
+    is JsonElement.Arr -> (0 until elements.component1()).map { elements.component2()(it).toNativeValue() }
     is JsonElement.Obj -> {
         val map = mutableMapOf<String, Any?>()
-        for (i in 0 until fields.a) {
-            val field = fields.b(i)
-            map[field.a] = field.b.toNativeValue()
+        for (i in 0 until fields.component1()) {
+            val field = fields.component2()(i)
+            map[field.component1()] = field.component2().toNativeValue()
         }
         map
     }

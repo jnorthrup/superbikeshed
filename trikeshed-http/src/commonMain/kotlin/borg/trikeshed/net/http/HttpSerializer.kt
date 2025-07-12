@@ -29,7 +29,7 @@ object HttpSerializer {
     internal fun serializeHeaders(headers: Indexed<Join<String, String>>): String {
         return (0 until headers.size).joinToString("\r\n") { i ->
             val header = headers[i]
-            "${header.a}: ${header.b}"
+            "${header.component1()}: ${header.component2()}"
         }
     }
     

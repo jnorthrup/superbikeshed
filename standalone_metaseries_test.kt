@@ -49,7 +49,7 @@ typealias Tensor<T> = MetaSeries<Shape, T>
 // Series operations
 val <T> Series<T>.size: Int get() = a
 operator fun <T> Series<T>.get(i: Int): T = b(i)
-inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> = size j { i -> xform(this[i]) }
+inline infix fun <X, C, V : Series<X>> V.α(crossinline xform: (X) -> C): Series<C> = \1 j { \2: Int -> xform(this[i]) }
 
 // Play materialization for standard library integration
 val <T> Series<T>.play: List<T> get() = (0 until size).map { this[it] }
@@ -64,17 +64,17 @@ class MetaSeriesTest {
     @Test
     fun `MetaSeries universal foundation`() {
         // MetaSeries<A, T> = Join<A, (A) -> T>
-        val timeSeries: MetaSeries<String, Int> = "events" j { key -> key.length }
+        val timeSeries: MetaSeries<String, Int> = \1 j { \2: Int -> key.length }
         
-        assertEquals("events", timeSeries.a)
-        assertEquals(6, timeSeries.b("events"))
+        assertEquals("events", timeSeries.component1())
+        assertEquals(6, timeSeries.component2()("events"))
         println("✓ MetaSeries universal foundation works")
     }
     
     @Test
     fun `Series realm - Int indexed sequences`() {
         // Series<T> = MetaSeries<Int, T>
-        val fibonacci: Series<Long> = 10 j { i ->
+        val fibonacci: Series<Long> = \1 j { \2: Int ->
             when (i) {
                 0 -> 0L
                 1 -> 1L
@@ -107,15 +107,15 @@ class MetaSeriesTest {
         // Twin<T> = MetaSeries<Boolean, T>
         val minMax: Twin<Double> = true j { if (it) 100.0 else -50.0 }
         
-        assertEquals(100.0, minMax.b(true))   // max
-        assertEquals(-50.0, minMax.b(false))  // min
+        assertEquals(100.0, minMax.component2()(true))   // max
+        assertEquals(-50.0, minMax.component2()(false))  // min
         println("✓ Twin realm works for min/max values")
     }
     
     @Test
     fun `Shape as Series of Int`() {
         // Shape = Series<Int> - dimensional metadata
-        val matrixShape: Shape = 4 j { dim ->
+        val matrixShape: Shape = \1 j { \2: Int ->
             when (dim) {
                 0 -> 5    // batch size
                 1 -> 3    // height
@@ -140,7 +140,7 @@ class MetaSeriesTest {
     @Test
     fun `Tensor realm - Shape indexed multidimensional arrays`() {
         // Tensor<T> = MetaSeries<Shape, T>
-        val imageShape: Shape = 3 j { i -> 
+        val imageShape: Shape = \1 j { \2: Int -> 
             when (i) {
                 0 -> 2  // height
                 1 -> 3  // width
@@ -149,21 +149,21 @@ class MetaSeriesTest {
             }
         }
         
-        val image: Tensor<Int> = imageShape j { coords ->
+        val image: Tensor<Int> = \1 j { \2: Int ->
             val h = coords[0]
             val w = coords[1] 
             val c = coords[2]
             h * 100 + w * 10 + c  // encode position as value
         }
         
-        assertEquals(imageShape, image.a)
+        assertEquals(imageShape, image.component1())
         
         // Access specific pixels
-        val pixel_0_0_R: Shape = 3 j { i -> if (i == 0) 0 else if (i == 1) 0 else 0 } // [0,0,0]
-        assertEquals(0, image.b(pixel_0_0_R))   // 0*100 + 0*10 + 0 = 0
+        val pixel_0_0_R: Shape = \1 j { \2: Int -> if (i == 0) 0 else if (i == 1) 0 else 0 } // [0,0,0]
+        assertEquals(0, image.component2()(pixel_0_0_R))   // 0*100 + 0*10 + 0 = 0
         
-        val pixel_1_2_G: Shape = 3 j { i -> if (i == 0) 1 else if (i == 1) 2 else 1 } // [1,2,1]
-        assertEquals(121, image.b(pixel_1_2_G)) // 1*100 + 2*10 + 1 = 121
+        val pixel_1_2_G: Shape = \1 j { \2: Int -> if (i == 0) 1 else if (i == 1) 2 else 1 } // [1,2,1]
+        assertEquals(121, image.component2()(pixel_1_2_G)) // 1*100 + 2*10 + 1 = 121
         
         println("✓ Tensor realm works for RGB image tensor")
     }
@@ -171,7 +171,7 @@ class MetaSeriesTest {
     @Test
     fun `Series2 with Join elements`() {
         // Series2<A,B> = MetaSeries<Int, Join<A,B>>
-        val database: Series2<String, Any?> = 5 j { rowId ->
+        val database: Series2<String, Any?> = \1 j { \2: Int ->
             when (rowId) {
                 0 -> "Alice" j 25
                 1 -> "Bob" j 30  
@@ -185,12 +185,12 @@ class MetaSeriesTest {
         assertEquals(5, database.size)
         
         val row0 = database[0]
-        assertEquals("Alice", row0.a)
-        assertEquals(25, row0.b)
+        assertEquals("Alice", row0.component1())
+        assertEquals(25, row0.component2())
         
         val row2 = database[2]
-        assertEquals("Charlie", row2.a)
-        assertEquals(null, row2.b)
+        assertEquals("Charlie", row2.component1())
+        assertEquals(null, row2.component2())
         
         println("✓ Series2 works as structured database rows")
     }
@@ -212,7 +212,7 @@ class MetaSeriesTest {
     
     @Test
     fun `Play materialization for standard library integration`() {
-        val series: Series<String> = 10 j { i -> "item-$i" }
+        val series: Series<String> = \1 j { \2: Int -> "item-$i" }
         
         // Use play to get List<T> for standard library operations
         val filtered = series.play.filter { it.contains("2") || it.contains("5") || it.contains("7") }
@@ -229,8 +229,8 @@ class MetaSeriesTest {
         val batchSize = 3
         val imageShape: Shape = 2 j { if (it == 0) 2 else 2 }  // 2x2 images
         
-        val imageBatch: Series<Tensor<Float>> = batchSize j { batchIdx ->
-            imageShape j { coords ->
+        val imageBatch: Series<Tensor<Float>> = \1 j { \2: Int ->
+            \1 j { \2: Int ->
                 val row = coords[0]
                 val col = coords[1]
                 batchIdx * 10.0f + row * 3.0f + col  // unique value per batch/position
@@ -241,11 +241,11 @@ class MetaSeriesTest {
         
         // Access specific image in batch
         val image1 = imageBatch[1]
-        assertEquals(imageShape, image1.a)
+        assertEquals(imageShape, image1.component1())
         
         // Access specific pixel in that image
         val coord: Shape = 2 j { if (it == 0) 1 else 0 }  // [1, 0]
-        val pixelValue = image1.b(coord)
+        val pixelValue = image1.component2()(coord)
         assertEquals(13.0f, pixelValue)  // 1*10 + 1*3 + 0 = 13
         
         println("✓ Complex nested composition: Series<Tensor<Float>> works")
@@ -256,7 +256,7 @@ class MetaSeriesTest {
         val startTime = TimeSource.Monotonic.markNow()
         
         // Create large dataset
-        val largeData: Series<Double> = 100_000 j { i -> i * Math.PI }
+        val largeData: Series<Double> = \1 j { \2: Int -> i * Math.PI }
         
         // Apply multiple transformations (all lazy)
         val processed = largeData α { it * 2 } α { it + 1 } α { Math.sin(it) }
@@ -284,15 +284,15 @@ class MetaSeriesTest {
         val intSeries: Series<String> = 3 j { "item$it" }
         val boolTwin: Twin<String> = true j { if (it) "yes" else "no" }
         val shape: Shape = 2 j { it + 5 }
-        val tensor: Tensor<String> = shape j { coords -> "cell[${coords[0]},${coords[1]}]" }
+        val tensor: Tensor<String> = \1 j { \2: Int -> "cell[${coords[0]},${coords[1]}]" }
         
         // All different index types maintain realm separation
         assertEquals("item1", intSeries[1])              // Int realm
-        assertEquals("yes", boolTwin.b(true))            // Boolean realm
+        assertEquals("yes", boolTwin.component2()(true))            // Boolean realm
         assertEquals(6, shape[1])                        // Int realm (but Shape semantics)
         
         val coord: Shape = 2 j { if (it == 0) 5 else 6 }
-        assertEquals("cell[5,6]", tensor.b(coord))       // Shape realm
+        assertEquals("cell[5,6]", tensor.component2()(coord))       // Shape realm
         
         // All are MetaSeries but with different index types
         assertTrue(intSeries is MetaSeries<Int, String>)
@@ -307,9 +307,9 @@ class MetaSeriesTest {
         // Test composition laws
         val point = 42 j 37
         
-        // Identity law: (a j b).a == a && (a j b).b == b
-        assertEquals(42, point.a)
-        assertEquals(37, point.b)
+        // Identity law: (a j b).component1() == a && (a j b).component2() == b
+        assertEquals(42, point.component1())
+        assertEquals(37, point.component2())
         
         // Destructuring
         val (x, y) = point
@@ -318,10 +318,10 @@ class MetaSeriesTest {
         
         // Nested composition
         val nested = (1 j 2) j (3 j 4)
-        assertEquals(1, nested.a.a)
-        assertEquals(2, nested.a.b)
-        assertEquals(3, nested.b.a)
-        assertEquals(4, nested.b.b)
+        assertEquals(1, nested.component1().component1())
+        assertEquals(2, nested.component1().component2())
+        assertEquals(3, nested.component2().component1())
+        assertEquals(4, nested.component2().component2())
         
         // Interop bridge
         assertEquals(Pair(42, 37), point.pair)

@@ -41,11 +41,11 @@ fun executeCarlosRSI2Strategy(klines: Indexed<Kline>): Indexed<TradingSignal> {
     val sma15 = calculateSMA(closePrices, 15)
 
     // c. Determine Trading Signals
-    return klines.a j { index:Int ->
-        val currentPrice = closePrices.b(index)
-        val currentRsi = rsi2.b(index) // This is a Double
-        val currentSma2 = sma2.b(index)
-        val currentSma15 = sma15.b(index)
+    return klines.component1() j { index:Int ->
+        val currentPrice = closePrices.component2()(index)
+        val currentRsi = rsi2.component2()(index) // This is a Double
+        val currentSma2 = sma2.component2()(index)
+        val currentSma15 = sma15.component2()(index)
 
         // Handle Undefined Indicator Values
         if (currentPrice == UNDEFINED_PRICE ||
@@ -88,13 +88,13 @@ fun main() {
     // if (klineDataSeries.isNotEmpty()) {
     //     val signals = executeCarlosRSI2Strategy(klineDataSeries)
     //
-    //     println("Signals generated (${signals.a} count):")
+    //     println("Signals generated (${signals.component1()} count):")
     //     signals.toList().forEachIndexed { index, signal ->
-    //         val kline = klineDataSeries.b(index)
+    //         val kline = klineDataSeries.component2()(index)
     //         val closePrice = kline.close.value
-    //         val rsiVal = calculateRSI(klineDataSeries.α{it.close}, 2).b(index) // For display
-    //         val sma2Val = calculateSMA(klineDataSeries.α{it.close}, 2).b(index).value // For display
-    //         val sma15Val = calculateSMA(klineDataSeries.α{it.close}, 15).b(index).value // For display
+    //         val rsiVal = calculateRSI(klineDataSeries.α{it.close}, 2).component2()(index) // For display
+    //         val sma2Val = calculateSMA(klineDataSeries.α{it.close}, 2).component2()(index).value // For display
+    //         val sma15Val = calculateSMA(klineDataSeries.α{it.close}, 15).component2()(index).value // For display
     //
     //         println(
     //             "Index: $index, Date: ${moneyfan.examples.klineTimestampToLocalDateTimeString(kline.timestamp)}, " +

@@ -54,17 +54,17 @@ abstract class TrikeShedRestClient(
     override suspend fun execute(request: HttpRequest): HttpResponse = coroutineScope {
         // Apply interceptors
         var processedRequest = request
-        for (i in 0 until interceptors.a) {
-            processedRequest = interceptors.b(i).intercept(processedRequest)
+        for (i in 0 until interceptors.component1()) {
+            processedRequest = interceptors.component2()(i).intercept(processedRequest)
         }
         
         // Merge default headers with request headers
-        val mergedHeaders = mergeHeaders(defaultHeaders, processedRequest.a.headers)
-        val finalRequest = processedRequest.a.copy(
-            url = resolveUrl(processedRequest.a.url),
+        val mergedHeaders = mergeHeaders(defaultHeaders, processedRequest.component1().headers)
+        val finalRequest = processedRequest.component1().copy(
+            url = resolveUrl(processedRequest.component1().url),
             headers = mergedHeaders,
-            timeout = processedRequest.a.timeout ?: defaultTimeout
-        ) j processedRequest.b
+            timeout = processedRequest.component1().timeout ?: defaultTimeout
+        ) j processedRequest.component2()
         
         // Execute with timing
         val response: HttpResponse
@@ -76,20 +76,20 @@ abstract class TrikeShedRestClient(
         logger.log(finalRequest, response)
         
         // Return response with duration
-        response.a.copy(duration = duration) j response.b
+        response.component1().copy(duration = duration) j response.component2()
     }
     
     override suspend fun stream(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> = flow {
         // Apply interceptors
         var processedRequest = request
-        for (i in 0 until interceptors.a) {
-            processedRequest = interceptors.b(i).intercept(processedRequest)
+        for (i in 0 until interceptors.component1()) {
+            processedRequest = interceptors.component2()(i).intercept(processedRequest)
         }
         
-        val finalRequest = processedRequest.a.copy(
-            url = resolveUrl(processedRequest.a.url),
-            headers = mergeHeaders(defaultHeaders, processedRequest.a.headers)
-        ) j processedRequest.b
+        val finalRequest = processedRequest.component1().copy(
+            url = resolveUrl(processedRequest.component1().url),
+            headers = mergeHeaders(defaultHeaders, processedRequest.component1().headers)
+        ) j processedRequest.component2()
         
         // Stream implementation would connect and emit chunks
         streamInternal(finalRequest).collect { chunk ->
@@ -99,14 +99,14 @@ abstract class TrikeShedRestClient(
     
     override suspend fun batch(requests: Indexed<HttpRequest>): Indexed<HttpResponse> = coroutineScope {
         // Execute requests in parallel with coroutines
-        val deferreds = (0 until requests.a).map { i ->
+        val deferreds = (0 until requests.component1()).map { i ->
             async {
-                execute(requests.b(i))
+                execute(requests.component2()(i))
             }
         }
         
         // Collect results maintaining order
-        requests.a j { i: Int ->
+        requests.component1() j { i: Int ->
             runBlocking { deferreds[i].await() }
         }
     }
@@ -133,20 +133,20 @@ abstract class TrikeShedRestClient(
     
     /*
     private fun convertToHttpRequest(request: HttpRequest): borg.trikeshed.net.http.HttpRequest {
-        val method = request.a.method.uppercase()
+        val method = request.component1().method.uppercase()
         
-        val path = HttpRequestPath(request.a.url)
+        val path = HttpRequestPath(request.component1().url)
         
-        val headers = Array(request.a.headers.a) { i ->
-            val header = request.a.headers.b(i)
-            HttpHeaderName(header.a) j HttpHeaderValue(header.b)
+        val headers = Array(request.component1().headers.component1()) { i ->
+            val header = request.component1().headers.component2()(i)
+            HttpHeaderName(header.component1()) j HttpHeaderValue(header.component2())
         }
         
         return borg.trikeshed.net.http.HttpRequest(
             method = method,
             path = path,
             headers = headers.size j headers::get,
-            body = request.b ?: ByteArray(0)
+            body = request.component2() ?: ByteArray(0)
         )
     }
     */
@@ -165,9 +165,9 @@ abstract class TrikeShedRestClient(
     
     /*
     private fun convertHeaders(httpHeaders: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): HttpHeaders {
-        val headers = Array(httpHeaders.a) { i ->
-            val header = httpHeaders.b(i)
-            header.a.value j header.b.value
+        val headers = Array(httpHeaders.component1()) { i ->
+            val header = httpHeaders.component2()(i)
+            header.component1().value j header.component2().value
         }
         return headers.size j headers::get
     }
@@ -186,15 +186,15 @@ abstract class TrikeShedRestClient(
         val headerMap = mutableMapOf<String, String>()
         
         // Add default headers
-        for (i in 0 until default.a) {
-            val header = default.b(i)
-            headerMap[header.a.lowercase()] = header.b
+        for (i in 0 until default.component1()) {
+            val header = default.component2()(i)
+            headerMap[header.component1().lowercase()] = header.component2()
         }
         
         // Override with request headers
-        for (i in 0 until request.a) {
-            val header = request.b(i)
-            headerMap[header.a.lowercase()] = header.b
+        for (i in 0 until request.component1()) {
+            val header = request.component2()(i)
+            headerMap[header.component1().lowercase()] = header.component2()
         }
         
         // Convert back to HttpHeaders
@@ -253,10 +253,10 @@ class SseClient(private val restClient: RestClient) {
         
         restClient.stream(request).collect { chunk ->
             // Parse SSE format
-            val data = chunk.b.decodeToString()
+            val data = chunk.component2().decodeToString()
             val events = parseSseEvents(data)
-            for (i in 0 until events.a) {
-                emit(events.b(i))
+            for (i in 0 until events.component1()) {
+                emit(events.component2()(i))
             }
         }
     }
@@ -431,9 +431,9 @@ class MultipartFormData {
     
     fun addPart(name: String, content: ByteArray, contentType: String? = null) {
         val headers = contentType?.let { mapOf("Content-Type" to it) } ?: emptyMap()
-        val currentSize = parts.a
+        val currentSize = parts.component1()
         parts = (currentSize + 1) j { i: Int ->
-            if (i < currentSize) parts.b(i) else FormPart(name, content, headers)
+            if (i < currentSize) parts.component2()(i) else FormPart(name, content, headers)
         }
     }
     
@@ -442,9 +442,9 @@ class MultipartFormData {
             "Content-Disposition" to "form-data; name=\"$name\"; filename=\"$filename\"",
             "Content-Type" to contentType
         )
-        val currentSize = parts.a
+        val currentSize = parts.component1()
         parts = (currentSize + 1) j { i: Int ->
-            if (i < currentSize) parts.b(i) else FormPart(name, content, headers)
+            if (i < currentSize) parts.component2()(i) else FormPart(name, content, headers)
         }
     }
     
@@ -453,8 +453,8 @@ class MultipartFormData {
         val contentType = "multipart/form-data; boundary=$boundary"
         
         val body = buildString {
-            for (i in 0 until parts.a) {
-                val part = parts.b(i)
+            for (i in 0 until parts.component1()) {
+                val part = parts.component2()(i)
                 append("--$boundary\r\n")
                 append("Content-Disposition: form-data; name=\"${part.name}\"\r\n")
                 part.headers.forEach { (key, value) ->

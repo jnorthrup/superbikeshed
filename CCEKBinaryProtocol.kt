@@ -25,7 +25,7 @@ object SimpleBinaryProtocol {
     }
     
     // Message field using Join
-    typealias Field = Join<Int, Join<WireType, ByteArray>> // fieldNum j (wireType j data)
+    typealias Field = Join<Int, WireType j ByteArray> // fieldNum j (wireType j data)
     typealias Message = Indexed<Field>
     
     // BBCursive ops for binary parsing
@@ -129,11 +129,11 @@ object SimpleBinaryProtocol {
         internal fun encodeMessage(msg: Message): ByteArray {
             val result = mutableListOf<Byte>()
             
-            for (i in 0 until msg.a) {
-                val field = msg.b(i)
-                val fieldNum = field.a
-                val wireType = field.b.a
-                val data = field.b.b
+            for (i in 0 until msg.component1()) {
+                val field = msg.component2()(i)
+                val fieldNum = field.component1()
+                val wireType = field.component2().component1()
+                val data = field.component2().component2()
                 
                 // Encode field header
                 val header = (fieldNum shl 3) or wireType.value
@@ -156,8 +156,8 @@ object SimpleBinaryProtocol {
             msg ?: return null
             
             // Apply validation rules from knowledge
-            for (i in 0 until knowledge.rules.a) {
-                val rule = knowledge.rules.b(i)
+            for (i in 0 until knowledge.rules.component1()) {
+                val rule = knowledge.rules.component2()(i)
                 // Check field constraints, required fields, etc.
             }
             
@@ -197,7 +197,7 @@ object FrameProtocol {
     
     // Frame structure using Join
     typealias Frame = Join<FrameHeader, ByteArray> // header j payload
-    typealias FrameHeader = Join<Int, Join<Boolean, Long>> // opcode j (masked j length)
+    typealias FrameHeader = Join<Int, Boolean j Long> // opcode j (masked j length)
     
     // Opcodes
     object OpCode {
@@ -277,11 +277,11 @@ object FrameProtocol {
             frame ?: return null
             
             // Apply transformations based on knowledge rules
-            val opcode = frame.a.a
+            val opcode = frame.component1().component1()
             
             // Example: Transform PING to PONG
             return if (opcode == OpCode.PING) {
-                (OpCode.PONG j frame.a.b) j frame.b
+                (OpCode.PONG j frame.component1().component2()) j frame.component2()
             } else frame
         }
     }
@@ -343,10 +343,10 @@ suspend fun main() = coroutineScope {
     val parsedFrame = frameProtocol.processFrame(textFrame, ccekFrame)
     println("\nParsed WebSocket frame: $parsedFrame")
     if (parsedFrame != null) {
-        println("  Opcode: ${parsedFrame.a.a}")
-        println("  Masked: ${parsedFrame.a.b.a}")
-        println("  Length: ${parsedFrame.a.b.b}")
-        println("  Payload: ${parsedFrame.b.decodeToString()}")
+        println("  Opcode: ${parsedFrame.component1().component1()}")
+        println("  Masked: ${parsedFrame.component1().component2().component1()}")
+        println("  Length: ${parsedFrame.component1().component2().component2()}")
+        println("  Payload: ${parsedFrame.component2().decodeToString()}")
     }
     
     // Transform PING to PONG

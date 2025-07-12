@@ -236,8 +236,8 @@ class AttentionVideoEncoder(
                 eventType = "document_focus",
                 data = mapOf(
                     "docId" to event.docId,
-                    "rangeStart" to event.range.a,
-                    "rangeEnd" to event.range.b,
+                    "rangeStart" to event.range.component1(),
+                    "rangeEnd" to event.range.component2(),
                     "duration" to event.duration
                 ),
                 intensity = event.intensity
@@ -298,15 +298,15 @@ suspend fun createAttentionVideo(
     val events = operations.α { attention ->
         when (attention.document) {
             is DocumentAttention -> AttentionEvent.DocumentFocus(
-                docId = attention.document.doc.a.toString(),
-                range = attention.document.doc.b,
+                docId = attention.document.doc.component1().toString(),
+                range = attention.document.doc.component2(),
                 duration = 1000L,
                 intensity = 1.0
             )
             is CorpusAttention -> AttentionEvent.CorpusScan(
-                corpusId = attention.document.corpus.a,
-                scannedBytes = attention.document.corpus.b.a,
-                totalBytes = attention.document.corpus.b.b,
+                corpusId = attention.document.corpus.component1(),
+                scannedBytes = attention.document.corpus.component2().component1(),
+                totalBytes = attention.document.corpus.component2().component2(),
                 attentionScore = 1.0
             )
             else -> AttentionEvent.FiduciaryAction(

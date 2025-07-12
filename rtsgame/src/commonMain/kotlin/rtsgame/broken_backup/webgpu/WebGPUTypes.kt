@@ -47,8 +47,8 @@ value class PipelineId(val value: Int)
 value class TextureId(val value: Int)
 
 // Shader resource types
-typealias VertexData = Join<Vector3D, Join<Float, Int>>
-typealias UniformData = Join<Matrix4, Join<Vector3D, Float>>
+typealias VertexData = Join<Vector3D, Float j Int>
+typealias UniformData = Join<Matrix4, Vector3D j Float>
 
 // Matrix type for uniforms
 data class Matrix4(

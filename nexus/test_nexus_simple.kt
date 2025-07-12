@@ -18,7 +18,7 @@ fun main() = runBlocking {
     val distribution = createStandardAttentionDistribution()
     for (i in 0 until distribution.size) {
         val vector = distribution[i]
-        println("   - ${vector.a}: ${vector.b}%")
+        println("   - ${vector.component1()}: ${vector.component2()}%")
     }
     
     // Test 3: Causality Chain
@@ -26,15 +26,15 @@ fun main() = runBlocking {
     val chain = createCausalityChain()
     for (i in 0 until chain.size) {
         val link = chain[i]
-        println("   - ${link.a} → ${link.b}")
+        println("   - ${link.component1()} → ${link.component2()}")
     }
     
     // Test 4: Core Types
     println("\n4. Testing Core Types:")
     val testJoin = "Nexus" j "Working"
-    println("   - Join test: ${testJoin.a} + ${testJoin.b}")
+    println("   - Join test: ${testJoin.component1()} + ${testJoin.component2()}")
     
-    val testSeries: Indexed<String> = 3 j { i -> "Item-$i" }
+    val testSeries: Indexed<String> = \1 j { \2: Int -> "Item-$i" }
     println("   - Series test: size=${testSeries.size}")
     for (i in 0 until testSeries.size) {
         println("     [${i}] = ${testSeries[i]}")

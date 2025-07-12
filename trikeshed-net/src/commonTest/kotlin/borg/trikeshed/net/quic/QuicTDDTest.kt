@@ -141,18 +141,18 @@ class QuicTDDTest {
         }
         
         // Then: Each range should be properly structured
-        assertEquals(3, ranges.a)
-        assertEquals(0L, ranges.b(0).a)      // First range start
-        assertEquals(1023L, ranges.b(0).b)   // First range end
-        assertEquals(2048L, ranges.b(1).a)   // Second range start (gap demonstrates attention)
-        assertEquals(3071L, ranges.b(1).b)   // Second range end
+        assertEquals(3, ranges.component1())
+        assertEquals(0L, ranges.component2()(0).component1())      // First range start
+        assertEquals(1023L, ranges.component2()(0).component2())   // First range end
+        assertEquals(2048L, ranges.component2()(1).component1())   // Second range start (gap demonstrates attention)
+        assertEquals(3071L, ranges.component2()(1).component2())   // Second range end
         
         // And: Simulate sending range requests over separate streams
         val streams = mutableListOf<MockQuicStream>()
-        for (i in 0 until ranges.a) {
+        for (i in 0 until ranges.component1()) {
             val stream = clientConn.createStream()
-            val range = ranges.b(i)
-            val rangeHeader = "Range: bytes=${range.a}-${range.b}\r\n".toByteArray()
+            val range = ranges.component2()(i)
+            val rangeHeader = "Range: bytes=${range.component1()}-${range.component2()}\r\n".toByteArray()
             stream.send(rangeHeader)
             streams.add(stream)
         }

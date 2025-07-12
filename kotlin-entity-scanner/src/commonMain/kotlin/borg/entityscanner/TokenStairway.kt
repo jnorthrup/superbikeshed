@@ -277,7 +277,7 @@ object TokenStairway {
      * Raw characters → Classified characters with positions
      */
     fun classifyChars(source: String): CharIndexed {
-        return source.length j { i ->
+        return \1 j { \2: Int ->
             val char = RawChar(source[i])
             val charClass = classifyChar(char.value)
             val position = CharPosition(i)
@@ -348,7 +348,7 @@ object TokenStairway {
                 if (currentScopeDepth > 0u) currentScopeDepth--
             }
         }
-        return syntaxList.size j { idx -> syntaxList[idx] }
+        return \1 j { \2: Int -> syntaxList[idx] }
     }
 
     /**
@@ -428,7 +428,7 @@ object TokenStairway {
 
             entityList.add((entityToken j roleToken) j contextToken)
         }
-        return entityList.size j { idx -> entityList[idx] }
+        return \1 j { \2: Int -> entityList[idx] }
     }
 
     // Helper to attempt to get lexical value from VisibleSyntax (placeholder)

@@ -126,14 +126,14 @@ class SimpleChannelWagon(
     }
     
     internal fun combineChunks(chunks: List<ByteIndexed>): ByteIndexed {
-        val totalSize = chunks.sumOf { it.a }
-        return ByteIndexed(totalSize j { index ->
+        val totalSize = chunks.sumOf { it.component1() }
+        return \1 j { \2: Int ->
             var offset = 0
             for (chunk in chunks) {
-                if (index < offset + chunk.a) {
-                    return@ByteIndexed chunk.b(index - offset)
+                if (index < offset + chunk.component1()) {
+                    return@ByteIndexed chunk.component2()(index - offset)
                 }
-                offset += chunk.a
+                offset += chunk.component1()
             }
             0.toByte()
         })
@@ -155,7 +155,7 @@ class TrikeShedWagonChannelSimpleTest {
         }
         
         assertTrue(chunks.isNotEmpty())
-        assertTrue(chunks.all { it.a > 0 })
+        assertTrue(chunks.all { it.component1() > 0 })
     }
     
     @Test
@@ -255,12 +255,12 @@ class TrikeShedWagonChannelSimpleTest {
         
         val combined = wagon.combineChunks(listOf(chunk1, chunk2))
         
-        assertEquals(5, combined.a)
-        assertEquals(0.toByte(), combined.b(0))
-        assertEquals(1.toByte(), combined.b(1))
-        assertEquals(2.toByte(), combined.b(2))
-        assertEquals(3.toByte(), combined.b(3))
-        assertEquals(4.toByte(), combined.b(4))
+        assertEquals(5, combined.component1())
+        assertEquals(0.toByte(), combined.component2()(0))
+        assertEquals(1.toByte(), combined.component2()(1))
+        assertEquals(2.toByte(), combined.component2()(2))
+        assertEquals(3.toByte(), combined.component2()(3))
+        assertEquals(4.toByte(), combined.component2()(4))
     }
     
     @Test

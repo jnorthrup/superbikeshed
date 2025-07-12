@@ -119,7 +119,7 @@ class FiduciaryBlackboardMetaverse(
         updateParticipantInCouch(session, participant)
         
         // Project participant join to other routers
-        projectionRouter.projectParticipantJoin(sessionId, participant)
+        projectionRouter.projectParticipantsessionId j participant
         
         return participant
     }

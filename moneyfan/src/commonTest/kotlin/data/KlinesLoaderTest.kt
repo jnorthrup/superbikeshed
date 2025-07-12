@@ -64,9 +64,9 @@ class KlinesLoaderTest {
                 // Compare each cell value within the RowVec.
                 // Assumes klinesRecordMeta order: timestamp, open, high, low, close, volume.
                 for (j in 0 until originalRowVec.size) {
-                    // Values are accessed from Join.a; Join.b provides ColumnMeta lambda.
-                    val originalValue = (originalRowVec.values[j] as? Join<Any?, *>)?.a
-                    val readValue = (readRowVec.values[j] as? Join<Any?, *>)?.a
+                    // Values are accessed from Join.component1(); Join.component2() provides ColumnMeta lambda.
+                    val originalValue = (originalRowVec.values[j] as? Join<Any?, *>)?.component1()
+                    val readValue = (readRowVec.values[j] as? Join<Any?, *>)?.component1()
 
                     assertNotNull(originalValue, "Original value at [$i][$j] should not be null join component")
                     assertNotNull(readValue, "Read value at [$i][$j] should not be null join component")

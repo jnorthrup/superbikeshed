@@ -97,13 +97,13 @@ class ProtocolChannelizedTDDTest {
         val config = parser.parseConfig(configContent)
         
         assertNotNull(config, "SSH config should be parsed")
-        assertEquals(1, config.a, "Should have one host configuration")
+        assertEquals(1, config.component1(), "Should have one host configuration")
         
-        val hostConfig = config.b(0)
-        assertEquals("example.com", hostConfig.a, "Host should be example.com")
+        val hostConfig = config.component2()(0)
+        assertEquals("example.com", hostConfig.component1(), "Host should be example.com")
         
-        val entries = hostConfig.b
-        assertTrue(entries.a > 0, "Should have configuration entries")
+        val entries = hostConfig.component2()
+        assertTrue(entries.component1() > 0, "Should have configuration entries")
     }
     
     @Test
@@ -241,7 +241,7 @@ class ProtocolChannelizedTDDTest {
         )
         
         assertNotNull(handshake, "BitTorrent handshake should be created")
-        assertEquals(68, handshake.a, "Handshake should be 68 bytes")
+        assertEquals(68, handshake.component1(), "Handshake should be 68 bytes")
         
         // Test message parsing
         val message = peerWire.parseMessage(handshake)

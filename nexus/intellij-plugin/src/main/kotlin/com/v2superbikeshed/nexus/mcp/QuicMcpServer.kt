@@ -135,7 +135,7 @@ class QuicMcpServer(internal val project: Project) {
         // Track connection
         val connectionsList = mutableListOf<QuicConnection>()
         val connections = activeConnections.getOrPut(channelName) { 
-            connectionsList.size j { i -> connectionsList[i] }
+            \1 j { \2: Int -> connectionsList[i] }
         }
         connectionsList.add(connection)
         

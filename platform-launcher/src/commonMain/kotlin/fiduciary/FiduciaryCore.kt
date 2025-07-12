@@ -666,11 +666,11 @@ object FiduciaryOperations {
         )
         
         // Find entity in registry and add role
-        val updatedRegistry = registry.size j { i ->
+        val updatedRegistry = \1 j { \2: Int ->
             val entityRecord = registry[i]
-            if (entityRecord.a == entityId) {
-                val currentRoles = entityRecord.b
-                val newRoles = (currentRoles.size + 1) j { j ->
+            if (entityRecord.component1() == entityId) {
+                val currentRoles = entityRecord.component2()
+                val newRoles = (currentRoles.size + \1 j { \2: Int ->
                     if (j < currentRoles.size) currentRoles[j] else role
                 }
                 entityId j newRoles
@@ -725,7 +725,7 @@ object AutomatedFiduciary {
         val alerts = mutableListOf<BeneficiaryAlert>()
         
         interests.play.forEach { entityInterests ->
-            entityInterests.b.play.forEach { interest ->
+            entityInterests.component2().play.forEach { interest ->
                 // Check for declining value
                 if (interest.currentValue.value < interest.potentialValue.value * 0.8) {
                     alerts.add(BeneficiaryAlert(
@@ -741,7 +741,7 @@ object AutomatedFiduciary {
             }
         }
         
-        return alerts.size j { i -> alerts[i] }
+        return \1 j { \2: Int -> alerts[i] }
     }
 }
 
@@ -794,7 +794,7 @@ object FiduciaryAttention {
         
         // Base weights from interest scores
         interests.play.forEach { entityInterests ->
-            entityInterests.b.play.forEach { interest ->
+            entityInterests.component2().play.forEach { interest ->
                 weights[interest.beneficiaryId] = 
                     (weights[interest.beneficiaryId] ?: 0.0) + interest.interestScore.value
             }
@@ -818,7 +818,7 @@ object FiduciaryAttention {
             weights.replaceAll { _, v -> (v / total) * 100.0 }
         }
         
-        return weights.entries.size j { i ->
+        return \1 j { \2: Int ->
             val entry = weights.entries.elementAt(i)
             entry.key j entry.value
         }
@@ -832,7 +832,7 @@ object FiduciaryAttention {
         attentionWeights: Indexed<Join<BeneficiaryId, Double>>
     ): AttentionDispatch {
         val affectedWeights = action.beneficiariesAffected.play.map { beneficiaryId ->
-            attentionWeights.play.find { it.a == beneficiaryId }?.b ?: 0.0
+            attentionWeights.play.find { it.component1() == beneficiaryId }?.component2() ?: 0.0
         }.sum()
         
         val priority = when {
@@ -943,7 +943,7 @@ object FiduciaryProductionSystem {
     }
     
     private fun initializeExpertPanel(config: ExpertPanelConfig): ExpertPanel {
-        return config.expertiseAreas.size j { i ->
+        return \1 j { \2: Int ->
             config.expertiseAreas[i] j emptyIndex<PanelMemberId, PanelMember>()
         }
     }

@@ -83,7 +83,7 @@ class Patrick0720Demo {
         val config = ProductionConfig(
             rootEntityId = EntityId("patrick-0720-root"),
             expertPanelConfig = ExpertPanelConfig(
-                expertiseAreas = 5 j { i -> ExpertiseArea("area-$i") },
+                expertiseAreas = \1 j { \2: Int -> ExpertiseArea("area-$i") },
                 minimumPanelSize = 3,
                 consensusThreshold = 0.67
             ),
@@ -276,7 +276,7 @@ class Patrick0720Demo {
         println("  ✅ Created lattice with ${lattice.nodes.size} nodes, ${lattice.edges.size} edges")
         
         // Initialize Wave collaboration
-        val participants = 3 j { i ->
+        val participants = \1 j { \2: Int ->
             WaveParticipant(
                 participantId = "analyst-$i",
                 displayName = "Patrick Analyst $i",

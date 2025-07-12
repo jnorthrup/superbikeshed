@@ -16,7 +16,7 @@ fun main() = runBlocking {
     
     archives.forEach { archiveUrl ->
         // Create request meta with headers using Join
-        val headHeaders: HttpHeaders = 1 j { i ->
+        val headHeaders: HttpHeaders = \1 j { \2: Int ->
             when (i) {
                 0 -> "User-Agent" j "TrikeShed/1.0"
                 else -> throw IndexOutOfBoundsException()
@@ -34,15 +34,15 @@ fun main() = runBlocking {
         val headResponse = executeRequest(headRequest j null)
         
         // Extract content length from response headers
-        val contentLength = extractHeader(headResponse.a.headers, "Content-Length")
-            ?.b?.toLongOrNull() ?: 0L
+        val contentLength = extractHeader(headResponse.component1().headers, "Content-Length")
+            ?.component2()?.toLongOrNull() ?: 0L
         
         println("\nArchive: $archiveUrl")
         println("Size: $contentLength bytes")
         
         // Range request for last 256KB
         val rangeStart = maxOf(0, contentLength - 256 * 1024)
-        val rangeHeaders: HttpHeaders = 2 j { i ->
+        val rangeHeaders: HttpHeaders = \1 j { \2: Int ->
             when (i) {
                 0 -> "User-Agent" j "TrikeShed/1.0"
                 1 -> "Range" j "bytes=$rangeStart-"
@@ -59,8 +59,8 @@ fun main() = runBlocking {
         
         val rangeResponse = executeRequest(rangeRequest j null)
         
-        if (rangeResponse.a.statusCode == 206) {
-            println("Got ${rangeResponse.b.size} bytes from range request")
+        if (rangeResponse.component1().statusCode == 206) {
+            println("Got ${rangeResponse.component2().size} bytes from range request")
             // TODO: Parse ZIP central directory
         }
     }
@@ -78,9 +78,9 @@ suspend fun executeRequest(request: HttpRequest): HttpResponse {
 }
 
 fun extractHeader(headers: HttpHeaders, name: String): Join<String, String>? {
-    for (i in 0 until headers.a) {
-        val header = headers.b(i)
-        if (header.a.equals(name, ignoreCase = true)) {
+    for (i in 0 until headers.component1()) {
+        val header = headers.component2()(i)
+        if (header.component1().equals(name, ignoreCase = true)) {
             return header
         }
     }

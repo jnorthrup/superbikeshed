@@ -32,7 +32,7 @@ data class Join3<A, B, C>(val a: A, val b: B, val c: C)
 data class Join4<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 // Infix operators
-infix fun <A, B> A.j(that: B): Join<A, B> = Join(this, that)
+infix fun <A, B> A.j(that: B): Join<A, B> = this j that
 infix fun <A, B, C> Join<A, B>.j(that: C): Join3<A, B, C> = Join3(l, r, that)
 infix fun <A, B, C, D> Join3<A, B, C>.j(that: D): Join4<A, B, C, D> = Join4(a, b, c, that)
 

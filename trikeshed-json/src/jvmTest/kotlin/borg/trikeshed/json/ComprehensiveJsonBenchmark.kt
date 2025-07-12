@@ -123,7 +123,7 @@ class ComprehensiveJsonBenchmark {
             parse = { json -> 
                 val element = Json.parseToJsonElement(json)
                 if (element is JsonObject) {
-                    element.size j { i -> 
+                    \1 j { \2: Int -> 
                         val key = element.keys.elementAt(i)
                         key j element[key]?.toString()
                     }
@@ -605,9 +605,9 @@ class ComprehensiveJsonBenchmark {
     
     private fun extractPropertiesFromElement(element: JsonElement): Indexed<JsonProperty> {
         return when (element) {
-            is JsonElement.Obj -> element.fields.a j { i -> 
-                val field = element.fields.b(i)
-                field.a j field.b.toString()
+            is JsonElement.Obj -> \1 j { \2: Int -> 
+                val field = element.fields.component2()(i)
+                field.component1() j field.component2().toString()
             }
             else -> 0 j { _: Int -> "error" j "not_object" }
         }
@@ -616,10 +616,10 @@ class ComprehensiveJsonBenchmark {
     private fun queryElement(element: JsonElement, key: String): Join<String, Any?>? {
         return when (element) {
             is JsonElement.Obj -> {
-                for (i in 0 until element.fields.a) {
-                    val field = element.fields.b(i)
-                    if (field.a == key) {
-                        return key j field.b
+                for (i in 0 until element.fields.component1()) {
+                    val field = element.fields.component2()(i)
+                    if (field.component1() == key) {
+                        return key j field.component2()
                     }
                 }
                 null

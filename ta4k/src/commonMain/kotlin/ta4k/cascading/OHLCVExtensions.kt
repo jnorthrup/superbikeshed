@@ -57,10 +57,10 @@ fun Cursor.groupBySymbol(): Map<String, Cursor> {
     
     return groups.mapValues { (_, rows) ->
         val data = rows.map { row ->
-            (0 until row.a).map { j -> row.b(j).a }
+            (0 until row.component1()).map { j -> row.component2()(j).component1() }
         }
         
-        cursorOf(data, columnNames.toList(), (0 until columnNames.a).map { IOMemento.IoDouble })
+        cursorOf(data, columnNames.toList(), (0 until columnNames.component1()).map { IOMemento.IoDouble })
     }
 }
 
@@ -122,9 +122,9 @@ fun Cursor.withMACD(fastPeriod: Int, slowPeriod: Int, signalPeriod: Int): Cursor
     val slowEMA = ema(slowPeriod, closeIndex)
     
     // MACD line = fast EMA - slow EMA
-    val macdLine = (0 until a) j { i ->
-        val fast = fastEMA.b(i)
-        val slow = slowEMA.b(i)
+    val macdLine = (0 until \1 j { \2: Int ->
+        val fast = fastEMA.component2()(i)
+        val slow = slowEMA.component2()(i)
         if (fast != null && slow != null) fast - slow else null
     }
     
@@ -132,9 +132,9 @@ fun Cursor.withMACD(fastPeriod: Int, slowPeriod: Int, signalPeriod: Int): Cursor
     val signalLine = macdLine.ema(signalPeriod)
     
     // Histogram = MACD - Signal
-    val histogram = (0 until a) j { i ->
-        val macd = macdLine.b(i)
-        val signal = signalLine.b(i)
+    val histogram = (0 until \1 j { \2: Int ->
+        val macd = macdLine.component2()(i)
+        val signal = signalLine.component2()(i)
         if (macd != null && signal != null) macd - signal else null
     }
     
@@ -149,7 +149,7 @@ fun Cursor.withBollingerBands(period: Int, stdDevMultiplier: Double): Cursor {
     val closeIndex = columnNames.toList().indexOf("close")
     
     val sma = sma(period, "close")
-    val stdDev = (0 until a) j { i ->
+    val stdDev = (0 until \1 j { \2: Int ->
         if (i < period - 1) {
             null
         } else {
@@ -161,15 +161,15 @@ fun Cursor.withBollingerBands(period: Int, stdDevMultiplier: Double): Cursor {
         }
     }
     
-    val upperBand = (0 until a) j { i ->
-        val middle = sma.b(i)
-        val std = stdDev.b(i)
+    val upperBand = (0 until \1 j { \2: Int ->
+        val middle = sma.component2()(i)
+        val std = stdDev.component2()(i)
         if (middle != null && std != null) middle + stdDevMultiplier * std else null
     }
     
-    val lowerBand = (0 until a) j { i ->
-        val middle = sma.b(i)
-        val std = stdDev.b(i)
+    val lowerBand = (0 until \1 j { \2: Int ->
+        val middle = sma.component2()(i)
+        val std = stdDev.component2()(i)
         if (middle != null && std != null) middle - stdDevMultiplier * std else null
     }
     
@@ -186,7 +186,7 @@ fun Cursor.withATR(period: Int): Cursor {
     val closeIndex = columnNames.toList().indexOf("close")
     
     // True Range = max(high - low, abs(high - prevClose), abs(low - prevClose))
-    val trueRange = (0 until a) j { i ->
+    val trueRange = (0 until \1 j { \2: Int ->
         if (i == 0) {
             at(i).getDouble(highIndex)!! - at(i).getDouble(lowIndex)!!
         } else {
@@ -287,7 +287,7 @@ fun Cursor.calculateCorrelationMatrix(timeframe: Timeframe?): CorrelationMatrix 
 fun Cursor.historicalVolatility(period: Int): Indexed<Double?> {
     val closeIndex = columnNames.toList().indexOf("close")
     
-    return (0 until a) j { i ->
+    return (0 until \1 j { \2: Int ->
         if (i < period) {
             null
         } else {
@@ -309,7 +309,7 @@ internal fun Indexed<Double?>.ema(period: Int): Indexed<Double?> {
     val multiplier = 2.0 / (period + 1)
     var ema: Double? = null
     
-    return a j { i ->
+    return \1 j { \2: Int ->
         val value = b(i)
         if (value != null) {
             ema = if (ema == null) {
@@ -325,7 +325,7 @@ internal fun Indexed<Double?>.ema(period: Int): Indexed<Double?> {
 }
 
 internal fun Cursor.ema(period: Int, columnIndex: Int): Indexed<Double?> {
-    val values = (0 until a) j { i ->
+    val values = (0 until \1 j { \2: Int ->
         at(i).getDouble(columnIndex)
     }
     return values.ema(period)
@@ -335,10 +335,10 @@ internal fun calculateCorrelation(cursor1: Cursor, cursor2: Cursor): Double {
     // Simple Pearson correlation
     val closeIndex = 5 // Assuming close is at index 5
     
-    val values1 = (0 until minOf(cursor1.a, cursor2.a)).map {
+    val values1 = (0 until minOf(cursor1.component1(), cursor2.component1())).map {
         cursor1.at(it).getDouble(closeIndex) ?: 0.0
     }
-    val values2 = (0 until minOf(cursor1.a, cursor2.a)).map {
+    val values2 = (0 until minOf(cursor1.component1(), cursor2.component1())).map {
         cursor2.at(it).getDouble(closeIndex) ?: 0.0
     }
     

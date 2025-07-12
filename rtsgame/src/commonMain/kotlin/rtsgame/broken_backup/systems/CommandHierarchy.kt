@@ -442,12 +442,12 @@ class EnhancedCommandHierarchy(
     
     fun getCommandStructure(): Indexed<CommandNode> {
         val nodes = commandNodes.values.toList()
-        return nodes.size j { i -> nodes[i] }
+        return \1 j { \2: Int -> nodes[i] }
     }
     
     fun getCommandFitness(): Indexed<CommandFitnessData> {
         val fitness = commandFitness.values.toList()
-        return fitness.size j { i -> fitness[i] }
+        return \1 j { \2: Int -> fitness[i] }
     }
 }
 

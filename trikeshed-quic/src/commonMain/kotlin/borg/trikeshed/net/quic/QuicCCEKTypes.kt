@@ -77,7 +77,7 @@ data class QuicConnectionPool(
         return QuicConnectionState(
             localConnectionId = ConnectionId.random(),
             remoteConnectionId = ConnectionId.random(),
-            streams = connections.size j { i ->
+            streams = \1 j { \2: Int ->
                 val conn = connections.values.elementAt(i)
                 QuicStreamState(streamId = i.toLong())
             }
@@ -207,14 +207,14 @@ class DefaultQuicValidator : QuicValidator {
     ): QuicValidationResult {
         return when (operation) {
             is QuicOperation.CreateStream -> {
-                if (state.streams.a >= constraints.maxStreamsPerConnection) {
+                if (state.streams.component1() >= constraints.maxStreamsPerConnection) {
                     QuicValidationResult(false, "Too many streams")
                 } else {
                     QuicValidationResult(true)
                 }
             }
             is QuicOperation.SendData -> {
-                if (operation.data.a > constraints.maxFrameSize) {
+                if (operation.data.component1() > constraints.maxFrameSize) {
                     QuicValidationResult(false, "Frame too large")
                 } else {
                     QuicValidationResult(true)
@@ -227,12 +227,12 @@ class DefaultQuicValidator : QuicValidator {
 
 class DefaultQuicAttentionModel : QuicAttentionModel {
     override fun prioritizeRanges(ranges: Indexed<Twin<Long>>, priority: Int): Indexed<QuicAttentionRange> {
-        return ranges.a j { i: Int ->
-            val range = ranges.b(i)
+        return ranges.component1() j { i: Int ->
+            val range = ranges.component2()(i)
             QuicAttentionRange(
                 connectionId = ConnectionId.random(),
-                start = range.a,
-                end = range.b,
+                start = range.component1(),
+                end = range.component2(),
                 priority = priority,
                 streamId = i.toLong()
             )

@@ -561,7 +561,7 @@ class OFACNegotiableInstruments {
             else → ExemptionReason.GENERAL_LICENSE
         }
     
-    internal fun <T> List<T>.toIdx(): Indexed<T> = b0.a
-    internal fun <T> emptyIndexed(): Indexed<T> = b0.a
-    internal fun <T> idx(vararg items: T): Indexed<T> = b0.a
+    internal fun <T> List<T>.toIdx(): Indexed<T> = b0.component1()
+    internal fun <T> emptyIndexed(): Indexed<T> = b0.component1()
+    internal fun <T> idx(vararg items: T): Indexed<T> = b0.component1()
 }

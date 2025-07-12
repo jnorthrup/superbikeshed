@@ -29,9 +29,9 @@ class SSHTcpTransport : SSHTransport {
     internal var maxPacketSize: SSHMaxPacketSize = SSHConstants.MAX_PACKET_SIZE
     
     override suspend fun connect(server: SSHServerInfo, context: SSHTransportContext): SSHTransportState {
-        return withContext(context.b) {
-            val host = server.a
-            val port = server.b
+        return withContext(context.component2()) {
+            val host = server.component1()
+            val port = server.component2()
             
             // Platform-specific connection
             socket = createSocket(host, port)
@@ -45,14 +45,14 @@ class SSHTcpTransport : SSHTransport {
             
             // Create initial state
             val initialState = 0 j { SSHState.CONNECTING }
-            val connectionInfo = Join(host, Join(port, serverVersion))
+            val connectionInfo = host j Join(port, serverVersion)
             
-            Join(initialState, connectionInfo)
+            initialState j connectionInfo
         }
     }
     
     override suspend fun sendPacket(packet: SSHPacket, context: SSHTransportContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             val encoded = packet.encode()
             sendRaw(encoded.toByteArray())
             sequenceNumber++
@@ -60,7 +60,7 @@ class SSHTcpTransport : SSHTransport {
     }
     
     override suspend fun receivePacket(context: SSHTransportContext): SSHPacket {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             // Read packet length (4 bytes)
             val lengthBytes = receiveRaw(4)
             val packetLength = (lengthBytes[0].toUInt() shl 24) or
@@ -81,11 +81,11 @@ class SSHTcpTransport : SSHTransport {
     }
     
     override suspend fun disconnect(reason: SSHDisconnectReason, context: SSHTransportContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             // Send disconnect message
             val disconnectPayload = SSHMessages.disconnect(reason, "Disconnected by client")
             val packet = SSHPacket(
-                length = (disconnectPayload.a + 1).toUInt(),
+                length = (disconnectPayload.component1() + 1).toUInt(),
                 paddingLength = 0,
                 messageType = SSHMessageType.DISCONNECT,
                 payload = disconnectPayload,
@@ -147,9 +147,9 @@ class SSHTcpTransport : SSHTransport {
         return SSHPacket(
             length = packetLength,
             paddingLength = paddingLength.toByte(),
-            messageType = if (payload.a > 0) SSHMessageType.fromByte(payload[0]) ?: SSHMessageType.IGNORE else SSHMessageType.IGNORE,
-            payload = if (payload.a > 1) {
-                (payload.a - 1) j { i: Int -> payload[i + 1] }
+            messageType = if (payload.component1() > 0) SSHMessageType.fromByte(payload[0]) ?: SSHMessageType.IGNORE else SSHMessageType.IGNORE,
+            payload = if (payload.component1() > 1) {
+                (payload.component1() - 1) j { i: Int -> payload[i + 1] }
             } else {
                 0 j { 0.toByte() }
             },
@@ -192,9 +192,9 @@ class SSHQuicTransport : SSHTransport {
     internal var maxPacketSize: SSHMaxPacketSize = SSHConstants.MAX_PACKET_SIZE
     
     override suspend fun connect(server: SSHServerInfo, context: SSHTransportContext): SSHTransportState {
-        return withContext(context.b) {
-            val host = server.a
-            val port = server.b
+        return withContext(context.component2()) {
+            val host = server.component1()
+            val port = server.component2()
             
             // Create QUIC connection
             quicConnection = createQuicConnection(host, port)
@@ -208,14 +208,14 @@ class SSHQuicTransport : SSHTransport {
             
             // Create initial state
             val initialState = 0 j { SSHState.CONNECTING }
-            val connectionInfo = Join(host, Join(port, serverVersion))
+            val connectionInfo = host j Join(port, serverVersion)
             
-            Join(initialState, connectionInfo)
+            initialState j connectionInfo
         }
     }
     
     override suspend fun sendPacket(packet: SSHPacket, context: SSHTransportContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             val encoded = packet.encode()
             sendRaw(encoded.toByteArray())
             sequenceNumber++
@@ -223,7 +223,7 @@ class SSHQuicTransport : SSHTransport {
     }
     
     override suspend fun receivePacket(context: SSHTransportContext): SSHPacket {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             // Read packet length (4 bytes)
             val lengthBytes = receiveRaw(4)
             val packetLength = (lengthBytes[0].toUInt() shl 24) or
@@ -244,11 +244,11 @@ class SSHQuicTransport : SSHTransport {
     }
     
     override suspend fun disconnect(reason: SSHDisconnectReason, context: SSHTransportContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             // Send disconnect message
             val disconnectPayload = SSHMessages.disconnect(reason, "Disconnected by client")
             val packet = SSHPacket(
-                length = (disconnectPayload.a + 1).toUInt(),
+                length = (disconnectPayload.component1() + 1).toUInt(),
                 paddingLength = 0,
                 messageType = SSHMessageType.DISCONNECT,
                 payload = disconnectPayload,
@@ -304,9 +304,9 @@ class SSHQuicTransport : SSHTransport {
         return SSHPacket(
             length = packetLength,
             paddingLength = paddingLength.toByte(),
-            messageType = if (payload.a > 0) SSHMessageType.fromByte(payload[0]) ?: SSHMessageType.IGNORE else SSHMessageType.IGNORE,
-            payload = if (payload.a > 1) {
-                (payload.a - 1) j { i: Int -> payload[i + 1] }
+            messageType = if (payload.component1() > 0) SSHMessageType.fromByte(payload[0]) ?: SSHMessageType.IGNORE else SSHMessageType.IGNORE,
+            payload = if (payload.component1() > 1) {
+                (payload.component1() - 1) j { i: Int -> payload[i + 1] }
             } else {
                 0 j { 0.toByte() }
             },

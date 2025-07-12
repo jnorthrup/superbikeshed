@@ -29,13 +29,13 @@ class CCEKFileChannel(
 
     override suspend fun readBatch(buffers: Indexed<ByteArray>): Indexed<Int> {
         // Placeholder implementation
-        val results = (0 until buffers.a).map { -1 }
+        val results = (0 until buffers.component1()).map { -1 }
         return results.size j results::get
     }
 
     override suspend fun writeBatch(buffers: Indexed<ByteArray>): Indexed<Int> {
         // Placeholder implementation  
-        val results = (0 until buffers.a).map { -1 }
+        val results = (0 until buffers.component1()).map { -1 }
         return results.size j results::get
     }
 
@@ -45,7 +45,7 @@ class CCEKFileChannel(
 
     override suspend fun submitAndWait(sqeOps: Indexed<SqeOp>): Indexed<Int> {
         // Placeholder implementation
-        val results = (0 until sqeOps.a).map { -1 }
+        val results = (0 until sqeOps.component1()).map { -1 }
         return results.size j results::get
     }
 }

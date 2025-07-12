@@ -324,7 +324,7 @@ class PeerNetworkSimulation(
     }
     
     // Helper functions
-    internal fun generatePieceData(size: Int): ByteIndexed = size j { i -> (i % 256).toByte() }
+    internal fun generatePieceData(size: Int): ByteIndexed = \1 j { \2: Int -> (i % 256).toByte() }
 }
 
 // Peer message types

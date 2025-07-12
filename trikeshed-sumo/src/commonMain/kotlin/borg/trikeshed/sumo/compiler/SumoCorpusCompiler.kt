@@ -55,7 +55,7 @@ class SumoCorpusCompiler {
         
         val duration = kotlinx.datetime.Clock.System.now().toEpochMilliseconds() - startTime
         val graph = joinGraph.buildGraph()
-        val uniqueConcepts = graph.a.size
+        val uniqueConcepts = graph.component1().size
         
         println("Ingestion complete: ${totalExpressions} expressions in ${duration}ms")
         println("  - Subclass expressions: ${subclassExpressions}")

@@ -48,23 +48,23 @@ class SSHBuilder {
         val stateMachine = createSSHProtocolStateMachine()
         
         // Create server info
-        val serverInfo = Join(transportConfig.host, transportConfig.port)
+        val serverInfo = transportConfig.host j transportConfig.port
         
         // Initialize session context
         val sessionContext = Join(
             authConfig.identity ?: generateEphemeralIdentity(),
-            Join(serverInfo, context)
+            serverInfo j context
         )
         
         // Connect
         val transportState = stateMachine.connect(serverInfo, context)
         
         // Create initial session
-        val channelStream = 0 j { SSHChannelEvent(Join(0u, ChannelData(0 j { 0.toByte() }))) }
+        val channelStream = 0 j { SSHChannelEvent(0u j ChannelData(0 j { 0.toByte( }))) }
         
         return Join(
             transportState,
-            Join(channelStream, sessionContext)
+            channelStream j sessionContext
         )
     }
 }
@@ -259,21 +259,21 @@ suspend fun ssh(init: SSHBuilder.() -> Unit): SSHSession {
 // Session extension functions for fluent API
 suspend fun SSHSession.connect(): SSHSession {
     val stateMachine = createSSHProtocolStateMachine()
-    val context = b.b.b
-    val serverInfo = b.b.a
+    val context = b.component2().component2()
+    val serverInfo = b.component2().component1()
     
     val newState = stateMachine.connect(serverInfo, context)
-    return Join(newState, b)
+    return newState j b
 }
 
 suspend fun SSHSession.authenticate(): SSHSession {
-    val authService = SSHServiceLocator.getAuthService(b.b.b)
+    val authService = SSHServiceLocator.getAuthService(b.component2().component2())
     // Perform authentication
     return this
 }
 
 suspend fun SSHSession.openChannels(): SSHSession {
-    val channelService = SSHServiceLocator.getChannelService(b.b.b)
+    val channelService = SSHServiceLocator.getChannelService(b.component2().component2())
     // Open configured channels
     return this
 }
@@ -285,7 +285,7 @@ suspend fun SSHSession.interactive(): SSHSession {
 
 suspend fun SSHSession.close() {
     val stateMachine = createSSHProtocolStateMachine()
-    val context = b.b.b
+    val context = b.component2().component2()
     stateMachine.disconnect(a, 11u, context) // SSH_DISCONNECT_BY_APPLICATION
 }
 
@@ -294,7 +294,7 @@ internal fun generateEphemeralIdentity(): SSHIdentity {
     // Generate temporary key pair for session
     val publicKey = 32 j { i: Int -> (i * 7).toByte() } // Placeholder
     val privateKey = 32 j { i: Int -> (i * 13).toByte() } // Placeholder
-    return Join(publicKey, privateKey)
+    return publicKey j privateKey
 }
 
 // Prompt helper for authentication

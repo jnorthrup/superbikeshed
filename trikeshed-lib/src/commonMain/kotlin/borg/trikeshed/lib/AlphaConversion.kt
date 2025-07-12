@@ -107,8 +107,8 @@ inline fun <T, R> Indexed<T>.flatMap(transform: (T) -> Indexed<R>): Indexed<R> {
     val results = mutableListOf<R>()
     for (i in 0 until a) {
         val mapped = transform(b(i))
-        for (j in 0 until mapped.a) {
-            results.add(mapped.b(j))
+        for (j in 0 until mapped.component1()) {
+            results.add(mapped.component2()(j))
         }
     }
     return results.size j results::get
@@ -141,8 +141,8 @@ inline fun <T> Indexed<T>.reduce(operation: (acc: T, T) -> T): T {
  * Zip two Indexed collections
  */
 infix fun <T, R> Indexed<T>.zip(other: Indexed<R>): Indexed<Join<T, R>> {
-    val size = minOf(a, other.a)
-    return size j { i -> b(i) j other.b(i) }
+    val size = minOf(a, other.component1())
+    return size j { i: Int -> b(i) j other.component2()(i) }
 }
 
 /**
@@ -158,7 +158,7 @@ fun <T> Indexed<T>.take(n: Int): Indexed<T> {
  */
 fun <T> Indexed<T>.drop(n: Int): Indexed<T> {
     val remaining = maxOf(0, a - n)
-    return remaining j { i -> b(i + n) }
+    return remaining j { i: Int -> b(i + n) }
 }
 
 /**
@@ -168,13 +168,13 @@ fun <T> Indexed<T>.slice(range: IntRange): Indexed<T> {
     val start = maxOf(0, range.first)
     val end = minOf(a, range.last + 1)
     val size = maxOf(0, end - start)
-    return size j { i -> b(i + start) }
+    return size j { i: Int -> b(i + start) }
 }
 
 /**
  * Reverse the indexed collection
  */
-fun <T> Indexed<T>.reversed(): Indexed<T> = a j { i -> b(a - 1 - i) }
+fun <T> Indexed<T>.reversed(): Indexed<T> = a j { i: Int -> b(a - 1 - i) }
 
 /**
  * Check if all elements match predicate

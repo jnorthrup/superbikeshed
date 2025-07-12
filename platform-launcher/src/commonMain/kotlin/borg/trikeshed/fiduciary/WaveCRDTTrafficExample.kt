@@ -149,8 +149,8 @@ class MetaSeriesTrafficAnalysis {
         val smoothedRate = movingAverage ⚬ opsPerSecond
         
         println("Traffic Analysis using MetaSeries projections:")
-        println("- Operations per second: ${opsPerSecond.a} samples")
-        println("- Cumulative operations: ${cumulativeOps.b(cumulativeOps.a)}")
+        println("- Operations per second: ${opsPerSecond.component1()} samples")
+        println("- Cumulative operations: ${cumulativeOps.component2()(cumulativeOps.component1())}")
         println("- Moving average window: 5 seconds")
     }
     
@@ -167,14 +167,14 @@ class MetaSeriesTrafficAnalysis {
     internal fun projectToOpsPerSecond(traffic: MetaSeries<Instant, Long>): MetaSeries<Int, Double> {
         return 60 j { second: Int ->
             // Calculate ops/second for each time window
-            traffic.b(traffic.a).toDouble() / 60.0
+            traffic.component2()(traffic.component1()).toDouble() / 60.0
         }
     }
     
     internal fun projectToCumulative(traffic: MetaSeries<Instant, Long>): MetaSeries<Int, Long> {
         var sum = 0L
         return 100 j { index: Int ->
-            sum += traffic.b(traffic.a)
+            sum += traffic.component2()(traffic.component1())
             sum
         }
     }
@@ -186,7 +186,7 @@ class MetaSeriesTrafficAnalysis {
         return 95 j { index: Int ->
             // Calculate moving average over window
             val windowSum = (0 until windowSize).sumOf { 
-                traffic.b(traffic.a)
+                traffic.component2()(traffic.component1())
             }
             windowSum.toDouble() / windowSize
         }

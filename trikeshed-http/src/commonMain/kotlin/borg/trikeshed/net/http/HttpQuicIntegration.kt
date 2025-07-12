@@ -143,7 +143,7 @@ class HttpQuicIntegration(
                 val request = HttpRequest(
                     method = HttpMethod.GET,
                     path = HttpRequestPath(path),
-                    headers = 0 j { Join(HttpHeaderName(""), HttpHeaderValue("")) },
+                    headers = 0 j { HttpHeaderName("") j HttpHeaderValue("") },
                     body = byteArrayOf(),
                     version = HttpVersion("HTTP/0.9")
                 )
@@ -178,7 +178,7 @@ class HttpQuicIntegration(
             HttpResponse(
                 status = HttpStatus.NOT_FOUND,
                 reasonPhrase = HttpStatus.NOT_FOUND.defaultReasonPhrase(),
-                headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/plain")) },
+                headers = 1 j { HttpHeaders.CONTENT_TYPE j HttpHeaderValue("text/plain") },
                 body = "Not Found".encodeToByteArray(),
                 version = HttpVersion("HTTP/1.0")
             )
@@ -214,7 +214,7 @@ class HttpQuicIntegration(
             HttpResponse(
                 status = HttpStatus.NOT_FOUND,
                 reasonPhrase = HttpStatus.NOT_FOUND.defaultReasonPhrase(),
-                headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/plain")) },
+                headers = 1 j { HttpHeaders.CONTENT_TYPE j HttpHeaderValue("text/plain") },
                 body = "Not Found".encodeToByteArray(),
                 version = HttpVersion("HTTP/1.1")
             )
@@ -315,7 +315,7 @@ class HttpQuicIntegration(
         val response = HttpResponse(
             status = status,
             reasonPhrase = status.defaultReasonPhrase(),
-            headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/plain")) },
+            headers = 1 j { HttpHeaders.CONTENT_TYPE j HttpHeaderValue("text/plain") },
             body = status.defaultReasonPhrase().value.encodeToByteArray(),
             version = HttpVersion("HTTP/1.1")
         )
@@ -328,10 +328,10 @@ class HttpQuicIntegration(
      * Check if request has Keep-Alive header
      */
     internal fun hasKeepAlive(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): Boolean {
-        for (i in 0 until headers.a) {
+        for (i in 0 until headers.component1()) {
             val header = headers[i]
-            if (header.a.value.equals("Connection", ignoreCase = true) &&
-                header.b.value.equals("Keep-Alive", ignoreCase = true)) {
+            if (header.component1().value.equals("Connection", ignoreCase = true) &&
+                header.component2().value.equals("Keep-Alive", ignoreCase = true)) {
                 return true
             }
         }
@@ -342,10 +342,10 @@ class HttpQuicIntegration(
      * Check if request has Connection: close header
      */
     internal fun hasConnectionClose(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): Boolean {
-        for (i in 0 until headers.a) {
+        for (i in 0 until headers.component1()) {
             val header = headers[i]
-            if (header.a.value.equals("Connection", ignoreCase = true) &&
-                header.b.value.equals("close", ignoreCase = true)) {
+            if (header.component1().value.equals("Connection", ignoreCase = true) &&
+                header.component2().value.equals("close", ignoreCase = true)) {
                 return true
             }
         }
@@ -383,7 +383,7 @@ fun createHttpQuicServer(quicServer: QuicServer): HttpQuicIntegration {
         route("/") { request ->
             HttpResponse(
                 status = HttpStatus.OK,
-                headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("text/html")) },
+                headers = 1 j { HttpHeaders.CONTENT_TYPE j HttpHeaderValue("text/html") },
                 body = """
                     <html>
                     <body>
@@ -400,7 +400,7 @@ fun createHttpQuicServer(quicServer: QuicServer): HttpQuicIntegration {
         route("/api/*") { request ->
             HttpResponse(
                 status = HttpStatus.OK,
-                headers = 1 j { Join(HttpHeaders.CONTENT_TYPE, HttpHeaderValue("application/json")) },
+                headers = 1 j { HttpHeaders.CONTENT_TYPE j HttpHeaderValue("application/json") },
                 body = """{"message": "API endpoint", "path": "${request.path.value}"}""".encodeToByteArray()
             )
         }

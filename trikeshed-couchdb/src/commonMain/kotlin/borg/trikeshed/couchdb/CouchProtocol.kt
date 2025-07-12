@@ -107,8 +107,8 @@ data class BulkDocsRequest(
 ) {
     fun toJson(): JsonObject = buildJsonObject {
         putJsonArray("docs") {
-            for (i in 0 until docs.a) {
-                add(docs.b(i))
+            for (i in 0 until docs.component1()) {
+                add(docs.component2()(i))
             }
         }
         put("new_edits", new_edits)
@@ -178,8 +178,8 @@ data class ReplicationRequest(
         query_params?.let { put("query_params", it) }
         doc_ids?.let { ids ->
             putJsonArray("doc_ids") {
-                for (i in 0 until ids.a) {
-                    add(ids.b(i))
+                for (i in 0 until ids.component1()) {
+                    add(ids.component2()(i))
                 }
             }
         }

@@ -22,8 +22,8 @@ class TorrentProtocolTddTest {
         // Given: Protocol parameters
         val protocol = "BitTorrent protocol"
         val reserved = ByteArray(8) { 0 }
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
 
         // When: Creating handshake message
         val handshake = BitTorrentPeerWire.PeerMessage.Handshake(
@@ -159,7 +159,7 @@ class TorrentProtocolTddTest {
         // Given: Piece data
         val pieceIndex = 5
         val offset = 512
-        val pieceData = 16384 j { i -> (i % 256).toByte() }
+        val pieceData = \1 j { \2: Int -> (i % 256).toByte() }
 
         // When: Creating piece message
         val pieceMessage = BitTorrentPeerWire.PeerMessage.Piece(
@@ -172,14 +172,14 @@ class TorrentProtocolTddTest {
         assertEquals(pieceIndex, pieceMessage.pieceIndex)
         assertEquals(offset, pieceMessage.offset)
         assertEquals(pieceData, pieceMessage.data)
-        assertEquals(16384, pieceMessage.data.a)
+        assertEquals(16384, pieceMessage.data.component1())
     }
 
     @Test
     fun `test peer wire protocol initialization`() = runTest {
         // Given: Protocol parameters
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val port = 6881
 
         // When: Creating peer wire protocol
@@ -198,8 +198,8 @@ class TorrentProtocolTddTest {
     @Test
     fun `test connection lifecycle`() = runTest {
         // Given: A peer wire protocol instance
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -232,8 +232,8 @@ class TorrentProtocolTddTest {
     @Test
     fun `test piece verification workflow`() = runTest {
         // Given: A peer wire protocol instance
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -244,12 +244,12 @@ class TorrentProtocolTddTest {
         val piece1 = BitTorrentPeerWire.PeerMessage.Piece(
             pieceIndex = 0,
             offset = 0,
-            data = 16384 j { i -> (i % 256).toByte() }
+            data = \1 j { \2: Int -> (i % 256).toByte() }
         )
         val piece2 = BitTorrentPeerWire.PeerMessage.Piece(
             pieceIndex = 1,
             offset = 0,
-            data = 16384 j { i -> ((i + 100) % 256).toByte() }
+            data = \1 j { \2: Int -> ((i + 100) % 256).toByte() }
         )
 
         peerWire.handleMessage("127.0.0.1:6881", piece1)
@@ -265,8 +265,8 @@ class TorrentProtocolTddTest {
     @Test
     fun `test message handling for different types`() = runTest {
         // Given: A peer wire protocol instance
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -298,17 +298,17 @@ class TorrentProtocolTddTest {
         val block1 = BitTorrentPeerWire.PeerMessage.Piece(
             pieceIndex = pieceIndex,
             offset = 0,
-            data = 8192 j { i -> (i % 256).toByte() }
+            data = \1 j { \2: Int -> (i % 256).toByte() }
         )
         val block2 = BitTorrentPeerWire.PeerMessage.Piece(
             pieceIndex = pieceIndex,
             offset = 8192,
-            data = 8192 j { i -> ((i + 8192) % 256).toByte() }
+            data = \1 j { \2: Int -> ((i + 8192) % 256).toByte() }
         )
 
         // When: Receiving both blocks
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -341,7 +341,7 @@ class TorrentProtocolTddTest {
     fun `test extension message handling`() = runTest {
         // Given: An extension message
         val messageId = 1.toByte()
-        val payload = 256 j { i -> (i % 256).toByte() }
+        val payload = \1 j { \2: Int -> (i % 256).toByte() }
         val extensionMessage = BitTorrentPeerWire.PeerMessage.Extension(
             messageId = messageId,
             payload = payload
@@ -351,7 +351,7 @@ class TorrentProtocolTddTest {
         // Then: Extension should be properly constructed
         assertEquals(messageId, extensionMessage.messageId)
         assertEquals(payload, extensionMessage.payload)
-        assertEquals(256, extensionMessage.payload.a)
+        assertEquals(256, extensionMessage.payload.component1())
     }
 
     @Test

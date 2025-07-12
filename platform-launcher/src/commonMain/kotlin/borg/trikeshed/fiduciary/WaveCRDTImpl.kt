@@ -45,8 +45,8 @@ data class Wavelet(
     val lastModified: Instant = Clock.System.now()
 ) {
     fun addOperation(op: WaveOperationData): Wavelet = copy(
-        operations = (operations.a + 1) j { i: Int ->
-            if (i < operations.a) operations.b(i) else op
+        operations = (operations.component1() + 1) j { i: Int ->
+            if (i < operations.component1()) operations.component2()(i) else op
         },
         version = version + 1,
         lastModified = Clock.System.now()
@@ -55,8 +55,8 @@ data class Wavelet(
     fun withParticipant(participantId: ParticipantId): Wavelet = 
         if (participants.toList().contains(participantId)) this
         else copy(
-            participants = (participants.a + 1) j { i: Int ->
-                if (i < participants.a) participants.b(i) else participantId
+            participants = (participants.component1() + 1) j { i: Int ->
+                if (i < participants.component1()) participants.component2()(i) else participantId
             }
         )
 }
@@ -129,8 +129,8 @@ data class WaveDocument(
         wavelets.toList().find { it.id == id }
     
     fun addWavelet(wavelet: Wavelet): WaveDocument = copy(
-        wavelets = (wavelets.a + 1) j { i: Int ->
-            if (i < wavelets.a) wavelets.b(i) else wavelet
+        wavelets = (wavelets.component1() + 1) j { i: Int ->
+            if (i < wavelets.component1()) wavelets.component2()(i) else wavelet
         }
     )
     
@@ -268,7 +268,7 @@ class WaveCRDTEngine {
         
         return concurrent.fold(operation) { acc, opData ->
             val transform = convergence.transform(acc, opData.operation.toWaveOp())
-            transform.a as WaveDocumentOp
+            transform.component1() as WaveDocumentOp
         }
     }
     

@@ -156,12 +156,12 @@ object CmdCodec : Codec<Cmd> {
                 V3Codec.encode(v.tgt, b)
             }
             is Cmd.Atk -> {
-                b.writeVarInt(v.a.size)
-                v.a.forEach { b.writeVarInt(it) }
+                b.writeVarInt(v.component1().size)
+                v.component1().forEach { b.writeVarInt(it) }
                 b.writeVarInt(v.tgt)
             }
             is Cmd.Bld -> {
-                b.writeVarInt(v.b)
+                b.writeVarInt(v.component2())
                 b.writeString(v.ut)
                 V3Codec.encode(v.pos, b)
             }

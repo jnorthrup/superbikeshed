@@ -721,7 +721,7 @@ class IpfsProtocolHandler(private val server: UringCouchDBServer) {
         return runBlocking {
             val result = ipfsClient.retrieve(hash)
             val data = result?.content ?: throw IllegalArgumentException("Content not found")
-            ByteArray(data.a) { data.b(it) }
+            ByteArray(data.component1()) { data.component2()(it) }
         }
     }
 }

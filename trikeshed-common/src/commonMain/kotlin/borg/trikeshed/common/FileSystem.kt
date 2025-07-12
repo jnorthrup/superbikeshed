@@ -7,7 +7,7 @@ import borg.trikeshed.lib.*
 import borg.trikeshed.lib.*
 
 fun <T> List<T>.toIndexed(): Indexed<T> = 
-    this.size j { i -> this[i] }
+    \1 j { \2: Int -> this[i] }
 
 fun <T> Array<T>.toIndexed(): Indexed<T> = 
-    this.size j { i -> this[i] } 
+    \1 j { \2: Int -> this[i] } 

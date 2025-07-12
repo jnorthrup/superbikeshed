@@ -103,15 +103,15 @@ class QuicClient(
         connection: QuicConnection,
         ranges: Indexed<Join<Twin<Long>, ByteArray>>
     ) = coroutineScope {
-        val streams = Array(ranges.a) { i ->
+        val streams = Array(ranges.component1()) { i ->
             async {
                 val stream = openUniStream(connection)
-                val rangeData = ranges.b(i)
-                val metadata = rangeData.a  // Twin<Long> = start j end
-                val data = rangeData.b
+                val rangeData = ranges.component2()(i)
+                val metadata = rangeData.component1()  // Twin<Long> = start j end
+                val data = rangeData.component2()
                 
                 // Send range metadata first
-                val metadataBytes = "${metadata.a}-${metadata.b}:".toByteArray()
+                val metadataBytes = "${metadata.component1()}-${metadata.component2()}:".toByteArray()
                 stream.send(metadataBytes, false)
                 stream.send(data, true)
                 
@@ -317,10 +317,10 @@ suspend fun QuicClient.executeMultiRange(
     path: String,
     ranges: Indexed<Twin<Long>>
 ): Indexed<ByteArray> = coroutineScope {
-    val results = Array(ranges.a) { i ->
+    val results = Array(ranges.component1()) { i ->
         async {
-            val range = ranges.b(i)
-            executeRange(connection, path, range.a, range.b)
+            val range = ranges.component2()(i)
+            executeRange(connection, path, range.component1(), range.component2())
         }
     }
     

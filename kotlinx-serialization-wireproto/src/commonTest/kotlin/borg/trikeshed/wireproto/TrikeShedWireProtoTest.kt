@@ -58,7 +58,7 @@ class TrikeShedWireProtoTest {
     fun testStringSeriesSerialization() {
         // Create test Indexed<String>
         val strings = listOf("hello", "world", "test", "data")
-        val series = strings.size j { i -> strings[i] }
+        val series = \1 j { \2: Int -> strings[i] }
         
         // Serialize to wire format
         val wireBytes = series.toWireBytes()
@@ -68,9 +68,9 @@ class TrikeShedWireProtoTest {
         val deserialized = wireBytes.toSeries<String>()
         
         // Verify series content
-        assertEquals(series.a, deserialized.a)
-        for (i in 0 until series.a) {
-            assertEquals(series.b(i), deserialized.b(i))
+        assertEquals(series.component1(), deserialized.component1())
+        for (i in 0 until series.component1()) {
+            assertEquals(series.component2()(i), deserialized.component2()(i))
         }
     }
     
@@ -78,14 +78,14 @@ class TrikeShedWireProtoTest {
     fun testIntSeriesSerialization() {
         // Create test Indexed<Int>
         val numbers = listOf(1, 2, 3, 42, 100, -5)
-        val series = numbers.size j { i -> numbers[i] }
+        val series = \1 j { \2: Int -> numbers[i] }
         
         val wireBytes = series.toWireBytes()
         val deserialized = wireBytes.toSeries<Int>()
         
-        assertEquals(series.a, deserialized.a)
-        for (i in 0 until series.a) {
-            assertEquals(series.b(i), deserialized.b(i))
+        assertEquals(series.component1(), deserialized.component1())
+        for (i in 0 until series.component1()) {
+            assertEquals(series.component2()(i), deserialized.component2()(i))
         }
     }
     
@@ -93,7 +93,7 @@ class TrikeShedWireProtoTest {
     fun testDoubleSeriesSerialization() {
         // Create test Indexed<Double>
         val doubles = listOf(3.14159, 2.71828, 1.41421, 0.0, -1.5)
-        val series = doubles.size j { i -> doubles[i] }
+        val series = \1 j { \2: Int -> doubles[i] }
         
         val wireBytes = series.toWireBytes()
         val deserialized = wireBytes.toSeries<Double>()
@@ -108,14 +108,14 @@ class TrikeShedWireProtoTest {
     fun testBooleanSeriesSerialization() {
         // Create test Indexed<Boolean>
         val booleans = listOf(true, false, true, true, false)
-        val series = booleans.size j { i -> booleans[i] }
+        val series = \1 j { \2: Int -> booleans[i] }
         
         val wireBytes = series.toWireBytes()
         val deserialized = wireBytes.toSeries<Boolean>()
         
-        assertEquals(series.a, deserialized.a)
-        for (i in 0 until series.a) {
-            assertEquals(series.b(i), deserialized.b(i))
+        assertEquals(series.component1(), deserialized.component1())
+        for (i in 0 until series.component1()) {
+            assertEquals(series.component2()(i), deserialized.component2()(i))
         }
     }
     
@@ -134,7 +134,7 @@ class TrikeShedWireProtoTest {
     fun testLargeSeries() {
         // Test larger series for performance
         val size = 1000
-        val series = size j { i -> i * 2 }
+        val series = \1 j { \2: Int -> i * 2 }
         
         val wireBytes = series.toWireBytes()
         val deserialized = wireBytes.toSeries<Int>()

@@ -46,7 +46,7 @@ object VectorAPIBitmapOps {
         try {
             // Use Vector API for SIMD processing of 32-byte chunks
             val chunkCount = (input.size + 31) / 32
-            return chunkCount j { chunkIndex ->
+            return \1 j { \2: Int ->
                 scanChunkVectorized(input, chunkIndex * 32)
             }
         } catch (e: Exception) {
@@ -108,9 +108,9 @@ class ForkJoinBitmapProcessor(
             val provider = BitmapJsonProvider(enableParallel = false)
             val result = provider.parse(jsonArray)
             
-            when (val element = result.a) {
+            when (val element = result.component1()) {
                 is JsonElement.Arr -> {
-                    val task = ArrayProcessTask(element, 0, element.elements.a, threshold, processor)
+                    val task = ArrayProcessTask(element, 0, element.elements.component1(), threshold, processor)
                     task.compute()
                 }
                 else -> {
@@ -144,7 +144,7 @@ internal class BitmapScanTask(
             val indices = scanner.getStructuralIndices()
             
             // Adjust indices to global positions
-            indices.a j { i -> indices.b(i) + start }
+            \1 j { \2: Int -> indices.component2()(i) + start }
         } else {
             // Split and conquer
             val mid = (start + end) / 2
@@ -167,13 +167,13 @@ internal class BitmapScanTask(
         val mergedIndices = mutableListOf<Int>()
         
         // Add all indices from left
-        for (i in 0 until left.a) {
-            mergedIndices.add(left.b(i))
+        for (i in 0 until left.component1()) {
+            mergedIndices.add(left.component2()(i))
         }
         
         // Add all indices from right
-        for (i in 0 until right.a) {
-            mergedIndices.add(right.b(i))
+        for (i in 0 until right.component1()) {
+            mergedIndices.add(right.component2()(i))
         }
         
         mergedIndices.sort()
@@ -196,7 +196,7 @@ internal class ArrayProcessTask(
         if (end - start <= threshold) {
             // Direct processing for small ranges
             for (i in start until end) {
-                processor(array.elements.b(i))
+                processor(array.elements.component2()(i))
             }
         } else {
             // Split and process in parallel
@@ -251,11 +251,11 @@ class MemoryMappedBitmapProcessor {
         val provider = BitmapJsonProvider(enableParallel = true)
         val result = provider.parse(chunk)
         
-        result.a?.let { element ->
+        result.component1()?.let { element ->
             when (element) {
                 is JsonElement.Arr -> {
-                    for (i in 0 until element.elements.a) {
-                        processor(element.elements.b(i))
+                    for (i in 0 until element.elements.component1()) {
+                        processor(element.elements.component2()(i))
                     }
                 }
                 else -> processor(element)
@@ -354,7 +354,7 @@ class ParallelBitmapToCursor(
         val provider = BitmapJsonProvider(enableParallel = true)
         val result = provider.parse(json)
         
-        when (val element = result.a) {
+        when (val element = result.component1()) {
             is JsonElement.Arr -> {
                 convertArrayToCursorParallel(element, contextId)
             }
@@ -372,7 +372,7 @@ class ParallelBitmapToCursor(
     ): Cursor = withContext(CursorContext(
         cursorId = contextId,
         metadata = CursorMetadata(
-            rowCount = array.elements.a,
+            rowCount = array.elements.component1(),
             columnCount = -1,
             columnNames = emptyList(),
             columnTypes = emptyList(),
@@ -381,12 +381,12 @@ class ParallelBitmapToCursor(
         ),
         executionPhase = CursorExecutionPhase.PROCESSING
     )) {
-        val chunkSize = maxOf(1, array.elements.a / workerThreads)
+        val chunkSize = maxOf(1, array.elements.component1() / workerThreads)
         val futures = mutableListOf<Future<List<List<Any?>>>>()
         
         for (i in 0 until workerThreads) {
             val start = i * chunkSize
-            val end = minOf((i + 1) * chunkSize, array.elements.a)
+            val end = minOf((i + 1) * chunkSize, array.elements.component1())
             
             if (start < end) {
                 futures.add(executor.submit(Callable {
@@ -416,13 +416,13 @@ class ParallelBitmapToCursor(
         val rows = mutableListOf<List<Any?>>()
         
         for (i in start until end) {
-            val element = array.elements.b(i)
+            val element = array.elements.component2()(i)
             when (element) {
                 is JsonElement.Obj -> {
                     val row = mutableListOf<Any?>()
-                    for (j in 0 until element.fields.a) {
-                        val field = element.fields.b(j)
-                        row.add(field.b.toNativeValue())
+                    for (j in 0 until element.fields.component1()) {
+                        val field = element.fields.component2()(j)
+                        row.add(field.component2().toNativeValue())
                     }
                     rows.add(row)
                 }
@@ -448,12 +448,12 @@ internal fun JsonElement.toNativeValue(): Any? = when (this) {
     is JsonElement.Bool -> value
     is JsonElement.Num -> value
     is JsonElement.Str -> value
-    is JsonElement.Arr -> (0 until elements.a).map { elements.b(it).toNativeValue() }
+    is JsonElement.Arr -> (0 until elements.component1()).map { elements.component2()(it).toNativeValue() }
     is JsonElement.Obj -> {
         val map = mutableMapOf<String, Any?>()
-        for (i in 0 until fields.a) {
-            val field = fields.b(i)
-            map[field.a] = field.b.toNativeValue()
+        for (i in 0 until fields.component1()) {
+            val field = fields.component2()(i)
+            map[field.component1()] = field.component2().toNativeValue()
         }
         map
     }

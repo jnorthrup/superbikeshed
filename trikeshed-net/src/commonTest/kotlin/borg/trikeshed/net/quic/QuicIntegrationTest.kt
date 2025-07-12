@@ -16,7 +16,7 @@ class QuicIntegrationTest {
         server.onStream(0) { connection, stream, data ->
             serverReceivedData = true
             // Echo back the data
-            stream.send(ByteArray(data.a) { i -> data.b(i) })
+            stream.send(ByteArray(data.component1()) { i -> data.component2()(i) })
         }
         
         // Create client
@@ -72,10 +72,10 @@ class QuicIntegrationTest {
         }
         
         // Verify range structure
-        assertEquals(3, ranges.a)
-        assertEquals(0L, ranges.b(0).a)
-        assertEquals(1023L, ranges.b(0).b)
-        assertEquals(1024L, ranges.b(1).a)
-        assertEquals(2047L, ranges.b(1).b)
+        assertEquals(3, ranges.component1())
+        assertEquals(0L, ranges.component2()(0).component1())
+        assertEquals(1023L, ranges.component2()(0).component2())
+        assertEquals(1024L, ranges.component2()(1).component1())
+        assertEquals(2047L, ranges.component2()(1).component2())
     }
 }

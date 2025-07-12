@@ -56,12 +56,12 @@ object SeriesDataProcessingExamples {
      */
     fun joinClosePriceAndVolume(klines: Indexed<Kline>): Series2<Price, Volume> {
         // To create a Indexed of Joins (Series2), we use the `Int.j` factory method
-        // for Indexed construction. `klines.a` gives the size of the input series.
-        // For each index, we access the corresponding Kline from the input series (`klines.b(index)` or `klines[index]`)
+        // for Indexed construction. `klines.component1()` gives the size of the input series.
+        // For each index, we access the corresponding Kline from the input series (`klines.component2()(index)` or `klines[index]`)
         // and then create a Join pair of its `close` price and `volume` using the `A.j(B)` infix function.
         // The result is `Indexed<Join<Price, Volume>>`, which is typealiased as `Series2<Price, Volume>`.
-        return klines.a j { index:Int ->
-            val kline = klines.b(index) // or klines[index]
+        return klines.component1() j { index:Int ->
+            val kline = klines.component2()(index) // or klines[index]
             kline.close j kline.volume
         }
     }
@@ -90,7 +90,7 @@ object SeriesDataProcessingExamples {
 
         println("\nJoined Close Price and Volume:")
         val closeAndVolume = joinClosePriceAndVolume(dummyKlines)
-        closeAndVolume.play.forEach { join -> println("Close: ${join.a.value}, Volume: ${join.b.value}") }
+        closeAndVolume.play.forEach { join -> println("Close: ${join.component1().value}, Volume: ${join.component2().value}") }
 
         // Example of accessing left/right from Series2
         // println("\nJoined Close (left):")

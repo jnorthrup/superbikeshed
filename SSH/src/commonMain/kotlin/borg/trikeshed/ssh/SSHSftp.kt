@@ -279,7 +279,7 @@ class SSHSftpImpl(
     
     internal fun buildWriteFileRequest(requestId: UInt, handle: Indexed<Byte>, offset: Long, data: Indexed<Byte>): SSHPayload {
         val handleBytes = handle
-        val size = 1 + 4 + 4 + handleBytes.size + 8 + 4 + data.a
+        val size = 1 + 4 + 4 + handleBytes.size + 8 + 4 + data.component1()
         
         return size j { i: Int ->
             when {
@@ -288,7 +288,7 @@ class SSHSftpImpl(
                 i < 9 -> ((handleBytes.size shr ((8 - i) * 8)) and 0xFF).toByte()
                 i < 9 + handleBytes.size -> handleBytes[i - 9]
                 i < 17 + handleBytes.size -> ((offset shr ((16 + handleBytes.size - i) * 8)) and 0xFF).toByte()
-                i < 21 + handleBytes.size -> ((data.a shr ((20 + handleBytes.size - i) * 8)) and 0xFFu).toByte()
+                i < 21 + handleBytes.size -> ((data.component1() shr ((20 + handleBytes.size - i) * 8)) and 0xFFu).toByte()
                 else -> data[i - 21 - handleBytes.size]
             }
         }
@@ -424,7 +424,7 @@ data class SSHSftpFileHandle(
 data class SSHSftpFileAttributes(
     val data: Indexed<Byte>
 ) {
-    val size: Int get() = data.a
+    val size: Int get() = data.component1()
 }
 
 data class SSHSftpFileInfo(

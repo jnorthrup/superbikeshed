@@ -97,11 +97,11 @@ class CouchDBIntegrationTest {
         )
         
         val serialized = adapter.serializeMessage(testMessage)
-        assertTrue(serialized.a > 0)
+        assertTrue(serialized.component1() > 0)
         
         val parsed = adapter.parseMessage(serialized, 0)
         assertNotNull(parsed)
-        assertNotNull(parsed.a)
+        assertNotNull(parsed.component1())
     }
     
     @Test
@@ -192,7 +192,7 @@ class CouchDBIntegrationTest {
         )
         
         val serializedMessage = adapter.serializeMessage(quicMessage)
-        assertTrue(serializedMessage.a > 0)
+        assertTrue(serializedMessage.component1() > 0)
         
         val parsedMessage = adapter.parseMessage(serializedMessage, 0)
         assertNotNull(parsedMessage)

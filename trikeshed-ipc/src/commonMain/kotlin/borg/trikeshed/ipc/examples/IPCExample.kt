@@ -100,7 +100,7 @@ class NativeHubExample {
                         )
                         
                         if (response.payload.size > 0) {
-                            return ByteArray(response.payload.a) { i -> response.payload[i] }
+                            return ByteArray(response.payload.component1()) { i -> response.payload[i] }
                         }
                     } else {
                         routing.updateMetrics(hop, RoutingResult.Timeout, key)
@@ -150,7 +150,7 @@ class NativeHubExample {
             // Simple serialization
             return nodes.flatMap { node ->
                 node.node.nodeId.toByteArray().toList()
-            }.toByteArray().let { bytes -> bytes.size j { i -> bytes[i] } }
+            }.toByteArray().let { bytes -> \1 j { \2: Int -> bytes[i] } }
         }
     }
     
@@ -206,7 +206,7 @@ class NativeHubExample {
                 source = 2,
                 destination = 0,
                 channelId = wasmToNative.id,
-                payload = searchKey.toByteArray().let { bytes -> bytes.size j { i -> bytes[i] } }
+                payload = searchKey.toByteArray().let { bytes -> \1 j { \2: Int -> bytes[i] } }
             ))
             
             // Native routes to JVM
@@ -216,7 +216,7 @@ class NativeHubExample {
                 source = 0,
                 destination = 1,
                 channelId = nativeToJvm.id,
-                payload = searchKey.toByteArray().let { bytes -> bytes.size j { i -> bytes[i] } }
+                payload = searchKey.toByteArray().let { bytes -> \1 j { \2: Int -> bytes[i] } }
             ))
         }
         

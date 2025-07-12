@@ -28,7 +28,7 @@ class SSHScpClientImpl(
     override val key: CoroutineContext.Key<*> get() = Key
     
     override suspend fun upload(localPath: String, remotePath: String, context: SSHScpContext): Boolean {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SCP: Uploading $localPath to $remotePath")
             
             try {
@@ -95,7 +95,7 @@ class SSHScpClientImpl(
     }
     
     override suspend fun download(remotePath: String, localPath: String, context: SSHScpContext): Boolean {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SCP: Downloading $remotePath to $localPath")
             
             try {
@@ -153,7 +153,7 @@ class SSHScpClientImpl(
     }
     
     override suspend fun uploadDirectory(localDir: String, remoteDir: String, context: SSHScpContext): Boolean {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SCP: Uploading directory $localDir to $remoteDir")
             
             try {
@@ -180,7 +180,7 @@ class SSHScpClientImpl(
     }
     
     override suspend fun downloadDirectory(remoteDir: String, localDir: String, context: SSHScpContext): Boolean {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("SCP: Downloading directory $remoteDir to $localDir")
             
             // SCP doesn't natively support directory downloads
@@ -198,7 +198,7 @@ class SSHScpClientImpl(
     
     private suspend fun createNewChannel(context: SSHScpContext): SSHChannel {
         val channelManager = SSHConnectionManagerFactory.createConnectionManager()
-        return channelManager.openChannel(connection, "session", SSHConnectionContext(context.b))
+        return channelManager.openChannel(connection, "session", SSHConnectionContext(context.component2()))
     }
     
     private suspend fun sendScpCommand(channel: SSHChannel, command: String) {

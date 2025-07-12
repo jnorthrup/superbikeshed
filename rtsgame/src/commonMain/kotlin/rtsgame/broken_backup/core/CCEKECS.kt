@@ -224,8 +224,8 @@ class CCEKECSWorld(
         
         while (offset < totalCount) {
             val batchCount = minOf(batchSize, totalCount - offset)
-            val entities = batchCount j { i -> storage.getEntityByIndex(offset + i) }
-            val components = batchCount j { i -> storage.getByIndex(offset + i) }
+            val entities = \1 j { \2: Int -> storage.getEntityByIndex(offset + i) }
+            val components = \1 j { \2: Int -> storage.getByIndex(offset + i) }
             
             action(entities, components)
             offset += batchCount

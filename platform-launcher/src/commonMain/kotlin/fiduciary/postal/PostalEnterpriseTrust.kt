@@ -625,7 +625,7 @@ class PostalEnterpriseTrust {
             settlementCurrency = "SDR"
         )
     
-    internal fun standardQualityObligations(): Indexed<QualityObligation> = b0.a
+    internal fun standardQualityObligations(): Indexed<QualityObligation> = b0.component1()
     
     internal fun calculateSpecialDepositRate(terms: DepositTerms): Double =
         when (terms.termLength) {
@@ -641,7 +641,7 @@ class PostalEnterpriseTrust {
     internal fun generateBarcodes(
         shipment: Shipment, 
         endorsements: Indexed<SpecialEndorsement>
-    ): Indexed<Barcode> = b0.a
+    ): Indexed<Barcode> = b0.component1()
     
     internal fun calculatePostage(
         shipment: Shipment,

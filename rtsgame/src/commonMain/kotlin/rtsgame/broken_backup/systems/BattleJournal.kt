@@ -369,7 +369,7 @@ class BattleJournal {
     }
     
     fun getBattleHistory(): Indexed<BattleRecord> {
-        return completedBattles.size j { i -> completedBattles[i] }
+        return \1 j { \2: Int -> completedBattles[i] }
     }
     
     internal fun generateBattleId(): String = "battle_${getCurrentTime()}"

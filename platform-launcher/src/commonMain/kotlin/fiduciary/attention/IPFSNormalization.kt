@@ -31,8 +31,8 @@ typealias NormalizedAttention = Twin<Long>  // start j end
 
     val normalized: NormalizedAttention
         get() {
-            val baseHash = chunk.a.hashCode().toLong() and 0x7FFFFFFFFFFFFFFFL
-            val offset = chunk.b * 1024L
+            val baseHash = chunk.component1().hashCode().toLong() and 0x7FFFFFFFFFFFFFFFL
+            val offset = chunk.component2() * 1024L
             return (baseHash + offset) j (baseHash + offset + 1024)
         }
 }
@@ -71,7 +71,7 @@ inline fun IPFSAttention.unfold(file: FileOffsetAttention): Join<String, Normali
 inline fun IPFSChunkAttention.fetch(source: HTTPRangeAttention): ByteArray {
     // Fetch chunk data using HTTP range
     val range = normalized
-    return ByteArray((range.b - range.a).toInt()) // Mock data
+    return ByteArray((range.component2() - range.component1()).toInt()) // Mock data
 }
 
 inline fun IPFSChunkAttention.store(target: ZipAttention): Boolean {
@@ -99,8 +99,8 @@ inline fun foldZipToIPFS(
     archiveUrl: String
 ): ArchiveFold {
     // Create IPFS entries for each ZIP entry
-    val ipfsEntries = Array(zipEntries.a) { i ->
-        val entry = zipEntries.b(i)
+    val ipfsEntries = Array(zipEntries.component1()) { i ->
+        val entry = zipEntries.component2()(i)
         val attention = ZipAttention(entry.offset j (entry.offset + entry.compressedSize))
         
         // Generate deterministic CID from entry data
@@ -131,21 +131,21 @@ inline fun unfoldIPFSToLinear(
     targetFormat: String = "http"
 ): Indexed<Join<String, NormalizedAttention>> {
     return fold.entries.α { entry ->
-        val filename = entry.a
-        val ipfs = entry.b
+        val filename = entry.component1()
+        val ipfs = entry.component2()
         
         when (targetFormat) {
             "http" -> {
                 val httpRange = HTTPRangeAttention(ipfs.normalized)
-                filename j ipfs.unfold(httpRange).b
+                filename j ipfs.unfold(httpRange).component2()
             }
             "zip" -> {
                 val zipRange = ZipAttention(ipfs.normalized)
-                filename j ipfs.unfold(zipRange).b
+                filename j ipfs.unfold(zipRange).component2()
             }
             else -> {
                 val fileRange = FileOffsetAttention(ipfs.normalized)
-                filename j ipfs.unfold(fileRange).b
+                filename j ipfs.unfold(fileRange).component2()
             }
         }
     }
@@ -175,7 +175,7 @@ suspend fun foldPatrickDevineToIPFS(
         // Fold to IPFS
         val fold = foldZipToIPFS(entries, archiveUrl)
         println("Created IPFS fold with root CID: ${fold.rootCID}")
-        println("Folded ${fold.entries.a} entries")
+        println("Folded ${fold.entries.component1()} entries")
         
         fold
     }
@@ -189,8 +189,8 @@ suspend fun foldPatrickDevineToIPFS(
  * Attention that can switch between linear and content-addressed
  */
 value class UnifiedAttention(val unified: Join<NormalizedAttention, String?>) {
-    val range: NormalizedAttention get() = unified.a
-    val cid: String? get() = unified.b
+    val range: NormalizedAttention get() = unified.component1()
+    val cid: String? get() = unified.component2()
     
     val isLinear: Boolean get() = cid == null
     val isContentAddressed: Boolean get() = cid != null
@@ -219,11 +219,11 @@ suspend fun demonstrateIPFSFolding() {
     
     // Fold linear into IPFS
     val folded = zipEntry.fold(ipfsCID)
-    println("Folded: ${folded.a} → ${folded.b}")
+    println("Folded: ${folded.component1()} → ${folded.component2()}")
     
     // Unfold IPFS to linear
     val unfolded = ipfsCID.unfold(zipEntry)
-    println("Unfolded: ${unfolded.a} → ${unfolded.b}")
+    println("Unfolded: ${unfolded.component1()} → ${unfolded.component2()}")
     
     // Unified attention
     val unified1 = unifyAttention(zipEntry)

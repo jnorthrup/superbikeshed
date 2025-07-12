@@ -52,7 +52,7 @@ class CommandBatcher(
         
         // Create immutable batch
         val batch = pendingCommands.toList()
-        val series = batch.size j { i -> batch[i] }
+        val series = \1 j { \2: Int -> batch[i] }
         
         pendingCommands.clear()
         lastFlushTime = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
@@ -162,7 +162,7 @@ class CommandPriorityQueue {
         return mutex.withLock {
             val commands = queue.map { it.command }
             queue.clear()
-            commands.size j { i -> commands[i] }
+            \1 j { \2: Int -> commands[i] }
         }
     }
     

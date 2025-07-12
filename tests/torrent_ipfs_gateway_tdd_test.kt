@@ -27,8 +27,8 @@ class TorrentIpfsGatewayTddTest {
     @Test
     fun `test BitTorrent handshake protocol`() = runTest {
         // Given: A BitTorrent peer wire instance
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -60,7 +60,7 @@ class TorrentIpfsGatewayTddTest {
             offset = 1024,
             length = 16384
         )
-        val pieceData = 16384 j { i -> (i % 256).toByte() }
+        val pieceData = \1 j { \2: Int -> (i % 256).toByte() }
         val pieceMessage = BitTorrentPeerWire.PeerMessage.Piece(
             pieceIndex = 5,
             offset = 512,
@@ -75,14 +75,14 @@ class TorrentIpfsGatewayTddTest {
         assertEquals(16384, requestMessage.length)
         assertEquals(5, pieceMessage.pieceIndex)
         assertEquals(512, pieceMessage.offset)
-        assertEquals(16384, pieceMessage.data.a)
+        assertEquals(16384, pieceMessage.data.component1())
     }
 
     @Test
     fun `test peer connection management`() = runTest {
         // Given: A BitTorrent peer wire instance
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -113,8 +113,8 @@ class TorrentIpfsGatewayTddTest {
     @Test
     fun `test piece verification`() = runTest {
         // Given: A BitTorrent peer wire instance
-        val infoHash = 20 j { i -> i.toByte() }
-        val peerId = PeerId(20 j { i -> (i + 10).toByte() })
+        val infoHash = \1 j { \2: Int -> i.toByte() }
+        val peerId = \1 j { \2: Int -> (i + 10).toByte() })
         val peerWire = BitTorrentPeerWire(
             context = Dispatchers.Unconfined,
             infoHash = infoHash,
@@ -122,7 +122,7 @@ class TorrentIpfsGatewayTddTest {
         )
 
         // When: Receiving a piece
-        val pieceData = 16384 j { i -> (i % 256).toByte() }
+        val pieceData = \1 j { \2: Int -> (i % 256).toByte() }
         val pieceIndex = 5
         val offset = 0
         val pieceMessage = BitTorrentPeerWire.PeerMessage.Piece(
@@ -151,7 +151,7 @@ class TorrentIpfsGatewayTddTest {
         assertTrue(simulation.isRunning())
 
         // When: Creating a torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "test-torrent",
@@ -173,7 +173,7 @@ class TorrentIpfsGatewayTddTest {
         val simulation = TorrentSimulation(context = Dispatchers.Unconfined)
         simulation.start()
         
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "test-torrent",
@@ -182,7 +182,7 @@ class TorrentIpfsGatewayTddTest {
         )
 
         // When: A peer joins the torrent
-        val peerId = PeerId(20 j { i -> (i + 20).toByte() })
+        val peerId = \1 j { \2: Int -> (i + 20).toByte() })
         val peer = simulation.simulatePeerJoin(
             torrent = torrent,
             peerId = peerId,
@@ -208,7 +208,7 @@ class TorrentIpfsGatewayTddTest {
         val simulation = TorrentSimulation(context = Dispatchers.Unconfined)
         simulation.start()
         
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "test-torrent",
@@ -218,7 +218,7 @@ class TorrentIpfsGatewayTddTest {
 
         val peer1 = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = PeerId(20 j { i -> (i + 20).toByte() }),
+            peerId = \1 j { \2: Int -> (i + 20).toByte() }),
             address = "127.0.0.1",
             port = 6882,
             hasPieces = setOf(0, 1, 2, 3)
@@ -226,7 +226,7 @@ class TorrentIpfsGatewayTddTest {
 
         val peer2 = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = PeerId(20 j { i -> (i + 30).toByte() }),
+            peerId = \1 j { \2: Int -> (i + 30).toByte() }),
             address = "127.0.0.1",
             port = 6883,
             hasPieces = emptySet()
@@ -234,7 +234,7 @@ class TorrentIpfsGatewayTddTest {
 
         // When: Simulating piece transfer
         val pieceIndex = 1
-        val pieceData = 16384 j { i -> (i % 256).toByte() }
+        val pieceData = \1 j { \2: Int -> (i % 256).toByte() }
         simulation.simulatePieceTransfer(
             torrent = torrent,
             fromPeer = peer1,
@@ -255,7 +255,7 @@ class TorrentIpfsGatewayTddTest {
     fun `test IPFS client content storage`() = runTest {
         // Given: An IPFS client with in-memory storage
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
@@ -263,18 +263,18 @@ class TorrentIpfsGatewayTddTest {
         )
 
         // When: Adding content to IPFS
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = client.add(testData)
 
         // Then: Content should be stored and retrievable
         assertNotNull(cid)
         val retrievedData = client.get(cid)
         assertNotNull(retrievedData)
-        assertEquals(testData.a, retrievedData!!.a)
+        assertEquals(testData.component1(), retrievedData!!.component1())
         
         // Verify data integrity
-        for (i in 0 until testData.a) {
-            assertEquals(testData.b(i), retrievedData.b(i))
+        for (i in 0 until testData.component1()) {
+            assertEquals(testData.component2()(i), retrievedData.component2()(i))
         }
     }
 
@@ -282,7 +282,7 @@ class TorrentIpfsGatewayTddTest {
     fun `test IPFS client file chunking`() = runTest {
         // Given: An IPFS client with large file data
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
@@ -290,18 +290,18 @@ class TorrentIpfsGatewayTddTest {
         )
 
         // When: Adding a large file (larger than chunk size)
-        val largeData = 300000 j { i -> (i % 256).toByte() } // 300KB
+        val largeData = \1 j { \2: Int -> (i % 256).toByte() } // 300KB
         val cid = client.addFile(largeData, chunkSize = 262144) // 256KB chunks
 
         // Then: File should be chunked and stored
         assertNotNull(cid)
         val retrievedData = client.getFile(cid)
         assertNotNull(retrievedData)
-        assertEquals(largeData.a, retrievedData!!.a)
+        assertEquals(largeData.component1(), retrievedData!!.component1())
         
         // Verify data integrity
-        for (i in 0 until largeData.a) {
-            assertEquals(largeData.b(i), retrievedData.b(i))
+        for (i in 0 until largeData.component1()) {
+            assertEquals(largeData.component2()(i), retrievedData.component2()(i))
         }
     }
 
@@ -309,14 +309,14 @@ class TorrentIpfsGatewayTddTest {
     fun `test IPFS pinning operations`() = runTest {
         // Given: An IPFS client with content
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = client.add(testData)
 
         // When: Pinning content
@@ -329,10 +329,10 @@ class TorrentIpfsGatewayTddTest {
         val pinnedCids = client.listPinned()
 
         // Then: Should contain the pinned CID
-        assertTrue(pinnedCids.a > 0)
+        assertTrue(pinnedCids.component1() > 0)
         var found = false
-        for (i in 0 until pinnedCids.a) {
-            if (pinnedCids.b(i) == cid) {
+        for (i in 0 until pinnedCids.component1()) {
+            if (pinnedCids.component2()(i) == cid) {
                 found = true
                 break
             }
@@ -364,7 +364,7 @@ class TorrentIpfsGatewayTddTest {
         assertTrue(stats.uptime >= 0)
 
         // When: Adding content via API
-        val testData = 512 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val request = IpfsApiRequest(
             method = "POST",
             path = "/api/v0/add",
@@ -391,7 +391,7 @@ class TorrentIpfsGatewayTddTest {
         assertEquals(200, getResponse.status)
         assertTrue(getResponse.data is Indexed<*>)
         val retrievedData = getResponse.data as Indexed<Byte>
-        assertEquals(testData.a, retrievedData.a)
+        assertEquals(testData.component1(), retrievedData.component1())
     }
 
     // === TORRENT-IPFS GATEWAY TESTS ===
@@ -403,7 +403,7 @@ class TorrentIpfsGatewayTddTest {
         simulation.start()
         
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val ipfsClient = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
@@ -411,7 +411,7 @@ class TorrentIpfsGatewayTddTest {
         )
 
         // When: Creating a torrent and downloading it
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "test-torrent",
@@ -421,7 +421,7 @@ class TorrentIpfsGatewayTddTest {
 
         val peer = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = PeerId(20 j { i -> (i + 20).toByte() }),
+            peerId = \1 j { \2: Int -> (i + 20).toByte() }),
             address = "127.0.0.1",
             port = 6882,
             hasPieces = (0..63).toSet() // Has all pieces
@@ -430,15 +430,15 @@ class TorrentIpfsGatewayTddTest {
         // Simulate downloading all pieces
         val downloadedPieces = mutableListOf<Indexed<Byte>>()
         for (i in 0 until torrent.totalPieces) {
-            val pieceData = 16384 j { j -> ((i * 16384 + j) % 256).toByte() }
+            val pieceData = \1 j { \2: Int -> ((i * 16384 + j) % 256).toByte() }
             downloadedPieces.add(pieceData)
         }
 
         // When: Storing torrent content in IPFS
-        val torrentData = downloadedPieces.fold(0 j { 0.toByte() }) { acc, piece ->
-            val newSize = acc.a + piece.a
-            newSize j { i ->
-                if (i < acc.a) acc.b(i) else piece.b(i - acc.a)
+        val torrentData = \1 j { \2: Int ->
+            val newSize = acc.component1() + piece.component1()
+            \1 j { \2: Int ->
+                if (i < acc.component1()) acc.component2()(i) else piece.component2()(i - acc.component1())
             }
         }
         val ipfsCid = ipfsClient.add(torrentData)
@@ -447,7 +447,7 @@ class TorrentIpfsGatewayTddTest {
         assertNotNull(ipfsCid)
         val retrievedData = ipfsClient.get(ipfsCid)
         assertNotNull(retrievedData)
-        assertEquals(torrentData.a, retrievedData!!.a)
+        assertEquals(torrentData.component1(), retrievedData!!.component1())
 
         // When: Creating a gateway mapping
         val gatewayMapping = TorrentIpfsGatewayMapping(
@@ -468,7 +468,7 @@ class TorrentIpfsGatewayTddTest {
     fun `test IPFS to torrent seeding`() = runTest {
         // Given: IPFS content and torrent simulation
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val ipfsClient = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
@@ -479,7 +479,7 @@ class TorrentIpfsGatewayTddTest {
         simulation.start()
 
         // When: Adding content to IPFS first
-        val testData = 1024 * 1024 j { i -> (i % 256).toByte() } // 1MB
+        val testData = 1024 * \1 j { \2: Int -> (i % 256).toByte() } // 1MB
         val ipfsCid = ipfsClient.add(testData)
 
         // Then: Content should be in IPFS
@@ -488,18 +488,18 @@ class TorrentIpfsGatewayTddTest {
         assertNotNull(retrievedData)
 
         // When: Creating a torrent from IPFS content
-        val infoHash = 20 j { i -> (i + 100).toByte() }
+        val infoHash = \1 j { \2: Int -> (i + 100).toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "ipfs-seeded-torrent",
-            totalSize = testData.a.toLong(),
+            totalSize = testData.component1().toLong(),
             pieceSize = 16384
         )
 
         // When: A peer joins to download
         val downloaderPeer = simulation.simulatePeerJoin(
             torrent = torrent,
-            peerId = PeerId(20 j { i -> (i + 200).toByte() }),
+            peerId = \1 j { \2: Int -> (i + 200).toByte() }),
             address = "127.0.0.1",
             port = 6883,
             hasPieces = emptySet()
@@ -509,8 +509,8 @@ class TorrentIpfsGatewayTddTest {
         val totalPieces = torrent.totalPieces
         for (i in 0 until totalPieces) {
             val pieceOffset = i * 16384
-            val pieceSize = minOf(16384, testData.a - pieceOffset)
-            val pieceData = pieceSize j { j -> testData.b(pieceOffset + j) }
+            val pieceSize = minOf(16384, testData.component1() - pieceOffset)
+            val pieceData = \1 j { \2: Int -> testData.component2()(pieceOffset + j) }
             
             simulation.simulatePieceTransfer(
                 torrent = torrent,
@@ -640,7 +640,7 @@ class TorrentIpfsGatewayTddTest {
         simulation.start()
         
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val ipfsClient = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
@@ -652,7 +652,7 @@ class TorrentIpfsGatewayTddTest {
         val rpcServer = TorrentRpcServer(downloader, requestFactory)
 
         // When: Creating and downloading a torrent
-        val infoHash = 20 j { i -> i.toByte() }
+        val infoHash = \1 j { \2: Int -> i.toByte() }
         val torrent = simulation.createTorrent(
             infoHash = infoHash,
             name = "integration-test",
@@ -663,15 +663,15 @@ class TorrentIpfsGatewayTddTest {
         // Simulate complete download
         val downloadedPieces = mutableListOf<Indexed<Byte>>()
         for (i in 0 until torrent.totalPieces) {
-            val pieceData = 16384 j { j -> ((i * 16384 + j) % 256).toByte() }
+            val pieceData = \1 j { \2: Int -> ((i * 16384 + j) % 256).toByte() }
             downloadedPieces.add(pieceData)
         }
 
         // When: Storing in IPFS
-        val torrentData = downloadedPieces.fold(0 j { 0.toByte() }) { acc, piece ->
-            val newSize = acc.a + piece.a
-            newSize j { i ->
-                if (i < acc.a) acc.b(i) else piece.b(i - acc.a)
+        val torrentData = \1 j { \2: Int ->
+            val newSize = acc.component1() + piece.component1()
+            \1 j { \2: Int ->
+                if (i < acc.component1()) acc.component2()(i) else piece.component2()(i - acc.component1())
             }
         }
         val ipfsCid = ipfsClient.add(torrentData)
@@ -706,7 +706,7 @@ class TorrentIpfsGatewayTddTest {
         // Verify IPFS content integrity
         val retrievedData = ipfsClient.get(ipfsCid)
         assertNotNull(retrievedData)
-        assertEquals(torrentData.a, retrievedData!!.a)
+        assertEquals(torrentData.component1(), retrievedData!!.component1())
     }
 
     // === MOCK IMPLEMENTATIONS ===

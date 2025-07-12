@@ -5,7 +5,7 @@ import com.ta4k.indicators.RSIIndicator
 import com.ta4k.indicators.SMAIndicator
 import moneyfan.model.TradeSignal
 import borg.trikeshed.lib.Indexed
-import borg.trikeshed.lib.b
+import borg.trikeshed.lib.component2()
 
 /**
  * 2-Period RSI Strategy
@@ -33,12 +33,12 @@ class RSI2Strategy(
                     // Entry conditions
                     shortSma.getValue(i)?.compareTo(longSma.getValue(i) ?: BigDecimal.ZERO) == 1 && // Trend
                     rsi.getValue(i)?.compareTo(BigDecimal(rsiLowerThreshold)) == -1 && // Signal 1
-                    shortSma.getValue(i)?.compareTo(klines.b(i).closePrice) == 1 -> TradeSignal.Buy // Signal 2
+                    shortSma.getValue(i)?.compareTo(klines.component2()(i).closePrice) == 1 -> TradeSignal.Buy // Signal 2
 
                     // Exit conditions
                     shortSma.getValue(i)?.compareTo(longSma.getValue(i) ?: BigDecimal.ZERO) == -1 && // Trend
                     rsi.getValue(i)?.compareTo(BigDecimal(rsiUpperThreshold)) == 1 && // Signal 1
-                    shortSma.getValue(i)?.compareTo(klines.b(i).closePrice) == -1 -> TradeSignal.Sell // Signal 2
+                    shortSma.getValue(i)?.compareTo(klines.component2()(i).closePrice) == -1 -> TradeSignal.Sell // Signal 2
 
                     else -> TradeSignal.Hold
                 }

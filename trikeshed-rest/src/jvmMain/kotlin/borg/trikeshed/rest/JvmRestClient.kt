@@ -35,8 +35,8 @@ actual class PlatformRestClient actual constructor(
     override suspend fun execute(request: HttpRequest): HttpResponse = withContext(Dispatchers.IO) {
         // Apply interceptors
         var processedRequest = request
-        for (i in 0 until interceptors.a) {
-            processedRequest = interceptors.b(i).intercept(processedRequest)
+        for (i in 0 until interceptors.component1()) {
+            processedRequest = interceptors.component2()(i).intercept(processedRequest)
         }
         
         // Build Java HTTP request
@@ -86,42 +86,42 @@ actual class PlatformRestClient actual constructor(
     
     override suspend fun batch(requests: Indexed<HttpRequest>): Indexed<HttpResponse> {
         // Simplified batch implementation - execute sequentially for now
-        return requests.a j { i: Int ->
-            runBlocking { execute(requests.b(i)) }
+        return requests.component1() j { i: Int ->
+            runBlocking { execute(requests.component2()(i)) }
         }
     }
     
     private suspend fun applyInterceptors(request: HttpRequest): HttpRequest {
         var processedRequest = request
-        for (i in 0 until interceptors.a) {
-            processedRequest = interceptors.b(i).intercept(processedRequest)
+        for (i in 0 until interceptors.component1()) {
+            processedRequest = interceptors.component2()(i).intercept(processedRequest)
         }
         return processedRequest
     }
     
     private fun buildJavaRequest(request: HttpRequest): JavaHttpRequest {
         val builder = JavaHttpRequest.newBuilder()
-            .uri(URI.create(resolveUrl(request.a.url)))
+            .uri(URI.create(resolveUrl(request.component1().url)))
         
         // Set method and body
-        when (request.a.method) {
+        when (request.component1().method) {
             HttpMethod.GET -> builder.GET()
-            HttpMethod.POST -> builder.POST(JavaHttpRequest.BodyPublishers.ofByteArray(request.b ?: ByteArray(0)))
-            HttpMethod.PUT -> builder.PUT(JavaHttpRequest.BodyPublishers.ofByteArray(request.b ?: ByteArray(0)))
+            HttpMethod.POST -> builder.POST(JavaHttpRequest.BodyPublishers.ofByteArray(request.component2() ?: ByteArray(0)))
+            HttpMethod.PUT -> builder.PUT(JavaHttpRequest.BodyPublishers.ofByteArray(request.component2() ?: ByteArray(0)))
             HttpMethod.DELETE -> builder.DELETE()
-            HttpMethod.PATCH -> builder.method("PATCH", JavaHttpRequest.BodyPublishers.ofByteArray(request.b ?: ByteArray(0)))
-            else -> builder.method(request.a.method.name, JavaHttpRequest.BodyPublishers.ofByteArray(request.b ?: ByteArray(0)))
+            HttpMethod.PATCH -> builder.method("PATCH", JavaHttpRequest.BodyPublishers.ofByteArray(request.component2() ?: ByteArray(0)))
+            else -> builder.method(request.component1().method.name, JavaHttpRequest.BodyPublishers.ofByteArray(request.component2() ?: ByteArray(0)))
         }
         
         // Set headers
-        val mergedHeaders = mergeHeaders(defaultHeaders, request.a.headers)
-        for (i in 0 until mergedHeaders.a) {
-            val header = mergedHeaders.b(i)
-            builder.header(header.a, header.b)
+        val mergedHeaders = mergeHeaders(defaultHeaders, request.component1().headers)
+        for (i in 0 until mergedHeaders.component1()) {
+            val header = mergedHeaders.component2()(i)
+            builder.header(header.component1(), header.component2())
         }
         
         // Set timeout
-        request.a.timeout?.let { timeout ->
+        request.component1().timeout?.let { timeout ->
             builder.timeout(timeout.toJavaDuration())
         }
         
@@ -160,15 +160,15 @@ actual class PlatformRestClient actual constructor(
         val headerMap = mutableMapOf<String, String>()
         
         // Add default headers
-        for (i in 0 until default.a) {
-            val header = default.b(i)
-            headerMap[header.a.lowercase()] = header.b
+        for (i in 0 until default.component1()) {
+            val header = default.component2()(i)
+            headerMap[header.component1().lowercase()] = header.component2()
         }
         
         // Override with request headers
-        for (i in 0 until request.a) {
-            val header = request.b(i)
-            headerMap[header.a.lowercase()] = header.b
+        for (i in 0 until request.component1()) {
+            val header = request.component2()(i)
+            headerMap[header.component1().lowercase()] = header.component2()
         }
         
         // Convert back to HttpHeaders
@@ -227,7 +227,7 @@ suspend fun RestClient.downloadFile(
     headers: HttpHeaders = 0 j { _: Int -> "" j "" }
 ): java.io.File {
     val response = get(url, headers)
-    destination.writeBytes(response.b)
+    destination.writeBytes(response.component2())
     return destination
 }
 
@@ -251,7 +251,7 @@ suspend fun RestClient.streamWithProgress(
 ): Flow<ByteArray> = flow {
     var totalBytes = 0L
     stream(request).collect { chunk ->
-        val bytes = chunk.b
+        val bytes = chunk.component2()
         totalBytes += bytes.size
         onProgress(totalBytes, -1) // Unknown total size for streams
         emit(bytes)

@@ -221,12 +221,12 @@ class StreamingKettle(
             it.outputChannel.trySend(PeerMessage.Interested).isSuccess 
         }.toIdx()
         
-        if (availablePeers.a == 0) return
+        if (availablePeers.component1() == 0) return
         
-        for (i in 0 until pieces.a) {
-            val piece: Int = pieces.b.invoke(i)
+        for (i in 0 until pieces.component1()) {
+            val piece: Int = pieces.component2().invoke(i)
             if (!pieceBuffer.containsKey(piece)) {
-                val peer: PeerBox = availablePeers.b.invoke(i % availablePeers.a)
+                val peer: PeerBox = availablePeers.component2().invoke(i % availablePeers.component1())
                 peer.outputChannel.send(
                     PeerMessage.Request(piece, 0, pieceSize)
                 )
@@ -263,22 +263,22 @@ class RandomAccessKettle(
         val startPiece: PieceIndex = (startByte / pieceSize).toInt()
         val endPiece: PieceIndex = (endByte / pieceSize).toInt()
         
-        val pieces: Indexed<Piece> = (startPiece..endPiece) j { pieceIdx ->
+        val pieces: Indexed<Piece> = \1 j { \2: Int ->
             fetchPiece(pieceIdx)
         }
         
         // Combine pieces and extract requested byte range
-        val totalSize: Int = pieces.a * pieceSize
-        val result: ByteIndexed = totalSize j { byteIdx ->
+        val totalSize: Int = pieces.component1() * pieceSize
+        val result: ByteIndexed = \1 j { \2: Int ->
             val pieceIdx = byteIdx / pieceSize
             val offsetInPiece = byteIdx % pieceSize
-            pieces.b.invoke(pieceIdx).data[offsetInPiece]
+            pieces.component2().invoke(pieceIdx).data[offsetInPiece]
         }
         
         val startOffset = (startByte % pieceSize).toInt()
         val length = (endByte - startByte).toInt()
         
-        return length j { i -> result[startOffset + i] }
+        return \1 j { \2: Int -> result[startOffset + i] }
     }
     
     internal suspend fun fetchPiece(index: PieceIndex): Piece {
@@ -305,7 +305,7 @@ class RandomAccessKettle(
         
         // LRU eviction
         val strategy = ChunkStrategy.RandomAccess(
-            hotspots = (accessHistory.takeLast(10).size) j { i -> accessHistory.takeLast(10)[i] },
+            hotspots = \1 j { \2: Int -> accessHistory.takeLast(10)[i] },
             cacheSize = 20
         )
         

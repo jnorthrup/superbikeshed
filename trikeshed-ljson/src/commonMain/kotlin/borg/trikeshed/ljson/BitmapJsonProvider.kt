@@ -100,13 +100,13 @@ class BitmapJsonNavigator(
     }
     
     internal fun parseString(): Join<JsonElement, Int> {
-        val startQuote = structuralIndices.b(currentIndex)
+        val startQuote = structuralIndices.component2()(currentIndex)
         currentIndex++
         
         // Find matching end quote
         var endQuote = -1
-        for (i in currentIndex until structuralIndices.a) {
-            val pos = structuralIndices.b(i)
+        for (i in currentIndex until structuralIndices.component1()) {
+            val pos = structuralIndices.component2()(i)
             if (input[pos] == '"') {
                 endQuote = pos
                 currentIndex = i + 1
@@ -131,7 +131,7 @@ class BitmapJsonNavigator(
             return JsonElement.Obj(0 j { _: Int -> "" j JsonElement.Null }) j currentIndex
         }
         
-        while (currentIndex < structuralIndices.a) {
+        while (currentIndex < structuralIndices.component1()) {
             // Parse key
             val (keyElement, nextIndex) = parseValue(currentIndex)
             val key = (keyElement as? JsonElement.Str)?.value ?: throw IllegalArgumentException("Expected string key")
@@ -172,7 +172,7 @@ class BitmapJsonNavigator(
             return JsonElement.Arr(0 j { _: Int -> JsonElement.Null }) j currentIndex
         }
         
-        while (currentIndex < structuralIndices.a) {
+        while (currentIndex < structuralIndices.component1()) {
             val (element, nextIndex) = parseValue(currentIndex)
             elements.add(element)
             currentIndex = nextIndex
@@ -195,7 +195,7 @@ class BitmapJsonNavigator(
     }
     
     internal fun parseBoolean(): Join<JsonElement, Int> {
-        val pos = structuralIndices.b(currentIndex)
+        val pos = structuralIndices.component2()(currentIndex)
         val value = when {
             input.startsWith("true", pos) -> {
                 currentIndex += "true".length
@@ -211,7 +211,7 @@ class BitmapJsonNavigator(
     }
     
     internal fun parseNull(): Join<JsonElement, Int> {
-        val pos = structuralIndices.b(currentIndex)
+        val pos = structuralIndices.component2()(currentIndex)
         if (input.startsWith("null", pos)) {
             currentIndex += "null".length
             return JsonElement.Null j currentIndex
@@ -220,7 +220,7 @@ class BitmapJsonNavigator(
     }
     
     internal fun parseNumber(): Join<JsonElement, Int> {
-        val startPos = structuralIndices.b(currentIndex)
+        val startPos = structuralIndices.component2()(currentIndex)
         var endPos = startPos
         
         // Find end of number
@@ -232,7 +232,7 @@ class BitmapJsonNavigator(
         val value = numberStr.toDoubleOrNull() ?: throw IllegalArgumentException("Invalid number: $numberStr")
         
         // Advance structural index to next position
-        while (currentIndex < structuralIndices.a && structuralIndices.b(currentIndex) < endPos) {
+        while (currentIndex < structuralIndices.component1() && structuralIndices.component2()(currentIndex) < endPos) {
             currentIndex++
         }
         
@@ -240,8 +240,8 @@ class BitmapJsonNavigator(
     }
     
     internal fun peekChar(): Char {
-        return if (currentIndex < structuralIndices.a) {
-            input[structuralIndices.b(currentIndex)]
+        return if (currentIndex < structuralIndices.component1()) {
+            input[structuralIndices.component2()(currentIndex)]
         } else '\u0000'
     }
     
@@ -317,11 +317,11 @@ class ParallelBitmapStreaming(
                 semaphore.withPermit {
                     val provider = BitmapJsonProvider(enableParallel = false)
                     val result = provider.parse(chunk)
-                    result.a?.let { element ->
+                    result.component1()?.let { element ->
                         when (element) {
                             is JsonElement.Arr -> {
-                                for (i in 0 until element.elements.a) {
-                                    send(element.elements.b(i))
+                                for (i in 0 until element.elements.component1()) {
+                                    send(element.elements.component2()(i))
                                 }
                             }
                             else -> send(element)
@@ -357,9 +357,9 @@ class ParallelBitmapStreaming(
             when (element) {
                 is JsonElement.Obj -> {
                     val row = mutableListOf<Any?>()
-                    for (i in 0 until element.fields.a) {
-                        val field = element.fields.b(i)
-                        row.add(field.b.toNativeValue())
+                    for (i in 0 until element.fields.component1()) {
+                        val field = element.fields.component2()(i)
+                        row.add(field.component2().toNativeValue())
                     }
                     rows.add(row)
                     maxColumns = maxOf(maxColumns, row.size)
@@ -413,8 +413,8 @@ object SIMDBitmapOps {
         // Merge results
         val allIndices = mutableListOf<Int>()
         results.forEach { indices ->
-            for (i in 0 until indices.a) {
-                allIndices.add(indices.b(i))
+            for (i in 0 until indices.component1()) {
+                allIndices.add(indices.component2()(i))
             }
         }
         
@@ -459,12 +459,12 @@ internal fun JsonElement.toNativeValue(): Any? = when (this) {
     is JsonElement.Bool -> value
     is JsonElement.Num -> value
     is JsonElement.Str -> value
-    is JsonElement.Arr -> (0 until elements.a).map { elements.b(it).toNativeValue() }
+    is JsonElement.Arr -> (0 until elements.component1()).map { elements.component2()(it).toNativeValue() }
     is JsonElement.Obj -> {
         val map = mutableMapOf<String, Any?>()
-        for (i in 0 until fields.a) {
-            val field = fields.b(i)
-            map[field.a] = field.b.toNativeValue()
+        for (i in 0 until fields.component1()) {
+            val field = fields.component2()(i)
+            map[field.component1()] = field.component2().toNativeValue()
         }
         map
     }

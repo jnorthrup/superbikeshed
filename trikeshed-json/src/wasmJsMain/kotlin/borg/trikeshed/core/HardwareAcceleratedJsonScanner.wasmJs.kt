@@ -33,7 +33,7 @@ actual class HardwareAcceleratedJsonScanner actual constructor(internal val json
     }
 
     actual fun query(path: String): String? {
-        return delegate.query(path)?.b
+        return delegate.query(path)?.component2()
     }
     
     actual fun getPerformanceProfile(): PerformanceProfile {

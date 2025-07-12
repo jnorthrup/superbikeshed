@@ -229,7 +229,7 @@ class WaveCRDTConvergence : OperationalTransform<WaveDocumentState> {
         op2: WaveOp<WaveDocumentState>
     ): WaveOp<WaveDocumentState> {
         val transformed = transform(op1, op2)
-        return transformed.a
+        return transformed.component1()
     }
     
     internal fun transformInsertInsert(
@@ -280,7 +280,7 @@ class WaveCRDTConvergence : OperationalTransform<WaveDocumentState> {
             else -> {
                 val overlap = findOverlap(op1, op2)
                 if (overlap != null) {
-                    overlap.a j overlap.b
+                    overlap.component1() j overlap.component2()
                 } else {
                     op1 j op2
                 }

@@ -244,7 +244,7 @@ class AStar(internal val terrainSystem: TerrainSystem) {
     
     internal fun smoothPath(path: List<Pair<Double, Double>>): Indexed<Pair<Double, Double>> {
         if (path.size <= 2) {
-            return path.size j { i -> path[i] }
+            return \1 j { \2: Int -> path[i] }
         }
         
         val smoothed = mutableListOf<Pair<Double, Double>>()
@@ -277,7 +277,7 @@ class AStar(internal val terrainSystem: TerrainSystem) {
             }
         }
         
-        return smoothed.size j { i -> smoothed[i] }
+        return \1 j { \2: Int -> smoothed[i] }
     }
     
     internal fun hasLineOfSight(x1: Double, y1: Double, x2: Double, y2: Double): Boolean {
@@ -300,7 +300,7 @@ class AStar(internal val terrainSystem: TerrainSystem) {
     }
     
     internal fun createDirectPath(startX: Double, startY: Double, targetX: Double, targetY: Double): Indexed<Pair<Double, Double>> {
-        return 2 j { i ->
+        return \1 j { \2: Int ->
             if (i == 0) startX to startY else targetX to targetY
         }
     }

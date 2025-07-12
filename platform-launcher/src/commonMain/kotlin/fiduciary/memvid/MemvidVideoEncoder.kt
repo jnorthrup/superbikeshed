@@ -123,7 +123,7 @@ class MemvidVideoEncoder(
         drawSquare(pixels, x.toInt(), y.toInt(), size, color)
         
         // Draw connections to related concepts
-        val relatedCount = min(event.relatedConcepts.a, 5)
+        val relatedCount = min(event.relatedConcepts.component1(), 5)
         for (i in 0 until relatedCount) {
             val angle = (i * 2 * PI / relatedCount).toFloat()
             val endX = x + cos(angle) * 50

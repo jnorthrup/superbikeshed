@@ -36,7 +36,7 @@ typealias FiduciaryTextDocumentCollection = Indexed<FiduciaryTextDocument>
 object FiduciaryTextDocumentChordSheet {
     // Declarative mapping: ZIP fragment (archiveId, zipFile, fragmentRange) → FiduciaryTextDocument
     // No implementation logic, only orchestration
-    // Example: (archiveId, zipFile, fragmentRange) j { (id, zip, range) -> FiduciaryTextDocument(id, zip, range) }
+    // Example: (archiveId, zipFile, \1 j { \2: Int -> FiduciaryTextDocument(id, zip, range) }
 
     // Collection orchestration: Indexed<FiduciaryTextDocument>
     // Example: documents: Indexed<FiduciaryTextDocument>

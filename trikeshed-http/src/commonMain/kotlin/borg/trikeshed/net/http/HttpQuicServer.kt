@@ -160,10 +160,10 @@ class HttpQuicServer(
                 Http3Protocol.FrameTypes.HEADERS -> {
                     headers = parseHeaders(frame.payload)
                     // Parse pseudo-headers
-                    val methodHeader = headers.play.find { it.a.value == ":method" }?.b?.value
+                    val methodHeader = headers.play.find { it.component1().value == ":method" }?.component2()?.value
                     method = if(methodHeader != null) HttpMethod.valueOf(methodHeader) else HttpMethod.GET
 
-                    val pathHeader = headers.play.find { it.a.value == ":path" }?.b?.value
+                    val pathHeader = headers.play.find { it.component1().value == ":path" }?.component2()?.value
                     path = if(pathHeader != null) HttpRequestPath(pathHeader) else HttpRequestPath("/")
                 }
                 Http3Protocol.FrameTypes.DATA -> {
@@ -214,7 +214,7 @@ class HttpQuicServer(
     internal fun createHeadersFrame(response: HttpResponse): Indexed<Byte> {
         val headersMap = mutableMapOf<String, String>()
         headersMap[":status"] = response.status.value.toString()
-        response.headers.play.forEach { headersMap[it.a.value] = it.b.value }
+        response.headers.play.forEach { headersMap[it.component1().value] = it.component2().value }
 
         // Serialize headers
         val headerData = mutableListOf<Byte>()

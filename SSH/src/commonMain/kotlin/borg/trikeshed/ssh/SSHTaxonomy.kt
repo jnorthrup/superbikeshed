@@ -46,7 +46,7 @@ typealias SSHStateContext = Join<SSHTransportContext, SSHEventQueue>
 typealias SSHEventQueue = Indexed<SSHEvent>
 
 // Protocol negotiation taxonomy
-typealias SSHAlgorithmSet = Join<KEXAlgorithms, Join<CipherSuites, Join<MACAlgorithms, CompressionMethods>>>
+typealias SSHAlgorithmSet = Join<KEXAlgorithms, CipherSuites j Join<MACAlgorithms, CompressionMethods>>
 typealias SSHNegotiator = (SSHAlgorithmSet, SSHAlgorithmSet, SSHNegotiationContext) -> SSHAlgorithmSet
 typealias SSHNegotiationContext = Join<SSHTransportContext, SSHSecurityPolicy>
 typealias KEXAlgorithms = Indexed<SSHKexAlgorithm>
@@ -55,9 +55,9 @@ typealias MACAlgorithms = Indexed<SSHMacAlgorithm>
 typealias CompressionMethods = Indexed<SSHCompressionMethod>
 
 // Session taxonomy
-typealias SSHSession = Join<SSHTransportState, Join<SSHChannelStream, SSHSessionContext>>
+typealias SSHSession = Join<SSHTransportState, SSHChannelStream j SSHSessionContext>
 typealias SSHSessionTransformer = (SSHSession) -> SSHSession
-typealias SSHSessionContext = Join<SSHIdentity, Join<SSHServerInfo, CoroutineContext>>
+typealias SSHSessionContext = Join<SSHIdentity, SSHServerInfo j CoroutineContext>
 typealias SSHSessionID = Indexed<Byte>
 
 // Crypto taxonomy
@@ -102,7 +102,7 @@ typealias SSHServiceContext = Join<SSHSessionContext, CoroutineContext>
 // SFTP taxonomy
 typealias SFTPHandle = Indexed<Byte>
 typealias SFTPPath = String
-typealias SFTPAttributes = Join<SFTPFileType, Join<SFTPPermissions, SFTPSize>>
+typealias SFTPAttributes = Join<SFTPFileType, SFTPPermissions j SFTPSize>
 typealias SFTPFileType = Byte
 typealias SFTPPermissions = UInt
 typealias SFTPSize = ULong
@@ -114,7 +114,7 @@ typealias SFTPOperation = Indexed<Byte>
 typealias SSHForwardRequest = Join<SSHBindAddress, SSHBindPort>
 typealias SSHBindAddress = String
 typealias SSHBindPort = Int
-typealias SSHForwardedConnection = Join<SSHChannelID, Join<SSHOriginAddress, SSHOriginPort>>
+typealias SSHForwardedConnection = Join<SSHChannelID, SSHOriginAddress j SSHOriginPort>
 typealias SSHOriginAddress = String
 typealias SSHOriginPort = Int
 
@@ -124,7 +124,7 @@ typealias SSHTerminalModes = Indexed<SSHTerminalSetting>
 typealias SSHTerminalSetting = Join<SSHTerminalMode, SSHTerminalValue>
 // SSHTerminalMode is now an enum in SSHProtocol.kt
 typealias SSHTerminalValue = UInt
-typealias SSHTerminalSize = Join<SSHTerminalWidth, Join<SSHTerminalHeight, Join<SSHPixelWidth, SSHPixelHeight>>>
+typealias SSHTerminalSize = Join<SSHTerminalWidth, SSHTerminalHeight j Join<SSHPixelWidth, SSHPixelHeight>>
 typealias SSHTerminalWidth = Int
 typealias SSHTerminalHeight = Int
 typealias SSHPixelWidth = Int
@@ -134,7 +134,7 @@ typealias SSHPixelHeight = Int
 // SSHSignalType is now an enum in SSHProtocol.kt
 typealias SSHSignal = SSHSignalType
 typealias SSHExitStatus = Int
-typealias SSHExitSignal = Join<SSHSignal, Join<Boolean, SSHErrorMessage>>
+typealias SSHExitSignal = Join<SSHSignal, Boolean j SSHErrorMessage>
 
 // Environment taxonomy
 typealias SSHEnvironment = Indexed<SSHEnvironmentVariable>

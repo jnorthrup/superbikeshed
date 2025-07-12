@@ -356,7 +356,7 @@ class OAuthClientImpl : OAuthClient {
                 put("response_type", context.grantType.value)
                 put("client_id", context.clientId)
                 put("redirect_uri", context.redirectUri)
-                put("scope", context.scope.a.joinToString(" "))
+                put("scope", context.scope.component1().joinToString(" "))
                 context.state?.let { put("state", it) }
                 context.pkceCodeChallenge?.let { put("code_challenge", it) }
                 context.pkceCodeChallengeMethod?.let { put("code_challenge_method", it.value) }
@@ -402,7 +402,7 @@ class OAuthClientImpl : OAuthClient {
                 put("client_id", context.clientId)
                 put("refresh_token", refreshToken)
                 context.clientSecret?.let { put("client_secret", it) }
-                context.scope?.let { put("scope", it.a.joinToString(" ")) }
+                context.scope?.let { put("scope", it.component1().joinToString(" ")) }
             }
             
             // TODO: Make HTTP request to token endpoint
@@ -440,7 +440,7 @@ class OAuthClientImpl : OAuthClient {
             // For now, return mock response
             OAuthResponse.IntrospectResponse(
                 active = true,
-                scope = context.scope.a.joinToString(" "),
+                scope = context.scope.component1().joinToString(" "),
                 clientId = context.clientId,
                 username = "mock_user",
                 tokenType = OAuthTokenType.BEARER.value,

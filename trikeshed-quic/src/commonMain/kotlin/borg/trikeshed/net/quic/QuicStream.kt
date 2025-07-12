@@ -163,7 +163,7 @@ class QuicStream(
         if (closed || !hasData()) return ByteArray(0)
         
         val indexed = readBytes(getAvailableBytes())
-        return ByteArray(indexed.a) { i -> indexed.b(i) }
+        return ByteArray(indexed.component1()) { i -> indexed.component2()(i) }
     }
     
     /**

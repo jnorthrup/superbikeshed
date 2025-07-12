@@ -92,7 +92,7 @@ object NarseseBbcursive {
     )
     
     // Feature recording buffer with semantic tags
-    val features = mutableListOf<Join<NodeType, Join<Int, Any?>>>()
+    val features = mutableListOf<Join<NodeType, Int j Any?>>()
     
     // Record parse features with semantic information
     fun recordFeature(nodeType: NodeType, position: Int, semanticTag: Any? = null) {
@@ -519,7 +519,7 @@ object NarseseBbcursive {
     }
     
     // Parse function with semantic extraction
-    fun parse(narseseString: String): Join<Boolean, List<Join<NodeType, Join<Int, Any?>>>> {
+    fun parse(narseseString: String): Join<Boolean, List<Join<NodeType, Int j Any?>>> {
         features.clear()
         
         val buffer = ByteIndexedBuffer(narseseString)

@@ -13,10 +13,7 @@ import kotlinx.coroutines.flow.flow
 
 // === TYPE DEFINITIONS ===
 
-/**
- * Binary Tree Node using Join patterns
- */
-typealias BinaryTreeNode<T> = Join<T, Join<BinaryTreeNode<T>?, BinaryTreeNode<T>?>>
+// Binary Tree Node type removed - defined in BBCursiveTreeCollections.kt
 
 // === HASH SET ===
 
@@ -142,9 +139,9 @@ class BBCursiveHashSet<T> {
     fun elements(): Indexed<T> {
         val elements = mutableListOf<T>()
         
-        for (i in 0 until buckets.a) {
+        for (i in 0 until buckets.size) {
             val bucket = buckets[i]
-            for (j in 0 until bucket.a) {
+            for (j in 0 until bucket.size) {
                 val entry = bucket[j]
                 if (entry != null) {
                     elements.add(entry.a)
@@ -177,20 +174,21 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun insertRecursive(node: BinaryTreeNode<T>?, element: T): BinaryTreeNode<T> {
         if (node == null) {
             size++
-            return element j (null j null)
+            return BinaryTreeNode(element, null, null)
         }
         
-        val (currentValue, children) = node
-        val (left, right) = children
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
         
         return when {
             element < currentValue -> {
                 val newLeft = insertRecursive(left, element)
-                currentValue j (newLeft j right)
+                BinaryTreeNode(currentValue, newLeft, right)
             }
             element > currentValue -> {
                 val newRight = insertRecursive(right, element)
-                currentValue j (left j newRight)
+                BinaryTreeNode(currentValue, left, newRight)
             }
             else -> node // Element already exists
         }
@@ -208,17 +206,18 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun removeRecursive(node: BinaryTreeNode<T>?, element: T): BinaryTreeNode<T>? {
         if (node == null) return null
         
-        val (currentValue, children) = node
-        val (left, right) = children
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
         
         return when {
             element < currentValue -> {
                 val newLeft = removeRecursive(left, element)
-                currentValue j (newLeft j right)
+                BinaryTreeNode(currentValue, newLeft, right)
             }
             element > currentValue -> {
                 val newRight = removeRecursive(right, element)
-                currentValue j (left j newRight)
+                BinaryTreeNode(currentValue, left, newRight)
             }
             else -> {
                 // Found element to remove
@@ -229,20 +228,20 @@ class BBCursiveTreeSet<T : Comparable<T>> {
                     else -> {
                         // Node has two children, find successor
                         val successor = findMin(right)
-                        val newRight = removeRecursive(right, successor)
-                        successor j (left j newRight)
+                        val newRight = removeRecursive(right, successor.value)
+                        BinaryTreeNode(successor.value, left, newRight)
                     }
                 }
             }
         }
     }
     
-    private fun findMin(node: BinaryTreeNode<T>): T {
+    private fun findMin(node: BinaryTreeNode<T>): BinaryTreeNode<T> {
         var current = node
-        while (current.component2().component1() != null) {
-            current = current.component2().component1()!!
+        while (current.left != null) {
+            current = current.left!!
         }
-        return current.component1()
+        return current
     }
     
     /**
@@ -253,8 +252,9 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun searchRecursive(node: BinaryTreeNode<T>?, element: T): T? {
         if (node == null) return null
         
-        val (currentValue, children) = node
-        val (left, right) = children
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
         
         return when {
             element == currentValue -> currentValue
@@ -275,8 +275,9 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun collectElements(node: BinaryTreeNode<T>?, elements: MutableList<T>) {
         if (node == null) return
         
-        val (currentValue, children) = node
-        val (left, right) = children
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
         
         collectElements(left, elements)
         elements.add(currentValue)
@@ -290,7 +291,7 @@ class BBCursiveTreeSet<T : Comparable<T>> {
  * Binary Tree implementation using Join patterns
  */
 class BBCursiveBinaryTree<T> {
-    private var root: BinaryTreeNode<T>? = null
+    private var root: TreeNode<T>? = null
     
     /**
      * Insert value using bbcursive pattern
@@ -299,41 +300,63 @@ class BBCursiveBinaryTree<T> {
         root = insertRecursive(root, value)
     }
     
-    private fun insertRecursive(node: BinaryTreeNode<T>?, value: T): BinaryTreeNode<T> {
-        if (node == null) return value j (null j null)
+    private fun insertRecursive(node: TreeNode<T>?, value: T): TreeNode<T> {
+        if (node == null) return TreeNode(value, 0 j { throw IndexOutOfBoundsException() })
         
-        val (currentValue, children) = node
-        val (left, right) = children
+        val currentValue = node.value
+        val children = node.children
         
         return when {
-            value < currentValue -> {
-                val newLeft = insertRecursive(left, value)
-                currentValue j (newLeft j right)
+            value is Comparable<*> && currentValue is Comparable<*> -> {
+                @Suppress("UNCHECKED_CAST")
+                val comparableValue = value as Comparable<Any>
+                @Suppress("UNCHECKED_CAST")
+                val comparableCurrentValue = currentValue as Comparable<Any>
+                when {
+                    comparableValue < comparableCurrentValue -> {
+                        val newLeft = if (children.isEmpty()) null else insertRecursive(children.getOrNull(0), value)
+                        val right = if (children.size < 2) null else children.getOrNull(1)
+                        val newChildren = 2 j { i -> if (i == 0) newLeft!! else right!! }
+                        TreeNode(currentValue, newChildren)
+                    }
+                    comparableValue > comparableCurrentValue -> {
+                        val left = if (children.isEmpty()) null else children.getOrNull(0)
+                        val newRight = if (children.size < 2) insertRecursive(null, value) else insertRecursive(children.getOrNull(1), value)
+                        val newChildren = 2 j { i -> if (i == 0) left!! else newRight!! }
+                        TreeNode(currentValue, newChildren)
+                    }
+                    else -> node // Value already exists
+                }
             }
-            value > currentValue -> {
-                val newRight = insertRecursive(right, value)
-                currentValue j (left j newRight)
-            }
-            else -> node // Value already exists
+            else -> node // Can't compare non-comparable values
         }
     }
     
     /**
      * Search using bbcursive pattern
      */
-    fun search(value: T): T? = searchRecursive(root, value)
+    fun search(value: T): T? = searchRecursive(root, value)?.value
     
-    private fun searchRecursive(node: BinaryTreeNode<T>?, value: T): T? {
+    private fun searchRecursive(node: TreeNode<T>?, value: T): TreeNode<T>? {
         if (node == null) return null
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val currentValue = node.value
+        val children = node.children
         
         return when {
-            value == currentValue -> currentValue
-            value < currentValue -> searchRecursive(left, value)
-            else -> searchRecursive(right, value)
+            value == currentValue -> node
+            value is Comparable<*> && currentValue is Comparable<*> -> {
+                @Suppress("UNCHECKED_CAST")
+                val comparableValue = value as Comparable<Any>
+                @Suppress("UNCHECKED_CAST")
+                val comparableCurrentValue = currentValue as Comparable<Any>
+                if (comparableValue < comparableCurrentValue) {
+                    searchRecursive(children.getOrNull(0), value)
+                } else {
+                    searchRecursive(children.getOrNull(1), value)
+                }
+            }
+            else -> null
         }
     }
     
@@ -346,23 +369,45 @@ class BBCursiveBinaryTree<T> {
         return root != oldRoot
     }
     
-    private fun removeRecursive(node: BinaryTreeNode<T>?, value: T): BinaryTreeNode<T>? {
+    private fun removeRecursive(node: TreeNode<T>?, value: T): TreeNode<T>? {
         if (node == null) return null
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
-        
+        val currentValue = node.value
+        val children = node.children
+        val left = children.getOrNull(0)
+        val right = children.getOrNull(1)
+
         return when {
-            value < currentValue -> {
-                val newLeft = removeRecursive(left, value)
-                currentValue j (newLeft j right)
+            value is Comparable<*> && currentValue is Comparable<*> -> {
+                @Suppress("UNCHECKED_CAST")
+                val comparableValue = value as Comparable<Any>
+                @Suppress("UNCHECKED_CAST")
+                val comparableCurrentValue = currentValue as Comparable<Any>
+                when {
+                    comparableValue < comparableCurrentValue -> {
+                        val newLeft = removeRecursive(left, value)
+                        TreeNode(currentValue, 2 j { i -> if (i == 0) newLeft!! else right!! })
+                    }
+                    comparableValue > comparableCurrentValue -> {
+                        val newRight = removeRecursive(right, value)
+                        TreeNode(currentValue, 2 j { i -> if (i == 0) left!! else newRight!! })
+                    }
+                    else -> {
+                        // Found value to remove
+                        when {
+                            left == null -> right
+                            right == null -> left
+                            else -> {
+                                // Node has two children, find successor
+                                val successor = findMin(right)
+                                val newRight = removeRecursive(right, successor.value)
+                                TreeNode(successor.value, 2 j { i -> if (i == 0) left else newRight!! })
+                            }
+                        }
+                    }
+                }
             }
-            value > currentValue -> {
-                val newRight = removeRecursive(right, value)
-                currentValue j (left j newRight)
-            }
-            else -> {
+            value == currentValue -> {
                 // Found value to remove
                 when {
                     left == null -> right
@@ -370,20 +415,21 @@ class BBCursiveBinaryTree<T> {
                     else -> {
                         // Node has two children, find successor
                         val successor = findMin(right)
-                        val newRight = removeRecursive(right, successor)
-                        successor j (left j newRight)
+                        val newRight = removeRecursive(right, successor.value)
+                        TreeNode(successor.value, 2 j { i -> if (i == 0) left else newRight!! })
                     }
                 }
             }
+            else -> node // Can't compare non-comparable values
         }
     }
     
-    private fun findMin(node: BinaryTreeNode<T>): T {
+    private fun findMin(node: TreeNode<T>): TreeNode<T> {
         var current = node
-        while (current.b.a != null) {
-            current = current.b.a
+        while (current.children.getOrNull(0) != null) {
+            current = current.children[0]
         }
-        return current.a
+        return current
     }
     
     /**
@@ -393,8 +439,8 @@ class BBCursiveBinaryTree<T> {
         val initialState = TreeScanState<T>(
             currentNode = root,
             depth = 0,
-            path = 0 j { _ -> throw IndexOutOfBoundsException() },
-            visited = 0 j { _ -> false }
+            path = 0 j { throw IndexOutOfBoundsException() },
+            visited = 0 j { false }
         )
         
         var state = initialState
@@ -415,16 +461,10 @@ class BBCursiveBinaryTree<T> {
 
 // === STACK ===
 
-/**
- * Stack implementation using Join patterns
- */
 class BBCursiveStack<T> {
-    private var elements: Indexed<T> = 0 j { _ -> throw IndexOutOfBoundsException() }
+    private var elements: Indexed<T> = 0 j { throw IndexOutOfBoundsException() }
     private var top = -1
-    
-    /**
-     * Push element using bbcursive pattern
-     */
+
     fun push(element: T) {
         val newSize = top + 2
         elements = newSize j { i ->
@@ -432,44 +472,26 @@ class BBCursiveStack<T> {
         }
         top++
     }
-    
-    /**
-     * Pop element using bbcursive pattern
-     */
+
     fun pop(): T? {
         if (isEmpty()) return null
-        
         val element = elements[top]
         top--
         return element
     }
-    
-    /**
-     * Peek at top element using bbcursive pattern
-     */
+
     fun peek(): T? {
         return if (isEmpty()) null else elements[top]
     }
-    
-    /**
-     * Check if stack is empty
-     */
+
     fun isEmpty(): Boolean = top < 0
-    
-    /**
-     * Get stack size
-     */
+
     fun size(): Int = top + 1
-    
-    /**
-     * Get all elements as Indexed (from bottom to top)
-     */
+
     fun elements(): Indexed<T> {
         return (top + 1) j { i -> elements[i] }
     }
 }
-
-// === CIRCULAR QUEUE ===
 
 /**
  * Circular Queue implementation using Join patterns

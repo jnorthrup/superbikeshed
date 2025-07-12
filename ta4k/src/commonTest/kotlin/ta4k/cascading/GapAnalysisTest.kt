@@ -33,7 +33,7 @@ class GapAnalysisTest {
         val hourBars = cursor.toOHLCV(Timeframe.HOUR)
         
         // Should handle gaps gracefully
-        assertEquals(2, hourBars.a, "Should only have bars where data exists")
+        assertEquals(2, hourBars.component1(), "Should only have bars where data exists")
         
         // Gap detection
         val gaps = cursor.detectGaps(Timeframe.HOUR)
@@ -54,7 +54,7 @@ class GapAnalysisTest {
         val minuteBars = cursor.toOHLCV(Timeframe.MINUTE)
         
         // Should create partial bar with metadata
-        assertEquals(1, minuteBars.a)
+        assertEquals(1, minuteBars.component1())
         val bar = minuteBars.at(0)
         
         // Should mark as partial
@@ -157,7 +157,7 @@ class GapAnalysisTest {
         ohlcv = ohlcv.updateWithTick(newTick)
         
         // Last bar should be updated
-        val lastBar = ohlcv.at(ohlcv.a - 1)
+        val lastBar = ohlcv.at(ohlcv.component1() - 1)
         assertEquals(30100.0, lastBar.getDouble("close"))
         assertTrue(lastBar.getDouble("high")!! >= 30100.0)
     }

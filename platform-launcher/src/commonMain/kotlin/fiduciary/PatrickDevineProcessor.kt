@@ -45,11 +45,11 @@ class PatrickDevineProcessor(
             
             // Read ZIP central directory using range requests
             val entries = readZipCentralDirectory(archiveUrl)
-            println("Found ${entries.a} entries in archive")
+            println("Found ${entries.component1()} entries in archive")
             
             // Process interesting files without downloading
-            for (i in 0 until entries.a) {
-                val entry = entries.b(i)
+            for (i in 0 until entries.component1()) {
+                val entry = entries.component2()(i)
                 
                 // Filter for documents of interest
                 if (isInterestingDocument(entry.name)) {
@@ -179,7 +179,7 @@ class PatrickDevineProcessor(
         val request = HttpRequest(
             method = HttpMethod.HEAD,
             path = HttpRequestPath(url),
-            headers = 2 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("Host") j HttpHeaderValue("archive.org")
                     1 -> HttpHeaderName("User-Agent") j HttpHeaderValue("PatrickDevineProcessor/1.0")
@@ -191,10 +191,10 @@ class PatrickDevineProcessor(
         val response = httpClient.execute(request)
         
         // Find Content-Length header
-        for (i in 0 until response.headers.a) {
-            val header = response.headers.b(i)
-            if (header.a.value.equals("Content-Length", ignoreCase = true)) {
-                return header.b.value.toLong()
+        for (i in 0 until response.headers.component1()) {
+            val header = response.headers.component2()(i)
+            if (header.component1().value.equals("Content-Length", ignoreCase = true)) {
+                return header.component2().value.toLong()
             }
         }
         
@@ -269,9 +269,9 @@ class PatrickDevineDocumentProcessor(
         // Group by document type
         val byType = mutableMapOf<String, MutableList<DocumentAttention>>()
         
-        for (i in 0 until documents.a) {
-            val doc = documents.b(i)
-            val mimeType = doc.doc.b
+        for (i in 0 until documents.component1()) {
+            val doc = documents.component2()(i)
+            val mimeType = doc.doc.component2()
             byType.getOrPut(mimeType) { mutableListOf() }.add(doc)
         }
         
@@ -289,12 +289,12 @@ class PatrickDevineDocumentProcessor(
     suspend fun extractConcepts(corpus: CorpusAttention): Indexed<ConceptAttention> {
         val concepts = mutableListOf<ConceptAttention>()
         
-        for (i in 0 until corpus.corpus.a.a) {
-            val doc = corpus.corpus.a.b(i)
+        for (i in 0 until corpus.corpus.component1().component1()) {
+            val doc = corpus.corpus.component1().component2()(i)
             
             // Only process text-based documents
-            if (doc.doc.b.startsWith("text/") || 
-                doc.doc.b == "application/pdf") {
+            if (doc.doc.component2().startsWith("text/") || 
+                doc.doc.component2() == "application/pdf") {
                 
                 // Mock concept extraction
                 val docConcepts = arrayOf(
@@ -335,9 +335,9 @@ suspend fun processPatrickDevineCorpus() {
     
     // Build corpus index
     val corpus = docProcessor.buildCorpusIndex()
-    println("Built corpus with ${corpus.corpus.a.a} documents")
+    println("Built corpus with ${corpus.corpus.component1().component1()} documents")
     
     // Extract concepts
     val concepts = docProcessor.extractConcepts(corpus)
-    println("Extracted concepts from ${concepts.a} documents")
+    println("Extracted concepts from ${concepts.component1()} documents")
 }

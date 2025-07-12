@@ -103,7 +103,7 @@ class ProtocolIntegrationTDDTest {
     @Test
     fun `should serialize ISAM metadata efficiently via wire protocol`() {
         // Given: ISAM table with complex metadata
-        val columns = 5 j { i ->
+        val columns = \1 j { \2: Int ->
             IOMemento.create(
                 name = "column_$i",
                 type = when (i % 3) { 0 -> "Int"; 1 -> "String"; else -> "Double" },
@@ -156,7 +156,7 @@ class ProtocolIntegrationTDDTest {
         
         val dataset = IsamDataset.create(
             tableName = "large_table",
-            columns = columnCount j { i -> IOMemento.create("col_$i", "Int", 4, false) },
+            columns = \1 j { \2: Int -> IOMemento.create("col_$i", "Int", 4, false) },
             rowCount = rowCount.toLong()
         )
         

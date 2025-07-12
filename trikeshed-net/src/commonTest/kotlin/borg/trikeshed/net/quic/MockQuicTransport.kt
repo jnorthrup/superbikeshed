@@ -123,10 +123,10 @@ class MockQuicStream(
         val packet = receiveChannel.tryReceive().getOrNull() ?: return ByteArray(0)
         
         // Extract stream data from packet
-        for (i in 0 until packet.frames.a) {
-            val frame = packet.frames.b(i)
+        for (i in 0 until packet.frames.component1()) {
+            val frame = packet.frames.component2()(i)
             if (frame is StreamFrame && frame.streamId == id) {
-                val data = ByteArray(frame.data.a) { j -> frame.data.b(j) }
+                val data = ByteArray(frame.data.component1()) { j -> frame.data.component2()(j) }
                 receiveBuffer.add(data)
                 
                 if (frame.fin) {

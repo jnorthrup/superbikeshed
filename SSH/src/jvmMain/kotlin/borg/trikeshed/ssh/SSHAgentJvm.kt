@@ -61,7 +61,7 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
             var offset = 0
             
             // Read number of identities
-            if (offset + 4 > data.a) return@withAgentConnection identities
+            if (offset + 4 > data.component1()) return@withAgentConnection identities
             val numIdentities = readUInt32(data, offset)
             offset += 4
             
@@ -69,15 +69,15 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
             repeat(numIdentities) {
                 // Read key blob
                 val keyBlob = readSSHString(data, offset) ?: return@repeat
-                offset = keyBlob.b
+                offset = keyBlob.component2()
                 
                 // Read comment
                 val comment = readSSHString(data, offset) ?: return@repeat
-                offset = comment.b
+                offset = comment.component2()
                 
                 identities.add(SSHAgentIdentity(
-                    publicKey = keyBlob.a,
-                    comment = String(ByteArray(comment.a.a) { i -> comment.a[i] })
+                    publicKey = keyBlob.component1(),
+                    comment = String(ByteArray(comment.component1().component1()) { i -> comment.component1()[i] })
                 ))
             }
         }
@@ -101,7 +101,7 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
             }
             
             // Parse signature
-            val sigData = readSSHString(response.data, 0)?.a
+            val sigData = readSSHString(response.data, 0)?.component1()
                 ?: throw IllegalStateException("Invalid signature response")
             
             sigData
@@ -131,7 +131,7 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
     }
     
     internal fun createAgentMessage(messageType: Byte, data: Indexed<Byte>? = null): ByteBuffer {
-        val dataSize = data?.a ?: 0
+        val dataSize = data?.component1() ?: 0
         val totalSize = 1 + dataSize // message type + data
         
         val buffer = ByteBuffer.allocate(4 + totalSize)
@@ -144,7 +144,7 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
         
         // Data
         if (data != null) {
-            for (i in 0 until data.a) {
+            for (i in 0 until data.component1()) {
                 buffer.put(data[i])
             }
         }
@@ -159,8 +159,8 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
         flags: Int = 0
     ): ByteBuffer {
         // Calculate size
-        val keySize = 4 + publicKey.a
-        val dataSize = 4 + data.a
+        val keySize = 4 + publicKey.component1()
+        val dataSize = 4 + data.component1()
         val totalSize = 1 + keySize + dataSize + 4 // type + key + data + flags
         
         val buffer = ByteBuffer.allocate(4 + totalSize)
@@ -172,14 +172,14 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
         buffer.put(SSHAgentProtocol.SSH_AGENTC_SIGN_REQUEST)
         
         // Key blob
-        buffer.putInt(publicKey.a)
-        for (i in 0 until publicKey.a) {
+        buffer.putInt(publicKey.component1())
+        for (i in 0 until publicKey.component1()) {
             buffer.put(publicKey[i])
         }
         
         // Data to sign
-        buffer.putInt(data.a)
-        for (i in 0 until data.a) {
+        buffer.putInt(data.component1())
+        for (i in 0 until data.component1()) {
             buffer.put(data[i])
         }
         
@@ -226,7 +226,7 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
     }
     
     internal fun readUInt32(data: Indexed<Byte>, offset: Int): Int {
-        if (offset + 4 > data.a) return 0
+        if (offset + 4 > data.component1()) return 0
         
         return ((data[offset].toInt() and 0xFF) shl 24) or
                ((data[offset + 1].toInt() and 0xFF) shl 16) or
@@ -235,13 +235,13 @@ class JvmSSHAgent(internal val socketPath: String) : SSHAgent {
     }
     
     internal fun readSSHString(data: Indexed<Byte>, offset: Int): Join<Indexed<Byte>, Int>? {
-        if (offset + 4 > data.a) return null
+        if (offset + 4 > data.component1()) return null
         
         val length = readUInt32(data, offset)
-        if (offset + 4 + length > data.a) return null
+        if (offset + 4 + length > data.component1()) return null
         
         val string = length j { i: Int -> data[offset + 4 + i] }
-        return Join(string, offset + 4 + length)
+        return string j offset + 4 + length
     }
     
     internal data class AgentMessage(

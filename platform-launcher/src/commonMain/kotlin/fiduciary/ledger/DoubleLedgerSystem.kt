@@ -539,6 +539,6 @@ class DoubleLedgerSystem {
             .groupingBy { it.type }
             .eachCount()
     
-    internal fun <T> List<T>.toIdx(): Indexed<T> = b0.a
-    internal fun <T> emptyIndexed(): Indexed<T> = b0.a
+    internal fun <T> List<T>.toIdx(): Indexed<T> = b0.component1()
+    internal fun <T> emptyIndexed(): Indexed<T> = b0.component1()
 }

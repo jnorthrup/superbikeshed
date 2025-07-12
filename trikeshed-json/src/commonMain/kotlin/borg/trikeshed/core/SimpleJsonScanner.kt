@@ -109,12 +109,12 @@ value class SimpleJsonScanner(val input: CharSequence) {
      */
     fun query(path: String): SimpleJsonValue? {
         val doc = scan()
-        val properties = doc.a
+        val properties = doc.component1()
         
         for (i in 0 until properties.size) {
-            val prop = properties.b(i)
-            if (prop.a == path) {
-                return "string" j prop.b
+            val prop = properties.component2()(i)
+            if (prop.component1() == path) {
+                return "string" j prop.component2()
             }
         }
         
@@ -125,7 +125,7 @@ value class SimpleJsonScanner(val input: CharSequence) {
      * Extract all properties (same as bitmap version)
      */
     fun properties(): Indexed<JsonProperty> {
-        return scan().a
+        return scan().component1()
     }
     
     /**
@@ -138,7 +138,7 @@ value class SimpleJsonScanner(val input: CharSequence) {
         if (props1.size != props2.size) return false
         
         for (i in 0 until props1.size) {
-            if (props1.b(i).a != props2.b(i).a) return false
+            if (props1.component2()(i).component1() != props2.component2()(i).component1()) return false
         }
         
         return true
@@ -151,7 +151,7 @@ value class SimpleJsonScanner(val input: CharSequence) {
         val props = properties()
         var hash = 0L
         for (i in 0 until props.size) {
-            hash = hash * 31 + props.b(i).a.hashCode()
+            hash = hash * 31 + props.component2()(i).component1().hashCode()
         }
         return hash
     }

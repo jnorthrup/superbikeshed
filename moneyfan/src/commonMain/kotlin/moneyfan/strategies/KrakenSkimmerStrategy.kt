@@ -49,9 +49,9 @@ fun executeKrakenSkimmerStrategy(
     val baselineSma = calculateSMA(closePrices, baselinePeriod)
 
     // c. Determine Trading Signals
-    return klines.a j { index:Int ->
-        val currentPrice = closePrices.b(index)
-        val currentBaseline = baselineSma.b(index)
+    return klines.component1() j { index:Int ->
+        val currentPrice = closePrices.component2()(index)
+        val currentBaseline = baselineSma.component2()(index)
 
         // Handle Undefined Values
         if (currentPrice == UNDEFINED_PRICE || currentBaseline == UNDEFINED_PRICE) {
@@ -85,11 +85,11 @@ fun main() {
     // if (klineDataSeries.isNotEmpty()) {
     //     val signals = executeKrakenSkimmerStrategy(klineDataSeries) // Using default parameters
     //
-    //     println("Kraken Skimmer Signals generated (${signals.a} count):")
+    //     println("Kraken Skimmer Signals generated (${signals.component1()} count):")
     //     signals.toList().forEachIndexed { index, signal ->
-    //         val kline = klineDataSeries.b(index)
+    //         val kline = klineDataSeries.component2()(index)
     //         val closePrice = kline.close.value
-    //         val baselineSmaVal = calculateSMA(klineDataSeries.α{it.close}, 20).b(index).value // For display
+    //         val baselineSmaVal = calculateSMA(klineDataSeries.α{it.close}, 20).component2()(index).value // For display
     //
     //         println(
     //             "Index: $index, Date: ${moneyfan.examples.klineTimestampToLocalDateTimeString(kline.timestamp)}, " +

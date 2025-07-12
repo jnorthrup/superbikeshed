@@ -43,10 +43,10 @@ interface AsyncChannel {
     
     // Single operations (implemented via batch internally)
     suspend fun read(buffer: ByteArray): Int = 
-        readBatch(1 j { buffer }).b(0)
+        readBatch(1 j { buffer }).component2()(0)
     
     suspend fun write(buffer: ByteArray): Int = 
-        writeBatch(1 j { buffer }).b(0)
+        writeBatch(1 j { buffer }).component2()(0)
     
     // Channel info
     val localAddress: String
@@ -559,10 +559,10 @@ class Socks5Server(
                 
                 // Prepare write batch for successful reads
                 val writeBuffers = mutableListOf<ByteArray>()
-                for (i in 0 until readResults.a) {
-                    val bytesRead = readResults.b(i)
+                for (i in 0 until readResults.component1()) {
+                    val bytesRead = readResults.component2()(i)
                     if (bytesRead > 0) {
-                        writeBuffers.add(buffers.b(i).sliceArray(0 until bytesRead))
+                        writeBuffers.add(buffers.component2()(i).sliceArray(0 until bytesRead))
                     }
                 }
                 
@@ -574,8 +574,8 @@ class Socks5Server(
                 )
                 
                 // Check for write errors
-                for (i in 0 until writeResults.a) {
-                    if (writeResults.b(i) < 0) {
+                for (i in 0 until writeResults.component1()) {
+                    if (writeResults.component2()(i) < 0) {
                         throw Exception("Write failed in $direction")
                     }
                 }
@@ -740,11 +740,11 @@ class Socks5Server(
             ioContext.submitBatch(batch.ops)
             
             // Wait for completions
-            val results = ioContext.waitCompletions(batch.ops.a)
+            val results = ioContext.waitCompletions(batch.ops.component1())
             
             // Send results back
-            for (i in 0 until results.a) {
-                batch.completions.send(results.b(i))
+            for (i in 0 until results.component1()) {
+                batch.completions.send(results.component2()(i))
             }
         }
     }
@@ -797,7 +797,7 @@ class Socks5Server(
             val readOps = Array(batchSize) { i -> SqeOp.Read(from.fd, bufferPool[i], 0) }
             val readResults = from.context.submitAndWait(batchSize j readOps::get)
             for (i in 0 until batchSize) {
-                val read = readResults.b(i)
+                val read = readResults.component2()(i)
                 if (read <= 0) continue
                 val writeOp = SqeOp.Write(to.fd, bufferPool[i], 0, read)
                 to.context.submitAndWait(1 j { writeOp })
@@ -814,15 +814,15 @@ class UringChannel(
     internal val context: IOContext.UringContext
 ) : AsyncChannel {
     override suspend fun readBatch(buffers: Indexed<ByteArray>): Indexed<Int> {
-        val ops = Array(buffers.a) { i ->
-            SqeOp.Read(fd, buffers.b(i), 0)
+        val ops = Array(buffers.component1()) { i ->
+            SqeOp.Read(fd, buffers.component2()(i), 0)
         }
         return context.submitAndWait(ops.size j ops::get)
     }
     
     override suspend fun writeBatch(buffers: Indexed<ByteArray>): Indexed<Int> {
-        val ops = Array(buffers.a) { i ->
-            SqeOp.Write(fd, buffers.b(i), 0)
+        val ops = Array(buffers.component1()) { i ->
+            SqeOp.Write(fd, buffers.component2()(i), 0)
         }
         return context.submitAndWait(ops.size j ops::get)
     }
@@ -844,7 +844,7 @@ class UringServerChannel(
     suspend fun accept(): AsyncChannel {
         val op = SqeOp.Accept(fd)
         val result = context.submitAndWait(1 j { op })
-        return UringChannel(result.b(0), context)
+        return UringChannel(result.component2()(0), context)
     }
 }
 

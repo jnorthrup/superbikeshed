@@ -44,7 +44,7 @@ class CCEKKeysTDDTest {
         assertEquals("test-123", result.control.executionId)
         assertEquals("session-456", result.context.sessionId)
         assertEquals("test-action", result.environment.action)
-        assertEquals(1, result.knowledge.rules.a)
+        assertEquals(1, result.knowledge.rules.component1())
     }
 
     @Test
@@ -186,8 +186,8 @@ class CCEKKeysTDDTest {
     fun `should create and access IPFS peer context`() = runTest {
         // Given: IPFS peer context
         val peerId = PeerId("QmTestPeer123")
-        val addresses = 2 j { i -> "127.0.0.1:${4001 + i}" }
-        val protocols = 2 j { i -> if (i == 0) "/ipfs/kad/1.0.0" else "/ipfs/bitswap/1.2.0" }
+        val addresses = \1 j { \2: Int -> "127.0.0.1:${4001 + i}" }
+        val protocols = \1 j { \2: Int -> if (i == 0) "/ipfs/kad/1.0.0" else "/ipfs/bitswap/1.2.0" }
         
         val peerContext = IpfsPeerContext(peerId, addresses, protocols)
         
@@ -200,9 +200,9 @@ class CCEKKeysTDDTest {
         // Then: Should retrieve the context
         assertNotNull(result)
         assertEquals(peerId, result.peerId)
-        assertEquals(2, result.addresses.a)
-        assertEquals(2, result.protocols.a)
-        assertEquals("/ipfs/kad/1.0.0", result.protocols.b(0))
+        assertEquals(2, result.addresses.component1())
+        assertEquals(2, result.protocols.component1())
+        assertEquals("/ipfs/kad/1.0.0", result.protocols.component2()(0))
     }
 
     @Test
@@ -222,7 +222,7 @@ class CCEKKeysTDDTest {
         // Then: Should retrieve the context
         assertNotNull(result)
         assertEquals(cid, result.cid)
-        assertEquals(1, result.providers.a)
+        assertEquals(1, result.providers.component1())
         assertTrue(result.isPinned)
     }
 
@@ -417,7 +417,7 @@ class CCEKKeysTDDTest {
     @Test
     fun `should create and access transformation rules context`() = runTest {
         // Given: Transformation rules context
-        val rules = 2 j { i ->
+        val rules = \1 j { \2: Int ->
             TransformationRule(
                 name = "rule-$i",
                 condition = RuleCondition.FieldEquals("field$i", "value$i"),
@@ -436,15 +436,15 @@ class CCEKKeysTDDTest {
         
         // Then: Should retrieve the context
         assertNotNull(result)
-        assertEquals(2, result.rules.a)
-        assertEquals("rule-0", result.rules.b(0).name)
-        assertEquals("rule-1", result.rules.b(1).name)
+        assertEquals(2, result.rules.component1())
+        assertEquals("rule-0", result.rules.component2()(0).name)
+        assertEquals("rule-1", result.rules.component2()(1).name)
     }
 
     @Test
     fun `should create and access validation constraints context`() = runTest {
         // Given: Validation constraints context
-        val constraints = 2 j { i ->
+        val constraints = \1 j { \2: Int ->
             Constraint(
                 name = "constraint-$i",
                 description = "Test constraint $i",
@@ -463,10 +463,10 @@ class CCEKKeysTDDTest {
         
         // Then: Should retrieve the context
         assertNotNull(result)
-        assertEquals(2, result.constraints.a)
-        assertEquals("constraint-0", result.constraints.b(0).name)
-        assertEquals(ConstraintSeverity.ERROR, result.constraints.b(0).severity)
-        assertEquals(ConstraintSeverity.WARNING, result.constraints.b(1).severity)
+        assertEquals(2, result.constraints.component1())
+        assertEquals("constraint-0", result.constraints.component2()(0).name)
+        assertEquals(ConstraintSeverity.ERROR, result.constraints.component2()(0).severity)
+        assertEquals(ConstraintSeverity.WARNING, result.constraints.component2()(1).severity)
     }
 
     @Test
@@ -488,7 +488,7 @@ class CCEKKeysTDDTest {
     @Test
     fun `should create and access protocol channels context`() = runTest {
         // Given: Protocol channels context
-        val channels = 2 j { i ->
+        val channels = \1 j { \2: Int ->
             AsyncChannelContext(
                 channelId = "channel-$i",
                 fd = 100 + i,
@@ -508,10 +508,10 @@ class CCEKKeysTDDTest {
         
         // Then: Should retrieve the context
         assertNotNull(result)
-        assertEquals(2, result.channels.a)
-        assertEquals("channel-0", result.channels.b(0).channelId)
-        assertEquals(100, result.channels.b(0).fd)
-        assertEquals(AsyncChannelContext.ChannelType.TCP_CLIENT, result.channels.b(0).type)
+        assertEquals(2, result.channels.component1())
+        assertEquals("channel-0", result.channels.component2()(0).channelId)
+        assertEquals(100, result.channels.component2()(0).fd)
+        assertEquals(AsyncChannelContext.ChannelType.TCP_CLIENT, result.channels.component2()(0).type)
     }
 
     @Test

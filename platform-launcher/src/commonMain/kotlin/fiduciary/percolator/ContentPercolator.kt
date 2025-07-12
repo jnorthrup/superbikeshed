@@ -127,7 +127,7 @@ class PercolatorDaemon(
         val request = HttpRequest(
             method = HttpMethod.POST,
             path = HttpRequestPath("$coordinatorUrl/api/v1/work/claim"),
-            headers = 3 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("X-Node-Id") j HttpHeaderValue(nodeId)
                     1 -> HttpHeaderName("Content-Type") j HttpHeaderValue("application/json")
@@ -219,7 +219,7 @@ class PercolatorDaemon(
         val rangeRequest = HttpRequest(
             method = HttpMethod.GET,
             path = HttpRequestPath(archiveUrl),
-            headers = 2 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("Range") j HttpHeaderValue("bytes=${entry.offset}-${entry.offset + entry.compressedSize - 1}")
                     1 -> HttpHeaderName("User-Agent") j HttpHeaderValue("Percolator/1.0")
@@ -407,8 +407,8 @@ class PercolatorCoordinator {
     }
     
     // Convert to Indexed patterns for functional composition
-    fun getWorkQueue(): Indexed<WorkUnit> = workQueue.size j { i -> workQueue.values.elementAt(i) }
-    fun getNodes(): Indexed<NodeStatus> = nodes.size j { i -> nodes.values.elementAt(i) }
+    fun getWorkQueue(): Indexed<WorkUnit> = \1 j { \2: Int -> workQueue.values.elementAt(i) }
+    fun getNodes(): Indexed<NodeStatus> = \1 j { \2: Int -> nodes.values.elementAt(i) }
 }
 
 @Serializable

@@ -319,7 +319,7 @@ class Building(
         currentProduction?.let { items.add(it) }
         items.addAll(productionQueue)
         
-        return items.size j { i -> items[i] }
+        return \1 j { \2: Int -> items[i] }
     }
     
     fun getCompletionPercentage(): Double {

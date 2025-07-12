@@ -65,7 +65,7 @@ actual class BinanceDataVisionReader {
             monthsToFetch.forEach { yearMonth ->
                 try {
                     val monthKlines = fetchMonthKlines(symbol, interval, yearMonth, cacheDir)
-                    if (monthKlines.a > 0) {
+                    if (monthKlines.component1() > 0) {
                         klineIndexed.add(monthKlines)
                     }
                 } catch (e: Exception) {
@@ -137,7 +137,7 @@ actual class BinanceDataVisionReader {
 
                 try {
                     val dailyKlines = fetchDailyKlineFile(symbol, interval, dateStr, symbolDir)
-                    if (dailyKlines.a > 0) {
+                    if (dailyKlines.component1() > 0) {
                         klineIndexed.add(dailyKlines)
                     }
                 } catch (e: Exception) {

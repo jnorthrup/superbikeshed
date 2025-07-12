@@ -83,8 +83,8 @@ value class PipelineId(val value: Int)
 value class TextureId(val value: Int)
 
 // Shader resource types
-typealias VertexData = Join<Vector3D, Join<Float, Int>> // Position + Size + Color
-typealias UniformData = Join<Matrix4, Join<Vector3D, Float>> // ViewProjection + CameraPos + Time
+typealias VertexData = Join<Vector3D, Float j Int> // Position + Size + Color
+typealias UniformData = Join<Matrix4, Vector3D j Float> // ViewProjection + CameraPos + Time
 
 data class Matrix4(
     val m00: Float, val m01: Float, val m02: Float, val m03: Float,
@@ -258,8 +258,8 @@ class CommonWebGPUSpaceGraph {
         var offset = 0
         
         vertices.play.forEach { vertex ->
-            val pos = vertex.a
-            val sizeColor = vertex.b
+            val pos = vertex.component1()
+            val sizeColor = vertex.component2()
             
             // Position (3 floats)
             writeFloat(data, offset, pos.x.toFloat()); offset += 4
@@ -267,10 +267,10 @@ class CommonWebGPUSpaceGraph {
             writeFloat(data, offset, pos.z.toFloat()); offset += 4
             
             // Size (1 float)
-            writeFloat(data, offset, sizeColor.a); offset += 4
+            writeFloat(data, offset, sizeColor.component1()); offset += 4
             
             // Color (1 int as 4 bytes)
-            writeInt(data, offset, sizeColor.b); offset += 4
+            writeInt(data, offset, sizeColor.component2()); offset += 4
             
             // Padding to align to 32 bytes
             offset += 8
@@ -283,8 +283,8 @@ class CommonWebGPUSpaceGraph {
         val data = ByteArray(80) // 16 floats matrix + 3 floats pos + 1 float time = 80 bytes
         var offset = 0
         
-        val matrix = uniform.a
-        val cameraPosTime = uniform.b
+        val matrix = uniform.component1()
+        val cameraPosTime = uniform.component2()
         
         // Matrix (16 floats)
         writeFloat(data, offset, matrix.m00); offset += 4
@@ -305,12 +305,12 @@ class CommonWebGPUSpaceGraph {
         writeFloat(data, offset, matrix.m33); offset += 4
         
         // Camera position (3 floats)
-        writeFloat(data, offset, cameraPosTime.a.x.toFloat()); offset += 4
-        writeFloat(data, offset, cameraPosTime.a.y.toFloat()); offset += 4
-        writeFloat(data, offset, cameraPosTime.a.z.toFloat()); offset += 4
+        writeFloat(data, offset, cameraPosTime.component1().x.toFloat()); offset += 4
+        writeFloat(data, offset, cameraPosTime.component1().y.toFloat()); offset += 4
+        writeFloat(data, offset, cameraPosTime.component1().z.toFloat()); offset += 4
         
         // Time (1 float)
-        writeFloat(data, offset, cameraPosTime.b)
+        writeFloat(data, offset, cameraPosTime.component2())
         
         return data
     }

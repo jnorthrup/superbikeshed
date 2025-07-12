@@ -387,7 +387,7 @@ class QuicCouchDBClient(
             }
             
             override suspend fun send(data: ByteIndexed) {
-                println("Mock QUIC Channel: Sent ${data.a} bytes")
+                println("Mock QUIC Channel: Sent ${data.component1()} bytes")
             }
             
             override suspend fun receive(): ByteIndexed {

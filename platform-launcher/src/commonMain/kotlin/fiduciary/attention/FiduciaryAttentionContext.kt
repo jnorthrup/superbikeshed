@@ -34,29 +34,29 @@ value class OCRSource(val ocr: Join<ByteArray, String>) : DocumentSource  // ima
 value class AudioSource(val audio: Join<String, Int>) : DocumentSource  // path j sampleRate
 
 // Fiduciary context - carries document processing state
-value class FiduciaryContext(val ctx: Join<IOContext, Join<Any, Any>>) {
-    val ioContext: IOContext get() = ctx.a
+value class FiduciaryContext(val ctx: Join<IOContext, Any j Any>) {
+    val ioContext: IOContext get() = ctx.component1()
     
 }
 
 // Fiduciary attention - document attention with context
 value class FiduciaryAttention(val fid: Join<DocumentAttention, FiduciaryContext>) {
-    val document: DocumentAttention get() = fid.a
-    val context: FiduciaryContext get() = fid.b
+    val document: DocumentAttention get() = fid.component1()
+    val context: FiduciaryContext get() = fid.component2()
 }
 
 // Patrick Devine corpus specific attention
-value class PatrickDevineAttention(val pd: Join<CorpusAttention, Join<String, Boolean>>) {
-    val corpus: CorpusAttention get() = pd.a
-    val zipUrl: String get() = pd.b.a
-    val useRangeRequests: Boolean get() = pd.b.b
+value class PatrickDevineAttention(val pd: Join<CorpusAttention, String j Boolean>) {
+    val corpus: CorpusAttention get() = pd.component1()
+    val zipUrl: String get() = pd.component2().component1()
+    val useRangeRequests: Boolean get() = pd.component2().component2()
 }
 
 // Common Law 1215.org tree builder with torrent support
-value class CommonLawAttention(val law: Join<CorpusAttention, Join<String, Boolean>>) {
-    val corpus: CorpusAttention get() = law.a
-    val sourceUrl: String get() = law.b.a
-    val isTreeStructure: Boolean get() = law.b.b
+value class CommonLawAttention(val law: Join<CorpusAttention, String j Boolean>) {
+    val corpus: CorpusAttention get() = law.component1()
+    val sourceUrl: String get() = law.component2().component1()
+    val isTreeStructure: Boolean get() = law.component2().component2()
 }
 
 // Tree traversal for Common Law archive
@@ -80,7 +80,7 @@ suspend inline fun CommonLawAttention.traverseTree(): Indexed<String> {
 
 // Integration with Trikeshed attention
 fun FiduciaryAttention.toContextual(): ContextualAttention =
-    ContextualAttention(document.doc.a j context.ioContext)
+    ContextualAttention(document.doc.component1() j context.ioContext)
 
 // Usage example
 suspend fun demonstrateFiduciaryAttention(ioContext: IOContext) {
@@ -113,7 +113,7 @@ suspend fun demonstrateFiduciaryAttention(ioContext: IOContext) {
             println("Using range requests for ${attention.zipUrl}")
         }
         val index = attention.corpus.buildIndex()
-        println("Built index with ${index.a} documents")
+        println("Built index with ${index.component1()} documents")
     }
 }
 

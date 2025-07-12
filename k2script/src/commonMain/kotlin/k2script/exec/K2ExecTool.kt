@@ -22,8 +22,8 @@ data class ExecConfig(
     val verboseOutput: Boolean = false,
     val dryRun: Boolean = false,
     val workingDirectory: String = Environment.getProperty("user.dir") ?: ".",
-    val jvmArgs: Indexed<String> = 0 j { _ -> "" },
-    val scriptArgs: Indexed<String> = 0 j { _ -> "" }
+    val jvmArgs: Indexed<String> = \1 j { \2: Int -> "" },
+    val scriptArgs: Indexed<String> = \1 j { \2: Int -> "" }
 )
 
 data class ExecResult(
@@ -64,8 +64,8 @@ class K2ExecTool(
             val annotations = jarController.analyzeScript(scriptPath)
             
             if (config.verboseOutput) {
-                println("   📦 Dependencies: ${annotations.dependencies.a}")
-                println("   🏛️  Repositories: ${annotations.repositories.a}")
+                println("   📦 Dependencies: ${annotations.dependencies.component1()}")
+                println("   🏛️  Repositories: ${annotations.repositories.component1()}")
             }
             
             // 2. Resolve dependencies with intelligent caching
@@ -73,9 +73,9 @@ class K2ExecTool(
             val resolution = jarController.resolveDependencies(annotations)
             
             if (config.verboseOutput) {
-                println("   ✅ Resolved: ${resolution.resolved.a}")
-                println("   💾 Cached: ${resolution.cached.a}")
-                println("   ❌ Failed: ${resolution.failed.a}")
+                println("   ✅ Resolved: ${resolution.resolved.component1()}")
+                println("   💾 Cached: ${resolution.cached.component1()}")
+                println("   ❌ Failed: ${resolution.failed.component1()}")
             }
             
             // 3. Build classpath
@@ -90,8 +90,8 @@ class K2ExecTool(
                     output = "Dry run completed successfully",
                     errorOutput = "",
                     executionTimeMs = System.currentTimeMillis() - startTime,
-                    resolvedDependencies = resolution.resolved.a,
-                    cachedDependencies = resolution.cached.a
+                    resolvedDependencies = resolution.resolved.component1(),
+                    cachedDependencies = resolution.cached.component1()
                 )
             } else {
                 if (config.verboseOutput) println("⚡ Executing script...")
@@ -150,8 +150,8 @@ class K2ExecTool(
             output = output,
             errorOutput = errorOutput,
             executionTimeMs = System.currentTimeMillis() - startTime,
-            resolvedDependencies = resolution.resolved.a,
-            cachedDependencies = resolution.cached.a
+            resolvedDependencies = resolution.resolved.component1(),
+            cachedDependencies = resolution.cached.component1()
         )
     }
     
@@ -166,8 +166,8 @@ class K2ExecTool(
         command.add("kotlin")
         
         // Add JVM args
-        for (i in 0 until config.jvmArgs.a) {
-            command.add(config.jvmArgs.b(i))
+        for (i in 0 until config.jvmArgs.component1()) {
+            command.add(config.jvmArgs.component2()(i))
         }
         
         // Add classpath if not empty
@@ -180,8 +180,8 @@ class K2ExecTool(
         command.add(scriptPath)
         
         // Add script args
-        for (i in 0 until config.scriptArgs.a) {
-            command.add(config.scriptArgs.b(i))
+        for (i in 0 until config.scriptArgs.component1()) {
+            command.add(config.scriptArgs.component2()(i))
         }
         
         return command
@@ -204,16 +204,16 @@ class K2ExecTool(
      */
     suspend fun quickResolve(coordinates: Indexed<String>): JarResolutionResult {
         // Convert string coordinates to dependency annotations
-        val dependencies: Indexed<DependencyAnnotation> = coordinates.a j { i ->
+        val dependencies: Indexed<DependencyAnnotation> = \1 j { \2: Int ->
             DependencyAnnotation(
-                coordinate = coordinates.b(i),
+                coordinate = coordinates.component2()(i),
                 repository = null
             )
         }
         
         val annotations = AnnotationSet(
             dependencies = dependencies,
-            repositories = 0 j { _ -> RepositoryAnnotation("", "") },
+            repositories = \1 j { \2: Int -> RepositoryAnnotation("", "") },
             sourceFile = "nexus-request"
         )
         
@@ -231,13 +231,13 @@ class K2ExecTool(
      * Pre-warm cache with common dependencies
      */
     suspend fun preWarmCache(commonDependencies: Indexed<String>) {
-        println("🔥 Pre-warming cache with ${commonDependencies.a} dependencies...")
+        println("🔥 Pre-warming cache with ${commonDependencies.component1()} dependencies...")
         
-        val tasks: Indexed<Deferred<Unit>> = commonDependencies.a j { i ->
-            val dep = commonDependencies.b(i)
+        val tasks: Indexed<Deferred<Unit>> = \1 j { \2: Int ->
+            val dep = commonDependencies.component2()(i)
             Reactor.spawn(dep) { dependency ->
                 try {
-                    val coords: Indexed<String> = 1 j { _ -> dependency }
+                    val coords: Indexed<String> = \1 j { \2: Int -> dependency }
                     quickResolve(coords)
                     println("💾 Cached: $dependency")
                 } catch (e: Exception) {
@@ -247,8 +247,8 @@ class K2ExecTool(
         }
         
         // Wait for all pre-warming tasks
-        for (i in 0 until tasks.a) {
-            tasks.b(i).await()
+        for (i in 0 until tasks.component1()) {
+            tasks.component2()(i).await()
         }
         
         val stats = getCacheStats()
@@ -269,16 +269,16 @@ data class NexusToolset(
         val startTime = System.currentTimeMillis()
         
         try {
-            val coordinates: Indexed<String> = dependencies.a j { i -> dependencies.b(i) }
+            val coordinates: Indexed<String> = \1 j { \2: Int -> dependencies.component2()(i) }
             val tool = K2ExecTool(jarController, reactor)
             val result = tool.quickResolve(coordinates)
             
             return AgentResolutionResult(
                 agentId = agentId,
                 success = true,
-                resolvedCount = result.resolved.a,
-                cachedCount = result.cached.a,
-                failedCount = result.failed.a,
+                resolvedCount = result.resolved.component1(),
+                cachedCount = result.cached.component1(),
+                failedCount = result.failed.component1(),
                 executionTimeMs = System.currentTimeMillis() - startTime,
                 classpath = jarController.createClasspath(result),
                 error = null
@@ -290,7 +290,7 @@ data class NexusToolset(
                 success = false,
                 resolvedCount = 0,
                 cachedCount = 0,
-                failedCount = dependencies.a,
+                failedCount = dependencies.component1(),
                 executionTimeMs = System.currentTimeMillis() - startTime,
                 classpath = "",
                 error = e.message
@@ -302,19 +302,19 @@ data class NexusToolset(
      * Batch resolution for multiple agents
      */
     suspend fun resolveBatch(requests: Indexed<AgentRequest>): Indexed<AgentResolutionResult> {
-        val tasks: Indexed<Deferred<AgentResolutionResult>> = requests.a j { i ->
-            val request = requests.b(i)
+        val tasks: Indexed<Deferred<AgentResolutionResult>> = \1 j { \2: Int ->
+            val request = requests.component2()(i)
             Reactor.spawn(request) { req ->
                 resolveForAgent(req.agentId, req.dependencies)
             }
         }
         
         val results = mutableListOf<AgentResolutionResult>()
-        for (i in 0 until tasks.a) {
-            results.add(tasks.b(i).await())
+        for (i in 0 until tasks.component1()) {
+            results.add(tasks.component2()(i).await())
         }
         
-        return results.size j { i -> results[i] }
+        return \1 j { \2: Int -> results[i] }
     }
 }
 
@@ -347,7 +347,7 @@ object K2ExecCLI {
         
         val scriptPath = args[0]
         val scriptArgsList = args.drop(1)
-        val scriptArgs: Indexed<String> = scriptArgsList.size j { i -> scriptArgsList[i] }
+        val scriptArgs: Indexed<String> = \1 j { \2: Int -> scriptArgsList[i] }
         
         // Parse CLI flags (simplified)
         val config = ExecConfig(
@@ -398,7 +398,7 @@ object K2ExecCLI {
 // === Common Dependencies for Pre-warming ===
 
 object CommonDependencies {
-    val KOTLIN_STDLIB: Indexed<String> = 3 j { i ->
+    val KOTLIN_STDLIB: Indexed<String> = \1 j { \2: Int ->
         when(i) {
             0 -> "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
             1 -> "org.jetbrains.kotlin:kotlin-stdlib-common:1.9.24"
@@ -407,7 +407,7 @@ object CommonDependencies {
         }
     }
     
-    val COROUTINES: Indexed<String> = 2 j { i ->
+    val COROUTINES: Indexed<String> = \1 j { \2: Int ->
         when(i) {
             0 -> "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0"
             1 -> "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.9.0"
@@ -415,7 +415,7 @@ object CommonDependencies {
         }
     }
     
-    val SERIALIZATION: Indexed<String> = 2 j { i ->
+    val SERIALIZATION: Indexed<String> = \1 j { \2: Int ->
         when(i) {
             0 -> "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3"
             1 -> "org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3"
@@ -423,7 +423,7 @@ object CommonDependencies {
         }
     }
     
-    val HTTP_CLIENTS: Indexed<String> = 3 j { i ->
+    val HTTP_CLIENTS: Indexed<String> = \1 j { \2: Int ->
         when(i) {
             0 -> "com.squareup.okhttp3:okhttp:4.12.0"
             1 -> "io.ktor:ktor-client-core:2.3.12"
@@ -436,11 +436,11 @@ object CommonDependencies {
         val all = mutableListOf<String>()
         
         // Add all dependencies manually since there's no .play property
-        for (i in 0 until KOTLIN_STDLIB.a) all.add(KOTLIN_STDLIB.b(i))
-        for (i in 0 until COROUTINES.a) all.add(COROUTINES.b(i))
-        for (i in 0 until SERIALIZATION.a) all.add(SERIALIZATION.b(i))
-        for (i in 0 until HTTP_CLIENTS.a) all.add(HTTP_CLIENTS.b(i))
+        for (i in 0 until KOTLIN_STDLIB.component1()) all.add(KOTLIN_STDLIB.component2()(i))
+        for (i in 0 until COROUTINES.component1()) all.add(COROUTINES.component2()(i))
+        for (i in 0 until SERIALIZATION.component1()) all.add(SERIALIZATION.component2()(i))
+        for (i in 0 until HTTP_CLIENTS.component1()) all.add(HTTP_CLIENTS.component2()(i))
         
-        return all.size j { i -> all[i] }
+        return \1 j { \2: Int -> all[i] }
     }
 }

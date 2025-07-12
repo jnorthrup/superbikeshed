@@ -24,4 +24,4 @@ value class Indexed<T>(val size: Int, val accessor: (Int) -> T) {
 
 data class Join<A, B>(val first: A, val second: B)
 
-infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b) 
+infix fun <A, B> A.j(b: B): Join<A, B> = this j b 

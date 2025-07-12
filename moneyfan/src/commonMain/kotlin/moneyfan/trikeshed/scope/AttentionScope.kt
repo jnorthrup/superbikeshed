@@ -94,18 +94,18 @@ data class RangeScope<T>(val startIndex: Int, val endIndexExclusive: Int) : Atte
         if (source.isEmpty()) {
             return emptySeries()
         }
-        val scopedIndices = getScopedIndices(source.a)
+        val scopedIndices = getScopedIndices(source.component1())
         if (scopedIndices.isEmpty()){
             return emptySeries()
         }
         // Construct new series using the selected indices to pick elements from the source.
-        return scopedIndices.a j { i:Int -> source.b(scopedIndices.b(i)) }
+        return scopedIndices.component1() j { i:Int -> source.component2()(scopedIndices.component2()(i)) }
     }
 }
 
 /**
  * An [AttentionScope] that defines a focus on a randomly selected fractional subset of a [Indexed].
- * The selection aims to pick approximately `percentage * source.a` elements.
+ * The selection aims to pick approximately `percentage * source.component1()` elements.
  *
  * @param T The type of elements in the [Indexed].
  * @property percentage The target fraction of elements to select, ranging from `0.0` (select none)
@@ -160,18 +160,18 @@ data class FractionalScope<T>(val percentage: Double, val seed: Long? = null) : 
     /**
      * Applies the fractional scope to the `source` [Indexed].
      * Returns a new [Indexed] containing a randomly selected subset of elements
-     * from the `source`. The size of the subset is approximately `percentage * source.a`.
+     * from the `source`. The size of the subset is approximately `percentage * source.component1()`.
      * The relative order of the selected elements is preserved.
      */
     override fun apply(source: Indexed<T>): Indexed<T> {
         if (source.isEmpty() || percentage == 0.0) { // Check percentage here too for quick exit
             return emptySeries()
         }
-        val scopedIndices = getScopedIndices(source.a)
+        val scopedIndices = getScopedIndices(source.component1())
         if (scopedIndices.isEmpty()){ // Handles cases where targetSize rounded to 0
             return emptySeries()
         }
         // Construct new series using the selected indices to pick elements from the source.
-        return scopedIndices.a j { i:Int -> source.b(scopedIndices.b(i)) }
+        return scopedIndices.component1() j { i:Int -> source.component2()(scopedIndices.component2()(i)) }
     }
 }

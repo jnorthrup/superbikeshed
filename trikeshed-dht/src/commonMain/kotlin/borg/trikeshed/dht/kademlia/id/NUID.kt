@@ -22,7 +22,7 @@ data class NUID(
     /**
      * Size in bytes
      */
-    val size: Int get() = bytes.a
+    val size: Int get() = bytes.component1()
 
     /**
      * Calculate XOR distance to another NUID (fundamental to Kademlia routing)
@@ -181,7 +181,7 @@ object IndexedByteSerializer : KSerializer<Indexed<Byte>> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("IndexedByte", PrimitiveKind.STRING)
     
     override fun serialize(encoder: Encoder, value: Indexed<Byte>) {
-        val bytes = ByteArray(value.a) { i -> value[i] }
+        val bytes = ByteArray(value.component1()) { i -> value[i] }
         encoder.encodeString(bytes.toHexString())
     }
     

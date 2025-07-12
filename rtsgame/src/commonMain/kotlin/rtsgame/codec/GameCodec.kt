@@ -282,7 +282,7 @@ object PacketCodec : Codec<Packet> {
             2 -> { // Join
                 val playerId = buffer.readVarInt()
                 val protocolVersion = buffer.readVarInt()
-                Packet.Join(sequence, timestamp, playerId, protocolVersion)
+                Packet.sequence j timestamp, playerId, protocolVersion
             }
             3 -> { // Leave
                 val playerId = buffer.readVarInt()

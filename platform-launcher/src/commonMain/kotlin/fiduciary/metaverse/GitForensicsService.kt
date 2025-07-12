@@ -38,8 +38,8 @@ typealias GitObjectContent = Indexed<Byte>
 
 // Forensic analysis types
 typealias ForensicEvidence = Indexed<ForensicArtifact>
-typealias ForensicArtifact = Join<ForensicId, Join<GitObjectHash, AttentionScore>>
-typealias ForensicScene = Join<SceneId, Join<ForensicEvidence, ForensicTimestamp>>
+typealias ForensicArtifact = Join<ForensicId, GitObjectHash j AttentionScore>
+typealias ForensicScene = Join<SceneId, ForensicEvidence j ForensicTimestamp>
 
 // CouchDB integration types
 typealias CouchForensicDoc = Join<ForensicId, CouchDocument>
@@ -120,8 +120,8 @@ class GitForensicsService(
         )
         
         // Analyze each git object
-        for (i in 0 until objectHashes.a) {
-            val objectHash = objectHashes.b(i)
+        for (i in 0 until objectHashes.component1()) {
+            val objectHash = objectHashes.component2()(i)
             val artifact = analyzeGitObject(session, objectHash)
             analysis.artifacts.add(artifact)
             
@@ -245,8 +245,8 @@ class GitForensicsService(
             classifications = mutableMapOf()
         )
         
-        for (i in 0 until objectHashes.a) {
-            val objectHash = objectHashes.b(i)
+        for (i in 0 until objectHashes.component1()) {
+            val objectHash = objectHashes.component2()(i)
             val artifact = analyzeGitObject(session, objectHash)
             val taxonomicClass = session.patternDetector.classifyObject(artifact)
             classification.classifications[objectHash] = taxonomicClass
@@ -268,7 +268,7 @@ class GitForensicsService(
         
         // Analyze object content
         val content = gitObject.content.encodeToByteArray().toIdx()
-        val size = content.a.toLong()
+        val size = content.component1().toLong()
         val type = gitObject.type
         
         // Create forensic artifact

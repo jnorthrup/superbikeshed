@@ -28,7 +28,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     internal var nextChannelId: SSHChannelID = 0u
     
     override suspend fun openChannel(type: SSHChannelType, context: SSHChannelContext): SSHChannelID {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             val channelId = nextChannelId++
             
             val channel = SSHChannel(
@@ -52,7 +52,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     override suspend fun sendChannelData(id: SSHChannelID, data: ChannelData, context: SSHChannelContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             val channel = channels[id] ?: throw SSHException("Channel not found: $id")
             
             if (channel.state != SSHChannelState.OPEN) {
@@ -60,11 +60,11 @@ class SSHChannelManagerImpl : SSHChannelManager {
             }
             
             // Check flow control
-            if (data.a > channel.remoteWindowSize) {
+            if (data.component1() > channel.remoteWindowSize) {
                 throw SSHException("Data exceeds remote window size")
             }
             
-            if (data.a > channel.remoteMaxPacketSize) {
+            if (data.component1() > channel.remoteMaxPacketSize) {
                 throw SSHException("Data exceeds remote max packet size")
             }
             
@@ -73,12 +73,12 @@ class SSHChannelManagerImpl : SSHChannelManager {
             // TODO: Send request through transport
             
             // Update window size
-            channel.remoteWindowSize -= data.a.toUInt()
+            channel.remoteWindowSize -= data.component1().toUInt()
         }
     }
     
     override suspend fun receiveChannelData(id: SSHChannelID, context: SSHChannelContext): ChannelData? {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             val channel = channels[id] ?: return@withContext null
             
             if (channel.state != SSHChannelState.OPEN) {
@@ -92,7 +92,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     override suspend fun closeChannel(id: SSHChannelID, context: SSHChannelContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             val channel = channels[id] ?: return@withContext
             
             if (channel.state == SSHChannelState.CLOSED) {
@@ -109,7 +109,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     override suspend fun handleChannelRequest(request: SSHChannelRequest, context: SSHChannelContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             when (request) {
                 is PTYRequest -> handlePTYRequest(request, context)
                 is ShellRequest -> handleShellRequest(request, context)
@@ -126,7 +126,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     override suspend fun adjustWindow(id: SSHChannelID, adjustment: UInt, context: SSHChannelContext) {
-        withContext(context.b) {
+        withContext(context.component2()) {
             val channel = channels[id] ?: throw SSHException("Channel not found: $id")
             
             channel.localWindowSize += adjustment
@@ -138,7 +138,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     override suspend fun getChannelInfo(id: SSHChannelID, context: SSHChannelContext): SSHChannelInfo? {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             val channel = channels[id] ?: return@withContext null
             
             SSHChannelInfo(
@@ -156,7 +156,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handlePTYRequest(request: PTYRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         
         // Process PTY request
         val term = request.terminal
@@ -173,7 +173,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleShellRequest(request: ShellRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         
         // TODO: Start shell
         println("Starting shell for channel $channelId")
@@ -184,7 +184,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleExecRequest(request: ExecRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         val command = request.command
         
         // TODO: Execute command
@@ -196,7 +196,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleSubsystemRequest(request: SubsystemRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         val subsystem = request.subsystem
         
         // TODO: Start subsystem
@@ -208,7 +208,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleWindowChangeRequest(request: WindowChangeRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         val width = request.width
         val height = request.height
         
@@ -221,7 +221,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleX11Request(request: X11Request, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         
         // TODO: Handle X11 forwarding
         println("X11 forwarding request")
@@ -232,7 +232,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleSignalRequest(request: SignalRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         val signal = request.signal
         
         // TODO: Send signal to process
@@ -244,7 +244,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleExitStatusRequest(request: ExitStatusRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         val status = request.status
         
         // TODO: Handle exit status
@@ -256,7 +256,7 @@ class SSHChannelManagerImpl : SSHChannelManager {
     }
     
     internal suspend fun handleExitSignalRequest(request: ExitSignalRequest, context: SSHChannelContext) {
-        val channelId = context.a
+        val channelId = context.component1()
         val signal = request.signal
         val coreDumped = request.coreDumped
         val errorMessage = request.errorMessage
@@ -294,14 +294,14 @@ class SSHChannelManagerImpl : SSHChannelManager {
     internal fun buildChannelDataRequest(channelId: SSHChannelID, data: ChannelData): SSHPayload {
         val recipientChannel = channelId.toByteArray()
         
-        val size = 1 + 4 + recipientChannel.size + 4 + data.a
+        val size = 1 + 4 + recipientChannel.size + 4 + data.component1()
         
         return size j { i: Int ->
             when {
                 i == 0 -> SSHMessageType.CHANNEL_DATA.value
                 i < 5 -> ((recipientChannel.size shr ((4 - i) * 8)) and 0xFF).toByte()
                 i < 5 + recipientChannel.size -> recipientChannel[i - 5]
-                i < 9 + recipientChannel.size -> ((data.a shr ((8 + recipientChannel.size - i) * 8)) and 0xFF).toByte()
+                i < 9 + recipientChannel.size -> ((data.component1() shr ((8 + recipientChannel.size - i) * 8)) and 0xFF).toByte()
                 else -> data[i - 9 - recipientChannel.size]
             }
         }

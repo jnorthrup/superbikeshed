@@ -60,7 +60,7 @@ class WasmIntegrationTest {
     fun `join operations work in wasm`() {
         val coord = XCoord(10f) j YCoord(20f)
         
-        assertEquals(10f, coord.a.value)
-        assertEquals(20f, coord.b.value)
+        assertEquals(10f, coord.component1().value)
+        assertEquals(20f, coord.component2().value)
     }
 }

@@ -9,7 +9,7 @@ class K2ExecToolTraitsTest {
     fun testDependencyResolutionTrait() = runBlocking {
         val tool = K2ExecTool()
         val result = tool.quickResolve(1 j { "org.jetbrains.kotlin:kotlin-stdlib:1.9.24" })
-        assertTrue(result.resolved.a >= 1, "Should resolve at least one dependency")
+        assertTrue(result.resolved.component1() >= 1, "Should resolve at least one dependency")
     }
 
     @Test
@@ -24,7 +24,7 @@ class K2ExecToolTraitsTest {
     @Test
     fun testReactorBasedParallelismTrait() = runBlocking {
         val tool = K2ExecTool()
-        val dependencies = 3 j { i -> "org.jetbrains.kotlin:kotlin-stdlib:${1.9 + i * 0.01}" }
+        val dependencies = \1 j { \2: Int -> "org.jetbrains.kotlin:kotlin-stdlib:${1.9 + i * 0.01}" }
         tool.preWarmCache(dependencies) // Should run in parallel
         val stats = tool.getCacheStats()
         assertTrue(stats.totalEntries >= 3, "Should cache multiple dependencies in parallel")
@@ -60,7 +60,7 @@ class K2ExecToolTraitsTest {
     @Test
     fun testPreWarmCacheTrait() = runBlocking {
         val tool = K2ExecTool()
-        val deps = 2 j { i -> "org.jetbrains.kotlin:kotlin-stdlib:${1.9 + i * 0.01}" }
+        val deps = \1 j { \2: Int -> "org.jetbrains.kotlin:kotlin-stdlib:${1.9 + i * 0.01}" }
         tool.preWarmCache(deps)
         val stats = tool.getCacheStats()
         assertTrue(stats.totalEntries >= 2, "Pre-warming should cache dependencies")

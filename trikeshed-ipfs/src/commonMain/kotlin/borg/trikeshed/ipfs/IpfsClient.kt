@@ -53,7 +53,7 @@ class IpfsClient(
      * Add file with chunking for large files
      */
     suspend fun addFile(data: Indexed<Byte>, chunkSize: Int = 262144): CID = coroutineScope {
-        if (data.a <= chunkSize) {
+        if (data.component1() <= chunkSize) {
             // Small file - store as single block
             return@coroutineScope add(data)
         }
@@ -62,16 +62,16 @@ class IpfsClient(
         val chunks = mutableListOf<CID>()
         var offset = 0
         
-        while (offset < data.a) {
-            val size = minOf(chunkSize, data.a - offset)
-            val chunk = size j { data.b(offset + it) }
+        while (offset < data.component1()) {
+            val size = minOf(chunkSize, data.component1() - offset)
+            val chunk = size j { data.component2()(offset + it) }
             val chunkCid = add(chunk)
             chunks.add(chunkCid)
             offset += size
         }
         
         // Create root node with links to chunks
-        val links = chunks.size j { i ->
+        val links = \1 j { \2: Int ->
             IpfsLink("chunk$i", chunks[i], chunkSize.toLong())
         }
         
@@ -97,9 +97,9 @@ class IpfsClient(
      */
     suspend fun get(cid: CID): Indexed<Byte>? = coroutineScope {
         // Check local cache
-        for (i in 0 until blockCache.a) {
-            val entry = blockCache.b(i)
-            if (entry.a == cid) return@coroutineScope entry.b.data
+        for (i in 0 until blockCache.component1()) {
+            val entry = blockCache.component2()(i)
+            if (entry.component1() == cid) return@coroutineScope entry.component2().data
         }
         
         // Check local storage
@@ -124,34 +124,34 @@ class IpfsClient(
         }
         
         // Check if it's a simple block or merkle dag
-        if (rootBlock.links.a == 0) {
+        if (rootBlock.links.component1() == 0) {
             return@coroutineScope rootBlock.data
         }
         
         // It's a merkle dag - fetch all chunks
         val chunks = mutableListOf<Indexed<Byte>>()
         
-        for (i in 0 until rootBlock.links.a) {
-            val link = rootBlock.links.b(i)
+        for (i in 0 until rootBlock.links.component1()) {
+            val link = rootBlock.links.component2()(i)
             val chunkData = get(link.cid) ?: return@coroutineScope null
             chunks.add(chunkData)
         }
         
         // Concatenate chunks
-        val totalSize = chunks.sumOf { it.a }
+        val totalSize = chunks.sumOf { it.component1() }
         
-        totalSize j { i ->
+        \1 j { \2: Int ->
             // Find which chunk this byte belongs to
             var chunkIndex = 0
             var remaining = i
             
-            while (chunkIndex < chunks.size && remaining >= chunks[chunkIndex].a) {
-                remaining -= chunks[chunkIndex].a
+            while (chunkIndex < chunks.size && remaining >= chunks[chunkIndex].component1()) {
+                remaining -= chunks[chunkIndex].component1()
                 chunkIndex++
             }
             
             if (chunkIndex < chunks.size) {
-                chunks[chunkIndex].b(remaining)
+                chunks[chunkIndex].component2()(remaining)
             } else {
                 throw IndexOutOfBoundsException()
             }
@@ -171,8 +171,8 @@ class IpfsClient(
         storage.pin(cid)
         
         // Recursively pin links
-        for (i in 0 until block.links.a) {
-            val link = block.links.b(i)
+        for (i in 0 until block.links.component1()) {
+            val link = block.links.component2()(i)
             pin(link.cid)
         }
         
@@ -201,8 +201,8 @@ class IpfsClient(
         val unpinned = storage.listUnpinned()
         val collected = mutableListOf<CID>()
         
-        for (i in 0 until unpinned.a) {
-            val cid = unpinned.b(i)
+        for (i in 0 until unpinned.component1()) {
+            val cid = unpinned.component2()(i)
             storage.removeBlock(cid)
             collected.add(cid)
             notifyDestruction(cid, "Garbage collection")
@@ -243,8 +243,8 @@ class IpfsClient(
     internal fun computeHash(data: Indexed<Byte>): Indexed<Byte> {
         // Simple hash function for demo purposes
         var hash = 0L
-        for (i in 0 until data.a) {
-            hash = hash * 31 + data.b(i).toLong()
+        for (i in 0 until data.component1()) {
+            hash = hash * 31 + data.component2()(i).toLong()
         }
         val hashBytes = hash.toString(16).padStart(32, '0').chunked(2).map { it.toInt(16).toByte() }
         return hashBytes.size j { hashBytes[it] }
@@ -252,7 +252,7 @@ class IpfsClient(
     
     internal fun addToCache(cid: CID, block: IpfsBlock) {
         // Simple cache management - could be enhanced with LRU
-        if (blockCache.a < 1000) { // Limit cache size
+        if (blockCache.component1() < 1000) { // Limit cache size
             // Would normally append to cache
         }
     }
@@ -283,23 +283,23 @@ data class MerkleNode(
         val serialized = mutableListOf<Byte>()
         
         // Add data length
-        val dataLength = data.a.toString()
+        val dataLength = data.component1().toString()
         serialized.addAll(dataLength.encodeToByteArray().map { it.toByte() })
         serialized.add(0) // null terminator
         
         // Add data
-        for (i in 0 until data.a) {
-            serialized.add(data.b(i))
+        for (i in 0 until data.component1()) {
+            serialized.add(data.component2()(i))
         }
         
         // Add links count
-        val linksCount = links.a.toString()
+        val linksCount = links.component1().toString()
         serialized.addAll(linksCount.encodeToByteArray().map { it.toByte() })
         serialized.add(0) // null terminator
         
         // Add links
-        for (i in 0 until links.a) {
-            val link = links.b(i)
+        for (i in 0 until links.component1()) {
+            val link = links.component2()(i)
             serialized.addAll(link.name.encodeToByteArray().map { it.toByte() })
             serialized.add(0) // null terminator
             serialized.addAll(link.cid.toString().encodeToByteArray().map { it.toByte() })
@@ -332,11 +332,11 @@ class IpfsStorage {
     }
     
     fun listPinned(): Indexed<CID> {
-        return pinnedBlocks.size j { i -> pinnedBlocks.elementAt(i) }
+        return \1 j { \2: Int -> pinnedBlocks.elementAt(i) }
     }
     
     fun listUnpinned(): Indexed<CID> {
-        return blocks.keys.filter { !pinnedBlocks.contains(it) }.size j { i -> 
+        return blocks.keys.filter { !pinnedBlocks.contains(it) \1 j { \2: Int -> 
             blocks.keys.filter { !pinnedBlocks.contains(it) }.elementAt(i) 
         }
     }
@@ -356,7 +356,7 @@ data class CID(
         DAG_PB(0x70)
     }
     
-    override fun toString(): String = "bafy" + multihash.digest.a.toString(16)
+    override fun toString(): String = "bafy" + multihash.digest.component1().toString(16)
 }
 
 data class Multihash(

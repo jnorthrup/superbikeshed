@@ -54,8 +54,8 @@ class SecureQuicEngine(
         val responses = mutableListOf<QuicPacket>()
         
         // Process each frame
-        for (i in 0 until packet.frames.a) {
-            val frame = packet.frames.b(i)
+        for (i in 0 until packet.frames.component1()) {
+            val frame = packet.frames.component2()(i)
             when (frame) {
                 is CryptoFrame -> {
                     val handshakeResponses = processCryptoFrame(frame)
@@ -102,7 +102,7 @@ class SecureQuicEngine(
         
         // Update stream state
         streamStates[streamId] = stream.copy(
-            sendOffset = stream.sendOffset + data.a
+            sendOffset = stream.sendOffset + data.component1()
         )
         
         // Create packet
@@ -122,7 +122,7 @@ class SecureQuicEngine(
         connectionState = connectionState.copy(
             sentPackets = appendToIndexed(connectionState.sentPackets, packet),
             nextPacketNumber = connectionState.nextPacketNumber + 1,
-            bytesInFlight = connectionState.bytesInFlight + encryptedData.a
+            bytesInFlight = connectionState.bytesInFlight + encryptedData.component1()
         )
         
         return packet
@@ -137,8 +137,8 @@ class SecureQuicEngine(
         val decryptedData = mutableListOf<Indexed<Byte>>()
         
         // Process each frame
-        for (i in 0 until packet.frames.a) {
-            val frame = packet.frames.b(i)
+        for (i in 0 until packet.frames.component1()) {
+            val frame = packet.frames.component2()(i)
             if (frame is StreamFrame) {
                 val stream = streamStates.getOrPut(frame.streamId) {
                     QuicStreamState(
@@ -161,7 +161,7 @@ class SecureQuicEngine(
                 
                 // Update stream state
                 streamStates[frame.streamId] = stream.copy(
-                    receiveOffset = stream.receiveOffset + frame.data.a
+                    receiveOffset = stream.receiveOffset + frame.data.component1()
                 )
             }
         }
@@ -250,9 +250,9 @@ class SecureQuicEngine(
     // === HELPER FUNCTIONS ===
     
     internal fun <T> appendToIndexed(indexed: Indexed<T>, item: T): Indexed<T> {
-        val newSize = indexed.a + 1
+        val newSize = indexed.component1() + 1
         return newSize j { i: Int ->
-            if (i < indexed.a) indexed.b(i) else item
+            if (i < indexed.component1()) indexed.component2()(i) else item
         }
     }
     

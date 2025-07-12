@@ -32,7 +32,7 @@ fun calculateSMA(prices: Indexed<Price>, period: Int): Indexed<Price> {
     // The output series will have the same size as the input series.
     // For indices where SMA cannot be computed (less than `period - 1` data points available),
     // Price.UNDEFINED is used.
-    return prices.a j { index:Int ->
+    return prices.component1() j { index:Int ->
         if (index < period - 1) {
             Price.UNDEFINED
         } else {
@@ -44,7 +44,7 @@ fun calculateSMA(prices: Indexed<Price>, period: Int): Indexed<Price> {
                 // if they were the result of a previous calculation.
                 // An SMA calculation should typically operate on raw, defined prices.
                 // If prices[i] could be NaN, sum could become NaN. This is acceptable.
-                sum += prices.b(i).value // Access the underlying Double value of Price
+                sum += prices.component2()(i).value // Access the underlying Double value of Price
             }
             Price(sum / period)
         }

@@ -24,7 +24,7 @@ class IndexedImpl<T>(internal val generator: (Int) -> T, override val size: Int)
 data class Join<A, B>(val a: A, val b: B)
 
 // DSL operators
-infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
+infix fun <A, B> A.j(other: B): Join<A, B> = this j other
 infix fun <T> Int.j(generator: (Int) -> T): Indexed<T> = IndexedImpl(generator, this)
 
 // Utility functions

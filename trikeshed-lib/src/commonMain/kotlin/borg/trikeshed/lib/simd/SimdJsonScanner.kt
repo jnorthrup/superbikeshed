@@ -36,12 +36,12 @@ class SimdJsonScanner(
         )
         
         // Find all structural characters using SIMD
-        val positions = simd.findAnyByte(jsonBytes.toIndexed(), structuralChars.toIndexed())
+        val positions = simd.findAnyByte(jsonBytes.toIndexed(), structuralChars.toIndexed(), 0)
         
         // Build bitmap - naturally uses full SIMD width
         val bitmap = IntArray((jsonBytes.size + 31) / 32)
-        for (i in 0 until positions.a) {
-            val pos = positions.b(i)
+        for (i in 0 until positions.component1()) {
+            val pos = positions.component2()(i)
             val wordIndex = pos shr 5
             val bitIndex = pos and 31
             bitmap[wordIndex] = bitmap[wordIndex] or (1 shl bitIndex)
@@ -55,25 +55,25 @@ class SimdJsonScanner(
      * Finds quote pairs, handling escapes
      */
     fun findStrings(): StringIndex {
-        val quotes = simd.findByte(jsonBytes.toIndexed(), '"'.code.toByte())
-        val backslashes = simd.findByte(jsonBytes.toIndexed(), '\\'.code.toByte())
+        val quotes = simd.findByte(jsonBytes.toIndexed(), '"'.code.toByte(), 0)
+        val backslashes = simd.findByte(jsonBytes.toIndexed(), '\\'.code.toByte(), 0)
         
         // Process quotes in SIMD-width chunks
         val stringRanges = mutableListOf<IntRange>()
         var i = 0
-        while (i < quotes.a) {
-            val start = quotes.b(i)
-            var end = if (i + 1 < quotes.a) quotes.b(i + 1) else jsonBytes.size
+        while (i < quotes.component1()) {
+            val start = quotes.component2()(i)
+            var end = if (i + 1 < quotes.component1()) quotes.component2()(i + 1) else jsonBytes.size
             
             // Check for escapes between start and end
             // This could also be SIMD-accelerated
             var escapeCount = 0
-            for (j in 0 until backslashes.a) {
-                val escapePos = backslashes.b(j)
+            for (j in 0 until backslashes.component1()) {
+                val escapePos = backslashes.component2()(j)
                 if (escapePos in (start + 1) until end) escapeCount++
             }
-            if (escapeCount % 2 == 1 && i + 2 < quotes.a) {
-                end = quotes.b(i + 2)
+            if (escapeCount % 2 == 1 && i + 2 < quotes.component1()) {
+                end = quotes.component2()(i + 2)
                 i += 3
             } else {
                 i += 2
@@ -158,8 +158,8 @@ class AdaptiveSimdAlgorithms {
             // Real SIMD: Load vector, compare all bytes, count matches
             val matches = simd.findByte(data.toIndexed(), target, offset)
             var matchCount = 0
-            for (i in 0 until matches.a) {
-                if (matches.b(i) < offset + cap.bytesPerVector) matchCount++
+            for (i in 0 until matches.component1()) {
+                if (matches.component2()(i) < offset + cap.bytesPerVector) matchCount++
             }
             count += matchCount
             offset += cap.bytesPerVector

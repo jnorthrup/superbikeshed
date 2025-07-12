@@ -71,7 +71,7 @@ class IpfsSystemTest {
             // Test retrieving content
             val retrieved = client.get(cid)
             assertNotNull(retrieved)
-            val content = String(retrieved!!.a j { retrieved.b(it) }.toByteArray())
+            val content = String(retrieved!!.component1() j { retrieved.component2()(it) }.toByteArray())
             assertEquals("Hello, IPFS!", content)
             
             // Test pinning
@@ -80,8 +80,8 @@ class IpfsSystemTest {
             
             // Test listing pinned content
             val pinnedList = client.listPinned()
-            assertEquals(1, pinnedList.a)
-            assertEquals(cid, pinnedList.b(0))
+            assertEquals(1, pinnedList.component1())
+            assertEquals(cid, pinnedList.component2()(0))
             
             // Test unpinning
             val unpinned = client.unpin(cid)
@@ -109,7 +109,7 @@ class IpfsSystemTest {
             // Test retrieving content
             val retrieved = server.get(cid)
             assertNotNull(retrieved)
-            val content = String(retrieved!!.a j { retrieved.b(it) }.toByteArray())
+            val content = String(retrieved!!.component1() j { retrieved.component2()(it) }.toByteArray())
             assertEquals("Server test content", content)
             
             // Test pinning operations
@@ -117,7 +117,7 @@ class IpfsSystemTest {
             assertTrue(pinned)
             
             val pinnedList = server.listPinned()
-            assertEquals(1, pinnedList.a)
+            assertEquals(1, pinnedList.component1())
             
             val unpinned = server.unpin(cid)
             assertTrue(unpinned)
@@ -215,7 +215,7 @@ class IpfsSystemTest {
                 val retrieved = ipfsServer!!.get(cid)
                 assertNotNull(retrieved)
                 
-                val content = String(retrieved!!.a j { retrieved.b(it) }.toByteArray())
+                val content = String(retrieved!!.component1() j { retrieved.component2()(it) }.toByteArray())
                 assertEquals("Launcher test content", content)
             }
             
@@ -339,9 +339,9 @@ class IpfsSystemTest {
             assertNotNull(retrieved2)
             assertNotNull(retrieved3)
             
-            val content1 = String(retrieved1!!.a j { retrieved1.b(it) }.toByteArray())
-            val content2 = String(retrieved2!!.a j { retrieved2.b(it) }.toByteArray())
-            val content3 = String(retrieved3!!.a j { retrieved3.b(it) }.toByteArray())
+            val content1 = String(retrieved1!!.component1() j { retrieved1.component2()(it) }.toByteArray())
+            val content2 = String(retrieved2!!.component1() j { retrieved2.component2()(it) }.toByteArray())
+            val content3 = String(retrieved3!!.component1() j { retrieved3.component2()(it) }.toByteArray())
             
             assertEquals("Hello, IPFS!", content1)
             assertEquals("Hello, IPFS!", content2)

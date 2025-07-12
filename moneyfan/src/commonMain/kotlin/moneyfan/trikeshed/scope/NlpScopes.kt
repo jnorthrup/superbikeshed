@@ -175,7 +175,7 @@ data class HumanLanguageAgentScope<T>(
         if (source.isEmpty()) return emptySeries()
 
         // 1. Convert source Indexed<T> to Indexed<String> for the NLP agent's semantic scoring part.
-        val stringSeries = source.a j { idx:Int -> itemToStringConverter(source.b(idx)) }
+        val stringSeries = source.component1() j { idx:Int -> itemToStringConverter(source.component2()(idx)) }
 
         // This check is mostly defensive, assuming itemToStringConverter is well-behaved.
         if (stringSeries.isEmpty() && source.isNotEmpty()) return emptySeries()
@@ -185,17 +185,17 @@ data class HumanLanguageAgentScope<T>(
         val nlpResult = agent.processQuery(nlpQuery, stringSeries)
 
         // Ensure scores series aligns with the source series for reliable lookup.
-        if (nlpResult.relevanceScores.a != source.a) {
-            println("Warning: Relevance score series size (${nlpResult.relevanceScores.a}) from NlpAgent " +
-                    "does not match source series size (${source.a}). Aborting HumanLanguageAgentScope application.")
+        if (nlpResult.relevanceScores.component1() != source.component1()) {
+            println("Warning: Relevance score series size (${nlpResult.relevanceScores.component1()}) from NlpAgent " +
+                    "does not match source series size (${source.component1()}). Aborting HumanLanguageAgentScope application.")
             return emptySeries()
         }
 
         // 3. Prepare a list of items along with their original index and semantic score.
         // This allows us to apply RQL filtering and then use the pre-calculated semantic scores.
         val itemsWithContext = mutableListOf<Triple<T, Int, Double>>()
-        for (i in 0 until source.a) {
-            itemsWithContext.add(Triple(source.b(i), i, nlpResult.relevanceScores.b(i)))
+        for (i in 0 until source.component1()) {
+            itemsWithContext.add(Triple(source.component2()(i), i, nlpResult.relevanceScores.component2()(i)))
         }
 
         // 4. Apply RQL filter (if a structured query was parsed by the agent).

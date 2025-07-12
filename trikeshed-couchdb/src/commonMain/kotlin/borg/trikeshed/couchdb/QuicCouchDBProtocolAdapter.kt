@@ -103,10 +103,10 @@ class QuicCouchDBAdapter(
     override suspend fun parseMessage(data: ByteIndexed, position: Int): Join<QuicCouchDBMessage?, Int>? {
         return try {
             // QUIC framing: [length:4][type:1][data:length-1]
-            if (position + 5 > data.a) return null // Need at least 5 bytes
+            if (position + 5 > data.component1()) return null // Need at least 5 bytes
             
             val length = ProtocolUtils.readUint32(data, position).toInt()
-            if (position + 4 + length > data.a) return null // Need complete message
+            if (position + 4 + length > data.component1()) return null // Need complete message
             
             val messageType = data[position + 4].toInt()
             val messageStart = position + 5

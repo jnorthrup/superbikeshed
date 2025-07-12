@@ -91,10 +91,10 @@ data class Http3Frame(
         encoded.addAll(encodeVarInt(type))
         
         // Encode payload length as variable-length integer
-        encoded.addAll(encodeVarInt(payload.a.toLong()))
+        encoded.addAll(encodeVarInt(payload.component1().toLong()))
         
         // Add payload
-        for (i in 0 until payload.a) {
+        for (i in 0 until payload.component1()) {
             encoded.add(payload[i])
         }
         
@@ -116,7 +116,7 @@ data class Http3Frame(
             pos += lengthLen
             
             // Extract payload
-            if (pos + payloadLength > data.a) return null to pos
+            if (pos + payloadLength > data.component1()) return null to pos
             
             val payload = payloadLength.toInt() j { i: Int -> data[pos + i] }
             pos += payloadLength.toInt()
@@ -192,12 +192,12 @@ class Http3Connection(
         
         // Convert headers to QPACK
         val headers = mutableListOf<Join<HttpHeaderName, HttpHeaderValue>>()
-        headers.add(Join(HttpHeaderName(":method"), HttpHeaderValue(request.method.name)))
-        headers.add(Join(HttpHeaderName(":path"), HttpHeaderValue(request.path.value)))
-        headers.add(Join(HttpHeaderName(":scheme"), HttpHeaderValue("https")))
-        headers.add(Join(HttpHeaderName(":authority"), HttpHeaderValue("example.com")))
+        headers.add(HttpHeaderName(":method") j HttpHeaderValue(request.method.name))
+        headers.add(HttpHeaderName(":path") j HttpHeaderValue(request.path.value))
+        headers.add(HttpHeaderName(":scheme") j HttpHeaderValue("https"))
+        headers.add(HttpHeaderName(":authority") j HttpHeaderValue("example.com"))
         
-        for (i in 0 until request.headers.a) {
+        for (i in 0 until request.headers.component1()) {
             headers.add(request.headers[i])
         }
         
@@ -315,7 +315,7 @@ class Http3Connection(
                     headers = qpackDecoder.decode(frame.payload, stream.id)
                 }
                 Http3Protocol.FrameTypes.DATA -> {
-                    for (i in 0 until frame.payload.a) {
+                    for (i in 0 until frame.payload.component1()) {
                         bodyParts.add(frame.payload[i])
                     }
                 }
@@ -340,11 +340,11 @@ class Http3Connection(
         var method: HttpMethod? = null
         var path: HttpRequestPath? = null
         
-        for (i in 0 until headers.a) {
+        for (i in 0 until headers.component1()) {
             val header = headers[i]
-            when (header.a.value) {
-                ":method" -> method = HttpMethod.valueOf(header.b.value)
-                ":path" -> path = HttpRequestPath(header.b.value)
+            when (header.component1().value) {
+                ":method" -> method = HttpMethod.valueOf(header.component2().value)
+                ":path" -> path = HttpRequestPath(header.component2().value)
             }
         }
         
@@ -388,7 +388,7 @@ class Http3Connection(
     internal fun handleSettings(payload: Http3FramePayload) {
         var offset = 0
         
-        while (offset < payload.a) {
+        while (offset < payload.component1()) {
             val (id, idLen) = decodeVarInt(payload, offset)
             if (id == null) break
             offset += idLen
@@ -552,10 +552,10 @@ class QpackEncoder {
         encoded.add(0x00) // Delta Base = 0
         
         // Encode header fields
-        for (i in 0 until headers.a) {
+        for (i in 0 until headers.component1()) {
             val header = headers[i]
-            val name = header.a.value.lowercase()
-            val value = header.b.value
+            val name = header.component1().value.lowercase()
+            val value = header.component2().value
             
             // Check static table
             val staticIndex = QpackStaticTable.getIndex(name, value)
@@ -600,7 +600,7 @@ class QpackEncoder {
     internal fun evictEntries() {
         while (currentCapacity > maxTableCapacity.value && dynamicTable.isNotEmpty()) {
             val removed = dynamicTable.removeAt(dynamicTable.size - 1)
-            currentCapacity -= 32 + removed.a.length + removed.b.length
+            currentCapacity -= 32 + removed.component1().length + removed.component2().length
         }
     }
 }
@@ -625,7 +625,7 @@ class QpackDecoder {
         offset++
         
         // Decode header fields
-        while (offset < data.a) {
+        while (offset < data.component1()) {
             val byte = data[offset]
             
             when {
@@ -636,8 +636,8 @@ class QpackDecoder {
                     
                     if (entry != null) {
                         headers.add(Join(
-                            HttpHeaderName(entry.a),
-                            HttpHeaderValue(entry.b)
+                            HttpHeaderName(entry.component1()),
+                            HttpHeaderValue(entry.component2())
                         ))
                     }
                     offset++
@@ -698,7 +698,7 @@ class QpackDecoder {
         val (length, lengthSize) = decodeVarInt(data, offset, 7)
         offset += lengthSize
         
-        if (length == null || offset + length > data.a) {
+        if (length == null || offset + length > data.component1()) {
             return "" to 1
         }
         
@@ -724,114 +724,114 @@ class QpackDecoder {
  */
 object QpackStaticTable {
     internal val entries = listOf(
-        Join(":authority", ""),
-        Join(":path", "/"),
-        Join("age", "0"),
-        Join("content-disposition", ""),
-        Join("content-length", "0"),
-        Join("cookie", ""),
-        Join("date", ""),
-        Join("etag", ""),
-        Join("if-modified-since", ""),
-        Join("if-none-match", ""),
-        Join("last-modified", ""),
-        Join("link", ""),
-        Join("location", ""),
-        Join("referer", ""),
-        Join("set-cookie", ""),
-        Join(":method", "CONNECT"),
-        Join(":method", "DELETE"),
-        Join(":method", "GET"),
-        Join(":method", "HEAD"),
-        Join(":method", "OPTIONS"),
-        Join(":method", "POST"),
-        Join(":method", "PUT"),
-        Join(":scheme", "http"),
-        Join(":scheme", "https"),
-        Join(":status", "103"),
-        Join(":status", "200"),
-        Join(":status", "304"),
-        Join(":status", "404"),
-        Join(":status", "503"),
-        Join("accept", "*/*"),
-        Join("accept", "application/dns-message"),
-        Join("accept-encoding", "gzip, deflate, br"),
-        Join("accept-ranges", "bytes"),
-        Join("access-control-allow-headers", "cache-control"),
-        Join("access-control-allow-headers", "content-type"),
-        Join("access-control-allow-origin", "*"),
-        Join("cache-control", "max-age=0"),
-        Join("cache-control", "max-age=2592000"),
-        Join("cache-control", "max-age=604800"),
-        Join("cache-control", "no-cache"),
-        Join("cache-control", "no-store"),
-        Join("cache-control", "public, max-age=31536000"),
-        Join("content-encoding", "br"),
-        Join("content-encoding", "gzip"),
-        Join("content-type", "application/dns-message"),
-        Join("content-type", "application/javascript"),
-        Join("content-type", "application/json"),
-        Join("content-type", "application/x-www-form-urlencoded"),
-        Join("content-type", "image/gif"),
-        Join("content-type", "image/jpeg"),
-        Join("content-type", "image/png"),
-        Join("content-type", "text/css"),
-        Join("content-type", "text/html; charset=utf-8"),
-        Join("content-type", "text/plain"),
-        Join("content-type", "text/plain;charset=utf-8"),
-        Join("range", "bytes=0-"),
-        Join("strict-transport-security", "max-age=31536000"),
-        Join("strict-transport-security", "max-age=31536000; includesubdomains"),
-        Join("strict-transport-security", "max-age=31536000; includesubdomains; preload"),
-        Join("vary", "accept-encoding"),
-        Join("vary", "origin"),
-        Join("x-content-type-options", "nosniff"),
-        Join("x-xss-protection", "1; mode=block"),
-        Join(":status", "100"),
-        Join(":status", "204"),
-        Join(":status", "206"),
-        Join(":status", "302"),
-        Join(":status", "400"),
-        Join(":status", "403"),
-        Join(":status", "421"),
-        Join(":status", "425"),
-        Join(":status", "500"),
-        Join("accept-language", ""),
-        Join("access-control-allow-credentials", "FALSE"),
-        Join("access-control-allow-credentials", "TRUE"),
-        Join("access-control-allow-headers", "*"),
-        Join("access-control-allow-methods", "get"),
-        Join("access-control-allow-methods", "get, post, options"),
-        Join("access-control-allow-methods", "options"),
-        Join("access-control-expose-headers", "content-length"),
-        Join("access-control-request-headers", "content-type"),
-        Join("access-control-request-method", "get"),
-        Join("access-control-request-method", "post"),
-        Join("alt-svc", "clear"),
-        Join("authorization", ""),
-        Join("content-security-policy", "script-src 'none'; object-src 'none'; base-uri 'none'"),
-        Join("early-data", "1"),
-        Join("expect-ct", ""),
-        Join("forwarded", ""),
-        Join("if-range", ""),
-        Join("origin", ""),
-        Join("purpose", "prefetch"),
-        Join("server", ""),
-        Join("timing-allow-origin", "*"),
-        Join("upgrade-insecure-requests", "1"),
-        Join("user-agent", ""),
-        Join("x-forwarded-for", ""),
-        Join("x-frame-options", "deny"),
-        Join("x-frame-options", "sameorigin")
+        ":authority" j "",
+        ":path" j "/",
+        "age" j "0",
+        "content-disposition" j "",
+        "content-length" j "0",
+        "cookie" j "",
+        "date" j "",
+        "etag" j "",
+        "if-modified-since" j "",
+        "if-none-match" j "",
+        "last-modified" j "",
+        "link" j "",
+        "location" j "",
+        "referer" j "",
+        "set-cookie" j "",
+        ":method" j "CONNECT",
+        ":method" j "DELETE",
+        ":method" j "GET",
+        ":method" j "HEAD",
+        ":method" j "OPTIONS",
+        ":method" j "POST",
+        ":method" j "PUT",
+        ":scheme" j "http",
+        ":scheme" j "https",
+        ":status" j "103",
+        ":status" j "200",
+        ":status" j "304",
+        ":status" j "404",
+        ":status" j "503",
+        "accept" j "*/*",
+        "accept" j "application/dns-message",
+        "accept-encoding" j "gzip, deflate, br",
+        "accept-ranges" j "bytes",
+        "access-control-allow-headers" j "cache-control",
+        "access-control-allow-headers" j "content-type",
+        "access-control-allow-origin" j "*",
+        "cache-control" j "max-age=0",
+        "cache-control" j "max-age=2592000",
+        "cache-control" j "max-age=604800",
+        "cache-control" j "no-cache",
+        "cache-control" j "no-store",
+        "cache-control" j "public, max-age=31536000",
+        "content-encoding" j "br",
+        "content-encoding" j "gzip",
+        "content-type" j "application/dns-message",
+        "content-type" j "application/javascript",
+        "content-type" j "application/json",
+        "content-type" j "application/x-www-form-urlencoded",
+        "content-type" j "image/gif",
+        "content-type" j "image/jpeg",
+        "content-type" j "image/png",
+        "content-type" j "text/css",
+        "content-type" j "text/html; charset=utf-8",
+        "content-type" j "text/plain",
+        "content-type" j "text/plain;charset=utf-8",
+        "range" j "bytes=0-",
+        "strict-transport-security" j "max-age=31536000",
+        "strict-transport-security" j "max-age=31536000; includesubdomains",
+        "strict-transport-security" j "max-age=31536000; includesubdomains; preload",
+        "vary" j "accept-encoding",
+        "vary" j "origin",
+        "x-content-type-options" j "nosniff",
+        "x-xss-protection" j "1; mode=block",
+        ":status" j "100",
+        ":status" j "204",
+        ":status" j "206",
+        ":status" j "302",
+        ":status" j "400",
+        ":status" j "403",
+        ":status" j "421",
+        ":status" j "425",
+        ":status" j "500",
+        "accept-language" j "",
+        "access-control-allow-credentials" j "FALSE",
+        "access-control-allow-credentials" j "TRUE",
+        "access-control-allow-headers" j "*",
+        "access-control-allow-methods" j "get",
+        "access-control-allow-methods" j "get, post, options",
+        "access-control-allow-methods" j "options",
+        "access-control-expose-headers" j "content-length",
+        "access-control-request-headers" j "content-type",
+        "access-control-request-method" j "get",
+        "access-control-request-method" j "post",
+        "alt-svc" j "clear",
+        "authorization" j "",
+        "content-security-policy" j "script-src 'none'; object-src 'none'; base-uri 'none'",
+        "early-data" j "1",
+        "expect-ct" j "",
+        "forwarded" j "",
+        "if-range" j "",
+        "origin" j "",
+        "purpose" j "prefetch",
+        "server" j "",
+        "timing-allow-origin" j "*",
+        "upgrade-insecure-requests" j "1",
+        "user-agent" j "",
+        "x-forwarded-for" j "",
+        "x-frame-options" j "deny",
+        "x-frame-options" j "sameorigin"
     )
     
     fun getIndex(name: String, value: String): Int? {
-        val index = entries.indexOfFirst { it.a == name && it.b == value }
+        val index = entries.indexOfFirst { it.component1() == name && it.component2() == value }
         return if (index >= 0) index else null
     }
     
     fun getNameIndex(name: String): Int? {
-        val index = entries.indexOfFirst { it.a == name }
+        val index = entries.indexOfFirst { it.component1() == name }
         return if (index >= 0) index else null
     }
     
@@ -840,7 +840,7 @@ object QpackStaticTable {
     }
     
     fun getName(index: Int): String? {
-        return if (index < entries.size) entries[index].a else null
+        return if (index < entries.size) entries[index].component1() else null
     }
 }
 
@@ -891,7 +891,7 @@ internal fun decodeVarInt(
     offset: Int,
     prefixBits: Int = 62
 ): Pair<Long?, Int> {
-    if (offset >= data.a) return null to 0
+    if (offset >= data.component1()) return null to 0
     
     val firstByte = data[offset].toInt() and 0xFF
     val prefix = firstByte shr (8 - 2)
@@ -899,13 +899,13 @@ internal fun decodeVarInt(
     return when (prefix) {
         0 -> (firstByte.toLong() and 0x3F) to 1
         1 -> {
-            if (offset + 1 >= data.a) return null to 0
+            if (offset + 1 >= data.component1()) return null to 0
             val value = ((firstByte.toLong() and 0x3F) shl 8) or
                        (data[offset + 1].toLong() and 0xFF)
             value to 2
         }
         2 -> {
-            if (offset + 3 >= data.a) return null to 0
+            if (offset + 3 >= data.component1()) return null to 0
             val value = ((firstByte.toLong() and 0x3F) shl 24) or
                        ((data[offset + 1].toLong() and 0xFF) shl 16) or
                        ((data[offset + 2].toLong() and 0xFF) shl 8) or
@@ -913,7 +913,7 @@ internal fun decodeVarInt(
             value to 4
         }
         3 -> {
-            if (offset + 7 >= data.a) return null to 0
+            if (offset + 7 >= data.component1()) return null to 0
             var value = (firstByte.toLong() and 0x3F) shl 56
             for (i in 1..7) {
                 value = value or ((data[offset + i].toLong() and 0xFF) shl (56 - i * 8))

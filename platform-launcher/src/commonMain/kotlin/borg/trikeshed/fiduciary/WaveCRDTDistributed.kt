@@ -34,7 +34,7 @@ data class GitWaveFlake(
         }
     
     fun operationsAsMetaSeries(): MetaSeries<Int, SerializedWaveOp> = 
-        waveOps.a j waveOps.b
+        waveOps.component1() j waveOps.component2()
 }
 
 /**
@@ -88,8 +88,8 @@ class DistributedWaveCRDTMerge(
         localOps: MetaSeries<Int, SerializedWaveOp>,
         remoteOps: MetaSeries<Int, SerializedWaveOp>
     ): Indexed<SerializedWaveOp> {
-        val localList = (0 until localOps.a).map { localOps.b(it) }
-        val remoteList = (0 until remoteOps.a).map { remoteOps.b(it) }
+        val localList = (0 until localOps.component1()).map { localOps.component2()(it) }
+        val remoteList = (0 until remoteOps.component1()).map { remoteOps.component2()(it) }
         
         // Transform each remote operation against all local operations
         val transformedRemote = remoteList.map { remoteOp ->
@@ -98,7 +98,7 @@ class DistributedWaveCRDTMerge(
                     acc.toWaveOp(),
                     localOp.toWaveOp()
                 )
-                (transform.a as WaveDocumentOp).toSerializable()
+                (transform.component1() as WaveDocumentOp).toSerializable()
             }
         }
         
@@ -218,7 +218,7 @@ class DistributedWaveSession(
     ): Either<GitWaveFlake, OperationException> {
         val localFlakes = flakeHistory.toIdx()
         
-        if (localFlakes.a == 0) {
+        if (localFlakes.component1() == 0) {
             // No local flakes, just apply remote
             return applyRemoteFlakes(documentId, remoteFlakes)
         }
@@ -252,7 +252,7 @@ class DistributedWaveSession(
             _flakeFlow.emit(flake)
         }
         
-        return Either.Left(remoteFlakes.b(remoteFlakes.a - 1))
+        return Either.Left(remoteFlakes.component2()(remoteFlakes.component1() - 1))
     }
     
     internal fun generateCommitHash(operations: List<SerializedWaveOp>): String {

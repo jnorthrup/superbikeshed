@@ -70,9 +70,9 @@ class CCEKMovementSystem(
         // Process in batches for performance
         world.forEachBatch(ComponentTypes.POSITION, 64) { entityBatch, positionBatch ->
             // Apply movement updates
-            for (i in 0 until entityBatch.a) {
-                val entityId = entityBatch.b(i)
-                val position = positionBatch.b(i)
+            for (i in 0 until entityBatch.component1()) {
+                val entityId = entityBatch.component2()(i)
+                val position = positionBatch.component2()(i)
                 val velocity = world.getComponent<VelocityComponent>(entityId, ComponentTypes.VELOCITY)
                 
                 velocity?.let { vel ->
@@ -137,9 +137,9 @@ class CCEKCombatSystem(
         val entities = world.query(ComponentTypes.WEAPON, ComponentTypes.HEALTH)
         
         world.forEachBatch(ComponentTypes.WEAPON, 32) { entityBatch, weaponBatch ->
-            for (i in 0 until entityBatch.a) {
-                val entityId = entityBatch.b(i)
-                val weapon = weaponBatch.b(i)
+            for (i in 0 until entityBatch.component1()) {
+                val entityId = entityBatch.component2()(i)
+                val weapon = weaponBatch.component2()(i)
                 val ai = world.getComponent<UnitAIComponent>(entityId, ComponentTypes.UNIT_AI)
                 
                 ai?.targetEntity?.let { targetId ->
@@ -228,9 +228,9 @@ class CCEKAISystem(
         val entities = world.query(ComponentTypes.UNIT_AI)
         
         world.forEachBatch(ComponentTypes.UNIT_AI, 32) { entityBatch, aiBatch ->
-            for (i in 0 until entityBatch.a) {
-                val entityId = entityBatch.b(i)
-                val ai = aiBatch.b(i)
+            for (i in 0 until entityBatch.component1()) {
+                val entityId = entityBatch.component2()(i)
+                val ai = aiBatch.component2()(i)
                 
                 updateEntityAI(entityId, ai, deltaTime)
             }
@@ -327,9 +327,9 @@ class CCEKResourceSystem(
         val entities = world.query(ComponentTypes.RESOURCE_GATHERER)
         
         world.forEachBatch(ComponentTypes.RESOURCE_GATHERER, 16) { entityBatch, gathererBatch ->
-            for (i in 0 until entityBatch.a) {
-                val entityId = entityBatch.b(i)
-                val gatherer = gathererBatch.b(i)
+            for (i in 0 until entityBatch.component1()) {
+                val entityId = entityBatch.component2()(i)
+                val gatherer = gathererBatch.component2()(i)
                 
                 updateGatherer(entityId, gatherer, deltaTime)
             }

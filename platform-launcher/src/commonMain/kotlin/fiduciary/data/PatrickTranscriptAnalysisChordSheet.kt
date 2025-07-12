@@ -75,9 +75,9 @@ typealias DataEngineeringPlan = MetaSeries<Indexed<PatrickTranscriptEntry>, Data
 object PatrickTranscriptAnalysisChordSheet {
     // Orchestrates data engineering and scientific analysis
     // Transcript Collection → Mixing Strategy → Mixed Transcript → Analysis → Insights
-    // Example: catalogEntries j { entries -> collectTranscripts(entries) }
-    // Example: transcriptEntries j { entries -> selectMixingStrategy(entries) }
-    // Example: (entries, strategy) j { (e, s) -> mixTranscripts(e, s) }
-    // Example: mixedTranscript j { transcript -> analyzeTranscript(transcript) }
-    // Example: analyses j { analyses -> extractInsights(analyses) }
+    // Example: \1 j { \2: Int -> collectTranscripts(entries) }
+    // Example: \1 j { \2: Int -> selectMixingStrategy(entries) }
+    // Example: (entries, \1 j { \2: Int -> mixTranscripts(e, s) }
+    // Example: \1 j { \2: Int -> analyzeTranscript(transcript) }
+    // Example: \1 j { \2: Int -> extractInsights(analyses) }
 } 

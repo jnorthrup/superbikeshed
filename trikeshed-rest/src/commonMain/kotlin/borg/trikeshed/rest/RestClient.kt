@@ -97,9 +97,9 @@ class RestClientBuilder {
     fun defaultHeaders(headers: HttpHeaders) = apply { defaultHeaders = headers }
     
     fun addHeader(key: String, value: String) = apply {
-        val currentSize = defaultHeaders.a
+        val currentSize = defaultHeaders.component1()
         defaultHeaders = (currentSize + 1) j { i: Int ->
-            if (i < currentSize) defaultHeaders.b(i) else (key j value)
+            if (i < currentSize) defaultHeaders.component2()(i) else (key j value)
         }
     }
     
@@ -108,9 +108,9 @@ class RestClientBuilder {
     fun requestTimeout(timeout: Duration) = apply { requestTimeout = timeout }
     
     fun addInterceptor(interceptor: RequestInterceptor) = apply {
-        val currentSize = interceptors.a
+        val currentSize = interceptors.component1()
         interceptors = (currentSize + 1) j { i: Int ->
-            if (i < currentSize) interceptors.b(i) else interceptor
+            if (i < currentSize) interceptors.component2()(i) else interceptor
         }
     }
     
@@ -140,7 +140,7 @@ class JsonTransformer<T> : ResponseTransformer<T> {
     override fun transform(response: HttpResponse): T {
         // Would use kotlinx.serialization or similar
         @Suppress("UNCHECKED_CAST")
-        return response.b.decodeToString() as T
+        return response.component2().decodeToString() as T
     }
 }
 
@@ -166,8 +166,8 @@ class ConnectionPool(size: Int) {
     
     suspend fun acquire(): Connection {
         // Find first available connection
-        for (i in 0 until connections.a) {
-            val conn = connections.b(i)
+        for (i in 0 until connections.component1()) {
+            val conn = connections.component2()(i)
             if (!conn.inUse) {
                 conn.inUse = true
                 return conn
@@ -226,34 +226,34 @@ class UrlBuilder(private val baseUrl: String) {
     private var queryParams: Indexed<Join<String, String>> = 0 j { _: Int -> "" j "" }
     
     fun addPath(segment: String) = apply {
-        val currentSize = pathSegments.a
+        val currentSize = pathSegments.component1()
         pathSegments = (currentSize + 1) j { i: Int ->
-            if (i < currentSize) pathSegments.b(i) else segment
+            if (i < currentSize) pathSegments.component2()(i) else segment
         }
     }
     
     fun addQueryParam(key: String, value: String) = apply {
-        val currentSize = queryParams.a
+        val currentSize = queryParams.component1()
         queryParams = (currentSize + 1) j { i: Int ->
-            if (i < currentSize) queryParams.b(i) else (key j value)
+            if (i < currentSize) queryParams.component2()(i) else (key j value)
         }
     }
     
     fun build(): String {
         val pathPart = buildString {
             append(baseUrl)
-            for (i in 0 until pathSegments.a) {
-                append("/").append(pathSegments.b(i))
+            for (i in 0 until pathSegments.component1()) {
+                append("/").append(pathSegments.component2()(i))
             }
         }
         
-        return if (queryParams.a > 0) {
+        return if (queryParams.component1() > 0) {
             buildString {
                 append(pathPart).append("?")
-                for (i in 0 until queryParams.a) {
+                for (i in 0 until queryParams.component1()) {
                     if (i > 0) append("&")
-                    val param = queryParams.b(i)
-                    append(param.a).append("=").append(param.b)
+                    val param = queryParams.component2()(i)
+                    append(param.component1()).append("=").append(param.component2())
                 }
             }
         } else pathPart
@@ -279,9 +279,9 @@ expect class PlatformWebSocketClient() : WebSocketClient
 
 // Extension to convert headers to/from Map (for interop)
 fun HttpHeaders.toMap(): Map<String, String> = buildMap {
-    for (i in 0 until this@toMap.a) {
-        val header = this@toMap.b(i)
-        put(header.a, header.b)
+    for (i in 0 until this@toMap.component1()) {
+        val header = this@toMap.component2()(i)
+        put(header.component1(), header.component2())
     }
 }
 

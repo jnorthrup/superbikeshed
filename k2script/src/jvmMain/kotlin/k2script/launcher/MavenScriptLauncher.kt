@@ -196,8 +196,8 @@ class MavenScriptLauncher {
             val jars = jarsResult.getOrThrow()
             
             // Create classloader with all JARs
-            val urls = (0 until jars.a).map { i -> 
-                jars.b(i).toURI().toURL() 
+            val urls = (0 until jars.component1()).map { i -> 
+                jars.component2()(i).toURI().toURL() 
             }.toTypedArray()
             
             val classLoader = URLClassLoader(urls, Thread.currentThread().contextClassLoader)
@@ -253,7 +253,7 @@ data class ScriptAnnotations(
 fun <T> List<T>.toIndexed(): Indexed<T> = this.size j { i: Int -> this[i] }
 
 // Extension to convert Indexed to List
-fun <T> Indexed<T>.toList(): List<T> = (0 until this.a).map { i -> this.b(i) }
+fun <T> Indexed<T>.toList(): List<T> = (0 until this.component1()).map { i -> this.component2()(i) }
 
 // Sandboxed script runner with security manager
 class SandboxedScriptRunner {

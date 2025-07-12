@@ -74,7 +74,7 @@ class SSHIntegratedWorkflowImpl(
         method: TransferMethod,
         context: SSHWorkflowContext
     ): TransferResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Workflow: Transferring file using $method")
             
             try {
@@ -101,11 +101,11 @@ class SSHIntegratedWorkflowImpl(
         destinationPath: String,
         context: SSHWorkflowContext
     ): SyncResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Workflow: Syncing directory $sourcePath to $destinationPath")
             
             try {
-                val scpContext = SSHScpContext(context.b)
+                val scpContext = SSHScpContext(context.component2())
                 val success = scpClient.uploadDirectory(sourcePath, destinationPath, scpContext)
                 
                 if (success) {
@@ -145,7 +145,7 @@ class SSHIntegratedWorkflowImpl(
         maxRetries: Int,
         context: SSHWorkflowContext
     ): TransferResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Workflow: Transferring with retry (max: $maxRetries)")
             
             var lastError: String? = null
@@ -186,7 +186,7 @@ class SSHIntegratedWorkflowImpl(
         progressCallback: (Int) -> Unit,
         context: SSHWorkflowContext
     ): TransferResult {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             println("Workflow: Transferring with progress tracking")
             
             try {
@@ -228,7 +228,7 @@ class SSHIntegratedWorkflowImpl(
             throw Exception("Source file not found: $sourcePath")
         }
         
-        val scpContext = SSHScpContext(context.b)
+        val scpContext = SSHScpContext(context.component2())
         val success = scpClient.upload(sourcePath, destinationPath, scpContext)
         
         return TransferResult(
@@ -248,7 +248,7 @@ class SSHIntegratedWorkflowImpl(
         }
         
         try {
-            val sftpContext = SSHSftpContext(context.b)
+            val sftpContext = SSHSftpContext(context.component2())
             
             // Open source file for reading
             val sourceHandle = sftpClient.openFile(sourcePath, "read", sftpContext)
@@ -304,7 +304,7 @@ class SSHIntegratedWorkflowImpl(
             throw Exception("Source file not found: $sourcePath")
         }
         
-        val rsyncContext = SSHRsyncContext(context.b)
+        val rsyncContext = SSHRsyncContext(context.component2())
         val rsyncCommand = "rsync -avz $sourcePath $destinationPath"
         val output = rsyncClient.executeRsync(rsyncCommand, rsyncContext)
         

@@ -424,7 +424,7 @@ class CommonLiburingEmulator : LiburingEmulator {
         }
         
         return if (cqe != null) {
-            cqe_ptr.b(0) = cqe
+            cqe_ptr.component2()(0) = cqe
             0
         } else {
             -1 // Timeout
@@ -448,7 +448,7 @@ class CommonLiburingEmulator : LiburingEmulator {
         }
         
         return if (cqe != null) {
-            cqe_ptr.b(0) = cqe
+            cqe_ptr.component2()(0) = cqe
             0
         } else {
             -1 // Timeout

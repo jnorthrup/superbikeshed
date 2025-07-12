@@ -70,8 +70,8 @@ class InlineScriptRunner {
     
     // Download all dependencies
     private suspend fun downloadAllDependencies(dependencies: Indexed<String>): Result<Indexed<File>> = coroutineScope {
-        val results = (0 until dependencies.a).map { i ->
-            async { downloadDependency(dependencies.b(i)) }
+        val results = (0 until dependencies.component1()).map { i ->
+            async { downloadDependency(dependencies.component2()(i)) }
         }.awaitAll()
         
         val failures = results.filter { it.isFailure }
@@ -249,4 +249,4 @@ suspend fun main(args: Array<String>) {
 
 // Extension functions
 private fun <T> List<T>.toIndexed(): Indexed<T> = this.size j { i: Int -> this[i] }
-private fun <T> Indexed<T>.toList(): List<T> = (0 until this.a).map { i -> this.b(i) }
+private fun <T> Indexed<T>.toList(): List<T> = (0 until this.component1()).map { i -> this.component2()(i) }

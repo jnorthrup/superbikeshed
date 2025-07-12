@@ -38,10 +38,10 @@ class ZipIndexTest {
             metadata = mapOf("test" to "true")
         )
         assertEquals("https://archive.org/test.zip", dir.archiveUrl)
-        assertEquals(3, dir.entries.a)
-        assertEquals("a.txt", dir.entries.b(0).name)
-        assertEquals(100L, dir.entries.b(1).offset)
-        assertEquals(200L, dir.entries.b(2).uncompressedSize)
+        assertEquals(3, dir.entries.component1())
+        assertEquals("a.txt", dir.entries.component2()(0).name)
+        assertEquals(100L, dir.entries.component2()(1).offset)
+        assertEquals(200L, dir.entries.component2()(2).uncompressedSize)
         assertEquals(450L, dir.totalSize)
         assertEquals("true", dir.metadata["test"])
     }
@@ -49,7 +49,7 @@ class ZipIndexTest {
     @Test
     fun testZipFragmentRangeTypealias() {
         val range: ZipFragmentRange = 10L j 20L
-        assertEquals(10L, range.a)
-        assertEquals(20L, range.b)
+        assertEquals(10L, range.component1())
+        assertEquals(20L, range.component2())
     }
 } 

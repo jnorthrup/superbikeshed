@@ -79,10 +79,10 @@ class XswoIntegrationTest {
         val join = quad.toJoin()
         
         // Verify Join composition
-        assertEquals("s", join.a.a)
-        assertEquals("p", join.a.b)
-        assertEquals("o", join.b.a)
-        assertEquals("c", join.b.b)
+        assertEquals("s", join.component1().component1())
+        assertEquals("p", join.component1().component2())
+        assertEquals("o", join.component2().component1())
+        assertEquals("c", join.component2().component2())
         
         // Verify conversion back
         val reconstructed = Quad.fromJoin(join)
@@ -122,12 +122,12 @@ class XswoIntegrationTest {
         
         // Verify Join composition
         val entry1 = entries[0]
-        assertEquals("a", entry1.a)
-        assertEquals("1", entry1.b)
+        assertEquals("a", entry1.component1())
+        assertEquals("1", entry1.component2())
         
         val entry2 = entries[1]
-        assertEquals("b", entry2.a)
-        assertEquals("2", entry2.b)
+        assertEquals("b", entry2.component1())
+        assertEquals("2", entry2.component2())
     }
     
     // === HAT SET TESTS ===
@@ -160,10 +160,10 @@ class XswoIntegrationTest {
             KifToken.ParenClose(21)
         )
         
-        val result = Sql2003Grammar.SQL_STATEMENT.b(sqlTokens)
+        val result = Sql2003Grammar.SQL_STATEMENT.component2()(sqlTokens)
         assertNotNull(result)
         
-        val expression = result.a
+        val expression = result.component1()
         assertTrue(expression is KifExpression.Cons)
         
         val elements = expression.toList()
@@ -182,22 +182,22 @@ class XswoIntegrationTest {
         val invalidToken = listOf(KifToken.Symbol("@", 0))
         
         // Test digit classification
-        val digitResult = Sql2003Grammar.DIGIT.b(digitToken)
+        val digitResult = Sql2003Grammar.DIGIT.component2()(digitToken)
         assertNotNull(digitResult)
-        assertEquals('5', digitResult.a)
+        assertEquals('5', digitResult.component1())
         
         // Test letter classification
-        val letterResult = Sql2003Grammar.SIMPLE_LATIN_LETTER.b(letterToken)
+        val letterResult = Sql2003Grammar.SIMPLE_LATIN_LETTER.component2()(letterToken)
         assertNotNull(letterResult)
-        assertEquals('A', letterResult.a)
+        assertEquals('A', letterResult.component1())
         
         // Test special character classification
-        val specialResult = Sql2003Grammar.SQL_SPECIAL_CHAR.b(specialToken)
+        val specialResult = Sql2003Grammar.SQL_SPECIAL_CHAR.component2()(specialToken)
         assertNotNull(specialResult)
-        assertEquals('+', specialResult.a)
+        assertEquals('+', specialResult.component1())
         
         // Test invalid character
-        val invalidResult = Sql2003Grammar.SQL_SPECIAL_CHAR.b(invalidToken)
+        val invalidResult = Sql2003Grammar.SQL_SPECIAL_CHAR.component2()(invalidToken)
         assertNull(invalidResult)
     }
     
@@ -222,10 +222,10 @@ class XswoIntegrationTest {
             KifToken.ParenClose(36)
         )
         
-        val result = SparqlGrammar.SPARQL_QUERY.b(sparqlTokens)
+        val result = SparqlGrammar.SPARQL_QUERY.component2()(sparqlTokens)
         assertNotNull(result)
         
-        val expression = result.a
+        val expression = result.component1()
         assertTrue(expression is KifExpression.Cons)
         
         val elements = expression.toList()
@@ -352,28 +352,28 @@ class XswoIntegrationTest {
         
         // Test SQL-2003 rule factory
         val sqlRule = sql2003Rule("custom_rule", customParser)
-        assertEquals("custom_rule", sqlRule.a)
+        assertEquals("custom_rule", sqlRule.component1())
         
         val sqlTokens = listOf(KifToken.Symbol("CUSTOM", 0))
-        val sqlResult = sqlRule.b(sqlTokens)
+        val sqlResult = sqlRule.component2()(sqlTokens)
         assertNotNull(sqlResult)
-        assertEquals("parsed", (sqlResult.a as KifExpression.Atom).value)
+        assertEquals("parsed", (sqlResult.component1() as KifExpression.Atom).value)
         
         // Test SPARQL rule factory
         val sparqlRule = sparqlRule("custom_rule", customParser)
-        assertEquals("custom_rule", sparqlRule.a)
+        assertEquals("custom_rule", sparqlRule.component1())
         
-        val sparqlResult = sparqlRule.b(sqlTokens)
+        val sparqlResult = sparqlRule.component2()(sqlTokens)
         assertNotNull(sparqlResult)
-        assertEquals("parsed", (sparqlResult.a as KifExpression.Atom).value)
+        assertEquals("parsed", (sparqlResult.component1() as KifExpression.Atom).value)
         
         // Test combined rule factory
         val combinedRule = combinedRule("combined", listOf(sqlRule, sparqlRule))
-        assertEquals("combined", combinedRule.a)
+        assertEquals("combined", combinedRule.component1())
         
-        val combinedResult = combinedRule.b(sqlTokens)
+        val combinedResult = combinedRule.component2()(sqlTokens)
         assertNotNull(combinedResult)
-        assertEquals("parsed", (combinedResult.a as KifExpression.Atom).value)
+        assertEquals("parsed", (combinedResult.component1() as KifExpression.Atom).value)
     }
     
     // === INTEGRATION TESTS ===
@@ -399,7 +399,7 @@ class XswoIntegrationTest {
             KifToken.ParenClose(23)
         )
         
-        val grammarResult = Sql2003Grammar.SQL_STATEMENT.b(grammarTokens)
+        val grammarResult = Sql2003Grammar.SQL_STATEMENT.component2()(grammarTokens)
         assertNotNull(grammarResult)
         
         // 4. Use bbcursive scanner to process collections
@@ -411,7 +411,7 @@ class XswoIntegrationTest {
         assertTrue(trieScan is Indexed<*>)
         assertTrue(quadBagScan is Indexed<*>)
         assertTrue(arrayHashScan is Indexed<*>)
-        assertTrue(grammarResult.a is KifExpression)
+        assertTrue(grammarResult.component1() is KifExpression)
         
         // 6. Test triple dispatch integration
         val trieQuery = XswoCollectionProcessor.dispatch(trie, "search", listOf("concept"))

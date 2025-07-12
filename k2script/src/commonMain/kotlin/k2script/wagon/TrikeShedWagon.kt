@@ -153,8 +153,8 @@ class TrikeShedWagon(
     
     suspend fun resolve(artifact: Artifact): ByteIndexed {
         // Try each repository until we find the artifact
-        for (i in 0 until repositories.a) {
-            val repo = repositories.b(i)
+        for (i in 0 until repositories.component1()) {
+            val repo = repositories.component2()(i)
             
             try {
                 return fetchFromRepository(repo, artifact)
@@ -178,7 +178,7 @@ class TrikeShedWagon(
         // Cache the artifact locally
         cacheArtifact(artifact, data)
         
-        println("✅ Downloaded: ${artifact.fileName} (${data.a} bytes)")
+        println("✅ Downloaded: ${artifact.fileName} (${data.component1()} bytes)")
         return data
     }
     
@@ -189,8 +189,8 @@ class TrikeShedWagon(
     
     // Parallel resolution for multiple artifacts
     suspend fun resolveAll(artifacts: Indexed<Artifact>): Indexed<Join<Artifact, ByteIndexed>> {
-        return artifacts.a j { i ->
-            val artifact = artifacts.b(i)
+        return \1 j { \2: Int ->
+            val artifact = artifacts.component2()(i)
             val data = resolve(artifact)
             artifact j data
         }
@@ -198,8 +198,8 @@ class TrikeShedWagon(
     
     // Check if artifact exists without downloading
     suspend fun exists(artifact: Artifact): Boolean {
-        for (i in 0 until repositories.a) {
-            val repo = repositories.b(i)
+        for (i in 0 until repositories.component1()) {
+            val repo = repositories.component2()(i)
             
             try {
                 val transport = TrikeShedTransport(repo.protocol)
@@ -233,8 +233,8 @@ class BatchWagon(
         val results = mutableListOf<ResolveResult>()
         
         // Create resolution tasks
-        val tasks = artifacts.a j { i ->
-            val artifact = artifacts.b(i)
+        val tasks = \1 j { \2: Int ->
+            val artifact = artifacts.component2()(i)
             Reactor.spawn(artifact) { a ->
                 try {
                     val data = wagon.resolve(a)
@@ -246,8 +246,8 @@ class BatchWagon(
         }
         
         // Await all tasks
-        for (i in 0 until tasks.a) {
-            val result = tasks.b(i).await()
+        for (i in 0 until tasks.component1()) {
+            val result = tasks.component2()(i).await()
             results.add(result)
         }
         

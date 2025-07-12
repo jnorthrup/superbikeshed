@@ -37,7 +37,7 @@ object JsonBBCursive {
     // Character matchers
     @Vectorizable
     internal inline fun char(expected: Byte): JsonParser = JsonParser { buffer, pos ->
-        if (pos < buffer.a && buffer.b(pos) == expected) {
+        if (pos < buffer.component1() && buffer.component2()(pos) == expected) {
             null j (pos + 1)
         } else null
     }
@@ -45,8 +45,8 @@ object JsonBBCursive {
     @Vectorizable
     internal inline fun whitespace(): JsonParser = JsonParser { buffer, pos ->
         var p = pos
-        while (p < buffer.a) {
-            val c = buffer.b(p)
+        while (p < buffer.component1()) {
+            val c = buffer.component2()(p)
             if (c == ' '.code.toByte() || c == '\t'.code.toByte() || 
                 c == '\n'.code.toByte() || c == '\r'.code.toByte()) {
                 p++
@@ -58,13 +58,13 @@ object JsonBBCursive {
     // String parser
     @Vectorizable
     internal fun string(): JsonParser = JsonParser { buffer, pos ->
-        if (pos >= buffer.a || buffer.b(pos) != '"'.code.toByte()) return@JsonParser null
+        if (pos >= buffer.component1() || buffer.component2()(pos) != '"'.code.toByte()) return@JsonParser null
         
         var p = pos + 1
         val chars = mutableListOf<Byte>()
         
-        while (p < buffer.a) {
-            val c = buffer.b(p)
+        while (p < buffer.component1()) {
+            val c = buffer.component2()(p)
             when (c) {
                 '"'.code.toByte() -> {
                     // End of string
@@ -74,8 +74,8 @@ object JsonBBCursive {
                 '\\'.code.toByte() -> {
                     // Escape sequence
                     p++
-                    if (p >= buffer.a) break
-                    val escaped = buffer.b(p)
+                    if (p >= buffer.component1()) break
+                    val escaped = buffer.component2()(p)
                     chars.add(when (escaped) {
                         '"'.code.toByte() -> '"'.code.toByte()
                         '\\'.code.toByte() -> '\\'.code.toByte()
@@ -105,53 +105,53 @@ object JsonBBCursive {
     // Number parser
     @Vectorizable
     internal fun number(): JsonParser = JsonParser { buffer, pos ->
-        if (pos >= buffer.a) return@JsonParser null
+        if (pos >= buffer.component1()) return@JsonParser null
         
         var p = pos
         val chars = mutableListOf<Byte>()
         
         // Optional minus
-        if (p < buffer.a && buffer.b(p) == '-'.code.toByte()) {
-            chars.add(buffer.b(p))
+        if (p < buffer.component1() && buffer.component2()(p) == '-'.code.toByte()) {
+            chars.add(buffer.component2()(p))
             p++
         }
         
         // Must have at least one digit
-        if (p >= buffer.a || !isDigit(buffer.b(p))) return@JsonParser null
+        if (p >= buffer.component1() || !isDigit(buffer.component2()(p))) return@JsonParser null
         
         // Integer part
-        if (buffer.b(p) == '0'.code.toByte()) {
-            chars.add(buffer.b(p))
+        if (buffer.component2()(p) == '0'.code.toByte()) {
+            chars.add(buffer.component2()(p))
             p++
         } else {
-            while (p < buffer.a && isDigit(buffer.b(p))) {
-                chars.add(buffer.b(p))
+            while (p < buffer.component1() && isDigit(buffer.component2()(p))) {
+                chars.add(buffer.component2()(p))
                 p++
             }
         }
         
         // Fractional part
-        if (p < buffer.a && buffer.b(p) == '.'.code.toByte()) {
-            chars.add(buffer.b(p))
+        if (p < buffer.component1() && buffer.component2()(p) == '.'.code.toByte()) {
+            chars.add(buffer.component2()(p))
             p++
-            if (p >= buffer.a || !isDigit(buffer.b(p))) return@JsonParser null
-            while (p < buffer.a && isDigit(buffer.b(p))) {
-                chars.add(buffer.b(p))
+            if (p >= buffer.component1() || !isDigit(buffer.component2()(p))) return@JsonParser null
+            while (p < buffer.component1() && isDigit(buffer.component2()(p))) {
+                chars.add(buffer.component2()(p))
                 p++
             }
         }
         
         // Exponent part
-        if (p < buffer.a && (buffer.b(p) == 'e'.code.toByte() || buffer.b(p) == 'E'.code.toByte())) {
-            chars.add(buffer.b(p))
+        if (p < buffer.component1() && (buffer.component2()(p) == 'e'.code.toByte() || buffer.component2()(p) == 'E'.code.toByte())) {
+            chars.add(buffer.component2()(p))
             p++
-            if (p < buffer.a && (buffer.b(p) == '+'.code.toByte() || buffer.b(p) == '-'.code.toByte())) {
-                chars.add(buffer.b(p))
+            if (p < buffer.component1() && (buffer.component2()(p) == '+'.code.toByte() || buffer.component2()(p) == '-'.code.toByte())) {
+                chars.add(buffer.component2()(p))
                 p++
             }
-            if (p >= buffer.a || !isDigit(buffer.b(p))) return@JsonParser null
-            while (p < buffer.a && isDigit(buffer.b(p))) {
-                chars.add(buffer.b(p))
+            if (p >= buffer.component1() || !isDigit(buffer.component2()(p))) return@JsonParser null
+            while (p < buffer.component1() && isDigit(buffer.component2()(p))) {
+                chars.add(buffer.component2()(p))
                 p++
             }
         }
@@ -165,9 +165,9 @@ object JsonBBCursive {
     @Vectorizable
     internal inline fun literal(text: String, element: JsonElement): JsonParser = JsonParser { buffer, pos ->
         val bytes = text.encodeToByteArray()
-        if (pos + bytes.size <= buffer.a) {
+        if (pos + bytes.size <= buffer.component1()) {
             for (i in bytes.indices) {
-                if (buffer.b(pos + i) != bytes[i]) return@JsonParser null
+                if (buffer.component2()(pos + i) != bytes[i]) return@JsonParser null
             }
             element j (pos + bytes.size)
         } else null
@@ -185,15 +185,15 @@ object JsonBBCursive {
         var p = pos
         
         // Parse '['
-        char('['.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: return@JsonParser null
+        char('['.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: return@JsonParser null
         
         // Skip whitespace
-        whitespace().parse(buffer, p)?.let { p = it.b }
+        whitespace().parse(buffer, p)?.let { p = it.component2() }
         
         // Check for empty array
         char(']'.code.toByte()).parse(buffer, p)?.let { 
             val emptyArray = JsonElement.Arr(0 j { _: Int -> JsonElement.Null })
-            return@JsonParser emptyArray j it.b
+            return@JsonParser emptyArray j it.component2()
         }
         
         // Parse elements
@@ -207,12 +207,12 @@ object JsonBBCursive {
         
         // Remaining elements
         while (true) {
-            whitespace().parse(buffer, p)?.let { p = it.b }
+            whitespace().parse(buffer, p)?.let { p = it.component2() }
             
             // Try comma
-            char(','.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: break
+            char(','.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: break
             
-            whitespace().parse(buffer, p)?.let { p = it.b }
+            whitespace().parse(buffer, p)?.let { p = it.component2() }
             
             // Parse next element
             valueParser.parse(buffer, p)?.let { (element, newPos) ->
@@ -221,8 +221,8 @@ object JsonBBCursive {
             } ?: return@JsonParser null
         }
         
-        whitespace().parse(buffer, p)?.let { p = it.b }
-        char(']'.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: return@JsonParser null
+        whitespace().parse(buffer, p)?.let { p = it.component2() }
+        char(']'.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: return@JsonParser null
         
         val indexedElements = elements.size j { i: Int -> elements[i] }
         JsonElement.Arr(indexedElements) j p
@@ -233,29 +233,29 @@ object JsonBBCursive {
         var p = pos
         
         // Parse '{'
-        char('{'.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: return@JsonParser null
+        char('{'.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: return@JsonParser null
         
-        whitespace().parse(buffer, p)?.let { p = it.b }
+        whitespace().parse(buffer, p)?.let { p = it.component2() }
         
         // Check for empty object
         char('}'.code.toByte()).parse(buffer, p)?.let {
             val emptyObj = JsonElement.Obj(0 j { _: Int -> "" j JsonElement.Null })
-            return@JsonParser emptyObj j it.b
+            return@JsonParser emptyObj j it.component2()
         }
         
         // Parse members
         val fields = mutableListOf<Join<String, JsonElement>>()
         
         // First member
-        whitespace().parse(buffer, p)?.let { p = it.b }
+        whitespace().parse(buffer, p)?.let { p = it.component2() }
         
         string().parse(buffer, p)?.let { (keyElement, newPos) ->
             val key = (keyElement as? JsonElement.Str)?.value ?: return@JsonParser null
             p = newPos
             
-            whitespace().parse(buffer, p)?.let { p = it.b }
-            char(':'.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: return@JsonParser null
-            whitespace().parse(buffer, p)?.let { p = it.b }
+            whitespace().parse(buffer, p)?.let { p = it.component2() }
+            char(':'.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: return@JsonParser null
+            whitespace().parse(buffer, p)?.let { p = it.component2() }
             
             valueParser.parse(buffer, p)?.let { (value, newPos2) ->
                 value?.let { fields.add(key j it) }
@@ -265,21 +265,21 @@ object JsonBBCursive {
         
         // Remaining members
         while (true) {
-            whitespace().parse(buffer, p)?.let { p = it.b }
+            whitespace().parse(buffer, p)?.let { p = it.component2() }
             
             // Try comma
-            char(','.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: break
+            char(','.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: break
             
-            whitespace().parse(buffer, p)?.let { p = it.b }
+            whitespace().parse(buffer, p)?.let { p = it.component2() }
             
             // Parse key
             string().parse(buffer, p)?.let { (keyElement, newPos) ->
                 val key = (keyElement as? JsonElement.Str)?.value ?: return@JsonParser null
                 p = newPos
                 
-                whitespace().parse(buffer, p)?.let { p = it.b }
-                char(':'.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: return@JsonParser null
-                whitespace().parse(buffer, p)?.let { p = it.b }
+                whitespace().parse(buffer, p)?.let { p = it.component2() }
+                char(':'.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: return@JsonParser null
+                whitespace().parse(buffer, p)?.let { p = it.component2() }
                 
                 valueParser.parse(buffer, p)?.let { (value, newPos2) ->
                     value?.let { fields.add(key j it) }
@@ -288,8 +288,8 @@ object JsonBBCursive {
             } ?: return@JsonParser null
         }
         
-        whitespace().parse(buffer, p)?.let { p = it.b }
-        char('}'.code.toByte()).parse(buffer, p)?.let { p = it.b } ?: return@JsonParser null
+        whitespace().parse(buffer, p)?.let { p = it.component2() }
+        char('}'.code.toByte()).parse(buffer, p)?.let { p = it.component2() } ?: return@JsonParser null
         
         val indexedFields = fields.size j { i: Int -> fields[i] }
         JsonElement.Obj(indexedFields) j p
@@ -323,12 +323,12 @@ object JsonBBCursive {
             if (result != null) {
                 val (element, finalPos) = result
                 whitespace().parse(buffer, finalPos)?.let { (_, endPos) ->
-                    if (endPos == buffer.a) {
+                    if (endPos == buffer.component1()) {
                         JsonParseResult(element, true, endPos)
                     } else {
                         JsonParseResult(null, false, endPos, "Unexpected characters after JSON")
                     }
-                } ?: JsonParseResult(element, finalPos == buffer.a, finalPos)
+                } ?: JsonParseResult(element, finalPos == buffer.component1(), finalPos)
             } else {
                 JsonParseResult(null, false, 0, "Failed to parse JSON")
             }

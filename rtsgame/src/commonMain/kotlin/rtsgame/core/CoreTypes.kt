@@ -75,7 +75,7 @@ data class Rect(val min: Vec2, val max: Vec2) {
 data class Join3<A, B, C>(val first: A, val second: B, val third: C)
 data class Join4<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
-infix fun <A, B> A.j(second: B) = Join(this, second)
+infix fun <A, B> A.j(second: B) = this j second
 infix fun <A, B, C> Join<A, B>.j(third: C) = Join3(first, second, third)
 infix fun <A, B, C, D> Join3<A, B, C>.j(fourth: D) = Join4(first, second, third, fourth)
 

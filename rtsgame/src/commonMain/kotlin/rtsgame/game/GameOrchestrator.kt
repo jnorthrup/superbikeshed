@@ -310,7 +310,7 @@ class GameOrchestrator(
         }
         
         is Cmd.Atk -> world.toMutableMap().apply {
-            cmd.a.forEach { id ->
+            cmd.component1().forEach { id ->
                 this[id]?.let { ent ->
                     this[id] = ent + ("attackTarget" to Tgt(cmd.tgt))
                 }

@@ -15,8 +15,8 @@ import borg.trikeshed.lib.Join
 import borg.trikeshed.lib.j
 
 // Extension functions to adapt to canonical types
-fun <T> Indexed<T>.a(): Int = this.a
-fun <T> Indexed<T>.b(): T = this.b(0) // Assuming b(0) is a reasonable default for single-element access
+fun <T> Indexed<T>.component1()(): Int = this.component1()
+fun <T> Indexed<T>.component2()(): T = this.component2()(0) // Assuming b(0) is a reasonable default for single-element access
 
 // Channel data type
 data class ChannelData(
@@ -28,7 +28,7 @@ data class ChannelData(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as ChannelData
-        return a == other.a && data.contentEquals(other.data)
+        return a == other.component1() && data.contentEquals(other.data)
     }
     override fun hashCode(): Int {
         var result = a

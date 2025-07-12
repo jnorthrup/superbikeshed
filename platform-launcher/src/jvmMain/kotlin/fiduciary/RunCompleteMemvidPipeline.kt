@@ -73,7 +73,7 @@ suspend fun main() {
                 conceptId = "entity_$entity",
                 sourceDoc = "patrick0720.txt",
                 confidence = 0.85,
-                relatedConcepts = analysis.entities.size j { i -> analysis.entities[i] }
+                relatedConcepts = \1 j { \2: Int -> analysis.entities[i] }
             ))
         }
     }

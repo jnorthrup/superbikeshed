@@ -28,23 +28,23 @@ class JsonISAMConverter {
         schemaHints: Map<String, IOMemento> = emptyMap()
     ) {
         // Analyze schema from first few records
-        val sampleSize = minOf(100, jsonArray.elements.a)
+        val sampleSize = minOf(100, jsonArray.elements.component1())
         val schema = inferSchema(jsonArray, sampleSize, schemaHints)
         
         // Convert to cursor
         val rows = mutableListOf<List<Any?>>()
         
-        for (i in 0 until jsonArray.elements.a) {
-            val element = jsonArray.elements.b(i)
+        for (i in 0 until jsonArray.elements.component1()) {
+            val element = jsonArray.elements.component2()(i)
             when (element) {
                 is JsonElement.Obj -> {
                     val row = schema.columnNames.map { columnName ->
                         // Find field by name
                         var value: Any? = null
-                        for (j in 0 until element.fields.a) {
-                            val field = element.fields.b(j)
-                            if (field.a == columnName) {
-                                value = convertToType(field.b, schema.columnTypes[columnName]!!)
+                        for (j in 0 until element.fields.component1()) {
+                            val field = element.fields.component2()(j)
+                            if (field.component1() == columnName) {
+                                value = convertToType(field.component2(), schema.columnTypes[columnName]!!)
                                 break
                             }
                         }
@@ -69,12 +69,12 @@ class JsonISAMConverter {
      */
     suspend fun isamToJsonArray(inputPath: String): JsonElement.Arr {
         val handle = openISAMCursor(inputPath)
-        val cursor = handle.a
+        val cursor = handle.component1()
         
         try {
             return JsonCursor.toJsonArray(cursor)
         } finally {
-            handle.b.close()
+            handle.component2().close()
         }
     }
     
@@ -94,7 +94,7 @@ class JsonISAMConverter {
             
             if (chunks.size >= chunkSize) {
                 val chunkPath = "${outputPath}.chunk_${chunkIndex}"
-                val array = JsonElement.Arr(chunks.size j { i -> chunks[i] })
+                val array = \1 j { \2: Int -> chunks[i] })
                 jsonArrayToISAM(array, chunkPath)
                 
                 chunks.clear()
@@ -105,7 +105,7 @@ class JsonISAMConverter {
         // Process remaining elements
         if (chunks.isNotEmpty()) {
             val chunkPath = "${outputPath}.chunk_${chunkIndex}"
-            val array = JsonElement.Arr(chunks.size j { i -> chunks[i] })
+            val array = \1 j { \2: Int -> chunks[i] })
             jsonArrayToISAM(array, chunkPath)
         }
         
@@ -121,33 +121,33 @@ class JsonISAMConverter {
         pageSize: Int = 1000
     ): Flow<JsonElement> = flow {
         val handle = openISAMCursor(inputPath)
-        val cursor = handle.a
+        val cursor = handle.component1()
         
         try {
             var offset = 0
-            while (offset < cursor.a) {
-                val endIndex = minOf(offset + pageSize, cursor.a)
+            while (offset < cursor.component1()) {
+                val endIndex = minOf(offset + pageSize, cursor.component1())
                 val page = cursor.at(offset until endIndex)
                 
-                for (i in 0 until page.a) {
+                for (i in 0 until page.component1()) {
                     val row = page.at(i)
                     val fields = mutableListOf<Join<String, JsonElement>>()
                     
-                    for (j in 0 until row.a) {
-                        val cell = row.b(j)
-                        val columnName = cursor.columnNames.b(j)
-                        val value = cell.a.toJsonElement()
+                    for (j in 0 until row.component1()) {
+                        val cell = row.component2()(j)
+                        val columnName = cursor.columnNames.component2()(j)
+                        val value = cell.component1().toJsonElement()
                         fields.add(columnName j value)
                     }
                     
-                    val obj = JsonElement.Obj(fields.size j { k -> fields[k] })
+                    val obj = \1 j { \2: Int -> fields[k] })
                     emit(obj)
                 }
                 
                 offset = endIndex
             }
         } finally {
-            handle.b.close()
+            handle.component2().close()
         }
     }
     
@@ -165,14 +165,14 @@ class JsonISAMConverter {
         val typeFrequency = mutableMapOf<String, MutableMap<IOMemento, Int>>()
         
         // Analyze sample records
-        for (i in 0 until minOf(sampleSize, array.elements.a)) {
-            val element = array.elements.b(i)
+        for (i in 0 until minOf(sampleSize, array.elements.component1())) {
+            val element = array.elements.component2()(i)
             when (element) {
                 is JsonElement.Obj -> {
-                    for (j in 0 until element.fields.a) {
-                        val field = element.fields.b(j)
-                        val fieldName = field.a
-                        val fieldType = inferTypeFromElement(field.b)
+                    for (j in 0 until element.fields.component1()) {
+                        val field = element.fields.component2()(j)
+                        val fieldName = field.component1()
+                        val fieldType = inferTypeFromElement(field.component2())
                         
                         columnNames.add(fieldName)
                         typeFrequency.getOrPut(fieldName) { mutableMapOf() }
@@ -300,8 +300,8 @@ class JsonISAMReactor(
             }
             
             val result = Json.parse(json)
-            if (result.a is JsonElement.Arr) {
-                converter.jsonArrayToISAM(result.a as JsonElement.Arr, isamPath)
+            if (result.component1() is JsonElement.Arr) {
+                converter.jsonArrayToISAM(result.component1() as JsonElement.Arr, isamPath)
                 _events.emit(JsonISAMEvent.ConversionCompleted(contextId, isamPath))
             } else {
                 _events.emit(JsonISAMEvent.ConversionFailed(contextId, "Invalid JSON array"))
@@ -369,7 +369,7 @@ object JsonISAMFactory {
         val converter = createConverter()
         val result = Json.parse(jsonContent)
         
-        when (val element = result.a) {
+        when (val element = result.component1()) {
             is JsonElement.Arr -> {
                 converter.jsonArrayToISAM(element, outputPath, schemaHints)
             }

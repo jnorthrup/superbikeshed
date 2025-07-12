@@ -140,8 +140,8 @@ class DataPipeline {
         // Get all transform steps in priority order
         val transforms = deck.filterByTag("transform")
             .let { transformDeck ->
-                (0 until transformDeck.a).map { i -> transformDeck.b(i) }
-                    .sortedByDescending { it.a.priority }
+                (0 until transformDeck.component1()).map { i -> transformDeck.component2()(i) }
+                    .sortedByDescending { it.component1().priority }
             }
         
         println("Pipeline: ${input.source} -> ${transforms.size} transforms -> ${output.destination}")
@@ -149,7 +149,7 @@ class DataPipeline {
         // Process data through transform pipeline
         var data = loadData(input)
         transforms.forEach { card ->
-            val transform = card.b as ProcessingContext.Transform
+            val transform = card.component2() as ProcessingContext.Transform
             data = transform.function(data)
             println("Applied ${transform.name}")
         }
@@ -222,7 +222,7 @@ class GameContextExample {
         
         // Deal effects to different subsystems
         val effects = deck.filterByTag("effect")
-        println("Active effects: ${effects.a}")
+        println("Active effects: ${effects.component1()}")
         
         // Push a new event onto the deck
         val withEvent = deck.push(
@@ -233,7 +233,7 @@ class GameContextExample {
         // Pop and process the top card (the event)
         val (event, remainingDeck) = withEvent.pop()
         event?.let { card ->
-            println("Processing ${card.a.name}: ${card.b}")
+            println("Processing ${card.component1().name}: ${card.component2()}")
         }
         
         // Pattern match on cards
@@ -279,7 +279,7 @@ suspend fun coroutineContextExample() = coroutineScope {
         // Process each card asynchronously
         deckContext?.deck?.forEachCard { card ->
             delay(100) // Simulate async processing
-            println("Processing ${card.a.name}")
+            println("Processing ${card.component1().name}")
         }
     }
 }
@@ -293,10 +293,10 @@ sealed class AIContext {
 
 // Helper extension to find card by name
 fun <T> ContextDeck<T>.findByName(name: String): T? {
-    for (i in 0 until this.a) {
-        val card = this.b(i)
-        if (card.a.name == name) {
-            return card.b
+    for (i in 0 until this.component1()) {
+        val card = this.component2()(i)
+        if (card.component1().name == name) {
+            return card.component2()
         }
     }
     return null
@@ -323,11 +323,11 @@ fun compositionExample() {
         featureDeck as ContextDeck<Any>
     )
     
-    println("Combined deck size: ${combinedDeck.a}")
+    println("Combined deck size: ${combinedDeck.component1()}")
     
     // Chain decks with 'then'
     val fullDeck = (authDeck as ContextDeck<Any>) then (featureDeck as ContextDeck<Any>)
-    println("Chained deck size: ${fullDeck.a}")
+    println("Chained deck size: ${fullDeck.component1()}")
 }
 
 sealed class AuthContext {

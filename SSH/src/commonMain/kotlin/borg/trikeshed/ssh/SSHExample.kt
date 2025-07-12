@@ -186,15 +186,15 @@ suspend fun parseConfigExample() {
     val config = reader.readUserConfig()
     
     // Find specific host
-    for (i in 0 until config.a) {
-        val host = config[i].a
-        val settings = config[i].b
+    for (i in 0 until config.component1()) {
+        val host = config[i].component1()
+        val settings = config[i].component2()
         
         if (host == "myserver" || host == "*") {
             println("Host: $host")
-            for (j in 0 until settings.a) {
-                val key = settings[j].a
-                val value = settings[j].b
+            for (j in 0 until settings.component1()) {
+                val key = settings[j].component1()
+                val value = settings[j].component2()
                 println("  $key = $value")
             }
         }
@@ -202,12 +202,12 @@ suspend fun parseConfigExample() {
     
     // Read known hosts
     val knownHosts = reader.readKnownHosts()
-    println("\nKnown hosts: ${knownHosts.a} entries")
+    println("\nKnown hosts: ${knownHosts.component1()} entries")
     
     // Find identity files
     val identityFiles = reader.findIdentityFiles("myserver")
     println("\nIdentity files:")
-    for (i in 0 until identityFiles.a) {
+    for (i in 0 until identityFiles.component1()) {
         println("  ${identityFiles[i]}")
     }
 }

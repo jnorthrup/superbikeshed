@@ -169,7 +169,7 @@ object IndexedStringSerializer : KSerializer<Indexed<String>> {
     override val descriptor: SerialDescriptor = ListSerializer(String.serializer()).descriptor
     
     override fun serialize(encoder: Encoder, value: Indexed<String>) {
-        val list = List(value.a) { i -> value[i] }
+        val list = List(value.component1()) { i -> value[i] }
         encoder.encodeSerializableValue(ListSerializer(String.serializer()), list)
     }
     
@@ -186,7 +186,7 @@ object IndexedNodeInfoSerializer : KSerializer<Indexed<NodeInfo>> {
     override val descriptor: SerialDescriptor = ListSerializer(NodeInfo.serializer()).descriptor
     
     override fun serialize(encoder: Encoder, value: Indexed<NodeInfo>) {
-        val list = List(value.a) { i -> value[i] }
+        val list = List(value.component1()) { i -> value[i] }
         encoder.encodeSerializableValue(ListSerializer(NodeInfo.serializer()), list)
     }
     

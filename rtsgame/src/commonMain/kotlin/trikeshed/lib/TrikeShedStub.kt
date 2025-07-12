@@ -15,7 +15,7 @@ data class Join<A, B>(val l: A, val r: B)
 data class Twin<T>(val l: T, val r: T)
 
 // Infix operators
-infix fun <A, B> A.j(that: B): Join<A, B> = Join(this, that)
+infix fun <A, B> A.j(that: B): Join<A, B> = this j that
 
 // Binary buffer for serialization
 class BinaryBuffer(

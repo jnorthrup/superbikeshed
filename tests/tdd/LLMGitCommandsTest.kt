@@ -77,7 +77,7 @@ class LLMGitCommandsTest {
         val success = result as LLMCommandResult.Success
         
         val patternInsights = success.insights.filter { insight ->
-            insight.a.contains("pattern", ignoreCase = true)
+            insight.component1().contains("pattern", ignoreCase = true)
         }
         assertTrue(patternInsights.isNotEmpty(), "Should generate pattern insights")
     }
@@ -166,7 +166,7 @@ class LLMGitCommandsTest {
         
         // Check for change insights
         val changeInsights = success.insights.filter { insight ->
-            insight.a.contains("change", ignoreCase = true)
+            insight.component1().contains("change", ignoreCase = true)
         }
         assertTrue(changeInsights.isNotEmpty(), "Should generate change insights")
     }
@@ -189,7 +189,7 @@ class LLMGitCommandsTest {
         val success = result as LLMCommandResult.Success
         
         val patternInsights = success.insights.filter { insight ->
-            insight.a.contains("pattern", ignoreCase = true)
+            insight.component1().contains("pattern", ignoreCase = true)
         }
         assertTrue(patternInsights.isNotEmpty(), "Should generate pattern insights")
     }
@@ -217,7 +217,7 @@ class LLMGitCommandsTest {
         
         // Check for author insights
         val authorInsights = success.insights.filter { insight ->
-            insight.a.contains("author", ignoreCase = true)
+            insight.component1().contains("author", ignoreCase = true)
         }
         assertTrue(authorInsights.isNotEmpty(), "Should generate author insights")
     }
@@ -417,7 +417,7 @@ class LLMGitCommandsTest {
         val success = result as LLMCommandResult.Success
         
         val commitInsights = success.insights.filter { insight ->
-            insight.a.contains("commit", ignoreCase = true)
+            insight.component1().contains("commit", ignoreCase = true)
         }
         assertTrue(commitInsights.isNotEmpty(), "Should generate commit insights")
     }
@@ -438,7 +438,7 @@ class LLMGitCommandsTest {
         val success = result as LLMCommandResult.Success
         
         val changeInsights = success.insights.filter { insight ->
-            insight.a.contains("change", ignoreCase = true)
+            insight.component1().contains("change", ignoreCase = true)
         }
         assertTrue(changeInsights.isNotEmpty(), "Should generate change insights")
     }
@@ -458,7 +458,7 @@ class LLMGitCommandsTest {
         
         // Then: Should return relevant insights
         assertTrue(insights.isNotEmpty(), "Should return insights for query")
-        assertTrue(insights.all { insight -> insight.a.contains("commit", ignoreCase = true) })
+        assertTrue(insights.all { insight -> insight.component1().contains("commit", ignoreCase = true) })
     }
     
     // ===== ERROR HANDLING TESTS =====

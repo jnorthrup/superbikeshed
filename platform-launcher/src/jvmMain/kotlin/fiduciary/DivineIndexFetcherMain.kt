@@ -32,8 +32,8 @@ fun main() = runBlocking {
     val fetcher = DivineIndexFetcher(httpClient, config)
     
     println("\n=== Target Archives ===")
-    for (i in 0 until config.archives.a) {
-        val url = config.archives.b(i)
+    for (i in 0 until config.archives.component1()) {
+        val url = config.archives.component2()(i)
         println("${i + 1}. ${extractArchiveName(url)}")
     }
     
@@ -53,10 +53,10 @@ fun main() = runBlocking {
     println("Average fetch time: ${stats.averageFetchTime}ms")
     println("Total processing time: ${totalTime}ms")
     
-    if (stats.errors.a > 0) {
+    if (stats.errors.component1() > 0) {
         println("\n=== Errors ===")
-        for (i in 0 until stats.errors.a) {
-            println("${i + 1}. ${stats.errors.b(i)}")
+        for (i in 0 until stats.errors.component1()) {
+            println("${i + 1}. ${stats.errors.component2()(i)}")
         }
     }
     

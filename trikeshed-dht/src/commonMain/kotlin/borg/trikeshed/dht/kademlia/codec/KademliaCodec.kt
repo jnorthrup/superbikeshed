@@ -82,39 +82,39 @@ object GraphBuilder {
                         "ipAddress" to nodeInfo.ipAddress,
                         "port" to nodeInfo.port,
                         "subnets" to nodeInfo.subnets.play.toList(),
-                        "publicKey" to ByteArray(nodeInfo.publicKey.a) { i -> nodeInfo.publicKey[i] },
+                        "publicKey" to ByteArray(nodeInfo.publicKey.component1()) { i -> nodeInfo.publicKey[i] },
                         "lastSeen" to nodeInfo.lastSeen,
                         "reliability" to nodeInfo.reliability
                     )
                 }.toList()
             }
             is StoreEvent -> {
-                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
-                fields["value"] = ByteArray(event.value.a) { i -> event.value[i] }
+                fields["key"] = ByteArray(event.key.component1()) { i -> event.key[i] }
+                fields["value"] = ByteArray(event.value.component1()) { i -> event.value[i] }
                 fields["ttl"] = event.ttl
                 fields["replicationFactor"] = event.replicationFactor
             }
             is StoreResponseEvent -> {
                 fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
-                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
+                fields["key"] = ByteArray(event.key.component1()) { i -> event.key[i] }
                 fields["success"] = event.success
                 fields["errorCode"] = event.errorCode
             }
             is FindValueEvent -> {
-                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
+                fields["key"] = ByteArray(event.key.component1()) { i -> event.key[i] }
                 fields["maxHops"] = event.maxHops
             }
             is FoundValueEvent -> {
                 fields["respondingToMessageId"] = ByteArray(event.respondingToMessageId.size) { i -> event.respondingToMessageId.bytes[i] }
-                fields["key"] = ByteArray(event.key.a) { i -> event.key[i] }
-                fields["value"] = ByteArray(event.value.a) { i -> event.value[i] }
+                fields["key"] = ByteArray(event.key.component1()) { i -> event.key[i] }
+                fields["value"] = ByteArray(event.value.component1()) { i -> event.value[i] }
                 fields["providingNodes"] = event.providingNodes.play.map { nodeInfo ->
                     mapOf(
                         "nodeId" to ByteArray(nodeInfo.nodeId.size) { i -> nodeInfo.nodeId.bytes[i] },
                         "ipAddress" to nodeInfo.ipAddress,
                         "port" to nodeInfo.port,
                         "subnets" to nodeInfo.subnets.play.toList(),
-                        "publicKey" to ByteArray(nodeInfo.publicKey.a) { i -> nodeInfo.publicKey[i] },
+                        "publicKey" to ByteArray(nodeInfo.publicKey.component1()) { i -> nodeInfo.publicKey[i] },
                         "lastSeen" to nodeInfo.lastSeen,
                         "reliability" to nodeInfo.reliability
                     )
@@ -122,7 +122,7 @@ object GraphBuilder {
             }
             is JoinRequestEvent -> {
                 fields["proposedNodeId"] = ByteArray(event.proposedNodeId.size) { i -> event.proposedNodeId.bytes[i] }
-                fields["publicKey"] = ByteArray(event.publicKey.a) { i -> event.publicKey[i] }
+                fields["publicKey"] = ByteArray(event.publicKey.component1()) { i -> event.publicKey[i] }
                 fields["formerNodeId"] = event.formerNodeId?.let { ByteArray(it.size) { i -> it.bytes[i] } }
             }
             is JoinResponseEvent -> {
@@ -135,7 +135,7 @@ object GraphBuilder {
                         "ipAddress" to nodeInfo.ipAddress,
                         "port" to nodeInfo.port,
                         "subnets" to nodeInfo.subnets.play.toList(),
-                        "publicKey" to ByteArray(nodeInfo.publicKey.a) { i -> nodeInfo.publicKey[i] },
+                        "publicKey" to ByteArray(nodeInfo.publicKey.component1()) { i -> nodeInfo.publicKey[i] },
                         "lastSeen" to nodeInfo.lastSeen,
                         "reliability" to nodeInfo.reliability
                     )

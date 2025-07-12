@@ -41,14 +41,7 @@ interface Join<A, B> {
     operator fun component1(): A = a
     operator fun component2(): B = b
     val pair: Pair<A, B> get() = a to b //for emergency materialization
-    companion object {
-        /** 100% immutable, don't even ask, just use a j  b  */     
- private       operator fun <A, B> invoke(a: A, b: B): Join<A, B> = object : Join<A, B> {
-            override val a: A = a
-            override val b: B = b
-        }
-    }
-}
+ }
 
 /**
  * Universal indexed access - Foundation for all indexed types
@@ -114,8 +107,6 @@ data class TableMeta(val name: ByteArray) {
  * Cursor types following pristine Columnar patterns
  */
 typealias CursorIndex = Join<TableMeta, Int>
-typealias Cursor = Indexed<RowVec>
-typealias TensorCursor = Indexed<Tensor<Any?>>
 
 /**
  * Series types for byte and character data
@@ -161,7 +152,10 @@ infix fun <T> T.d(other: T): T { println(other); return this }
 /**
  * Core composition operator - j operator
  */
-infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
+infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B> {
+    override val a: A = this@j
+    override val b: B = b
+}
 
 // === CATEGORICAL NOTATION OPERATORS FROM COLUMNAR ===
 
@@ -171,7 +165,7 @@ infix fun <A, B> A.j(b: B): Join<A, B> = Join(this, b)
  */
 infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = a j { iy: Int ->
     val aggCell: RowVec = b(iy)
-    val valuesVect: Indexed<*> = aggCell.b
+    val valuesVect: Indexed<Any?> = aggCell.b
     aggCell.a j { ix: Int ->
         val cellContent = valuesVect[ix]
         val reducedValue = when (cellContent) {
@@ -189,7 +183,7 @@ infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = a j { iy: Int ->
  */
 infix fun Cursor.α(unaryFunctor: (Any?) -> Any?): Cursor = a j { iy: Int ->
     val row: RowVec = b(iy)
-    (row.b α unaryFunctor) j row.a
+    (row.b.a j { i -> unaryFunctor(row.b[i]) }) j row.a
 }
 
 /**
@@ -324,19 +318,19 @@ typealias Cursor = Indexed<RowVec>
 infix fun Cursor.at(y: Int): RowVec = this[if (y < 0) a + y else y]
 
 /** Get a slice of rows */
-infix fun Cursor.slice(range: IntRange): Cursor = range.last j { i -> this[range.first + i] }
+infix fun Cursor.slice(range: IntRange): Cursor = (range.last - range.first + 1) j { i -> this[range.first + i] }
 
 /** Get column names - Cured: Returns Indexed<ByteArray> instead of List */
 val Cursor.columnNames: Indexed<ByteArray>
     get() = firstOrNull()?.let { firstRow ->
-        firstRow.a j { i -> firstRow.b[i].a }
+        (firstRow.b as Indexed<Join<ByteArray, KClassifier>>).a j { i -> (firstRow.b as Indexed<Join<ByteArray, KClassifier>>)[i].a }
     } ?: (0 j { ByteArray(0) })
 
 /** Get column types - Cured: Returns Indexed<KClassifier> instead of List */
 val Cursor.columnTypes: Indexed<KClassifier>
     get() = firstOrNull()?.let { firstRow ->
-        firstRow.a j { i -> firstRow.b[i].b }
-    } ?: (0 j { String::class })
+        (firstRow.b as Indexed<Join<ByteArray, KClassifier>>).a j { i -> (firstRow.b as Indexed<Join<ByteArray, KClassifier>>)[i].b }
+    } ?: (0 j { Any::class })
 
 /** Get column index by name - Cured: Returns Indexed<Join<ByteArray, Int>> instead of Map */
 val Cursor.colIdx: Indexed<Join<ByteArray, Int>>
@@ -379,7 +373,7 @@ fun cursorOf(
     } ?: (0 j { ByteArray(0) }),
     columnTypes: Indexed<KClassifier> = data.firstOrNull()?.let { firstRow ->
         firstRow.a j { i -> inferType(firstRow.b(i)) }
-    } ?: (0 j { String::class })
+    } ?: (0 j { Any::class })
 ): Cursor {
     require(data.a > 0) { "Data cannot be empty" }
     val firstRow = data.b(0)
@@ -486,8 +480,8 @@ object _m {
 // === TYPE CONVERSION HELPERS ===
 
 @Suppress("UNCHECKED_CAST")
-inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? Indexed<T>)?.let { l -> 
-    l
+inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l -> 
+    l.size j { l[it] }
 } ?: error("Cannot convert to Indexed")
 
 // expect fun assert(value: Boolean, lazyMessage: () -> Any) 

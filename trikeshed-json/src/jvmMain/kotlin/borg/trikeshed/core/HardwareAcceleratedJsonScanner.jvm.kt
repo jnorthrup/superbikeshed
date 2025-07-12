@@ -35,7 +35,7 @@ actual class HardwareAcceleratedJsonScanner actual constructor(internal val json
 
     actual fun query(path: String): String? {
         val result = delegate.query(path)
-        return result?.b?.toString()
+        return result?.component2()?.toString()
         // Real implementation: nativeQuery(nativeHandle, path)
     }
     

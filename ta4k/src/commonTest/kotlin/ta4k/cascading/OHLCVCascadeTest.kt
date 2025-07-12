@@ -33,7 +33,7 @@ class OHLCVCascadeTest {
         val minuteBars = tickCursor.toOHLCV(Timeframe.MINUTE)
         
         // Should have 2 minute bars
-        assertEquals(2, minuteBars.a)
+        assertEquals(2, minuteBars.component1())
         
         // Check first minute bar
         val firstBar = minuteBars.at(0)
@@ -93,7 +93,7 @@ class OHLCVCascadeTest {
         val hourBars = minuteCursor.cascadeOHLCV(Timeframe.MINUTE, Timeframe.HOUR)
         
         // Should have 2 hour bars
-        assertEquals(2, hourBars.a)
+        assertEquals(2, hourBars.component1())
         
         // Verify cascading preserved OHLCV integrity
         val firstHour = hourBars.at(0)
@@ -181,7 +181,7 @@ class OHLCVCascadeTest {
         // Our cursor equivalent:
         val minuteBars = cursor.toOHLCV(Timeframe.MINUTE, "BTC/USD")
         
-        println("Generated ${minuteBars.a} minute bars from ${ticks.size} ticks")
+        println("Generated ${minuteBars.component1()} minute bars from ${ticks.size} ticks")
         
         // The beauty: This is exactly what CouchDB's reduce does,
         // but with type safety and cursor composability!
@@ -190,11 +190,11 @@ class OHLCVCascadeTest {
         val hourBars = minuteBars.cascadeOHLCV(Timeframe.MINUTE, Timeframe.HOUR)
         val dayBars = hourBars.cascadeOHLCV(Timeframe.HOUR, Timeframe.DAY)
         
-        println("Cascaded to ${hourBars.a} hour bars and ${dayBars.a} day bars")
+        println("Cascaded to ${hourBars.component1()} hour bars and ${dayBars.component1()} day bars")
         
         // And we can query any timeframe efficiently!
-        assertTrue(dayBars.a <= hourBars.a)
-        assertTrue(hourBars.a <= minuteBars.a)
+        assertTrue(dayBars.component1() <= hourBars.component1())
+        assertTrue(hourBars.component1() <= minuteBars.component1())
     }
     
     internal fun generateTestTicks(count: Int): List<Tick> {

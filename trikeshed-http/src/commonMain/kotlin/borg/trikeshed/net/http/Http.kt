@@ -27,9 +27,9 @@ data class HttpRequest(
     fun toByteArray(): ByteArray {
         val startLine = "${method.name} ${path.value} ${version.value}\r\n"
         val headersStr = StringBuilder()
-        (0 until headers.a).forEach { i ->
-            val header = headers.b(i)
-            headersStr.append("${header.a.value}: ${header.b.value}\r\n")
+        (0 until headers.component1()).forEach { i ->
+            val header = headers.component2()(i)
+            headersStr.append("${header.component1().value}: ${header.component2().value}\r\n")
         }
         val finalHeaders = headersStr.toString()
         val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
@@ -53,7 +53,7 @@ data class HttpRequest(
             for (i in 1 until headerLines.size) {
                 if (headerLines[i].isBlank()) continue
                 val headerParts = headerLines[i].split(":", limit = 2)
-                headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
+                headersList.add(HttpHeaderName(headerParts[0].trim()) j HttpHeaderValue(headerParts[1].trim()))
             }
             val headers: Indexed2<HttpHeaderName, HttpHeaderValue> =   (headersList.size)j { it:Int->headersList[it] }
 
@@ -86,9 +86,9 @@ data class HttpResponse(
     fun toByteArray(): ByteArray {
         val startLine = "${version.value} ${status.value} ${reasonPhrase.value}\r\n"
         val headersStr = StringBuilder()
-        (0 until headers.a).forEach { i ->
-            val header = headers.b(i)
-            headersStr.append("${header.a.value}: ${header.b.value}\r\n")
+        (0 until headers.component1()).forEach { i ->
+            val header = headers.component2()(i)
+            headersStr.append("${header.component1().value}: ${header.component2().value}\r\n")
         }
         val finalHeaders = headersStr.toString()
         val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
@@ -114,7 +114,7 @@ data class HttpResponse(
             for (i in 1 until headerLines.size) {
                 if (headerLines[i].isBlank()) continue
                 val headerParts = headerLines[i].split(":", limit = 2)
-                headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
+                headersList.add(HttpHeaderName(headerParts[0].trim()) j HttpHeaderValue(headerParts[1].trim()))
             }
             val headers =  (headersList.size) j {it :Int-> headersList[it] }
 
@@ -148,10 +148,10 @@ data class UpgradeProtocol(
 
 object HttpUpgrade {
     fun canUpgrade(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>, protocol: ProtocolName): Boolean {
-        val upgradeHeader = (0 until headers.a).asSequence().map { headers.b(it) }
-            .find { it.a.value.equals("Upgrade", ignoreCase = true) }?.b?.value
-        val connectionHeader = (0 until headers.a).asSequence().map { headers.b(it) }
-            .find { it.a.value.equals("Connection", ignoreCase = true) }?.b?.value
+        val upgradeHeader = (0 until headers.component1()).asSequence().map { headers.component2()(it) }
+            .find { it.component1().value.equals("Upgrade", ignoreCase = true) }?.component2()?.value
+        val connectionHeader = (0 until headers.component1()).asSequence().map { headers.component2()(it) }
+            .find { it.component1().value.equals("Connection", ignoreCase = true) }?.component2()?.value
         
         return upgradeHeader?.equals(protocol.value, ignoreCase = true) == true &&
                connectionHeader?.contains("upgrade", ignoreCase = true) == true
@@ -165,14 +165,14 @@ object HttpUtils {
         return (headerLines.size) j { i:Int ->
             val line = headerLines[i]
             val parts = line.split(":", limit = 2)
-            Join(HttpHeaderName(parts[0].trim()), HttpHeaderValue(parts[1].trim()))
+            HttpHeaderName(parts[0].trim()) j HttpHeaderValue(parts[1].trim())
         }
     }
     
     fun buildHeaderString(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): String {
-        return (0 until headers.a).joinToString("\r\n") { i ->
-            val join = headers.b(i)
-            "${join.a.value}: ${join.b.value}"
+        return (0 until headers.component1()).joinToString("\r\n") { i ->
+            val join = headers.component2()(i)
+            "${join.component1().value}: ${join.component2().value}"
         }
     }
 }

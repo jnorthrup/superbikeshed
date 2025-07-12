@@ -101,7 +101,7 @@ class WireProtocolTDDTest {
     @Test
     fun `should serialize Series<Int> with type information and elements`() {
         // Given: Series<Int> with values
-        val numbers = 5 j { i -> i * i } // [0, 1, 4, 9, 16]
+        val numbers = \1 j { \2: Int -> i * i } // [0, 1, 4, 9, 16]
         
         // When: Serialized to wire format
         val wireBytes = numbers.toWireBytes()
@@ -121,7 +121,7 @@ class WireProtocolTDDTest {
     @Test
     fun `should serialize Series<String> with variable-length encoding`() {
         // Given: Series<String> with strings of varying lengths
-        val strings = 3 j { i -> "item$i" } // ["item0", "item1", "item2"]
+        val strings = \1 j { \2: Int -> "item$i" } // ["item0", "item1", "item2"]
         
         // When: Serialized to wire format
         val wireBytes = strings.toWireBytes()
@@ -142,7 +142,7 @@ class WireProtocolTDDTest {
     fun `should meet Series<Int> performance target of 2-5μs per 1000 elements`() {
         // Given: Large Series<Int> for performance testing
         val size = 1000
-        val series = size j { i -> i }
+        val series = \1 j { \2: Int -> i }
         
         // When: Measuring serialization performance
         val startTime = System.nanoTime()
@@ -160,7 +160,7 @@ class WireProtocolTDDTest {
     fun `should meet Series<String> performance target of 10-20μs per 1000 elements`() {
         // Given: Large Series<String> for performance testing
         val size = 1000
-        val series = size j { i -> "string_$i" }
+        val series = \1 j { \2: Int -> "string_$i" }
         
         // When: Measuring serialization performance
         val startTime = System.nanoTime()
@@ -197,7 +197,7 @@ class WireProtocolTDDTest {
     @Test
     fun `should use varint encoding for small integers`() {
         // Given: Series with small integers
-        val smallNumbers = 10 j { i -> i } // [0,1,2,3,4,5,6,7,8,9]
+        val smallNumbers = \1 j { \2: Int -> i } // [0,1,2,3,4,5,6,7,8,9]
         
         // When: Serialized to wire format
         val wireBytes = smallNumbers.toWireBytes()
@@ -229,7 +229,7 @@ class WireProtocolTDDTest {
     @Test
     fun `should handle type mismatches gracefully`() {
         // Given: Serialized data for one type
-        val intSeries = 5 j { i -> i }
+        val intSeries = \1 j { \2: Int -> i }
         val wireBytes = intSeries.toWireBytes()
         
         // When: Attempting to deserialize as different type
@@ -333,7 +333,7 @@ class WireProtocolTDDTest {
     @Test
     fun `should support zero-copy operations where possible`() {
         // Given: Large data set
-        val largeSeries = 10000 j { i -> i }
+        val largeSeries = \1 j { \2: Int -> i }
         
         // When: Serialized
         val wireBytes = largeSeries.toWireBytes()

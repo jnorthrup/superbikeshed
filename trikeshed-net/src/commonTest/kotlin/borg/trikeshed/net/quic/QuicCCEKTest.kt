@@ -131,7 +131,7 @@ class QuicCCEKTest {
         val state = QuicConnectionState(
             localConnectionId = ConnectionId.random(),
             remoteConnectionId = ConnectionId.random(),
-            streams = 3 j { i -> QuicStreamState(i.toLong()) } // 3 streams = exceeds limit
+            streams = \1 j { \2: Int -> QuicStreamState(i.toLong()) } // 3 streams = exceeds limit
         )
         
         val operation = QuicOperation.CreateStream(ConnectionId.random(), 6L)
@@ -173,11 +173,11 @@ class QuicCCEKTest {
         val knowledge = (orchestrator as TestQuicCCEKOrchestrator).knowledge
         val attentionRanges = knowledge.applyAttention(ranges, 1)
         
-        assertEquals(4, attentionRanges.a)
-        assertEquals(0L, attentionRanges.b(0).start)
-        assertEquals(1023L, attentionRanges.b(0).end)
-        assertEquals(4096L, attentionRanges.b(1).start) // Demonstrates attention gap
-        assertEquals(5119L, attentionRanges.b(1).end)
+        assertEquals(4, attentionRanges.component1())
+        assertEquals(0L, attentionRanges.component2()(0).start)
+        assertEquals(1023L, attentionRanges.component2()(0).end)
+        assertEquals(4096L, attentionRanges.component2()(1).start) // Demonstrates attention gap
+        assertEquals(5119L, attentionRanges.component2()(1).end)
     }
     
     @Test
@@ -249,7 +249,7 @@ class TestQuicCCEKOrchestrator(
 // Mock transport adapter for testing
 class MockTransportAdapter : QuicTransport {
     override suspend fun send(connectionId: ConnectionId, streamId: Long, data: Indexed<Byte>): QuicDeliveryResult {
-        return QuicDeliveryResult(true, data.a.toLong())
+        return QuicDeliveryResult(true, data.component1().toLong())
     }
     
     override suspend fun receive(connectionId: ConnectionId, streamId: Long): QuicDeliveryResult {

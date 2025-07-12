@@ -21,13 +21,13 @@ typealias SSHConfig = Join<SSHConfigHost, SSHConfigSection>
 typealias SSHConfigFile = Indexed<SSHConfig>
 
 // Known hosts taxonomy
-typealias SSHKnownHostEntry = Join<SSHHostPattern, Join<SSHKeyType, SSHPublicKey>>
+typealias SSHKnownHostEntry = Join<SSHHostPattern, SSHKeyType j SSHPublicKey>
 typealias SSHHostPattern = String
 typealias SSHKeyType = String
 typealias SSHKnownHostsFile = Indexed<SSHKnownHostEntry>
 
 // Authorized keys taxonomy
-typealias SSHAuthorizedKey = Join<SSHKeyOptions, Join<SSHKeyType, Join<SSHPublicKey, SSHKeyComment>>>
+typealias SSHAuthorizedKey = Join<SSHKeyOptions, SSHKeyType j Join<SSHPublicKey, SSHKeyComment>>
 typealias SSHKeyOptions = Indexed<String>
 typealias SSHKeyComment = String
 typealias SSHAuthorizedKeysFile = Indexed<SSHAuthorizedKey>
@@ -125,7 +125,7 @@ class DefaultSSHConfigParser : SSHConfigParser {
                 // Save previous host section
                 currentHost?.let { host ->
                     val entries = currentEntries.size j { i: Int -> currentEntries[i] }
-                    configs.add(Join(host, entries))
+                    configs.add(host j entries)
                 }
                 
                 // Start new host section
@@ -133,14 +133,14 @@ class DefaultSSHConfigParser : SSHConfigParser {
                 currentEntries = mutableListOf()
             } else {
                 // Add to current section
-                currentEntries.add(Join(key, value))
+                currentEntries.add(key j value)
             }
         }
         
         // Save final host section
         currentHost?.let { host ->
             val entries = currentEntries.size j { i: Int -> currentEntries[i] }
-            configs.add(Join(host, entries))
+            configs.add(host j entries)
         }
         
         configs.size j { i: Int -> configs[i] }
@@ -178,7 +178,7 @@ class DefaultSSHConfigParser : SSHConfigParser {
             }
             
             val publicKey = keyBytes.size j { i: Int -> keyBytes[i] }
-            entries.add(Join(hostPattern, Join(keyType, publicKey)))
+            entries.add(hostPattern j Join(keyType, publicKey))
         }
         
         entries.size j { i: Int -> entries[i] }
@@ -221,7 +221,7 @@ class DefaultSSHConfigParser : SSHConfigParser {
             }
             
             val publicKey = keyBytes.size j { i: Int -> keyBytes[i] }
-            keys.add(Join(options, Join(keyType, Join(publicKey, comment))))
+            keys.add(options j Join(keyType, Join(publicKey, comment)))
         }
         
         keys.size j { i: Int -> keys[i] }
@@ -288,9 +288,9 @@ class SSHConfigResolver(
         val matchingConfigs = mutableListOf<SSHConfigSection>()
         
         // Find all matching host patterns
-        for (i in 0 until config.a) {
-            val hostPattern = config[i].a
-            val section = config[i].b
+        for (i in 0 until config.component1()) {
+            val hostPattern = config[i].component1()
+            val section = config[i].component2()
             
             if (matchesHostPattern(hostname, hostPattern)) {
                 matchingConfigs.add(section)
@@ -300,9 +300,9 @@ class SSHConfigResolver(
         // Merge configurations (first match wins)
         val merged = mutableMapOf<String, String>()
         matchingConfigs.forEach { section ->
-            for (j in 0 until section.a) {
-                val key = section[j].a
-                val value = section[j].b
+            for (j in 0 until section.component1()) {
+                val key = section[j].component1()
+                val value = section[j].component2()
                 
                 // Only set if not already set (first match wins)
                 if (!merged.containsKey(key)) {
@@ -415,7 +415,7 @@ class OpenSSHKeyParser : SSHKeyReader {
             derivePublicKey(privateKey)
         }
         
-        Join(publicKey, privateKey)
+        publicKey j privateKey
     }
     
     internal suspend fun parseOpenSSHPrivateKey(content: String, passphrase: String?): SSHPrivateKey {

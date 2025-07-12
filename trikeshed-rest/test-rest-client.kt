@@ -88,9 +88,9 @@ suspend fun main() {
 
 suspend fun testGetRequest(client: RestClient) {
     val response = client.get("/users/123")
-    println("Status: ${response.a.statusCode}")
-    println("Body: ${response.b.decodeToString()}")
-    println("Headers: ${headersToString(response.a.headers)}")
+    println("Status: ${response.component1().statusCode}")
+    println("Body: ${response.component2().decodeToString()}")
+    println("Headers: ${headersToString(response.component1().headers)}")
 }
 
 suspend fun testPostRequest(client: RestClient) {
@@ -100,8 +100,8 @@ suspend fun testPostRequest(client: RestClient) {
     )
     
     val response = client.post("/users", body, headers)
-    println("Status: ${response.a.statusCode}")
-    println("Response: ${response.b.decodeToString()}")
+    println("Status: ${response.component1().statusCode}")
+    println("Response: ${response.component2().decodeToString()}")
 }
 
 suspend fun testBatchRequests(client: RestClient) {
@@ -115,10 +115,10 @@ suspend fun testBatchRequests(client: RestClient) {
     }
     
     val responses = client.batch(requests)
-    println("Batch size: ${responses.a}")
-    for (i in 0 until responses.a) {
-        val response = responses.b(i)
-        println("Response $i: ${response.a.statusCode} - ${response.b.decodeToString()}")
+    println("Batch size: ${responses.component1()}")
+    for (i in 0 until responses.component1()) {
+        val response = responses.component2()(i)
+        println("Response $i: ${response.component1().statusCode} - ${response.component2().decodeToString()}")
     }
 }
 
@@ -132,7 +132,7 @@ suspend fun testStreaming(client: RestClient) {
     client.stream(request)
         .take(3)
         .collect { chunk ->
-            println("Received chunk: ${chunk.b.decodeToString()}")
+            println("Received chunk: ${chunk.component2().decodeToString()}")
         }
 }
 
@@ -144,10 +144,10 @@ fun testHeaders(client: RestClient) {
         "Accept-Language" j "en-US"
     )
     
-    println("Headers count: ${headers.a}")
-    for (i in 0 until headers.a) {
-        val header = headers.b(i)
-        println("  ${header.a}: ${header.b}")
+    println("Headers count: ${headers.component1()}")
+    for (i in 0 until headers.component1()) {
+        val header = headers.component2()(i)
+        println("  ${header.component1()}: ${header.component2()}")
     }
     
     // Test header merging
@@ -204,10 +204,10 @@ suspend fun testSse(client: RestClient) {
 fun headersToString(headers: HttpHeaders): String {
     return buildString {
         append("{")
-        for (i in 0 until headers.a) {
+        for (i in 0 until headers.component1()) {
             if (i > 0) append(", ")
-            val header = headers.b(i)
-            append("${header.a}=${header.b}")
+            val header = headers.component2()(i)
+            append("${header.component1()}=${header.component2()}")
         }
         append("}")
     }
@@ -216,7 +216,7 @@ fun headersToString(headers: HttpHeaders): String {
 // Test interceptor
 class LoggingInterceptor : RequestInterceptor {
     override suspend fun intercept(request: HttpRequest): HttpRequest {
-        println("[Interceptor] ${request.a.method} ${request.a.url}")
+        println("[Interceptor] ${request.component1().method} ${request.component1().url}")
         return request
     }
 }

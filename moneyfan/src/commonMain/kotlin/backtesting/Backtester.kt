@@ -60,8 +60,8 @@ class Backtester(val initialEquity: Double) {
             // Index 4 for 'close' means size must be at least 5.
             // Index 0 for 'timestamp'.
             if (rowVec.size >= 5) {
-                val timestamp = rowVec.values.getOrNull(0)?.a as? Long
-                val closePrice = rowVec.values.getOrNull(4)?.a as? Double
+                val timestamp = rowVec.values.getOrNull(0)?.component1() as? Long
+                val closePrice = rowVec.values.getOrNull(4)?.component1() as? Double
                 if (timestamp != null && closePrice != null) Pair(timestamp, closePrice) else null
             } else {
                 null // RowVec is too short or data types are incorrect.

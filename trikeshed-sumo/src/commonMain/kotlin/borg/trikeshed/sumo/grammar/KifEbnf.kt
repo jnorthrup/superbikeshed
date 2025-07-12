@@ -39,11 +39,11 @@ object KifEbnf {
      */
     
     // Core grammar rules using Join composition
-    val KIF_FILE: GrammarRule = "kif_file" j { tokens ->
+    val KIF_FILE: GrammarRule = \1 j { \2: Int ->
         tokens.filter { it !is KifToken.Whitespace && it !is KifToken.Comment }
     }
     
-    val S_EXPRESSION: GrammarRule = "s_expression" j { tokens ->
+    val S_EXPRESSION: GrammarRule = \1 j { \2: Int ->
         when {
             tokens.firstOrNull() is KifToken.ParenOpen -> {
                 val (expr, remaining) = parseSExpression(tokens)
@@ -53,7 +53,7 @@ object KifEbnf {
         }
     }
     
-    val TERM: GrammarRule = "term" j { tokens ->
+    val TERM: GrammarRule = \1 j { \2: Int ->
         when (val token = tokens.firstOrNull()) {
             is KifToken.Symbol -> {
                 val term = parseTerm(token)
@@ -71,7 +71,7 @@ object KifEbnf {
         }
     }
     
-    val CONSTANT: GrammarRule = "constant" j { tokens ->
+    val CONSTANT: GrammarRule = \1 j { \2: Int ->
         when (val token = tokens.firstOrNull()) {
             is KifToken.Symbol -> {
                 if (!token.value.startsWith("?")) {
@@ -83,7 +83,7 @@ object KifEbnf {
         }
     }
     
-    val VARIABLE: GrammarRule = "variable" j { tokens ->
+    val VARIABLE: GrammarRule = \1 j { \2: Int ->
         when (val token = tokens.firstOrNull()) {
             is KifToken.Symbol -> {
                 if (token.value.startsWith("?")) {
@@ -95,7 +95,7 @@ object KifEbnf {
         }
     }
     
-    val STRING: GrammarRule = "string" j { tokens ->
+    val STRING: GrammarRule = \1 j { \2: Int ->
         when (val token = tokens.firstOrNull()) {
             is KifToken.Str -> {
                 val string = parseString(token)

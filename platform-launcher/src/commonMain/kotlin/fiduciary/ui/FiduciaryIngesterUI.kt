@@ -139,7 +139,7 @@ class FiduciaryIngesterUI {
     internal fun generateSessionId(): String = 
         "fiduciary-${Clock.System.now().toEpochMilliseconds()}"
     
-    internal fun emptyIndexed<T>(): Indexed<T> = b0.a
+    internal fun emptyIndexed<T>(): Indexed<T> = b0.component1()
 }
 
 /**

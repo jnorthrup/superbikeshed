@@ -65,7 +65,7 @@ class CarlosRSI2Strategy(
         }
         
         // Extract price series using Indexed.α transformation
-        val prices = candles.α { candle -> candle.a.ohlc.close }
+        val prices = candles.α { candle -> candle.component1().ohlc.close }
         
         // Calculate technical indicators
         val rsiValues = calculateRSI(prices, rsiPeriod)
@@ -241,10 +241,10 @@ data class StrategyAnalysis(
         get() = if (rsiValues.size > 0) rsiValues[rsiValues.size - 1] else RSIValue(50.0)
     
     val trendDirection: TrendDirection
-        get() = trend.a
+        get() = trend.component1()
     
     val trendStrength: Double
-        get() = trend.b
+        get() = trend.component2()
     
     companion object {
         fun empty(): StrategyAnalysis = StrategyAnalysis(

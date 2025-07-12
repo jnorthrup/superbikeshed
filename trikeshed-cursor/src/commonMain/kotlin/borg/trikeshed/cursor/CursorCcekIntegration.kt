@@ -137,9 +137,9 @@ suspend fun Cursor.withCCEK(
 ) {
     val metadata = CursorMetadata(
         rowCount = size,
-        columnCount = if (size > 0) at(0).a else 0,
-        columnNames = columnNames.let { names -> (0 until names.size).map { names.b(it) } },
-        columnTypes = scalars.let { scalars -> (0 until scalars.size).map { scalars.b(it).b } },
+        columnCount = if (size > 0) at(0).component1() else 0,
+        columnNames = columnNames.let { names -> (0 until names.size).map { names.component2()(it) } },
+        columnTypes = scalars.let { scalars -> (0 until scalars.size).map { scalars.component2()(it).component2() } },
         sourceType = sourceType,
         sourcePath = sourcePath
     )
@@ -198,9 +198,9 @@ class CursorSession(
     ): CursorContext {
         val metadata = CursorMetadata(
             rowCount = cursor.size,
-            columnCount = if (cursor.size > 0) cursor.at(0).a else 0,
-            columnNames = cursor.columnNames.let { names -> (0 until names.size).map { names.b(it) } },
-            columnTypes = cursor.scalars.let { scalars -> (0 until scalars.size).map { scalars.b(it).b } },
+            columnCount = if (cursor.size > 0) cursor.at(0).component1() else 0,
+            columnNames = cursor.columnNames.let { names -> (0 until names.size).map { names.component2()(it) } },
+            columnTypes = cursor.scalars.let { scalars -> (0 until scalars.size).map { scalars.component2()(it).component2() } },
             sourceType = sourceType,
             sourcePath = sourcePath
         )
@@ -273,14 +273,14 @@ internal fun Cursor.validateConstraints(constraints: List<CursorConstraint>) {
                 }
             }
             is CursorConstraint.ColumnLimit -> {
-                val columnCount = if (size > 0) at(0).a else 0
+                val columnCount = if (size > 0) at(0).component1() else 0
                 require(columnCount <= constraint.maxColumns) { 
                     "Cursor column count $columnCount exceeds limit ${constraint.maxColumns}" 
                 }
             }
             is CursorConstraint.TypeConstraint -> {
                 if (size > 0) {
-                    val actualType = scalars.b(constraint.columnIndex).b
+                    val actualType = scalars.component2()(constraint.columnIndex).component2()
                     require(actualType in constraint.allowedTypes) {
                         "Column ${constraint.columnIndex} type $actualType not in allowed types ${constraint.allowedTypes}"
                     }

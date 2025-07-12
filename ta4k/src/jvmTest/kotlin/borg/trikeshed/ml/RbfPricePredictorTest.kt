@@ -30,13 +30,13 @@ class RbfPricePredictorTest {
         val stringReader = StringReader(sampleCsvData)
         val klineCursor = parseKlineCsv(stringReader)
         assertNotNull(klineCursor, "Parsed kline cursor should not be null.")
-        assertEquals(12, klineCursor.a.rows, "Should have 12 data rows.")
-        assertEquals(11, klineCursor.b.totalSize, "Should have 11 metadata columns.")
+        assertEquals(12, klineCursor.component1().rows, "Should have 12 data rows.")
+        assertEquals(11, klineCursor.component2().totalSize, "Should have 11 metadata columns.")
 
 
         val closePrices = extractColumnData(klineCursor, "Close")
         assertNotNull(closePrices, "Extracted close prices should not be null.")
-        assertEquals(klineCursor.a.rows, closePrices.size, "Close prices array size should match number of rows.")
+        assertEquals(klineCursor.component1().rows, closePrices.size, "Close prices array size should match number of rows.")
 
         val windowSize = 5
         val featuresAndLabels = createSlidingWindowFeatures(closePrices, windowSize)
@@ -44,8 +44,8 @@ class RbfPricePredictorTest {
         assertTrue(featuresAndLabels.first.isNotEmpty(), "Features should not be empty.")
         assertTrue(featuresAndLabels.second.isNotEmpty(), "Labels should not be empty.")
         // Expected: 12 rows - 5 windowSize = 7 feature sets
-        assertEquals(klineCursor.a.rows - windowSize, featuresAndLabels.first.size, "Number of feature sets is incorrect.")
-        assertEquals(klineCursor.a.rows - windowSize, featuresAndLabels.second.size, "Number of labels is incorrect.")
+        assertEquals(klineCursor.component1().rows - windowSize, featuresAndLabels.first.size, "Number of feature sets is incorrect.")
+        assertEquals(klineCursor.component1().rows - windowSize, featuresAndLabels.second.size, "Number of labels is incorrect.")
 
 
         val trainedModel = trainRbfPredictor(featuresAndLabels.first, featuresAndLabels.second, numberOfNeurons = 5)
@@ -58,15 +58,15 @@ class RbfPricePredictorTest {
 
         val cursorWithPredictions = addPredictionsToCursor(klineCursor, trainedModel, "Close", windowSize, "TestPrediction")
         assertNotNull(cursorWithPredictions, "Cursor with predictions should not be null.")
-        assertEquals(klineCursor.b.totalSize + 1, cursorWithPredictions.b.totalSize, "Metadata should have one additional column for predictions.")
-        assertEquals(klineCursor.a.rows, cursorWithPredictions.a.rows, "Number of rows should remain the same.")
-        assertEquals(klineCursor.a.cols + 1, cursorWithPredictions.a.cols, "Data tensor should have one additional column.")
+        assertEquals(klineCursor.component2().totalSize + 1, cursorWithPredictions.component2().totalSize, "Metadata should have one additional column for predictions.")
+        assertEquals(klineCursor.component1().rows, cursorWithPredictions.component1().rows, "Number of rows should remain the same.")
+        assertEquals(klineCursor.component1().cols + 1, cursorWithPredictions.component1().cols, "Data tensor should have one additional column.")
 
         // Verify that the new column exists in metadata
-        val newMeta = cursorWithPredictions.b
+        val newMeta = cursorWithPredictions.component2()
         var foundPredictionColumn = false
         for (i in 0 until newMeta.totalSize) {
-            if (newMeta[i].a == "TestPrediction") {
+            if (newMeta[i].component1() == "TestPrediction") {
                 foundPredictionColumn = true
                 break
             }
@@ -77,10 +77,10 @@ class RbfPricePredictorTest {
         val predColIdx = newMeta.totalSize -1
          // The first `windowSize` predictions should be NaN
         for(r in 0 until windowSize) {
-            assertTrue(cursorWithPredictions.a[r, predColIdx].isNaN(), "Prediction for row $r should be NaN.")
+            assertTrue(cursorWithPredictions.component1()[r, predColIdx].isNaN(), "Prediction for row $r should be NaN.")
         }
         // The prediction for row `windowSize` should be the first actual number
-         assertTrue(!cursorWithPredictions.a[windowSize, predColIdx].isNaN(), "Prediction for row $windowSize should not be NaN.")
+         assertTrue(!cursorWithPredictions.component1()[windowSize, predColIdx].isNaN(), "Prediction for row $windowSize should not be NaN.")
 
 
     }

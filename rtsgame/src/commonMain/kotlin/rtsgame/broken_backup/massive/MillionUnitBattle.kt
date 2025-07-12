@@ -111,7 +111,7 @@ class MillionUnitBattleSystem {
         
         // Process AI in parallel batches
         threadPool.processEntities(
-            activeUnits j { i -> EntityId(i) },
+            \1 j { \2: Int -> EntityId(i) },
             batchSize
         ) { batch ->
             updateAIBatch(batch)
@@ -119,7 +119,7 @@ class MillionUnitBattleSystem {
     }
     
     internal fun updateAIBatch(batch: Indexed<EntityId>) {
-        for (i in 0 until batch.a) {
+        for (i in 0 until batch.component1()) {
             val idx = batch[i].value
             if (healths[idx] <= 0) continue
             

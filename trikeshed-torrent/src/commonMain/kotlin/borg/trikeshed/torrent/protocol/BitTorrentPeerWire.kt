@@ -342,7 +342,7 @@ class BitTorrentPeerWire(
             }
             
             // Update download speed
-            connection.downloadSpeed = message.data.a.toLong()
+            connection.downloadSpeed = message.data.component1().toLong()
             
         } catch (e: Exception) {
             println("Error handling piece message: ${e.message}")
@@ -370,7 +370,7 @@ class BitTorrentPeerWire(
                     connection.outputChannel.send(pieceMessage)
                     
                     // Update upload speed
-                    connection.uploadSpeed = pieceData.a.toLong()
+                    connection.uploadSpeed = pieceData.component1().toLong()
                 }
             }
         } catch (e: Exception) {
@@ -436,7 +436,7 @@ class BitTorrentPeerWire(
      */
     internal fun isPieceComplete(pieceIndex: Int): Boolean {
         val pieceDataMap = pieceData[pieceIndex] ?: return false
-        val totalSize = pieceDataMap.values.sumOf { it.a }
+        val totalSize = pieceDataMap.values.sumOf { it.component1() }
         return totalSize >= PIECE_SIZE
     }
     
@@ -447,14 +447,14 @@ class BitTorrentPeerWire(
         val pieceDataMap = pieceData[pieceIndex] ?: return 0 j { 0.toByte() }
         val sortedBlocks = pieceDataMap.entries.sortedBy { it.key }
         
-        val totalSize = sortedBlocks.sumOf { it.value.a }
-        val assembled = totalSize j { i ->
+        val totalSize = sortedBlocks.sumOf { it.value.component1() }
+        val assembled = \1 j { \2: Int ->
             var currentOffset = 0
             for ((offset, data) in sortedBlocks) {
-                if (i >= currentOffset && i < currentOffset + data.a) {
+                if (i >= currentOffset && i < currentOffset + data.component1()) {
                     return@j data[i - currentOffset]
                 }
-                currentOffset += data.a
+                currentOffset += data.component1()
             }
             0.toByte()
         }
@@ -468,7 +468,7 @@ class BitTorrentPeerWire(
     internal fun verifyPiece(pieceIndex: Int, pieceData: ByteIndexed): Boolean {
         // TODO: Implement actual hash verification against torrent info
         // For now, return true if piece has data
-        return pieceData.a > 0
+        return pieceData.component1() > 0
     }
     
     /**
@@ -477,7 +477,7 @@ class BitTorrentPeerWire(
     internal fun readPieceData(pieceIndex: Int, offset: Int, length: Int): ByteIndexed? {
         // TODO: Implement actual file I/O
         // For now, return dummy data
-        return length j { i -> (i % 256).toByte() }
+        return \1 j { \2: Int -> (i % 256).toByte() }
     }
     
     /**

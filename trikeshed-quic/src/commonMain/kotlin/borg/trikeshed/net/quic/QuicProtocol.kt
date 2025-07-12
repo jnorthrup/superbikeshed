@@ -50,11 +50,11 @@ enum class QuicFrameType(val value: Byte) {
 data class ConnectionId(
     val bytes: Indexed<Byte>
 ) {
-    val length: Int get() = bytes.a
+    val length: Int get() = bytes.component1()
     
     fun toHexString(): String = buildString {
-        for (i in 0 until bytes.a) {
-            append(bytes.b(i).toUByte().toString(16).padStart(2, '0'))
+        for (i in 0 until bytes.component1()) {
+            append(bytes.component2()(i).toUByte().toString(16).padStart(2, '0'))
         }
     }
     

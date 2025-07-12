@@ -9,9 +9,9 @@ import kotlin.NoSuchElementException // For extendByClamping on empty series
  */
 enum class ExtensionMode {
     /**
-     * Clamps the requested index to the valid range of the original series (`0` to `originalSeries.a - 1`).
+     * Clamps the requested index to the valid range of the original series (`0` to `originalSeries.component1() - 1`).
      * - Accessing an index less than `0` returns the element at index `0`.
-     * - Accessing an index greater than or equal to `originalSeries.a` returns the element at `originalSeries.a - 1`.
+     * - Accessing an index greater than or equal to `originalSeries.component1()` returns the element at `originalSeries.component1() - 1`.
      * - **Warning:** If the original series is empty, attempts to access the extended series
      *   will result in a [NoSuchElementException] because there are no elements to clamp to.
      *   The [Indexed.extendByClamping] helper provides specific behavior for this case.
@@ -74,7 +74,7 @@ data class SeriesExtension<T>(
  * according to the rules defined in the provided [extension] configuration.
  *
  * The returned [Indexed] will report its size (`a`) as [Int.MAX_VALUE].
- * Accessing elements within the original series' bounds (`0` to `originalSeries.a - 1`)
+ * Accessing elements within the original series' bounds (`0` to `originalSeries.component1() - 1`)
  * will return the original elements. Accessing elements outside these bounds will trigger
  * the behavior defined by `extension.mode`.
  *
@@ -97,7 +97,7 @@ fun <T> Indexed<T>.extend(extension: SeriesExtension<T>): Indexed<T> {
         override val b: (index: Int) -> T = { index ->
             when {
                 // In-bounds access: delegate to the original series
-                index >= 0 && index < originalSeries.a -> originalSeries.b(index)
+                index >= 0 && index < originalSeries.component1() -> originalSeries.component2()(index)
 
                 // Out-of-bounds access: apply extension logic
                 else -> {
@@ -108,8 +108,8 @@ fun <T> Indexed<T>.extend(extension: SeriesExtension<T>): Indexed<T> {
                                 throw NoSuchElementException("Cannot clamp access to an empty series. Consider extendByClamping() for specific empty series behavior or provide a non-empty series.")
                             }
                             // Coerce the index to be within the valid range of the original series.
-                            val clampedIndex = index.coerceIn(0, originalSeries.a - 1)
-                            originalSeries.b(clampedIndex)
+                            val clampedIndex = index.coerceIn(0, originalSeries.component1() - 1)
+                            originalSeries.component2()(clampedIndex)
                         }
                         ExtensionMode.DEFAULT_VALUE -> {
                             extension.defaultValue!! // Validated non-null by SeriesExtension's init block
@@ -128,7 +128,7 @@ fun <T> Indexed<T>.extend(extension: SeriesExtension<T>): Indexed<T> {
  * Extends a [Indexed] to be virtually infinite by clamping out-of-bounds access
  * to the nearest edge element of the original series.
  * - If `index < 0`, it returns the element at index `0`.
- * - If `index >= originalSeries.a`, it returns the element at index `originalSeries.a - 1`.
+ * - If `index >= originalSeries.component1()`, it returns the element at index `originalSeries.component1() - 1`.
  *
  * **Special Behavior for Empty Indexed:**
  * If the original series is empty, the returned "infinite" series will
@@ -150,7 +150,7 @@ fun <T> Indexed<T>.extendByClamping(): Indexed<T> {
 
 /**
  * Extends a [Indexed] to be virtually infinite, returning a specified `defaultValue`
- * for any out-of-bounds access (i.e., for `index < 0` or `index >= originalSeries.a`).
+ * for any out-of-bounds access (i.e., for `index < 0` or `index >= originalSeries.component1()`).
  *
  * @param T The type of elements in the Indexed.
  * @param defaultValue The value to return for indices outside the original series' bounds.
@@ -162,7 +162,7 @@ fun <T> Indexed<T>.extendWithDefault(defaultValue: T): Indexed<T> {
 
 /**
  * Extends a [Indexed] to be virtually infinite, using a `generativeFunction`
- * to produce values for any out-of-bounds access (i.e., for `index < 0` or `index >= originalSeries.a`).
+ * to produce values for any out-of-bounds access (i.e., for `index < 0` or `index >= originalSeries.component1()`).
  *
  * The `generativeFunction` receives the requested out-of-bounds index and
  * a reference to the original series, allowing for dynamic computation of extended values.
@@ -188,7 +188,7 @@ fun <T> Indexed<T>.extendWithGenerator(generativeFunction: (index: Int, original
  * @return A new [Indexed<T>] where `null`s from the original series are replaced by `defaultValue`.
  */
 fun <T : Any> Indexed<T?>.fillna(defaultValue: T): Indexed<T> {
-    return this.a j { index:Int -> this.b(index) ?: defaultValue }
+    return this.component1() j { index:Int -> this.component2()(index) ?: defaultValue }
 }
 
 /**
@@ -204,7 +204,7 @@ fun <T : Any> Indexed<T?>.fillna(defaultValue: T): Indexed<T> {
  * @return A new [Indexed<T>] where `null`s from the original series are replaced by values generated by `defaultProvider`.
  */
 fun <T : Any> Indexed<T?>.fillna(defaultProvider: (index: Int) -> T): Indexed<T> {
-    return this.a j { index:Int -> this.b(index) ?: defaultProvider(index) }
+    return this.component1() j { index:Int -> this.component2()(index) ?: defaultProvider(index) }
 }
 
 /**
@@ -241,8 +241,8 @@ fun <T : Any> Indexed<T?>.ffill(): Indexed<T?> {
     }
 
     var lastNonNullValue: T? = null // Holds the last seen non-null value.
-    return this.a j { index:Int ->
-        val currentValue = this.b(index)
+    return this.component1() j { index:Int ->
+        val currentValue = this.component2()(index)
         if (currentValue != null) {
             lastNonNullValue = currentValue // Update if current is non-null
             currentValue // Return current non-null value

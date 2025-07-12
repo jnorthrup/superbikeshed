@@ -172,12 +172,12 @@ class MemvidAttentionBridgeTest {
         
         // Then: Stream should have correct properties
         assertTrue(stream.streamId.startsWith("fiduciary-"))
-        assertEquals(3, stream.events.a)
+        assertEquals(3, stream.events.component1())
         assertEquals("fiduciary_attention", stream.metadata["source"])
         
         // And: All events should be DocumentFocus type
-        for (i in 0 until stream.events.a) {
-            val event = stream.events.b(i)
+        for (i in 0 until stream.events.component1()) {
+            val event = stream.events.component2()(i)
             assertTrue(event is AttentionEvent.DocumentFocus)
         }
     }
@@ -327,11 +327,11 @@ class MemvidAttentionBridgeTest {
         // Then: Attention memory should reflect all events
         val memory = bridge.getAttentionMemory()
         assertEquals("webbing-memory", memory.memoryId)
-        assertEquals(4, memory.focusHistory.a)
+        assertEquals(4, memory.focusHistory.component1())
         assertTrue(memory.attentionMap.containsKey("docA"))
         assertTrue(memory.attentionMap.containsKey("corpusX"))
         // Check event types in order
-        val types = (0 until memory.focusHistory.a).map { i -> memory.focusHistory.b(i)::class.simpleName }
+        val types = (0 until memory.focusHistory.component1()).map { i -> memory.focusHistory.component2()(i)::class.simpleName }
         assertEquals(listOf("DocumentFocus", "CorpusScan", "ConceptExtraction", "FiduciaryAction"), types)
     }
     

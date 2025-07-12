@@ -38,7 +38,7 @@ class SimpleTest {
         )
         
         val serialized = adapter.serializeMessage(message)
-        assertTrue(serialized.a > 0)
+        assertTrue(serialized.component1() > 0)
     }
     
     @Test

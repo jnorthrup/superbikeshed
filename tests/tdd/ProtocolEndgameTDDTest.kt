@@ -230,8 +230,8 @@ class ProtocolEndgameTDDTest {
     @Test
     fun `should leverage SIMD instructions where available`() {
         // Given: SIMD-capable operations
-        val largeSeries = 1000000 j { i -> i.toDouble() }
-        val largeTensor = Tensor(3 j { 100 }, 1000000 j { i -> i.toDouble() })
+        val largeSeries = \1 j { \2: Int -> i.toDouble() }
+        val largeTensor = \1 j { \2: Int -> i.toDouble() })
         
         // When: Performing SIMD-optimized operations
         val simdResults = runSimdOptimizedOperations(largeSeries, largeTensor)

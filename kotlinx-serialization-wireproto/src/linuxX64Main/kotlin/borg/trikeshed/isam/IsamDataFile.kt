@@ -351,8 +351,8 @@ class AsyncIOWriter(internal val config: AsyncIOConfig) {
                 val rowBuffer = ByteArray(rowLen)
 
                 // Batch processing with IO_URING
-                for (batchStart in 0 until cursor.a step config.batchSize) {
-                    val batchEnd = minOf(batchStart + config.batchSize, cursor.a)
+                for (batchStart in 0 until cursor.component1() step config.batchSize) {
+                    val batchEnd = minOf(batchStart + config.batchSize, cursor.component1())
                     val batchSize = batchEnd - batchStart
 
                     // Prepare batch of submissions

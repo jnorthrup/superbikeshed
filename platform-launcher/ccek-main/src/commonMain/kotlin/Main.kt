@@ -138,9 +138,9 @@ suspend fun main() = runBlocking {
     ) chain channel2
     
     println("  🔗 Channel Chain Context:")
-    println("    Chain Length: ${channelChain.channels.a}")
-    for (i in 0 until channelChain.channels.a) {
-        val channel = channelChain.channels.b(i)
+    println("    Chain Length: ${channelChain.channels.component1()}")
+    for (i in 0 until channelChain.channels.component1()) {
+        val channel = channelChain.channels.component2()(i)
         println("    Channel ${i + 1}: ${channel.channelId} (${channel.type})")
         println("      Local: ${channel.localAddr}")
         println("      Remote: ${channel.remoteAddr}")
@@ -159,7 +159,7 @@ suspend fun main() = runBlocking {
         println("    CCEK Action: ${context?.action}")
         println("    io_uring Batch Size: ${uring?.batchSize}")
         if (chain != null) {
-            println("    Channel Chain: ${chain.channels.a} channels")
+            println("    Channel Chain: ${chain.channels.component1()} channels")
         }
     }
     

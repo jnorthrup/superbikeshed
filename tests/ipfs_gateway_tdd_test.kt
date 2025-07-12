@@ -20,7 +20,7 @@ class IpfsGatewayTddTest {
     @Test
     fun `test IPFS client initialization`() = runTest {
         // Given: IPFS client parameters
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val storage = InMemoryIpfsStorage()
         val config = IpfsConfig()
 
@@ -42,14 +42,14 @@ class IpfsGatewayTddTest {
     fun `test content addition to IPFS`() = runTest {
         // Given: An IPFS client and test data
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
 
         // When: Adding content to IPFS
         val cid = client.add(testData)
@@ -58,21 +58,21 @@ class IpfsGatewayTddTest {
         assertNotNull(cid)
         assertTrue(cid.version >= 0)
         assertNotNull(cid.multihash)
-        assertTrue(cid.multihash.digest.a > 0)
+        assertTrue(cid.multihash.digest.component1() > 0)
     }
 
     @Test
     fun `test content retrieval from IPFS`() = runTest {
         // Given: An IPFS client with stored content
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val originalData = 2048 j { i -> (i % 256).toByte() }
+        val originalData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = client.add(originalData)
 
         // When: Retrieving content from IPFS
@@ -80,11 +80,11 @@ class IpfsGatewayTddTest {
 
         // Then: Should get the original data
         assertNotNull(retrievedData)
-        assertEquals(originalData.a, retrievedData!!.a)
+        assertEquals(originalData.component1(), retrievedData!!.component1())
         
         // Verify data integrity
-        for (i in 0 until originalData.a) {
-            assertEquals(originalData.b(i), retrievedData.b(i))
+        for (i in 0 until originalData.component1()) {
+            assertEquals(originalData.component2()(i), retrievedData.component2()(i))
         }
     }
 
@@ -92,14 +92,14 @@ class IpfsGatewayTddTest {
     fun `test large file chunking`() = runTest {
         // Given: An IPFS client and large data
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val largeData = 500000 j { i -> (i % 256).toByte() } // 500KB
+        val largeData = \1 j { \2: Int -> (i % 256).toByte() } // 500KB
         val chunkSize = 262144 // 256KB
 
         // When: Adding large file with chunking
@@ -114,11 +114,11 @@ class IpfsGatewayTddTest {
 
         // Then: Should get the complete file
         assertNotNull(retrievedData)
-        assertEquals(largeData.a, retrievedData!!.a)
+        assertEquals(largeData.component1(), retrievedData!!.component1())
         
         // Verify data integrity
-        for (i in 0 until largeData.a) {
-            assertEquals(largeData.b(i), retrievedData.b(i))
+        for (i in 0 until largeData.component1()) {
+            assertEquals(largeData.component2()(i), retrievedData.component2()(i))
         }
     }
 
@@ -126,14 +126,14 @@ class IpfsGatewayTddTest {
     fun `test content pinning`() = runTest {
         // Given: An IPFS client with content
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = client.add(testData)
 
         // When: Pinning content
@@ -146,10 +146,10 @@ class IpfsGatewayTddTest {
         val pinnedCids = client.listPinned()
 
         // Then: Should contain the pinned CID
-        assertTrue(pinnedCids.a > 0)
+        assertTrue(pinnedCids.component1() > 0)
         var found = false
-        for (i in 0 until pinnedCids.a) {
-            if (pinnedCids.b(i) == cid) {
+        for (i in 0 until pinnedCids.component1()) {
+            if (pinnedCids.component2()(i) == cid) {
                 found = true
                 break
             }
@@ -161,14 +161,14 @@ class IpfsGatewayTddTest {
     fun `test content unpinning`() = runTest {
         // Given: An IPFS client with pinned content
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = client.add(testData)
         client.pin(cid)
 
@@ -183,8 +183,8 @@ class IpfsGatewayTddTest {
 
         // Then: Should not contain the unpinned CID
         var found = false
-        for (i in 0 until pinnedCids.a) {
-            if (pinnedCids.b(i) == cid) {
+        for (i in 0 until pinnedCids.component1()) {
+            if (pinnedCids.component2()(i) == cid) {
                 found = true
                 break
             }
@@ -196,15 +196,15 @@ class IpfsGatewayTddTest {
     fun `test garbage collection`() = runTest {
         // Given: An IPFS client with unpinned content
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val testData1 = 1024 j { i -> (i % 256).toByte() }
-        val testData2 = 2048 j { i -> ((i + 100) % 256).toByte() }
+        val testData1 = \1 j { \2: Int -> (i % 256).toByte() }
+        val testData2 = \1 j { \2: Int -> ((i + 100) % 256).toByte() }
         
         val cid1 = client.add(testData1)
         val cid2 = client.add(testData2)
@@ -216,10 +216,10 @@ class IpfsGatewayTddTest {
         val collectedCids = client.gc()
 
         // Then: Should collect unpinned content
-        assertTrue(collectedCids.a > 0)
+        assertTrue(collectedCids.component1() > 0)
         var cid1Collected = false
-        for (i in 0 until collectedCids.a) {
-            if (collectedCids.b(i) == cid1) {
+        for (i in 0 until collectedCids.component1()) {
+            if (collectedCids.component2()(i) == cid1) {
                 cid1Collected = true
                 break
             }
@@ -229,7 +229,7 @@ class IpfsGatewayTddTest {
         // Pinned content should still be available
         val retrievedData2 = client.get(cid2)
         assertNotNull(retrievedData2)
-        assertEquals(testData2.a, retrievedData2!!.a)
+        assertEquals(testData2.component1(), retrievedData2!!.component1())
     }
 
     @Test
@@ -264,7 +264,7 @@ class IpfsGatewayTddTest {
         val server = IpfsServer(config, storage, dht, pubsub)
         server.start()
 
-        val testData = 512 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
 
         // When: Adding content via HTTP API
         val request = IpfsApiRequest(
@@ -295,7 +295,7 @@ class IpfsGatewayTddTest {
         val server = IpfsServer(config, storage, dht, pubsub)
         server.start()
 
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = server.add(testData)
 
         // When: Getting content via HTTP API
@@ -310,7 +310,7 @@ class IpfsGatewayTddTest {
         assertEquals(200, response.status)
         assertTrue(response.data is Indexed<*>)
         val retrievedData = response.data as Indexed<Byte>
-        assertEquals(testData.a, retrievedData.a)
+        assertEquals(testData.component1(), retrievedData.component1())
     }
 
     @Test
@@ -324,7 +324,7 @@ class IpfsGatewayTddTest {
         val server = IpfsServer(config, storage, dht, pubsub)
         server.start()
 
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         val cid = server.add(testData)
 
         // When: Pinning content via HTTP API
@@ -428,8 +428,8 @@ class IpfsGatewayTddTest {
     @Test
     fun `test torrent to IPFS gateway mapping`() = runTest {
         // Given: Torrent and IPFS data
-        val torrentHash = 20 j { i -> i.toByte() }
-        val ipfsCid = CID(1, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, 32 j { i -> i.toByte() }))
+        val torrentHash = \1 j { \2: Int -> i.toByte() }
+        val ipfsCid = CID(1, CID.Codec.RAW, Multihash(Multihash.HashType.SHA2_256, \1 j { \2: Int -> i.toByte() }))
         val torrentName = "test-torrent"
         val totalSize = 1024 * 1024L
 
@@ -453,14 +453,14 @@ class IpfsGatewayTddTest {
     fun `test IPFS content store and retrieve`() = runTest {
         // Given: An IPFS client
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
             storage = storage
         )
 
-        val testData = 2048 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
 
         // When: Storing content
         val storeResult = client.store(testData)
@@ -474,11 +474,11 @@ class IpfsGatewayTddTest {
 
         // Then: Should get the original content
         assertNotNull(retrieveResult)
-        assertEquals(testData.a, retrieveResult!!.content.a)
+        assertEquals(testData.component1(), retrieveResult!!.content.component1())
         
         // Verify data integrity
-        for (i in 0 until testData.a) {
-            assertEquals(testData.b(i), retrieveResult.content.b(i))
+        for (i in 0 until testData.component1()) {
+            assertEquals(testData.component2()(i), retrieveResult.content.component2()(i))
         }
     }
 
@@ -486,7 +486,7 @@ class IpfsGatewayTddTest {
     fun `test IPFS content retrieval with invalid hash`() = runTest {
         // Given: An IPFS client
         val storage = InMemoryIpfsStorage()
-        val peerId = PeerId(32 j { i -> i.toByte() })
+        val peerId = \1 j { \2: Int -> i.toByte() })
         val client = IpfsClient(
             localPeerId = peerId,
             quicEngine = null,
@@ -514,7 +514,7 @@ class IpfsGatewayTddTest {
         server.start()
 
         // When: Adding content
-        val testData = 1024 j { i -> (i % 256).toByte() }
+        val testData = \1 j { \2: Int -> (i % 256).toByte() }
         server.add(testData)
 
         // When: Getting content

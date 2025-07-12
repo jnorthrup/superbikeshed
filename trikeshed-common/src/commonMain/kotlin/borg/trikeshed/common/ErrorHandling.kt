@@ -249,11 +249,11 @@ class PlatformException(
 inline fun <T> trySystemCall(block: () -> T): Join<SystemCallResult, T?> {
     return try {
         val result = block()
-        Join(ErrorCodes.SUCCESS, result)
+        ErrorCodes.SUCCESS j result
     } catch (e: SystemCallException) {
-        Join(e.errorCode, null)
+        e.errorCode j null
     } catch (e: Exception) {
-        Join(-1, null)
+        -1 j null
     }
 }
 

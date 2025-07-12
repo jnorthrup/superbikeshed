@@ -299,12 +299,12 @@ class TorrentSimulation(
     
     // Helper functions
     internal fun generatePieceData(size: Int): ByteIndexed {
-        return size j { i -> (i % 256).toByte() }
+        return \1 j { \2: Int -> (i % 256).toByte() }
     }
     
     internal fun verifyPieceData(pieceIndex: Int, data: ByteIndexed): Boolean {
         // Simulated verification - just check data is not empty
-        return data.a > 0
+        return data.component1() > 0
     }
     
     /**

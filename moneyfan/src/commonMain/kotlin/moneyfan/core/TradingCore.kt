@@ -44,11 +44,11 @@ typealias TickData = Join<PriceVolume, Instant>
 typealias OHLCV = Join<Join<Price, Price>, Join<Join<Price, Price>, Volume>> // Open-High-Low-Close-Volume
 
 // Helper functions for OHLCV access
-val OHLCV.open: Price get() = this.a.a
-val OHLCV.high: Price get() = this.a.b  
-val OHLCV.low: Price get() = this.b.a.a
-val OHLCV.close: Price get() = this.b.a.b
-val OHLCV.volume: Volume get() = this.b.b
+val OHLCV.open: Price get() = this.component1().component1()
+val OHLCV.high: Price get() = this.component1().component2()  
+val OHLCV.low: Price get() = this.component2().component1().component1()
+val OHLCV.close: Price get() = this.component2().component1().component2()
+val OHLCV.volume: Volume get() = this.component2().component2()
 
 fun OHLCV(open: Price, high: Price, low: Price, close: Price, volume: Volume): OHLCV =
     (open j high) j ((low j close) j volume)
@@ -61,9 +61,9 @@ data class MarketTick(
     val data: TickData,
     val tradeId: TradeId
 ) {
-    val price: Price get() = data.a.a
-    val volume: Volume get() = data.a.b
-    val timestamp: Instant get() = data.b
+    val price: Price get() = data.component1().component1()
+    val volume: Volume get() = data.component1().component2()
+    val timestamp: Instant get() = data.component2()
 }
 
 /**
@@ -242,7 +242,7 @@ class TechnicalAnalysis {
         return Indexed.of(emaData.size) { i -> emaData[i] }
     }
     
-    fun bollingerBands(prices: PriceSeries, period: Int, stdDev: Decimal = 2.0): Join<PriceSeries, Join<PriceSeries, PriceSeries>> {
+    fun bollingerBands(prices: PriceSeries, period: Int, stdDev: Decimal = 2.0): Join<PriceSeries, PriceSeries j PriceSeries> {
         val sma = simpleMovingAverage(prices, period)
         val smaList = sma.play
         val priceList = prices.play

@@ -45,7 +45,7 @@ typealias CatalogingPlan = MetaSeries<Join<PatrickTranscriptEntry, Indexed<NLPTa
 
 object PatrickTranscriptChordSheet {
     // Orchestrates the full pipeline: ZIP Entry → Transcript → NLP Tags → Catalog Entry
-    // Example: transcriptEntry j { entry -> extractTranscript(entry) }
-    // Example: transcriptText j { text -> tagWithNLP(text) }
-    // Example: (transcriptEntry, nlpTags) j { (entry, tags) -> createCatalogEntry(entry, tags) }
+    // Example: \1 j { \2: Int -> extractTranscript(entry) }
+    // Example: \1 j { \2: Int -> tagWithNLP(text) }
+    // Example: (transcriptEntry, \1 j { \2: Int -> createCatalogEntry(entry, tags) }
 } 

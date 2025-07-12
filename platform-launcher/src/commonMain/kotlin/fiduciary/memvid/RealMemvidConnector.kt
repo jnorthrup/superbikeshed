@@ -36,8 +36,8 @@ class RealMemvidConnector(
                 MemvidDocumentFocus(
                     eventType = "document_focus",
                     docId = event.docId,
-                    rangeStart = event.range.a,
-                    rangeEnd = event.range.b,
+                    rangeStart = event.range.component1(),
+                    rangeEnd = event.range.component2(),
                     duration = event.duration,
                     intensity = event.intensity,
                     timestamp = System.currentTimeMillis()
@@ -50,8 +50,8 @@ class RealMemvidConnector(
                     conceptId = event.conceptId,
                     sourceDoc = event.sourceDoc,
                     confidence = event.confidence,
-                    relatedConcepts = (0 until event.relatedConcepts.a).map { 
-                        event.relatedConcepts.b(it) 
+                    relatedConcepts = (0 until event.relatedConcepts.component1()).map { 
+                        event.relatedConcepts.component2()(it) 
                     },
                     timestamp = System.currentTimeMillis()
                 )
@@ -74,7 +74,7 @@ class RealMemvidConnector(
         val request = buildMemvidRequest("POST", endpoint, payload.toString())
         val response = executeMemvidRequest(request)
         
-        return response.a.statusCode == 200 || response.a.statusCode == 201
+        return response.component1().statusCode == 200 || response.component1().statusCode == 201
     }
     
     /**
@@ -85,16 +85,16 @@ class RealMemvidConnector(
         val request = buildMemvidRequest("GET", endpoint)
         val response = executeMemvidRequest(request)
         
-        if (response.a.statusCode == 200) {
+        if (response.component1().statusCode == 200) {
             val memoryData = json.decodeFromString<MemvidMemoryResponse>(
-                String(response.b)
+                String(response.component2())
             )
             
             return AttentionMemory(
                 memoryId = memoryData.memoryId,
                 timestamp = memoryData.timestamp,
                 attentionMap = memoryData.attentionScores,
-                focusHistory = memoryData.recentEvents.size j { i ->
+                focusHistory = \1 j { \2: Int ->
                     // Convert back to AttentionEvent
                     parseMemvidEvent(memoryData.recentEvents[i])
                 },
@@ -121,7 +121,7 @@ class RealMemvidConnector(
         val request = buildMemvidRequest("DELETE", endpoint)
         val response = executeMemvidRequest(request)
         
-        return response.a.statusCode == 200 || response.a.statusCode == 204
+        return response.component1().statusCode == 200 || response.component1().statusCode == 204
     }
     
     /**
@@ -132,8 +132,8 @@ class RealMemvidConnector(
         val request = buildMemvidRequest("GET", endpoint)
         val response = executeMemvidRequest(request)
         
-        return if (response.a.statusCode == 200) {
-            response.b
+        return if (response.component1().statusCode == 200) {
+            response.component2()
         } else {
             ByteArray(0)
         }
@@ -147,7 +147,7 @@ class RealMemvidConnector(
         val request = buildMemvidRequest("PUT", endpoint, data)
         val response = executeMemvidRequest(request)
         
-        return response.a.statusCode == 200 || response.a.statusCode == 201
+        return response.component1().statusCode == 200 || response.component1().statusCode == 201
     }
     
     /**
@@ -169,7 +169,7 @@ class RealMemvidConnector(
     ): HttpRequest {
         val headerCount = if (apiKey != null) 4 else 3
         
-        val headers: HttpHeaders = headerCount j { i ->
+        val headers: HttpHeaders = \1 j { \2: Int ->
             when (i) {
                 0 -> "Content-Type" j "application/json"
                 1 -> "Accept" j "application/json"
@@ -219,7 +219,7 @@ class RealMemvidConnector(
                 sourceDoc = eventData.sourceDoc ?: "",
                 confidence = eventData.confidence ?: 0.0,
                 relatedConcepts = eventData.relatedConcepts?.size?.let { size ->
-                    size j { i -> eventData.relatedConcepts[i] }
+                    \1 j { \2: Int -> eventData.relatedConcepts[i] }
                 } ?: (0 j { throw IndexOutOfBoundsException() })
             )
             

@@ -117,8 +117,8 @@ class CouchCursorOperations(
                 )
                 
                 // Convert to indexed documents
-                val indexedDocs = response.rows.a j { i ->
-                    response.rows.b(i).doc ?: CouchDocument()
+                val indexedDocs = \1 j { \2: Int ->
+                    response.rows.component2()(i).doc ?: CouchDocument()
                 }
                 
                 val metadata = CouchChannelMetadata(
@@ -180,13 +180,13 @@ class CouchCursorOperations(
             when (operation) {
                 BulkOperation.PUT -> {
                     val request = BulkDocsRequest(
-                        docs = documents.a j { i -> documents.b(i).toJson() }
+                        docs = \1 j { \2: Int -> documents.component2()(i).toJson() }
                     )
                     client.bulkDocs(database, request)
                 }
                 BulkOperation.DELETE -> {
-                    val deletedDocs = documents.a j { i ->
-                        documents.b(i).copy(deleted = true).toJson()
+                    val deletedDocs = \1 j { \2: Int ->
+                        documents.component2()(i).copy(deleted = true).toJson()
                     }
                     val request = BulkDocsRequest(docs = deletedDocs)
                     client.bulkDocs(database, request)
@@ -214,13 +214,13 @@ class CouchCursorOperations(
             val changes = client.getChanges(database, params)
             
             // Group changes into indexed channels
-            val changeGroups = changes.results.a / 100 // Group by 100 changes
+            val changeGroups = changes.results.component1() / 100 // Group by 100 changes
             for (group in 0 until changeGroups) {
                 val start = group * 100
-                val end = minOf(start + 100, changes.results.a)
+                val end = minOf(start + 100, changes.results.component1())
                 
-                val documents = (end - start) j { i ->
-                    changes.results.b(start + i).doc ?: CouchDocument()
+                val documents = (end - \1 j { \2: Int ->
+                    changes.results.component2()(start + i).doc ?: CouchDocument()
                 }
                 
                 val channel = CouchDocumentChannel(
@@ -242,8 +242,8 @@ class CouchCursorOperations(
      * Create cursor from indexed channel
      */
     private fun createCursorFromChannel(channel: CouchDocumentChannel): Cursor {
-        return Cursor(channel.documents.a j { i ->
-            CursorRow(channel.documents.b(i))
+        return \1 j { \2: Int ->
+            CursorRow(channel.documents.component2()(i))
         })
     }
     
@@ -302,8 +302,8 @@ suspend fun <T> withCouchCCek(
 /**
  * CouchDB document cursor operations
  */
-fun Indexed<CouchDocument>.asCursor(): Cursor = Cursor(this.a j { i ->
-    CursorRow(this.b(i))
+fun Indexed<CouchDocument>.asCursor(): Cursor = \1 j { \2: Int ->
+    CursorRow(this.component2()(i))
 })
 
 /**
@@ -312,8 +312,8 @@ fun Indexed<CouchDocument>.asCursor(): Cursor = Cursor(this.a j { i ->
 fun Indexed<CouchDocument>.asFlow(
     bufferSize: Int = Channel.BUFFERED
 ): Flow<CouchDocument> = flow {
-    for (i in 0 until this@asFlow.a) {
-        emit(this@asFlow.b(i))
+    for (i in 0 until this@asFlow.component1()) {
+        emit(this@asFlow.component2()(i))
     }
 }.buffer(bufferSize)
 

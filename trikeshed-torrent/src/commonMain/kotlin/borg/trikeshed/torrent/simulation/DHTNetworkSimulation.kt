@@ -204,7 +204,7 @@ class DHTNetworkSimulation(
     
     // Helper functions
     internal fun generateNodeId(): String = "node_${(0..999999).random()}"
-    internal fun generatePeerId(): PeerId = 20 j { i -> (i * 7).toByte() }
+    internal fun generatePeerId(): PeerId = \1 j { \2: Int -> (i * 7).toByte() }
 }
 
 // DHT data classes

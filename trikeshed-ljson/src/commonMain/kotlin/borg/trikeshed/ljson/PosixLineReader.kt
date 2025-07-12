@@ -68,7 +68,7 @@ object PosixLineReader {
     fun readLines(data: Indexed<Byte>): Flow<Indexed<Byte>> = flow {
         var lineStart = 0
         
-        for (i in 0 until data.a) {
+        for (i in 0 until data.component1()) {
             if (data[i] == LF) {
                 val lineLength = i - lineStart
                 
@@ -83,8 +83,8 @@ object PosixLineReader {
         }
         
         // Handle last line without newline
-        if (lineStart < data.a) {
-            val lineLength = data.a - lineStart
+        if (lineStart < data.component1()) {
+            val lineLength = data.component1() - lineStart
             val line = lineLength j { j: Int -> data[lineStart + j] }
             emit(line)
         }

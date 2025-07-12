@@ -167,11 +167,11 @@ object RTSCodec {
     fun encodeRequest(request: RTSRequest): Indexed<Byte> {
         val jsonString = json.encodeToString(RTSRequest.serializer(), request)
         val bytes = jsonString.encodeToByteArray()
-        return bytes.size j { i -> bytes[i] }
+        return \1 j { \2: Int -> bytes[i] }
     }
     
     fun decodeRequest(data: Indexed<Byte>): RTSRequest {
-        val bytes = ByteArray(data.a) { i -> data[i] }
+        val bytes = ByteArray(data.component1()) { i -> data[i] }
         val jsonString = bytes.decodeToString()
         return json.decodeFromString(RTSRequest.serializer(), jsonString)
     }
@@ -179,11 +179,11 @@ object RTSCodec {
     fun encodeResponse(response: RTSResponse): Indexed<Byte> {
         val jsonString = json.encodeToString(RTSResponse.serializer(), response)
         val bytes = jsonString.encodeToByteArray()
-        return bytes.size j { i -> bytes[i] }
+        return \1 j { \2: Int -> bytes[i] }
     }
     
     fun decodeResponse(data: Indexed<Byte>): RTSResponse {
-        val bytes = ByteArray(data.a) { i -> data[i] }
+        val bytes = ByteArray(data.component1()) { i -> data[i] }
         val jsonString = bytes.decodeToString()
         return json.decodeFromString(RTSResponse.serializer(), jsonString)
     }
@@ -197,6 +197,6 @@ object RTSCodec {
             requests
         )
         val bytes = batchJson.encodeToByteArray()
-        return bytes.size j { i -> bytes[i] }
+        return \1 j { \2: Int -> bytes[i] }
     }
 }

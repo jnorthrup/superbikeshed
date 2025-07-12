@@ -92,5 +92,5 @@ object BlackboardLatticeChordSheet {
 
 object BlackboardLatticeEfficiencyChordSheet {
     // Orchestrates the mapping of batch passes to efficiency strategies and metrics
-    // Example: batchPass j { pass -> EfficiencyStrategy(...) }
+    // Example: \1 j { \2: Int -> EfficiencyStrategy(...) }
 } 

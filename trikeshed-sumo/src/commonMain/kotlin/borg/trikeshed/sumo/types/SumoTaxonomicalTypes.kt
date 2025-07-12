@@ -270,7 +270,7 @@ fun <A, R> query(input: A, predicate: (A) -> R): Query<A, R> = input j predicate
  * Create a subclass query
  */
 fun subclassQuery(sub: String, sup: String): SubclassQuery = 
-    (ConceptName(sub) j ConceptName(sup)) j { pair -> 
+    (ConceptName(sub) j \1 j { \2: Int -> 
         // This would be implemented with actual knowledge base lookup
         false 
     }
@@ -279,7 +279,7 @@ fun subclassQuery(sub: String, sup: String): SubclassQuery =
  * Create an instance query
  */
 fun instanceQuery(instance: String, concept: String): InstanceQuery = 
-    (ConceptName(instance) j ConceptName(concept)) j { pair -> 
+    (ConceptName(instance) j \1 j { \2: Int -> 
         // This would be implemented with actual knowledge base lookup
         false 
     } 

@@ -30,21 +30,21 @@ class ProjectApiService(internal val project: Project) {
         return ProjectInfo(
             name = project.name,
             basePath = project.basePath,
-            modules = moduleNames.size j { i -> moduleNames[i] },
-            contentRoots = roots.size j { i -> roots[i] }
+            modules = \1 j { \2: Int -> moduleNames[i] },
+            contentRoots = \1 j { \2: Int -> roots[i] }
         )
     }
     
     fun getProjectFiles(path: String? = null): Indexed<String> {
         val files = mutableListOf<String>()
-        val basePath = path ?: project.basePath ?: return 0 j { _ -> "" }
+        val basePath = path ?: project.basePath ?: return \1 j { \2: Int -> "" }
         
         val virtualFile = com.intellij.openapi.vfs.LocalFileSystem.getInstance().findFileByPath(basePath)
         if (virtualFile != null) {
             collectFiles(virtualFile, files)
         }
         
-        return files.size j { i -> files[i] }
+        return \1 j { \2: Int -> files[i] }
     }
     
     internal fun collectFiles(file: VirtualFile, collector: MutableList<String>) {

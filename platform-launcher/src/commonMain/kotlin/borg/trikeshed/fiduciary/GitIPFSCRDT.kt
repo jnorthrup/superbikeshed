@@ -132,8 +132,8 @@ class GitIPFSBridge(
     ): String {
         val flake = GitWaveFlake(
             commitHash = gitCommitHash,
-            parentCommits = (0 until parentCommits.a).map { parentCommits.b(it) },
-            waveOperations = (0 until operations.a).map { operations.b(it) },
+            parentCommits = (0 until parentCommits.component1()).map { parentCommits.component2()(it) },
+            waveOperations = (0 until operations.component1()).map { operations.component2()(it) },
             documentState = applyOperationsToDocument("", operations),
             timestamp = System.currentTimeMillis(),
             author = "git-bridge",
@@ -152,8 +152,8 @@ class GitIPFSBridge(
         val borrowedOps = ipfsHost.borrowOperations(sourceCID)
         val filteredOps = mutableListOf<WaveOperation>()
         
-        for (i in 0 until borrowedOps.a) {
-            val op = borrowedOps.b(i)
+        for (i in 0 until borrowedOps.component1()) {
+            val op = borrowedOps.component2()(i)
             if (operationFilter(op)) {
                 filteredOps.add(op)
             }
@@ -168,8 +168,8 @@ class GitIPFSBridge(
     ): String {
         var document = baseDocument
         
-        for (i in 0 until operations.a) {
-            val op = operations.b(i)
+        for (i in 0 until operations.component1()) {
+            val op = operations.component2()(i)
             document = when (op) {
                 is WaveOperation.Insert -> {
                     document.substring(0, op.position) + 
@@ -195,8 +195,8 @@ class GitIPFSBridge(
     
     internal fun signFlake(operations: Indexed<WaveOperation>): String {
         // Simplified signature - in production use proper cryptographic signing
-        val operationData = (0 until operations.a).joinToString("|") { i ->
-            val op = operations.b(i)
+        val operationData = (0 until operations.component1()).joinToString("|") { i ->
+            val op = operations.component2()(i)
             "${op.javaClass.simpleName}:${op.position}:${op.timestamp}"
         }
         return "SIG_${operationData.hashCode()}"
@@ -229,8 +229,8 @@ class ConsensusCRDTEngine {
     internal fun extractAllOperations(flakes: Indexed<GitWaveFlake>): Indexed<WaveOperation> {
         val allOps = mutableListOf<WaveOperation>()
         
-        for (i in 0 until flakes.a) {
-            val flake = flakes.b(i)
+        for (i in 0 until flakes.component1()) {
+            val flake = flakes.component2()(i)
             allOps.addAll(flake.waveOperations)
         }
         
@@ -254,14 +254,14 @@ class ConsensusCRDTEngine {
         var localOffset = 0
         var remoteOffset = 0
         
-        for (i in 0 until localSorted.a) {
-            val localOp = localSorted.b(i)
+        for (i in 0 until localSorted.component1()) {
+            val localOp = localSorted.component2()(i)
             val adjustedOp = adjustPositionForConcurrentOps(localOp, remoteSorted, remoteOffset)
             transformedLocal.add(adjustedOp)
         }
         
-        for (i in 0 until remoteSorted.a) {
-            val remoteOp = remoteSorted.b(i)
+        for (i in 0 until remoteSorted.component1()) {
+            val remoteOp = remoteSorted.component2()(i)
             val adjustedOp = adjustPositionForConcurrentOps(remoteOp, localSorted, localOffset)
             transformedRemote.add(adjustedOp)
         }
@@ -271,7 +271,7 @@ class ConsensusCRDTEngine {
     }
     
     internal fun sortOperationsByTimestamp(ops: Indexed<WaveOperation>): Indexed<WaveOperation> {
-        val sorted = (0 until ops.a).map { ops.b(it) }.sortedBy { it.timestamp }
+        val sorted = (0 until ops.component1()).map { ops.component2()(it) }.sortedBy { it.timestamp }
         return sorted.size j { sorted[it] }
     }
     
@@ -295,13 +295,13 @@ class ConsensusCRDTEngine {
         val merged = mutableListOf<WaveOperation>()
         
         // Add all local operations
-        for (i in 0 until local.a) {
-            merged.add(local.b(i))
+        for (i in 0 until local.component1()) {
+            merged.add(local.component2()(i))
         }
         
         // Add all remote operations
-        for (i in 0 until remote.a) {
-            merged.add(remote.b(i))
+        for (i in 0 until remote.component1()) {
+            merged.add(remote.component2()(i))
         }
         
         // Sort by timestamp for causal ordering
@@ -319,17 +319,17 @@ class ConsensusCRDTEngine {
         val allParents = mutableSetOf<String>()
         
         // Collect all parent commits
-        for (i in 0 until localFlakes.a) {
-            allParents.add(localFlakes.b(i).commitHash)
+        for (i in 0 until localFlakes.component1()) {
+            allParents.add(localFlakes.component2()(i).commitHash)
         }
-        for (i in 0 until remoteFlakes.a) {
-            allParents.add(remoteFlakes.b(i).commitHash)
+        for (i in 0 until remoteFlakes.component1()) {
+            allParents.add(remoteFlakes.component2()(i).commitHash)
         }
         
         return GitWaveFlake(
             commitHash = generateConsensusHash(mergedOps),
             parentCommits = allParents.toList(),
-            waveOperations = (0 until mergedOps.a).map { mergedOps.b(it) },
+            waveOperations = (0 until mergedOps.component1()).map { mergedOps.component2()(it) },
             documentState = applyOperationsToDocument("", mergedOps),
             timestamp = System.currentTimeMillis(),
             author = "consensus_merge",
@@ -340,15 +340,15 @@ class ConsensusCRDTEngine {
     }
     
     internal fun generateConsensusHash(ops: Indexed<WaveOperation>): String {
-        val opsString = (0 until ops.a).joinToString("|") { i ->
-            val op = ops.b(i)
+        val opsString = (0 until ops.component1()).joinToString("|") { i ->
+            val op = ops.component2()(i)
             "${op.javaClass.simpleName}:${op.timestamp}:${op.author}"
         }
         return "CONSENSUS_${opsString.hashCode()}"
     }
     
     internal fun signConsensus(ops: Indexed<WaveOperation>): String {
-        return "CONSENSUS_SIG_${ops.a}_${System.currentTimeMillis()}"
+        return "CONSENSUS_SIG_${ops.component1()}_${System.currentTimeMillis()}"
     }
     
     internal fun collectIPFSLinks(
@@ -357,11 +357,11 @@ class ConsensusCRDTEngine {
     ): List<String> {
         val allLinks = mutableSetOf<String>()
         
-        for (i in 0 until localFlakes.a) {
-            allLinks.addAll(localFlakes.b(i).ipfsLinks)
+        for (i in 0 until localFlakes.component1()) {
+            allLinks.addAll(localFlakes.component2()(i).ipfsLinks)
         }
-        for (i in 0 until remoteFlakes.a) {
-            allLinks.addAll(remoteFlakes.b(i).ipfsLinks)
+        for (i in 0 until remoteFlakes.component1()) {
+            allLinks.addAll(remoteFlakes.component2()(i).ipfsLinks)
         }
         
         return allLinks.toList()
@@ -374,11 +374,11 @@ class ConsensusCRDTEngine {
         // Simple heuristic - use most common document type
         val types = mutableListOf<FiduciaryDocType>()
         
-        for (i in 0 until localFlakes.a) {
-            types.add(localFlakes.b(i).documentType)
+        for (i in 0 until localFlakes.component1()) {
+            types.add(localFlakes.component2()(i).documentType)
         }
-        for (i in 0 until remoteFlakes.a) {
-            types.add(remoteFlakes.b(i).documentType)
+        for (i in 0 until remoteFlakes.component1()) {
+            types.add(remoteFlakes.component2()(i).documentType)
         }
         
         return types.groupBy { it }.maxByOrNull { it.value.size }?.key 
@@ -391,8 +391,8 @@ class ConsensusCRDTEngine {
     ): String {
         var document = baseDocument
         
-        for (i in 0 until operations.a) {
-            val op = operations.b(i)
+        for (i in 0 until operations.component1()) {
+            val op = operations.component2()(i)
             document = when (op) {
                 is WaveOperation.Insert -> {
                     if (op.position <= document.length) {
@@ -464,7 +464,7 @@ class DistributedDocumentManager(
             localFlakes = 1 j { existingFlake },
             remoteFlakes = 1 j { 
                 existingFlake.copy(
-                    waveOperations = (0 until newOperations.a).map { newOperations.b(it) },
+                    waveOperations = (0 until newOperations.component1()).map { newOperations.component2()(it) },
                     timestamp = System.currentTimeMillis()
                 )
             }

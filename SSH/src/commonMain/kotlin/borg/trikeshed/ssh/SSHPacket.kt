@@ -22,7 +22,7 @@ class SSHPacketEncoder(
         sequenceNumber: SSHSequenceNumber
     ): SSHWirePacket {
         // Build complete payload with message type
-        val fullPayload = (payload.a + 1) j { i: Int ->
+        val fullPayload = (payload.component1() + 1) j { i: Int ->
             if (i == 0) messageType.value else payload[i - 1]
         }
         
@@ -35,7 +35,7 @@ class SSHPacketEncoder(
     
     internal fun createPacket(payload: SSHPayload): SSHPacket {
         val blockSize = getBlockSize()
-        val payloadLength = payload.a
+        val payloadLength = payload.component1()
         val paddingLengthFieldSize = 1
         val packetLengthFieldSize = 4
         
@@ -53,9 +53,9 @@ class SSHPacketEncoder(
         return SSHPacket(
             length = packetLength,
             paddingLength = paddingLength.toByte(),
-            messageType = if (payload.a > 0) SSHMessageType.fromByte(payload[0]) ?: SSHMessageType.IGNORE else SSHMessageType.IGNORE,
-            payload = if (payload.a > 1) {
-                (payload.a - 1) j { i: Int -> payload[i + 1] }
+            messageType = if (payload.component1() > 0) SSHMessageType.fromByte(payload[0]) ?: SSHMessageType.IGNORE else SSHMessageType.IGNORE,
+            payload = if (payload.component1() > 1) {
+                (payload.component1() - 1) j { i: Int -> payload[i + 1] }
             } else {
                 0 j { 0.toByte() }
             },
@@ -92,7 +92,7 @@ class SSHPacketDecoder(
     }
     
     internal fun parsePacket(data: SSHPayload): SSHPacket? {
-        if (data.a < 6) return null // Minimum packet size
+        if (data.component1() < 6) return null // Minimum packet size
         
         // Extract packet length (4 bytes)
         val packetLength = ((data[0].toInt() and 0xFF) shl 24) or
@@ -110,7 +110,7 @@ class SSHPacketDecoder(
         val payloadStart = 6
         val payloadEnd = 4 + packetLength.toInt() - paddingLength
         
-        if (payloadEnd > data.a) return null // Incomplete packet
+        if (payloadEnd > data.component1()) return null // Incomplete packet
         
         // Extract payload
         val payload = (payloadEnd - payloadStart) j { i: Int ->
@@ -121,7 +121,7 @@ class SSHPacketDecoder(
         val paddingStart = payloadEnd
         val paddingEnd = paddingStart + paddingLength
         
-        if (paddingEnd > data.a) return null // Invalid padding
+        if (paddingEnd > data.component1()) return null // Invalid padding
         
         val padding = paddingLength.toInt() j { i: Int ->
             data[paddingStart + i]
@@ -143,7 +143,7 @@ class SSHPacketDecoder(
 
 // Wire format builder
 fun SSHPacket.encode(): SSHWirePacket {
-    val totalSize = 4 + 1 + 1 + payload.a + padding.a + mac.a
+    val totalSize = 4 + 1 + 1 + payload.component1() + padding.component1() + mac.component1()
     
     return totalSize j { i: Int ->
         when {
@@ -154,9 +154,9 @@ fun SSHPacket.encode(): SSHWirePacket {
             }
             i == 4 -> paddingLength
             i == 5 -> messageType.value
-            i < 6 + payload.a -> payload[i - 6]
-            i < 6 + payload.a + padding.a -> padding[i - 6 - payload.a]
-            else -> mac[i - 6 - payload.a - padding.a]
+            i < 6 + payload.component1() -> payload[i - 6]
+            i < 6 + payload.component1() + padding.component1() -> padding[i - 6 - payload.component1()]
+            else -> mac[i - 6 - payload.component1() - padding.component1()]
         }
     }
 }
@@ -201,11 +201,11 @@ object SSHMessages {
     }
     
     fun ignore(data: Indexed<Byte>): SSHPayload {
-        val size = 4 + data.a
+        val size = 4 + data.component1()
         
         return size j { i: Int ->
             when {
-                i < 4 -> ((data.a shr ((3 - i) * 8)) and 0xFF).toByte()
+                i < 4 -> ((data.component1() shr ((3 - i) * 8)) and 0xFF).toByte()
                 else -> data[i - 4]
             }
         }
@@ -251,20 +251,20 @@ fun encodeSSHString(str: String): Indexed<Byte> {
 }
 
 fun decodeSSHString(data: Indexed<Byte>, offset: Int = 0): Join<String, Int>? {
-    if (offset + 4 > data.a) return null
+    if (offset + 4 > data.component1()) return null
     
     val length = ((data[offset].toInt() and 0xFF) shl 24) or
                  ((data[offset + 1].toInt() and 0xFF) shl 16) or
                  ((data[offset + 2].toInt() and 0xFF) shl 8) or
                  (data[offset + 3].toInt() and 0xFF)
     
-    if (offset + 4 + length > data.a) return null
+    if (offset + 4 + length > data.component1()) return null
     
     val bytes = ByteArray(length) { i ->
         data[offset + 4 + i]
     }
     
-    return Join(bytes.decodeToString(), offset + 4 + length)
+    return bytes.decodeToString() j offset + 4 + length
 }
 
 // Name list encoding/decoding
@@ -274,46 +274,46 @@ fun encodeNameList(names: List<String>): Indexed<Byte> {
 
 fun decodeNameList(data: Indexed<Byte>, offset: Int = 0): Join<List<String>, Int>? {
     val result = decodeSSHString(data, offset) ?: return null
-    val names = if (result.a.isEmpty()) emptyList() else result.a.split(",")
-    return Join(names, result.b)
+    val names = if (result.component1().isEmpty()) emptyList() else result.component1().split(",")
+    return names j result.component2()
 }
 
 // Binary data encoding
 fun encodeSSHBinary(data: Indexed<Byte>): Indexed<Byte> {
-    return (4 + data.a) j { i: Int ->
+    return (4 + data.component1()) j { i: Int ->
         when {
-            i < 4 -> ((data.a shr ((3 - i) * 8)) and 0xFF).toByte()
+            i < 4 -> ((data.component1() shr ((3 - i) * 8)) and 0xFF).toByte()
             else -> data[i - 4]
         }
     }
 }
 
 fun decodeSSHBinary(data: Indexed<Byte>, offset: Int = 0): Join<Indexed<Byte>, Int>? {
-    if (offset + 4 > data.a) return null
+    if (offset + 4 > data.component1()) return null
     
     val length = ((data[offset].toInt() and 0xFF) shl 24) or
                  ((data[offset + 1].toInt() and 0xFF) shl 16) or
                  ((data[offset + 2].toInt() and 0xFF) shl 8) or
                  (data[offset + 3].toInt() and 0xFF)
     
-    if (offset + 4 + length > data.a) return null
+    if (offset + 4 + length > data.component1()) return null
     
     val binary = length j { i: Int -> data[offset + 4 + i] }
     
-    return Join(binary, offset + 4 + length)
+    return binary j offset + 4 + length
 }
 
 // Multi-precision integer encoding
 fun encodeMPInt(value: Indexed<Byte>): Indexed<Byte> {
     // Remove leading zeros except for sign bit
     var start = 0
-    while (start < value.a - 1 && value[start] == 0.toByte()) {
+    while (start < value.component1() - 1 && value[start] == 0.toByte()) {
         start++
     }
     
     // Add padding if high bit is set (to maintain positive sign)
-    val needsPadding = value.a > start && (value[start].toInt() and 0x80) != 0
-    val length = value.a - start + (if (needsPadding) 1 else 0)
+    val needsPadding = value.component1() > start && (value[start].toInt() and 0x80) != 0
+    val length = value.component1() - start + (if (needsPadding) 1 else 0)
     
     return (4 + length) j { i: Int ->
         when {

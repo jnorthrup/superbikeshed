@@ -10,8 +10,8 @@ import borg.trikeshed.lib.j
 class JvmSimdStrategy : SimdStrategy {
     override fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
-        for (i in offset until data.a) {
-            if (data.b(i) == target) {
+        for (i in offset until data.component1()) {
+            if (data.component2()(i) == target) {
                 positions.add(i)
             }
         }
@@ -20,10 +20,10 @@ class JvmSimdStrategy : SimdStrategy {
 
     override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
         val positions = mutableListOf<Int>()
-        for (i in offset until data.a) {
-            val byte = data.b(i)
-            for (j in 0 until targets.a) {
-                if (byte == targets.b(j)) {
+        for (i in offset until data.component1()) {
+            val byte = data.component2()(i)
+            for (j in 0 until targets.component1()) {
+                if (byte == targets.component2()(j)) {
                     positions.add(i)
                     break
                 }
@@ -33,14 +33,14 @@ class JvmSimdStrategy : SimdStrategy {
     }
 
     override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
-        return positions.a j { i ->
-            val pos = positions.b(i)
-            if (pos + pattern.a > data.a) {
+        return \1 j { \2: Int ->
+            val pos = positions.component2()(i)
+            if (pos + pattern.component1() > data.component1()) {
                 false
             } else {
                 var matches = true
-                for (j in 0 until pattern.a) {
-                    if (data.b(pos + j) != pattern.b(j)) {
+                for (j in 0 until pattern.component1()) {
+                    if (data.component2()(pos + j) != pattern.component2()(j)) {
                         matches = false
                         break
                     }
@@ -52,8 +52,8 @@ class JvmSimdStrategy : SimdStrategy {
 
     override fun popcount(bitmap: Indexed<Int>): Int {
         var count = 0
-        for (i in 0 until bitmap.a) {
-            var word = bitmap.b(i)
+        for (i in 0 until bitmap.component1()) {
+            var word = bitmap.component2()(i)
             while (word != 0) {
                 count += word and 1
                 word = word ushr 1
@@ -63,9 +63,9 @@ class JvmSimdStrategy : SimdStrategy {
     }
 
     override fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte> {
-        return positions.a j { i ->
-            val pos = positions.b(i)
-            if (pos < data.a) data.b(pos) else 0
+        return \1 j { \2: Int ->
+            val pos = positions.component2()(i)
+            if (pos < data.component1()) data.component2()(pos) else 0
         }
     }
 

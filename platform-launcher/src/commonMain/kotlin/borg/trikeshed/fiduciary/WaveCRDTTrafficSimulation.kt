@@ -306,7 +306,7 @@ class WaveCRDTTrafficSimulator(
         val startTime = Clock.System.now()
         
         operations.toList().forEach { timedOp ->
-            val relativeDelay = timedOp.timestamp - operations.b(0).timestamp
+            val relativeDelay = timedOp.timestamp - operations.component2()(0).timestamp
             val actualDelay = startTime + relativeDelay.toKotlinDuration()
             
             delay((actualDelay - Clock.System.now()).inWholeMilliseconds.coerceAtLeast(0))

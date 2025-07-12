@@ -49,7 +49,7 @@ class ChannelizedKademliaNode(
     ): Result<ConcentricSubnet> {
         return try {
             val subnet = ConcentricSubnet(subnetId, type, criteria.toMetadata())
-            subnet.addMember(nodeId, NodeInfo(nodeId, criteria.nodeAddress, 8080, criteria.capabilities.size j { i -> criteria.capabilities.elementAt(i) }))
+            subnet.addMember(nodeId, NodeInfo(nodeId, criteria.nodeAddress, 8080, \1 j { \2: Int -> criteria.capabilities.elementAt(i) }))
             
             subnets[subnetId] = subnet
             
@@ -184,7 +184,7 @@ class ChannelizedKademliaNode(
         // Simplified distance calculation - in real implementation would use XOR distance
         return peers.values
             .filter { peer -> subnet.isMember(peer.nodeId) }
-            .sortedBy { peer -> calculateDistance(peer.nodeId.bytes.let { indexed -> ByteArray(indexed.a) { i -> indexed.b(i) } }, targetKey) }
+            .sortedBy { peer -> calculateDistance(peer.nodeId.bytes.let { indexed -> ByteArray(indexed.component1()) { i -> indexed.component2()(i) } }, targetKey) }
             .take(maxPeers)
     }
     
@@ -216,15 +216,15 @@ class ChannelizedKademliaNode(
                 when (subnet.type) {
                     ConcentricSubnet.SubnetType.GEOGRAPHIC -> {
                         // Geographic proximity logic
-                        (0 until peer.nodeInfo.subnets.a).any { i -> peer.nodeInfo.subnets.b(i) == "geo" } 
+                        (0 until peer.nodeInfo.subnets.component1()).any { i -> peer.nodeInfo.subnets.component2()(i) == "geo" } 
                     }
                     ConcentricSubnet.SubnetType.TRUST_LEVEL -> {
                         // Trust level assessment
-                        (0 until peer.nodeInfo.subnets.a).any { i -> peer.nodeInfo.subnets.b(i) == "trusted" }
+                        (0 until peer.nodeInfo.subnets.component1()).any { i -> peer.nodeInfo.subnets.component2()(i) == "trusted" }
                     }
                     ConcentricSubnet.SubnetType.PERFORMANCE -> {
                         // Performance criteria
-                        (0 until peer.nodeInfo.subnets.a).any { i -> peer.nodeInfo.subnets.b(i) == "high-perf" }
+                        (0 until peer.nodeInfo.subnets.component1()).any { i -> peer.nodeInfo.subnets.component2()(i) == "high-perf" }
                     }
                     else -> true
                 }

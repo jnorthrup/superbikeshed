@@ -196,7 +196,7 @@ class DivineIndexFetcher(
         val request = HttpRequest(
             method = HttpMethod.HEAD,
             path = HttpRequestPath(url),
-            headers = 2 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("Host") j HttpHeaderValue("archive.org")
                     1 -> HttpHeaderName("User-Agent") j HttpHeaderValue("DivineIndexFetcher/1.0")
@@ -208,10 +208,10 @@ class DivineIndexFetcher(
         val response = httpClient.execute(request)
         
         // Find Content-Length header
-        for (i in 0 until response.headers.a) {
-            val header = response.headers.b(i)
-            if (header.a.value.equals("Content-Length", ignoreCase = true)) {
-                return header.b.value.toLong()
+        for (i in 0 until response.headers.component1()) {
+            val header = response.headers.component2()(i)
+            if (header.component1().value.equals("Content-Length", ignoreCase = true)) {
+                return header.component2().value.toLong()
             }
         }
         

@@ -519,20 +519,20 @@ class MCPRestService(
         return HttpResponse(
             status = HttpStatusCode(status),
             reasonPhrase = HttpStatusCode(status).defaultReasonPhrase(),
-            headers = 1 j { Join(HttpHeaderName("Content-Type"), HttpHeaderValue("application/json")) },
+            headers = 1 j { HttpHeaderName("Content-Type") j HttpHeaderValue("application/json") },
             body = json.encodeToByteArray()
         )
     }
     private fun notFound(): HttpResponse = HttpResponse(
         status = HttpStatus.NOT_FOUND,
         reasonPhrase = HttpStatus.NOT_FOUND.defaultReasonPhrase(),
-        headers = 1 j { Join(HttpHeaderName("Content-Type"), HttpHeaderValue("application/json")) },
+        headers = 1 j { HttpHeaderName("Content-Type") j HttpHeaderValue("application/json") },
         body = "{\"error\":\"Not found\"}".encodeToByteArray()
     )
     private fun methodNotAllowed(): HttpResponse = HttpResponse(
         status = HttpStatus.METHOD_NOT_ALLOWED,
         reasonPhrase = HttpStatus.METHOD_NOT_ALLOWED.defaultReasonPhrase(),
-        headers = 1 j { Join(HttpHeaderName("Content-Type"), HttpHeaderValue("application/json")) },
+        headers = 1 j { HttpHeaderName("Content-Type") j HttpHeaderValue("application/json") },
         body = "{\"error\":\"Method not allowed\"}".encodeToByteArray()
     )
 } 

@@ -268,7 +268,7 @@ class LatticeOperations(private val server: UringCouchDBServer) {
     /**
      * Find the join (least upper bound) of two concepts
      */
-    suspend fun findJoin(database: String, concept1: String, concept2: String): String? {
+    suspend fun finddatabase: String j concept1: String, concept2: String: String? {
         val result = server.queryLatticeView(
             database = database,
             designDoc = "lattice_ops",

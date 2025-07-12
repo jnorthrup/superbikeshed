@@ -23,7 +23,7 @@ interface SSHAuthentication {
 class SSHAuthenticationService : SSHAuthentication {
     
     override suspend fun authenticate(method: SSHAuthMethod, context: SSHAuthContext): SSHAuthResult {
-        return withContext(context.b.b) {
+        return withContext(context.component2().component2()) {
             when (method) {
                 is PublicKeyAuthMethod -> authenticatePublicKey(method, context)
                 is PasswordAuthMethod -> authenticatePassword(method, context)
@@ -35,20 +35,20 @@ class SSHAuthenticationService : SSHAuthentication {
     }
     
     override suspend fun verifyHostKey(hostKey: SSHHostKey, context: SSHAuthContext): Boolean {
-        return withContext(context.b.b) {
+        return withContext(context.component2().component2()) {
             val knownHosts = loadKnownHosts()
-            val hostname = hostKey.a
-            val publicKey = hostKey.b
+            val hostname = hostKey.component1()
+            val publicKey = hostKey.component2()
             
             // Check if host key is in known hosts
             knownHosts.any { knownHost ->
-                knownHost.a == hostname && knownHost.b.a == publicKey.a
+                knownHost.component1() == hostname && knownHost.component2().component1() == publicKey.component1()
             }
         }
     }
     
     override suspend fun loadIdentity(path: String, context: SSHAuthContext): SSHIdentity {
-        return withContext(context.b.b) {
+        return withContext(context.component2().component2()) {
             val content = readFile(path)
             val format = SSHKeyFormat.detectFormat(content)
             
@@ -62,7 +62,7 @@ class SSHAuthenticationService : SSHAuthentication {
     }
     
     override suspend fun getAvailableMethods(context: SSHAuthContext): Indexed<SSHAuthMethod> {
-        return withContext(context.b.b) {
+        return withContext(context.component2().component2()) {
             val methods = mutableListOf<SSHAuthMethod>()
             
             // Check for SSH agent
@@ -80,7 +80,7 @@ class SSHAuthenticationService : SSHAuthentication {
                 val path = identityFiles.j(i)
                 try {
                     val identity = loadIdentity(path, context)
-                    methods.add(PublicKeyAuthMethod(identity.a))
+                    methods.add(PublicKeyAuthMethod(identity.component1()))
                 } catch (e: Exception) {
                     // Skip invalid identity files
                 }
@@ -98,7 +98,7 @@ class SSHAuthenticationService : SSHAuthentication {
     
     internal suspend fun authenticatePublicKey(method: PublicKeyAuthMethod, context: SSHAuthContext): SSHAuthResult {
         val publicKey = method.publicKey
-        val username = context.b.a
+        val username = context.component2().component1()
         
         // Build authentication request
         val request = buildPublicKeyAuthRequest(username, publicKey)
@@ -108,11 +108,11 @@ class SSHAuthenticationService : SSHAuthentication {
         
         // For now, return success
         val sessionId = generateSessionId()
-        return Join(true, sessionId)
+        return true j sessionId
     }
     
     internal suspend fun authenticatePassword(method: PasswordAuthMethod, context: SSHAuthContext): SSHAuthResult {
-        val username = context.b.a
+        val username = context.component2().component1()
         val password = method.getPassword()
         
         // Build authentication request
@@ -123,11 +123,11 @@ class SSHAuthenticationService : SSHAuthentication {
         
         // For now, return success
         val sessionId = generateSessionId()
-        return Join(true, sessionId)
+        return true j sessionId
     }
     
     internal suspend fun authenticateKeyboardInteractive(method: KeyboardInteractiveAuthMethod, context: SSHAuthContext): SSHAuthResult {
-        val username = context.b.a
+        val username = context.component2().component1()
         
         // Build initial request
         val request = buildKeyboardInteractiveRequest(username)
@@ -140,11 +140,11 @@ class SSHAuthenticationService : SSHAuthentication {
         
         // For now, return success
         val sessionId = generateSessionId()
-        return Join(true, sessionId)
+        return true j sessionId
     }
     
     internal suspend fun authenticateHostBased(method: HostBasedAuthMethod, context: SSHAuthContext): SSHAuthResult {
-        val username = context.b.a
+        val username = context.component2().component1()
         val hostKey = method.hostKey
         val signature = method.signature
         
@@ -156,13 +156,13 @@ class SSHAuthenticationService : SSHAuthentication {
         
         // For now, return success
         val sessionId = generateSessionId()
-        return Join(true, sessionId)
+        return true j sessionId
     }
     
     internal suspend fun loadKnownHosts(): Indexed<SSHHostKey> {
         val knownHostsPath = getKnownHostsPath()
         if (!fileExists(knownHostsPath)) {
-            return 0 j { SSHHostKey(Join("", 0 j { 0.toByte() })) }
+            return 0 j { SSHHostKey("" j 0 j { 0.toByte( })) }
         }
         
         val content = readFile(knownHostsPath)
@@ -180,7 +180,7 @@ class SSHAuthenticationService : SSHAuthentication {
                         
                         // TODO: Parse key data properly
                         val publicKey = keyData.encodeToByteArray()
-                        hosts.add(SSHHostKey(Join(hostname, publicKey.size j { i: Int -> publicKey[i] })))
+                        hosts.add(SSHHostKey(hostname j publicKey.size j { i: Int -> publicKey[i] }))
                     }
                 } catch (e: Exception) {
                     // Skip invalid lines
@@ -230,7 +230,7 @@ class SSHAuthenticationService : SSHAuthentication {
         val privateKey = decoded.size j { i: Int -> decoded[i] }
         val publicKey = derivePublicKey(privateKey)
         
-        return Join(publicKey, privateKey)
+        return publicKey j privateKey
     }
     
     internal suspend fun parseRSAPrivateKey(content: String): SSHIdentity {
@@ -244,7 +244,7 @@ class SSHAuthenticationService : SSHAuthentication {
         val privateKey = decoded.size j { i: Int -> decoded[i] }
         val publicKey = derivePublicKey(privateKey)
         
-        return Join(publicKey, privateKey)
+        return publicKey j privateKey
     }
     
     internal suspend fun parseECPrivateKey(content: String): SSHIdentity {
@@ -258,7 +258,7 @@ class SSHAuthenticationService : SSHAuthentication {
         val privateKey = decoded.size j { i: Int -> decoded[i] }
         val publicKey = derivePublicKey(privateKey)
         
-        return Join(publicKey, privateKey)
+        return publicKey j privateKey
     }
     
     internal fun derivePublicKey(privateKey: SSHPrivateKey): SSHPublicKey {
@@ -272,7 +272,7 @@ class SSHAuthenticationService : SSHAuthentication {
         val keyType = "ssh-rsa" // TODO: Detect key type
         val keyTypeBytes = keyType.encodeToByteArray()
         
-        val size = 1 + 4 + usernameBytes.size + 4 + keyTypeBytes.size + 4 + publicKey.a
+        val size = 1 + 4 + usernameBytes.size + 4 + keyTypeBytes.size + 4 + publicKey.component1()
         
         return size j { i: Int ->
             when {
@@ -281,7 +281,7 @@ class SSHAuthenticationService : SSHAuthentication {
                 i < 5 + usernameBytes.size -> usernameBytes[i - 5]
                 i < 9 + usernameBytes.size -> ((keyTypeBytes.size shr ((8 + usernameBytes.size - i) * 8)) and 0xFF).toByte()
                 i < 9 + usernameBytes.size + keyTypeBytes.size -> keyTypeBytes[i - 9 - usernameBytes.size]
-                i < 13 + usernameBytes.size + keyTypeBytes.size -> ((publicKey.a shr ((12 + usernameBytes.size + keyTypeBytes.size - i) * 8)) and 0xFF).toByte()
+                i < 13 + usernameBytes.size + keyTypeBytes.size -> ((publicKey.component1() shr ((12 + usernameBytes.size + keyTypeBytes.size - i) * 8)) and 0xFF).toByte()
                 else -> publicKey[i - 13 - usernameBytes.size - keyTypeBytes.size]
             }
         }

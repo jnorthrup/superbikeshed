@@ -118,8 +118,8 @@ class FiduciaryAttentionContextTest {
 
         // Assert on the results (using the mock implementations)
         kotlin.test.assertTrue(text.contains("Extracted PDF content"))
-        kotlin.test.assertEquals(3, concepts.a)
-        val conceptList = List(concepts.a) { concepts.b(it) }
+        kotlin.test.assertEquals(3, concepts.component1())
+        val conceptList = List(concepts.component1()) { concepts.component2()(it) }
         kotlin.test.assertTrue(conceptList.contains("person"))
         kotlin.test.assertTrue(conceptList.contains("organization"))
         kotlin.test.assertTrue(conceptList.contains("location"))

@@ -93,7 +93,7 @@ class AttentionBasedTicker {
         // Update attention state using TrikeShed patterns
         val weightedPairs = watchedPairs.map { (sym, weight) -> sym j weight }
         val pairSeries = Indexed.of(weightedPairs.size) { weightedPairs[it] }
-        currentAttention = currentAttention.a j pairSeries
+        currentAttention = currentAttention.component1() j pairSeries
         
         println("Added ${symbol.value} to variable time gauge tracker with weight ${initialWeight.value}")
     }
@@ -238,7 +238,7 @@ class AttentionBasedTicker {
     }
     
     // Get current attention focus
-    fun getCurrentFocus(): AttentionFocus = currentAttention.a
+    fun getCurrentFocus(): AttentionFocus = currentAttention.component1()
     
     // Get attention history for a pair using Indexed
     fun getAttentionHistory(symbol: Symbol): AttentionSeries {

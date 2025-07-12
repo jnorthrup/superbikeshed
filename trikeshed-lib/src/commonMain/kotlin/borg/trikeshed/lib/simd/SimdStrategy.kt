@@ -86,7 +86,10 @@ data class SimdCapabilities(
     val hasMaskOps: Boolean,       // Hardware mask operations
     val hasVariableLength: Boolean, // Variable length vector support
     val name: String               // Platform-specific name (e.g., "Apple NEON", "Linux AVX2")
-)
+) {
+    val bytesPerVector: Int
+        get() = vectorBits / 8
+}
 
 /**
  * Adaptive chunking based on SIMD width

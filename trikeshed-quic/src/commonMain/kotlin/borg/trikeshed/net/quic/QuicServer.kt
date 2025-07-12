@@ -749,9 +749,9 @@ class HttpClient {
     
     private fun convertHeaders(httpHeaders: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): Map<String, String> {
         val headers = mutableMapOf<String, String>()
-        for (i in 0 until httpHeaders.a) {
-            val header = httpHeaders.b(i)
-            headers[header.a.value] = header.b.value
+        for (i in 0 until httpHeaders.component1()) {
+            val header = httpHeaders.component2()(i)
+            headers[header.component1().value] = header.component2().value
         }
         return headers
     }

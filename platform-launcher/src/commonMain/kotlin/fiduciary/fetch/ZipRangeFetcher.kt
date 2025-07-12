@@ -92,7 +92,7 @@ class ZipRangeFetcher(private val httpClient: HttpClient) {
         val request = HttpRequest(
             method = HttpMethod.HEAD,
             path = HttpRequestPath(url),
-            headers = 2 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("User-Agent") j HttpHeaderValue("ZipRangeFetcher/1.0")
                     1 -> HttpHeaderName("Accept") j HttpHeaderValue("*/*")
@@ -104,10 +104,10 @@ class ZipRangeFetcher(private val httpClient: HttpClient) {
         val response = httpClient.execute(request)
         
         // Find Content-Length header
-        for (i in 0 until response.headers.a) {
-            val header = response.headers.b(i)
-            if (header.a.value.equals("Content-Length", ignoreCase = true)) {
-                return header.b.value.toLong()
+        for (i in 0 until response.headers.component1()) {
+            val header = response.headers.component2()(i)
+            if (header.component1().value.equals("Content-Length", ignoreCase = true)) {
+                return header.component2().value.toLong()
             }
         }
         
@@ -136,7 +136,7 @@ class ZipRangeFetcher(private val httpClient: HttpClient) {
         val request = HttpRequest(
             method = HttpMethod.GET,
             path = HttpRequestPath(url),
-            headers = 3 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("Range") j HttpHeaderValue("bytes=$start-$end")
                     1 -> HttpHeaderName("User-Agent") j HttpHeaderValue("ZipRangeFetcher/1.0")

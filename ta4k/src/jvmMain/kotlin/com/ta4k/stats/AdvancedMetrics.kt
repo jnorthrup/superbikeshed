@@ -529,7 +529,7 @@ class AdvancedMetrics {
      * Calculate the monthly returns
      */
     fun monthlyReturns(returns: Indexed<BigDecimal>, eoy: Boolean = true, compounded: Boolean = true): Indexed<BigDecimal> {
-        if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
+        if (returns.isEmpty()) return \1 j { \2: Int -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
@@ -781,7 +781,7 @@ class AdvancedMetrics {
      * Calculate the percentage rank
      */
     fun pctRank(returns: Indexed<BigDecimal>, window: Int = 60): Indexed<BigDecimal> {
-        if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
+        if (returns.isEmpty()) return \1 j { \2: Int -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
@@ -802,7 +802,7 @@ class AdvancedMetrics {
      * Calculate the compound sum
      */
     fun compSum(returns: Indexed<BigDecimal>): Indexed<BigDecimal> {
-        if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
+        if (returns.isEmpty()) return \1 j { \2: Int -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
@@ -820,7 +820,7 @@ class AdvancedMetrics {
      * Calculate the compound returns
      */
     fun comp(returns: Indexed<BigDecimal>): Indexed<BigDecimal> {
-        if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
+        if (returns.isEmpty()) return \1 j { \2: Int -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
         val result: MutableList<BigDecimal> = mutableListOf()
@@ -838,7 +838,7 @@ class AdvancedMetrics {
      * Calculate the outliers
      */
     fun outliers(returns: Indexed<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Indexed<BigDecimal> {
-        if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
+        if (returns.isEmpty()) return \1 j { \2: Int -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
         val sorted: List<BigDecimal> = returnsList.sorted()
@@ -853,7 +853,7 @@ class AdvancedMetrics {
      * Remove outliers
      */
     fun removeOutliers(returns: Indexed<BigDecimal>, quantile: BigDecimal = BigDecimal("0.95")): Indexed<BigDecimal> {
-        if (returns.isEmpty()) return 0 j { _ -> BigDecimal.ZERO }
+        if (returns.isEmpty()) return \1 j { \2: Int -> BigDecimal.ZERO }
         
         val returnsList: List<BigDecimal> = returns.`play`.toList()
         val sorted: List<BigDecimal> = returnsList.sorted()

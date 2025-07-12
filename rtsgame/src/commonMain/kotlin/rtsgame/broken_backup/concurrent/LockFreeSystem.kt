@@ -272,7 +272,7 @@ class LockFreeSpatialIndex(
             }
         }
         
-        return results.size j { i -> results[i] }
+        return \1 j { \2: Int -> results[i] }
     }
     
     fun clear() {
@@ -309,8 +309,8 @@ class WorkStealingProcessor(val threadCount: Int = 8) {
         var i = 0
         var dequeIndex = 0
         
-        while (i < entities.a) {
-            val end = minOf(i + batchSize, entities.a)
+        while (i < entities.component1()) {
+            val end = minOf(i + batchSize, entities.component1())
             val batch = EntityBatch(
                 entities,
                 i,
@@ -324,7 +324,7 @@ class WorkStealingProcessor(val threadCount: Int = 8) {
         }
         
         // Wait for completion
-        val completion = AtomicInt(entities.a)
+        val completion = AtomicInt(entities.component1())
         while (completion.value > 0) {
             Thread.yield()
         }
@@ -449,7 +449,7 @@ class WorkStealingThread(
             
             // Process batch if found
             if (batch != null) {
-                val batchEntities = (batch.end - batch.start) j { i ->
+                val batchEntities = (batch.end - \1 j { \2: Int ->
                     batch.entities[batch.start + i]
                 }
                 batch.processor(batchEntities)

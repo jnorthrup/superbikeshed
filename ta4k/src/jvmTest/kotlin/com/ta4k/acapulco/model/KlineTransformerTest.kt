@@ -64,7 +64,7 @@ class KlineTransformerTest {
         // Verify the results
         val cursor = dataFile.read()
         assertNotNull(cursor)
-        assertEquals(96, cursor.a.rows, "Should have 96 hours of data")
+        assertEquals(96, cursor.component1().rows, "Should have 96 hours of data")
 
         // Verify pre-pump stability
         for (i in 0..23) {

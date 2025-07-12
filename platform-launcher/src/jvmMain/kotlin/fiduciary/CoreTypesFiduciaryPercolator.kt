@@ -68,13 +68,13 @@ object DatabasePercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Da
     fun getPercolatorFlow(): SharedFlow<PercolatorEvent> = percolatorFlow.asSharedFlow()
     
     // Indexed patterns for functional composition
-    fun getDatabases(): Indexed<Database> = databases.size j { i -> databases.values.elementAt(i) }
-    fun getDatabaseNames(): Indexed<String> = databases.size j { i -> databases.keys.elementAt(i) }
+    fun getDatabases(): Indexed<Database> = \1 j { \2: Int -> databases.values.elementAt(i) }
+    fun getDatabaseNames(): Indexed<String> = \1 j { \2: Int -> databases.keys.elementAt(i) }
     
     // Confix operators for database operations
     fun getDatabaseByName(name: String): Database? = databases[name]
     fun getDocumentsByDatabase(dbName: String): Indexed<Document> = 
-        databases[dbName]?.let { db -> db.documents.size j { i -> db.documents.values.elementAt(i) } } ?: (0 j { throw IndexOutOfBoundsException() })
+        databases[dbName]?.let { db -> \1 j { \2: Int -> db.documents.values.elementAt(i) } } ?: (0 j { throw IndexOutOfBoundsException() })
     
     // Functional composition for database operations
     fun getDatabaseCount(): Int = databases.size
@@ -82,7 +82,7 @@ object DatabasePercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Da
     
     // Metaseries operations
     fun getDatabasesWithDocumentCount(): Indexed<Join<String, Int>> = 
-        databases.size j { i -> 
+        \1 j { \2: Int -> 
             val db = databases.values.elementAt(i)
             db.name j db.documents.size 
         }
@@ -114,8 +114,8 @@ object ChannelPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<Cha
     fun getChannelFlow(name: String): SharedFlow<Any>? = channelFlows[name]?.asSharedFlow()
     
     // Indexed patterns for functional composition
-    fun getChannelNames(): Indexed<String> = channels.size j { i -> channels.keys.elementAt(i) }
-    fun getChannels(): Indexed<Channel<Any>> = channels.size j { i -> channels.values.elementAt(i) }
+    fun getChannelNames(): Indexed<String> = \1 j { \2: Int -> channels.keys.elementAt(i) }
+    fun getChannels(): Indexed<Channel<Any>> = \1 j { \2: Int -> channels.values.elementAt(i) }
     
     // Functional composition for channel operations
     fun getChannelCount(): Int = channels.size
@@ -145,9 +145,9 @@ object TransformPercolatorKey : CoroutineContext.Element, CoroutineContext.Key<T
     }
     
     // Indexed patterns for functional composition
-    fun getTransformerNames(): Indexed<String> = transformers.size j { i -> transformers.keys.elementAt(i) }
+    fun getTransformerNames(): Indexed<String> = \1 j { \2: Int -> transformers.keys.elementAt(i) }
     fun getTransformers(): Indexed<suspend (Map<String, Any>) -> Map<String, Any>> = 
-        transformers.size j { i -> transformers.values.elementAt(i) }
+        \1 j { \2: Int -> transformers.values.elementAt(i) }
     
     // Functional composition for transformation pipeline
     suspend fun transformThroughPipeline(data: Map<String, Any>, stages: Indexed<String>): Map<String, Any> =
@@ -412,7 +412,7 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
         
         withContext(networkContext) {
             // Convert to Indexed and use functional composition with confix operators
-            val targetsIndexed = targets.size j { i -> targets[i] }
+            val targetsIndexed = \1 j { \2: Int -> targets[i] }
             val protocols = listOf("HTTP", "SSH", "IPFS").toIndexed()
             
             // Metaseries composition: targets × protocols
@@ -518,7 +518,7 @@ object NetworkScannerKey : CoroutineContext.Element, CoroutineContext.Key<Networ
     }
     
     // Indexed patterns for functional composition
-    fun getScanResults(): Indexed<ScanResult> = scanResults.size j { i -> scanResults[i] }
+    fun getScanResults(): Indexed<ScanResult> = \1 j { \2: Int -> scanResults[i] }
     fun getScanFlow(): SharedFlow<ScanResult> = scanFlow.asSharedFlow()
     
     // Metaseries operations

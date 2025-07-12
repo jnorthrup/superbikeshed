@@ -26,7 +26,7 @@ data class HttpRequest(
         val headersStr = StringBuilder()
         (0 until headers.size).forEach { i ->
             val header = headers[i]
-            headersStr.append("${header.a.value}: ${header.b.value}\r\n")
+            headersStr.append("${header.component1().value}: ${header.component2().value}\r\n")
         }
         val finalHeaders = headersStr.toString()
         val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
@@ -50,7 +50,7 @@ data class HttpRequest(
             for (i in 1 until headerLines.size) {
                 if (headerLines[i].isBlank()) continue
                 val headerParts = headerLines[i].split(":", limit = 2)
-                headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
+                headersList.add(HttpHeaderName(headerParts[0].trim()) j HttpHeaderValue(headerParts[1].trim()))
             }
             val headers: Series2<HttpHeaderName, HttpHeaderValue> =   (headersList.size)j { it:Int->headersList[it] }
 
@@ -85,7 +85,7 @@ data class HttpResponse(
         val headersStr = StringBuilder()
         (0 until headers.size).forEach { i ->
             val header = headers[i]
-            headersStr.append("${header.a.value}: ${header.b.value}\r\n")
+            headersStr.append("${header.component1().value}: ${header.component2().value}\r\n")
         }
         val finalHeaders = headersStr.toString()
         val head = (startLine + finalHeaders + "\r\n").encodeToByteArray()
@@ -111,7 +111,7 @@ data class HttpResponse(
             for (i in 1 until headerLines.size) {
                 if (headerLines[i].isBlank()) continue
                 val headerParts = headerLines[i].split(":", limit = 2)
-                headersList.add(Join(HttpHeaderName(headerParts[0].trim()), HttpHeaderValue(headerParts[1].trim())))
+                headersList.add(HttpHeaderName(headerParts[0].trim()) j HttpHeaderValue(headerParts[1].trim()))
             }
             val headers =  (headersList.size) j {it :Int-> headersList[it] }
 
@@ -140,14 +140,14 @@ object HttpUtils {
         return (headerLines.size) j { i:Int ->
             val line = headerLines[i]
             val parts = line.split(":", limit = 2)
-            Join(HttpHeaderName(parts[0].trim()), HttpHeaderValue(parts[1].trim()))
+            HttpHeaderName(parts[0].trim()) j HttpHeaderValue(parts[1].trim())
         }
     }
     
     fun buildHeaderString(headers: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): String {
         return (0 until headers.size).joinToString("\r\n") { i ->
             val join = headers[i]
-            "${join.a.value}: ${join.b.value}"
+            "${join.component1().value}: ${join.component2().value}"
         }
     }
 }

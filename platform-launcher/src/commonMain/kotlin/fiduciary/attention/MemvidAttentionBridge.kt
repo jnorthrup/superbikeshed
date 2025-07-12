@@ -153,15 +153,15 @@ class FiduciaryMemvidBridge(
     fun attentionToEvent(attention: FiduciaryAttention): AttentionEvent {
         return when (attention.document) {
             is DocumentAttention -> AttentionEvent.DocumentFocus(
-                docId = attention.document.doc.a.toString(),
-                range = attention.document.doc.b,
+                docId = attention.document.doc.component1().toString(),
+                range = attention.document.doc.component2(),
                 duration = 1000L, // Default 1 second
                 intensity = calculateIntensity(attention)
             )
             is CorpusAttention -> AttentionEvent.CorpusScan(
-                corpusId = attention.document.corpus.a,
-                scannedBytes = attention.document.corpus.b.a,
-                totalBytes = attention.document.corpus.b.b,
+                corpusId = attention.document.corpus.component1(),
+                scannedBytes = attention.document.corpus.component2().component1(),
+                totalBytes = attention.document.corpus.component2().component2(),
                 attentionScore = calculateIntensity(attention)
             )
             else -> AttentionEvent.FiduciaryAction(

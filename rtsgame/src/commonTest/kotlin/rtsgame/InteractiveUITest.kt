@@ -65,8 +65,8 @@ class InteractiveUITest {
         // Verify new entity has valid properties
         val newEntity = gameState2.entities.`play`.last()
         assertTrue(newEntity.id.value.startsWith("unit_"), "New entity should have unit_ prefix")
-        assertTrue(newEntity.position.a.value >= 20f, "X position should be valid")
-        assertTrue(newEntity.position.b.value >= 120f, "Y position should be valid")
+        assertTrue(newEntity.position.component1().value >= 20f, "X position should be valid")
+        assertTrue(newEntity.position.component2().value >= 120f, "Y position should be valid")
         assertTrue(newEntity.health.value > 0f, "Health should be positive")
         assertTrue(newEntity.playerId.value in 1..2, "Player ID should be valid")
     }

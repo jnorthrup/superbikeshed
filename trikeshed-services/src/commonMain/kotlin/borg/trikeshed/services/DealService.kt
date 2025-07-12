@@ -17,11 +17,11 @@ interface DealServiceInterface {
  * Value class representing a deal.
  */
 class DealProxy(internal val data: Join<String, Map<String, Any>>) {
-    val id: String get() = data.a
-    val product: String get() = data.b["product"] as? String ?: ""
-    val vendor: String get() = data.b["vendor"] as? String ?: ""
-    val price: Double get() = data.b["price"] as? Double ?: 0.0
-    val quantity: Int get() = data.b["quantity"] as? Int ?: 0
+    val id: String get() = data.component1()
+    val product: String get() = data.component2()["product"] as? String ?: ""
+    val vendor: String get() = data.component2()["vendor"] as? String ?: ""
+    val price: Double get() = data.component2()["price"] as? Double ?: 0.0
+    val quantity: Int get() = data.component2()["quantity"] as? Int ?: 0
 
     companion object {
         operator fun invoke(
@@ -65,14 +65,14 @@ class DealProxy(internal val data: Join<String, Map<String, Any>>) {
  * Value class representing a vendor.
  */
 class VendorProxy(internal val data: Join<String, Map<String, String>>) {
-    val id: String get() = data.a
-    val name: String get() = data.b["name"] ?: ""
+    val id: String get() = data.component1()
+    val name: String get() = data.component2()["name"] ?: ""
 
     companion object {
         operator fun invoke(
             id: String = "",
             name: String = ""
-        ): VendorProxy = VendorProxy(Join(id, mapOf("name" to name)))
+        ): VendorProxy = VendorProxy(id j mapOf("name" to name))
     }
 
     override fun equals(other: Any?): Boolean {
@@ -96,11 +96,11 @@ class VendorProxy(internal val data: Join<String, Map<String, String>>) {
  * Value class representing a CouchDB transaction result.
  */
 class CouchTxProxy(internal val data: Join<String, Map<String, String>>) {
-    val id: String get() = data.a
-    val ok: Boolean get() = data.b["ok"] == "true"
-    val rev: String? get() = data.b["rev"]
-    val error: String? get() = data.b["error"]
-    val reason: String? get() = data.b["reason"]
+    val id: String get() = data.component1()
+    val ok: Boolean get() = data.component2()["ok"] == "true"
+    val rev: String? get() = data.component2()["rev"]
+    val error: String? get() = data.component2()["error"]
+    val reason: String? get() = data.component2()["reason"]
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

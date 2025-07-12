@@ -252,7 +252,7 @@ class CCEKWaveCRDTSynergyDemo {
         world.operationFlow.collect { operation ->
             println("📡 Wave operation: ${operation.operationType} on entity ${operation.entityId}")
             println("  Participant: ${operation.participantId}")
-            println("  Components changed: ${operation.componentChanges.a}")
+            println("  Components changed: ${operation.componentChanges.component1()}")
         }
     }
     

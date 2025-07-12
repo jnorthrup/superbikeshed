@@ -269,12 +269,12 @@ object LDATopicModeling {
             topics.add(LDATopic(
                 topicId = topicId,
                 probability = 1.0 / numTopics, // Simplified
-                topWords = 10 j { i -> TopicWord("word$i", 0.1) }, // Placeholder
+                topWords = \1 j { \2: Int -> TopicWord("word$i", 0.1) }, // Placeholder
                 coherenceScore = 0.75 // Placeholder
             ))
         }
         
-        return topics.size j { i -> topics[i] }
+        return \1 j { \2: Int -> topics[i] }
     }
 }
 
@@ -563,13 +563,13 @@ object PatrickDevineOperations {
         }
         
         // Convert to Indexed structure
-        return index.entries.size j { i ->
+        return \1 j { \2: Int ->
             val entry = index.entries.elementAt(i)
             val term = entry.key
-            val docPositions = entry.value.entries.size j { j ->
+            val docPositions = \1 j { \2: Int ->
                 val docEntry = entry.value.entries.elementAt(j)
                 val docId = docEntry.key
-                val positions = docEntry.value.size j { k ->
+                val positions = \1 j { \2: Int ->
                     docEntry.value[k]
                 }
                 docId j positions
@@ -596,7 +596,7 @@ object PatrickDevineOperations {
                 level = determineLevel(doc),
                 position = calculatePosition(idx, documents.size),
                 documentRefs = 1 j { doc.id },
-                topicScores = topics.size j { i -> 
+                topicScores = \1 j { \2: Int -> 
                     doc.metadata.ldaTopics?.play?.find { it.topicId == i }?.probability ?: 0.0
                 },
                 importance = calculateImportance(doc)
@@ -622,8 +622,8 @@ object PatrickDevineOperations {
         val levels = groupNodesByLevel(nodes)
         
         return PatrickLattice(
-            nodes = nodes.size j { i -> nodes[i] },
-            edges = edges.size j { i -> edges[i] },
+            nodes = \1 j { \2: Int -> nodes[i] },
+            edges = \1 j { \2: Int -> edges[i] },
             levels = levels,
             metadata = LatticeMetadata(
                 createdAt = kotlinx.datetime.Clock.System.now(),
@@ -648,7 +648,7 @@ object PatrickDevineOperations {
         // Create main wavelet
         val mainWavelet = Wavelet(
             waveletId = "main_wavelet",
-            blips = lattice.nodes.size j { i ->
+            blips = \1 j { \2: Int ->
                 val node = lattice.nodes[i]
                 Blip(
                     blipId = "blip_${node.id}",
@@ -664,7 +664,7 @@ object PatrickDevineOperations {
                     childBlips = emptyIndex()
                 )
             },
-            participants = participants.size j { i -> participants[i].participantId },
+            participants = \1 j { \2: Int -> participants[i].participantId },
             creator = participants[0].participantId,
             createdTime = kotlinx.datetime.Clock.System.now(),
             lastModifiedTime = kotlinx.datetime.Clock.System.now(),
@@ -675,7 +675,7 @@ object PatrickDevineOperations {
         
         return WaveDocument(
             waveId = "patrick_wave_${System.currentTimeMillis()}",
-            wavelets = wavelets.size j { i -> wavelets[i] },
+            wavelets = \1 j { \2: Int -> wavelets[i] },
             participants = participants,
             version = 1L,
             lastModified = kotlinx.datetime.Clock.System.now()
@@ -755,7 +755,7 @@ object PatrickDevineOperations {
             ))
         }
         
-        return agents.size j { i -> agents[i] }
+        return \1 j { \2: Int -> agents[i] }
     }
     
     // Helper functions
@@ -812,7 +812,7 @@ object PatrickDevineOperations {
                 averageConnectivity = 0.0 // Would calculate from edges
             )
         }
-        return levels.size j { i -> levels[i] }
+        return \1 j { \2: Int -> levels[i] }
     }
     
     private fun calculateModularity(nodes: List<LatticeNode>, edges: List<LatticeEdge>): Double {

@@ -81,9 +81,9 @@ class FileSystemSimulation(
         
         pieceStorage.getOrPut(infoHash) { mutableMapOf() }[pieceIndex] = data
         
-        fileSystemChannel.send(FileSystemEvent.PieceStored(infoHash, pieceIndex, data.a))
+        fileSystemChannel.send(FileSystemEvent.PieceStored(infoHash, pieceIndex, data.component1()))
         
-        println("💾 Stored piece $pieceIndex (${data.a} bytes) for torrent")
+        println("💾 Stored piece $pieceIndex (${data.component1()} bytes) for torrent")
     }
     
     /**
@@ -99,8 +99,8 @@ class FileSystemSimulation(
         val piece = pieceStorage[infoHash]?.get(pieceIndex)
         
         if (piece != null) {
-            fileSystemChannel.send(FileSystemEvent.PieceRetrieved(infoHash, pieceIndex, piece.a))
-            println("📖 Retrieved piece $pieceIndex (${piece.a} bytes)")
+            fileSystemChannel.send(FileSystemEvent.PieceRetrieved(infoHash, pieceIndex, piece.component1()))
+            println("📖 Retrieved piece $pieceIndex (${piece.component1()} bytes)")
         } else {
             fileSystemChannel.send(FileSystemEvent.PieceNotFound(infoHash, pieceIndex))
             println("❌ Piece $pieceIndex not found")
@@ -123,10 +123,10 @@ class FileSystemSimulation(
         delay((100..500).random().toLong())
         
         val pieces = pieceStorage[infoHash] ?: emptyMap()
-        val totalSize = pieces.values.sumOf { it.a }
+        val totalSize = pieces.values.sumOf { it.component1() }
         
         // Create assembled file data (simulated)
-        val assembledData = totalSize j { i ->
+        val assembledData = \1 j { \2: Int ->
             val pieceIndex = i / torrent.pieceSize
             val offsetInPiece = i % torrent.pieceSize
             pieces[pieceIndex]?.getOrNull(offsetInPiece) ?: 0.toByte()
@@ -166,7 +166,7 @@ class FileSystemSimulation(
     suspend fun getTorrentProgress(infoHash: InfoHash, totalPieces: Int): TorrentProgress = withContext(context) {
         val pieces = pieceStorage[infoHash] ?: emptyMap()
         val downloadedPieces = pieces.size
-        val downloadedBytes = pieces.values.sumOf { it.a }
+        val downloadedBytes = pieces.values.sumOf { it.component1() }
         
         return TorrentProgress(
             downloadedPieces = downloadedPieces,

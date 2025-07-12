@@ -71,10 +71,10 @@ class AdvancedPhysicsSystem : System {
     
     internal fun resolveCollisions(world: ECSWorld, deltaTime: Float) {
         collisionPairs.forEach { pair ->
-            val posA = world.getComponent<PositionComponent>(pair.a, ComponentTypes.POSITION) ?: return@forEach
-            val posB = world.getComponent<PositionComponent>(pair.b, ComponentTypes.POSITION) ?: return@forEach
-            val physicsA = world.getComponent<PhysicsComponent>(pair.a, ComponentTypes.PHYSICS)
-            val physicsB = world.getComponent<PhysicsComponent>(pair.b, ComponentTypes.PHYSICS)
+            val posA = world.getComponent<PositionComponent>(pair.component1(), ComponentTypes.POSITION) ?: return@forEach
+            val posB = world.getComponent<PositionComponent>(pair.component2(), ComponentTypes.POSITION) ?: return@forEach
+            val physicsA = world.getComponent<PhysicsComponent>(pair.component1(), ComponentTypes.PHYSICS)
+            val physicsB = world.getComponent<PhysicsComponent>(pair.component2(), ComponentTypes.PHYSICS)
             
             // Calculate collision normal
             val dx = posB.x - posA.x

@@ -66,15 +66,15 @@ class CursorTest {
         
         val nameColumn = cursor.column("name")
         assertEquals(3, nameColumn.size)
-        assertEquals("Alice", nameColumn.b(0))
-        assertEquals("Bob", nameColumn.b(1))
-        assertEquals("Charlie", nameColumn.b(2))
+        assertEquals("Alice", nameColumn.component2()(0))
+        assertEquals("Bob", nameColumn.component2()(1))
+        assertEquals("Charlie", nameColumn.component2()(2))
         assertEquals(3, nameColumn.size)
         
         val ageColumn = cursor.column(1)
-        assertEquals(25, ageColumn.b(0))
-        assertEquals(30, ageColumn.b(1))
-        assertEquals(35, ageColumn.b(2))
+        assertEquals(25, ageColumn.component2()(0))
+        assertEquals(30, ageColumn.component2()(1))
+        assertEquals(35, ageColumn.component2()(2))
     }
     
     @Test
@@ -143,8 +143,8 @@ class CursorTest {
         assertEquals(2, groups.size)
         
         // Check that we have groups for both departments
-        val group1 = groups.b(0)
-        val group2 = groups.b(1)
+        val group1 = groups.component2()(0)
+        val group2 = groups.component2()(1)
         
         assertEquals(2, groups.size)
         assertTrue(group1.size == 2 || group2.size == 2)
@@ -215,8 +215,8 @@ class CursorTest {
         val cursor = cursorOf(data, columnNames)
         
         val names = cursor.columnNames
-        assertEquals("str_col", names.b(0))
-        assertEquals("int_col", names.b(1))
+        assertEquals("str_col", names.component2()(0))
+        assertEquals("int_col", names.component2()(1))
         
         val colIdx = cursor.colIdx
         assertEquals(0, colIdx["str_col"])

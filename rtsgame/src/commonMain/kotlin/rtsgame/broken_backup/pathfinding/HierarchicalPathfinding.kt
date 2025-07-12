@@ -43,7 +43,7 @@ class HierarchicalPathfinder(
         }
         
         // Generate paths using flow field
-        return starts.a j { i ->
+        return \1 j { \2: Int ->
             val start = starts[i]
             generatePathFromFlowField(start, destination, flowField)
         }

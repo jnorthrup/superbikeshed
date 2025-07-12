@@ -21,13 +21,13 @@ typealias ChainLength = Int // How far to chain rules
 typealias RulePriority = UByte // 0-255 priority
 
 // High-entropy rule system
-typealias EntropyRule = Join<ParsingRule, Join<RuleEntropy, ActivationThreshold>>
+typealias EntropyRule = Join<ParsingRule, RuleEntropy j ActivationThreshold>
 typealias PrioritizedRule = Join<EntropyRule, RulePriority>
 typealias RuleCluster = Indexed<PrioritizedRule>
 typealias GraphNodeIndexed = Indexed<Indexed<Int>> // Graph adjacency representation
 
 // Chaining configuration
-typealias ChainConfig = Join<ChainLength, Join<RuleEntropy, ActivationThreshold>>
+typealias ChainConfig = Join<ChainLength, RuleEntropy j ActivationThreshold>
 typealias ForwardChainConfig = Join<ChainConfig, ContextWindow>
 typealias BackwardChainConfig = Join<ChainConfig, ContextWindow>
 

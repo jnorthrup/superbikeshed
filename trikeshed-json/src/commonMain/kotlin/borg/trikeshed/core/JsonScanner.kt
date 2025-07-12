@@ -97,7 +97,7 @@ value class JsonScannerCompact(val input: CharSequence) {
             pos++
         }
         
-        val jsonBitmap = bitmap j JsonTypeEvidence(evidenceMap.entries.map { "${it.key}:${it.value.a}" }.joinToString(","), evidenceMap.size)
+        val jsonBitmap = bitmap j JsonTypeEvidence(evidenceMap.entries.map { "${it.key}:${it.value.component1()}" }.joinToString(","), evidenceMap.size)
         val indexArray = indexList.toIntArray()
         val jsonIndex = indexArray j input
         
@@ -109,14 +109,14 @@ value class JsonScannerCompact(val input: CharSequence) {
      */
     fun query(path: String): JsonTypedValue? {
         val doc = scan()
-        val content = doc.b.b
+        val content = doc.component2().component2()
         
         // Simple property extraction for MVP
         val properties = properties()
         for (i in 0 until properties.size) {
             val prop = properties[i]
-            if (prop.a == path) {
-                return JsonTypeEvidence("string", 1) j prop.b
+            if (prop.component1() == path) {
+                return JsonTypeEvidence("string", 1) j prop.component2()
             }
         }
         
@@ -130,8 +130,8 @@ value class JsonScannerCompact(val input: CharSequence) {
         val doc1 = scan()
         val doc2 = other.scan()
         
-        val bitmap1 = doc1.a.a
-        val bitmap2 = doc2.a.a
+        val bitmap1 = doc1.component1().component1()
+        val bitmap2 = doc2.component1().component1()
         
         // Compare structural bitmaps
         return bitmap1.contentEquals(bitmap2)
@@ -197,7 +197,7 @@ value class JsonScannerCompact(val input: CharSequence) {
         }
         
         // Convert to Indexed
-        return propertiesList.size j { i -> propertiesList[i] }
+        return \1 j { \2: Int -> propertiesList[i] }
     }
     
     // Compact helper functions
@@ -217,7 +217,7 @@ value class JsonScannerCompact(val input: CharSequence) {
     
     internal fun extractValue(content: CharSequence, pos: Int, evidence: JsonTypeEvidence): JsonTypedValue? {
         // Extract typed value at position
-        val type = evidence.a.split(',').find { it.startsWith("$pos:") }?.substringAfter(':')
+        val type = evidence.component1().split(',').find { it.startsWith("$pos:") }?.substringAfter(':')
         return when (type) {
             "string" -> {
                 val (str, _) = extractString(content, pos)
@@ -292,10 +292,10 @@ value class StructuralFlow(val scanner: JsonScannerCompact) {
     
     fun evidence(): JsonTypeEvidence {
         val doc = scanner.scan()
-        return doc.a.b
+        return doc.component1().component2()
     }
     
-    fun bitmap(): IntArray = scanner.scan().a.a
+    fun bitmap(): IntArray = scanner.scan().component1().component1()
 }
 
 @kotlin.jvm.JvmInline
@@ -305,9 +305,9 @@ value class QueryableFlow(val scanner: JsonScannerCompact) {
     
     fun properties(): Indexed<JsonProperty> = scanner.properties()
     
-    fun keys(): Indexed<String> = scanner.properties() α { it.a }
+    fun keys(): Indexed<String> = scanner.properties() α { it.component1() }
     
-    fun values(): Indexed<String> = scanner.properties() α { it.b }
+    fun values(): Indexed<String> = scanner.properties() α { it.component2() }
 }
 
 @kotlin.jvm.JvmInline
@@ -319,8 +319,8 @@ value class ComparableFlow(val scanner: JsonScannerCompact) {
         val doc1 = scanner.scan()
         val doc2 = other.scan()
         
-        val evidence1 = doc1.a.b.b
-        val evidence2 = doc2.a.b.b
+        val evidence1 = doc1.component1().component2().component2()
+        val evidence2 = doc2.component1().component2().component2()
         
         return if (evidence1 == evidence2) 1.0 else 0.0
     }
@@ -353,7 +353,7 @@ inline fun JsonScannerCompact.toProperties(): Indexed<JsonProperty> = properties
 /**
  * JsonTypeEvidence extraction
  */
-inline fun JsonScannerCompact.evidence(): JsonTypeEvidence = scan().a.b
+inline fun JsonScannerCompact.evidence(): JsonTypeEvidence = scan().component1().component2()
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // TENSOR INTEGRATION
@@ -374,15 +374,15 @@ fun Indexed<String>.jsonTensor(): Join<IntArray, Indexed<JsonScannerCompact>> {
 fun Join<IntArray, Indexed<JsonScannerCompact>>.findIsomorphisms(): Map<IntArray, Indexed<Int>> {
     val scanners = b
     // Create a Series of (bitmap j original_index) pairs
-    val indexedBitmaps: Indexed<Join<IntArray, Int>> = scanners.size j { index ->
-        scanners[index].scan().a.a j index
+    val indexedBitmaps: Indexed<Join<IntArray, Int>> = \1 j { \2: Int ->
+        scanners[index].scan().component1().component1() j index
     }
     
     return indexedBitmaps.play.groupBy( // Use play to convert to Iterable for groupBy
-        keySelector = { join: Join<IntArray, Int> -> join.a },
-        valueTransform = { join: Join<IntArray, Int> -> join.b }
+        keySelector = { join: Join<IntArray, Int> -> join.component1() },
+        valueTransform = { join: Join<IntArray, Int> -> join.component2() }
     ).mapValues { (_, indices: List<Int>) ->
-        indices.size j { i -> indices[i] }
+        \1 j { \2: Int -> indices[i] }
     }
 }
  
@@ -390,7 +390,7 @@ fun Join<IntArray, Indexed<JsonScannerCompact>>.findIsomorphisms(): Map<IntArray
  * Structural fingerprinting
  */
 fun JsonScannerCompact.fingerprint(): Long {
-    val bitmap = scan().a.a
+    val bitmap = scan().component1().component1()
     return bitmap.fold(0L) { acc, word -> acc xor word.toLong() }
 }
 

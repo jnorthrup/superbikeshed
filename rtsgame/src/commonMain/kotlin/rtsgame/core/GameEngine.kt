@@ -5,7 +5,7 @@ import rtsgame.compat.*
 // TrikeShed-compatible types
 typealias Indexed<T> = List<T>
 data class Join<A, B>(val first: A, val second: B)
-infix fun <A, B> A.j(second: B): Join<A, B> = Join(this, second)
+infix fun <A, B> A.j(second: B): Join<A, B> = this j second
 typealias Series<T> = List<T>
 
 /**
@@ -91,8 +91,8 @@ class GameEngine {
     
     private fun updateEntityPosition(entity: GameEntity): GameEntity {
         // Simple random movement within bounds
-        val currentX = entity.position.a.value
-        val currentY = entity.position.b.value
+        val currentX = entity.position.component1().value
+        val currentY = entity.position.component2().value
         
         // Random movement with small steps
         val deltaX = (kotlin.random.Random.nextFloat() - 0.5f) * 10f
@@ -107,6 +107,6 @@ class GameEngine {
     }
     
     private fun createIndexedFromList(entities: List<GameEntity>): Indexed<GameEntity> {
-        return entities.size j { index -> entities[index] }
+        return \1 j { \2: Int -> entities[index] }
     }
 }

@@ -175,7 +175,7 @@ class NexusMCPBridge(
             is Array<*> -> deps.filterIsInstance<String>()
             else -> emptyList()
         }
-        return depsList.size j { i -> depsList[i] }
+        return \1 j { \2: Int -> depsList[i] }
     }
     
     private fun extractStringArray(value: Any?): Indexed<String> {
@@ -184,7 +184,7 @@ class NexusMCPBridge(
             is Array<*> -> value.filterIsInstance<String>()
             else -> emptyList()
         }
-        return list.size j { i -> list[i] }
+        return \1 j { \2: Int -> list[i] }
     }
 }
 

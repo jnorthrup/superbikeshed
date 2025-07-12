@@ -12,33 +12,33 @@ import kotlin.reflect.KClassifier
 // Type-safe accessors for RowVec
 /** Get Int value with type safety */
 fun RowVec.getInt(index: Int): Int? {
-    val cell = this.b(index)
-    return cell.a as? Int
+    val cell = this.component2()(index)
+    return cell.component1() as? Int
 }
 
 /** Get String value with type safety */
 fun RowVec.getString(index: Int): String? {
-    val cell = this.b(index)
-    return cell.a as? String
+    val cell = this.component2()(index)
+    return cell.component1() as? String
 }
 
 /** Get Float value with type safety */
 fun RowVec.getFloat(index: Int): Float? {
-    val cell = this.b(index)
-    return cell.a as? Float 
+    val cell = this.component2()(index)
+    return cell.component1() as? Float 
 }
 
 /** Get Double value with type safety */
 fun RowVec.getDouble(index: Int): Double? {
-    val cell = this.b(index)
-    return cell.a as? Double
+    val cell = this.component2()(index)
+    return cell.component1() as? Double
 }
 
 /** Generic typed getter */
 fun <T : Any> RowVec.getTyped(index: Int, expectedClass: KClass<T>): T? {
-    val cell = this.b(index)
-    return if (expectedClass.isInstance(cell.a)) {
-        cell.a as? T
+    val cell = this.component2()(index)
+    return if (expectedClass.isInstance(cell.component1())) {
+        cell.component1() as? T
     } else null
 }
 
@@ -57,8 +57,8 @@ fun Cursor.filter(predicate: (RowVec) -> Boolean): Cursor {
 /** Sort cursor by column values */
 fun Cursor.sortBy(columnIndex: Int): Cursor {
     val indices = (0 until a).sortedWith { i1, i2 ->
-        val v1 = at(i1).b(columnIndex).a
-        val v2 = at(i2).b(columnIndex).a
+        val v1 = at(i1).component2()(columnIndex).component1()
+        val v2 = at(i2).component2()(columnIndex).component1()
         compareValues(v1 as? Comparable<Any>, v2 as? Comparable<Any>?)
     }
     return this[indices]
@@ -66,7 +66,7 @@ fun Cursor.sortBy(columnIndex: Int): Cursor {
 
 /** Group cursor by column values */
 fun Cursor.groupBy(columnIndex: Int): Indexed<Cursor> {
-    val groupsMap = (0 until a).groupBy { i -> at(i).b(columnIndex).a }
+    val groupsMap = (0 until a).groupBy { i -> at(i).component2()(columnIndex).component1() }
     val groupList = groupsMap.values.toList()
     return groupList.size j { i: Int -> this[groupList[i]] }
 }
@@ -77,7 +77,7 @@ fun Cursor.groupBy(columnIndex: Int): Indexed<Cursor> {
 fun Cursor.sumColumn(columnIndex: Int): Double {
     var sum = 0.0
     for (i in 0 until a) {
-        val value = at(i).b(columnIndex).a
+        val value = at(i).component2()(columnIndex).component1()
         sum += when (value) {
             is Number -> value.toDouble()
             else -> 0.0
@@ -90,7 +90,7 @@ fun Cursor.sumColumn(columnIndex: Int): Double {
 fun Cursor.countColumn(columnIndex: Int): Int {
     var count = 0
     for (i in 0 until a) {
-        if (at(i).b(columnIndex).a != null) count++
+        if (at(i).component2()(columnIndex).component1() != null) count++
     }
     return count
 }
@@ -102,7 +102,7 @@ fun Cursor.columns(vararg indices: Int): Cursor =
     a j { rowIndex: Int ->
         val oldRow = at(rowIndex)
         indices.size j { colIdx: Int ->
-            oldRow.b(indices[colIdx])
+            oldRow.component2()(indices[colIdx])
         }
     }
 

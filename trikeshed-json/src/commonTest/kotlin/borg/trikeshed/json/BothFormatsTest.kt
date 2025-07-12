@@ -87,8 +87,8 @@ class BothFormatsTest {
         
         assertNotNull(bitmapName)
         assertNotNull(simpleName)
-        assertEquals("scanner", bitmapName.b)
-        assertEquals("scanner", simpleName.b)
+        assertEquals("scanner", bitmapName.component2())
+        assertEquals("scanner", simpleName.component2())
     }
     
     @Test
@@ -98,7 +98,7 @@ class BothFormatsTest {
         // Simple scanner should work without bitmap overhead
         val simpleScanner = json.simpleJson()
         val simpleDoc = simpleScanner.scan()
-        val simpleProps = simpleDoc.a
+        val simpleProps = simpleDoc.component1()
         
         assertTrue(simpleProps.size > 0)
         

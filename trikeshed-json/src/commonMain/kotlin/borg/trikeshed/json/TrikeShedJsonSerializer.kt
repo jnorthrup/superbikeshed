@@ -126,7 +126,7 @@ class TrikeShedJsonDecoder(
     
     override fun decodeBoolean(): Boolean {
         val value = scanner.query(currentPath)
-        return when (val v = value?.b) {
+        return when (val v = value?.component2()) {
             is Boolean -> v
             is String -> when (v) {
                 "true" -> true
@@ -146,7 +146,7 @@ class TrikeShedJsonDecoder(
     
     internal fun decodeNumber(): Double {
         val value = scanner.query(currentPath)
-        return when (val v = value?.b) {
+        return when (val v = value?.component2()) {
             is Number -> v.toDouble()
             is String -> v.toDoubleOrNull() ?: throw SerializationException("Invalid number: $v at path: $currentPath")
             else -> throw SerializationException("Expected number at path: $currentPath, got: $v")
@@ -161,7 +161,7 @@ class TrikeShedJsonDecoder(
     
     override fun decodeString(): String {
         val value = scanner.query(currentPath)
-        return when (val v = value?.b) {
+        return when (val v = value?.component2()) {
             is String -> v
             else -> throw SerializationException("Expected string at path: $currentPath")
         }
@@ -178,12 +178,12 @@ class TrikeShedJsonDecoder(
     
     override fun decodeNotNullMark(): Boolean {
         val value = scanner.query(currentPath)
-        return value?.b != null
+        return value?.component2() != null
     }
     
     override fun decodeNull(): Nothing? {
         val value = scanner.query(currentPath)
-        if (value?.b != null) throw SerializationException("Expected null at path: $currentPath")
+        if (value?.component2() != null) throw SerializationException("Expected null at path: $currentPath")
         return null
     }
     

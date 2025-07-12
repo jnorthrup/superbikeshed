@@ -33,6 +33,6 @@ class CCEKChunkedDecodingChordSheet {
         // val total = someIndexed.play.sumOf { it.someProperty }
         
         // Correct way to access Indexed elements
-        // val element = someIndexed.b(index) // not someIndexed[index]
+        // val element = someIndexed.component2()(index) // not someIndexed[index]
     }
 }

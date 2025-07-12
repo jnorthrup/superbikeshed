@@ -122,7 +122,7 @@ class DHTQuicIntegration(
      * Bootstrap the DHT by connecting to known nodes
      */
     internal suspend fun bootstrapDHT() {
-        for (i in 0 until bootstrapNodes.a) {
+        for (i in 0 until bootstrapNodes.component1()) {
             val node = bootstrapNodes[i]
             if (node.nodeId != NUID.ZERO) {
                 connectToNode(node)
@@ -238,7 +238,7 @@ class DHTQuicIntegration(
         
         // Send STORE to closest nodes
         var stored = 0
-        for (i in 0 until minOf(3, closestNodes.a)) {
+        for (i in 0 until minOf(3, closestNodes.component1())) {
             val node = closestNodes[i]
             val event = StoreEvent(
                 timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
@@ -267,7 +267,7 @@ class DHTQuicIntegration(
         val keyNuid = NUID(key)
         val closestNodes = routingTable.findClosestNodes(keyNuid)
         
-        for (i in 0 until closestNodes.a) {
+        for (i in 0 until closestNodes.component1()) {
             val node = closestNodes[i]
             val event = FindValueEvent(
                 timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
@@ -343,7 +343,7 @@ class DHTQuicIntegration(
     
     internal suspend fun handleFoundNodes(event: FoundNodesEvent) {
         // Add found nodes to routing table
-        for (i in 0 until event.nodes.a) {
+        for (i in 0 until event.nodes.component1()) {
             val node = event.nodes[i]
             routingTable.addNode(node)
         }

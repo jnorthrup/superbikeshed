@@ -78,7 +78,7 @@ class MemvidAttentionIntegration {
             val text = when (event) {
                 is AttentionEvent.DocumentFocus -> {
                     "Document Focus: ${event.docId} " +
-                    "Range: ${event.range.a}-${event.range.b} " +
+                    "Range: ${event.range.component1()}-${event.range.component2()} " +
                     "Intensity: ${event.intensity}"
                 }
                 

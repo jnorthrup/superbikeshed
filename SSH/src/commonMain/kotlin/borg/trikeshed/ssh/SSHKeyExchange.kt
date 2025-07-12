@@ -24,7 +24,7 @@ interface SSHKeyExchange {
 class SSHDiffieHellmanKex : SSHKeyExchange {
     
     override suspend fun negotiateAlgorithms(context: SSHNegotiationContext): SSHAlgorithmSet {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             // Negotiate algorithms based on preferences
             val kexAlgorithms = negotiateKexAlgorithms(context)
             val hostKeyAlgorithms = negotiateHostKeyAlgorithms(context)
@@ -32,12 +32,12 @@ class SSHDiffieHellmanKex : SSHKeyExchange {
             val macAlgorithms = negotiateMacAlgorithms(context)
             val compressionAlgorithms = negotiateCompressionAlgorithms(context)
             
-            Join(kexAlgorithms, Join(cipherAlgorithms, Join(macAlgorithms, compressionAlgorithms)))
+            kexAlgorithms j Join(cipherAlgorithms, Join(macAlgorithms, compressionAlgorithms))
         }
     }
     
     override suspend fun performKex(algorithm: SSHKexAlgorithm, context: SSHTransportContext): SSHSharedSecret {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             when (algorithm) {
                 "diffie-hellman-group14-sha256" -> performDHGroup14Sha256(context)
                 "diffie-hellman-group16-sha512" -> performDHGroup16Sha512(context)
@@ -52,7 +52,7 @@ class SSHDiffieHellmanKex : SSHKeyExchange {
     }
     
     override suspend fun deriveKeys(secret: SSHSharedSecret, context: SSHTransportContext): SSHKeySet {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             // Derive keys using HKDF
             val sessionId = generateSessionId(secret)
             val hashAlgorithm = "sha256" // Default hash for key derivation
@@ -68,24 +68,24 @@ class SSHDiffieHellmanKex : SSHKeyExchange {
             val serverToClientMacKey = deriveKey(secret, sessionId, "F", hashAlgorithm, 32)
             
             // Create key sets
-            val clientToServerKeys = Join(clientToServerKey, clientToServerIV)
-            val serverToClientKeys = Join(serverToClientKey, serverToClientIV)
-            val macKeys = Join(clientToServerMacKey, serverToClientMacKey)
+            val clientToServerKeys = clientToServerKey j clientToServerIV
+            val serverToClientKeys = serverToClientKey j serverToClientIV
+            val macKeys = clientToServerMacKey j serverToClientMacKey
             
-            Join(Join(clientToServerKeys, serverToClientKeys), macKeys)
+            Join(clientToServerKeys j serverToClientKeys, macKeys)
         }
     }
     
     override suspend fun verifyHostKey(hostKey: SSHHostKey, context: SSHTransportContext): Boolean {
-        return withContext(context.b) {
+        return withContext(context.component2()) {
             // Verify host key against known hosts
             val knownHosts = loadKnownHosts()
-            val hostname = hostKey.a
-            val publicKey = hostKey.b
+            val hostname = hostKey.component1()
+            val publicKey = hostKey.component2()
             
             // Check if host key is in known hosts
             knownHosts.any { knownHost ->
-                knownHost.a == hostname && knownHost.b.a == publicKey.a
+                knownHost.component1() == hostname && knownHost.component2().component1() == publicKey.component1()
             }
         }
     }
@@ -233,13 +233,13 @@ class SSHDiffieHellmanKex : SSHKeyExchange {
         val salt = sessionId.toByteArray()
         
         // TODO: Implement proper HKDF
-        return keyLength j { i: Int -> (secret[i % secret.a].toInt() xor i).toByte() }
+        return keyLength j { i: Int -> (secret[i % secret.component1()].toInt() xor i).toByte() }
     }
     
     internal suspend fun loadKnownHosts(): Indexed<SSHHostKey> {
         // Load known hosts from file
         // TODO: Implement known hosts loading
-        return 0 j { SSHHostKey(Join("", 0 j { 0.toByte() })) }
+        return 0 j { SSHHostKey("" j 0 j { 0.toByte( })) }
     }
     
     // Cryptographic helper functions
@@ -286,17 +286,17 @@ class SSHDiffieHellmanKex : SSHKeyExchange {
         val compressionAlgorithms = encodeAlgorithmList(AlgorithmPreferences.Compression.preferences)
         
         // Combine all fields
-        val totalSize = cookie.a + kexAlgorithms.a + hostKeyAlgorithms.a + 
-                       cipherAlgorithms.a + macAlgorithms.a + compressionAlgorithms.a + 8
+        val totalSize = cookie.component1() + kexAlgorithms.component1() + hostKeyAlgorithms.component1() + 
+                       cipherAlgorithms.component1() + macAlgorithms.component1() + compressionAlgorithms.component1() + 8
         
         return totalSize j { i: Int ->
             when {
-                i < cookie.a -> cookie[i]
-                i < cookie.a + kexAlgorithms.a -> kexAlgorithms[i - cookie.a]
-                i < cookie.a + kexAlgorithms.a + hostKeyAlgorithms.a -> hostKeyAlgorithms[i - cookie.a - kexAlgorithms.a]
-                i < cookie.a + kexAlgorithms.a + hostKeyAlgorithms.a + cipherAlgorithms.a -> cipherAlgorithms[i - cookie.a - kexAlgorithms.a - hostKeyAlgorithms.a]
-                i < cookie.a + kexAlgorithms.a + hostKeyAlgorithms.a + cipherAlgorithms.a + macAlgorithms.a -> macAlgorithms[i - cookie.a - kexAlgorithms.a - hostKeyAlgorithms.a - cipherAlgorithms.a]
-                else -> compressionAlgorithms[i - cookie.a - kexAlgorithms.a - hostKeyAlgorithms.a - cipherAlgorithms.a - macAlgorithms.a]
+                i < cookie.component1() -> cookie[i]
+                i < cookie.component1() + kexAlgorithms.component1() -> kexAlgorithms[i - cookie.component1()]
+                i < cookie.component1() + kexAlgorithms.component1() + hostKeyAlgorithms.component1() -> hostKeyAlgorithms[i - cookie.component1() - kexAlgorithms.component1()]
+                i < cookie.component1() + kexAlgorithms.component1() + hostKeyAlgorithms.component1() + cipherAlgorithms.component1() -> cipherAlgorithms[i - cookie.component1() - kexAlgorithms.component1() - hostKeyAlgorithms.component1()]
+                i < cookie.component1() + kexAlgorithms.component1() + hostKeyAlgorithms.component1() + cipherAlgorithms.component1() + macAlgorithms.component1() -> macAlgorithms[i - cookie.component1() - kexAlgorithms.component1() - hostKeyAlgorithms.component1() - cipherAlgorithms.component1()]
+                else -> compressionAlgorithms[i - cookie.component1() - kexAlgorithms.component1() - hostKeyAlgorithms.component1() - cipherAlgorithms.component1() - macAlgorithms.component1()]
             }
         }
     }

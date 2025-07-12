@@ -214,7 +214,7 @@ suspend fun Cursor.aggregateToChannel(
     asFlow().collect { row ->
         aggregations.forEach { agg ->
             val currentValue = results[agg.name] ?: agg.initialValue
-            val cellValue = row.b(agg.columnIndex).a
+            val cellValue = row.component2()(agg.columnIndex).component1()
             results[agg.name] = agg.accumulator(currentValue, cellValue)
         }
     }

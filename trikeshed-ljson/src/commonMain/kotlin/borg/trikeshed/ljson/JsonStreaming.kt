@@ -29,10 +29,10 @@ class JsonStreamingParser(
         val provider = BBCursiveJsonProvider()
         val result = provider.parse(json)
         
-        when (val element = result.a) {
+        when (val element = result.component1()) {
             is JsonElement.Arr -> {
-                for (i in 0 until element.elements.a) {
-                    emit(element.elements.b(i))
+                for (i in 0 until element.elements.component1()) {
+                    emit(element.elements.component2()(i))
                     if (i % batchSize == 0) yield() // Allow cancellation
                 }
             }
@@ -49,10 +49,10 @@ class JsonStreamingParser(
         val provider = BBCursiveJsonProvider()
         val result = provider.parse(json)
         
-        when (val element = result.a) {
+        when (val element = result.component1()) {
             is JsonElement.Obj -> {
-                for (i in 0 until element.fields.a) {
-                    emit(element.fields.b(i))
+                for (i in 0 until element.fields.component1()) {
+                    emit(element.fields.component2()(i))
                     if (i % batchSize == 0) yield() // Allow cancellation
                 }
             }
@@ -75,7 +75,7 @@ class JsonStreamingParser(
         lines.forEachIndexed { index, line ->
             if (line.isNotBlank()) {
                 val result = provider.parse(line.trim())
-                result.a?.let { emit(it) }
+                result.component1()?.let { emit(it) }
                 if (index % batchSize == 0) yield() // Allow cancellation
             }
         }
@@ -197,9 +197,9 @@ object JsonCursorStreaming {
             when (element) {
                 is JsonElement.Obj -> {
                     val row = mutableListOf<Any?>()
-                    for (i in 0 until element.fields.a) {
-                        val field = element.fields.b(i)
-                        row.add(field.b.toNativeValue())
+                    for (i in 0 until element.fields.component1()) {
+                        val field = element.fields.component2()(i)
+                        row.add(field.component2().toNativeValue())
                     }
                     rows.add(row)
                     maxColumns = maxOf(maxColumns, row.size)
@@ -219,18 +219,18 @@ object JsonCursorStreaming {
      * Convert cursor to streaming JSON array
      */
     fun toJsonArrayStream(cursor: Cursor): Flow<JsonElement> = flow {
-        for (i in 0 until cursor.a) {
+        for (i in 0 until cursor.component1()) {
             val row = cursor.at(i)
             val fields = mutableListOf<Join<String, JsonElement>>()
             
-            for (j in 0 until row.a) {
-                val cell = row.b(j)
-                val columnName = cursor.columnNames.b(j)
-                val value = cell.a.toJsonElement()
+            for (j in 0 until row.component1()) {
+                val cell = row.component2()(j)
+                val columnName = cursor.columnNames.component2()(j)
+                val value = cell.component1().toJsonElement()
                 fields.add(columnName j value)
             }
             
-            val obj = JsonElement.Obj(fields.size j { k -> fields[k] })
+            val obj = \1 j { \2: Int -> fields[k] })
             emit(obj)
         }
     }
@@ -244,8 +244,8 @@ object JsonCursorStreaming {
         fieldExtractor: (JsonElement) -> List<Any?> = { element ->
             when (element) {
                 is JsonElement.Obj -> {
-                    (0 until element.fields.a).map { i ->
-                        element.fields.b(i).b.toNativeValue()
+                    (0 until element.fields.component1()).map { i ->
+                        element.fields.component2()(i).component2().toNativeValue()
                     }
                 }
                 else -> listOf(element.toNativeValue())
@@ -276,7 +276,7 @@ object JsonCursorStreaming {
         jsonArrayOutput: Boolean = true
     ): Flow<JsonElement> = flow {
         val handle = openISAMCursor(isamlPath)
-        val cursor = handle.a
+        val cursor = handle.component1()
         
         try {
             if (jsonArrayOutput) {
@@ -285,23 +285,23 @@ object JsonCursorStreaming {
                 emit(jsonArray)
             } else {
                 // Emit each row as separate element
-                for (i in 0 until cursor.a) {
+                for (i in 0 until cursor.component1()) {
                     val row = cursor.at(i)
                     val fields = mutableListOf<Join<String, JsonElement>>()
                     
-                    for (j in 0 until row.a) {
-                        val cell = row.b(j)
-                        val columnName = cursor.columnNames.b(j)
-                        val value = cell.a.toJsonElement()
+                    for (j in 0 until row.component1()) {
+                        val cell = row.component2()(j)
+                        val columnName = cursor.columnNames.component2()(j)
+                        val value = cell.component1().toJsonElement()
                         fields.add(columnName j value)
                     }
                     
-                    val obj = JsonElement.Obj(fields.size j { k -> fields[k] })
+                    val obj = \1 j { \2: Int -> fields[k] })
                     emit(obj)
                 }
             }
         } finally {
-            handle.b.close()
+            handle.component2().close()
         }
     }
 }
@@ -365,12 +365,12 @@ internal fun JsonElement.toNativeValue(): Any? = when (this) {
     is JsonElement.Bool -> value
     is JsonElement.Num -> value
     is JsonElement.Str -> value
-    is JsonElement.Arr -> (0 until elements.a).map { elements.b(it).toNativeValue() }
+    is JsonElement.Arr -> (0 until elements.component1()).map { elements.component2()(it).toNativeValue() }
     is JsonElement.Obj -> {
         val map = mutableMapOf<String, Any?>()
-        for (i in 0 until fields.a) {
-            val field = fields.b(i)
-            map[field.a] = field.b.toNativeValue()
+        for (i in 0 until fields.component1()) {
+            val field = fields.component2()(i)
+            map[field.component1()] = field.component2().toNativeValue()
         }
         map
     }
@@ -382,7 +382,7 @@ internal fun Any?.toJsonElement(): JsonElement = when (this) {
     is Number -> JsonElement.Num(this.toDouble())
     is String -> JsonElement.Str(this)
     is List<*> -> {
-        val elements = size j { i -> this[i].toJsonElement() }
+        val elements = \1 j { \2: Int -> this[i].toJsonElement() }
         JsonElement.Arr(elements)
     }
     is Map<*, *> -> {
@@ -390,7 +390,7 @@ internal fun Any?.toJsonElement(): JsonElement = when (this) {
         forEach { (key, value) ->
             fields.add((key?.toString() ?: "") j value.toJsonElement())
         }
-        JsonElement.Obj(fields.size j { i -> fields[i] })
+        \1 j { \2: Int -> fields[i] })
     }
     else -> JsonElement.Str(toString())
 }

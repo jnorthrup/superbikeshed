@@ -33,7 +33,7 @@ abstract class ComponentStorage<T : Component> {
     abstract fun has(entity: EntityId): Boolean
     abstract fun clear()
     
-    fun entities(): Indexed<EntityId> = indexToEntity.size j { i -> indexToEntity[i] }
+    fun entities(): Indexed<EntityId> = \1 j { \2: Int -> indexToEntity[i] }
 }
 
 /**
@@ -177,7 +177,7 @@ class ECSWorld {
             }
         }
         
-        return result.size j { i -> result[i] }
+        return \1 j { \2: Int -> result[i] }
     }
     
     /**
@@ -208,8 +208,8 @@ class ECSWorld {
         var i = 0
         while (i < count) {
             val remaining = minOf(batchSize, count - i)
-            val entities = remaining j { j -> storage.getEntityByIndex(i + j) }
-            val components = remaining j { j -> storage.getByIndex(i + j) }
+            val entities = \1 j { \2: Int -> storage.getEntityByIndex(i + j) }
+            val components = \1 j { \2: Int -> storage.getByIndex(i + j) }
             
             action(entities, components)
             i += remaining
@@ -231,7 +231,7 @@ abstract class ComponentSystem(vararg val requiredComponents: ComponentTypeId) :
     override fun update(world: ECSWorld, deltaTime: Float) {
         val entities = world.query(*requiredComponents)
         
-        for (i in 0 until entities.a) {
+        for (i in 0 until entities.component1()) {
             processEntity(world, entities[i], deltaTime)
         }
     }
@@ -247,13 +247,13 @@ abstract class ParallelSystem(vararg requiredComponents: ComponentTypeId) : Comp
         val entities = world.query(*requiredComponents)
         
         // Process entities in parallel batches
-        val batchSize = maxOf(1, entities.a / getProcessorCount())
+        val batchSize = maxOf(1, entities.component1() / getProcessorCount())
         val batches = mutableListOf<Indexed<EntityId>>()
         
         var i = 0
-        while (i < entities.a) {
-            val end = minOf(i + batchSize, entities.a)
-            batches.add((end - i) j { j -> entities[i + j] })
+        while (i < entities.component1()) {
+            val end = minOf(i + batchSize, entities.component1())
+            batches.add((end - \1 j { \2: Int -> entities[i + j] })
             i = end
         }
         

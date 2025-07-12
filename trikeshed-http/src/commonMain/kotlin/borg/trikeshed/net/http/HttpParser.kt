@@ -49,7 +49,7 @@ object HttpParser {
             if (colonIndex > 0) {
                 val name = line.substring(0, colonIndex).trim()
                 val value = line.substring(colonIndex + 1).trim()
-                headers.add(Join(name, value))
+                headers.add(name j value)
             }
             i++
         }

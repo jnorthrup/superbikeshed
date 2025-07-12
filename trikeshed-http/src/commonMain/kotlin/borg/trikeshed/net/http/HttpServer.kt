@@ -163,7 +163,7 @@ class HttpConnectionHandler(
 
     internal fun convertToHttpRequest(message: HttpMessage): HttpRequest? {
         val startLine = message.startLine as? HttpRequestLine ?: return null
-        val headers = message.headerFields.α { HttpHeaderName(it.a.value) j HttpHeaderValue(it.b.value) }
+        val headers = message.headerFields.α { HttpHeaderName(it.component1().value) j HttpHeaderValue(it.component2().value) }
         return HttpRequest(startLine.method, HttpRequestPath(startLine.requestTarget.value), headers, message.messageBody, startLine.httpVersion)
     }
 
@@ -189,7 +189,7 @@ fun createStaticFileHandler(rootDir: String): HttpHandler {
             HttpResponse(HttpStatusCode(404), HttpReasonPhrase("Not Found"))
         } else {
             // Opportunistic Gzip
-            val acceptEncoding = request.headers.play.find { it.a.value.equals("Accept-Encoding", ignoreCase = true) }?.b?.value ?: ""
+            val acceptEncoding = request.headers.play.find { it.component1().value.equals("Accept-Encoding", ignoreCase = true) }?.component2()?.value ?: ""
             val gzFile = PlatformFile("${file.path}.gz")
             
             val (fileToSend, contentEncoding) = if ("gzip" in acceptEncoding && gzFile.exists()) {
@@ -259,8 +259,8 @@ class HttpConnectionManager(internal val config: HttpServerConfig) {
     
     fun shouldKeepAlive(headers: Series2<HttpFieldName, HttpFieldValue>, version: HttpVersion): Boolean {
         val connectionHeader = headers.`play`.find {
-            it.a.value.lowercase() == "connection" 
-        }?.b?.value?.lowercase()
+            it.component1().value.lowercase() == "connection" 
+        }?.component2()?.value?.lowercase()
         
         return when {
             connectionHeader == "close" -> false
@@ -274,7 +274,7 @@ class HttpConnectionManager(internal val config: HttpServerConfig) {
         headers: Series2<HttpFieldName, HttpFieldValue>
     ): UpgradeProtocol? {
         if (!HttpUpgrade.canUpgrade(headers.α { join -> 
-                HttpFieldName(join.a.value) j HttpFieldValue(join.b.value) 
+                HttpFieldName(join.component1().value) j HttpFieldValue(join.component2().value) 
             }, ProtocolName("websocket"))) {
             return null
         }

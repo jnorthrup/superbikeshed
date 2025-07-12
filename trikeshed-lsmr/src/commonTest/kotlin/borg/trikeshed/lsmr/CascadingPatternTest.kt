@@ -153,7 +153,7 @@ class CascadingPatternTest {
         
         // Group by facility using cursor operations
         val facilityGroups = mutableMapOf<String, MutableList<Double>>()
-        for (i in 0 until cursor.a) {
+        for (i in 0 until cursor.component1()) {
             val row = cursor.at(i)
             val facility = row.getString(1) ?: ""
             val cpu = row.getDouble(4) ?: 0.0

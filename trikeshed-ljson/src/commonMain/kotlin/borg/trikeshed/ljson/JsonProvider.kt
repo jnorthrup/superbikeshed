@@ -123,14 +123,14 @@ object JsonCursor {
     fun fromJsonArray(array: JsonElement.Arr): Cursor {
         val rows = mutableListOf<List<Any?>>()
         
-        for (i in 0 until array.elements.a) {
-            val element = array.elements.b(i)
+        for (i in 0 until array.elements.component1()) {
+            val element = array.elements.component2()(i)
             when (element) {
                 is JsonElement.Obj -> {
                     val row = mutableListOf<Any?>()
-                    for (j in 0 until element.fields.a) {
-                        val field = element.fields.b(j)
-                        row.add(field.b.toNativeValue())
+                    for (j in 0 until element.fields.component1()) {
+                        val field = element.fields.component2()(j)
+                        row.add(field.component2().toNativeValue())
                     }
                     rows.add(row)
                 }
@@ -155,22 +155,22 @@ object JsonCursor {
     fun toJsonArray(cursor: Cursor): JsonElement.Arr {
         val elements = mutableListOf<JsonElement>()
         
-        for (i in 0 until cursor.a) {
+        for (i in 0 until cursor.component1()) {
             val row = cursor.at(i)
             val fields = mutableListOf<Join<String, JsonElement>>()
             
-            for (j in 0 until row.a) {
-                val cell = row.b(j)
-                val columnName = cursor.columnNames.b(j)
-                val value = cell.a.toJsonElement()
+            for (j in 0 until row.component1()) {
+                val cell = row.component2()(j)
+                val columnName = cursor.columnNames.component2()(j)
+                val value = cell.component1().toJsonElement()
                 fields.add(columnName j value)
             }
             
-            val obj = JsonElement.Obj(fields.size j { k -> fields[k] })
+            val obj = \1 j { \2: Int -> fields[k] })
             elements.add(obj)
         }
         
-        return JsonElement.Arr(elements.size j { i -> elements[i] })
+        return \1 j { \2: Int -> elements[i] })
     }
 }
 
@@ -186,7 +186,7 @@ internal fun kotlinx.serialization.json.JsonElement.toTrikeShedJson(): JsonEleme
         else -> JsonElement.Num(content.toDoubleOrNull() ?: 0.0)
     }
     is JsonArray -> {
-        val elements = size j { i -> this[i].toTrikeShedJson() }
+        val elements = \1 j { \2: Int -> this[i].toTrikeShedJson() }
         JsonElement.Arr(elements)
     }
     is JsonObject -> {
@@ -194,7 +194,7 @@ internal fun kotlinx.serialization.json.JsonElement.toTrikeShedJson(): JsonEleme
         forEach { (key, value) ->
             fields.add(key j value.toTrikeShedJson())
         }
-        JsonElement.Obj(fields.size j { i -> fields[i] })
+        \1 j { \2: Int -> fields[i] })
     }
 }
 
@@ -204,14 +204,14 @@ internal fun JsonElement.toKotlinxJson(): kotlinx.serialization.json.JsonElement
     is JsonElement.Num -> JsonPrimitive(value)
     is JsonElement.Str -> JsonPrimitive(value)
     is JsonElement.Arr -> {
-        val list = (0 until elements.a).map { elements.b(it).toKotlinxJson() }
+        val list = (0 until elements.component1()).map { elements.component2()(it).toKotlinxJson() }
         JsonArray(list)
     }
     is JsonElement.Obj -> {
         val map = mutableMapOf<String, kotlinx.serialization.json.JsonElement>()
-        for (i in 0 until fields.a) {
-            val field = fields.b(i)
-            map[field.a] = field.b.toKotlinxJson()
+        for (i in 0 until fields.component1()) {
+            val field = fields.component2()(i)
+            map[field.component1()] = field.component2().toKotlinxJson()
         }
         JsonObject(map)
     }
@@ -222,12 +222,12 @@ internal fun JsonElement.toNativeValue(): Any? = when (this) {
     is JsonElement.Bool -> value
     is JsonElement.Num -> value
     is JsonElement.Str -> value
-    is JsonElement.Arr -> (0 until elements.a).map { elements.b(it).toNativeValue() }
+    is JsonElement.Arr -> (0 until elements.component1()).map { elements.component2()(it).toNativeValue() }
     is JsonElement.Obj -> {
         val map = mutableMapOf<String, Any?>()
-        for (i in 0 until fields.a) {
-            val field = fields.b(i)
-            map[field.a] = field.b.toNativeValue()
+        for (i in 0 until fields.component1()) {
+            val field = fields.component2()(i)
+            map[field.component1()] = field.component2().toNativeValue()
         }
         map
     }
@@ -239,7 +239,7 @@ internal fun Any?.toJsonElement(): JsonElement = when (this) {
     is Number -> JsonElement.Num(this.toDouble())
     is String -> JsonElement.Str(this)
     is List<*> -> {
-        val elements = size j { i -> this[i].toJsonElement() }
+        val elements = \1 j { \2: Int -> this[i].toJsonElement() }
         JsonElement.Arr(elements)
     }
     is Map<*, *> -> {
@@ -247,7 +247,7 @@ internal fun Any?.toJsonElement(): JsonElement = when (this) {
         forEach { (key, value) ->
             fields.add((key?.toString() ?: "") j value.toJsonElement())
         }
-        JsonElement.Obj(fields.size j { i -> fields[i] })
+        \1 j { \2: Int -> fields[i] })
     }
     else -> JsonElement.Str(toString())
 }

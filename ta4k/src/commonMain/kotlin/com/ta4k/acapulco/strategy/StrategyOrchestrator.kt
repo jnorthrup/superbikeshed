@@ -83,7 +83,7 @@ class StrategyOrchestrator(
     fun analyzeSymbol(symbol: Symbol): CombinedAnalysis {
         val candles = historicalDataManager.getHotWindow(symbol)
         val timestamp = if (candles.size > 0) {
-            candles[candles.size - 1].b
+            candles[candles.size - 1].component2()
         } else {
             kotlinx.datetime.Clock.System.now()
         }
@@ -233,7 +233,7 @@ class StrategyOrchestrator(
         
         // Analyze each symbol
         val analyses = topSymbols.α { weightedSymbol ->
-            analyzeSymbol(weightedSymbol.a)
+            analyzeSymbol(weightedSymbol.component1())
         }
         
         // Sort by signal strength and attention score

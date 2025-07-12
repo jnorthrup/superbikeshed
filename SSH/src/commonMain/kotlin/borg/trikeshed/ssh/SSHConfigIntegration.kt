@@ -134,7 +134,7 @@ class DefaultSSHConfigReader(
         
         if (!fileExists(configPath)) {
             // Return empty config
-            return@coroutineScope 0 j { Join("", 0 j { Join("", "") }) }
+            return@coroutineScope 0 j { "" j 0 j { Join("", "" }) }
         }
         
         val content = readFile(configPath)
@@ -149,7 +149,7 @@ class DefaultSSHConfigReader(
         val configPath = fileLocator.getSystemConfigPath()
         
         if (!fileExists(configPath)) {
-            return@coroutineScope 0 j { Join("", 0 j { Join("", "") }) }
+            return@coroutineScope 0 j { "" j 0 j { Join("", "" }) }
         }
         
         val content = readFile(configPath)
@@ -166,7 +166,7 @@ class DefaultSSHConfigReader(
         if (fileExists(userPath)) {
             val content = readFile(userPath)
             val userHosts = parser.parseKnownHosts(content)
-            for (i in 0 until userHosts.a) {
+            for (i in 0 until userHosts.component1()) {
                 entries.add(userHosts[i])
             }
         }
@@ -175,7 +175,7 @@ class DefaultSSHConfigReader(
         if (fileExists(systemPath)) {
             val content = readFile(systemPath)
             val systemHosts = parser.parseKnownHosts(content)
-            for (i in 0 until systemHosts.a) {
+            for (i in 0 until systemHosts.component1()) {
                 entries.add(systemHosts[i])
             }
         }
@@ -188,7 +188,7 @@ class DefaultSSHConfigReader(
         
         if (!fileExists(path)) {
             return@coroutineScope 0 j { 
-                Join(0 j { "" }, Join("", Join(0 j { 0.toByte() }, "")))
+                0 j { "" } j Join("", Join(0 j { 0.toByte( }, "")))
             }
         }
         
@@ -283,11 +283,11 @@ class SSHHostKeyVerifier(
         }
         
         // Check all entries
-        for (i in 0 until hosts.a) {
+        for (i in 0 until hosts.component1()) {
             val entry = hosts[i]
-            val pattern = entry.a
-            val entryKeyType = entry.b.a
-            val entryKey = entry.b.b
+            val pattern = entry.component1()
+            val entryKeyType = entry.component2().component1()
+            val entryKey = entry.component2().component2()
             
             if (matchesHost(hostname, port, pattern) && keyType == entryKeyType) {
                 return if (keysEqual(hostKey, entryKey)) {
@@ -337,9 +337,9 @@ class SSHHostKeyVerifier(
     }
     
     internal fun keysEqual(key1: SSHPublicKey, key2: SSHPublicKey): Boolean {
-        if (key1.a != key2.a) return false
+        if (key1.component1() != key2.component1()) return false
         
-        for (i in 0 until key1.a) {
+        for (i in 0 until key1.component1()) {
             if (key1[i] != key2[i]) return false
         }
         

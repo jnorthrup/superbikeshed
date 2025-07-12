@@ -66,7 +66,7 @@ class TaggingPipeline(
                 conceptId = "entity_${doc.filename}_$index",
                 sourceDoc = doc.filename,
                 confidence = 0.85,
-                relatedConcepts = doc.nlpAnalysis.entities.size j { i ->
+                relatedConcepts = \1 j { \2: Int ->
                     doc.nlpAnalysis.entities[i]
                 }
             )

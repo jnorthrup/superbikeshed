@@ -278,7 +278,7 @@ class GameUnit(
     
     internal fun findNearbyEnemies(simulation: Simulation, range: Double): Indexed<GameUnit> {
         val nearby = mutableListOf<GameUnit>()
-        for (i in 0 until simulation.units.a) {
+        for (i in 0 until simulation.units.component1()) {
             val unit = simulation.units[i]
             if (unit.team != this.team && !unit.isDead && distanceTo(unit) <= range) {
                 nearby.add(unit)

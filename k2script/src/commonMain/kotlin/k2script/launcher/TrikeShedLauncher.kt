@@ -48,7 +48,7 @@ class TrikeShedLauncher(
         val pattern = """@file:DependsOn\("([^"]+)"\)""".toRegex()
         val matches = pattern.findAll(content).toList()
         
-        return matches.size j { i ->
+        return \1 j { \2: Int ->
             val coordinate = matches[i].groupValues[1]
             parseArtifact(coordinate)
         }
@@ -58,7 +58,7 @@ class TrikeShedLauncher(
         val pattern = """@file:Repository\("([^"]+)"\)""".toRegex()
         val matches = pattern.findAll(content).toList()
         
-        return matches.size j { i ->
+        return \1 j { \2: Int ->
             val url = matches[i].groupValues[1]
             Repository(
                 id = "script-repo-$i",
@@ -72,7 +72,7 @@ class TrikeShedLauncher(
         val pattern = """^import\s+(.+)$""".toRegex(RegexOption.MULTILINE)
         val matches = pattern.findAll(content).toList()
         
-        return matches.size j { i ->
+        return \1 j { \2: Int ->
             matches[i].groupValues[1].trim()
         }
     }
@@ -97,7 +97,7 @@ class TrikeShedLauncher(
     // === Dependency Resolution with Reactor Concurrency ===
     
     suspend fun resolveDependencies(metadata: ScriptMetadata): ResolvedDependencies {
-        println("🔍 Resolving ${metadata.dependencies.a} dependencies...")
+        println("🔍 Resolving ${metadata.dependencies.component1()} dependencies...")
         
         // Use reactor for concurrent resolution
         val batchWagon = BatchWagon(wagon, reactor)
@@ -106,8 +106,8 @@ class TrikeShedLauncher(
         val resolved = mutableListOf<ResolvedArtifact>()
         val failed = mutableListOf<String>()
         
-        for (i in 0 until results.a) {
-            when (val result = results.b(i)) {
+        for (i in 0 until results.component1()) {
+            when (val result = results.component2()(i)) {
                 is ResolveResult.Success -> {
                     val artifact = result.artifact
                     val jarFile = cacheArtifact(artifact, result.data)
@@ -139,8 +139,8 @@ class TrikeShedLauncher(
         val entries = mutableListOf<String>()
         
         // Add resolved JARs
-        for (i in 0 until resolved.resolved.a) {
-            val artifact = resolved.resolved.b(i)
+        for (i in 0 until resolved.resolved.component1()) {
+            val artifact = resolved.resolved.component2()(i)
             entries.add(artifact.jarPath)
         }
         
@@ -160,7 +160,7 @@ class TrikeShedLauncher(
     ): ExecutionResult {
         
         println("🚀 Executing script: ${metadata.path}")
-        println("📚 Classpath entries: ${classpath.entries.a}")
+        println("📚 Classpath entries: ${classpath.entries.component1()}")
         
         // Create execution context
         val context = ExecutionContext(
@@ -186,7 +186,7 @@ class TrikeShedLauncher(
         // For now, return a placeholder
         println("📄 Script: ${context.scriptPath}")
         println("🎯 Main: ${context.mainClass}")
-        println("📋 Args: ${context.arguments.a}")
+        println("📋 Args: ${context.arguments.component1()}")
         
         return "Script executed successfully"
     }
@@ -204,10 +204,10 @@ class TrikeShedLauncher(
         // 2. Resolve dependencies
         val resolved = resolveDependencies(metadata)
         
-        if (resolved.failed.a > 0) {
-            println("⚠️  Failed to resolve ${resolved.failed.a} dependencies:")
-            for (i in 0 until resolved.failed.a) {
-                println("   ${resolved.failed.b(i)}")
+        if (resolved.failed.component1() > 0) {
+            println("⚠️  Failed to resolve ${resolved.failed.component1()} dependencies:")
+            for (i in 0 until resolved.failed.component1()) {
+                println("   ${resolved.failed.component2()(i)}")
             }
         }
         

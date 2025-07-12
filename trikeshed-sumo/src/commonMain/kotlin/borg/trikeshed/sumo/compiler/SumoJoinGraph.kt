@@ -59,8 +59,8 @@ class SumoJoinGraph {
      * Build the complete graph using Join composition
      */
     fun buildGraph(): JoinGraph {
-        val conceptIndex = concepts.size j { i -> concepts[i] }
-        val relationshipIndex = relationships.size j { i -> relationships[i] }
+        val conceptIndex = \1 j { \2: Int -> concepts[i] }
+        val relationshipIndex = \1 j { \2: Int -> relationships[i] }
         
         return conceptIndex j relationshipIndex
     }
@@ -70,8 +70,8 @@ class SumoJoinGraph {
      */
     fun isSubclassOf(sub: String, sup: String): Boolean {
         val graph = buildGraph()
-        val conceptIndex = graph.a
-        val relationshipIndex = graph.b
+        val conceptIndex = graph.component1()
+        val relationshipIndex = graph.component2()
         
         val subConcept = findConceptByName(sub, conceptIndex)
         val supConcept = findConceptByName(sup, conceptIndex)
@@ -95,8 +95,8 @@ class SumoJoinGraph {
         relationships: Indexed<Relationship>
     ): Boolean {
         val directSupers = relationships.play.filter { rel ->
-            rel.a == sub
-        }.map { it.b }
+            rel.component1() == sub
+        }.map { it.component2() }
         
         if (directSupers.contains(sup)) return true
         
@@ -110,7 +110,7 @@ class SumoJoinGraph {
      */
     private fun findConceptByName(name: String, conceptIndex: Indexed<Concept>): Concept? {
         return conceptIndex.play.find { concept ->
-            concept.b.value == name
+            concept.component2().value == name
         }
     }
     
@@ -119,8 +119,8 @@ class SumoJoinGraph {
      */
     fun generateJoinQueries(): JoinQueryCode {
         val graph = buildGraph()
-        val conceptIndex = graph.a
-        val relationshipIndex = graph.b
+        val conceptIndex = graph.component1()
+        val relationshipIndex = graph.component2()
         
         val subclassQueries = generateSubclassQueries(conceptIndex, relationshipIndex)
         val conceptQueries = generateConceptQueries(conceptIndex)
@@ -139,8 +139,8 @@ class SumoJoinGraph {
         // Generate concept lookup using Join patterns
         sb.appendLine("  private val concepts = listOf(")
         concepts.play.forEach { concept ->
-            val id = concept.a.value
-            val name = concept.b.value
+            val id = concept.component1().value
+            val name = concept.component2().value
             sb.appendLine("    $id j \"$name\"")
         }
         sb.appendLine("  )")
@@ -148,8 +148,8 @@ class SumoJoinGraph {
         // Generate relationship lookup
         sb.appendLine("  private val relationships = setOf(")
         relationships.play.forEach { rel ->
-            val subId = rel.a.a.value
-            val supId = rel.b.a.value
+            val subId = rel.component1().component1().value
+            val supId = rel.component2().component1().value
             sb.appendLine("    $subId j $supId")
         }
         sb.appendLine("  )")
@@ -158,9 +158,9 @@ class SumoJoinGraph {
         sb.appendLine("""
           @JvmStatic
           fun isSubclassOf(sub: String, sup: String): Boolean {
-              val subConcept = concepts.find { it.b == sub } ?: return false
-              val supConcept = concepts.find { it.b == sup } ?: return false
-              val relationship = subConcept.a j supConcept.a
+              val subConcept = concepts.find { it.component2() == sub } ?: return false
+              val supConcept = concepts.find { it.component2() == sup } ?: return false
+              val relationship = subConcept.component1() j supConcept.component1()
               return relationships.contains(relationship)
           }
         """.trimIndent())
@@ -174,10 +174,10 @@ class SumoJoinGraph {
         sb.appendLine("// Generated Join-Based Concept Queries")
         sb.appendLine("object JoinConceptQueries {")
         
-        sb.appendLine("  private val conceptIndex = ${concepts.size} j { i -> concepts[i] }")
+        sb.appendLine("  private val conceptIndex = \1 j { \2: Int -> concepts[i] }")
         sb.appendLine("  private val concepts = listOf(")
         concepts.play.forEach { concept ->
-            val name = concept.b.value
+            val name = concept.component2().value
             sb.appendLine("    \"$name\"")
         }
         sb.appendLine("  )")
@@ -187,11 +187,11 @@ class SumoJoinGraph {
           fun getAllConcepts(): List<String> = concepts
           
           @JvmStatic
-          fun getConceptCount(): Int = conceptIndex.a
+          fun getConceptCount(): Int = conceptIndex.component1()
           
           @JvmStatic
           fun getConceptById(id: Int): String? = 
-              if (id < conceptIndex.a) conceptIndex.b(id).b.value else null
+              if (id < conceptIndex.component1()) conceptIndex.component2()(id).component2().value else null
         """.trimIndent())
         
         sb.appendLine("}")
@@ -231,7 +231,7 @@ object JoinExpressionProcessor : JoinExpressionDispatcher<Relationship?> {
                 val car1 = dispatch(expr1.car, expr2.car, graph)
                 val cdr1 = dispatch(expr1.cdr, expr2.cdr, graph)
                 if (car1 != null && cdr1 != null) {
-                    car1.a j cdr1.b
+                    car1.component1() j cdr1.component2()
                 } else null
             }
             expr1 is KifExpression.Atom && expr2 is KifExpression.Atom -> {

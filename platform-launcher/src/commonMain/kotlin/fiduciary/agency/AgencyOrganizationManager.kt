@@ -666,12 +666,12 @@ class AgencyOrganizationManager {
     internal fun generateOrganizationId(name: String): String = 
         "ORG-${name.take(4).uppercase()}-${System.currentTimeMillis()}"
     
-    internal fun <T> emptyIndexed(): Indexed<T> = b0.a
+    internal fun <T> emptyIndexed(): Indexed<T> = b0.component1()
     internal suspend fun <T> await(block: suspend () → T): T = coroutineScope { block() }
     
-    internal fun setupOffices(configs: List<OfficeConfig>): Indexed<AgencyOffice> = b0.a
-    internal fun setupDepartments(configs: List<DepartmentConfig>): Indexed<Department> = b0.a
-    internal fun setupFinancialAccounts(configs: List<BankingConfig>): Indexed<FinancialAccount> = b0.a
+    internal fun setupOffices(configs: List<OfficeConfig>): Indexed<AgencyOffice> = b0.component1()
+    internal fun setupDepartments(configs: List<DepartmentConfig>): Indexed<Department> = b0.component1()
+    internal fun setupFinancialAccounts(configs: List<BankingConfig>): Indexed<FinancialAccount> = b0.component1()
     
     internal suspend fun registerWithAuthorities(org: AgencyOrganization): AgencyOrganization = org
     internal suspend fun recoverFromBackup(criteria: RecoveryCriteria): AgencyOrganization? = null

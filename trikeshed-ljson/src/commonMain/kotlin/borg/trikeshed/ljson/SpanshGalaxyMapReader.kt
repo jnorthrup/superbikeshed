@@ -73,7 +73,7 @@ data class SpanshIndexMetadata(
 data class GalaxySystem(
     val id: SystemId,
     val name: SystemName,
-    val coords: Join<GalacticX, Join<GalacticY, GalacticZ>>,
+    val coords: Join<GalacticX, GalacticY j GalacticZ>,
     val primaryStar: Map<String, Any>?,
     val bodies: List<Map<String, Any>>?,
     val stations: List<Map<String, Any>>?
@@ -151,7 +151,7 @@ class SpanshGalaxyMapReader(
     fun streamSystemsNearLocation(
         fileId: String,
         index: SpanshIndexMetadata,
-        center: Join<GalacticX, Join<GalacticY, GalacticZ>>,
+        center: Join<GalacticX, GalacticY j GalacticZ>,
         maxDistance: Double,
         limit: Int = 1000
     ): Flow<GalaxySystem> = flow {
@@ -389,13 +389,13 @@ class LRUBlockCache(internal val maxSizeBytes: Long) : BlockCache {
     
     override suspend fun put(fileId: String, blockId: Int, data: Indexed<Byte>) {
         val key = "$fileId:$blockId"
-        val size = data.a.toLong()
+        val size = data.component1().toLong()
         
         // Remove old entries if needed
         while (currentSize + size > maxSizeBytes && cache.isNotEmpty()) {
             val oldest = cache.iterator().next()
             cache.remove(oldest.key)
-            currentSize -= oldest.value.a
+            currentSize -= oldest.value.component1()
         }
         
         cache[key] = data

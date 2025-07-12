@@ -24,8 +24,8 @@ fun main() {
     try {
         val structural = Json.index("""{"test": "value"}""")
         println("✓ JSON indexing works")
-        println("  Bounds: ${structural.a.a} to ${structural.a.b}")
-        println("  Comma indices: ${structural.b.size}")
+        println("  Bounds: ${structural.component1().component1()} to ${structural.component1().component2()}")
+        println("  Comma indices: ${structural.component2().size}")
     } catch (e: Exception) {
         println("✗ JSON indexing failed: ${e.message}")
     }

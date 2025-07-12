@@ -108,7 +108,7 @@ class TrikeShedWagonTest {
         val metadata = cache.getMetadata(repo)
         
         assertEquals(repo, metadata.repository)
-        assertTrue(metadata.availableVersions.a == 0)
+        assertTrue(metadata.availableVersions.component1() == 0)
     }
     
     // === TrikeShedWagon Tests ===
@@ -205,28 +205,28 @@ class TrikeShedWagonTest {
     fun `default repositories should include maven central`() {
         val repos = DefaultRepositories.default
         
-        assertTrue(repos.a > 0)
+        assertTrue(repos.component1() > 0)
         
-        val centralRepo = (0 until repos.a).find { i ->
-            repos.b(i).id == "central"
+        val centralRepo = (0 until repos.component1()).find { i ->
+            repos.component2()(i).id == "central"
         }
         
         assertNotNull(centralRepo)
-        assertEquals("https://repo1.maven.org/maven2", repos.b(centralRepo).url)
+        assertEquals("https://repo1.maven.org/maven2", repos.component2()(centralRepo).url)
     }
     
     @Test
     fun `quic repositories should prioritize QUIC protocol`() {
         val repos = DefaultRepositories.withQuic
         
-        assertTrue(repos.a > 0)
+        assertTrue(repos.component1() > 0)
         
-        val quicRepo = (0 until repos.a).find { i ->
-            repos.b(i).protocol == TransportProtocol.QUIC
+        val quicRepo = (0 until repos.component1()).find { i ->
+            repos.component2()(i).protocol == TransportProtocol.QUIC
         }
         
         assertNotNull(quicRepo)
-        assertEquals("central-quic", repos.b(quicRepo).id)
+        assertEquals("central-quic", repos.component2()(quicRepo).id)
     }
     
     // === Exception Tests ===

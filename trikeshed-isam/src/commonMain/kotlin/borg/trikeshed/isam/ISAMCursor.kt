@@ -91,17 +91,17 @@ fun generateISAMMetaContent(
     names: Indexed<String>,
     types: Indexed<IOMemento>
 ): String {
-    val coordsStr = (0 until coords.a).joinToString(" ") { i ->
-        val coord = coords.b(i)
-        "${coord.a} ${coord.b}"
+    val coordsStr = (0 until coords.component1()).joinToString(" ") { i ->
+        val coord = coords.component2()(i)
+        "${coord.component1()} ${coord.component2()}"
     }
     
-    val namesStr = (0 until names.a).joinToString(" ") { i ->
-        names.b(i).replace(' ', '_')
+    val namesStr = (0 until names.component1()).joinToString(" ") { i ->
+        names.component2()(i).replace(' ', '_')
     }
     
-    val typesStr = (0 until types.a).joinToString(" ") { i ->
-        types.b(i).toString()
+    val typesStr = (0 until types.component1()).joinToString(" ") { i ->
+        types.component2()(i).toString()
     }
     
     return listOf(
@@ -123,8 +123,8 @@ fun calculateNetworkCoords(
 ): Indexed<CoordRange> {
     var offset = 0
     
-    return types.a j { i ->
-        val type = types.b(i)
+    return \1 j { \2: Int ->
+        val type = types.component2()(i)
         val size = when (type) {
             IOMemento.IoBoolean -> 1
             IOMemento.IoByte -> 1

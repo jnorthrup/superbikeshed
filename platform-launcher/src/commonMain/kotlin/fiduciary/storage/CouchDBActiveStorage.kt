@@ -500,7 +500,7 @@ class CouchDBActiveStorage(
     }
     
     private fun createHeaders(): MPIndexed<HttpHeaderName, HttpHeaderValue> {
-        return 3 j { i ->
+        return \1 j { \2: Int ->
             when (i) {
                 0 -> HttpHeaderName("Content-Type") j HttpHeaderValue("application/json")
                 1 -> HttpHeaderName("Accept") j HttpHeaderValue("application/json")

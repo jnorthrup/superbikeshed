@@ -161,7 +161,7 @@ class ConsolidatedTorrentSimulation(
         fromPeer.lastActivity = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         
         // Notify systems
-        fileChannel.send(FileEvent.PieceStored(torrent.infoHash, pieceIndex, pieceData.a))
+        fileChannel.send(FileEvent.PieceStored(torrent.infoHash, pieceIndex, pieceData.component1()))
         peerChannel.send(PeerEvent.PieceTransferred(fromPeer, toPeer, pieceIndex))
         
         // Update torrent progress
@@ -234,7 +234,7 @@ class ConsolidatedTorrentSimulation(
     suspend fun getSimulationStats(): SimulationStats = withContext(context) {
         val totalPiecesDownloaded = pieces.values.sumOf { it.size }
         val totalDataTransferred = pieces.values.sumOf { pieceMap ->
-            pieceMap.values.sumOf { it.a }
+            pieceMap.values.sumOf { it.component1() }
         }
         
         SimulationStats(
@@ -338,15 +338,15 @@ class ConsolidatedTorrentSimulation(
     
     // Helper functions - all self-contained
     internal fun generateInfoHash(name: String): InfoHash {
-        return 20 j { i -> (name.hashCode() + i).toByte() }
+        return \1 j { \2: Int -> (name.hashCode() + i).toByte() }
     }
     
     internal fun generatePeerId(): PeerId {
-        return 20 j { i -> (i * 7).toByte() }
+        return \1 j { \2: Int -> (i * 7).toByte() }
     }
     
     internal fun generatePieceData(size: Int): ByteIndexed {
-        return size j { i -> (i % 256).toByte() }
+        return \1 j { \2: Int -> (i % 256).toByte() }
     }
 }
 

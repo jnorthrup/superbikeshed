@@ -171,11 +171,11 @@ object NetworkCodec {
     
     fun encodeMessage(message: NetworkMessage): Indexed<Byte> {
         val bytes = protobuf.encodeToByteArray(NetworkMessage.serializer(), message)
-        return bytes.size j { i -> bytes[i] }
+        return \1 j { \2: Int -> bytes[i] }
     }
     
     fun decodeMessage(data: Indexed<Byte>): NetworkMessage {
-        val bytes = ByteArray(data.a) { i -> data[i] }
+        val bytes = ByteArray(data.component1()) { i -> data[i] }
         return protobuf.decodeFromByteArray(NetworkMessage.serializer(), bytes)
     }
     

@@ -185,7 +185,7 @@ class FullIngestPipeline {
         val request = HttpRequest(
             method = HttpMethod.GET,
             path = HttpRequestPath(sourceDir.archiveUrl),
-            headers = 2 j { i ->
+            headers = \1 j { \2: Int ->
                 when (i) {
                     0 -> HttpHeaderName("Range") j HttpHeaderValue(
                         "bytes=${entry.localHeaderOffset}-${entry.localHeaderOffset + entry.compressedSize + 1024}"

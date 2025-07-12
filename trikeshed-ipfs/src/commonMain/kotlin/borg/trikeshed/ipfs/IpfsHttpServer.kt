@@ -114,7 +114,7 @@ class IpfsHttpServer(
                 val response = mapOf(
                     "ID" to (peer?.peerId?.toBase58() ?: "unknown"),
                     "Addresses" to (peer?.addresses?.let { addresses ->
-                        (0 until addresses.a).map { addresses.b(it) }
+                        (0 until addresses.component1()).map { addresses.component2()(it) }
                     } ?: emptyList()),
                     "AgentVersion" to "trikeshed-ipfs/1.0.0",
                     "ProtocolVersion" to "ipfs/0.1.0"
@@ -138,8 +138,8 @@ class IpfsHttpServer(
             "/api/v0/pin/ls" -> {
                 val pinned = ipfsServer.listPinned()
                 val response = mapOf(
-                    "Keys" to (0 until pinned.a).associate { i ->
-                        val cid = pinned.b(i)
+                    "Keys" to (0 until pinned.component1()).associate { i ->
+                        val cid = pinned.component2()(i)
                         cid.encode() to mapOf("Type" to "recursive")
                     }
                 )
@@ -151,11 +151,11 @@ class IpfsHttpServer(
                 val dht = IpfsServiceLocator.getDHT()
                 val providers = dht.findProviders(parsedCid)
                 
-                val response = (0 until providers.a).map { i ->
-                    val provider = providers.b(i)
+                val response = (0 until providers.component1()).map { i ->
+                    val provider = providers.component2()(i)
                     mapOf(
                         "ID" to provider.id.toBase58(),
-                        "Addrs" to (0 until provider.addresses.a).map { provider.addresses.b(it) }
+                        "Addrs" to (0 until provider.addresses.component1()).map { provider.addresses.component2()(it) }
                     )
                 }
                 HttpResponse(200, json.encodeToString(response))
@@ -253,7 +253,7 @@ data class HttpResponse(
     fun toByteArray(): ByteArray {
         return when (data) {
             is String -> data.encodeToByteArray()
-            is Indexed<Byte> -> data.a j { data.b(it) }.toByteArray()
+            is Indexed<Byte> -> data.component1() j { data.component2()(it) }.toByteArray()
             else -> data.toString().encodeToByteArray()
         }
     }

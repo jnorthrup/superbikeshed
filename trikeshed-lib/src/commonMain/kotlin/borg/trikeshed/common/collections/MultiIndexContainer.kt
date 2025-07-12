@@ -76,7 +76,7 @@ class AdaptiveRadixIndex<K, V> : IndexView<K, V> {
     private var root: ARTNode<K, V>? = null
     
     override val a: (K) -> Indexed<V> = { key ->
-        findValues(root, key) ?: (0 j { _ -> null as V })
+        findValues(root, key) ?: (0 j { throw IndexOutOfBoundsException() })
     }
     
     override val b = IndexMetadata(
@@ -124,7 +124,7 @@ class HAMTIndex<K, V> : IndexView<K, V> {
     private val mask = 0x1F
     
     override val a: (K) -> Indexed<V> = { key ->
-        lookup(root, key.hashCode(), key, 0) ?: (0 j { _ -> null as V })
+        lookup(root, key.hashCode(), key, 0) ?: (0 j { throw IndexOutOfBoundsException() })
     }
     
     override val b = IndexMetadata(
@@ -176,7 +176,7 @@ class HeightOptimizedIndex<K : Comparable<K>, V> : IndexView<K, V> {
     
     private fun rangeSearch(node: HOTNode<K, V>?, start: K, end: K): Indexed<V> {
         // HOT range search implementation
-        return 0 j { _ -> null as V } // TODO: Implement
+        return 0 j { throw IndexOutOfBoundsException() } // TODO: Implement
     }
 }
 
@@ -232,7 +232,7 @@ class MultiIndexContainer<T> {
     private val indices = mutableMapOf<String, IndexView<*, T>>()
     
     // Primary storage using Indexed
-    private var storage: Indexed<T> = 0 j { _ -> null as T }
+    private var storage: Indexed<T?> = 0 j { null }
     private var size = 0
     
     /**
@@ -273,7 +273,7 @@ class MultiIndexContainer<T> {
     @Suppress("UNCHECKED_CAST")
     fun <K> queryByIndex(indexName: String, key: K): Indexed<T> {
         val index = indices[indexName] as? IndexView<K, T>
-        return index?.a?.invoke(key) ?: (0 j { _ -> null as T })
+        return index?.a?.invoke(key) ?: (0 j { throw IndexOutOfBoundsException() })
     }
     
     /**
@@ -287,9 +287,9 @@ class MultiIndexContainer<T> {
         val index = indices[indexName]
         if (index?.b?.supportRange == true) {
             // Perform range query
-            return 0 j { _ -> null as T } // TODO: Implement
+            return 0 j { throw IndexOutOfBoundsException() } // TODO: Implement
         }
-        return 0 j { _ -> null as T }
+        return 0 j { throw IndexOutOfBoundsException() }
     }
 }
 
@@ -305,28 +305,28 @@ class IndexBuilder<T> {
      * Add ART index
      */
     fun <K> adaptiveRadix(name: String, keyExtractor: (T) -> K) {
-        indices.add(name to AdaptiveRadixIndex<K, T>())
+        indices.add(name to AdaptiveRadixIndex<K, T>() as IndexView<*, T>)
     }
     
     /**
      * Add HAMT index
      */
     fun <K> hamt(name: String, keyExtractor: (T) -> K) {
-        indices.add(name to HAMTIndex<K, T>())
+        indices.add(name to HAMTIndex<K, T>() as IndexView<*, T>)
     }
     
     /**
      * Add HOT index
      */
     fun <K : Comparable<K>> heightOptimized(name: String, keyExtractor: (T) -> K) {
-        indices.add(name to HeightOptimizedIndex<K, T>())
+        indices.add(name to HeightOptimizedIndex<K, T>() as IndexView<*, T>)
     }
     
     /**
      * Add Masstree index
      */
     fun <K> masstree(name: String, keyExtractor: (T) -> K) {
-        indices.add(name to MasstreeIndex<K, T>())
+        indices.add(name to MasstreeIndex<K, T>() as IndexView<*, T>)
     }
     
     /**
@@ -335,7 +335,7 @@ class IndexBuilder<T> {
     fun build(): MultiIndexContainer<T> {
         val container = MultiIndexContainer<T>()
         indices.forEach { (name, index) ->
-            container.addIndex(name, index) { it }
+            container.addIndex(name, index as IndexView<Any, T>) { it as Any }
         }
         return container
     }

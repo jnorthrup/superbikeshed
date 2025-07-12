@@ -84,27 +84,27 @@ data class Multihash(
     }
     
     fun encode(): Indexed<Byte> {
-        val size = 2 + digest.a // type byte + size byte + digest
-        return size j { i ->
+        val size = 2 + digest.component1() // type byte + size byte + digest
+        return \1 j { \2: Int ->
             when (i) {
                 0 -> type.code
-                1 -> digest.a.toByte()
-                else -> digest.b(i - 2)
+                1 -> digest.component1().toByte()
+                else -> digest.component2()(i - 2)
             }
         }
     }
     
     companion object {
         fun decode(bytes: Indexed<Byte>): Multihash {
-            require(bytes.a >= 2) { "Invalid multihash: too short" }
-            val typeCode = bytes.b(0)
-            val size = bytes.b(1).toInt()
-            require(bytes.a >= 2 + size) { "Invalid multihash: size mismatch" }
+            require(bytes.component1() >= 2) { "Invalid multihash: too short" }
+            val typeCode = bytes.component2()(0)
+            val size = bytes.component2()(1).toInt()
+            require(bytes.component1() >= 2 + size) { "Invalid multihash: size mismatch" }
             
             val type = HashType.values().find { it.code == typeCode }
                 ?: throw IllegalArgumentException("Unknown hash type: $typeCode")
             
-            val digest = size j { bytes.b(2 + it) }
+            val digest = size j { bytes.component2()(2 + it) }
             return Multihash(type, digest)
         }
     }
@@ -136,13 +136,13 @@ data class CID(
     internal fun encodeCIDv1(): Indexed<Byte> {
         val codecBytes = encodeVarint(codec.code)
         val hashBytes = multihash.encode()
-        val size = 1 + codecBytes.a + hashBytes.a
+        val size = 1 + codecBytes.component1() + hashBytes.component1()
         
-        return size j { i ->
+        return \1 j { \2: Int ->
             when {
                 i == 0 -> 1.toByte() // version
-                i < 1 + codecBytes.a -> codecBytes.b(i - 1)
-                else -> hashBytes.b(i - 1 - codecBytes.a)
+                i < 1 + codecBytes.component1() -> codecBytes.component2()(i - 1)
+                else -> hashBytes.component2()(i - 1 - codecBytes.component1())
             }
         }
     }
@@ -172,11 +172,11 @@ data class MerkleNode(
         val json = buildJsonObject {
             put("data", base64Encode(data))
             putJsonArray("links") {
-                for (i in 0 until links.a) {
-                    val link = links.b(i)
+                for (i in 0 until links.component1()) {
+                    val link = links.component2()(i)
                     add(buildJsonObject {
-                        put("name", link.a)
-                        put("cid", link.b.encode())
+                        put("name", link.component1())
+                        put("cid", link.component2().encode())
                     })
                 }
             }
@@ -266,10 +266,10 @@ class RoutingTable(
     
     internal fun xorDistance(id1: PeerId, id2: PeerId): Int {
         var distance = 0
-        val minSize = minOf(id1.id.a, id2.id.a)
+        val minSize = minOf(id1.id.component1(), id2.id.component1())
         
         for (i in 0 until minSize) {
-            val xor = id1.id.b(i).toInt() xor id2.id.b(i).toInt()
+            val xor = id1.id.component2()(i).toInt() xor id2.id.component2()(i).toInt()
             distance = distance * 256 + xor
         }
         
@@ -310,7 +310,7 @@ class InMemoryIpfsStorage : IpfsStorage {
     override suspend fun list(): Indexed<CID> {
         val cids = blocks.keys.map { cidString ->
             // Simplified CID parsing
-            val hash = sha256(cidString.encodeToByteArray().let { it.size j { i -> it[i] } })
+            val hash = sha256(cidString.encodeToByteArray().let { \1 j { \2: Int -> it[i] } })
             val multihash = Multihash(Multihash.HashType.SHA2_256, hash)
             CID(0, CID.Codec.RAW, multihash)
         }
@@ -323,8 +323,8 @@ fun base58Encode(bytes: Indexed<Byte>): String {
     // Simplified base58 encoding
     val alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
     var value = 0L
-    for (i in 0 until bytes.a) {
-        value = value * 256 + bytes.b(i).toLong()
+    for (i in 0 until bytes.component1()) {
+        value = value * 256 + bytes.component2()(i).toLong()
     }
     
     val result = StringBuilder()
@@ -340,8 +340,8 @@ fun base32Encode(bytes: Indexed<Byte>): String {
     // Simplified base32 encoding
     val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
     var value = 0L
-    for (i in 0 until bytes.a) {
-        value = value * 256 + bytes.b(i).toLong()
+    for (i in 0 until bytes.component1()) {
+        value = value * 256 + bytes.component2()(i).toLong()
     }
     
     val result = StringBuilder()
@@ -358,17 +358,17 @@ fun base64Encode(bytes: Indexed<Byte>): String {
     val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     val result = StringBuilder()
     
-    for (i in 0 until bytes.a step 3) {
+    for (i in 0 until bytes.component1() step 3) {
         val chunk = when {
-            i + 2 < bytes.a -> (bytes.b(i).toInt() shl 16) or (bytes.b(i + 1).toInt() shl 8) or bytes.b(i + 2).toInt()
-            i + 1 < bytes.a -> (bytes.b(i).toInt() shl 16) or (bytes.b(i + 1).toInt() shl 8)
-            else -> bytes.b(i).toInt() shl 16
+            i + 2 < bytes.component1() -> (bytes.component2()(i).toInt() shl 16) or (bytes.component2()(i + 1).toInt() shl 8) or bytes.component2()(i + 2).toInt()
+            i + 1 < bytes.component1() -> (bytes.component2()(i).toInt() shl 16) or (bytes.component2()(i + 1).toInt() shl 8)
+            else -> bytes.component2()(i).toInt() shl 16
         }
         
         result.append(alphabet[(chunk shr 18) and 0x3F])
         result.append(alphabet[(chunk shr 12) and 0x3F])
-        if (i + 1 < bytes.a) result.append(alphabet[(chunk shr 6) and 0x3F])
-        if (i + 2 < bytes.a) result.append(alphabet[chunk and 0x3F])
+        if (i + 1 < bytes.component1()) result.append(alphabet[(chunk shr 6) and 0x3F])
+        if (i + 2 < bytes.component1()) result.append(alphabet[chunk and 0x3F])
     }
     
     return result.toString()

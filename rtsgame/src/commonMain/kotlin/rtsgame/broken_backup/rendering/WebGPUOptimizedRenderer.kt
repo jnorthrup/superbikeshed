@@ -262,7 +262,7 @@ class WebGPUOptimizedRenderer {
         // Color and team info
         instanceData[offset + 16] = instance.teamColor.r
         instanceData[offset + 17] = instance.teamColor.g
-        instanceData[offset + 18] = instance.teamColor.b
+        instanceData[offset + 18] = instance.teamColor.component2()
         instanceData[offset + 19] = instance.healthPercent
     }
     

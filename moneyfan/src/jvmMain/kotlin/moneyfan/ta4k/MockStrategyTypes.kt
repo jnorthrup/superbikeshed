@@ -50,7 +50,7 @@ class Indexed<T>(val data: List<T>) {
 }
 
 // Join implementation using infix
-infix fun <A, B> A.j(other: B): Join<A, B> = Join(this, other)
+infix fun <A, B> A.j(other: B): Join<A, B> = this j other
 
 data class Join<A, B>(val a: A, val b: B)
 

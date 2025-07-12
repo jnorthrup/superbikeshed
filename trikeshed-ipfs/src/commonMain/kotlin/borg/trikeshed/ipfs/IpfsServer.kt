@@ -132,8 +132,8 @@ class IpfsServer(
                 // Try to find providers via DHT
                 val providers = dht.findProviders(cid)
                 
-                for (i in 0 until providers.a) {
-                    val provider = providers.b(i)
+                for (i in 0 until providers.component1()) {
+                    val provider = providers.component2()(i)
                     data = tryFetchFromPeer(provider, cid)
                     if (data != null) break
                 }
@@ -296,7 +296,7 @@ class IpfsServer(
                 val currentStats = stats.value
                 val newStats = currentStats.copy(
                     uptime = currentStats.uptime + 1,
-                    peersCount = peers.value.a
+                    peersCount = peers.value.component1()
                 )
                 _stats.value = newStats
                 delay(1000) // Update every second

@@ -75,10 +75,10 @@ class ContinuumTest {
         
         // Calculate expected total rows (sum of all chunks)
         val expectedRows = chunks.sumOf { it.lines().size - 1 } // Subtract 1 for header
-        assertEquals(expectedRows, view?.a?.rows, "Should have correct number of rows")
+        assertEquals(expectedRows, view?.component1()?.rows, "Should have correct number of rows")
         
         // Verify price progression across sparse ranges
-        val prices: List<BigDecimal> = view?.a?.rows?.let { rows ->
+        val prices: List<BigDecimal> = view?.component1()?.rows?.let { rows ->
             (0 until rows).map { i ->
                 val row = view.get(i)
                 row[1] as BigDecimal // Open price

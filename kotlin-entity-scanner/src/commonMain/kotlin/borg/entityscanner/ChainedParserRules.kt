@@ -32,7 +32,7 @@ typealias ContextWindow = Int // Lookahead/lookbehind window
 typealias ParsingRule = Join<RuleId, Join<RuleWeight, (ParseContext) -> RuleActivation>>
 typealias RuleCondition = (ParseContext, Int) -> Boolean
 typealias RuleAction = (ParseContext, Int) -> ParseContext
-typealias ChainedRule = Join<ParsingRule, Join<ChainDirection, ContextWindow>>
+typealias ChainedRule = Join<ParsingRule, ChainDirection j ContextWindow>
 
 // Rule collections
 typealias ForwardRuleSeries = Indexed<ChainedRule>

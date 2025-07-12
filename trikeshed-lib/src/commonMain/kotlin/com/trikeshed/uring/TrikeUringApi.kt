@@ -3,6 +3,8 @@ package com.trikeshed.uring
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
+import java.io.Closeable
+import java.nio.ByteBuffer
 
 // Mock PosixError and SocketAddress for commonMain (or define them properly if they exist elsewhere)
 // For now, we'll use simple interfaces/data classes to allow compilation.
@@ -15,24 +17,10 @@ data class PosixError(val errno: Int) {
 interface SocketAddress
 
 // Mock ByteBuffer for commonMain
-expect class ByteBuffer {
-    fun remaining(): Int
-    fun hasRemaining(): Boolean
-    fun get(): Byte
-    fun put(b: Byte): ByteBuffer
-    fun flip(): ByteBuffer
-    fun clear(): ByteBuffer
-    fun position(): Int
-    fun position(newPosition: Int): ByteBuffer
-    fun limit(): Int
-    fun limit(newLimit: Int): ByteBuffer
-    fun capacity(): Int
-}
+actual typealias ByteBuffer = java.nio.ByteBuffer
 
 // Mock Closeable for commonMain
-expect interface Closeable {
-    fun close()
-}
+actual typealias Closeable = java.io.Closeable
 
 /**
  * A sealed interface representing a single operation to be submitted.
@@ -142,7 +130,7 @@ interface TrikeUring : CoroutineScope, Closeable {
 }
 
 // Factory function to create the platform-specific implementation
-expect fun createTrikeUring(
+actual fun createTrikeUring(
     scope: CoroutineScope,
-    ringSize: Int = 256
-): TrikeUring
+    ringSize: Int
+): TrikeUring = TODO("Not yet implemented for this platform")
