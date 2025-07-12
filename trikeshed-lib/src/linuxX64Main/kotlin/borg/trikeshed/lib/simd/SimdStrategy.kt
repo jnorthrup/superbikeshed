@@ -3,6 +3,22 @@ package borg.trikeshed.lib.simd
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
 import borg.trikeshed.lib.toIntArray
+import kotlin.coroutines.CoroutineContext
+
+// VM Launch Capability
+interface VmLaunchCapability : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<VmLaunchCapability>
+    override val key: CoroutineContext.Key<*> get() = Key
+    suspend fun launchVm(args: List<String>): Int
+}
+
+// Native DLL Load Capability
+interface NativeDllLoadCapability : CoroutineContext.Element {
+    companion object Key : CoroutineContext.Key<NativeDllLoadCapability>
+    override val key: CoroutineContext.Key<*> get() = Key
+    suspend fun loadLibrary(path: String): Boolean
+    suspend fun callNative(entry: String, args: List<Any?>): Any?
+}
 
 // External declarations for C interop
 private external fun simd_find_byte(data: ByteArray, len: Int, target: Byte, offset: Int, positions: IntArray, count: IntArray): Int

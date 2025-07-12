@@ -16,17 +16,24 @@ import kotlinx.coroutines.flow.flow
 /**
  * Tree node using Join composition
  */
-typealias TreeNode<T> = Join<T, Indexed<TreeNode<T>>>
+data class TreeNode<T>(
+    val value: T,
+    val children: Indexed<TreeNode<T>>
+)
 
 /**
  * Binary tree node with left/right children
  */
-typealias BinaryTreeNode<T> = Join<T, Join<TreeNode<T>?, TreeNode<T>?>>
+data class BinaryTreeNode<T>(
+    val value: T,
+    val left: BinaryTreeNode<T>?,
+    val right: BinaryTreeNode<T>?
+)
 
 /**
  * N-ary tree node with indexed children
  */
-typealias NaryTreeNode<T> = Join<T, Indexed<TreeNode<T>>>
+typealias NaryTreeNode<T> = TreeNode<T>
 
 /**
  * Tree traversal state for bbcursive scanning
@@ -56,8 +63,8 @@ object BBCursiveTreeTraversal {
     fun <T> preOrderScanner(): TreeScanner<T, T> = TreeScanner { node, state ->
         if (node == null) return@TreeScanner null
         
-        val value = node.a
-        val children = node.b
+        val value = node.value
+        val children = node.children
         
         // Visit current node
         val newPath = (state.path.size + 1) j { i ->
@@ -82,8 +89,8 @@ object BBCursiveTreeTraversal {
     fun <T> inOrderScanner(): TreeScanner<T, T> = TreeScanner { node, state ->
         if (node == null) return@TreeScanner null
         
-        val value = node.a
-        val children = node.b
+        val value = node.value
+        val children = node.children
         
         // For binary trees, visit left subtree first
         if (children.size > 0 && !state.visited[0]) {
@@ -118,8 +125,8 @@ object BBCursiveTreeTraversal {
     fun <T> postOrderScanner(): TreeScanner<T, T> = TreeScanner { node, state ->
         if (node == null) return@TreeScanner null
         
-        val value = node.a
-        val children = node.b
+        val value = node.value
+        val children = node.children
         
         // Check if all children have been visited
         val allChildrenVisited = (0 until children.size).all { i ->
@@ -154,8 +161,8 @@ object BBCursiveTreeTraversal {
     fun <T> levelOrderScanner(): TreeScanner<T, T> = TreeScanner { node, state ->
         if (node == null) return@TreeScanner null
         
-        val value = node.a
-        val children = node.b
+        val value = node.value
+        val children = node.children
         
         // Visit current node at current level
         val newPath = (state.path.size + 1) j { i ->
@@ -194,21 +201,21 @@ class BBCursiveBinarySearchTree<T : Comparable<T>> {
     
     private fun insertRecursive(node: BinaryTreeNode<T>?, value: T): BinaryTreeNode<T> {
         if (node == null) {
-            return value j (null j null)
+            return BinaryTreeNode(value, null, null)
         }
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
         
         return when {
             value < currentValue -> {
                 val newLeft = insertRecursive(left, value)
-                currentValue j (newLeft j right)
+                BinaryTreeNode(currentValue, newLeft, right)
             }
             value > currentValue -> {
                 val newRight = insertRecursive(right, value)
-                currentValue j (left j newRight)
+                BinaryTreeNode(currentValue, left, newRight)
             }
             else -> node // Value already exists
         }

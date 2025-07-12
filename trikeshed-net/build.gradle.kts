@@ -10,6 +10,7 @@ val enabledTargets = (rootProject.findProperty("enabledTargets") as? String)?.sp
 kotlin {
     jvm()
     macosArm64()
+    linuxX64()
     
     sourceSets {
         commonMain {
