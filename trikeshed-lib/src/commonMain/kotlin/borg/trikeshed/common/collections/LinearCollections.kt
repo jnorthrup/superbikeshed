@@ -22,7 +22,7 @@ typealias HashSetEntry<T> = Join<T, Boolean>
  * Hash Set implementation with bbcursive scanning
  */
 class BBCursiveHashSet<T> {
-    private var buckets: Indexed<Indexed<HashSetEntry<T>>> = 16 j { _ -> 0 j { _ -> null } }
+    private var buckets: Indexed<Indexed<HashSetEntry<T>?>> = 16 j { _ -> 0 j { _ -> null } }
     private var size = 0
     private val loadFactor = 0.75
     
@@ -31,11 +31,11 @@ class BBCursiveHashSet<T> {
      */
     fun add(element: T): Boolean {
         val hash = element.hashCode()
-        val bucketIndex = hash and (buckets.size - 1)
+        val bucketIndex = hash and (buckets.a - 1)
         val bucket = buckets[bucketIndex]
         
         // Check if element already exists
-        for (i in 0 until bucket.size) {
+        for (i in 0 until bucket.a) {
             val entry = bucket[i]
             if (entry != null && entry.a == element) {
                 return false // Already exists
@@ -44,18 +44,18 @@ class BBCursiveHashSet<T> {
         
         // Add new element
         val newEntry = element j true
-        val newBucket = (bucket.size + 1) j { i ->
-            if (i < bucket.size) bucket[i] else newEntry
+        val newBucket = (bucket.a + 1) j { i ->
+            if (i < bucket.a) bucket[i] else newEntry
         }
         
-        buckets = buckets.size j { i ->
+        buckets = buckets.a j { i ->
             if (i == bucketIndex) newBucket else buckets[i]
         }
         
         size++
         
         // Resize if needed
-        if (size > buckets.size * loadFactor) {
+        if (size > buckets.a * loadFactor) {
             resize()
         }
         
@@ -67,14 +67,14 @@ class BBCursiveHashSet<T> {
      */
     fun remove(element: T): Boolean {
         val hash = element.hashCode()
-        val bucketIndex = hash and (buckets.size - 1)
+        val bucketIndex = hash and (buckets.a - 1)
         val bucket = buckets[bucketIndex]
         
         // Find and remove element
-        for (i in 0 until bucket.size) {
+        for (i in 0 until bucket.a) {
             val entry = bucket[i]
             if (entry != null && entry.a == element) {
-                val newBucket = (bucket.size - 1) j { j ->
+                val newBucket = (bucket.a - 1) j { j ->
                     when {
                         j < i -> bucket[j]
                         j == i -> null
@@ -82,7 +82,7 @@ class BBCursiveHashSet<T> {
                     }
                 }
                 
-                buckets = buckets.size j { k ->
+                buckets = buckets.a j { k ->
                     if (k == bucketIndex) newBucket else buckets[k]
                 }
                 
@@ -99,10 +99,10 @@ class BBCursiveHashSet<T> {
      */
     fun contains(element: T): Boolean {
         val hash = element.hashCode()
-        val bucketIndex = hash and (buckets.size - 1)
+        val bucketIndex = hash and (buckets.a - 1)
         val bucket = buckets[bucketIndex]
         
-        for (i in 0 until bucket.size) {
+        for (i in 0 until bucket.a) {
             val entry = bucket[i]
             if (entry != null && entry.a == element) {
                 return true
@@ -114,13 +114,13 @@ class BBCursiveHashSet<T> {
     
     private fun resize() {
         val oldBuckets = buckets
-        buckets = (oldBuckets.size * 2) j { _ -> 0 j { _ -> null } }
+        buckets = (oldBuckets.a * 2) j { _ -> 0 j { _ -> null } }
         size = 0
         
         // Rehash all elements
-        for (i in 0 until oldBuckets.size) {
+        for (i in 0 until oldBuckets.a) {
             val bucket = oldBuckets[i]
-            for (j in 0 until bucket.size) {
+            for (j in 0 until bucket.a) {
                 val entry = bucket[j]
                 if (entry != null) {
                     add(entry.a)
@@ -135,9 +135,9 @@ class BBCursiveHashSet<T> {
     fun elements(): Indexed<T> {
         val elements = mutableListOf<T>()
         
-        for (i in 0 until buckets.size) {
+        for (i in 0 until buckets.a) {
             val bucket = buckets[i]
-            for (j in 0 until bucket.size) {
+            for (j in 0 until bucket.a) {
                 val entry = bucket[j]
                 if (entry != null) {
                     elements.add(entry.a)
@@ -233,33 +233,34 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     }
     
     private fun findMin(node: BinaryTreeNode<T>): T {
-        val left = node.b.a
-        return if (left != null) findMin(left) else node.a
+        var current = node
+        while (current.b.a != null) {
+            current = current.b.a
+        }
+        return current.a
     }
     
     /**
      * Check if element exists using bbcursive pattern
      */
-    fun contains(element: T): Boolean {
-        return containsRecursive(root, element)
-    }
+    fun contains(element: T): Boolean = searchRecursive(root, element) != null
     
-    private fun containsRecursive(node: BinaryTreeNode<T>?, element: T): Boolean {
-        if (node == null) return false
+    private fun searchRecursive(node: BinaryTreeNode<T>?, element: T): T? {
+        if (node == null) return null
         
         val currentValue = node.a
         val left = node.b.a
         val right = node.b.b
         
         return when {
-            element == currentValue -> true
-            element < currentValue -> containsRecursive(left, element)
-            else -> containsRecursive(right, element)
+            element == currentValue -> currentValue
+            element < currentValue -> searchRecursive(left, element)
+            else -> searchRecursive(right, element)
         }
     }
     
     /**
-     * Get all elements as Indexed (in-order traversal)
+     * Get all elements as Indexed
      */
     fun elements(): Indexed<T> {
         val elements = mutableListOf<T>()
@@ -277,6 +278,82 @@ class BBCursiveTreeSet<T : Comparable<T>> {
         collectElements(left, elements)
         elements.add(currentValue)
         collectElements(right, elements)
+    }
+}
+
+// === BINARY TREE ===
+
+/**
+ * Binary Search Tree using Join patterns
+ */
+class BinarySearchTree<T : Comparable<T>> {
+    private var root: BinaryTreeNode<T>? = null
+    
+    /**
+     * Insert value using Join pattern
+     */
+    fun insert(value: T) {
+        root = insertRecursive(root, value)
+    }
+    
+    private fun insertRecursive(node: BinaryTreeNode<T>?, value: T): BinaryTreeNode<T> {
+        if (node == null) {
+            return BinaryTreeNode(value, null, null)
+        }
+        
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
+        
+        when {
+            value < currentValue -> {
+                val newLeft = insertRecursive(left, value)
+                return node.copy(left = newLeft)
+            }
+            value > currentValue -> {
+                val newRight = insertRecursive(right, value)
+                return node.copy(right = newRight)
+            }
+            else -> return node // Value already exists
+        }
+    }
+    
+    /**
+     * Search using Join pattern
+     */
+    fun search(value: T): T? {
+        return searchRecursive(root, value)
+    }
+    
+    private fun searchRecursive(node: BinaryTreeNode<T>?, value: T): T? {
+        if (node == null) return null
+        
+        val currentValue = node.value
+        val left = node.left
+        val right = node.right
+        
+        return when {
+            value < currentValue -> searchRecursive(left, value)
+            value > currentValue -> searchRecursive(right, value)
+            else -> currentValue
+        }
+    }
+    
+    /**
+     * In-order traversal using Join pattern
+     */
+    fun inOrderTraversal(): Indexed<T> {
+        val result = mutableListOf<T>()
+        inOrderRecursive(root, result)
+        return result.size j { result[it] }
+    }
+    
+    private fun inOrderRecursive(node: BinaryTreeNode<T>?, result: MutableList<T>) {
+        if (node != null) {
+            inOrderRecursive(node.left, result)
+            result.add(node.value)
+            inOrderRecursive(node.right, result)
+        }
     }
 }
 

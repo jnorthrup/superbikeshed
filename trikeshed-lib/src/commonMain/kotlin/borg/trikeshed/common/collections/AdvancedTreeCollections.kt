@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.flow
 // === RADIX TREE ===
 
 /**
- * Radix Tree node using Join patterns - Pristine Columnar pattern
- * Structure: key j (value j children)
+ * Radix Tree node using Join patterns
  */
-typealias RadixTreeNode<T> = Join<String, Join<T?, Indexed<RadixTreeNode<T>>>>
+data class RadixTreeNode<T>(
+    val key: String,
+    val value: T?,
+    val children: Indexed<RadixTreeNode<T>?>
+)
 
 /**
  * Radix Tree implementation with bbcursive scanning
@@ -28,39 +31,38 @@ class BBCursiveRadixTree<T> {
     /**
      * Insert key-value pair using bbcursive pattern
      */
-    fun insert(key: String, value: T) {
-        root = insertRecursive(root, key, value)
+    fun insert(key: String, value: T): RadixTreeNode<T> {
+        return insertRecursive(root, key, value, 0)
     }
     
-    private fun insertRecursive(node: RadixTreeNode<T>?, key: String, value: T): RadixTreeNode<T> {
-        if (node == null) return key j (value j (0 j { _: Int -> null as RadixTreeNode<T>? }))
+    private fun insertRecursive(node: RadixTreeNode<T>?, key: String, value: T, depth: Int): RadixTreeNode<T> {
+        if (node == null) {
+            return RadixTreeNode(key, value, 0 j { _ -> null })
+        }
         
-        val nodeKey = node.a
-        val nodeValue = node.b.a
-        val children = node.b.b
+        val commonPrefix = findCommonPrefix(node.key, key)
+        val remainingKey = key.substring(commonPrefix.length)
         
-        val commonPrefix = findCommonPrefix(nodeKey, key)
+        if (remainingKey.isEmpty()) {
+            return node.copy(value = value)
+        }
         
-        if (commonPrefix == nodeKey) {
-            if (key == nodeKey) return key j (value j children)
-            val remainingKey = key.substring(commonPrefix.length)
-            val newChild = insertRecursive(null, remainingKey, value)
-            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
-            return commonPrefix j (nodeValue j newChildren)
-        } else if (commonPrefix == key) {
-            val remainingKey = nodeKey.substring(commonPrefix.length)
-            val newChild = insertRecursive(null, remainingKey, nodeValue)
-            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
-            return commonPrefix j (value j newChildren)
+        val remainingNodeKey = node.key.substring(commonPrefix.length)
+        
+        if (remainingNodeKey.isEmpty()) {
+            // Insert into existing node
+            val childIndex = remainingKey[0].code % 256
+            val children = node.children.toMutableList()
+            children[childIndex] = insertRecursive(children[childIndex], remainingKey, value, depth + 1)
+            return node.copy(children = children)
         } else {
-            val nodeRemaining = nodeKey.substring(commonPrefix.length)
-            val keyRemaining = key.substring(commonPrefix.length)
-            
-            val nodeChild = insertRecursive(null, nodeRemaining, nodeValue)
-            val keyChild = insertRecursive(null, keyRemaining, value)
-            
-            val newChildren = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }
-            return commonPrefix j (null j newChildren)
+            // Split node
+            val newChild = RadixTreeNode(remainingNodeKey, node.value, node.children)
+            val splitNode = RadixTreeNode(commonPrefix, null, 0 j { _ -> null })
+            val splitNodeChildren = splitNode.children.toMutableList()
+            splitNodeChildren[remainingNodeKey[0].code % 256] = newChild
+            splitNodeChildren[remainingKey[0].code % 256] = RadixTreeNode(remainingKey, value, 0 j { _ -> null })
+            return splitNode.copy(children = splitNodeChildren)
         }
     }
     
@@ -73,27 +75,29 @@ class BBCursiveRadixTree<T> {
     /**
      * Search using bbcursive pattern
      */
-    fun search(key: String): T? = searchRecursive(root, key)
+    fun search(key: String): T? {
+        return searchRecursive(root, key, 0)
+    }
     
-    private fun searchRecursive(node: RadixTreeNode<T>?, key: String): T? {
+    private fun searchRecursive(node: RadixTreeNode<T>?, key: String, depth: Int): T? {
         if (node == null) return null
         
-        val nodeKey = node.a
-        val nodeValue = node.b.a
-        val children = node.b.b
+        val commonPrefix = findCommonPrefix(node.key, key)
+        val remainingKey = key.substring(commonPrefix.length)
         
-        if (key.startsWith(nodeKey)) {
-            val remainingKey = key.substring(nodeKey.length)
-            if (remainingKey.isEmpty()) return nodeValue
-            
-            for (i in 0 until children.a) {
-                val child = children.b(i)
-                if (child != null) {
-                    val result = searchRecursive(child, remainingKey)
-                    if (result != null) return result
-                }
-            }
+        if (remainingKey.isEmpty()) {
+            return node.value
         }
+        
+        val remainingNodeKey = node.key.substring(commonPrefix.length)
+        
+        if (remainingNodeKey.isEmpty()) {
+            // Search in children
+            val childIndex = remainingKey[0].code % 256
+            val child = node.children[childIndex]
+            return searchRecursive(child, remainingKey, depth + 1)
+        }
+        
         return null
     }
 }
@@ -211,7 +215,7 @@ class BBCursiveNavigableMap<K : Comparable<K>, V> {
     
     private fun findFirstKey(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?): K? {
         if (node == null) return null
-        val left = node.b.a
+        val left = node.b.a as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         return if (left != null) findFirstKey(left) else node.a.a
     }
     
@@ -222,7 +226,7 @@ class BBCursiveNavigableMap<K : Comparable<K>, V> {
     
     private fun findLastKey(node: Join<SortedMapEntry<K, V>, Join<Any?, Any?>>?): K? {
         if (node == null) return null
-        val right = node.b.b
+        val right = node.b.b as? Join<SortedMapEntry<K, V>, Join<Any?, Any?>>
         return if (right != null) findLastKey(right) else node.a.a
     }
     
@@ -276,10 +280,13 @@ class BBCursiveNavigableMap<K : Comparable<K>, V> {
 // === TRIE WITH COMPRESSION ===
 
 /**
- * Compressed Trie node using Join pattern - Pristine Columnar pattern
- * Structure: key j (value j children)
+ * Compressed Trie node using data class to avoid recursive type aliases
  */
-typealias CompressedTrieNode<T> = Join<String, Join<T?, Indexed<CompressedTrieNode<T>>>>
+data class CompressedTrieNode<T>(
+    val key: String,
+    val value: T?,
+    val children: Indexed<CompressedTrieNode<T>?>
+)
 
 /**
  * Compressed Trie implementation for memory efficiency
@@ -295,29 +302,29 @@ class BBCursiveCompressedTrie<T> {
     }
     
     private fun insertCompressed(node: CompressedTrieNode<T>?, key: String, value: T): CompressedTrieNode<T> {
-        if (node == null) return key j (value j (0 j { _: Int -> null as CompressedTrieNode<T>? }))
+        if (node == null) return CompressedTrieNode(key, value, 0 j { _ -> null })
         
-        val nodeKey = node.a
-        val nodeValue = node.b.a
-        val children = node.b.b
+        val nodeKey = node.key
+        val nodeValue = node.value
+        val children = node.children
         
         val commonPrefix = findCommonPrefix(nodeKey, key)
         
         if (commonPrefix.isEmpty()) {
-            val newRoot = "" j (null j (2 j { i -> when (i) { 0 -> node; 1 -> key j (value j (0 j { _: Int -> null as CompressedTrieNode<T>? })); else -> null } }))
+            val newRoot = CompressedTrieNode("", null, 2 j { i -> when (i) { 0 -> node; 1 -> CompressedTrieNode(key, value, 0 j { _ -> null }); else -> null } })
             return newRoot
         }
         
         if (commonPrefix == nodeKey) {
             val remainingKey = key.substring(commonPrefix.length)
             val newChild = insertCompressed(null, remainingKey, value)
-            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
-            return commonPrefix j (nodeValue j newChildren)
+            val newChildren: Indexed<CompressedTrieNode<T>?> = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
+            return CompressedTrieNode(commonPrefix, nodeValue, newChildren)
         } else if (commonPrefix == key) {
             val remainingNodeKey = nodeKey.substring(commonPrefix.length)
             val newChild = insertCompressed(null, remainingNodeKey, nodeValue)
-            val newChildren = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
-            return commonPrefix j (value j newChildren)
+            val newChildren: Indexed<CompressedTrieNode<T>?> = (children.a + 1) j { i -> if (i < children.a) children.b(i) else newChild }
+            return CompressedTrieNode(commonPrefix, value, newChildren)
         } else {
             val nodeRemaining = nodeKey.substring(commonPrefix.length)
             val keyRemaining = key.substring(commonPrefix.length)
@@ -325,8 +332,8 @@ class BBCursiveCompressedTrie<T> {
             val nodeChild = insertCompressed(null, nodeRemaining, nodeValue)
             val keyChild = insertCompressed(null, keyRemaining, value)
             
-            val newChildren = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }
-            return commonPrefix j (null j newChildren)
+            val newChildren: Indexed<CompressedTrieNode<T>?> = 2 j { i -> when (i) { 0 -> nodeChild; 1 -> keyChild; else -> null } }
+            return CompressedTrieNode(commonPrefix, null, newChildren)
         }
     }
     
@@ -344,9 +351,9 @@ class BBCursiveCompressedTrie<T> {
     private fun searchCompressed(node: CompressedTrieNode<T>?, key: String): T? {
         if (node == null) return null
         
-        val nodeKey = node.a
-        val nodeValue = node.b.a
-        val children = node.b.b
+        val nodeKey = node.key
+        val nodeValue = node.value
+        val children = node.children
         
         if (key.startsWith(nodeKey)) {
             val remainingKey = key.substring(nodeKey.length)

@@ -3,8 +3,6 @@ package com.trikeshed.uring
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
-import java.io.Closeable
-import java.nio.ByteBuffer // Assuming ByteBuffer is available in commonMain or mocked
 
 // Mock PosixError and SocketAddress for commonMain (or define them properly if they exist elsewhere)
 // For now, we'll use simple interfaces/data classes to allow compilation.
@@ -15,6 +13,26 @@ data class PosixError(val errno: Int) {
 }
 
 interface SocketAddress
+
+// Mock ByteBuffer for commonMain
+expect class ByteBuffer {
+    fun remaining(): Int
+    fun hasRemaining(): Boolean
+    fun get(): Byte
+    fun put(b: Byte): ByteBuffer
+    fun flip(): ByteBuffer
+    fun clear(): ByteBuffer
+    fun position(): Int
+    fun position(newPosition: Int): ByteBuffer
+    fun limit(): Int
+    fun limit(newLimit: Int): ByteBuffer
+    fun capacity(): Int
+}
+
+// Mock Closeable for commonMain
+expect interface Closeable {
+    fun close()
+}
 
 /**
  * A sealed interface representing a single operation to be submitted.
@@ -91,7 +109,7 @@ sealed class Cqe(open val userData: Long, open val result: Int) {
 
 // --- Concrete CQE Types ---
 class ReadResult(override val userData: Long, override val result: Int) : Cqe(userData, result)
-class WriteResult(override val userData: Long, override val val result: Int) : Cqe(userData, result)
+class WriteResult(override val userData: Long, override val result: Int) : Cqe(userData, result)
 class FsyncResult(override val userData: Long, override val result: Int) : Cqe(userData, result)
 class AcceptResult(override val userData: Long, override val result: Int, val clientAddress: SocketAddress?) : Cqe(userData, result)
 class ConnectResult(override val userData: Long, override val result: Int) : Cqe(userData, result)

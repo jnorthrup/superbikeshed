@@ -243,7 +243,9 @@ class MultiIndexContainer<T> {
         // Rebuild index from existing data
         for (i in 0 until size) {
             storage[i]?.let { value ->
-                // Insert into index
+                // Insert into index using keyExtractor
+                val key = keyExtractor(value)
+                // TODO: Implement index insertion
             }
         }
     }

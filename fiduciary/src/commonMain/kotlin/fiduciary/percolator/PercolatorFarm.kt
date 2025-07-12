@@ -68,24 +68,20 @@ class PercolatorFarm(
      * Start the percolator farm
      */
     fun start() {
-        println("""
-        ╔════════════════════════════════════════════╗
-        ║         PERCOLATOR FARM STARTING           ║
-        ╚════════════════════════════════════════════╝
-        
-        Configuration:
-        - Coordinator: ${config.coordinatorUrl}
-        - Initial Nodes: ${config.nodeCount}
-        - Max Concurrent/Node: ${config.maxConcurrentPerNode}
-        - Work Directory: ${config.workDirBase}
-        - Auto-scaling: ${config.autoScale}
-        - Max Nodes: ${config.maxNodes}
-        """.trimIndent())
+        log(LogEvent.PROCESSING, "PERCOLATOR FARM STARTING")
+        log(LogEvent.DEBUG, "Configuration", 
+            "coordinator" to config.coordinatorUrl,
+            "initial_nodes" to config.nodeCount,
+            "max_concurrent_per_node" to config.maxConcurrentPerNode,
+            "work_dir_base" to config.workDirBase,
+            "auto_scale" to config.autoScale,
+            "max_nodes" to config.maxNodes
+        )
         
         scope.launch {
-            // Start initial nodes
-            repeat(config.nodeCount) { index ->
-                launchNode("farm-node-${index + 1}")
+            // Start initial nodes using functional composition
+            config.nodeCount j { index -> "farm-node-${index + 1}" } α { nodeId ->
+                launchNode(nodeId)
             }
             
             // Farm management loops
@@ -119,11 +115,11 @@ class PercolatorFarm(
         // Start the daemon
         daemon.start()
         
-        println("🌊 Launched node: $nodeId")
+        log(LogEvent.DEBUG, "Launched node", nodeId)
     }
     
     /**
-     * Main farm management loop
+     * Main farm management loop using functional composition
      */
     private suspend fun farmManagementLoop() {
         while (isActive) {
@@ -136,14 +132,14 @@ class PercolatorFarm(
                 
                 delay(config.heartbeatInterval.seconds)
             } catch (e: Exception) {
-                println("❌ Farm management error: ${e.message}")
+                log(LogEvent.ERROR, "Farm management error", e.message)
                 delay(30.seconds)
             }
         }
     }
     
     /**
-     * Auto-scaling loop
+     * Auto-scaling loop using functional composition
      */
     private suspend fun autoScalingLoop() {
         if (!config.autoScale) return
@@ -155,11 +151,10 @@ class PercolatorFarm(
                 // Scale up if needed
                 if (stats.activeNodes < config.minNodes) {
                     val nodesToAdd = config.minNodes - stats.activeNodes
-                    repeat(nodesToAdd) { index ->
-                        val nodeId = "farm-node-${nodes.size + index + 1}"
+                    nodesToAdd j { index -> "farm-node-${nodes.size + index + 1}" } α { nodeId ->
                         launchNode(nodeId)
                     }
-                    println("📈 Auto-scaled up: +$nodesToAdd nodes")
+                    log(LogEvent.DEBUG, "Auto-scaled up", nodesToAdd, "nodes")
                 }
                 
                 // Scale down if overloaded
@@ -169,22 +164,22 @@ class PercolatorFarm(
                         .sortedBy { it.lastHeartbeat }
                         .take(nodesToRemove)
                     
-                    nodesToStop.forEach { node ->
+                    nodesToStop.size j { i -> nodesToStop[i] } α { node ->
                         stopNode(node.nodeId)
                     }
-                    println("📉 Auto-scaled down: -${nodesToRemove} nodes")
+                    log(LogEvent.DEBUG, "Auto-scaled down", nodesToRemove, "nodes")
                 }
                 
                 delay(5.minutes)
             } catch (e: Exception) {
-                println("❌ Auto-scaling error: ${e.message}")
+                log(LogEvent.ERROR, "Auto-scaling error", e.message)
                 delay(1.minutes)
             }
         }
     }
     
     /**
-     * Stats reporting loop
+     * Stats reporting loop using functional composition
      */
     private suspend fun statsReportingLoop() {
         while (isActive) {
@@ -193,19 +188,19 @@ class PercolatorFarm(
                 reportFarmStats(stats)
                 delay(1.minutes)
             } catch (e: Exception) {
-                println("❌ Stats reporting error: ${e.message}")
+                log(LogEvent.ERROR, "Stats reporting error", e.message)
                 delay(30.seconds)
             }
         }
     }
     
     /**
-     * Update status of all nodes
+     * Update status of all nodes using functional composition
      */
     private suspend fun updateNodeStatuses() {
-        nodes.values.forEach { node ->
+        nodes.size j { i -> nodes.values.elementAt(i) } α { node ->
             val daemon = daemons[node.nodeId]
-            if (daemon != null) {
+            daemon?.let {
                 // Update node status (mock for now)
                 val updatedNode = node.copy(
                     lastHeartbeat = Clock.System.now(),
@@ -220,7 +215,7 @@ class PercolatorFarm(
     }
     
     /**
-     * Clean up dead nodes
+     * Clean up dead nodes using functional composition
      */
     private suspend fun cleanupDeadNodes() {
         val now = Clock.System.now()
@@ -228,9 +223,9 @@ class PercolatorFarm(
             now - node.lastHeartbeat > 5.minutes
         }
         
-        deadNodes.forEach { node ->
+        deadNodes.size j { i -> deadNodes[i] } α { node ->
             stopNode(node.nodeId)
-            println("💀 Removed dead node: ${node.nodeId}")
+            log(LogEvent.DEBUG, "Removed dead node", node.nodeId)
         }
     }
     
@@ -239,11 +234,11 @@ class PercolatorFarm(
      */
     private suspend fun stopNode(nodeId: String) {
         val daemon = daemons[nodeId]
-        if (daemon != null) {
+        daemon?.let {
             daemon.stop()
             daemons.remove(nodeId)
             nodes.remove(nodeId)
-            println("🛑 Stopped node: $nodeId")
+            log(LogEvent.DEBUG, "Stopped node", nodeId)
         }
     }
     
@@ -274,28 +269,28 @@ class PercolatorFarm(
     }
     
     /**
-     * Report farm statistics
+     * Report farm statistics using structured logging
      */
     private suspend fun reportFarmStats(stats: FarmStats) {
-        println("""
-        📊 PERCOLATOR FARM STATS
-        ──────────────────────────────────────────
-        Nodes: ${stats.activeNodes}/${stats.totalNodes} active
-        Work: ${stats.totalActiveWork} active, ${stats.totalCompletedWork} completed
-        CPU: ${(stats.averageCpuUsage * 100).toInt()}% avg
-        Memory: ${(stats.averageMemoryUsage * 100).toInt()}% avg
-        Uptime: ${stats.farmUptime / 60} minutes
-        """.trimIndent())
+        log(LogEvent.DEBUG, "PERCOLATOR FARM STATS",
+            "nodes_active" to stats.activeNodes,
+            "nodes_total" to stats.totalNodes,
+            "work_active" to stats.totalActiveWork,
+            "work_completed" to stats.totalCompletedWork,
+            "cpu_avg" to (stats.averageCpuUsage * 100).toInt(),
+            "memory_avg" to (stats.averageMemoryUsage * 100).toInt(),
+            "uptime_minutes" to (stats.farmUptime / 60)
+        )
     }
     
     /**
      * Stop the entire farm
      */
     fun stop() {
-        println("🛑 Stopping percolator farm...")
+        log(LogEvent.PROCESSING, "Stopping percolator farm")
         
         scope.launch {
-            daemons.values.forEach { daemon ->
+            daemons.size j { i -> daemons.values.elementAt(i) } α { daemon ->
                 daemon.stop()
             }
             daemons.clear()
@@ -303,7 +298,7 @@ class PercolatorFarm(
         }
         
         scope.cancel()
-        println("✅ Farm stopped")
+        log(LogEvent.COMPLETED, "Farm stopped")
     }
     
     /**
