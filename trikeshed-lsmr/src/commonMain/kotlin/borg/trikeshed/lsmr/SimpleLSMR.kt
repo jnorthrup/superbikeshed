@@ -76,7 +76,7 @@ class SimpleLSMR {
         return computeStats(deviceData.map { it.second })
     }
     
-    fun asCursor(): borg.trikeshed.cursor.Cursor {
+    fun asCursor(): Cursor {
         val rows = deviceData.map { (key, reading) ->
             listOf(
                 reading.deviceId,

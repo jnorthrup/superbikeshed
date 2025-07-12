@@ -46,7 +46,7 @@ kotlin {
                 implementation(project(":trikeshed-net"))
                 implementation(project(":trikeshed-services"))
                 implementation(project(":trikeshed-json"))
-                implementation(project(":trikeshed-rest"))
+                // implementation(project(":trikeshed-rest")) // Temporarily disabled due to compilation issues
                 implementation(project(":trikeshed-wave"))
                 implementation(project(":trikeshed-sumo"))
                 implementation(project(":trikeshed-ccek"))

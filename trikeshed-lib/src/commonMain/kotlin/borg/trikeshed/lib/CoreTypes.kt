@@ -47,23 +47,10 @@ interface ArrayLike<I, T> {
     val size: Int
 }
 
-// Index type for Cursor to avoid conflicts with Indexed<T>
-@kotlin.jvm.JvmInline
-value class CursorRowIndex(val value: Int) {
-    operator fun compareTo(other: CursorRowIndex): Int = value.compareTo(other.value)
-}
-
 // Canonical RowVec and Cursor definitions
 typealias RowVec = Join<Int, (Int) -> Join<Any?, () -> ColumnMeta>>
 
-// Cursor with ArrayLike trait - WHENEVER THEY NEED get[i] OPERATOR
-@kotlin.jvm.JvmInline
-value class Cursor(internal val data: MetaSeries<CursorRowIndex, RowVec>) : ArrayLike<Int, RowVec> {
-    override operator fun get(index: Int): RowVec = data.b(CursorRowIndex(index))
-    override val size: Int get() = data.a.value
-    // Delegate to the underlying MetaSeries for operations that need it
-    fun asSeries(): MetaSeries<CursorRowIndex, RowVec> = data
-}
+// Cursor is now defined as a typealias below
 data class TableMeta(val name: String)
 typealias CursorIndex = Join<TableMeta, Int>
 // Cursor is now defined in trikeshed-lib
@@ -168,3 +155,169 @@ val <T> Indexed<T>.size: Int get() = a
 
 // Clean array-like access for Indexed<T> - no more .b(i)!
 operator fun <T> Indexed<T>.get(index: Int): T = b(index) 
+
+// Factory for MetaSeries and Indexed
+fun <A, T> MetaSeries_create(a: A, getter: (A) -> T): MetaSeries<A, T> = a j getter
+fun <T> Indexed_create(size: Int, getter: (Int) -> T): Indexed<T> = size j getter 
+
+// === CURSOR DEFINITIONS ===
+// Production cursor implementation based on columnar/cursor
+
+// Bridge types for cursor system
+typealias TrikeShedIndexed<T> = Join<Int, (Int) -> T>  // Compatible with Indexed<T>
+typealias CursorRow = TrikeShedIndexed<Any?>           // Equivalent to RowVec
+typealias CursorMeta = TrikeShedIndexed<ColumnMeta>    // Metadata accessor
+
+/**
+ * ## Cursor - Database Table Metaclass (TrikeShed Integration)
+ * 
+ * Production cursor definition that bridges the columnar system with TrikeShed's
+ * MetaSeries architecture. This maintains full backward compatibility while enabling
+ * integration with the universal TrikeShed type system.
+ * 
+ * **Definition:**
+ * ```kotlin
+ * typealias Cursor = TrikeShedIndexed<RowVec>
+ * ```
+ * 
+ * **Future Migration Path:**
+ * ```kotlin
+ * typealias Cursor = MetaSeries<CursorIndex, RowVec>  // Full TrikeShed integration
+ * where CursorIndex = Join<TableMeta, Int>            // Database-aware indexing
+ * ```
+ */
+typealias Cursor = TrikeShedIndexed<RowVec>
+
+// === CURSOR CORE OPERATIONS ===
+
+/** Get the RowVec at y or if y is negative then -y from last */
+infix fun Cursor.at(y: Int): RowVec = b(if (y < 0) a + y else y)
+
+/** Get a slice of rows */
+infix fun Cursor.at(r: IntRange): Cursor {
+    val actualStart = if (r.first < 0) a + r.first else r.first
+    val actualEnd = if (r.last < 0) a + r.last else r.last
+    require(actualStart >= 0 && actualEnd < a && actualStart <= actualEnd) { 
+        "Invalid range $r for cursor size $a" 
+    }
+    val sliceSize = actualEnd - actualStart + 1
+    return sliceSize j { y -> b(y + actualStart) }
+}
+
+// === CURSOR INDEXING OPERATORS ===
+
+operator fun Cursor.get(indexes: Iterable<Int>): Cursor = 
+    this[indexes.toList().toIntArray()]
+
+operator fun Cursor.get(index: IntArray): Cursor = 
+    index.size j { iy: Int -> b(index[iy]) }
+
+/** Get cursor with specified row indices (vararg version) */
+fun Cursor.rows(vararg indices: Int): Cursor = this[indices]
+
+// === CURSOR UTILITY OPERATIONS ===
+
+/** Get column by index */
+fun Cursor.column(index: Int): Indexed<Any?> =
+    a j { rowIndex: Int -> at(rowIndex).b(index).a }
+
+/** Get column by name */
+fun Cursor.column(name: String): Indexed<Any?> {
+    val columnIndex = findColumnIndex(name)
+    require(columnIndex >= 0) { "Column '$name' not found" }
+    return column(columnIndex)
+}
+
+/** Find column index by name */
+internal fun Cursor.findColumnIndex(name: String): Int {
+    val columnMetas = scalars
+    for (i in 0 until columnMetas.a) {
+        if (columnMetas.b(i).a == name) {
+            return i
+        }
+    }
+    return -1
+}
+
+/** Get column scalars/metadata */
+val Cursor.scalars: Indexed<ColumnMeta>
+    get() = if (a > 0) {
+        val firstRow = at(0)
+        firstRow.a j { colIndex: Int ->
+            firstRow.b(colIndex).b()
+        }
+    } else {
+        0 j { _: Int -> "" j String::class }
+    }
+
+/** Get column names */
+val Cursor.columnNames: Indexed<String>
+    get() = scalars.a j { i -> scalars.b(i).a }
+
+/** Get column index by name */
+val Cursor.colIdx: Map<String, Int>
+    get() = columnNames.let { names ->
+        (0 until names.a).associate { i -> names.b(i) to i }
+    }
+
+// === CURSOR ITERATION SUPPORT ===
+
+/** Iterator for cursor rows */
+fun Cursor.iterator(): Iterator<RowVec> = object : Iterator<RowVec> {
+    internal var index = 0
+    override fun hasNext(): Boolean = index < a
+    override fun next(): RowVec = at(index++)
+}
+
+/** forEach for cursor rows */
+inline fun Cursor.forEach(action: (RowVec) -> Unit) {
+    for (i in 0 until a) {
+        action(at(i))
+    }
+}
+
+/** Convert cursor to list of rows */
+fun Cursor.toList(): List<RowVec> = (0 until a).map { at(it) }
+
+/** Play property for Iterable support */
+val Cursor.play: Iterable<RowVec>
+    get() = object : Iterable<RowVec> {
+        override fun iterator(): Iterator<RowVec> = this@play.iterator()
+    }
+
+// === CURSOR FACTORY FUNCTIONS ===
+
+/** Create simple cursor from data */
+fun cursorOf(
+    data: List<List<Any?>>,
+    columnNames: List<String> = data.firstOrNull()?.indices?.map { "col_$it" } ?: emptyList(),
+    columnTypes: List<KClassifier> = data.firstOrNull()?.map { inferType(it) } ?: emptyList()
+): Cursor {
+    require(data.isNotEmpty()) { "Data cannot be empty" }
+    val firstRow = data.first()
+    require(columnNames.size == firstRow.size) { "Column names size mismatch" }
+    require(columnTypes.size == firstRow.size) { "Column types size mismatch" }
+
+    val scalars: Indexed<ColumnMeta> = columnNames.size j { i ->
+        columnNames[i] j columnTypes[i]
+    }
+
+    return data.size j { rowIndex: Int ->
+        val rowData = data[rowIndex]
+        val rowVec: RowVec = rowData.size j { colIndex: Int ->
+            val cellValue = rowData[colIndex]
+            val columnMeta = scalars.b(colIndex)
+            cellValue j { columnMeta }
+        }
+        rowVec
+    }
+}
+
+/** Infer type from value */
+internal fun inferType(value: Any?): KClassifier = when (value) {
+    is Int -> Int::class
+    is String -> String::class
+    is Float -> Float::class
+    is Double -> Double::class
+    else -> String::class
+} 

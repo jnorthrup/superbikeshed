@@ -65,7 +65,7 @@ suspend fun fromChannel(
         if (count >= maxRows) break
     }
     
-    return Cursor(CursorRowIndex(rows.size) j { i: CursorRowIndex -> rows[i.value] })
+    return rows.size j { i: Int -> rows[i] }
 }
 
 /**
