@@ -208,9 +208,8 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun removeRecursive(node: BinaryTreeNode<T>?, element: T): BinaryTreeNode<T>? {
         if (node == null) return null
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val (currentValue, children) = node
+        val (left, right) = children
         
         return when {
             element < currentValue -> {
@@ -240,10 +239,10 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     
     private fun findMin(node: BinaryTreeNode<T>): T {
         var current = node
-        while (current.b.a != null) {
-            current = current.b.a
+        while (current.component2().component1() != null) {
+            current = current.component2().component1()!!
         }
-        return current.a
+        return current.component1()
     }
     
     /**
@@ -254,9 +253,8 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun searchRecursive(node: BinaryTreeNode<T>?, element: T): T? {
         if (node == null) return null
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val (currentValue, children) = node
+        val (left, right) = children
         
         return when {
             element == currentValue -> currentValue
@@ -277,9 +275,8 @@ class BBCursiveTreeSet<T : Comparable<T>> {
     private fun collectElements(node: BinaryTreeNode<T>?, elements: MutableList<T>) {
         if (node == null) return
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val (currentValue, children) = node
+        val (left, right) = children
         
         collectElements(left, elements)
         elements.add(currentValue)
@@ -305,9 +302,8 @@ class BBCursiveBinaryTree<T> {
     private fun insertRecursive(node: BinaryTreeNode<T>?, value: T): BinaryTreeNode<T> {
         if (node == null) return value j (null j null)
         
-        val currentValue = node.a
-        val left = node.b.a
-        val right = node.b.b
+        val (currentValue, children) = node
+        val (left, right) = children
         
         return when {
             value < currentValue -> {
