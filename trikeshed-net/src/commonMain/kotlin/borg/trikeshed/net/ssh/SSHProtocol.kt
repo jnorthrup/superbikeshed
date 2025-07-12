@@ -3,7 +3,7 @@
 package borg.trikeshed.net.ssh
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.crypto.*
+// import borg.trikeshed.crypto.*
 // import borg.trikeshed.net.quic.*
 import kotlinx.coroutines.*
 import kotlin.jvm.JvmInline
@@ -15,8 +15,8 @@ import borg.trikeshed.net.ssh.SftpPacketParser
 // import borg.trikeshed.net.socks.socksIngress
 // import borg.trikeshed.net.socks.socksEgress
 import kotlinx.coroutines.channels.Channel
-import borg.trikeshed.io.PlatformFileIO
-import borg.trikeshed.io.PlatformFileIOImpl
+// import borg.trikeshed.io.PlatformFileIO
+// import borg.trikeshed.io.PlatformFileIOImpl
 
 // === SSH TAXONOMICAL TYPEALIASES ===
 
@@ -55,13 +55,22 @@ typealias ChannelWindow = UInt
 typealias ChannelPacketSize = UInt
 
 // Missing crypto types
-typealias CommonCrypto = Any
-typealias CryptoFactory = Any
 typealias TicketNonce = ByteArray
 
 // Crypto helper functions
 expect fun getSecureRandom(): ByteArray
 expect fun randomBytes(size: Int): ByteArray
+
+// Temporary stub implementations for missing crypto
+interface CommonCrypto {
+    fun randomBytes(size: Int): ByteArray
+}
+
+object CryptoFactory {
+    fun getSecureRandom(): CommonCrypto = object : CommonCrypto {
+        override fun randomBytes(size: Int): ByteArray = ByteArray(size) { (0..255).random().toByte() }
+    }
+}
 
 // QUIC types (temporary)
 interface QuicConnection {

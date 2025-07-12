@@ -16,7 +16,7 @@ import kotlin.time.Duration
  */
 
 // Core types using TrikeShed structures
-typealias HttpMethod = String
+// HttpMethod defined in TrikeShedRestClient.kt
 typealias HttpHeaders = Join<Int, (Int) -> Join<String, String>>
 typealias HttpRequest = Join<RequestMeta, RequestBody?>
 typealias HttpResponse = Join<ResponseMeta, ResponseBody>
@@ -112,19 +112,27 @@ class RestClientBuilder {
         }
     }
     
-    fun build(): RestClient = TrikeShedRestClient(
-        baseUrl = baseUrl,
-        defaultHeaders = defaultHeaders,
-        connectionPoolSize = connectionPoolSize,
-        defaultTimeout = requestTimeout,
-        interceptors = interceptors
-    )
+    fun build(): RestClient = object : RestClient {
+        override suspend fun execute(request: HttpRequest): HttpResponse {
+            TODO("Platform-specific implementation required")
+        }
+        
+        override suspend fun stream(request: HttpRequest): Flow<Join<ResponseMeta, ByteArray>> {
+            TODO("Platform-specific implementation required")
+        }
+        
+        override suspend fun batch(requests: Indexed<HttpRequest>): Indexed<HttpResponse> {
+            TODO("Platform-specific implementation required")
+        }
+    }
 }
 
-// Request interceptor for middleware
+// Request interceptor defined in TrikeShedRestClient.kt
+/*
 interface RequestInterceptor {
     suspend fun intercept(request: HttpRequest): HttpRequest
 }
+*/
 
 object IdentityInterceptor : RequestInterceptor {
     override suspend fun intercept(request: HttpRequest): HttpRequest = request
@@ -151,6 +159,8 @@ data class RetryPolicy(
 )
 
 // Connection pool using TrikeShed structures
+// Moved to TrikeShedRestClient.kt to avoid duplication
+/*
 class ConnectionPool(size: Int) {
     private val connections: Indexed<Connection> = size j { i: Int ->
         Connection(id = i, inUse = false)
@@ -178,6 +188,7 @@ class ConnectionPool(size: Int) {
         connection.inUse = false
     }
 }
+*/
 
 // Batch request executor
 class BatchExecutor(private val client: RestClient) {
@@ -200,6 +211,8 @@ data class RequestLog(
     val error: Throwable?
 )
 
+// Moved to TrikeShedRestClient.kt to avoid duplication
+/*
 class RequestLogger {
     private val logs = mutableListOf<RequestLog>()
     
@@ -214,6 +227,7 @@ class RequestLogger {
     
     fun getLogs(): Indexed<RequestLog> = logs.size j { i: Int -> logs[i] }
 }
+*/
 
 // URL builder using TrikeShed patterns
 class UrlBuilder(private val baseUrl: String) {

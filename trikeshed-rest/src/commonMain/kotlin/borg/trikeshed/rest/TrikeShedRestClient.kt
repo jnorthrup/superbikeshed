@@ -1,7 +1,7 @@
 package borg.trikeshed.rest
 
 import borg.trikeshed.lib.*
-import borg.trikeshed.net.http.*
+// import borg.trikeshed.net.http.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.time.Duration
@@ -20,6 +20,13 @@ import kotlin.coroutines.CoroutineContext
  * This is a pure Kotlin common implementation that can be extended
  * by platform-specific HTTP engines
  */
+
+// HTTP method is just a String in RestClient.kt
+
+// Temporary HTTP types
+data class HttpRequestPath(val value: String)
+data class HttpHeaderName(val value: String)
+data class HttpHeaderValue(val value: String)
 abstract class TrikeShedRestClient(
     protected val baseUrl: String,
     protected val defaultHeaders: HttpHeaders,
@@ -32,7 +39,7 @@ abstract class TrikeShedRestClient(
     
     private val connectionPool = ConnectionPool(connectionPoolSize)
     private val logger = RequestLogger()
-    private val httpClient = createHttpClient()
+    // private val httpClient = createHttpClient() // Disabled until net.http is available
     
     override suspend fun execute(request: HttpRequest): HttpResponse = coroutineScope {
         // Apply interceptors
@@ -120,17 +127,9 @@ abstract class TrikeShedRestClient(
         }
     }
     
+    /*
     private fun convertToHttpRequest(request: HttpRequest): borg.trikeshed.net.http.HttpRequest {
-        val method = when (request.a.method.uppercase()) {
-            "GET" -> HttpMethod.GET
-            "POST" -> HttpMethod.POST
-            "PUT" -> HttpMethod.PUT
-            "DELETE" -> HttpMethod.DELETE
-            "PATCH" -> HttpMethod.PATCH
-            "HEAD" -> HttpMethod.HEAD
-            "OPTIONS" -> HttpMethod.OPTIONS
-            else -> HttpMethod.GET
-        }
+        val method = request.a.method.uppercase()
         
         val path = HttpRequestPath(request.a.url)
         
@@ -146,7 +145,9 @@ abstract class TrikeShedRestClient(
             body = request.b ?: ByteArray(0)
         )
     }
+    */
     
+    /*
     private fun convertToRestResponse(httpResponse: borg.trikeshed.net.http.HttpResponse): HttpResponse {
         val meta = ResponseMeta(
             statusCode = httpResponse.status.value,
@@ -156,7 +157,9 @@ abstract class TrikeShedRestClient(
         
         return meta j httpResponse.body
     }
+    */
     
+    /*
     private fun convertHeaders(httpHeaders: Indexed<Join<HttpHeaderName, HttpHeaderValue>>): HttpHeaders {
         val headers = Array(httpHeaders.a) { i ->
             val header = httpHeaders.b(i)
@@ -164,6 +167,7 @@ abstract class TrikeShedRestClient(
         }
         return headers.size j headers::get
     }
+    */
     
     private fun resolveUrl(url: String): String {
         return if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -196,6 +200,7 @@ abstract class TrikeShedRestClient(
         }
     }
     
+    /*
     private fun createHttpClient(): borg.trikeshed.net.http.HttpClient {
         val ioContext = borg.trikeshed.io.IOContext.NioContext("rest-client")
         return borg.trikeshed.net.http.HttpClient(ioContext).apply {
@@ -204,9 +209,10 @@ abstract class TrikeShedRestClient(
             maxConnectionsPerHost = connectionPoolSize
         }
     }
+    */
     
     fun close() {
-        httpClient.close()
+        // httpClient.close() // Disabled until net.http is available
     }
 }
 

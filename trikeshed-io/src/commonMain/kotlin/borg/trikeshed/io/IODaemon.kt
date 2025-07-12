@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
  * I/O Daemon that coordinates high-performance I/O operations
  * Acts as a bridge between JVM and native Linux implementations
  */
-expect class IODaemon(scope: CoroutineScope) {
+expect class IODaemon {
     /**
      * Initialize the daemon with configuration
      */

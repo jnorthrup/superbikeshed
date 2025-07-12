@@ -4,11 +4,6 @@ package borg.trikeshed.io
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Platform-specific AsyncIOEngine implementation
- */
-expect class AsyncIOEngineImpl : AsyncIOEngine
-
-/**
  * Platform-specific creation of AsyncIOEngine
  */
 expect fun createAsyncIOEngine(): AsyncIOEngine
