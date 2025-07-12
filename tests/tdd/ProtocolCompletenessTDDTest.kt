@@ -715,77 +715,130 @@ enum class CompressionType(val id: UByte) {
 }
 
 // Extension Functions (stubs for TDD)
-fun GossipDigestRequest.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toGossipDigestRequest(): GossipDigestRequest = GossipDigestRequest(
-    NodeId(ByteArray(32).toUByteArray()),
-    0 j { MessageDigest(MessageId(ByteArray(32).toUByteArray()), 0L, Checksum(0u)) },
-    Timestamp(System.currentTimeMillis())
-)
+fun NodeId.toWireBytes(): UByteArray = this.bytes
+fun UByteArray.toNodeId(): NodeId = NodeId(this)
 
-fun GossipSyncResponse.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toGossipSyncResponse(): GossipSyncResponse = GossipSyncResponse(
-    NodeId(ByteArray(32).toUByteArray()),
-    0 j { GossipMessage(
-        MessageId(ByteArray(32).toUByteArray()),
-        NodeId(ByteArray(32).toUByteArray()),
-        DataValue(ByteArray(10).toUByteArray()),
-        0 j { "subnet" },
-        Timestamp(System.currentTimeMillis()),
-        TimeToLive(300),
-        0
-    ) },
-    Timestamp(System.currentTimeMillis())
-)
+fun MessageId.toWireBytes(): UByteArray = this.bytes
+fun UByteArray.toMessageId(): MessageId = MessageId(this)
 
-fun QuicStreamFrame.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toQuicStreamFrame(): QuicStreamFrame = QuicStreamFrame(
-    1L,
-    QuicStreamType.DHT_MESSAGES,
-    TrikeShedMessageFrame.create(TrikeShedProtocol(1u), "TEST", ByteArray(10).toUByteArray())
-)
+fun DataValue.toWireBytes(): UByteArray = this.bytes
+fun UByteArray.toDataValue(): DataValue = DataValue(this)
 
-fun NodeIdentity.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toNodeIdentity(): NodeIdentity = NodeIdentity(
-    NodeId(ByteArray(32).toUByteArray()),
-    PublicKey(ByteArray(32)),
-    Signature(ByteArray(64))
-)
+fun Checksum.toWireBytes(): UByteArray = this.crc32.toUInt().toUByteArray()
+fun UByteArray.toChecksum(): Checksum = Checksum(this.toUInt())
 
-fun SecureMessage.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toSecureMessage(): SecureMessage = SecureMessage(
-    NodeId(ByteArray(32).toUByteArray()),
-    NodeId(ByteArray(32).toUByteArray()),
-    ByteArray(24).toUByteArray(),
-    ByteArray(10).toUByteArray(),
-    ByteArray(16).toUByteArray()
-)
+fun Timestamp.toWireBytes(): UByteArray = this.epochMillis.toULong().toUByteArray()
+fun UByteArray.toTimestamp(): Timestamp = Timestamp(this.toLong())
 
-fun ErrorResponse.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toErrorResponse(): ErrorResponse = ErrorResponse(
-    TrikeShedError.SUCCESS,
-    "test",
-    emptyMap(),
-    Timestamp(System.currentTimeMillis())
-)
+fun TimeToLive.toWireBytes(): UByteArray = this.seconds.toUByteArray()
+fun UByteArray.toTimeToLive(): TimeToLive = TimeToLive(this.toInt())
 
-fun <T> T.toProtocolMessage(): T = this
-fun <T> UByteArray.toProtocolMessage(): T = Any() as T
+fun MessageDigest.toWireBytes(): UByteArray =
+    this.messageId.toWireBytes() +
+    this.version.toULong().toUByteArray() +
+    this.checksum.toWireBytes()
 
-fun Series<String>.toCbor(): ByteArray = ByteArray(100)
-fun <T> ByteArray.fromCbor(): T = Any() as T
-fun Tensor<Double>.toCbor(): ByteArray = ByteArray(100)
-fun Join<Int, String>.toCbor(): ByteArray = ByteArray(100)
-fun IOMemento.toCbor(): ByteArray = ByteArray(100)
+fun UByteArray.toMessageDigest(): MessageDigest {
+    var offset = 0
+    val messageId = this.sliceArray(offset until offset + 32).toUByteArray().toMessageId()
+    offset += 32
+    val version = this.sliceArray(offset until offset + 8).toUByteArray().toULong().toLong()
+    offset += 8
+    val checksum = this.sliceArray(offset until offset + 4).toUByteArray().toChecksum()
+    return MessageDigest(messageId, version, checksum)
+}
 
-fun UByteArray.compress(type: CompressionType): UByteArray = this
-fun Series<Int>.compress(type: CompressionType): UByteArray = this.toWireBytes().compress(type)
-fun Series<String>.compress(type: CompressionType): UByteArray = this.toWireBytes().compress(type)
-fun IOMemento.compress(type: CompressionType): UByteArray = this.toWireBytes().compress(type)
+fun GossipDigestRequest.toWireBytes(): UByteArray {
+    val nodeIdBytes = this.nodeId.toWireBytes()
+    val digestsBytes = this.digests.flatMap { it.toWireBytes().toList() }.toUByteArray()
+    val digestsLengthBytes = this.digests.size.toUInt().toUByteArray() // Prefix with size
+    val timestampBytes = this.timestamp.toWireBytes()
 
-fun Series<Int>.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun Series<String>.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun IOMemento.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun UByteArray.toIoMemento(): IOMemento = IOMemento.create("test", "Int", 4, false)
+    return nodeIdBytes + digestsLengthBytes + digestsBytes + timestampBytes
+}
 
-fun PingRequest.toWireBytes(): UByteArray = ByteArray(100).toUByteArray()
-fun CursorDataResponse.toWireBytes(): UByteArray = ByteArray(100).toUByteArray() 
+fun UByteArray.toGossipDigestRequest(): GossipDigestRequest {
+    var offset = 0
+    val nodeId = this.sliceArray(offset until offset + 32).toUByteArray().toNodeId()
+    offset += 32
+
+    val digestsLength = this.sliceArray(offset until offset + 4).toUByteArray().toUInt().toInt()
+    offset += 4
+
+    val digests = mutableListOf<MessageDigest>()
+    for (i in 0 until digestsLength) {
+        // MessageDigest size: messageId (32 bytes) + version (8 bytes) + checksum (4 bytes) = 44 bytes
+        val digestBytes = this.sliceArray(offset until offset + 44).toUByteArray()
+        digests.add(digestBytes.toMessageDigest())
+        offset += 44
+    }
+
+    val timestamp = this.sliceArray(offset until offset + 8).toUByteArray().toTimestamp()
+    return GossipDigestRequest(nodeId, digests.toSeries(), timestamp)
+}
+
+// Helper for ULong to UByteArray and back
+fun ULong.toUByteArray(): UByteArray =
+    UByteArray(8) { i -> (this shr (i * 8)).toUByte() }
+
+fun UByteArray.toULong(): ULong {
+    var value = 0UL
+    for (i in 0 until 8) {
+        value = value or (this[i].toULong() shl (i * 8))
+    }
+    return value
+}
+
+// Helper for UInt to UByteArray and back
+fun UInt.toUByteArray(): UByteArray =
+    UByteArray(4) { i -> (this shr (i * 8)).toUByte() }
+
+fun UByteArray.toUInt(): UInt {
+    var value = 0u
+    for (i in 0 until 4) {
+        value = value or (this[i].toUInt() shl (i * 8))
+    }
+    return value
+}
+
+// Helper for Long to UByteArray and back
+fun Long.toUByteArray(): UByteArray = this.toULong().toUByteArray()
+fun UByteArray.toLong(): Long = this.toULong().toLong()
+
+// Helper for Int to UByteArray and back
+fun Int.toUByteArray(): UByteArray = this.toUInt().toUByteArray()
+fun UByteArray.toInt(): Int = this.toUInt().toInt()
+
+// Helper for calculateCrc32 (stub for now)
+fun calculateCrc32(data: UByteArray): UInt = 0u
+
+
+
+fun GossipSyncResponse.toWireBytes(): UByteArray {
+    val nodeIdBytes = this.nodeId.toWireBytes()
+    val messagesBytes = this.messages.flatMap { it.toWireBytes().toList() }.toUByteArray()
+    val messagesLengthBytes = this.messages.size.toUInt().toUByteArray()
+    val timestampBytes = this.timestamp.toWireBytes()
+
+    return nodeIdBytes + messagesLengthBytes + messagesBytes + timestampBytes
+}
+
+fun UByteArray.toGossipSyncResponse(): GossipSyncResponse {
+    var offset = 0
+    val nodeId = this.sliceArray(offset until offset + 32).toUByteArray().toNodeId()
+    offset += 32
+
+    val messagesLength = this.sliceArray(offset until offset + 4).toUByteArray().toUInt().toInt()
+    offset += 4
+
+    val messages = mutableListOf<GossipMessage>()
+    for (i in 0 until messagesLength) {
+        val messageBytes = this.sliceArray(offset until this.size).toUByteArray()
+        val message = messageBytes.toGossipMessage()
+        messages.add(message)
+        offset += message.toWireBytes().size
+    }
+
+    val timestamp = this.sliceArray(offset until offset + 8).toUByteArray().toTimestamp()
+    return GossipSyncResponse(nodeId, messages.toSeries(), timestamp)
+} 
