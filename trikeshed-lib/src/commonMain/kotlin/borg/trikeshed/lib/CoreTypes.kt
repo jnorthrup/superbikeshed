@@ -443,6 +443,8 @@ fun <T> Indexed<T>.slice(start: Int, endInclusive: Int): Indexed<T> {
     return sliceSize j { b(start + it) }
 }
 
+fun <T> Indexed<T>.getOrNull(index: Int): T? = if (index in 0 until this.a) this.b(index) else null 
+
 // === QOL HELPERS MIGRATED FROM borg.trikeshed.common.collections ===
 
 object _a {

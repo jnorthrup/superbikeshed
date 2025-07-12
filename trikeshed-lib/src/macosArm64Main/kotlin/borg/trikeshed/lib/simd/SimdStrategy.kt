@@ -24,7 +24,7 @@ class AppleSimdStrategy : SimdStrategy {
         
         simd_find_byte(dataArray, dataArray.size, target, offset, positions, count)
         
-        return count[0] j { positions[it] }
+        return makeIndexed(count[0]) { positions[it] }
     }
 
     override fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int> {
@@ -35,7 +35,7 @@ class AppleSimdStrategy : SimdStrategy {
         
         simd_find_any_byte(dataArray, dataArray.size, targetsArray, targetsArray.size, offset, positions, count)
         
-        return count[0] j { positions[it] }
+        return makeIndexed(count[0]) { positions[it] }
     }
 
     override fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean> {
@@ -46,7 +46,7 @@ class AppleSimdStrategy : SimdStrategy {
         
         simd_compare_bytes(dataArray, dataArray.size, patternArray, patternArray.size, positionsArray, positionsArray.size, results)
         
-        return results.size j { results[it] }
+        return makeIndexed(results.size) { results[it] }
     }
 
     override fun popcount(bitmap: Indexed<Int>): Int {
@@ -61,7 +61,7 @@ class AppleSimdStrategy : SimdStrategy {
         
         simd_gather_bytes(dataArray, dataArray.size, positionsArray, positionsArray.size, results)
         
-        return results.size j { results[it] }
+        return makeIndexed(results.size) { results[it] }
     }
 
     override fun getCapabilities(): SimdCapabilities {

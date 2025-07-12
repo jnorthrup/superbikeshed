@@ -6,7 +6,7 @@ import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
-import java.io.Closeable
+import com.trikeshed.uring.Closeable
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -92,25 +92,3 @@ suspend fun <T> withTrikeUring(
     }
 }
 
-/**
- * ByteBuffer abstraction for cross-platform compatibility
- */
-expect class ByteBuffer {
-    val capacity: Int
-    val position: Int
-    val remaining: Int
-    
-    fun get(): Byte
-    fun get(dst: ByteArray, offset: Int, length: Int): ByteBuffer
-    fun put(b: Byte): ByteBuffer
-    fun put(src: ByteArray, offset: Int, length: Int): ByteBuffer
-    fun flip(): ByteBuffer
-    fun clear(): ByteBuffer
-    fun rewind(): ByteBuffer
-    
-    companion object {
-        fun allocate(capacity: Int): ByteBuffer
-        fun allocateDirect(capacity: Int): ByteBuffer
-        fun wrap(array: ByteArray): ByteBuffer
-    }
-}

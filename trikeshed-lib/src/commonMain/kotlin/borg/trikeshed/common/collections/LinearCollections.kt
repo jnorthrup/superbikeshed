@@ -108,9 +108,8 @@ class BBCursiveHashSet<T> {
         
         for (i in 0 until bucket.a) {
             val entry = bucket[i]
-            if (entry != null && entry.a == element) {
-                return true
-            }
+            if (entry != null && entry.a == element)                    return true
+            
         }
         
         return false
@@ -126,9 +125,9 @@ class BBCursiveHashSet<T> {
             val bucket = oldBuckets[i]
             for (j in 0 until bucket.a) {
                 val entry = bucket[j]
-                if (entry != null) {
+                if (entry != null)  
                     add(entry.a)
-                }
+              
             }
         }
     }
@@ -143,9 +142,8 @@ class BBCursiveHashSet<T> {
             val bucket = buckets[i]
             for (j in 0 until bucket.size) {
                 val entry = bucket[j]
-                if (entry != null) {
-                    elements.add(entry.a)
-                }
+                if (entry != null)                    elements.add(entry.a)
+                
             }
         }
         
@@ -582,15 +580,15 @@ typealias HeapEntry<T> = Join<T, Int>
  * Min Heap implementation using Join patterns
  */
 class BBCursiveMinHeap<T : Comparable<T>> {
-    private var elements: Indexed<HeapEntry<T>> = 0 j { _ -> throw IndexOutOfBoundsException() }
+    private var elements: Indexed<HeapEntry<T>> = emptyIndexed<HeapEntry<T>>()
     private var size = 0
     
     /**
      * Insert element using bbcursive pattern
      */
     fun insert(element: T) {
-        val entry = element j size
-        elements = (size + 1) j { i ->
+        val entry = makeJoin(element, size)
+        elements = makeIndexed(size + 1) { i ->
             if (i < size) elements[i] else entry
         }
         size++
@@ -606,7 +604,7 @@ class BBCursiveMinHeap<T : Comparable<T>> {
         val minElement = elements[0].a
         val lastElement = elements[size - 1]
         
-        elements = (size - 1) j { i ->
+        elements = makeIndexed(size - 1) { i ->
             if (i == 0) lastElement else elements[i]
         }
         size--
@@ -642,7 +640,7 @@ class BBCursiveMinHeap<T : Comparable<T>> {
             if (elements[current].a < elements[parent].a) {
                 // Swap elements
                 val temp = elements[current]
-                elements = size j { i ->
+                elements = makeIndexed(size) { i ->
                     when (i) {
                         current -> elements[parent]
                         parent -> temp
@@ -675,7 +673,7 @@ class BBCursiveMinHeap<T : Comparable<T>> {
             
             // Swap elements
             val temp = elements[current]
-            elements = size j { i ->
+            elements = makeIndexed(size) { i ->
                 when (i) {
                     current -> elements[smallest]
                     smallest -> temp
@@ -690,7 +688,7 @@ class BBCursiveMinHeap<T : Comparable<T>> {
      * Get all elements as Indexed (in heap order)
      */
     fun elements(): Indexed<T> {
-        return size j { i -> elements[i].a }
+        return makeIndexed(size) { i -> elements[i].a }
     }
 }
 

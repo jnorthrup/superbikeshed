@@ -217,7 +217,7 @@ inline fun <T> Indexed<T>.partition(predicate: (T) -> Boolean): Join<Indexed<T>,
         val item = b(i)
         if (predicate(item)) first.add(item) else second.add(item)
     }
-    return (first.size j { i: Int -> first[i] }) j (second.size j { i: Int -> second[i] })
+    return makeJoin(makeIndexed(first.size) { i: Int -> first[i] }, makeIndexed(second.size) { i: Int -> second[i] })
 }
 
 // Canonical conversion utilities

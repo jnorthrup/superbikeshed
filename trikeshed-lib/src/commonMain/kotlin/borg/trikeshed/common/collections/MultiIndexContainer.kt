@@ -206,7 +206,7 @@ class MasstreeIndex<K, V> : IndexView<K, V> {
     private var root: MasstreeNode<K, V>? = null
     
     override val a: (K) -> Indexed<V> = { key ->
-        lookup(root, key) ?: (0 j { _ -> null as V })
+        lookup(root, key) ?: (0 j { throw IndexOutOfBoundsException() })
     }
     
     override val b = IndexMetadata(
@@ -232,7 +232,7 @@ class MultiIndexContainer<T> {
     private val indices = mutableMapOf<String, IndexView<*, T>>()
     
     // Primary storage using Indexed
-    private var storage: Indexed<T?> = 0 j { null }
+    private var storage: Indexed<T?> = emptyIndexed()
     private var size = 0
     
     /**
@@ -255,7 +255,7 @@ class MultiIndexContainer<T> {
      */
     fun insert(element: T) {
         // Add to storage
-        val newStorage = (size + 1) j { i ->
+        val newStorage = makeIndexed(size + 1) { i ->
             if (i < size) storage[i] else element
         }
         storage = newStorage
@@ -273,7 +273,7 @@ class MultiIndexContainer<T> {
     @Suppress("UNCHECKED_CAST")
     fun <K> queryByIndex(indexName: String, key: K): Indexed<T> {
         val index = indices[indexName] as? IndexView<K, T>
-        return index?.a?.invoke(key) ?: (0 j { throw IndexOutOfBoundsException() })
+        return index?.a?.invoke(key) ?: emptyIndexed()
     }
     
     /**
@@ -287,9 +287,9 @@ class MultiIndexContainer<T> {
         val index = indices[indexName]
         if (index?.b?.supportRange == true) {
             // Perform range query
-            return 0 j { throw IndexOutOfBoundsException() } // TODO: Implement
+            return emptyIndexed() // TODO: Implement
         }
-        return 0 j { throw IndexOutOfBoundsException() }
+        return emptyIndexed()
     }
 }
 

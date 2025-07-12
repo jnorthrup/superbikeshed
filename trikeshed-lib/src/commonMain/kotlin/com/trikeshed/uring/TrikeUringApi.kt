@@ -3,8 +3,6 @@ package com.trikeshed.uring
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
-import java.io.Closeable
-import java.nio.ByteBuffer
 
 // Mock PosixError and SocketAddress for commonMain (or define them properly if they exist elsewhere)
 // For now, we'll use simple interfaces/data classes to allow compilation.
@@ -17,10 +15,24 @@ data class PosixError(val errno: Int) {
 interface SocketAddress
 
 // Mock ByteBuffer for commonMain
-actual typealias ByteBuffer = java.nio.ByteBuffer
+expect class ByteBuffer {
+    fun remaining(): Int
+    fun hasRemaining(): Boolean
+    fun get(): Byte
+    fun put(b: Byte): ByteBuffer
+    fun flip(): ByteBuffer
+    fun clear(): ByteBuffer
+    fun position(): Int
+    fun position(newPosition: Int): ByteBuffer
+    fun limit(): Int
+    fun limit(newLimit: Int): ByteBuffer
+    fun capacity(): Int
+}
 
 // Mock Closeable for commonMain
-actual typealias Closeable = java.io.Closeable
+expect interface Closeable {
+    fun close()
+}
 
 /**
  * A sealed interface representing a single operation to be submitted.
@@ -48,7 +60,6 @@ data class Fsync(
     override val userData: Long = nextId()
 ) : Sqe(userData)
 
-// --- Network Operations ---
 data class Accept(
     val fd: Int,
     override val userData: Long = nextId()
@@ -126,11 +137,11 @@ interface TrikeUring : CoroutineScope, Closeable {
     /**
      * Registers a set of files for potentially more efficient I/O.
      */
-    suspend fun registerFiles(fds: IntArray)
+    suspend fun fun registerFiles(fds: IntArray)
 }
 
 // Factory function to create the platform-specific implementation
-actual fun createTrikeUring(
+expect fun createTrikeUring(
     scope: CoroutineScope,
-    ringSize: Int
-): TrikeUring = TODO("Not yet implemented for this platform")
+    ringSize: Int = 256
+): TrikeUring

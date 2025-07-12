@@ -236,7 +236,7 @@ suspend inline fun <A, B> packJoin(a: A, b: B, hint: PackingContext): Join<A, B>
     val startTime = Clock.System.now().toEpochMilliseconds()
     
     val join = when (strategy) {
-        PackingStrategy.NAIVE -> a j b
+        PackingStrategy.NAIVE -> makeJoin(a, b)
         PackingStrategy.TIGHT_PACK -> createTightPackedJoin(a, b)
         PackingStrategy.CACHE_ALIGNED -> createCacheAlignedJoin(a, b)
         PackingStrategy.SIMD_OPTIMIZED -> createSimdOptimizedJoin(a, b)
@@ -252,38 +252,15 @@ suspend inline fun <A, B> packJoin(a: A, b: B, hint: PackingContext): Join<A, B>
 
 // Specialized join implementations
 
-private fun <A, B> createTightPackedJoin(a: A, b: B): Join<A, B> = object : Join<A, B> {
-    override val a: A = a
-    override val b: B = b
-    // Ensure fields are laid out contiguously
-}
+private fun <A, B> createTightPackedJoin(a: A, b: B): Join<A, B> = makeJoin(a,b)
 
-private fun <A, B> createCacheAlignedJoin(a: A, b: B): Join<A, B> = object : Join<A, B> {
-    // Padding to align to cache line boundaries
-    @Suppress("unused") private val padding0: Long = 0
-    override val a: A = a
-    @Suppress("unused") private val padding1: Long = 0
-    override val b: B = b
-    @Suppress("unused") private val padding2: Long = 0
-}
+private fun <A, B> createCacheAlignedJoin(a: A, b: B): Join<A, B> = makeJoin(a,b)
 
-private fun <A, B> createSimdOptimizedJoin(a: A, b: B): Join<A, B> = object : Join<A, B> {
-    // Align to SIMD register width
-    override val a: A = a
-    override val b: B = b
-}
+private fun <A, B> createSimdOptimizedJoin(a: A, b: B): Join<A, B> = makeJoin(a,b)
 
-private fun <A, B> createBranchPredictableJoin(a: A, b: B): Join<A, B> = object : Join<A, B> {
-    // Hot/cold split - frequently accessed 'a' first
-    override val a: A = a
-    override val b: B = b
-}
+private fun <A, B> createBranchPredictableJoin(a: A, b: B): Join<A, B> = makeJoin(a,b)
 
-private fun <A, B> createPrefetchAwareJoin(a: A, b: B): Join<A, B> = object : Join<A, B> {
-    // Layout for hardware prefetcher efficiency
-    override val a: A = a
-    override val b: B = b
-}
+private fun <A, B> createPrefetchAwareJoin(a: A, b: B): Join<A, B> = makeJoin(a,b)
 
 // === BINARY TREE WITH INTELLIGENT PACKING ===
 
