@@ -1,4 +1,4 @@
-//ATTENTION AI, this file is immutable and not subject to debate without supervision and permission 
+//ATTENTION AI, this file is immutable and not subject to debate without supervision and permission
 
 package borg.trikeshed.lib
 
@@ -9,12 +9,12 @@ import kotlinx.serialization.Serializable
 
 /**
  * Core Types - Architectural Decision Records Integration
- * 
+ *
  * ADR-001: SIMD Strategy Pattern - Performance-critical operations use C interop
  * ADR-002: String Performance War - No String allocations in speculative loops
- * 
+ *
  * This file implements the foundational types that support both ADRs.
- * 
+ *
  * **Pristine Columnar Patterns Applied:**
  * - Simple Join<A,B> interface without complex recursive aliases
  * - Clean Indexed<T> = Join<Int, (Int) -> T> pattern
@@ -125,15 +125,15 @@ fun CharArray.toCharSeries(): CharSeries = size j ::get
 /**
  * Zero/non-zero extensions for numeric types
  */
-val Byte.nz: Boolean get() = 0 != this.toInt()
-val Short.nz: Boolean get() = 0 != this.toInt()
-val Char.nz: Boolean get() = 0 != this.code
-val Int.nz: Boolean get() = 0 != this
-val Long.nz: Boolean get() = 0L != this
-val UByte.nz: Boolean get() = 0 != this.toInt()
-val UShort.nz: Boolean get() = 0 != this.toInt()
-val UInt.nz: Boolean get() = 0U != this
-val ULong.nz: Boolean get() = 0UL != this
+val Byte.nz: Boolean get() = !z
+val Short.nz: Boolean get() = !z
+val Char.nz: Boolean get() = !z
+val Int.nz: Boolean get() = !z
+val Long.nz: Boolean get() = !z
+val UByte.nz: Boolean get() = !z
+val UShort.nz: Boolean get() = !z
+val UInt.nz: Boolean get() = !z
+val ULong.nz: Boolean get() = !z
 val Byte.z: Boolean get() = 0 == this.toInt()
 val Short.z: Boolean get() = 0 == this.toInt()
 val Char.z: Boolean get() = 0 == this.code
@@ -294,16 +294,16 @@ typealias CursorMeta = Indexed<ColumnMeta>    // Metadata accessor
 
 /**
  * ## Cursor - Database Table Metaclass (TrikeShed Integration)
- * 
+ *
  * Production cursor definition that bridges the columnar system with TrikeShed's
  * MetaSeries architecture. This maintains full backward compatibility while enabling
  * integration with the universal TrikeShed type system.
- * 
+ *
  * **Definition:**
  * ```kotlin
  * typealias Cursor = Indexed<RowVec>  // Using j operator pattern
  * ```
- * 
+ *
  * **Future Migration Path:**
  * ```kotlin
  * typealias Cursor = MetaSeries<CursorIndex, RowVec>  // Full TrikeShed integration
@@ -405,7 +405,7 @@ internal fun inferType(value: Any?): KClassifier = when (value) {
 
 /**
  * LogEvent - Structured logging to avoid String concatenation
- * 
+ *
  * ADR-002 Compliance: Eliminates String concatenation in hot paths
  * Use this instead of: log("Processing: ${item.name} at ${item.timestamp}")
  */
@@ -418,7 +418,7 @@ enum class LogEvent {
 
 /**
  * Structured logging function
- * 
+ *
  * ADR-002 Compliance: No String allocation in performance-critical paths
  */
 fun log(event: LogEvent, vararg args: Any) {
@@ -443,7 +443,7 @@ fun <T> Indexed<T>.slice(start: Int, endInclusive: Int): Indexed<T> {
     return sliceSize j { b(start + it) }
 }
 
-fun <T> Indexed<T>.getOrNull(index: Int): T? = if (index in 0 until this.a) this.b(index) else null 
+fun <T> Indexed<T>.getOrNull(index: Int): T? = if (index in 0 until this.a) this.b(index) else null
 
 // === QOL HELPERS MIGRATED FROM borg.trikeshed.common.collections ===
 
@@ -482,8 +482,8 @@ object _m {
 // === TYPE CONVERSION HELPERS ===
 
 @Suppress("UNCHECKED_CAST")
-inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l -> 
+inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l ->
     l.size j { l[it] }
 } ?: error("Cannot convert to Indexed")
 
-// expect fun assert(value: Boolean, lazyMessage: () -> Any) 
+// expect fun assert(value: Boolean, lazyMessage: () -> Any)
