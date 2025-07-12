@@ -1,0 +1,43 @@
+{
+  "global_settings": {
+    "auto_backup": true,
+    "backup_retention_days": 30,
+    "deployment_strategy": "copy",
+    "version_control": true,
+    "momentum_tracking": true
+  },
+  "framework_settings": {
+    "claude": {
+      "enabled": true,
+      "priority": 1,
+      "customizations": []
+    },
+    "gemini": {
+      "enabled": true,
+      "priority": 2,
+      "customizations": []
+    },
+    "cursor": {
+      "enabled": true,
+      "priority": 3,
+      "customizations": []
+    },
+    "aider": {
+      "enabled": true,
+      "priority": 4,
+      "customizations": []
+    }
+  },
+  "momentum_settings": {
+    "tracking_enabled": true,
+    "auto_calculate": true,
+    "display_format": "points",
+    "chain_history": true
+  },
+  "deployment_settings": {
+    "confirm_changes": false,
+    "create_backups": true,
+    "update_timestamps": true,
+    "log_operations": true
+  }
+} 

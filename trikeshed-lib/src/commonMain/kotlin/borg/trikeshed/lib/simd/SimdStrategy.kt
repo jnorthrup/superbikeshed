@@ -3,82 +3,90 @@ package borg.trikeshed.lib.simd
 import borg.trikeshed.lib.Indexed
 
 /**
- * Scan strategies for register-at-a-time scanning
- */
-enum class ScanStrategy {
-    SCALAR, SIMD, VECTOR, AUTOVEC
-}
-
-/**
- * SIMD Strategy: Take any register size we can get and maximize throughput.
+ * SIMD Strategy Pattern - Architectural Decision Record (ADR-001)
  * 
- * Register sizes by platform:
- * - ARM NEON: 128-bit (16 bytes)
- * - SSE4.2: 128-bit (16 bytes) 
- * - AVX2: 256-bit (32 bytes)
- * - AVX-512: 512-bit (64 bytes)
- * - ARM SVE: 128-2048 bits (scalable!)
- * - RISC-V V: 128-65536 bits (ultra-scalable!)
- * - WASM SIMD: 128-bit (16 bytes)
+ * CONTEXT: High-performance parsing requires platform-specific SIMD optimization
+ * DECISION: Use expect/actual pattern with C interop for native SIMD
+ * CONSEQUENCES: Platform-specific implementations (Apple NEON/AMX, Linux SSE/AVX)
  * 
- * Strategy: Write algorithms that naturally scale with register width.
+ * DO NOT CHANGE: This interface must remain stable for bbcursive integration
+ * DO NOT REPLACE: C interop with pure Kotlin implementations
+ * 
+ * ADR-002 Compliance: All methods use Indexed<T> instead of String-based operations
+ * 
+ * Related: BBCursiveSimdAutovec, cinterop/simd.h, ADR-001, ADR-002
  */
 interface SimdStrategy {
-    
     /**
-     * Core SIMD operations we need for parsing/scanning
+     * Find all occurrences of a byte value in a buffer
+     * 
+     * ARCHITECTURAL CONSTRAINT: Must use native SIMD for performance
+     * DO NOT: Implement with scalar fallback in production
+     * ADR-002 Compliance: Uses Indexed<Int> instead of String-based results
      */
-    
+    fun findByte(data: Indexed<Byte>, target: Byte, offset: Int): Indexed<Int>
+
     /**
-     * Find all occurrences of a byte value in parallel.
-     * This is THE fundamental operation for scanning.
+     * Find any of multiple byte values in a buffer
+     * 
+     * ARCHITECTURAL CONSTRAINT: Must use native SIMD for performance
+     * DO NOT: Implement with scalar fallback in production
+     * ADR-002 Compliance: Uses Indexed<Int> instead of String-based results
      */
-    fun findByte(data: Indexed<Byte>, target: Byte, offset: Int = 0): Indexed<Int>
-    
+    fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int): Indexed<Int>
+
     /**
-     * Find any of multiple byte values (e.g., '{', '[', '"' for JSON).
-     * Uses SIMD OR operations to combine comparisons.
-     */
-    fun findAnyByte(data: Indexed<Byte>, targets: Indexed<Byte>, offset: Int = 0): Indexed<Int>
-    
-    /**
-     * Parallel string comparison - check multiple positions at once.
-     * Critical for header field matching.
+     * Compare bytes at multiple positions against a pattern
+     * 
+     * ARCHITECTURAL CONSTRAINT: Must use native SIMD for performance
+     * DO NOT: Implement with scalar fallback in production
+     * ADR-002 Compliance: Uses Indexed<Boolean> instead of String-based results
      */
     fun compareBytes(data: Indexed<Byte>, pattern: Indexed<Byte>, positions: Indexed<Int>): Indexed<Boolean>
-    
+
     /**
-     * Population count - count set bits in parallel.
-     * Useful for counting structural characters.
+     * Count set bits in bitmap
+     * 
+     * ARCHITECTURAL CONSTRAINT: Must use native popcount instruction
+     * DO NOT: Implement with manual bit counting
+     * ADR-002 Compliance: Returns primitive Int, no String allocation
      */
     fun popcount(bitmap: Indexed<Int>): Int
-    
+
     /**
-     * Parallel extraction - gather bytes from multiple positions.
-     * Perfect for extracting field values after scanning.
+     * Gather bytes from specified positions
+     * 
+     * ARCHITECTURAL CONSTRAINT: Must use native gather instruction
+     * DO NOT: Implement with manual array indexing
+     * ADR-002 Compliance: Uses Indexed<Byte> instead of String-based results
      */
     fun gatherBytes(data: Indexed<Byte>, positions: Indexed<Int>): Indexed<Byte>
-    
+
     /**
-     * Get characteristics of this SIMD implementation
+     * Get platform-specific SIMD capabilities
+     * 
+     * ARCHITECTURAL CONSTRAINT: Must reflect actual hardware capabilities
+     * DO NOT: Return generic capabilities for all platforms
+     * ADR-002 Compliance: Uses structured data class instead of String-based capabilities
      */
     fun getCapabilities(): SimdCapabilities
 }
 
 /**
- * SIMD capabilities detection
+ * SIMD capabilities for the current platform
+ * 
+ * ARCHITECTURAL CONSTRAINT: Must be accurate for platform-specific SIMD
+ * DO NOT: Use generic values across all platforms
+ * ADR-002 Compliance: Uses structured data class with enum-like name field
  */
 data class SimdCapabilities(
-    val vectorBits: Int,        // 64, 128, 256, 512, etc.
-    val hasPopcount: Boolean,    // POPCNT instruction
-    val hasGather: Boolean,      // Gather/scatter operations
-    val hasMaskOps: Boolean,     // AVX-512 style masking
-    val hasVariableLength: Boolean, // ARM SVE or RISC-V V
-    val name: String            // "NEON", "AVX2", "AVX-512", etc.
-) {
-    val bytesPerVector: Int get() = vectorBits / 8
-    val intsPerVector: Int get() = vectorBits / 32
-}
+    val vectorBits: Int,           // Vector register size in bits
+    val hasPopcount: Boolean,      // Hardware popcount support
+    val hasGather: Boolean,        // Hardware gather support
+    val hasMaskOps: Boolean,       // Hardware mask operations
+    val hasVariableLength: Boolean, // Variable length vector support
+    val name: String               // Platform-specific name (e.g., "Apple NEON", "Linux AVX2")
+)
 
 /**
  * Adaptive chunking based on SIMD width
@@ -149,5 +157,11 @@ abstract class ScalableSimdAlgorithm {
 
 /**
  * Factory function to create platform-specific SIMD strategy
+ * 
+ * ARCHITECTURAL CONSTRAINT: Must return platform-specific implementation
+ * DO NOT: Return generic implementation for all platforms
+ * ADR-002 Compliance: No String allocation in factory function
+ * 
+ * Related: ADR-001, ADR-002, AppleSimdStrategy, LinuxSimdStrategy
  */
 expect fun createSimdStrategy(): SimdStrategy 

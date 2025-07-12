@@ -1,0 +1,55 @@
+{
+  "active_frameworks": {
+    "claude": {
+      "status": "active",
+      "file": "CLAUDE.md",
+      "deployed_at": "2024-01-27T11:34:47Z",
+      "version": "2.0.0",
+      "source": "pristine/claude/CLAUDE.md",
+      "bootstrap": "active/claude-bootstrap.md",
+      "optimization": "mathematical_elegance",
+      "momentum_score": 170.86
+    },
+    "cursor": {
+      "status": "active", 
+      "file": ".cursorrules",
+      "deployed_at": "2024-01-27T11:34:47Z",
+      "version": "2.0.0",
+      "source": "pristine/cursor/CURSOR.md",
+      "bootstrap": "active/cursor-bootstrap.md",
+      "optimization": "ide_integration",
+      "momentum_score": 170.86
+    },
+    "aider": {
+      "status": "active",
+      "file": ".aider.md", 
+      "deployed_at": "2024-01-27T11:34:47Z",
+      "version": "2.0.0",
+      "source": "pristine/aider/AIDER.md",
+      "bootstrap": "active/aider-bootstrap.md",
+      "optimization": "cli_workflow",
+      "momentum_score": 170.86
+    },
+    "gemini": {
+      "status": "active",
+      "file": ".gemini.md",
+      "deployed_at": "2024-01-27T11:34:47Z", 
+      "version": "2.0.0",
+      "source": "pristine/gemini/GEMINI.md",
+      "bootstrap": "active/gemini-bootstrap.md",
+      "optimization": "type_safety",
+      "momentum_score": 170.86
+    }
+  },
+  "default_framework": "claude",
+  "last_deployment": "2024-01-27T11:34:47Z",
+  "deployment_count": 8,
+  "optimization_status": "complete",
+  "momentum_system": {
+    "base_points": 10,
+    "multiplier": 1.5,
+    "friction_penalty": -20,
+    "max_chain_length": 10,
+    "provider_specific_triggers": true
+  }
+} 

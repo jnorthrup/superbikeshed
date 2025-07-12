@@ -1,0 +1,3 @@
+headers = simd.h
+language = C
+compilerOpts = -std=c99 

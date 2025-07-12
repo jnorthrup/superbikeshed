@@ -1,0 +1,42 @@
+{
+  "frameworks": {
+    "claude": {
+      "name": "Claude",
+      "source_file": "claude/CLAUDE.md",
+      "target_file": "CLAUDE.md",
+      "description": "Claude-specific compliance framework with full Architectural Momentum System"
+    },
+    "gemini": {
+      "name": "Gemini",
+      "source_file": "gemini/GEMINI.md",
+      "target_file": ".gemini.md",
+      "description": "Gemini CLI framework with enhanced type safety and JSON formatting"
+    },
+    "cursor": {
+      "name": "Cursor",
+      "source_file": "cursor/CURSOR.md",
+      "target_file": ".cursorrules",
+      "description": "Cursor IDE framework with context awareness and refactoring support"
+    },
+    "aider": {
+      "name": "Aider",
+      "source_file": "aider/AIDER.md",
+      "target_file": ".aider.md",
+      "description": "Aider CLI framework with git integration and command-line optimization"
+    }
+  },
+  "settings": {
+    "backup_enabled": true,
+    "backup_suffix": ".backup.{timestamp}",
+    "timestamp_format": "%Y%m%d_%H%M%S",
+    "default_framework": "claude"
+  },
+  "momentum_system": {
+    "base_points": 10,
+    "multiplier": 1.5,
+    "friction_penalty": -20,
+    "max_chain_length": 10
+  },
+  "version": "2.0.0",
+  "last_updated": "2024-01-27"
+} 

@@ -1,0 +1,125 @@
+# Cursor Rules for Architectural Protection & Project Context
+
+## Core Principles
+- Preserve established architectural patterns
+- Respect ADRs (Architectural Decision Records)
+- Maintain idiomatic Kotlin Multiplatform design
+- Protect performance-critical implementations
+- Follow established type system patterns
+- **Design for metaseries, not individual instances**
+
+## Type System Memory & Constraints
+
+### The String War (HIGHEST PRIORITY)
+- **String**: Fine for keys, bad in speculative loops
+- **String pointers cause innumerable stalls** in common Kotlin JVM code
+- **String concatenation** in hot paths creates garbage collection pressure
+- **String comparisons** in loops kill performance
+- **String allocations** in speculative contexts are the enemy of performance
+
+### Other Shunned Types
+- **MutableList**: Use {List|Array}CowView for lazy mutable, Indexed for interfaces and returns
+
+### Type System Patterns
+- **Indexed Type Hoisting**: Discovered vtable pointer hoisting strategy for `Indexed<Twin<I>>` cast to `Indexed2<I,I>`
+- **CCEK**: coroutinecontextelementkey
+- **5**: Explain when encountered - has no inherent meaning
+
+## Architectural Constraints
+
+### SIMD Strategy Pattern (ADR-001)
+- DO NOT replace C interop with pure Kotlin implementations
+- DO NOT remove platform-specific actuals (macosArm64Main, linuxX64Main)
+- DO NOT add generic implementations that bypass native SIMD
+- MUST maintain expect/actual pattern for platform-specific code
+- MUST preserve C interop headers and implementations
+
+### Kotlin Multiplatform Structure
+- DO NOT consolidate platform-specific code into commonMain
+- DO NOT remove nativeMain source sets without justification
+- MUST maintain platform-specific actuals for performance-critical code
+- MUST use multiplatform time APIs (kotlinx.datetime) instead of System.currentTimeMillis()
+
+### Build System
+- DO NOT modify Gradle cinterop configurations without understanding implications
+- DO NOT remove platform targets (macosArm64, linuxX64) without justification
+- MUST maintain Ben Manes version management
+- MUST preserve dependency version centralization in top-level build.gradle.kts
+
+### Performance-Critical Code
+- DO NOT replace native implementations with JVM fallbacks
+- DO NOT remove C interop for SIMD operations
+- MUST preserve bbcursive integration patterns
+- MUST maintain platform-specific optimizations
+
+## Build File Policy
+
+### Immutable File Policy
+- Edits only with explicit permission for specific files and purposes
+- No versions allowed in child Gradle files
+- Run super-project Benmanes active rewrite before each build
+
+### Gradle Permissions
+- Gradle lock is enforced. Highest executive permission needed
+- Gradle freedom is restored but also 1) version info stripped, 2) benmanes runs
+- Deviating from targets in trikeshed-lib will get stomped by trikeshed lib gradle file replacement
+
+## Protocol Implementation Notes
+- All mentions to couchdb, quic, ipfs, ssh, rest, wave, and other protocols are ALWAYS for internal dogfooding implementations
+- ESPECIALLY WHEN WE DON'T HAVE ONE YET
+
+## Interaction Guidelines
+- DO NOT INTERRUPT TYPING IN LEARNING MODE
+- YOU SIMPLY STOP ASKING FOR MODAL DIALOGS
+
+## Code Review Guidelines
+Before suggesting changes to:
+1. **SimdStrategy interface**: Check ADR-001 and ensure changes don't break C interop
+2. **Platform-specific actuals**: Verify changes maintain platform-specific optimizations
+3. **Build configurations**: Ensure cinterop and platform targets remain intact
+4. **Performance-critical code**: Confirm changes don't introduce scalar fallbacks
+
+## Context Preservation
+When suggesting changes:
+1. **Reference relevant ADRs** in comments
+2. **Explain architectural implications** of proposed changes
+3. **Consider impact on bbcursive integration**
+4. **Maintain platform-specific performance characteristics**
+
+## Forbidden Patterns
+- **Using String in speculative loops** (HIGHEST PRIORITY - performance killer)
+- **String concatenation in hot paths** (garbage collection pressure)
+- **String comparisons in performance-critical code** (use primitives/enums)
+- **Fighting abstractions for each column/token** (design for metaseries instead)
+- **Creating bespoke solutions for individual cases** (use composable patterns)
+- **Micro-optimizing every data point** (optimize for the series)
+- Replacing C interop with pure Kotlin for SIMD
+- Consolidating platform-specific code into commonMain
+- Removing expect/actual patterns for performance-critical code
+- Adding generic implementations that bypass native optimizations
+- Modifying cinterop configurations without understanding implications
+- Using MutableList instead of Indexed/CowView patterns
+
+## Required Patterns
+- Use expect/actual for platform-specific implementations
+- Maintain C interop for native SIMD operations
+- Preserve platform-specific source sets (macosArm64Main, linuxX64Main)
+- Use multiplatform time APIs
+- Reference ADRs in architectural decisions
+- Use Indexed<T> for mutable list interfaces and returns
+- Use CowView for lazy mutable operations
+- **Design for metaseries over individual instances**
+- **Use composable transformations for series operations**
+- **Leverage sealed classes and enums for type-safe series**
+- **Use cursor coordinates for lightweight column expression**
+- **LJSON + coordinates = wireproto at a discount**
+
+## TODO List
+- Kademlia concentric subnet agent work channelized and integrated metaverse fiduciary
+- Investigate Claude/Gemini/Cursor LLM computer use on Docker Alpine
+- Develop a linter to strip out versions from child projects
+- Project Armor - Global stacktrace fixer
+  - Agglomerate source Kotlin file pre-and post package suppressions
+  - Implement opt-ins
+  - Quiet distracting elements
+  - Fix infix lambda lint type annotations 
