@@ -147,4 +147,28 @@ class ByteIndexedBuffer(
 
 // Extension functions for ByteIndexedBuffer
 fun ByteArray.toByteIndexedBuffer(): ByteIndexedBuffer = ByteIndexedBuffer(this)
-fun Indexed<Byte>.toByteIndexedBuffer(): ByteIndexedBuffer = ByteIndexedBuffer(this) 
+fun Indexed<Byte>.toByteIndexedBuffer(): ByteIndexedBuffer = ByteIndexedBuffer(this)
+
+expect class ByteBuffer {
+    val capacity: Int
+    val position: Int
+    val remaining: Int
+
+    fun get(): Byte
+    fun get(dst: ByteArray, offset: Int, length: Int): ByteBuffer
+    fun put(b: Byte): ByteBuffer
+    fun put(src: ByteArray, offset: Int, length: Int): ByteBuffer
+    fun flip(): ByteBuffer
+    fun clear(): ByteBuffer
+    fun rewind(): ByteBuffer
+
+    companion object {
+        fun allocate(capacity: Int): ByteBuffer
+        fun allocateDirect(capacity: Int): ByteBuffer
+        fun wrap(array: ByteArray): ByteBuffer
+    }
+}
+
+expect interface Closeable {
+    fun close()
+}

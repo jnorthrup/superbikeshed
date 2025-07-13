@@ -6,7 +6,8 @@ import borg.trikeshed.lib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
-import com.trikeshed.uring.Closeable
+import borg.trikeshed.lib.ByteBuffer
+import borg.trikeshed.lib.Closeable
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -91,4 +92,3 @@ suspend fun <T> withTrikeUring(
         uring.close()
     }
 }
-

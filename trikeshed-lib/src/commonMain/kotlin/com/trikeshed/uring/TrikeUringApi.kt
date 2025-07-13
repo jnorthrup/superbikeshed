@@ -3,6 +3,8 @@ package com.trikeshed.uring
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
+import borg.trikeshed.lib.ByteBuffer
+import borg.trikeshed.lib.Closeable
 
 // Mock PosixError and SocketAddress for commonMain (or define them properly if they exist elsewhere)
 // For now, we'll use simple interfaces/data classes to allow compilation.
@@ -13,26 +15,6 @@ data class PosixError(val errno: Int) {
 }
 
 interface SocketAddress
-
-// Mock ByteBuffer for commonMain
-expect class ByteBuffer {
-    fun remaining(): Int
-    fun hasRemaining(): Boolean
-    fun get(): Byte
-    fun put(b: Byte): ByteBuffer
-    fun flip(): ByteBuffer
-    fun clear(): ByteBuffer
-    fun position(): Int
-    fun position(newPosition: Int): ByteBuffer
-    fun limit(): Int
-    fun limit(newLimit: Int): ByteBuffer
-    fun capacity(): Int
-}
-
-// Mock Closeable for commonMain
-expect interface Closeable {
-    fun close()
-}
 
 /**
  * A sealed interface representing a single operation to be submitted.
@@ -60,6 +42,7 @@ data class Fsync(
     override val userData: Long = nextId()
 ) : Sqe(userData)
 
+// --- Network Operations ---
 data class Accept(
     val fd: Int,
     override val userData: Long = nextId()
@@ -137,11 +120,8 @@ interface TrikeUring : CoroutineScope, Closeable {
     /**
      * Registers a set of files for potentially more efficient I/O.
      */
-    suspend fun fun registerFiles(fds: IntArray)
+    suspend fun registerFiles(fds: IntArray)
 }
 
 // Factory function to create the platform-specific implementation
-expect fun createTrikeUring(
-    scope: CoroutineScope,
-    ringSize: Int = 256
-): TrikeUring
+

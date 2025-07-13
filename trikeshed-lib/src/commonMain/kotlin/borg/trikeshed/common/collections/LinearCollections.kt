@@ -48,7 +48,7 @@ class BBCursiveHashSet<T> {
         
         // Add new element
         val newEntry = element j true
-        val newBucket = (bucket.a + 1) j { i ->
+        val newBucket = (bucket.a + 1) j { i: Int ->
             if (i < bucket.a) bucket[i] else newEntry
         }
         
@@ -78,7 +78,7 @@ class BBCursiveHashSet<T> {
         for (i in 0 until bucket.a) {
             val entry = bucket[i]
             if (entry != null && entry.a == element) {
-                val newBucket = (bucket.a - 1) j { j ->
+                val newBucket = (bucket.a - 1) j { j: Int ->
                     when {
                         j < i -> bucket[j]
                         j == i -> null
@@ -299,7 +299,7 @@ class BBCursiveBinaryTree<T> {
     }
     
     private fun insertRecursive(node: TreeNode<T>?, value: T): TreeNode<T> {
-        if (node == null) return TreeNode(value, 0 j { throw IndexOutOfBoundsException() })
+        if (node == null) return TreeNode(value, emptyIndexed()) // Use emptyIndexed()
         
         val currentValue = node.value
         val children = node.children
@@ -314,13 +314,13 @@ class BBCursiveBinaryTree<T> {
                     comparableValue < comparableCurrentValue -> {
                         val newLeft = if (children.isEmpty()) null else insertRecursive(children.getOrNull(0), value)
                         val right = if (children.size < 2) null else children.getOrNull(1)
-                        val newChildren = 2 j { i -> if (i == 0) newLeft!! else right!! }
+                        val newChildren = makeIndexed(2) { i -> if (i == 0) newLeft!! else right!! }
                         TreeNode(currentValue, newChildren)
                     }
                     comparableValue > comparableCurrentValue -> {
                         val left = if (children.isEmpty()) null else children.getOrNull(0)
                         val newRight = if (children.size < 2) insertRecursive(null, value) else insertRecursive(children.getOrNull(1), value)
-                        val newChildren = 2 j { i -> if (i == 0) left!! else newRight!! }
+                        val newChildren = makeIndexed(2) { i -> if (i == 0) left!! else newRight!! }
                         TreeNode(currentValue, newChildren)
                     }
                     else -> node // Value already exists
@@ -384,11 +384,11 @@ class BBCursiveBinaryTree<T> {
                 when {
                     comparableValue < comparableCurrentValue -> {
                         val newLeft = removeRecursive(left, value)
-                        TreeNode(currentValue, 2 j { i -> if (i == 0) newLeft!! else right!! })
+                        TreeNode(currentValue, makeIndexed(2) { i -> if (i == 0) newLeft!! else right!! })
                     }
                     comparableValue > comparableCurrentValue -> {
                         val newRight = removeRecursive(right, value)
-                        TreeNode(currentValue, 2 j { i -> if (i == 0) left!! else newRight!! })
+                        TreeNode(currentValue, makeIndexed(2) { i -> if (i == 0) left!! else newRight!! })
                     }
                     else -> {
                         // Found value to remove
@@ -399,7 +399,7 @@ class BBCursiveBinaryTree<T> {
                                 // Node has two children, find successor
                                 val successor = findMin(right)
                                 val newRight = removeRecursive(right, successor.value)
-                                TreeNode(successor.value, 2 j { i -> if (i == 0) left else newRight!! })
+                                TreeNode(successor.value, makeIndexed(2) { i -> if (i == 0) left else newRight!! })
                             }
                         }
                     }
@@ -414,7 +414,7 @@ class BBCursiveBinaryTree<T> {
                         // Node has two children, find successor
                         val successor = findMin(right)
                         val newRight = removeRecursive(right, successor.value)
-                        TreeNode(successor.value, 2 j { i -> if (i == 0) left else newRight!! })
+                        TreeNode(successor.value, makeIndexed(2) { i -> if (i == 0) left else newRight!! })
                     }
                 }
             }
@@ -437,8 +437,8 @@ class BBCursiveBinaryTree<T> {
         val initialState = TreeScanState<T>(
             currentNode = root,
             depth = 0,
-            path = 0 j { throw IndexOutOfBoundsException() },
-            visited = 0 j { false }
+            path = emptyIndexed(),
+            visited = emptyIndexed()
         )
         
         var state = initialState
@@ -460,12 +460,12 @@ class BBCursiveBinaryTree<T> {
 // === STACK ===
 
 class BBCursiveStack<T> {
-    private var elements: Indexed<T> = 0 j { throw IndexOutOfBoundsException() }
+    private var elements: Indexed<T> = emptyIndexed()
     private var top = -1
 
     fun push(element: T) {
         val newSize = top + 2
-        elements = newSize j { i ->
+        elements = makeIndexed(newSize) { i ->
             if (i <= top) elements[i] else element
         }
         top++
@@ -487,7 +487,7 @@ class BBCursiveStack<T> {
     fun size(): Int = top + 1
 
     fun elements(): Indexed<T> {
-        return (top + 1) j { i -> elements[i] }
+        return makeIndexed(top + 1) { i -> elements[i] }
     }
 }
 
@@ -495,7 +495,7 @@ class BBCursiveStack<T> {
  * Circular Queue implementation using Join patterns
  */
 class BBCursiveCircularQueue<T>(private val capacity: Int) {
-    private var elements: Indexed<T?> = capacity j { _ -> null }
+    private var elements: Indexed<T?> = makeIndexed(capacity) { null }
     private var front = 0
     private var rear = -1
     private var count = 0
@@ -507,7 +507,7 @@ class BBCursiveCircularQueue<T>(private val capacity: Int) {
         if (isFull()) return false
         
         rear = (rear + 1) % capacity
-        elements = capacity j { i ->
+        elements = makeIndexed(capacity) { i ->
             if (i == rear) element else elements[i]
         }
         count++
@@ -565,7 +565,7 @@ class BBCursiveCircularQueue<T>(private val capacity: Int) {
             remaining--
         }
         
-        return result.size j { i -> result[i] }
+        return makeIndexed(result.size) { i -> result[i] }
     }
 }
 

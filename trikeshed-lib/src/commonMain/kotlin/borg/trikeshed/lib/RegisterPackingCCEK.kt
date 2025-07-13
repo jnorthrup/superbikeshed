@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
+import kotlin.native.concurrent.ThreadLocal
 
 /**
  * Register Packing CCEK - Coroutine Context Element for intelligent register packing
@@ -196,7 +197,6 @@ class PackingDecisionEngine {
 /**
  * Register Packing Coroutine Context Element
  */
-@OptIn(ExperimentalStdlibApi::class)
 class RegisterPackingContext(
     val engine: PackingDecisionEngine = PackingDecisionEngine()
 ) : CoroutineContext.Element {
@@ -205,7 +205,7 @@ class RegisterPackingContext(
     override val key: CoroutineContext.Key<*> = Key
     
     // Thread-local current strategy for performance
-    private val currentStrategy = ThreadLocal<PackingStrategy>()
+    private val currentStrategy = kotlin.native.concurrent.ThreadLocal<PackingStrategy>()
     
     fun getStrategy(context: PackingContext): PackingStrategy {
         return currentStrategy.get() ?: engine.selectStrategy(context).also {

@@ -76,7 +76,7 @@ class AdaptiveRadixIndex<K, V> : IndexView<K, V> {
     private var root: ARTNode<K, V>? = null
     
     override val a: (K) -> Indexed<V> = { key ->
-        findValues(root, key) ?: (0 j { throw IndexOutOfBoundsException() })
+        findValues(root, key) ?: emptyIndexed()
     }
     
     override val b = IndexMetadata(
@@ -124,7 +124,7 @@ class HAMTIndex<K, V> : IndexView<K, V> {
     private val mask = 0x1F
     
     override val a: (K) -> Indexed<V> = { key ->
-        lookup(root, key.hashCode(), key, 0) ?: (0 j { throw IndexOutOfBoundsException() })
+        lookup(root, key.hashCode(), key, 0) ?: emptyIndexed()
     }
     
     override val b = IndexMetadata(
@@ -176,7 +176,7 @@ class HeightOptimizedIndex<K : Comparable<K>, V> : IndexView<K, V> {
     
     private fun rangeSearch(node: HOTNode<K, V>?, start: K, end: K): Indexed<V> {
         // HOT range search implementation
-        return 0 j { throw IndexOutOfBoundsException() } // TODO: Implement
+        return emptyIndexed() // TODO: Implement
     }
 }
 
@@ -206,7 +206,7 @@ class MasstreeIndex<K, V> : IndexView<K, V> {
     private var root: MasstreeNode<K, V>? = null
     
     override val a: (K) -> Indexed<V> = { key ->
-        lookup(root, key) ?: (0 j { throw IndexOutOfBoundsException() })
+        lookup(root, key) ?: emptyIndexed()
     }
     
     override val b = IndexMetadata(
@@ -242,7 +242,7 @@ class MultiIndexContainer<T> {
         indices[name] = index
         // Rebuild index from existing data
         for (i in 0 until size) {
-            storage[i]?.let { value ->
+            storage.getOrNull(i)?.let { value ->
                 // Insert into index using keyExtractor
                 val key = keyExtractor(value)
                 // TODO: Implement index insertion

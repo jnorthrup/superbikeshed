@@ -3,14 +3,8 @@
 package borg.trikeshed.uring
 
 import borg.trikeshed.ccek.*
-import borg.trikeshed.lib.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.*
-import kotlinx.cinterop.*
-import platform.posix.*
-import platform.darwin.*
-import kotlin.coroutines.CoroutineContext
+import borg.trikeshed.lib.ByteBuffer
+import borg.trikeshed.lib.Closeable
 
 /**
  * Darwin (macOS) implementation of TrikeUring using kqueue

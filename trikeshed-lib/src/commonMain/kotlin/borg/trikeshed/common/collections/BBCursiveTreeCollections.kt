@@ -249,13 +249,13 @@ class BBCursiveBinarySearchTree<T : Comparable<T>> {
         val initialState = TreeScanState<T>(
             currentNode = root?.let {
                 val children = mutableListOf<TreeNode<T>>()
-                it.left?.let { l -> children.add(TreeNode(l.value, 0 j { throw IndexOutOfBoundsException() })) }
-                it.right?.let { r -> children.add(TreeNode(r.value, 0 j { throw IndexOutOfBoundsException() })) }
-                TreeNode(it.value, children.size j { i -> children[i] })
+                it.left?.let { l -> children.add(TreeNode(l.value, emptyIndexed())) }
+                it.right?.let { r -> children.add(TreeNode(r.value, emptyIndexed())) }
+                TreeNode(it.value, makeIndexed(children.size) { i -> children[i] })
             },
             depth = 0,
-            path = 0 j { throw IndexOutOfBoundsException() },
-            visited = 0 j { false }
+            path = emptyIndexed(),
+            visited = emptyIndexed()
         )
         
         var state = initialState
@@ -285,7 +285,7 @@ class BBCursiveNaryTree<T> {
      */
     fun insert(value: T, parentValue: T? = null) {
         if (parentValue == null) {
-            root = TreeNode(value, 0 j { throw IndexOutOfBoundsException() })
+            root = TreeNode(value, emptyIndexed())
         } else {
             root = insertUnderParent(root, value, parentValue)
         }
@@ -299,15 +299,16 @@ class BBCursiveNaryTree<T> {
         
         if (currentValue == parentValue) {
             // Add as child of this node
-            val newChildren: Indexed<TreeNode<T>> = (children.a + 1) j { i ->
-                if (i < children.a) children.b(i) else TreeNode(value, 0 j { throw IndexOutOfBoundsException() })
+            val newChildren: Indexed<TreeNode<T>> = makeIndexed(children.size + 1) { i ->
+                if (i < children.size) children[i] else TreeNode(value, emptyIndexed())
             }
             return TreeNode(currentValue, newChildren)
         }
         
         // Search in children
-        val newChildren: Indexed<TreeNode<T>> = children.a j { i ->
-            insertUnderParent(children.b(i), value, parentValue) ?: children.b(i)
+        val newChildren: Indexed<TreeNode<T>> = makeIndexed(children.size) { i ->
+            val child = if (i < children.size) children[i] else null
+            insertUnderParent(child, value, parentValue) ?: child!!
         }
         
         return TreeNode(currentValue, newChildren)
@@ -320,8 +321,8 @@ class BBCursiveNaryTree<T> {
         val initialState = TreeScanState<T>(
             currentNode = root,
             depth = 0,
-            path = 0 j { throw IndexOutOfBoundsException() },
-            visited = 0 j { false }
+            path = emptyIndexed(),
+            visited = emptyIndexed()
         )
         
         var state = initialState
@@ -359,11 +360,11 @@ class BBCursiveTrie {
         val existingNode = findChild(node, char)
 
         val newNode = if (existingNode == null) {
-            val newNode = TreeNode(char, 0 j { throw IndexOutOfBoundsException() })
+            val newNode = TreeNode(char, emptyIndexed())
             // This logic is not quite right for inserting into a trie, but it fixes the compile errors.
             // A real implementation would need to handle prefixes and children correctly.
-            val children = node?.children ?: (0 j { throw IndexOutOfBoundsException() })
-            val newChildren = (children.size + 1) j { i -> if (i < children.size) children[i] else newNode }
+            val children: Indexed<TreeNode<Char>> = node?.children ?: emptyIndexed()
+            val newChildren = makeIndexed(children.size + 1) { i -> if (i < children.size) children[i] else newNode }
             TreeNode(node?.value ?: ' ', newChildren)
         } else {
             existingNode
@@ -378,7 +379,7 @@ class BBCursiveTrie {
     
     private fun insertChar(node: NaryTreeNode<Char>?, char: Char): NaryTreeNode<Char> {
         if (node == null) {
-            return TreeNode(char, 0 j { throw IndexOutOfBoundsException() })
+            return TreeNode(char, emptyIndexed())
         }
         
         val currentChar = node.value
@@ -389,8 +390,8 @@ class BBCursiveTrie {
         }
         
         // Add new child
-        val newChildren: Indexed<TreeNode<Char>> = (children.size + 1) j { i: Int ->
-            if (i < children.size) children[i] else TreeNode(char, 0 j { throw IndexOutOfBoundsException() })
+        val newChildren: Indexed<TreeNode<Char>> = makeIndexed(children.size + 1) { i: Int ->
+            if (i < children.size) children[i] else TreeNode(char, emptyIndexed())
         }
         
         return TreeNode(currentChar, newChildren)
@@ -418,8 +419,8 @@ class BBCursiveTrie {
         }
         
         // Search in children
-        for (i in 0 until children.a) {
-            val child = children.b(i)
+        for (i in 0 until children.size) {
+            val child = children.getOrNull(i)
             if (child != null && child.value == char) {
                 return child
             }

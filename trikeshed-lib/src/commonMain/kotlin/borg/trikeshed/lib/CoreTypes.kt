@@ -1,4 +1,4 @@
-//ATTENTION AI, this file is immutable and not subject to debate without supervision and permission
+//ATTENTION AI, this file is immutable and not subject to debate without supervision and permission 
 
 package borg.trikeshed.lib
 
@@ -9,12 +9,12 @@ import kotlinx.serialization.Serializable
 
 /**
  * Core Types - Architectural Decision Records Integration
- *
+ * 
  * ADR-001: SIMD Strategy Pattern - Performance-critical operations use C interop
  * ADR-002: String Performance War - No String allocations in speculative loops
- *
+ * 
  * This file implements the foundational types that support both ADRs.
- *
+ * 
  * **Pristine Columnar Patterns Applied:**
  * - Simple Join<A,B> interface without complex recursive aliases
  * - Clean Indexed<T> = Join<Int, (Int) -> T> pattern
@@ -62,6 +62,8 @@ typealias Indexed<T> = Join<Int, (Int) -> T>
 // Extension properties for Indexed<T> to provide array-like access
 val <T> Indexed<T>.size: Int get() = this.a
 operator fun <T> Indexed<T>.get(index: Int): T = this.b(index)
+fun <T> Indexed<T>.isEmpty(): Boolean = this.a == 0
+fun <T> Indexed<T>.getOrNull(index: Int): T? = if (index in 0 until this.a) this.b(index) else null
 
 /**
  * Core type aliases following pristine Columnar patterns
@@ -72,10 +74,6 @@ typealias Indexed2<A, B> = Indexed<Join<A, B>>
 typealias Shape = Indexed<Int>
 typealias Tensor<T> = MetaSeries<Shape, T>
 
-/**
- * ColumnMeta - Cured: Replaced String with ByteArray for ADR-002 compliance
- */
-typealias ColumnMeta = Join<ByteArray, KClassifier>
 
 /**
  * Trait for array-like access - WHENEVER THEY NEED get[i] OPERATOR
@@ -163,18 +161,24 @@ infix fun <A, B> A.j(b: B): Join<A, B> = object : Join<A, B> {
  * Sum operator (∑) - Aggregate reduction across cursor
  * cursor ∑ reducer means reduce all values using the reducer function
  */
-infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = a j { iy: Int ->
-    val aggCell: RowVec = b(iy)
-    val valuesVect: Indexed<Any?> = aggCell.b
-    aggCell.a j { ix: Int ->
-        val cellContent = valuesVect[ix]
-        val reducedValue = when (cellContent) {
-            is Indexed<*> -> if (cellContent.a > 0) cellContent.play.reduce(reducer) else null
-            is Iterable<*> -> if (cellContent.iterator().hasNext()) cellContent.reduce(reducer) else null
-            else -> cellContent
+infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor {
+    if (isEmpty()) return emptyIndexed()
+
+    val firstRow = this[0]
+    val numColumns = firstRow.size
+
+    val aggregatedRowContent: Indexed<Any?> = makeIndexed(numColumns) { colIndex ->
+        val columnValues: Indexed<Any?> = makeIndexed(size) { rowIndex ->
+            this[rowIndex].b[colIndex]
         }
-        reducedValue j aggCell.b[ix]
+        if (!columnValues.isEmpty()) {
+            columnValues.play.reduce(reducer)
+        } else {
+            null
+        }
     }
+    val aggregatedRow = makeJoin(firstRow.a, aggregatedRowContent)
+    return makeIndexed(1) { aggregatedRow }
 }
 
 /**
@@ -183,7 +187,7 @@ infix fun Cursor.`∑`(reducer: (Any?, Any?) -> Any?): Cursor = a j { iy: Int ->
  */
 infix fun Cursor.α(unaryFunctor: (Any?) -> Any?): Cursor = a j { iy: Int ->
     val row: RowVec = b(iy)
-    (row.b.a j { i -> unaryFunctor(row.b[i]) }) j row.a
+    row.a j (row.b.a j { i: Int -> unaryFunctor(row.b[i]) })
 }
 
 /**
@@ -283,34 +287,159 @@ val <T> Indexed<T>.play: IterableIndexed<T> get() = IterableIndexed(this)
 fun <A, T> MetaSeries_create(a: A, getter: (A) -> T): MetaSeries<A, T> = a j getter
 fun <T> Indexed_create(size: Int, getter: (Int) -> T): Indexed<T> = size j getter
 
-// === CURSOR DEFINITIONS ===
-// Production cursor implementation based on columnar/cursor
+// === COLUMNAR METADATA TYPES ===
 
 /**
- * Bridge types for cursor system
+ * TypeMemento - Metadata for data types
+ * From Columnar codebase with categorical features
  */
-typealias CursorRow = Indexed<Any?>           // Equivalent to RowVec
-typealias CursorMeta = Indexed<ColumnMeta>    // Metadata accessor
+interface TypeMemento { 
+    val networkSize: Int? 
+}
 
 /**
- * ## Cursor - Database Table Metaclass (TrikeShed Integration)
- *
- * Production cursor definition that bridges the columnar system with TrikeShed's
- * MetaSeries architecture. This maintains full backward compatibility while enabling
- * integration with the universal TrikeShed type system.
- *
- * **Definition:**
- * ```kotlin
- * typealias Cursor = Indexed<RowVec>  // Using j operator pattern
- * ```
- *
- * **Future Migration Path:**
- * ```kotlin
- * typealias Cursor = MetaSeries<CursorIndex, RowVec>  // Full TrikeShed integration
- * where CursorIndex = Join<TableMeta, Int>            // Database-aware indexing
- * ```
+ * IoMemento - I/O metadata for ISAM and cursor operations
+ * From Columnar codebase with categorical features
+ */
+enum class IOMemento : TypeMemento {
+    IoByte, IoShort, IoInt, IoFloat, IoDouble, IoLong,
+    IoBoolean, IoChar, IoString, IoCharSeries, IoBigDecimal,
+    IoBigInt, IoDateTime, IoDuration, IoUUID, IoBinary, IoUnknown;
+    
+    override val networkSize: Int? get() = when(this) {
+        IoByte, IoBoolean -> 1
+        IoShort, IoChar -> 2
+        IoInt, IoFloat -> 4
+        IoLong, IoDouble -> 8
+        else -> null // Variable size or not applicable
+    }
+}
+
+/**
+ * ColumnMeta - Enhanced with categorical features
+ * From Columnar codebase with wireproto integration
+ */
+typealias ColumnMeta = Join<ByteArray, TypeMemento>
+
+// Extension properties for ColumnMeta
+inline val ColumnMeta.name: ByteArray get() = a
+inline val ColumnMeta.type: TypeMemento get() = b
+
+/**
+ * CursorMeta - Metadata accessor for cursors
+ * From Columnar codebase
+ */
+typealias CursorMeta = Indexed<ColumnMeta>
+
+// === CURSOR DEFINITIONS WITH CATEGORICAL FEATURES ===
+
+
+/**
+ * Cursor - Database table metaclass with categorical features
+ * From Columnar codebase with old wireproto integration
  */
 typealias Cursor = Indexed<RowVec>
+
+/**
+ * Cursor with metadata - Enhanced cursor with categorical features
+ * From Columnar codebase
+ */
+typealias CursorWithMeta = Join<Cursor, CursorMeta>
+
+// === WIREPROTO FOR CURSORS WITH CATEGORICAL FEATURES ===
+
+/**
+ * Wire format for IoMemento with categorical features
+ * Old wireproto integration for cursor operations
+ */
+@Serializable
+data class WireIoMemento(
+    val name: String?,
+    val type: String?,
+    val width: Int?,
+    val nullable: Boolean?,
+    val encoding: String?,
+    val format: String?
+)
+
+/**
+ * Wire format for cursor operations with categorical features
+ * Old wireproto integration
+ */
+@Serializable
+data class CursorOpenRequest(
+    val dataFile: String,
+    val columns: Indexed<WireIoMemento>,
+    val readOnly: Boolean
+)
+
+@Serializable
+data class CursorReadRequest(
+    val cursorId: Long,
+    val offset: Long,
+    val limit: Int
+)
+
+@Serializable
+data class CursorDataResponse(
+    val cursorId: Long,
+    val rows: Indexed<Indexed<Any?>>, // RowVec data
+    val hasMore: Boolean
+)
+
+// === CATEGORICAL CURSOR OPERATIONS ===
+
+/**
+ * Cursor-specific categorical operators
+ * From Columnar codebase with enhanced features
+ */
+
+/**
+ * Cursor filter operator (⟲) - Filter rows by predicate
+ * cursor ⟲ predicate means filter rows where predicate is true
+ */
+infix fun Cursor.`⟲`(predicate: (RowVec) -> Boolean): Cursor = a j { i: Int ->
+    val row = b(i)
+    if (predicate(row)) row else null
+}.filterNotNull()
+
+/**
+ * Cursor map operator (➤) - Transform rows
+ * cursor ➤ transform means transform each row
+ */
+infix fun Cursor.`➤`(transform: (RowVec) -> RowVec): Cursor = a j { i: Int ->
+    transform(b(i))
+}
+
+/**
+ * Cursor first operator (f1rst) - Get first row
+ * cursor.f1rst means get first row or null
+ */
+val Cursor.f1rst: RowVec? get() = if (a > 0) b(0) else null
+
+/**
+ * Cursor last operator (last) - Get last row
+ * cursor.last means get last row or null
+ */
+val Cursor.last: RowVec? get() = if (a > 0) b(a - 1) else null
+
+/**
+ * Cursor reverse operator (reverse) - Reverse cursor order
+ * cursor.reverse means reverse row order
+ */
+val Cursor.reverse: Cursor get() = a j { i: Int -> b(a - 1 - i) }
+
+/**
+ * Cursor infinite operator (infinite) - Create infinite cursor
+ * cursor.infinite means repeat cursor infinitely
+ */
+val Cursor.infinite: Cursor get() = (-1) j { i: Int -> b(i % a) }
+
+/**
+ * Cursor take operator (/) - Take first n rows
+ * cursor / n means take first n rows
+ */
+infix fun Cursor.`/`(n: Int): Cursor = minOf(n, a) j { i: Int -> b(i) }
 
 // === CURSOR CORE OPERATIONS ===
 
@@ -322,15 +451,15 @@ infix fun Cursor.slice(range: IntRange): Cursor = (range.last - range.first + 1)
 
 /** Get column names - Cured: Returns Indexed<ByteArray> instead of List */
 val Cursor.columnNames: Indexed<ByteArray>
-    get() = firstOrNull()?.let { firstRow ->
-        (firstRow.b as Indexed<Join<ByteArray, KClassifier>>).a j { i -> (firstRow.b as Indexed<Join<ByteArray, KClassifier>>)[i].a }
+    get() = f1rst?.let { firstRow ->
+        firstRow.b.a j { i -> firstRow.b[i] }
     } ?: (0 j { ByteArray(0) })
 
-/** Get column types - Cured: Returns Indexed<KClassifier> instead of List */
-val Cursor.columnTypes: Indexed<KClassifier>
-    get() = firstOrNull()?.let { firstRow ->
-        (firstRow.b as Indexed<Join<ByteArray, KClassifier>>).a j { i -> (firstRow.b as Indexed<Join<ByteArray, KClassifier>>)[i].b }
-    } ?: (0 j { Any::class })
+/** Get column types - Cured: Returns Indexed<TypeMemento> instead of List */
+val Cursor.columnTypes: Indexed<TypeMemento>
+    get() = f1rst?.let { firstRow ->
+        firstRow.b.a j { i -> inferType(firstRow.b[i]) }
+    } ?: (0 j { IOMemento.IoUnknown })
 
 /** Get column index by name - Cured: Returns Indexed<Join<ByteArray, Int>> instead of Map */
 val Cursor.colIdx: Indexed<Join<ByteArray, Int>>
@@ -368,63 +497,59 @@ val Cursor.play: Iterable<RowVec>
 /** Create simple cursor from data - Cured: Uses Indexed instead of List */
 fun cursorOf(
     data: Indexed<Indexed<Any?>>,
-    columnNames: Indexed<ByteArray> = data.firstOrNull()?.let { firstRow ->
+    columnNames: Indexed<ByteArray> = data.f1rst?.let { firstRow ->
         firstRow.a j { i -> "col_$i".toByteArray() }
     } ?: (0 j { ByteArray(0) }),
-    columnTypes: Indexed<KClassifier> = data.firstOrNull()?.let { firstRow ->
+    columnTypes: Indexed<TypeMemento> = data.f1rst?.let { firstRow ->
         firstRow.a j { i -> inferType(firstRow.b(i)) }
-    } ?: (0 j { Any::class })
+    } ?: (0 j { IOMemento.IoUnknown })
 ): Cursor {
     require(data.a > 0) { "Data cannot be empty" }
     val firstRow = data.b(0)
     require(columnNames.a == firstRow.a) { "Column names size mismatch" }
     require(columnTypes.a == firstRow.a) { "Column types size mismatch" }
 
-    val scalars: Indexed<ColumnMeta> = columnNames.a j { i ->
-        columnNames.b(i) j columnTypes.b(i)
-    }
-
     return data.a j { rowIndex: Int ->
         val rowData = data.b(rowIndex)
-        rowData.a j { colIndex: Int ->
-            val cellValue = rowData.b(colIndex)
-            val columnMeta = scalars.b(colIndex)
-            cellValue j columnMeta
-        }
+        rowData.a j { colIndex: Int -> rowData.b(colIndex) }
     }
 }
 
-/** Infer type from value */
-internal fun inferType(value: Any?): KClassifier = when (value) {
-    is Int -> Int::class
-    is ByteArray -> ByteArray::class
-    is Float -> Float::class
-    is Double -> Double::class
-    else -> String::class
+/** Infer type from value with categorical features */
+internal fun inferType(value: Any?): TypeMemento = when (value) {
+    is Int -> IOMemento.IoInt
+    is ByteArray -> IOMemento.IoBinary
+    is Float -> IOMemento.IoFloat
+    is Double -> IOMemento.IoDouble
+    is String -> IOMemento.IoString
+    is Boolean -> IOMemento.IoBoolean
+    is Long -> IOMemento.IoLong
+    is Byte -> IOMemento.IoByte
+    is Short -> IOMemento.IoShort
+    is Char -> IOMemento.IoChar
+    else -> IOMemento.IoUnknown
+}
+
+// === CURSOR UTILITY EXTENSIONS ===
+
+/**
+ * Get cursor metadata
+ * From Columnar codebase
+ */
+val Cursor.meta: CursorMeta get() = a j { i: Int ->
+    val row = b(i)
+    row.a j { j: Int -> 
+        val columnName = "col_$j".toByteArray()
+        val columnType = inferType(row.b(j))
+        columnName j columnType
+    }
 }
 
 /**
- * LogEvent - Structured logging to avoid String concatenation
- *
- * ADR-002 Compliance: Eliminates String concatenation in hot paths
- * Use this instead of: log("Processing: ${item.name} at ${item.timestamp}")
+ * Get cursor with metadata
+ * From Columnar codebase
  */
-enum class LogEvent {
-    PROCESSING,
-    COMPLETED,
-    ERROR,
-    DEBUG
-}
-
-/**
- * Structured logging function
- *
- * ADR-002 Compliance: No String allocation in performance-critical paths
- */
-fun log(event: LogEvent, vararg args: Any) {
-    // Implementation uses structured logging
-    // No String concatenation in hot path
-}
+val Cursor.withMeta: CursorWithMeta get() = this j meta
 
 // === HELPER EXTENSIONS FOR INDEXED ===
 
@@ -437,13 +562,20 @@ fun <T> Iterable<T>.toIndexed(): Indexed<T> {
 /** Get first element or null */
 fun <T> Indexed<T>.firstOrNull(): T? = if (a > 0) b(0) else null
 
+/** Filter null values from Indexed */
+fun <T> Indexed<T?>.filterNotNull(): Indexed<T> {
+    val nonNull = mutableListOf<T>()
+    for (i in 0 until a) {
+        b(i)?.let { nonNull.add(it) }
+    }
+    return nonNull.size j { nonNull[it] }
+}
+
 /** Slice Indexed from start to end inclusive */
 fun <T> Indexed<T>.slice(start: Int, endInclusive: Int): Indexed<T> {
     val sliceSize = endInclusive - start + 1
     return sliceSize j { b(start + it) }
 }
-
-fun <T> Indexed<T>.getOrNull(index: Int): T? = if (index in 0 until this.a) this.b(index) else null
 
 // === QOL HELPERS MIGRATED FROM borg.trikeshed.common.collections ===
 
@@ -482,8 +614,31 @@ object _m {
 // === TYPE CONVERSION HELPERS ===
 
 @Suppress("UNCHECKED_CAST")
-inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l ->
+inline fun <T> Any.toIndexed(): Indexed<T> = (this as? Indexed<T>) ?: (this as? List<T>)?.let { l -> 
     l.size j { l[it] }
 } ?: error("Cannot convert to Indexed")
 
-// expect fun assert(value: Boolean, lazyMessage: () -> Any)
+// expect fun assert(value: Boolean, lazyMessage: () -> Any) 
+
+/**
+ * LogEvent - Structured logging to avoid String concatenation
+ * 
+ * ADR-002 Compliance: Eliminates String concatenation in hot paths
+ * Use this instead of: log("Processing: ${item.name} at ${item.timestamp}")
+ */
+enum class LogEvent {
+    PROCESSING,
+    COMPLETED,
+    ERROR,
+    DEBUG
+}
+
+/**
+ * Structured logging function
+ * 
+ * ADR-002 Compliance: No String allocation in performance-critical paths
+ */
+fun log(event: LogEvent, vararg args: Any) {
+    // Implementation uses structured logging
+    // No String concatenation in hot path
+} 

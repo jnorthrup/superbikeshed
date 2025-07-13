@@ -3,6 +3,7 @@ package borg.trikeshed.lib.simd
 import borg.trikeshed.lib.Indexed
 import borg.trikeshed.lib.toByteArray
 import borg.trikeshed.lib.toIntArray
+import borg.trikeshed.lib.makeIndexed
 
 // External declarations for C interop
 private external fun simd_find_byte(data: ByteArray, len: Int, target: Byte, offset: Int, positions: IntArray, count: IntArray): Int

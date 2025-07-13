@@ -1,7 +1,5 @@
 package trikeshed.uring
 
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -10,49 +8,6 @@ import kotlin.coroutines.CoroutineContext
  * ensuring [UringService.destroyContext] is called to release resources.
  */
 expect class UringContext
-
-/**
- * Main interface for io_uring-style asynchronous I/O operations.
- * Provides submission and completion queues as coroutine channels.
- */
-interface TrikeUring : AutoCloseable {
-    /**
-     * The channel for submitting operations to the ring.
-     */
-    val submission: SendChannel<Sqe>
-    
-    /**
-     * The flow of completed operations from the ring.
-     */
-    val completion: Flow<Cqe>
-    
-    /**
-     * Registers a set of buffers for potentially more efficient I/O.
-     * On Linux with io_uring, this enables zero-copy operations.
-     */
-    suspend fun registerBuffers(buffers: List<ByteArray>)
-    
-    /**
-     * Registers a set of file descriptors for potentially more efficient I/O.
-     * On Linux with io_uring, this reduces overhead for registered files.
-     */
-    suspend fun registerFiles(fds: IntArray)
-    
-    /**
-     * Submits a batch of operations efficiently.
-     * On platforms that support it, this submits all operations in a single syscall.
-     */
-    suspend fun submitBatch(operations: List<Sqe>)
-}
-
-/**
- * Factory function to create the platform-specific implementation.
- */
-expect fun createTrikeUring(
-    context: CoroutineContext,
-    ringSize: Int = 256,
-    flags: Int = 0
-): TrikeUring
 
 /**
  * Service interface for managing io_uring-style contexts.
