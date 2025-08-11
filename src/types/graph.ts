@@ -11,11 +11,18 @@ export interface WikipediaNode {
   categories: string[];
   position: Position3D;
   level: number;
+  // Add D3 simulation properties
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
 export interface WikipediaEdge {
-  source: string;
-  target: string;
+  source: string | WikipediaNode;
+  target: string | WikipediaNode;
   weight: number;
 }
 
