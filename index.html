@@ -1,13 +1,605 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fractaline Wikipedia Graph</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fractaline Wikipedia Graph</title>
+  <style>
+    body { margin: 0; background-color: #1a1a1a; color: white; font-family: sans-serif; }
+    #root { width: 100vw; height: 100vh; }
+    #controls { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; }
+    input, button { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+  <div id="controls">
+    <input type="text" id="article-input" value="React (software)">
+    <button id="generate-button">Generate Graph</button>
+  </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.160.0",
+        "d3-force": "https://esm.sh/d3-force@3.0.0",
+        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.13.0",
+        "@react-three/drei": "https://esm.sh/@react-three/drei@9.80.0"
+      }
+    }
+  </script>
+
+  <script type="text/babel" data-type="module">
+    import * as THREE from 'three';
+    import { Canvas, useFrame } from '@react-three/fiber';
+    import { OrbitControls, Text, Trail } from '@react-three/drei';
+    import { forceSimulation, forceManyBody, forceCenter, forceLink } from 'd3-force';
+
+    const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+    // --- wikipediaApi.js ---
+    const API_URL = 'https://en.wikipedia.org/w/api.php';
+
+    async function fetchWikipediaLinks(title) {
+      const allLinks = new Set();
+      let plcontinue = null;
+
+      do {
+        const params = new URLSearchParams({
+          action: 'query',
+          titles: title,
+          prop: 'links',
+          pllimit: 'max',
+          format: 'json',
+          origin: '*',
+        });
+
+        if (plcontinue) {
+          params.append('plcontinue', plcontinue);
+        }
+
+        const response = await fetch(`${API_URL}?${params.toString()}`);
+        const data = await response.json();
+
+        if (data.query && data.query.pages) {
+          const pages = data.query.pages;
+          for (const pageId in pages) {
+            const page = pages[pageId];
+            if (page.links) {
+              for (const link of page.links) {
+                allLinks.add(link.title);
+              }
+            }
+          }
+        }
+
+        plcontinue = data.continue ? data.continue.plcontinue : null;
+      } while (plcontinue);
+
+      return Array.from(allLinks);
+    }
+
+    async function fetchArticleDetails(titles) {
+      const nodes = [];
+      const titleChunks = [];
+
+      for (let i = 0; i < titles.length; i += 50) {
+        titleChunks.push(titles.slice(i, i + 50));
+      }
+
+      for (const chunk of titleChunks) {
+        const params = new URLSearchParams({
+          action: 'query',
+          titles: chunk.join('|'),
+          prop: 'extracts|categories',
+          exintro: 'true',
+          explaintext: 'true',
+          cllimit: 'max',
+          format: 'json',
+          origin: '*',
+        });
+
+        const response = await fetch(`${API_URL}?${params.toString()}`);
+        const data = await response.json();
+
+        if (data.query && data.query.pages) {
+          const pages = data.query.pages;
+          for (const pageId in pages) {
+            const page = pages[pageId];
+            if (page.missing !== undefined) continue;
+
+            const categories = page.categories?.map(cat => cat.title) || [];
+
+            let domain = 'Other';
+            if (categories.some(c => c.toLowerCase().includes('mathematics'))) {
+              domain = 'Mathematics';
+            } else if (categories.some(c => c.toLowerCase().includes('physics'))) {
+              domain = 'Physics';
+            } else if (categories.some(c => c.toLowerCase().includes('computer science'))) {
+              domain = 'Computer Science';
+            }
+
+            nodes.push({
+              id: page.title,
+              title: page.title,
+              summary: page.extract,
+              domain: domain,
+            });
+          }
+        }
+      }
+
+      return nodes;
+    }
+
+    // --- fractalineLayout.js ---
+    class FractalineLayoutEngine {
+      constructor(config = {}) {
+        this.config = {
+          centerForce: 0.05,
+          repelForce: -100,
+          linkForce: 0.05,
+          depthSpacing: 15.0,
+          spiralTightness: 2.0,
+          levelVariation: 0.5,
+          ...config
+        };
+      }
+
+      calculateLevels(nodes, edges, startNodeId) {
+        const levels = new Map();
+        const adj = new Map();
+
+        edges.forEach(edge => {
+          const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
+          const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
+          if (!adj.has(sourceId)) adj.set(sourceId, []);
+          if (!adj.has(targetId)) adj.set(targetId, []);
+          adj.get(sourceId).push(targetId);
+          adj.get(targetId).push(sourceId);
+        });
+
+        const queue = [[startNodeId, 0]];
+        const visited = new Set([startNodeId]);
+        levels.set(startNodeId, 0);
+
+        while (queue.length > 0) {
+          const [u, level] = queue.shift();
+          (adj.get(u) || []).forEach(v => {
+            if (!visited.has(v)) {
+              visited.add(v);
+              levels.set(v, level + 1);
+              queue.push([v, level + 1]);
+            }
+          });
+        }
+
+        nodes.forEach(node => {
+            if(!levels.has(node.id)) {
+                levels.set(node.id, Infinity);
+            }
+        })
+
+        return levels;
+      }
+
+      computeFractalineLayout(nodes, edges) {
+        if (nodes.length === 0) return [];
+
+        const layoutNodes = nodes.map(node => ({ ...node, x: 0, y: 0, z: 0 }));
+        const startNodeId = nodes[0].id;
+        const levels = this.calculateLevels(layoutNodes, edges, startNodeId);
+
+        layoutNodes.forEach(node => {
+          const level = levels.get(node.id) || 0;
+          node.level = level;
+
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = level * this.config.spiralTightness + (Math.random() - 0.5);
+
+          node.x = Math.cos(angle) * radius;
+          node.y = Math.sin(angle) * radius;
+          node.z = -level * this.config.depthSpacing + (Math.random() - 0.5) * this.config.levelVariation;
+        });
+
+        this.setupSimulation(layoutNodes, edges);
+
+        return layoutNodes;
+      }
+
+      setupSimulation(nodes, edges) {
+        this.simulation = forceSimulation(nodes)
+          .force('charge', forceManyBody().strength(this.config.repelForce))
+          .force('center', forceCenter(0, 0).strength(this.config.centerForce))
+          .force('link', forceLink(edges).id(d => d.id).strength(this.config.linkForce))
+          .on('tick', () => {
+            nodes.forEach(node => {
+              node.position = { x: node.x, y: node.y, z: node.z };
+            });
+          });
+      }
+
+      updateLayout(nodes) {
+        if (this.simulation) {
+          this.simulation.nodes(nodes);
+          this.simulation.alpha(0.3).restart();
+        }
+      }
+
+      stop() {
+        if (this.simulation) {
+          this.simulation.stop();
+        }
+      }
+    }
+
+    // --- useWikipediaGraph.js ---
+    function useWikipediaGraph(startTitle, depth = 1, maxNodes = 50) {
+      const [graph, setGraph] = useState({ nodes: [], edges: [] });
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [progress, setProgress] = useState({ loaded: 0, total: 0 });
+
+      const generateGraph = useCallback(async () => {
+        if (!startTitle) return;
+
+        setLoading(true);
+        setError(null);
+        setGraph({ nodes: [], edges: [] });
+        setProgress({ loaded: 0, total: 0 });
+
+        try {
+          // Caching logic
+          const cacheKey = `wiki-graph-${startTitle}`;
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
+            const { data, expires } = JSON.parse(cached);
+            if (expires > Date.now()) {
+              const parser = new N3.Parser();
+              const quads = parser.parse(data);
+              const nodes = [];
+              const edges = [];
+              const nodeMap = new Map();
+              quads.forEach(quad => {
+                if (quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' && quad.object.value === 'http://xmlns.com/foaf/0.1/Person') {
+                  if (!nodeMap.has(quad.subject.value)) {
+                    const id = decodeURIComponent(quad.subject.value.split('/').pop());
+                    const node = { id: id, title: id };
+                    nodes.push(node);
+                    nodeMap.set(node.id, node);
+                  }
+                }
+                if (quad.predicate.value === 'http://xmlns.com/foaf/0.1/knows') {
+                  const source = decodeURIComponent(quad.subject.value.split('/').pop());
+                  const target = decodeURIComponent(quad.object.value.split('/').pop());
+                  edges.push({ source, target });
+                }
+              });
+              setGraph({ nodes, edges });
+              setLoading(false);
+              return;
+            }
+          }
+
+          const nodesToProcess = new Set([startTitle]);
+          const processedNodes = new Set();
+          const allNodes = new Map();
+          const allEdges = [];
+
+          let currentDepth = 0;
+
+          while (currentDepth < depth && nodesToProcess.size > 0 && allNodes.size < maxNodes) {
+            const currentLevelNodes = Array.from(nodesToProcess);
+            nodesToProcess.clear();
+
+            const newNodesDetails = await fetchArticleDetails(currentLevelNodes);
+
+            for (const node of newNodesDetails) {
+              if (!allNodes.has(node.id)) {
+                allNodes.set(node.id, node);
+                processedNodes.add(node.id);
+                setProgress(prev => ({ ...prev, loaded: allNodes.size }));
+              }
+            }
+
+            setProgress(prev => ({ ...prev, total: prev.total + currentLevelNodes.length }));
+
+            for (const title of currentLevelNodes) {
+              if (allNodes.size >= maxNodes) break;
+
+              const links = await fetchWikipediaLinks(title);
+              const validLinks = links.slice(0, Math.min(links.length, 5));
+
+              for (const link of validLinks) {
+                allEdges.push({ source: title, target: link });
+                if (!processedNodes.has(link) && allNodes.size < maxNodes) {
+                  nodesToProcess.add(link);
+                }
+              }
+            }
+            currentDepth++;
+          }
+
+          const finalNodes = Array.from(allNodes.values());
+          const finalNodeIds = new Set(finalNodes.map(n => n.id));
+          const finalEdges = allEdges.filter(e => finalNodeIds.has(e.source) && finalNodeIds.has(e.target));
+
+          setGraph({ nodes: finalNodes, edges: finalEdges });
+
+          // Caching logic
+          const writer = new N3.Writer({ prefixes: {
+            foaf: 'http://xmlns.com/foaf/0.1/',
+            rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+            ex: 'http://example.org/nodes/'
+          }});
+          finalNodes.forEach(node => {
+            writer.addQuad(
+              N3.DataFactory.namedNode(`http://example.org/nodes/${encodeURIComponent(node.id)}`),
+              N3.DataFactory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
+              N3.DataFactory.namedNode('http://xmlns.com/foaf/0.1/Person')
+            );
+          });
+          finalEdges.forEach(edge => {
+            writer.addQuad(
+              N3.DataFactory.namedNode(`http://example.org/nodes/${encodeURIComponent(edge.source)}`),
+              N3.DataFactory.namedNode('http://xmlns.com/foaf/0.1/knows'),
+              N3.DataFactory.namedNode(`http://example.org/nodes/${encodeURIComponent(edge.target)}`)
+            );
+          });
+          writer.end((error, result) => {
+            if (error) {
+              console.error(error);
+              return;
+            }
+            const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+            localStorage.setItem(cacheKey, JSON.stringify({ data: result, expires }));
+          });
+
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to generate graph');
+        } finally {
+          setLoading(false);
+        }
+      }, [startTitle, depth, maxNodes]);
+
+      useEffect(() => {
+        if (startTitle) {
+          generateGraph();
+        }
+      }, [generateGraph, startTitle]);
+
+      return { graph, loading, error, progress };
+    }
+
+    // --- GraphVisualization.jsx ---
+    const Node = ({ node, selected, onSelect }) => {
+      const meshRef = useRef();
+      const [hovered, setHovered] = useState(false);
+
+      useFrame((state) => {
+        if (meshRef.current) {
+          if (node.position) {
+            meshRef.current.position.lerp(new THREE.Vector3(node.position.x, node.position.y, node.position.z), 0.1);
+          }
+          if (selected) {
+            const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+            meshRef.current.scale.set(scale, scale, scale);
+          } else {
+            meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+          }
+        }
+      });
+
+      const radius = Math.max(0.1, 0.3 - (node.level || 0) * 0.05);
+
+      const getNodeColor = () => {
+        if (selected) return '#ff6b6b';
+        if (hovered) return '#4ecdc4';
+
+        switch (node.domain) {
+          case 'Mathematics': return '#ffe66d';
+          case 'Physics': return '#ff8b94';
+          case 'Computer Science': return '#a8e6cf';
+          default: return '#dda0dd';
+        }
+      };
+
+      const opacity = node.position ? Math.max(0.3, 1 - (node.position.z || 0) * 0.1) : 1;
+
+      return (
+        <group position={node.position ? [node.position.x, node.position.y, node.position.z] : [0, 0, 0]}>
+          <Trail
+            width={0.5}
+            length={10}
+            color={getNodeColor()}
+            attenuation={(t) => t * t}
+          >
+            <mesh
+              ref={meshRef}
+              onClick={() => onSelect(node.id)}
+              onPointerOver={() => setHovered(true)}
+              onPointerOut={() => setHovered(false)}
+            >
+              <sphereGeometry args={[radius, 16, 16]} />
+              <meshStandardMaterial
+                color={getNodeColor()}
+                transparent
+                opacity={opacity}
+                metalness={0.3}
+                roughness={0.4}
+              />
+            </mesh>
+          </Trail>
+
+            {node.level === 0 && (
+              <mesh>
+                <sphereGeometry args={[radius * 1.5, 16, 16]} />
+                <meshBasicMaterial
+                  color={getNodeColor()}
+                  transparent
+                  opacity={0.1}
+                />
+              </mesh>
+            )}
+
+            {(selected || hovered) && (
+              <Text
+                position={[0, radius + 0.3, 0]}
+                fontSize={0.15}
+                color="white"
+                anchorX="center"
+                anchorY="middle"
+                maxWidth={2}
+              >
+                {node.title}
+              </Text>
+            )}
+
+            {(selected || hovered) && (
+              <Text
+                position={[0, -radius - 0.2, 0]}
+                fontSize={0.08}
+                color="#cccccc"
+                anchorX="center"
+                anchorY="middle"
+                maxWidth={1.5}
+              >
+                {node.domain}
+              </Text>
+            )}
+        </group>
+      );
+    };
+
+    const Edge = ({ edge, nodes }) => {
+      const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
+      const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
+      const sourceNode = nodes.get(sourceId);
+      const targetNode = nodes.get(targetId);
+
+      if (!sourceNode || !targetNode || !sourceNode.position || !targetNode.position) return null;
+
+      const start = new THREE.Vector3(sourceNode.position.x, sourceNode.position.y, sourceNode.position.z);
+      const end = new THREE.Vector3(targetNode.position.x, targetNode.position.y, targetNode.position.z);
+
+      const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+      mid.z += start.distanceTo(end) * 0.2;
+
+      const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+      const points = curve.getPoints(20);
+
+      return (
+        <line>
+          <bufferGeometry attach="geometry" setFromPoints={points} />
+          <lineBasicMaterial color="#555" transparent opacity={0.3} />
+        </line>
+      );
+    };
+
+    const GraphVisualization = ({ nodes, edges }) => {
+      const [selectedNode, setSelectedNode] = useState(null);
+      const [layoutNodes, setLayoutNodes] = useState([]);
+      const layoutEngine = useRef(new FractalineLayoutEngine());
+
+      useEffect(() => {
+        const engine = layoutEngine.current;
+        const newLayoutNodes = engine.computeFractalineLayout(nodes, edges);
+        setLayoutNodes(newLayoutNodes);
+
+        return () => {
+          engine.stop();
+        };
+      }, [nodes, edges]);
+
+      const nodeMap = useMemo(() => new Map(layoutNodes.map(node => [node.id, node])), [layoutNodes]);
+
+      const cameraPosition = useMemo(() => {
+        const extent = Math.max(10, Math.sqrt(nodes.length) * 3);
+        return [extent, extent, extent];
+      }, [nodes.length]);
+
+      return (
+        <Canvas
+          camera={{
+            position: cameraPosition,
+            fov: 60,
+            near: 0.1,
+            far: 1000
+          }}
+          style={{ background: 'radial-gradient(circle, #2a2a2a 0%, #1a1a1a 100%)' }}
+        >
+          <ambientLight intensity={0.4} />
+          <pointLight position={[10, 10, 10]} intensity={1} color="#ffffff" />
+          <pointLight position={[-10, -10, -10]} intensity={0.5} color="#4ecdc4" />
+          <pointLight position={[0, 0, 20]} intensity={0.3} color="#ffe66d" />
+
+          <fog attach="fog" args={['#1a1a1a', 5, 50]} />
+
+          {edges.map((edge) => (
+            <Edge
+              key={`${typeof edge.source === 'string' ? edge.source : edge.source.id}-${typeof edge.target === 'string' ? edge.target : edge.target.id}`}
+              edge={edge}
+              nodes={nodeMap}
+            />
+          ))}
+
+          {layoutNodes.map((node) => (
+            <Node
+              key={node.id}
+              node={node}
+              selected={selectedNode === node.id}
+              onSelect={setSelectedNode}
+            />
+          ))}
+
+          <gridHelper
+            args={[20, 20, '#333333', '#222222']}
+            position={[0, -5, 0]}
+          />
+
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            maxDistance={50}
+            minDistance={2}
+            autoRotate={false}
+            dampingFactor={0.05}
+            enableDamping={true}
+          />
+        </Canvas>
+      );
+    };
+
+    // --- App.jsx ---
+    const App = () => {
+      const [startArticle, setStartArticle] = useState(null);
+      const { graph, loading, error, progress } = useWikipediaGraph(startArticle, 2, 100);
+
+      const handleSearch = () => {
+        const input = document.getElementById('article-input');
+        setStartArticle(input.value);
+      };
+
+      useEffect(() => {
+        const button = document.getElementById('generate-button');
+        button.addEventListener('click', handleSearch);
+        return () => button.removeEventListener('click', handleSearch);
+      }, [handleSearch]);
+
+      return (
+        <div style={{ width: '100vw', height: '100vh' }}>
+          <GraphVisualization nodes={graph.nodes} edges={graph.edges} />
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+</body>
 </html>
