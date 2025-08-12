@@ -1,6 +1,6 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Text, Trail, Float } from '@react-three/drei';
+import { OrbitControls, Text, Trail } from '@react-three/drei';
 import * as THREE from 'three';
 import type { WikipediaNode, WikipediaEdge } from '../types/graph';
 import { FractalineLayoutEngine } from '../utils/fractalineLayout';
@@ -8,72 +8,67 @@ import { FractalineLayoutEngine } from '../utils/fractalineLayout';
 interface NodeProps {
   node: WikipediaNode;
   selected: boolean;
-  onSelect: (nodeId: string) => void;
-  animationPhase: number;
+  onSelect: (nodeId:string) => void;
 }
 
-const Node: React.FC<NodeProps> = ({ node, selected, onSelect, animationPhase }) => {
+const Node: React.FC<NodeProps> = ({ node, selected, onSelect }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
   useFrame((state) => {
     if (meshRef.current) {
-      // Subtle rotation based on node level and animation phase
-      const rotationSpeed = 0.1 * (1 / (node.level + 1));
-      meshRef.current.rotation.y = state.clock.elapsedTime * rotationSpeed + animationPhase;
-      
-      // Breathing effect for selected nodes
+      if (node.position) {
+        meshRef.current.position.lerp(new THREE.Vector3(node.position.x, node.position.y, node.position.z), 0.1);
+      }
       if (selected) {
-        const breathe = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
-        meshRef.current.scale.setScalar(breathe);
+        const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+        meshRef.current.scale.set(scale, scale, scale);
+      } else {
+        meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
       }
     }
   });
 
-  // Dynamic sizing based on level and connections
-  const radius = Math.max(0.08, 0.25 - node.level * 0.04);
+  const radius = Math.max(0.1, 0.3 - (node.level || 0) * 0.05);
   
-  // Color scheme based on categories and state
   const getNodeColor = () => {
     if (selected) return '#ff6b6b';
     if (hovered) return '#4ecdc4';
     
-    // Color by category
-    const primaryCategory = node.categories[0]?.toLowerCase() || '';
-    if (primaryCategory.includes('mathematics')) return '#ffe66d';
-    if (primaryCategory.includes('physics')) return '#ff8b94';
-    if (primaryCategory.includes('computer')) return '#a8e6cf';
-    return '#dda0dd';
+    switch (node.domain) {
+      case 'Mathematics': return '#ffe66d';
+      case 'Physics': return '#ff8b94';
+      case 'Computer Science': return '#a8e6cf';
+      default: return '#dda0dd';
+    }
   };
 
-  // Depth-based opacity for 2.5D effect
-  const opacity = Math.max(0.3, 1 - node.position.z * 0.1);
+  const opacity = node.position ? Math.max(0.3, 1 - (node.position.z || 0) * 0.1) : 1;
 
   return (
-    <Float speed={1 + node.level * 0.5} rotationIntensity={0.1} floatIntensity={0.1}>
-      <group position={[node.position.x, node.position.y, node.position.z]}>
-        <Trail
-          width={0.5}
-          length={10}
-          color={getNodeColor()}
-          attenuation={(t) => t * t}
+    <group position={node.position ? [node.position.x, node.position.y, node.position.z] : [0, 0, 0]}>
+      <Trail
+        width={0.5}
+        length={10}
+        color={getNodeColor()}
+        attenuation={(t) => t * t}
+      >
+        <mesh
+          ref={meshRef}
+          onClick={() => onSelect(node.id)}
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
         >
-          <mesh
-            ref={meshRef}
-            onClick={() => onSelect(node.id)}
-            onPointerOver={() => setHovered(true)}
-            onPointerOut={() => setHovered(false)}
-          >
-            <sphereGeometry args={[radius, 16, 16]} />
-            <meshStandardMaterial 
-              color={getNodeColor()} 
-              transparent 
-              opacity={opacity}
-              metalness={0.3}
-              roughness={0.4}
-            />
-          </mesh>
-        </Trail>
+          <sphereGeometry args={[radius, 16, 16]} />
+          <meshStandardMaterial
+            color={getNodeColor()}
+            transparent
+            opacity={opacity}
+            metalness={0.3}
+            roughness={0.4}
+          />
+        </mesh>
+      </Trail>
         
         {/* Glow effect for important nodes */}
         {node.level === 0 && (
@@ -102,8 +97,7 @@ const Node: React.FC<NodeProps> = ({ node, selected, onSelect, animationPhase })
           </Text>
         )}
         
-        {/* Category indicators */}
-        {node.level > 0 && (
+        {(selected || hovered) && (
           <Text
             position={[0, -radius - 0.2, 0]}
             fontSize={0.08}
@@ -112,11 +106,10 @@ const Node: React.FC<NodeProps> = ({ node, selected, onSelect, animationPhase })
             anchorY="middle"
             maxWidth={1.5}
           >
-            {node.categories[0]}
+            {node.domain}
           </Text>
         )}
       </group>
-    </Float>
   );
 };
 
@@ -126,56 +119,30 @@ interface EdgeProps {
 }
 
 const Edge: React.FC<EdgeProps> = ({ edge, nodes }) => {
-  const lineRef = useRef<THREE.BufferGeometry>(null);
   const sourceId = typeof edge.source === 'string' ? edge.source : edge.source.id;
   const targetId = typeof edge.target === 'string' ? edge.target : edge.target.id;
   const sourceNode = nodes.get(sourceId);
   const targetNode = nodes.get(targetId);
 
-  useFrame(() => {
-    if (lineRef.current && sourceNode && targetNode) {
-      // Could add edge animation here in the future
-    }
-  });
-
-  if (!sourceNode || !targetNode) return null;
+  if (!sourceNode || !targetNode || !sourceNode.position || !targetNode.position) return null;
 
   const start = new THREE.Vector3(sourceNode.position.x, sourceNode.position.y, sourceNode.position.z);
   const end = new THREE.Vector3(targetNode.position.x, targetNode.position.y, targetNode.position.z);
   
-  // Create curved edge for better visual appeal
-  const midpoint = start.clone().add(end).multiplyScalar(0.5);
-  const direction = end.clone().sub(start);
-  const distance = direction.length();
-  
-  // Add curve based on edge weight and distance
-  const curveHeight = distance * 0.1 * edge.weight;
-  const perpendicular = new THREE.Vector3(-direction.y, direction.x, direction.z).normalize();
-  midpoint.add(perpendicular.multiplyScalar(curveHeight));
+  const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+  mid.z += start.distanceTo(end) * 0.2;
 
-  const curve = new THREE.QuadraticBezierCurve3(start, midpoint, end);
+  const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
   const points = curve.getPoints(20);
-
-  // Edge opacity based on weight and depth
-  const avgDepth = (sourceNode.position.z + targetNode.position.z) * 0.5;
-  const opacity = Math.max(0.1, edge.weight * 0.8 * (1 - avgDepth * 0.05));
 
   return (
     <line>
-      <bufferGeometry ref={lineRef}>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[new Float32Array(points.flatMap(p => [p.x, p.y, p.z])), 3]}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial 
-        color="#95a5a6" 
-        transparent 
-        opacity={opacity}
-      />
+      <bufferGeometry attach="geometry" setFromPoints={points} />
+      <lineBasicMaterial color="#555" transparent opacity={0.3} />
     </line>
   );
 };
+
 
 interface GraphVisualizationProps {
   nodes: WikipediaNode[];
@@ -184,21 +151,25 @@ interface GraphVisualizationProps {
 
 export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ nodes, edges }) => {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [layoutNodes, setLayoutNodes] = useState<WikipediaNode[]>([]);
   const layoutEngine = useRef(new FractalineLayoutEngine());
 
-  // Apply fractaline layout
-  const layoutNodes = useMemo(() => {
-    const enhanced = layoutEngine.current.computeFractalineLayout(nodes, edges);
-    return enhanced;
+  useEffect(() => {
+    const engine = layoutEngine.current;
+    const newLayoutNodes = engine.computeFractalineLayout(nodes, edges);
+    setLayoutNodes(newLayoutNodes);
+
+    return () => {
+      engine.stop();
+    };
   }, [nodes, edges]);
 
-  const nodeMap = new Map(layoutNodes.map(node => [node.id, node]));
+  const nodeMap = useMemo(() => new Map(layoutNodes.map(node => [node.id, node])), [layoutNodes]);
 
-  // Camera position based on graph extent
   const cameraPosition = useMemo(() => {
-    const extent = Math.max(8, Math.sqrt(layoutNodes.length) * 2);
-    return [extent, extent * 0.8, extent * 0.6] as [number, number, number];
-  }, [layoutNodes.length]);
+    const extent = Math.max(10, Math.sqrt(nodes.length) * 3);
+    return [extent, extent, extent] as [number, number, number];
+  }, [nodes.length]);
 
   return (
     <Canvas 
@@ -229,13 +200,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({ nodes, e
       ))}
       
       {/* Render nodes */}
-      {layoutNodes.map((node, index) => (
+      {layoutNodes.map((node) => (
         <Node
           key={node.id}
           node={node}
           selected={selectedNode === node.id}
           onSelect={setSelectedNode}
-          animationPhase={index * 0.2}
         />
       ))}
       

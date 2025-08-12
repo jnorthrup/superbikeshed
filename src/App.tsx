@@ -1,88 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GraphVisualization } from './components/GraphVisualization';
-import { useGraphData } from './hooks/useGraphData';
-import { WikipediaParser } from './utils/wikipediaParser';
-import type { WikipediaGraph } from './types/graph';
+import { useWikipediaGraph } from './hooks/useWikipediaGraph';
 import './App.css';
 
 function App() {
-  const { graph: sampleGraph, loading, error } = useGraphData('/data/sample-wiki-graph.json');
-  const [currentGraph, setCurrentGraph] = useState<WikipediaGraph | null>(null);
-  const [dataSource, setDataSource] = useState<'sample' | 'enhanced'>('sample');
-  
-  // Initialize enhanced data
-  useEffect(() => {
-    if (dataSource === 'enhanced') {
-      const parser = new WikipediaParser();
-      const enhancedGraph = parser.createEnhancedSampleData();
-      setCurrentGraph(enhancedGraph);
-    } else if (sampleGraph) {
-      setCurrentGraph(sampleGraph);
-    }
-  }, [dataSource, sampleGraph]);
+  const [startArticle, setStartArticle] = useState<string>('React (software)');
+  const [inputArticle, setInputArticle] = useState<string>('React (software)');
+  const { graph, loading, error, progress } = useWikipediaGraph(startArticle, 2, 100);
 
-  const handleDataSourceChange = (source: 'sample' | 'enhanced') => {
-    setDataSource(source);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStartArticle(inputArticle);
   };
-
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        color: 'white',
-        fontSize: '1.2em'
-      }}>
-        Loading Wikipedia Graph...
-      </div>
-    );
-  }
-
-  if (error && dataSource === 'sample') {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        color: '#ff6b6b',
-        fontSize: '1.2em'
-      }}>
-        Error loading sample data: {error}
-        <button 
-          onClick={() => handleDataSourceChange('enhanced')}
-          style={{
-            marginLeft: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#4ecdc4',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
-          Use Enhanced Data
-        </button>
-      </div>
-    );
-  }
-
-  if (!currentGraph) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        color: 'white',
-        fontSize: '1.2em'
-      }}>
-        No graph data available
-      </div>
-    );
-  }
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#1a1a1a' }}>
@@ -96,13 +25,13 @@ function App() {
         fontFamily: 'Arial, sans-serif'
       }}>
         <h1 style={{ margin: '0 0 10px 0', fontSize: '1.5em' }}>
-          2.5D Fractaline Wikipedia Graph
+          Dynamic Wikipedia Graph
         </h1>
         <p style={{ margin: '0', fontSize: '0.9em', opacity: 0.8 }}>
-          {currentGraph.nodes.length} nodes, {currentGraph.edges.length} edges
+          {graph.nodes.length} nodes, {graph.edges.length} edges
         </p>
         <p style={{ margin: '5px 0 0 0', fontSize: '0.8em', opacity: 0.6 }}>
-          Click nodes to select • Drag to rotate • Scroll to zoom
+          Enter a Wikipedia article to start exploring
         </p>
       </div>
 
@@ -117,105 +46,59 @@ function App() {
         borderRadius: '8px',
         color: 'white',
         fontFamily: 'Arial, sans-serif',
-        minWidth: '200px'
+        minWidth: '250px'
       }}>
-        <h3 style={{ margin: '0 0 15px 0', fontSize: '1em' }}>Data Source</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-            <input
-              type="radio"
-              name="dataSource"
-              value="sample"
-              checked={dataSource === 'sample'}
-              onChange={() => handleDataSourceChange('sample')}
-              style={{ marginRight: '8px' }}
-            />
-            Sample (6 nodes)
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-            <input
-              type="radio"
-              name="dataSource"
-              value="enhanced"
-              checked={dataSource === 'enhanced'}
-              onChange={() => handleDataSourceChange('enhanced')}
-              style={{ marginRight: '8px' }}
-            />
-            Enhanced ({new WikipediaParser().createEnhancedSampleData().nodes.length} nodes)
-          </label>
-        </div>
-        
-        <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #444' }}>
-          <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9em' }}>Legend</h4>
-          <div style={{ fontSize: '0.8em', lineHeight: '1.4' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+        <h3 style={{ margin: '0 0 15px 0', fontSize: '1em' }}>Controls</h3>
+        <form onSubmit={handleSearch}>
+          <input
+            type="text"
+            value={inputArticle}
+            onChange={(e) => setInputArticle(e.target.value)}
+            placeholder="Start article"
+            style={{
+              width: '100%',
+              padding: '8px',
+              boxSizing: 'border-box',
+              borderRadius: '4px',
+              border: '1px solid #555',
+              backgroundColor: '#333',
+              color: 'white'
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginTop: '10px',
+              backgroundColor: loading ? '#555' : '#4ecdc4',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            {loading ? 'Loading...' : 'Generate Graph'}
+          </button>
+        </form>
+        {loading && (
+          <div style={{ marginTop: '10px' }}>
+            <p>Loading: {progress.loaded} / {progress.total} nodes</p>
+            <div style={{ width: '100%', backgroundColor: '#555', borderRadius: '4px' }}>
               <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                borderRadius: '50%', 
-                backgroundColor: '#ffe66d', 
-                marginRight: '8px' 
+                width: `${(progress.loaded / progress.total) * 100}%`,
+                height: '5px',
+                backgroundColor: '#4ecdc4',
+                borderRadius: '4px'
               }}></div>
-              Mathematics
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-              <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                borderRadius: '50%', 
-                backgroundColor: '#ff8b94', 
-                marginRight: '8px' 
-              }}></div>
-              Physics
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-              <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                borderRadius: '50%', 
-                backgroundColor: '#a8e6cf', 
-                marginRight: '8px' 
-              }}></div>
-              Computer Science
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ 
-                width: '12px', 
-                height: '12px', 
-                borderRadius: '50%', 
-                backgroundColor: '#dda0dd', 
-                marginRight: '8px' 
-              }}></div>
-              Other
             </div>
           </div>
-        </div>
+        )}
+        {error && <p style={{ color: '#ff6b6b', marginTop: '10px' }}>Error: {error}</p>}
       </div>
 
-      {/* Info Panel */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '20px',
-        zIndex: 1000,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        padding: '15px',
-        borderRadius: '8px',
-        color: 'white',
-        fontFamily: 'Arial, sans-serif',
-        maxWidth: '300px'
-      }}>
-        <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9em' }}>Features</h4>
-        <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.8em', lineHeight: '1.4' }}>
-          <li>Fractaline recursive layout with depth spacing</li>
-          <li>Semantic clustering by knowledge domain</li>
-          <li>2.5D depth cues with fog and opacity</li>
-          <li>Dynamic animations and trails</li>
-          <li>Cross-disciplinary connection mapping</li>
-        </ul>
-      </div>
-
-      <GraphVisualization nodes={currentGraph.nodes} edges={currentGraph.edges} />
+      <GraphVisualization nodes={graph.nodes} edges={graph.edges} />
     </div>
   );
 }
