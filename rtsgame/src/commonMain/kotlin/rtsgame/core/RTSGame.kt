@@ -10,6 +10,8 @@ import com.rtsgame.shared.game.GameState // Using canonical GameState
 // borg.trikeshed.lib may still be needed for other things if this file grows.
 // For now, it's not directly used by the refactored GameState/Entity.
 // import borg.trikeshed.lib.*
+import borg.trikeshed.lib.Series
+import borg.trikeshed.lib.toSeries
 
 
 data class GameTick(val value: Long) // Remains local, seems fine.
@@ -56,7 +58,7 @@ data class CoreEntity(
 class GameEngine {
     fun tick(): GameState {
         // Simple static game state for demo, using canonical types
-        val entitiesMap = mutableMapOf<String, Entity>()
+        val entitiesList = mutableListOf<Entity>()
 
         val entity1 = CoreEntity(
             id = "unit_1",
@@ -67,7 +69,7 @@ class GameEngine {
             team = 1,
             name = "Alpha"
         )
-        entitiesMap[entity1.id] = entity1
+        entitiesList.add(entity1)
 
         val entity2 = CoreEntity(
             localId = LocalEntityId("unit_2"), // Example using helper constructor
@@ -78,7 +80,7 @@ class GameEngine {
             localPlayerId = LocalPlayerId(2),
             entityName = "Beta"
         )
-        entitiesMap[entity2.id] = entity2
+        entitiesList.add(entity2)
         
         // Resources map for GameState (PlayerID -> ResourceType -> Amount)
         // Example: Player 1 has 1000 of each basic resource.
@@ -91,15 +93,15 @@ class GameEngine {
         val resources = mapOf(1 to player1Resources)
 
         return GameState(
-            entities = entitiesMap,
+            entities = entitiesList.toSeries(),
             resources = resources, // Added resources to GameState
             currentTime = currentTimeMillis() / 1000 // Assuming currentTime is a Long timestamp
         )
     }
     
     fun simulateTick(currentState: GameState): GameState {
-        val newEntities = mutableMapOf<String, Entity>()
-        currentState.entities.values.forEach { entity ->
+        val newEntitiesList = mutableListOf<Entity>()
+        currentState.entities.play.forEach { entity ->
             // Ensure we are working with CoreEntity if we need specific fields not on Entity interface
             // For now, position is on Entity interface.
             // val coreEntity = entity as? CoreEntity ?: entity // Keep as Entity if no specific fields needed
@@ -112,17 +114,17 @@ class GameEngine {
             // For CoreEntity, position is a var.
             if (entity is CoreEntity) { // Check if it's our concrete type to modify
                  val movedEntity = entity.copy(position = Position(newX, newY))
-                 newEntities[movedEntity.id] = movedEntity
+                 newEntitiesList.add(movedEntity)
             } else {
                 // If it's not a CoreEntity, we can't easily change its position unless Entity interface's position is var
                 // Or we'd need specific logic for other Entity implementers.
                 // For now, just copy non-CoreEntity types.
-                newEntities[entity.id] = entity
+                newEntitiesList.add(entity)
             }
         }
         
         return currentState.copy(
-            entities = newEntities,
+            entities = newEntitiesList.toSeries(),
             currentTime = currentState.currentTime + 1 // Increment game time (tick)
         )
     }
